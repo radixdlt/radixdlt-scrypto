@@ -28,8 +28,8 @@ impl ConsensusManagerNativePackage {
         fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
         fields
             .push(aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<i64>());
-        fields.push(aggregator.add_child_type_and_descendents::<i64>());
+        fields.push(aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>());
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::SortedIndex(

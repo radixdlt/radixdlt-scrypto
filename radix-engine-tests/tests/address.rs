@@ -606,7 +606,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                btreeset!(transaction_allocated_address.into_node_id()),
+                indexset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();
     }
@@ -627,7 +627,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                btreeset!(transaction_allocated_address.into_node_id()),
+                indexset!(transaction_allocated_address.into_node_id()),
             )
             .expect_commit_success();
     }
@@ -648,7 +648,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                btreeset!(transaction_allocated_address.into_node_id()),
+                indexset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();
     }
@@ -669,7 +669,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                btreeset!(transaction_allocated_address.into_node_id()),
+                indexset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();
     }
@@ -690,7 +690,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                btreeset!(transaction_allocated_address.into_node_id()),
+                indexset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();
     }

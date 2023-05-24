@@ -17,9 +17,9 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
-const SECONDS_TO_MS_FACTOR: i64 = 1000;
-const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
-const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
+const MILLIS_IN_SECOND: i64 = 1000;
+const SECONDS_IN_MINUTE: i64 = 60;
+const MILLIS_IN_MINUTE: i64 = MILLIS_IN_SECOND * SECONDS_IN_MINUTE;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerConfigSubstate {
@@ -46,7 +46,64 @@ pub struct Validator {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CurrentValidatorSetSubstate {
-    pub validator_set: BTreeMap<ComponentAddress, Validator>,
+    pub validator_set: ActiveValidatorSet,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ActiveValidatorSet {
+    /// The validators in the set, ordered by stake descending.
+    pub validators_by_stake_desc: IndexMap<ComponentAddress, Validator>,
+}
+
+impl ActiveValidatorSet {
+    pub fn get_by_index(&self, index: ValidatorIndex) -> Option<(&ComponentAddress, &Validator)> {
+        self.validators_by_stake_desc.get_index(index as usize)
+    }
+
+    pub fn get_by_address(&self, address: &ComponentAddress) -> Option<&Validator> {
+        self.validators_by_stake_desc.get(address)
+    }
+
+    /// Note for performance - this is calculated by iterating over the whole validator set.
+    pub fn get_by_public_key(
+        &self,
+        public_key: &EcdsaSecp256k1PublicKey,
+    ) -> Option<(&ComponentAddress, &Validator)> {
+        self.validators_by_stake_desc
+            .iter()
+            .find(|(_, validator)| &validator.key == public_key)
+    }
+
+    /// Note for performance - this is calculated by iterating over the whole validator set.
+    pub fn total_active_stake_xrd(&self) -> Decimal {
+        self.validators_by_stake_desc
+            .iter()
+            .map(|(_, validator)| validator.stake)
+            .sum()
+    }
+
+    pub fn validator_count(&self) -> usize {
+        self.validators_by_stake_desc.len()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ProposerMilliTimestampSubstate {
+    /// A number of millis elapsed since epoch (i.e. a classic "epoch millis" timestamp).
+    /// A signed number is traditionally used (for reasons like representing instants before A.D.
+    /// 1970, which may not even apply in our case).
+    pub epoch_milli: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ProposerMinuteTimestampSubstate {
+    /// A number of full minutes elapsed since epoch.
+    /// A signed number is used for the same reasons as in [`ProposerMilliTimestampSubstate`], and
+    /// gives us time until A.D. 5772.
+    pub epoch_minute: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -175,10 +232,18 @@ impl ConsensusManagerBlueprint {
                 round: 0,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
-                validator_set: BTreeMap::new(),
+                validator_set: ActiveValidatorSet {
+                    validators_by_stake_desc: index_map_new(),
+                },
             };
             let current_proposal_statistic = CurrentProposalStatisticSubstate {
                 validator_statistics: Vec::new(),
+            };
+            let minute_timestamp = ProposerMinuteTimestampSubstate {
+                epoch_minute: Self::milli_to_minute(initial_time_ms),
+            };
+            let milli_timestamp = ProposerMilliTimestampSubstate {
+                epoch_milli: initial_time_ms,
             };
 
             api.new_simple_object(
@@ -188,8 +253,8 @@ impl ConsensusManagerBlueprint {
                     scrypto_encode(&consensus_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
                     scrypto_encode(&current_proposal_statistic).unwrap(),
-                    scrypto_encode(&Self::round_to_minutes_ms(initial_time_ms)).unwrap(),
-                    scrypto_encode(&initial_time_ms).unwrap(),
+                    scrypto_encode(&minute_timestamp).unwrap(),
+                    scrypto_encode(&milli_timestamp).unwrap(),
                 ],
             )?
         };
@@ -287,21 +352,26 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let proposer_milli_timestamp = ProposerMilliTimestampSubstate {
+            epoch_milli: current_time_ms,
+        };
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTime.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &current_time_ms)?;
+        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
         api.field_lock_release(handle)?;
 
-        let current_time_rounded_to_minutes_ms = Self::round_to_minutes_ms(current_time_ms);
+        let proposer_minute_timestamp = ProposerMinuteTimestampSubstate {
+            epoch_minute: Self::milli_to_minute(current_time_ms),
+        };
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &current_time_rounded_to_minutes_ms)?;
+        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
         api.field_lock_release(handle)?;
 
         Ok(())
@@ -321,10 +391,13 @@ impl ConsensusManagerBlueprint {
                     ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let current_time_rounded_to_minutes_ms: i64 = api.field_lock_read_typed(handle)?;
+                let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
+                    api.field_lock_read_typed(handle)?;
                 api.field_lock_release(handle)?;
-                let instant = Self::instant_from_millis(current_time_rounded_to_minutes_ms);
-                Ok(instant)
+
+                Ok(Self::epoch_minute_to_instant(
+                    proposer_minute_timestamp.epoch_minute,
+                ))
             }
         }
     }
@@ -340,35 +413,35 @@ impl ConsensusManagerBlueprint {
     {
         match precision {
             TimePrecision::Minute => {
+                let other_epoch_minute = Self::milli_to_minute(
+                    other_arbitrary_precision_instant.seconds_since_unix_epoch * MILLIS_IN_SECOND,
+                );
+
                 let handle = api.actor_lock_field(
                     OBJECT_HANDLE_SELF,
                     ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let current_time_rounded_to_minutes_ms: i64 = api.field_lock_read_typed(handle)?;
+                let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
+                    api.field_lock_read_typed(handle)?;
                 api.field_lock_release(handle)?;
 
-                let other_time_ms = Self::instant_to_millis(other_arbitrary_precision_instant);
-                let other_time_rounded_to_minutes_ms = Self::round_to_minutes_ms(other_time_ms);
-
-                let current_instant = Self::instant_from_millis(current_time_rounded_to_minutes_ms);
-                let other_instant = Self::instant_from_millis(other_time_rounded_to_minutes_ms);
-                let result = current_instant.compare(other_instant, operator);
+                // convert back to Instant only for comparison operation
+                let proposer_instant =
+                    Self::epoch_minute_to_instant(proposer_minute_timestamp.epoch_minute);
+                let other_instant = Self::epoch_minute_to_instant(other_epoch_minute);
+                let result = proposer_instant.compare(other_instant, operator);
                 Ok(result)
             }
         }
     }
 
-    fn round_to_minutes_ms(time_ms: i64) -> i64 {
-        (time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR
+    fn epoch_minute_to_instant(epoch_minute: i32) -> Instant {
+        Instant::new(epoch_minute as i64 * SECONDS_IN_MINUTE)
     }
 
-    fn instant_from_millis(time_ms: i64) -> Instant {
-        Instant::new(time_ms / SECONDS_TO_MS_FACTOR)
-    }
-
-    fn instant_to_millis(instant: Instant) -> i64 {
-        instant.seconds_since_unix_epoch * SECONDS_TO_MS_FACTOR
+    fn milli_to_minute(epoch_milli: i64) -> i32 {
+        i32::try_from(epoch_milli / MILLIS_IN_MINUTE).unwrap() // safe until A.D. 5700
     }
 
     pub(crate) fn next_round<Y>(
@@ -503,7 +576,7 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // read previous validator set
+        // Read previous validator set
         let validator_set_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentValidatorSet.into(),
@@ -513,7 +586,7 @@ impl ConsensusManagerBlueprint {
             api.field_lock_read_typed(validator_set_handle)?;
         let previous_validator_set = validator_set_substate.validator_set;
 
-        // read previous validator statistics
+        // Read previous validator statistics
         let statistic_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentProposalStatistic.into(),
@@ -523,7 +596,7 @@ impl ConsensusManagerBlueprint {
             api.field_lock_read_typed(statistic_handle)?;
         let previous_statistics = statistic_substate.validator_statistics;
 
-        // apply emissions
+        // Apply emissions
         Self::apply_validator_emissions(
             previous_validator_set,
             previous_statistics,
@@ -532,36 +605,61 @@ impl ConsensusManagerBlueprint {
             api,
         )?;
 
-        // select next validator set
-        let registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
+        // Select next validator set
+        // NOTE - because the stake index is by u16 buckets, it's possible that there are multiple validators at the cut off point
+        // that fall into the same bucket.
+        // To reduce the risk of that causing issues, we take a decent chunk more than we need from the index.
+        // It's still possible that the bucket is _very_ large and we miss some validators in the bucket, and fail to read validators
+        // with a higher stake, but lower DbSortKey.
+        // The risk is very low though in practice, and only affects validators near the bottom of the list who would likely get very
+        // few proposals, so we feel it's an okay trade-off.
+        let num_validators_to_read_from_store =
+            config.max_validators + (config.max_validators / 10) + 10;
+
+        let mut top_registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
             .actor_sorted_index_scan_typed(
                 OBJECT_HANDLE_SELF,
                 CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
-                config.max_validators,
+                num_validators_to_read_from_store,
             )?;
-        let next_validator_set: BTreeMap<ComponentAddress, Validator> = registered_validators
-            .into_iter()
-            .map(|entry| (entry.component_address, entry.validator))
-            .collect();
 
-        // emit epoch change event
+        // The index scan should already pull the validators out in stake DESC, but if multiple validators are on the same u16 stake,
+        // then let's be even more accurate here. This sort is stable, so if two validators tie, then the resultant order will be
+        // decided on sort key DESC.
+        top_registered_validators.sort_by(|validator_1, validator_2| {
+            validator_1
+                .validator
+                .stake
+                .cmp(&validator_2.validator.stake)
+                .reverse()
+        });
+
+        let next_active_validator_set = ActiveValidatorSet {
+            validators_by_stake_desc: top_registered_validators
+                .into_iter()
+                .take(config.max_validators as usize)
+                .map(|entry| (entry.component_address, entry.validator))
+                .collect(),
+        };
+
+        // Emit epoch change event
         Runtime::emit_event(
             api,
             EpochChangeEvent {
                 epoch: next_epoch,
-                validators: next_validator_set.clone(),
+                validator_set: next_active_validator_set.clone(),
             },
         )?;
 
-        // write zeroed statistics of next validators
-        statistic_substate.validator_statistics = (0..next_validator_set.len())
+        // Write zeroed statistics of next validators
+        statistic_substate.validator_statistics = (0..next_active_validator_set.validator_count())
             .map(|_index| ProposalStatistic::default())
             .collect();
         api.field_lock_write_typed(statistic_handle, statistic_substate)?;
         api.field_lock_release(statistic_handle)?;
 
-        // write next validator set
-        validator_set_substate.validator_set = next_validator_set;
+        // Write next validator set
+        validator_set_substate.validator_set = next_active_validator_set;
         api.field_lock_write_typed(validator_set_handle, validator_set_substate)?;
         api.field_lock_release(validator_set_handle)?;
 
@@ -571,7 +669,7 @@ impl ConsensusManagerBlueprint {
     /// Emits a configured XRD amount ([`ConsensusManagerConfigSubstate.total_emission_xrd_per_epoch`])
     /// and distributes it across the given validator set, according to their stake.
     fn apply_validator_emissions<Y>(
-        validator_set: BTreeMap<ComponentAddress, Validator>,
+        validator_set: ActiveValidatorSet,
         validator_statistics: Vec<ProposalStatistic>,
         config: &ConsensusManagerConfigSubstate,
         epoch: u64, // the concluded epoch, for event creation
@@ -581,6 +679,7 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validator_emissions = validator_set
+            .validators_by_stake_desc
             .into_iter()
             .zip(validator_statistics)
             .filter_map(|((address, validator), statistic)| {

@@ -9,6 +9,7 @@ pub enum ValueType {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum PrepareError {
     DecodeError(DecodeError),
+    EncodeError(EncodeError),
     TooManyValues {
         value_type: ValueType,
         actual: usize,
@@ -25,6 +26,12 @@ pub enum PrepareError {
 impl From<DecodeError> for PrepareError {
     fn from(value: DecodeError) -> Self {
         Self::DecodeError(value)
+    }
+}
+
+impl From<EncodeError> for PrepareError {
+    fn from(value: EncodeError) -> Self {
+        Self::EncodeError(value)
     }
 }
 

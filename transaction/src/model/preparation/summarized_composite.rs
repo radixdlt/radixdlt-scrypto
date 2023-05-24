@@ -1,4 +1,5 @@
 use super::*;
+use radix_engine_constants::*;
 
 pub enum ConcatenatedDigest {}
 
@@ -8,7 +9,8 @@ impl ConcatenatedDigest {
         decoder: &mut TransactionDecoder,
         discriminator: TransactionDiscriminator,
     ) -> Result<(T, Summary), PrepareError> {
-        let digest = HashAccumulator::new().update(&[discriminator as u8]);
+        let digest = HashAccumulator::new()
+            .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
         T::prepare_into_concatenated_digest(decoder, digest, discriminator as u8)
     }
 
@@ -17,7 +19,8 @@ impl ConcatenatedDigest {
         decoder: &mut TransactionDecoder,
         discriminator: TransactionDiscriminator,
     ) -> Result<(T, Summary), PrepareError> {
-        let digest = HashAccumulator::new().update(&[discriminator as u8]);
+        let digest = HashAccumulator::new()
+            .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
         T::prepare_into_concatenated_digest(decoder, digest)
     }
 

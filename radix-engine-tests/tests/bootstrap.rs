@@ -1,3 +1,4 @@
+use radix_engine::blueprints::consensus_manager::ProposerMinuteTimestampSubstate;
 use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
@@ -384,15 +385,15 @@ fn test_genesis_time() {
         )
         .unwrap();
 
-    let current_time_rounded_to_minutes_ms = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, i64>(
+    let proposer_minute_timestamp = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, ProposerMinuteTimestampSubstate>(
             CONSENSUS_MANAGER.as_node_id(),
             OBJECT_BASE_PARTITION,
             &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         )
         .unwrap();
 
-    assert_eq!(current_time_rounded_to_minutes_ms, 123 * 60 * 1000);
+    assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
 }
 
 fn dummy_consensus_manager_configuration() -> ConsensusManagerInitialConfiguration {

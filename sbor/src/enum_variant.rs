@@ -1,17 +1,17 @@
 use crate::*;
 
-pub struct EnumVariant<const DISCRIMINATOR: u8, T> {
+pub struct FixedEnumVariant<const DISCRIMINATOR: u8, T> {
     pub fields: T,
 }
 
-impl<const DISCRIMINATOR: u8, T> EnumVariant<DISCRIMINATOR, T> {
+impl<const DISCRIMINATOR: u8, T> FixedEnumVariant<DISCRIMINATOR, T> {
     pub fn new(fields: T) -> Self {
         Self { fields }
     }
 }
 
 impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> Categorize<X>
-    for EnumVariant<DISCRIMINATOR, T>
+    for FixedEnumVariant<DISCRIMINATOR, T>
 {
     fn value_kind() -> ValueKind<X> {
         ValueKind::Enum
@@ -19,7 +19,7 @@ impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> Categorize<X>
 }
 
 impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> SborEnum<X>
-    for EnumVariant<DISCRIMINATOR, T>
+    for FixedEnumVariant<DISCRIMINATOR, T>
 {
     fn get_length(&self) -> usize {
         self.fields.get_length()
@@ -35,7 +35,7 @@ impl<
         E: Encoder<X>,
         const DISCRIMINATOR: u8,
         T: Encode<X, E> + SborTuple<X>,
-    > Encode<X, E> for EnumVariant<DISCRIMINATOR, T>
+    > Encode<X, E> for FixedEnumVariant<DISCRIMINATOR, T>
 {
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -52,7 +52,7 @@ impl<
         D: Decoder<X>,
         const DISCRIMINATOR: u8,
         T: Decode<X, D> + SborTuple<X>,
-    > Decode<X, D> for EnumVariant<DISCRIMINATOR, T>
+    > Decode<X, D> for FixedEnumVariant<DISCRIMINATOR, T>
 {
     #[inline]
     fn decode_body_with_value_kind(
