@@ -586,45 +586,6 @@ fn generate_stubs(
     Ok(output)
 }
 
-/*
-fn get_protection(attributes: &mut Vec<Attribute>) -> Option<Vec<String>> {
-    let to_remove = attributes
-        .iter_mut()
-        .enumerate()
-        .find_map(|(index, attribute)| {
-            if let Ok(Meta::List(meta_list)) = attribute.parse_meta() {
-                if !meta_list.path.is_ident("restrict_to") {
-                    return None;
-                }
-
-                let mut authorities = Vec::new();
-
-                for nested_meta in meta_list.nested {
-                    match nested_meta {
-                        NestedMeta::Lit(Lit::Str(s)) => {
-                            authorities.push(s.value());
-                        }
-                        _ => {
-                            return None;
-                        }
-                    }
-                }
-
-                return Some((index, authorities));
-            }
-
-            return None;
-        });
-
-    if let Some((to_remove, authority)) = to_remove {
-        attributes.remove(to_remove);
-        Some(authority)
-    } else {
-        None
-    }
-}
- */
-
 #[allow(dead_code)]
 struct GeneratedSchemaInfo {
     function_names: Vec<String>,
@@ -692,19 +653,6 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                         });
                     } else {
                         method_idents.push(m.sig.ident.clone());
-                        /*
-                        if let Some(authority) = get_protection(&mut m.attrs) {
-                            protected_methods.push(function_name.clone());
-                            protected_method_authorities.push(parse_quote!( {
-                                let mut authorities = Vec::new();
-                                #({
-                                    authorities.push(SchemaAuthorityKey::new(#authority.to_owned()));
-                                })*
-                                authorities
-                            }));
-                        }
-                         */
-
                         function_names.push(function_name);
                         function_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {

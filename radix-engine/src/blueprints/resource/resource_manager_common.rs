@@ -55,30 +55,14 @@ fn build_access_rules(
 
         // Mint
         {
-            roles.define_role(
-                MINT_UPDATE_ROLE,
-                mint_mutability,
-                vec![MINT_UPDATE_ROLE],
-            );
-            roles.define_role(
-                MINT_ROLE,
-                mint_access_rule,
-                vec![MINT_UPDATE_ROLE],
-            );
+            roles.define_role(MINT_UPDATE_ROLE, mint_mutability, vec![MINT_UPDATE_ROLE]);
+            roles.define_role(MINT_ROLE, mint_access_rule, vec![MINT_UPDATE_ROLE]);
         }
 
         // Burn
         {
-            roles.define_role(
-                BURN_UPDATE_ROLE,
-                burn_mutability,
-                vec![BURN_UPDATE_ROLE],
-            );
-            roles.define_role(
-                BURN_ROLE,
-                burn_access_rule,
-                vec![BURN_UPDATE_ROLE],
-            );
+            roles.define_role(BURN_UPDATE_ROLE, burn_mutability, vec![BURN_UPDATE_ROLE]);
+            roles.define_role(BURN_ROLE, burn_access_rule, vec![BURN_UPDATE_ROLE]);
         }
 
         // Non Fungible Update data
@@ -148,11 +132,7 @@ fn build_access_rules(
                 recall_mutability,
                 vec![RECALL_UPDATE_ROLE],
             );
-            roles.define_role(
-                RECALL_ROLE,
-                recall_access_rule,
-                vec![RECALL_UPDATE_ROLE],
-            );
+            roles.define_role(RECALL_ROLE, recall_access_rule, vec![RECALL_UPDATE_ROLE]);
         }
 
         // Deposit
@@ -163,11 +143,7 @@ fn build_access_rules(
                 vec![DEPOSIT_UPDATE_ROLE],
             );
 
-            roles.define_role(
-                DEPOSIT_ROLE,
-                deposit_access_rule,
-                vec![DEPOSIT_UPDATE_ROLE],
-            );
+            roles.define_role(DEPOSIT_ROLE, deposit_access_rule, vec![DEPOSIT_UPDATE_ROLE]);
         }
 
         // Internal
