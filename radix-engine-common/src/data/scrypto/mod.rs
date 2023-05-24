@@ -61,6 +61,12 @@ pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
 pub trait ScryptoCategorize: Categorize<ScryptoCustomValueKind> {}
 impl<T: Categorize<ScryptoCustomValueKind> + ?Sized> ScryptoCategorize for T {}
 
+pub trait ScryptoSborEnum: SborEnum<ScryptoCustomValueKind> {}
+impl<T: SborEnum<ScryptoCustomValueKind> + ?Sized> ScryptoSborEnum for T {}
+
+pub trait ScryptoSborTuple: SborTuple<ScryptoCustomValueKind> {}
+impl<T: SborTuple<ScryptoCustomValueKind> + ?Sized> ScryptoSborTuple for T {}
+
 pub trait ScryptoDecode: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>> {}
 impl<T: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>>> ScryptoDecode for T {}
 

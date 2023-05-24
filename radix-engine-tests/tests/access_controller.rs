@@ -7,7 +7,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::clock::TimePrecision;
+use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 use scrypto_unit::TestRunner;
 use transaction::builder::*;
 
@@ -1984,7 +1984,7 @@ impl AccessControllerTestRunner {
             )
             .call_method(
                 self.account.0,
-                "deposit_batch",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

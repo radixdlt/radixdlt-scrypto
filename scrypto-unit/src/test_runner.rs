@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
@@ -17,8 +17,8 @@ use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
-    TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
+    PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -29,17 +29,17 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::blueprints::clock::{
-    ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
-    CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
-};
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInput, EpochManagerInitialConfiguration, EpochManagerSetEpochInput,
-    EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
+use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerGetCurrentEpochInput, ConsensusManagerGetCurrentTimeInput,
+    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput,
+    ConsensusManagerSetCurrentTimeInput, ConsensusManagerSetEpochInput, LeaderProposalHistory,
+    TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+    CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
@@ -132,14 +132,14 @@ impl Compile {
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
-    pub initial_configuration: EpochManagerInitialConfiguration,
+    pub initial_configuration: ConsensusManagerInitialConfiguration,
     pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
     pub fn default(
         initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
+        initial_configuration: ConsensusManagerInitialConfiguration,
     ) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
@@ -158,7 +158,7 @@ impl CustomGenesis {
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
+        initial_configuration: ConsensusManagerInitialConfiguration,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
@@ -517,7 +517,11 @@ impl TestRunner {
             .lock_fee(self.faucet_component(), 100u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.call_method(account_address, "deposit", manifest_args!(bucket))
+                builder.call_method(
+                    account_address,
+                    ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                    manifest_args!(bucket),
+                )
             })
             .build();
 
@@ -545,7 +549,7 @@ impl TestRunner {
             .call_method(self.faucet_component(), "free", manifest_args!())
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -589,9 +593,9 @@ impl TestRunner {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
-                EPOCH_MANAGER.as_node_id(),
+                CONSENSUS_MANAGER.as_node_id(),
                 OBJECT_BASE_PARTITION,
-                &EpochManagerField::CurrentValidatorSet.into(),
+                &ConsensusManagerField::CurrentValidatorSet.into(),
             )
             .unwrap();
 
@@ -662,7 +666,7 @@ impl TestRunner {
             .create_identity()
             .call_method(
                 account,
-                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -683,7 +687,7 @@ impl TestRunner {
             .create_validator(pub_key)
             .call_method(
                 account,
-                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -697,7 +701,7 @@ impl TestRunner {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         authority_rules: AuthorityRules,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
@@ -911,7 +915,7 @@ impl TestRunner {
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(
                 to,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1053,7 +1057,7 @@ impl TestRunner {
             )
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1075,7 +1079,7 @@ impl TestRunner {
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1099,7 +1103,7 @@ impl TestRunner {
             .create_fungible_resource(1u8, BTreeMap::new(), access_rules, None)
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1123,7 +1127,7 @@ impl TestRunner {
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1147,7 +1151,7 @@ impl TestRunner {
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1180,9 +1184,9 @@ impl TestRunner {
     pub fn set_current_epoch(&mut self, epoch: u32) {
         let receipt = self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
-                address: EPOCH_MANAGER.into(),
-                method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-                args: to_manifest_value(&EpochManagerSetEpochInput {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerSetEpochInput {
                     epoch: epoch as u64,
                 }),
             }],
@@ -1194,9 +1198,9 @@ impl TestRunner {
     pub fn get_current_epoch(&mut self) -> u32 {
         let receipt = self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
-                address: EPOCH_MANAGER.into(),
-                method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
             }],
             btreeset![AuthAddresses::validator_role()],
         );
@@ -1258,12 +1262,32 @@ impl TestRunner {
         )
     }
 
+    /// Executes a "start round number `round`" system transaction, as if it was proposed by the
+    /// first validator from the validator set, after `round - 1` missed rounds by that validator.
+    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+        self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerNextRoundInput {
+                    round,
+                    leader_proposal_history: LeaderProposalHistory {
+                        gap_round_leaders: (1..round).map(|_| 0).collect(),
+                        current_leader: 0,
+                        is_fallback: false,
+                    },
+                }),
+            }],
+            btreeset![AuthAddresses::validator_role()],
+        )
+    }
+
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let receipt = self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
-                address: CLOCK.into(),
-                method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerSetCurrentTimeInput { current_time_ms }),
             }],
             btreeset![AuthAddresses::validator_role()],
         );
@@ -1273,9 +1297,9 @@ impl TestRunner {
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let receipt = self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
-                address: CLOCK.into(),
-                method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
             }],
             btreeset![AuthAddresses::validator_role()],
         );
@@ -1430,6 +1454,15 @@ impl TestRunner {
         };
         let actual_type_name = self.event_name(event_type_identifier);
         expected_type_name == actual_type_name
+    }
+
+    pub fn extract_events_of_type<T: ScryptoEvent>(&self, result: &CommitResult) -> Vec<T> {
+        result
+            .application_events
+            .iter()
+            .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
+            .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
+            .collect::<Vec<_>>()
     }
 }
 

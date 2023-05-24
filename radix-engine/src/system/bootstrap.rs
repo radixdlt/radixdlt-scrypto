@@ -1,7 +1,6 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::EpochManagerNativePackage;
+use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
@@ -20,11 +19,10 @@ use crate::vm::ScryptoVm;
 use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::{
-    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
-};
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerInitialConfiguration, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerInitialConfiguration, CONSENSUS_MANAGER_BLUEPRINT,
+    CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -138,13 +136,14 @@ where
         self.bootstrap_with_genesis_data(
             vec![],
             1u64,
-            EpochManagerInitialConfiguration {
+            ConsensusManagerInitialConfiguration {
                 max_validators: 10,
                 rounds_per_epoch: 1,
                 num_unstake_epochs: 1,
                 total_emission_xrd_per_epoch: Decimal::one(),
                 min_validator_reliability: Decimal::one(),
                 num_owner_stake_units_unlock_epochs: 2,
+                num_fee_increase_delay_epochs: 1,
             },
             1,
         )
@@ -154,7 +153,7 @@ where
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
+        initial_configuration: ConsensusManagerInitialConfiguration,
         initial_time_ms: i64,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
@@ -193,7 +192,7 @@ where
     fn execute_system_bootstrap(
         &mut self,
         initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
+        initial_configuration: ConsensusManagerInitialConfiguration,
         initial_time_ms: i64,
     ) -> TransactionReceipt {
         let transaction = create_system_bootstrap_transaction(
@@ -270,7 +269,7 @@ where
 
 pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
-    initial_configuration: EpochManagerInitialConfiguration,
+    initial_configuration: ConsensusManagerInitialConfiguration,
     initial_time_ms: i64,
 ) -> SystemTransactionV1 {
     // NOTES
@@ -392,18 +391,30 @@ pub fn create_system_bootstrap_transaction(
     // XRD Token
     {
         let mut metadata = BTreeMap::new();
-        metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
-        metadata.insert("name".to_owned(), XRD_NAME.to_owned());
-        metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
-        metadata.insert("url".to_owned(), XRD_URL.to_owned());
-        metadata.insert("icon_url".to_owned(), XRD_ICON_URL.to_owned());
+        metadata.insert(
+            "symbol".to_owned(),
+            MetadataValue::String(XRD_SYMBOL.to_owned()),
+        );
+        metadata.insert(
+            "name".to_owned(),
+            MetadataValue::String(XRD_NAME.to_owned()),
+        );
+        metadata.insert(
+            "description".to_owned(),
+            MetadataValue::String(XRD_DESCRIPTION.to_owned()),
+        );
+        metadata.insert("url".to_owned(), MetadataValue::String(XRD_URL.to_owned()));
+        metadata.insert(
+            "icon_url".to_owned(),
+            MetadataValue::String(XRD_ICON_URL.to_owned()),
+        );
 
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         access_rules.insert(
             Mint,
             (
-                rule!(require(global_caller(EPOCH_MANAGER))),
+                rule!(require(global_caller(CONSENSUS_MANAGER))),
                 rule!(deny_all),
             ),
         );
@@ -429,7 +440,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Package Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into();
@@ -450,7 +461,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Object Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = GLOBAL_CALLER_VIRTUAL_BADGE.into();
@@ -548,18 +559,18 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // EpochManager Package
+    // ConsensusManager Package
     {
-        pre_allocated_ids.insert(EPOCH_MANAGER_PACKAGE.into());
-        let package_address = EPOCH_MANAGER_PACKAGE.into();
+        pre_allocated_ids.insert(CONSENSUS_MANAGER_PACKAGE.into());
+        let package_address = CONSENSUS_MANAGER_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: EpochManagerNativePackage::schema(),
-                native_package_code_id: EPOCH_MANAGER_CODE_ID,
+                schema: ConsensusManagerNativePackage::schema(),
+                native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
                 dependent_resources: vec![
                     RADIX_TOKEN,
@@ -568,28 +579,7 @@ pub fn create_system_bootstrap_transaction(
                     VALIDATOR_OWNER_BADGE,
                 ],
                 dependent_components: vec![],
-                package_access_rules: EpochManagerNativePackage::package_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
-            }),
-        });
-    }
-
-    // Clock Package
-    {
-        pre_allocated_ids.insert(CLOCK_PACKAGE.into());
-        let package_address = CLOCK_PACKAGE.into();
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                schema: ClockNativePackage::schema(),
-                native_package_code_id: CLOCK_CODE_ID,
-                metadata: BTreeMap::new(),
-                dependent_resources: vec![SYSTEM_TRANSACTION_BADGE],
-                dependent_components: vec![],
-                package_access_rules: ClockNativePackage::package_access_rules(),
+                package_access_rules: ConsensusManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             }),
         });
@@ -660,7 +650,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
                 dependent_resources: vec![PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE],
-                dependent_components: vec![CLOCK],
+                dependent_components: vec![CONSENSUS_MANAGER],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
@@ -681,7 +671,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
                 dependent_resources: vec![],
-                dependent_components: vec![EPOCH_MANAGER],
+                dependent_components: vec![CONSENSUS_MANAGER],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
@@ -690,7 +680,7 @@ pub fn create_system_bootstrap_transaction(
 
     // ECDSA
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
@@ -711,7 +701,7 @@ pub fn create_system_bootstrap_transaction(
 
     // EDDSA ED25519 Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
@@ -732,7 +722,7 @@ pub fn create_system_bootstrap_transaction(
 
     // System Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TRANSACTION_BADGE.into();
@@ -795,37 +785,23 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Clock Component
+    // Create ConsensusManager
     {
-        let component_address = CLOCK.into();
-        pre_allocated_ids.insert(CLOCK.into());
-        instructions.push(InstructionV1::CallFunction {
-            package_address: CLOCK_PACKAGE,
-            blueprint_name: CLOCK_BLUEPRINT.to_string(),
-            function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ClockCreateInput {
-                component_address,
-                initial_time_ms,
-            }),
-        });
-    }
-
-    // Create EpochManager
-    {
-        let epoch_manager_component_address = Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER);
+        let consensus_manager_component_address =
+            Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER);
         let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE);
-        pre_allocated_ids.insert(EPOCH_MANAGER.into());
+        pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
         pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
-
         instructions.push(InstructionV1::CallFunction {
-            package_address: EPOCH_MANAGER_PACKAGE,
-            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            package_address: CONSENSUS_MANAGER_PACKAGE,
+            blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+            function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             args: manifest_args!(
                 validator_owner_token,
-                epoch_manager_component_address,
+                consensus_manager_component_address,
                 initial_epoch,
-                initial_configuration
+                initial_configuration,
+                initial_time_ms
             ),
         });
     }
@@ -848,7 +824,7 @@ pub fn create_system_bootstrap_transaction(
             args: manifest_args!(
                 address_bytes,
                 whole_lotta_xrd,
-                EPOCH_MANAGER,
+                CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
             ),
         });
