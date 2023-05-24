@@ -205,7 +205,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, BTreeMap<ComponentAddress, Validator>) {
+    pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -249,7 +249,7 @@ impl TestRunnerBuilder {
             .expect_commit_success()
             .next_epoch()
             .unwrap();
-        (runner, next_epoch.0)
+        (runner, next_epoch.validator_set)
     }
 
     pub fn build(self) -> TestRunner {
@@ -574,8 +574,11 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
-    pub fn get_validator_info_by_key(&self, key: &EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
-        let address = self.get_validator_with_key(key);
+    pub fn get_active_validator_info_by_key(
+        &self,
+        key: &EcdsaSecp256k1PublicKey,
+    ) -> ValidatorSubstate {
+        let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
     }
 
@@ -589,7 +592,7 @@ impl TestRunner {
             .unwrap()
     }
 
-    pub fn get_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+    pub fn get_active_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
@@ -601,8 +604,7 @@ impl TestRunner {
 
         substate
             .validator_set
-            .iter()
-            .find(|(_, v)| v.key.eq(key))
+            .get_by_public_key(key)
             .unwrap()
             .0
             .clone()
