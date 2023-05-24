@@ -6,8 +6,7 @@ use native_sdk::modules::metadata::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
 use radix_engine_common::math::*;
-use radix_engine_common::prelude::scrypto_encode;
-use radix_engine_common::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -32,7 +31,7 @@ impl SingleResourcePoolBlueprint {
         let resource_manager = ResourceManager(resource_address);
         if let ResourceType::NonFungible { .. } = resource_manager.resource_type(api)? {
             Err(
-                SingleResourcePoolError::CantCreateAPoolOfNonFungibleResources { resource_address },
+                SingleResourcePoolError::PoolsDoNotSupportNonFungibleResources { resource_address },
             )?
         }
 
@@ -62,8 +61,8 @@ impl SingleResourcePoolBlueprint {
             // TODO: Pool unit resource metadata - two things are needed to do this:
             // 1- Better APIs for initializing the metadata so that it's not string string.
             // 2- A fix for the issue with references so that we can have the component address of
-            //    the pool component in the metadata of the pool unit resource (currently results
-            //    in an error because we're passing a reference to a node that doesn't exist).
+            //    the pool component in the metadata of the pool unit resource (currently results in
+            //    an error because we're passing a reference to a node that doesn't exist).
 
             ResourceManager::new_fungible(18, Default::default(), access_rules, api)?.0
         };
@@ -190,33 +189,26 @@ impl SingleResourcePoolBlueprint {
         }
 
         // Calculating the amount owed based on the passed pool units.
-        let mut amount_owed = {
-            let pool_units_to_redeem = bucket.amount(api)?;
-            let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
-            let pool_resource_reserves = vault.amount(api)?;
+        let pool_units_to_redeem = bucket.amount(api)?;
+        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_resource_reserves = vault.amount(api)?;
+        let pool_resource_divisibility = vault
+            .resource_address(api)
+            .and_then(|resource_address| ResourceManager(resource_address).resource_type(api))
+            .map(|resource_type| {
+                if let ResourceType::Fungible { divisibility } = resource_type {
+                    divisibility
+                } else {
+                    panic!("Impossible case, we check for this in the constructor and have a test for this.")
+                }
+            })?;
 
-            (pool_units_to_redeem / pool_units_total_supply) * pool_resource_reserves
-        };
-
-        // Apply rounding if needed. Rounding is done if the resources in the pool have a
-        // divisibility that is not 18. If rounding is needed then apply it.
-        {
-            let divisibility = vault
-                .resource_address(api)
-                .and_then(|resource_address| ResourceManager(resource_address).resource_type(api))
-                .map(|resource_type| {
-                    if let ResourceType::Fungible { divisibility } = resource_type {
-                        divisibility
-                    } else {
-                        panic!("Impossible case, we check for this in the constructor.")
-                    }
-                })?;
-
-            if divisibility != 18 {
-                amount_owed =
-                    amount_owed.round(divisibility as u32, RoundingMode::TowardsNegativeInfinity);
-            }
-        }
+        let amount_owed = Self::calculate_amount_owed(
+            pool_units_to_redeem,
+            pool_units_total_supply,
+            pool_resource_reserves,
+            pool_resource_divisibility,
+        );
 
         // Burn the pool units and take the owed resources from the bucket.
         bucket.burn(api)?;
@@ -248,13 +240,47 @@ impl SingleResourcePoolBlueprint {
     }
 
     pub fn get_redemption_value<Y>(
-        _amount_of_pool_units: Decimal,
-        _api: &mut Y,
+        amount_of_pool_units: Decimal,
+        api: &mut Y,
     ) -> Result<SingleResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!()
+        let (pool_unit_resource_manager, vault, handle) = {
+            let (single_resource_pool_substate, lock_handle) =
+                Self::lock_and_read(api, LockFlags::read_only())?;
+
+            (
+                single_resource_pool_substate.pool_unit_resource_manager(),
+                single_resource_pool_substate.vault(),
+                lock_handle,
+            )
+        };
+
+        let pool_units_to_redeem = amount_of_pool_units;
+        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_resource_reserves = vault.amount(api)?;
+        let pool_resource_divisibility = vault
+            .resource_address(api)
+            .and_then(|resource_address| ResourceManager(resource_address).resource_type(api))
+            .map(|resource_type| {
+                if let ResourceType::Fungible { divisibility } = resource_type {
+                    divisibility
+                } else {
+                    panic!("Impossible case, we check for this in the constructor and have a test for this.")
+                }
+            })?;
+
+        let amount_owed = Self::calculate_amount_owed(
+            pool_units_to_redeem,
+            pool_units_total_supply,
+            pool_resource_reserves,
+            pool_resource_divisibility,
+        );
+
+        api.field_lock_release(handle)?;
+
+        Ok(amount_owed)
     }
 
     pub fn get_vault_amount<Y>(
@@ -264,6 +290,43 @@ impl SingleResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         todo!()
+    }
+
+    //===================
+    // Utility Functions
+    //===================
+
+    fn calculate_amount_owed(
+        pool_units_to_redeem: Decimal,
+        pool_units_total_supply: Decimal,
+        pool_resource_reserves: Decimal,
+        pool_resource_divisibility: u8,
+    ) -> Decimal {
+        let amount_owed = (pool_units_to_redeem / pool_units_total_supply) * pool_resource_reserves;
+
+        if pool_resource_divisibility == 18 {
+            amount_owed
+        } else {
+            amount_owed.round(
+                pool_resource_divisibility as u32,
+                RoundingMode::TowardsNegativeInfinity,
+            )
+        }
+    }
+
+    fn lock_and_read<Y>(
+        api: &mut Y,
+        lock_flags: LockFlags,
+    ) -> Result<(SingleResourcePoolSubstate, LockHandle), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let substate_key = SingleResourcePoolField::SingleResourcePool.into();
+        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
+        let single_resource_pool_substate =
+            api.field_lock_read_typed::<SingleResourcePoolSubstate>(handle)?;
+
+        Ok((single_resource_pool_substate, handle))
     }
 }
 

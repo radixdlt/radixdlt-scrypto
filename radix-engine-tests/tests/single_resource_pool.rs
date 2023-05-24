@@ -1,4 +1,7 @@
-use radix_engine::blueprints::pool::single_resource_pool::SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::blueprints::pool::single_resource_pool::{
+    SingleResourcePoolError, SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
+};
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine_interface::blueprints::pool::*;
 use scrypto::prelude::*;
@@ -16,7 +19,7 @@ pub fn initial_contribution_to_pool_mints_expected_amount() {
     let mut test_runner = SingleResourcePoolTestRunner::new(18);
 
     // Act
-    let receipt = test_runner.contribute(100.into(), true);
+    let receipt = test_runner.contribute(100, true);
 
     // Assert
     let commit_result = receipt.expect_commit_success();
@@ -36,8 +39,8 @@ pub fn contribution_to_pool_mints_expected_amount_1() {
     let mut test_runner = SingleResourcePoolTestRunner::new(18);
 
     // Act
-    let _ = test_runner.contribute(100.into(), true);
-    let receipt = test_runner.contribute(100.into(), true);
+    let _ = test_runner.contribute(100, true);
+    let receipt = test_runner.contribute(100, true);
 
     // Assert
     let commit_result = receipt.expect_commit_success();
@@ -57,8 +60,8 @@ pub fn contribution_to_pool_mints_expected_amount_2() {
     let mut test_runner = SingleResourcePoolTestRunner::new(18);
 
     // Act
-    let _ = test_runner.contribute(100.into(), true);
-    let receipt = test_runner.contribute(200.into(), true);
+    let _ = test_runner.contribute(100, true);
+    let receipt = test_runner.contribute(200, true);
 
     // Assert
     let commit_result = receipt.expect_commit_success();
@@ -78,8 +81,8 @@ pub fn contribution_to_pool_mints_expected_amount_3() {
     let mut test_runner = SingleResourcePoolTestRunner::new(18);
 
     // Act
-    let _ = test_runner.contribute(100.into(), true);
-    let receipt = test_runner.contribute(50.into(), true);
+    let _ = test_runner.contribute(100, true);
+    let receipt = test_runner.contribute(50, true);
 
     // Assert
     let commit_result = receipt.expect_commit_success();
@@ -97,7 +100,7 @@ pub fn contribution_to_pool_mints_expected_amount_3() {
 pub fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redeemed() {
     // Arrange
     let mut test_runner = SingleResourcePoolTestRunner::new(18);
-    let initial_contribution = 100.into();
+    let initial_contribution = 100;
 
     // Act
     {
@@ -108,7 +111,7 @@ pub fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redee
             .redeem(initial_contribution, true)
             .expect_commit_success();
     };
-    let receipt = test_runner.contribute(50.into(), true);
+    let receipt = test_runner.contribute(50, true);
 
     // Assert
     let commit_result = receipt.expect_commit_success();
@@ -121,7 +124,7 @@ pub fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redee
 
     assert_eq!(
         balance_change.clone(),
-        BalanceChange::Fungible(initial_contribution)
+        BalanceChange::Fungible(initial_contribution.into())
     );
 }
 
@@ -131,9 +134,7 @@ pub fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_
     let divisibility = 2;
     let mut test_runner = SingleResourcePoolTestRunner::new(divisibility);
 
-    test_runner
-        .contribute(100.into(), true)
-        .expect_commit_success();
+    test_runner.contribute(100, true).expect_commit_success();
 
     // Act
     let receipt = test_runner.redeem(dec!("1.111111111111"), true);
@@ -151,6 +152,60 @@ pub fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_
         balance_change.clone(),
         BalanceChange::Fungible(dec!("1.11"))
     );
+}
+
+#[test]
+pub fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming() {
+    // Arrange
+    let divisibility = 2;
+    let mut test_runner = SingleResourcePoolTestRunner::new(divisibility);
+
+    test_runner.contribute(100, true).expect_commit_success();
+
+    // Act
+    let receipt = test_runner.redeem(dec!("1.111111111111"), true);
+
+    // Assert
+    let commit_result = receipt.expect_commit_success();
+    let balance_change = commit_result
+        .balance_changes()
+        .get(&GlobalAddress::from(test_runner.account_component_address))
+        .unwrap()
+        .get(&test_runner.resource_address)
+        .unwrap();
+
+    assert_eq!(
+        balance_change.clone(),
+        BalanceChange::Fungible(test_runner.get_redemption_value(dec!("1.111111111111"), false))
+    );
+}
+
+#[test]
+pub fn creating_a_pool_with_non_fungible_resources_fails() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_account(false);
+
+    let non_fungible_resource = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            POOL_PACKAGE,
+            SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
+            SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT,
+            to_manifest_value(&SingleResourcePoolInstantiateManifestInput {
+                resource_address: non_fungible_resource,
+                pool_manager_rule: rule!(allow_all),
+            }),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(
+        is_single_resource_pool_does_not_support_non_fungible_resources_error,
+    )
 }
 
 //===================================
@@ -217,9 +272,9 @@ impl SingleResourcePoolTestRunner {
         }
     }
 
-    pub fn contribute(&mut self, amount: Decimal, sign: bool) -> TransactionReceipt {
+    pub fn contribute<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .mint_fungible(self.resource_address, amount)
+            .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, |builder, bucket| {
                 builder.call_method(
                     self.pool_component_address,
@@ -232,12 +287,12 @@ impl SingleResourcePoolTestRunner {
         self.execute_manifest(manifest, sign)
     }
 
-    pub fn redeem(&mut self, amount: Decimal, sign: bool) -> TransactionReceipt {
+    pub fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
-                amount,
+                amount.into(),
             )
             .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
                 builder.call_method(
@@ -249,6 +304,24 @@ impl SingleResourcePoolTestRunner {
             .safe_deposit_batch(self.account_component_address)
             .build();
         self.execute_manifest(manifest, sign)
+    }
+
+    pub fn get_redemption_value<D: Into<Decimal>>(
+        &mut self,
+        amount_of_pool_units: D,
+        sign: bool,
+    ) -> Decimal {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                self.pool_component_address,
+                SINGLE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
+                to_manifest_value(&SingleResourcePoolGetRedemptionValueManifestInput {
+                    amount_of_pool_units: amount_of_pool_units.into(),
+                }),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, sign);
+        receipt.expect_commit_success().output(1)
     }
 
     fn execute_manifest(
@@ -271,4 +344,15 @@ impl SingleResourcePoolTestRunner {
             vec![]
         }
     }
+}
+
+fn is_single_resource_pool_does_not_support_non_fungible_resources_error(
+    runtime_error: &RuntimeError,
+) -> bool {
+    matches!(
+        runtime_error,
+        RuntimeError::ApplicationError(ApplicationError::SingleResourcePoolError(
+            SingleResourcePoolError::PoolsDoNotSupportNonFungibleResources { .. }
+        ))
+    )
 }
