@@ -81,14 +81,18 @@ fn genesis_epoch_has_correct_initial_validators() {
     };
 
     // Act
-    let (_, validators) = TestRunner::builder()
+    let (_, validator_set) = TestRunner::builder()
         .with_custom_genesis(genesis)
         .build_and_get_epoch();
 
     // Assert
-    assert_eq!(validators.len(), max_validators as usize);
+    assert_eq!(validator_set.validator_count(), max_validators as usize);
 
-    for (i, (_, validator)) in validators.into_iter().enumerate() {
+    for (i, (_, validator)) in validator_set
+        .validators_by_stake_desc
+        .into_iter()
+        .enumerate()
+    {
         let index = *keys.get(&validator.key).unwrap();
         // Check that the validator set is in order stake DESC
         // Based on the weird special-casing of certain validators we defined above
@@ -225,7 +229,7 @@ fn register_validator_with_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -258,7 +262,7 @@ fn register_validator_without_auth_fails() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .register_validator(validator_address)
@@ -289,7 +293,7 @@ fn unregister_validator_with_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -322,7 +326,7 @@ fn unregister_validator_without_auth_fails() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .unregister_validator(validator_address)
@@ -350,7 +354,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
@@ -443,7 +447,10 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, initial_epoch + 1);
-    assert!(!next_epoch.validators.contains_key(&validator_address));
+    assert!(!next_epoch
+        .validator_set
+        .get_by_address(&validator_address)
+        .is_some());
 }
 
 #[test]
@@ -517,7 +524,8 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let next_epoch_validators = result
         .next_epoch()
         .expect("Should have next epoch")
-        .validators
+        .validator_set
+        .validators_by_stake_desc
         .into_values()
         .collect::<Vec<_>>();
 
@@ -553,7 +561,9 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         // Note - emissions are output in the order of the active validator set, so b is first as it has higher stake
         vec![
             (
-                test_runner.get_validator_with_key(&b_key).into_node_id(),
+                test_runner
+                    .get_active_validator_with_key(&b_key)
+                    .into_node_id(),
                 ValidatorEmissionAppliedEvent {
                     epoch: initial_epoch,
                     starting_stake_pool_xrd: b_initial_stake,
@@ -565,7 +575,9 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
                 }
             ),
             (
-                test_runner.get_validator_with_key(&a_key).into_node_id(),
+                test_runner
+                    .get_active_validator_with_key(&a_key)
+                    .into_node_id(),
                 ValidatorEmissionAppliedEvent {
                     epoch: initial_epoch,
                     starting_stake_pool_xrd: a_initial_stake,
@@ -630,7 +642,8 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let next_epoch_validators = result
         .next_epoch()
         .expect("Should have next epoch")
-        .validators
+        .validator_set
+        .validators_by_stake_desc
         .into_values()
         .collect::<Vec<_>>();
     assert_eq!(
@@ -691,7 +704,8 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     let next_epoch_validators = result
         .next_epoch()
         .expect("Should have next epoch")
-        .validators
+        .validator_set
+        .validators_by_stake_desc
         .into_values()
         .collect::<Vec<_>>();
     assert_eq!(
@@ -737,7 +751,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
 
     // Act: request the fee decrease
     let manifest = ManifestBuilder::new()
@@ -845,7 +859,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
             .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_xrd_vault_id = test_runner
         .get_validator_info(validator_address)
         .stake_xrd_vault_id
@@ -1189,12 +1203,15 @@ fn registered_validator_test(
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(
-        next_epoch.validators.len(),
+        next_epoch.validator_set.validators_by_stake_desc.len(),
         expected_num_validators_in_next_epoch
     );
     assert_eq!(next_epoch.epoch, initial_epoch + 1);
     assert_eq!(
-        next_epoch.validators.contains_key(&validator_address),
+        next_epoch
+            .validator_set
+            .validators_by_stake_desc
+            .contains_key(&validator_address),
         expect_in_next_epoch
     );
 }
@@ -1304,7 +1321,7 @@ fn test_registering_and_staking_many_validators() {
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.validators.len(), 10);
+    assert_eq!(next_epoch.validator_set.validators_by_stake_desc.len(), 10);
     assert_eq!(next_epoch.epoch, initial_epoch + 1);
 }
 
@@ -1326,7 +1343,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -1345,7 +1362,10 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, initial_epoch + 1);
-    assert!(!next_epoch.validators.contains_key(&validator_address));
+    assert!(!next_epoch
+        .validator_set
+        .validators_by_stake_desc
+        .contains_key(&validator_address));
 }
 
 #[test]
@@ -1366,7 +1386,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let next_validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(3u64)
         .unwrap()
         .public_key();
@@ -1393,7 +1413,12 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, initial_epoch + 1);
     assert_eq!(
-        next_epoch.validators.get(&validator_address).unwrap().key,
+        next_epoch
+            .validator_set
+            .validators_by_stake_desc
+            .get(&validator_address)
+            .unwrap()
+            .key,
         next_validator_pub_key
     );
 }
@@ -1417,7 +1442,7 @@ fn cannot_claim_unstake_immediately() {
         dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
     // Act
@@ -1475,7 +1500,7 @@ fn can_claim_unstake_after_epochs() {
         dummy_consensus_manager_configuration().with_num_unstake_epochs(num_unstake_epochs as u64),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -1539,7 +1564,7 @@ fn owner_can_lock_stake_units() {
         dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
     // Act
@@ -1597,7 +1622,7 @@ fn owner_can_start_unlocking_stake_units() {
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
         .stake_unit_resource;
@@ -1683,7 +1708,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
         .stake_unit_resource;
@@ -1775,7 +1800,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
         .stake_unit_resource;
@@ -1879,7 +1904,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
         .stake_unit_resource;
@@ -1984,7 +2009,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
         .stake_unit_resource;
@@ -2084,7 +2109,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -2116,7 +2141,11 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, initial_epoch + 1);
     assert_eq!(
-        next_epoch.validators.get(&validator_address).unwrap(),
+        next_epoch
+            .validator_set
+            .validators_by_stake_desc
+            .get(&validator_address)
+            .unwrap(),
         &Validator {
             key: validator_pub_key,
             stake: Decimal::from(9),

@@ -999,7 +999,7 @@ fn validator_unstake_emits_correct_events() {
         dummy_consensus_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
     // Act
@@ -1155,7 +1155,7 @@ fn validator_claim_xrd_emits_correct_events() {
         dummy_consensus_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
