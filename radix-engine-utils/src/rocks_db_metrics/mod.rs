@@ -1,12 +1,14 @@
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
-    PartitionEntry, SubstateDatabase,
+    PartitionEntry, SubstateDatabase, PartitionUpdates, DatabaseUpdate,
 };
-use radix_engine_stores::{rocks_db::{BlockBasedOptions, Options, RocksdbSubstateStore}, memory_db::InMemorySubstateDatabase};
+use radix_engine_stores::{rocks_db::{BlockBasedOptions, Options, LogLevel, RocksdbSubstateStore}, memory_db::InMemorySubstateDatabase};
 use std::{path::PathBuf, time::Duration, cell::RefCell, collections::BTreeMap};
 use linreg::linear_regression_of;
 use plotters::prelude::*;
-
+use ::polyfit_rs::*;
+use blake2::digest::{consts::U32, Digest};
+use blake2::Blake2b;
 
 pub struct SubstateStoreWithMetrics<S>
 where
@@ -25,6 +27,12 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         opt.set_disable_auto_compactions(true);
         opt.create_if_missing(true);
         opt.set_block_based_table_factory(&factory_opts);
+        //opt.set_keep_log_file_num(1);
+        //opt.set_log_level(LogLevel::Fatal);
+        //opt.set_stats_dump_period_sec(0);
+        //opt.set_target_file_size_base();
+        //opt.set_target_file_size_multiplier(2);
+        //opt.set_max_open_files(4000);
 
         Self {
             db: RocksdbSubstateStore::with_options(&opt, path),
@@ -73,6 +81,27 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         (data, median_data)
     }
 
+    pub fn drop_edge_values(&mut self) {
+        for (_, v) in self.read_metrics.borrow_mut().iter_mut() {
+            v.sort();
+            v.pop();
+            v.remove(0);
+        }
+    }
+
+    pub fn calculate_percent_to_max_points(&mut self, percent: f32) -> Vec<(i32,i32)> {
+        assert!(percent <= 100f32);
+        let mut output_values = Vec::new();
+        let mut binding = self.read_metrics.borrow_mut();
+        for (k, v) in binding.iter_mut() {
+            v.sort();
+            let idx = (((v.len() - 1) as f32 * percent) / 100f32).round() as usize;
+            output_values.push((*k as i32, v[idx].as_nanos() as i32));
+        }
+        output_values
+    }
+
+
     pub fn export_graph_and_print_summary(&mut self, data: &Vec<(i32, i32)>, median_data: &Vec<(i32, i32)>, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         // calculate axis max/min values
         let y_ofs = 1000;
@@ -83,7 +112,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         let y_max = data.iter().map(|i| i.1).max().unwrap() + y_ofs;
 
         // 4. calculate linear approximation
-        let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&data).unwrap();
+        let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&median_data).unwrap();
         let lin_x_axis = (x_min..x_max).step(10);
 
         // draw scatter plot
@@ -327,3 +356,86 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
     }
 }
 
+
+#[test]
+fn test_store_db() {
+
+    // RocksDB part
+    let path = PathBuf::from(r"/tmp/radix-scrypto-db");
+    // clean database
+    std::fs::remove_dir_all(path.clone()).ok();
+
+    let max_size = 4 * 1024 * 1024;
+    let size_step = 500 * 1024;
+    let count = 10usize;
+    let read_repeats = 100usize;
+
+    {
+        let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
+        let mut sort_key_value: usize = 0;
+        for size in (1..=max_size).step_by(size_step) {
+            let mut input_data = DatabaseUpdates::new();
+            for i in 0..count {
+                let value = DatabaseUpdate::Set(vec![1; size]);
+            
+                let plain_bytes = sort_key_value.to_be_bytes().to_vec();
+                let mut hashed_prefix: Vec<u8> = Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
+                hashed_prefix.extend(plain_bytes);
+
+                let sort_key = DbSortKey(hashed_prefix);
+                sort_key_value += 1;
+
+                let mut partition = PartitionUpdates::new();
+                partition.insert(sort_key, value);
+
+                let partition_key = DbPartitionKey(i.to_be_bytes().to_vec());
+
+                input_data.insert(partition_key, partition);
+            }
+            substate_db.commit(&input_data);
+        }
+        println!("Insert done");
+    }
+
+    // reopen database
+    let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
+
+    for _ in 0..read_repeats {
+        let mut sort_key_value: usize = 0;
+        for size in (1..=max_size).step_by(size_step) {
+            for i in 0..count
+            {
+                let plain_bytes = sort_key_value.to_be_bytes().to_vec();
+                let mut hashed_prefix: Vec<u8> = Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
+                hashed_prefix.extend(plain_bytes);
+
+                let sort_key = DbSortKey(hashed_prefix);
+                sort_key_value += 1;
+
+                let partition_key = DbPartitionKey(i.to_be_bytes().to_vec());
+
+                let read_value = substate_db.get_substate(&partition_key, &sort_key);
+
+                assert!(read_value.is_some());
+                assert_eq!(read_value.unwrap().len(), size);
+            }
+        }
+}
+
+    println!("Read done");
+
+
+    substate_db.drop_edge_values();
+    let output_data = substate_db.calculate_percent_to_max_points(95f32);
+
+    let mut data = Vec::with_capacity(100000);
+    for (k, v) in substate_db.read_metrics.borrow().iter() {
+        for i in v {
+            data.push((*k as i32, i.as_nanos() as i32));
+        }
+    }
+
+    // export results
+    substate_db.export_graph_and_print_summary(&data, &output_data, "/tmp/aa_1.png").unwrap();
+
+}

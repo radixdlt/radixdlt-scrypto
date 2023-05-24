@@ -11,6 +11,8 @@ shared_memory = { version = "0.12.4", optional = true }
 fixedstr = "0.2.9"
 plotters = "0.3.4"
 linreg = "0.2.0"
+polyfit-rs = "0.2.1"
+blake2 = { version = "0.10.6", default-features = false }
 
 [lib]
 bench = false
