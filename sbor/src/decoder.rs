@@ -341,14 +341,8 @@ impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::borrow::ToOwned;
-    use crate::rust::boxed::Box;
     use crate::rust::cell::RefCell;
-    use crate::rust::collections::*;
     use crate::rust::rc::Rc;
-    use crate::rust::string::String;
-    use crate::rust::vec;
-    use crate::rust::vec::Vec;
 
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
         // Encode
