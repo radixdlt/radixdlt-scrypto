@@ -41,69 +41,69 @@ fn build_access_rules(
 
         {
             roles.define_role(
-                UPDATE_METADATA_UPDATE_AUTHORITY,
+                SET_METADATA_UPDATE_ROLE,
                 update_metadata_mutability,
-                vec![UPDATE_METADATA_UPDATE_AUTHORITY],
+                vec![SET_METADATA_UPDATE_ROLE],
             );
 
             roles.define_role(
-                UPDATE_METADATA_AUTHORITY,
+                SET_METADATA_ROLE,
                 update_metadata_access_rule,
-                vec![UPDATE_METADATA_UPDATE_AUTHORITY],
+                vec![SET_METADATA_UPDATE_ROLE],
             );
         }
 
         // Mint
         {
             roles.define_role(
-                MINT_UPDATE_AUTHORITY,
+                MINT_UPDATE_ROLE,
                 mint_mutability,
-                vec![MINT_UPDATE_AUTHORITY],
+                vec![MINT_UPDATE_ROLE],
             );
             roles.define_role(
-                MINT_AUTHORITY,
+                MINT_ROLE,
                 mint_access_rule,
-                vec![MINT_UPDATE_AUTHORITY],
+                vec![MINT_UPDATE_ROLE],
             );
         }
 
         // Burn
         {
             roles.define_role(
-                BURN_UPDATE_AUTHORITY,
+                BURN_UPDATE_ROLE,
                 burn_mutability,
-                vec![BURN_UPDATE_AUTHORITY],
+                vec![BURN_UPDATE_ROLE],
             );
             roles.define_role(
-                BURN_AUTHORITY,
+                BURN_ROLE,
                 burn_access_rule,
-                vec![BURN_UPDATE_AUTHORITY],
+                vec![BURN_UPDATE_ROLE],
             );
         }
 
         // Non Fungible Update data
         {
             roles.define_role(
-                UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY,
+                UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
                 update_non_fungible_data_mutability,
-                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY],
+                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
             );
 
             roles.define_role(
-                UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
+                UPDATE_NON_FUNGIBLE_DATA_ROLE,
                 update_non_fungible_data_access_rule,
-                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY],
+                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
             );
         }
 
         let resman_protected_methods = method_permissions!(
-            MethodKey::metadata(METADATA_GET_IDENT) => [UPDATE_METADATA_AUTHORITY];
-            MethodKey::metadata(METADATA_SET_IDENT) => [UPDATE_METADATA_AUTHORITY];
-            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_AUTHORITY];
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_AUTHORITY];
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_AUTHORITY];
-            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_AUTHORITY];
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_AUTHORITY];
+            MethodKey::metadata(METADATA_GET_IDENT) => [SET_METADATA_ROLE];
+            MethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
+            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
             MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => Public;
             MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => Public;
             MethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => Public;
@@ -130,43 +130,43 @@ fn build_access_rules(
         // Withdraw
         {
             roles.define_role(
-                WITHDRAW_UPDATE_AUTHORITY,
+                WITHDRAW_UPDATE_ROLE,
                 withdraw_mutability,
-                vec![WITHDRAW_UPDATE_AUTHORITY],
+                vec![WITHDRAW_UPDATE_ROLE],
             );
             roles.define_role(
-                WITHDRAW_AUTHORITY,
+                WITHDRAW_ROLE,
                 withdraw_access_rule,
-                vec![WITHDRAW_UPDATE_AUTHORITY],
+                vec![WITHDRAW_UPDATE_ROLE],
             );
         }
 
         // Recall
         {
             roles.define_role(
-                RECALL_UPDATE_AUTHORITY,
+                RECALL_UPDATE_ROLE,
                 recall_mutability,
-                vec![RECALL_UPDATE_AUTHORITY],
+                vec![RECALL_UPDATE_ROLE],
             );
             roles.define_role(
-                RECALL_AUTHORITY,
+                RECALL_ROLE,
                 recall_access_rule,
-                vec![RECALL_UPDATE_AUTHORITY],
+                vec![RECALL_UPDATE_ROLE],
             );
         }
 
         // Deposit
         {
             roles.define_role(
-                DEPOSIT_UPDATE_AUTHORITY,
+                DEPOSIT_UPDATE_ROLE,
                 deposit_mutability,
-                vec![DEPOSIT_UPDATE_AUTHORITY],
+                vec![DEPOSIT_UPDATE_ROLE],
             );
 
             roles.define_role(
-                DEPOSIT_AUTHORITY,
+                DEPOSIT_ROLE,
                 deposit_access_rule,
-                vec![DEPOSIT_UPDATE_AUTHORITY],
+                vec![DEPOSIT_UPDATE_ROLE],
             );
         }
 
@@ -184,12 +184,12 @@ fn build_access_rules(
             MethodKey::main(VAULT_CREATE_PROOF_IDENT) => Public;
             MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => Public;
 
-            MethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_AUTHORITY];
-            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_AUTHORITY];
-            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_AUTHORITY];
-            MethodKey::main(VAULT_RECALL_IDENT) => [RECALL_AUTHORITY];
-            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_AUTHORITY];
-            MethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_AUTHORITY];
+            MethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
+            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
+            MethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
+            MethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
             MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
             MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
             MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];

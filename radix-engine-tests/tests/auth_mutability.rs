@@ -24,12 +24,12 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     let authority_key = match action {
-        ResourceAuth::Mint => RoleKey::new(MINT_AUTHORITY),
-        ResourceAuth::Burn => RoleKey::new(BURN_AUTHORITY),
-        ResourceAuth::UpdateMetadata => RoleKey::new(UPDATE_METADATA_AUTHORITY),
-        ResourceAuth::Withdraw => RoleKey::new(WITHDRAW_AUTHORITY),
-        ResourceAuth::Deposit => RoleKey::new(DEPOSIT_AUTHORITY),
-        ResourceAuth::Recall => RoleKey::new(RECALL_AUTHORITY),
+        ResourceAuth::Mint => RoleKey::new(MINT_ROLE),
+        ResourceAuth::Burn => RoleKey::new(BURN_ROLE),
+        ResourceAuth::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
+        ResourceAuth::Withdraw => RoleKey::new(WITHDRAW_ROLE),
+        ResourceAuth::Deposit => RoleKey::new(DEPOSIT_ROLE),
+        ResourceAuth::Recall => RoleKey::new(RECALL_ROLE),
     };
     {
         let manifest = ManifestBuilder::new()
@@ -52,12 +52,12 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .create_proof_from_account(account, admin_auth);
 
     let role_key = match action {
-        ResourceAuth::Mint => RoleKey::new(MINT_AUTHORITY),
-        ResourceAuth::Burn => RoleKey::new(BURN_AUTHORITY),
-        ResourceAuth::UpdateMetadata => RoleKey::new(UPDATE_METADATA_AUTHORITY),
-        ResourceAuth::Withdraw => RoleKey::new(WITHDRAW_AUTHORITY),
-        ResourceAuth::Deposit => RoleKey::new(DEPOSIT_AUTHORITY),
-        ResourceAuth::Recall => RoleKey::new(RECALL_AUTHORITY),
+        ResourceAuth::Mint => RoleKey::new(MINT_ROLE),
+        ResourceAuth::Burn => RoleKey::new(BURN_ROLE),
+        ResourceAuth::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
+        ResourceAuth::Withdraw => RoleKey::new(WITHDRAW_ROLE),
+        ResourceAuth::Deposit => RoleKey::new(DEPOSIT_ROLE),
+        ResourceAuth::Recall => RoleKey::new(RECALL_ROLE),
     };
 
     let builder = if lock {

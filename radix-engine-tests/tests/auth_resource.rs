@@ -32,12 +32,12 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     if update_auth {
         let role_key = match action {
-            Action::Mint => RoleKey::new(MINT_AUTHORITY),
-            Action::Burn => RoleKey::new(BURN_AUTHORITY),
-            Action::UpdateMetadata => RoleKey::new(UPDATE_METADATA_AUTHORITY),
-            Action::Withdraw => RoleKey::new(WITHDRAW_AUTHORITY),
-            Action::Deposit => RoleKey::new(DEPOSIT_AUTHORITY),
-            Action::Recall => RoleKey::new(RECALL_AUTHORITY),
+            Action::Mint => RoleKey::new(MINT_ROLE),
+            Action::Burn => RoleKey::new(BURN_ROLE),
+            Action::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
+            Action::Withdraw => RoleKey::new(WITHDRAW_ROLE),
+            Action::Deposit => RoleKey::new(DEPOSIT_ROLE),
+            Action::Recall => RoleKey::new(RECALL_ROLE),
         };
 
         let manifest = ManifestBuilder::new()
