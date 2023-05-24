@@ -65,7 +65,7 @@ impl AccessRulesObject for AttachedAccessRules {
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn define_role<
+    fn update_role_rules<
         Y: ClientApi<E>,
         E: Debug + ScryptoDecode,
         R: Into<RoleKey>,
@@ -119,7 +119,7 @@ pub trait AccessRulesObject {
         Ok(())
     }
 
-    fn set_method_permission_and_mutability<
+    fn update_method<
         Y: ClientApi<E>,
         E: Debug + ScryptoDecode,
         P: Into<MethodPermission>,

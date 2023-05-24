@@ -1392,13 +1392,13 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.define_role(RoleKey::new("primary"), rule_set.primary_role.clone(), api)?;
-    attached.define_role(
+    attached.update_role_rules(RoleKey::new("primary"), rule_set.primary_role.clone(), api)?;
+    attached.update_role_rules(
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
-    attached.define_role(
+    attached.update_role_rules(
         RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,

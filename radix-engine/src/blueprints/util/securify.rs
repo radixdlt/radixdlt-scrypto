@@ -14,20 +14,22 @@ pub trait SecurifiedAccessRules {
 
     fn role_definitions() -> Roles;
 
-    fn create_roles(authority_rules: Roles) -> Roles {
-        let mut authority_rules_to_use = Self::role_definitions();
-        for (authority, (access_rule, mutability)) in authority_rules.rules {
-            authority_rules_to_use.define_role(authority.key, access_rule, mutability);
+    fn create_roles(owner_rule: AccessRule, authority_rules: Roles) -> Roles {
+        let mut roles = Self::role_definitions();
+        roles.define_role(RoleKey::new(Self::OWNER_ROLE), owner_rule, [SELF_ROLE]);
+        for (role_key, (access_rule, mutability)) in authority_rules.rules {
+            roles.define_role(role_key, access_rule, mutability);
         }
 
-        authority_rules_to_use
+        roles
     }
 
+    // TODO: This should include method permissions
     fn create_advanced<Y: ClientApi<RuntimeError>>(
         role_definitions: Roles,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let roles = Self::create_roles(role_definitions);
+        let roles = Self::create_roles(AccessRule::DenyAll, role_definitions);
         let mut method_permissions = Self::method_permissions();
 
         if let Some(securify) = Self::SECURIFY_METHOD {
@@ -45,7 +47,7 @@ pub trait SecurifiedAccessRules {
     fn create_securified<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
-        let roles = Self::create_roles(Roles::new());
+        let roles = Self::create_roles(AccessRule::DenyAll, Roles::new());
         let method_permissions = Self::method_permissions();
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
         let bucket = Self::securify_access_rules(&access_rules, api)?;
@@ -59,7 +61,7 @@ pub trait SecurifiedAccessRules {
         let owner_token = ResourceManager(Self::OWNER_BADGE);
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         if let Some(securify) = Self::SECURIFY_METHOD {
-            access_rules.set_method_permission_and_mutability(
+            access_rules.update_method(
                 MethodKey::main(securify),
                 MethodPermission::nobody(),
                 RoleList::none(),
@@ -68,7 +70,7 @@ pub trait SecurifiedAccessRules {
         }
 
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
-        access_rules.define_role(
+        access_rules.update_role_rules(
             RoleKey::new(Self::OWNER_ROLE),
             rule!(require(global_id.clone())),
             api,
@@ -84,9 +86,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut roles = Self::create_roles(Roles::new());
-        roles.define_role(Self::OWNER_ROLE, rule!(require(owner_id)), [SELF_ROLE]);
-
+        let roles = Self::create_roles(rule!(require(owner_id)), Roles::new());
         let mut method_permissions = Self::method_permissions();
         if let Some(securify) = Self::SECURIFY_METHOD {
             method_permissions.insert(

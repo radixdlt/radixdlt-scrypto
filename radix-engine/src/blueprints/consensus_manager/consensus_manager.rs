@@ -272,7 +272,7 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(mgr.epoch, &config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_method_permission_and_mutability(
+        access_rules.update_method(
             MethodKey::main(CONSENSUS_MANAGER_START_IDENT),
             MethodPermission::nobody(),
             RoleList::none(),

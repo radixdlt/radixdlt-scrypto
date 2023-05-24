@@ -321,7 +321,7 @@ mod tests {
             + 22348 /* DropLock */
             + 5985 /* DropNode */
             + 4678666 /* Invoke */
-            + 7490266 /* LockSubstate */
+            + 7489235 /* LockSubstate */
             + 31696 /* ReadSubstate */
             + 202500 /* RunNative */
             + 40000 /* RunSystem */
