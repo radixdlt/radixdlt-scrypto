@@ -3,6 +3,7 @@ use crate::blueprints::account::AccountError;
 use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
 use crate::blueprints::pool::single_resource_pool::SingleResourcePoolError;
+use crate::blueprints::pool::two_resource_pool::TwoResourcePoolError;
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
     BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,
@@ -410,6 +411,8 @@ pub enum ApplicationError {
     MetadataError(MetadataPanicError),
 
     SingleResourcePoolError(SingleResourcePoolError),
+
+    TwoResourcePoolError(TwoResourcePoolError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {
