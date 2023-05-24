@@ -52,9 +52,8 @@ impl SingleResourcePoolBlueprint {
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // TODO: Pool unit resource metadata - two things are needed to do this:
-            // 1- Better APIs for initializing the metadata so that it's not string string.
-            // 2- A fix for the issue with references so that we can have the component address of
+            // TODO: Pool unit resource metadata - one things is needed to do this:
+            // 1- A fix for the issue with references so that we can have the component address of
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
@@ -111,11 +110,8 @@ impl SingleResourcePoolBlueprint {
         // No check that the bucket is of the same resource as the vault. This check will be handled
         // by the vault itself on deposit.
 
-        let substate_key = SingleResourcePoolField::SingleResourcePool.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut single_resource_pool_substate =
-            api.field_lock_read_typed::<SingleResourcePoolSubstate>(handle)?;
-
+        let (mut single_resource_pool_substate, handle) =
+            Self::lock_and_read(api, LockFlags::read_only())?;
         let mut pool_unit_resource_manager =
             single_resource_pool_substate.pool_unit_resource_manager();
         let mut vault = single_resource_pool_substate.vault();
@@ -170,16 +166,14 @@ impl SingleResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let (pool_unit_resource_manager, mut vault, handle) = {
-            let substate_key = SingleResourcePoolField::SingleResourcePool.into();
-            let handle =
-                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
-            let single_resource_pool_substate =
-                api.field_lock_read_typed::<SingleResourcePoolSubstate>(handle)?;
+            let (single_resource_pool_substate, lock_handle) =
+                Self::lock_and_read(api, LockFlags::read_only())?;
 
-            let pool_unit_resource = single_resource_pool_substate.pool_unit_resource_manager();
-            let vault = single_resource_pool_substate.vault();
-
-            (pool_unit_resource, vault, handle)
+            (
+                single_resource_pool_substate.pool_unit_resource_manager(),
+                single_resource_pool_substate.vault(),
+                lock_handle,
+            )
         };
 
         // Ensure that the passed pool resources are indeed pool resources

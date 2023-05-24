@@ -437,6 +437,7 @@ impl SingleResourcePoolTestRunner {
         receipt.expect_commit_success().output(1)
     }
 
+    #[allow(unused)]
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
         let manifest = ManifestBuilder::new()
             .call_method(
