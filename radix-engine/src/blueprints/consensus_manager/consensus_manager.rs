@@ -47,7 +47,46 @@ pub struct Validator {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CurrentValidatorSetSubstate {
-    pub validator_set: BTreeMap<ComponentAddress, Validator>,
+    pub validator_set: ActiveValidatorSet,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ActiveValidatorSet {
+    /// The validators in the set, ordered by stake descending.
+    pub validators_by_stake_desc: IndexMap<ComponentAddress, Validator>,
+}
+
+impl ActiveValidatorSet {
+    pub fn get_by_index(&self, index: ValidatorIndex) -> Option<(&ComponentAddress, &Validator)> {
+        self.validators_by_stake_desc.get_index(index as usize)
+    }
+
+    pub fn get_by_address(&self, address: &ComponentAddress) -> Option<&Validator> {
+        self.validators_by_stake_desc.get(address)
+    }
+
+    /// Note for performance - this is calculated by iterating over the whole validator set.
+    pub fn get_by_public_key(
+        &self,
+        public_key: &EcdsaSecp256k1PublicKey,
+    ) -> Option<(&ComponentAddress, &Validator)> {
+        self.validators_by_stake_desc
+            .iter()
+            .find(|(_, validator)| &validator.key == public_key)
+    }
+
+    /// Note for performance - this is calculated by iterating over the whole validator set.
+    pub fn total_active_stake_xrd(&self) -> Decimal {
+        self.validators_by_stake_desc
+            .iter()
+            .map(|(_, validator)| validator.stake)
+            .sum()
+    }
+
+    pub fn validator_count(&self) -> usize {
+        self.validators_by_stake_desc.len()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -200,7 +239,9 @@ impl ConsensusManagerBlueprint {
                 round: 0,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
-                validator_set: BTreeMap::new(),
+                validator_set: ActiveValidatorSet {
+                    validators_by_stake_desc: index_map_new(),
+                },
             };
             let current_proposal_statistic = CurrentProposalStatisticSubstate {
                 validator_statistics: Vec::new(),
@@ -527,7 +568,7 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // read previous validator set
+        // Read previous validator set
         let validator_set_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentValidatorSet.into(),
@@ -537,7 +578,7 @@ impl ConsensusManagerBlueprint {
             api.field_lock_read_typed(validator_set_handle)?;
         let previous_validator_set = validator_set_substate.validator_set;
 
-        // read previous validator statistics
+        // Read previous validator statistics
         let statistic_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentProposalStatistic.into(),
@@ -547,7 +588,7 @@ impl ConsensusManagerBlueprint {
             api.field_lock_read_typed(statistic_handle)?;
         let previous_statistics = statistic_substate.validator_statistics;
 
-        // apply emissions
+        // Apply emissions
         Self::apply_validator_emissions(
             previous_validator_set,
             previous_statistics,
@@ -556,36 +597,61 @@ impl ConsensusManagerBlueprint {
             api,
         )?;
 
-        // select next validator set
-        let registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
+        // Select next validator set
+        // NOTE - because the stake index is by u16 buckets, it's possible that there are multiple validators at the cut off point
+        // that fall into the same bucket.
+        // To reduce the risk of that causing issues, we take a decent chunk more than we need from the index.
+        // It's still possible that the bucket is _very_ large and we miss some validators in the bucket, and fail to read validators
+        // with a higher stake, but lower DbSortKey.
+        // The risk is very low though in practice, and only affects validators near the bottom of the list who would likely get very
+        // few proposals, so we feel it's an okay trade-off.
+        let num_validators_to_read_from_store =
+            config.max_validators + (config.max_validators / 10) + 10;
+
+        let mut top_registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
             .actor_sorted_index_scan_typed(
                 OBJECT_HANDLE_SELF,
                 CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
-                config.max_validators,
+                num_validators_to_read_from_store,
             )?;
-        let next_validator_set: BTreeMap<ComponentAddress, Validator> = registered_validators
-            .into_iter()
-            .map(|entry| (entry.component_address, entry.validator))
-            .collect();
 
-        // emit epoch change event
+        // The index scan should already pull the validators out in stake DESC, but if multiple validators are on the same u16 stake,
+        // then let's be even more accurate here. This sort is stable, so if two validators tie, then the resultant order will be
+        // decided on sort key DESC.
+        top_registered_validators.sort_by(|validator_1, validator_2| {
+            validator_1
+                .validator
+                .stake
+                .cmp(&validator_2.validator.stake)
+                .reverse()
+        });
+
+        let next_active_validator_set = ActiveValidatorSet {
+            validators_by_stake_desc: top_registered_validators
+                .into_iter()
+                .take(config.max_validators as usize)
+                .map(|entry| (entry.component_address, entry.validator))
+                .collect(),
+        };
+
+        // Emit epoch change event
         Runtime::emit_event(
             api,
             EpochChangeEvent {
                 epoch: next_epoch,
-                validators: next_validator_set.clone(),
+                validator_set: next_active_validator_set.clone(),
             },
         )?;
 
-        // write zeroed statistics of next validators
-        statistic_substate.validator_statistics = (0..next_validator_set.len())
+        // Write zeroed statistics of next validators
+        statistic_substate.validator_statistics = (0..next_active_validator_set.validator_count())
             .map(|_index| ProposalStatistic::default())
             .collect();
         api.field_lock_write_typed(statistic_handle, statistic_substate)?;
         api.field_lock_release(statistic_handle)?;
 
-        // write next validator set
-        validator_set_substate.validator_set = next_validator_set;
+        // Write next validator set
+        validator_set_substate.validator_set = next_active_validator_set;
         api.field_lock_write_typed(validator_set_handle, validator_set_substate)?;
         api.field_lock_release(validator_set_handle)?;
 
@@ -595,7 +661,7 @@ impl ConsensusManagerBlueprint {
     /// Emits a configured XRD amount ([`ConsensusManagerConfigSubstate.total_emission_xrd_per_epoch`])
     /// and distributes it across the given validator set, according to their stake.
     fn apply_validator_emissions<Y>(
-        validator_set: BTreeMap<ComponentAddress, Validator>,
+        validator_set: ActiveValidatorSet,
         validator_statistics: Vec<ProposalStatistic>,
         config: &ConsensusManagerConfigSubstate,
         epoch: u64, // the concluded epoch, for event creation
@@ -605,6 +671,7 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validator_emissions = validator_set
+            .validators_by_stake_desc
             .into_iter()
             .zip(validator_statistics)
             .filter_map(|((address, validator), statistic)| {

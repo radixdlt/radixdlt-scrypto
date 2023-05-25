@@ -214,7 +214,7 @@ pub struct LeaderProposalHistory {
 
 /// An index of a specific validator within the current validator set.
 /// To be exact: a `ValidatorIndex` equal to `k` references the `k-th` element returned by the
-/// iterator of `BTreeMap<ComponentAddress, Validator>`.
+/// iterator of the `IndexMap<ComponentAddress, Validator>` in this epoch's active validator set.
 /// This uniquely identifies the validator, while being shorter than `ComponentAddress` (we do care
 /// about the constant factor of the space taken by `LeaderProposalHistory` under prolonged liveness
 /// break scenarios).

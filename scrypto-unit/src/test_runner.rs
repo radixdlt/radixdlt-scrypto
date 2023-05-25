@@ -62,7 +62,7 @@ use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
     AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
-    SystemTransaction, TestTransaction,
+    SystemTransactionV1, TestTransaction, TransactionPayloadEncode,
 };
 
 pub struct Compile;
@@ -221,7 +221,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, BTreeMap<ComponentAddress, Validator>) {
+    pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -265,7 +265,7 @@ impl TestRunnerBuilder {
             .expect_commit_success()
             .next_epoch()
             .unwrap();
-        (runner, next_epoch.0)
+        (runner, next_epoch.validator_set)
     }
 
     pub fn build(self) -> TestRunner {
@@ -590,8 +590,11 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
-    pub fn get_validator_info_by_key(&self, key: &EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
-        let address = self.get_validator_with_key(key);
+    pub fn get_active_validator_info_by_key(
+        &self,
+        key: &EcdsaSecp256k1PublicKey,
+    ) -> ValidatorSubstate {
+        let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
     }
 
@@ -605,7 +608,7 @@ impl TestRunner {
             .unwrap()
     }
 
-    pub fn get_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+    pub fn get_active_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
@@ -617,8 +620,7 @@ impl TestRunner {
 
         substate
             .validator_set
-            .iter()
-            .find(|(_, v)| v.key.eq(key))
+            .get_by_public_key(key)
             .unwrap()
             .0
             .clone()
@@ -1238,15 +1240,15 @@ impl TestRunner {
         &mut self,
         instructions: Vec<InstructionV1>,
         proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_ids: BTreeSet<NodeId>,
+        pre_allocated_ids: IndexSet<NodeId>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
 
         self.execute_transaction(
-            SystemTransaction {
+            SystemTransactionV1 {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
-                hash: hash(format!("Test runner txn: {}", nonce)),
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_ids,
             }
             .prepare()
@@ -1270,11 +1272,11 @@ impl TestRunner {
         let nonce = self.next_transaction_nonce();
 
         self.execute_transaction(
-            SystemTransaction {
+            SystemTransactionV1 {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
-                hash: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_ids: BTreeSet::new(),
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_ids: index_set_new(),
             }
             .prepare()
             .expect("expected transaction to be preparable")

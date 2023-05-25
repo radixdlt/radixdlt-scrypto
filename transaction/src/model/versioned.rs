@@ -81,6 +81,13 @@ pub enum VersionedTransactionPayload {
         signed_intent: SignedIntentV1,
         notary_signature: NotarySignatureV1,
     },
+    #[sbor(discriminator(V1_SYSTEM_TRANSACTION))]
+    SystemTransactionV1 {
+        instructions: InstructionsV1,
+        blobs: BlobsV1,
+        pre_allocated_ids: IndexSet<NodeId>,
+        hash_for_execution: Hash,
+    },
 }
 
 #[cfg(test)]
@@ -93,10 +100,10 @@ mod tests {
         hash(&manifest_encode(&value).unwrap()[1..])
     }
 
+    /// This test demonstrates how the hashes and payloads are constructed in a valid user transaction.
+    /// It also provides an example payload which can be used in other implementations.
     #[test]
-    pub fn v1_transaction_structure() {
-        // This test demonstrates how the hashes and payloads are constructed in a valid transaction.
-        // It also provides an example payload which can be used in other implementations.
+    pub fn v1_user_transaction_structure() {
         let network = NetworkDefinition::simulator();
 
         // Create key pairs
@@ -309,6 +316,88 @@ mod tests {
         assert_eq!(
             hex::encode(notarized_transaction_payload_bytes),
             "4d22030221022104210707f2090100000009050000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b010008000020220112002020020704000102030702050621002022020001210120074100821f54ad0e11d08e46debae1167d4181f6343ba5a431a45dd3b66a9e9c873ffa22870316f53cd1aed1b6ea4d29f8424d185b5d2d6202e73fdd8b183eec5ef9db01022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe267421012007402506c9295fa7210554d16bfdb4b0f22ab979c0148c505431d634a4aa9acc7758e25bcd8914773599cb70ffbc59d40a567b54715f63656f2d017ea8bf371bf5002201012101200740eb907630079ab07da8598742cc3ed1c3831f02a3e8b5985473a441bdea17ac7e983584410f4c67ffe30ea840cc88f7948fa053346fe6cf0cf1af70373a848608"
+        );
+    }
+
+    /// This test demonstrates how the hashes and payloads are constructed in a valid system transaction.
+    /// A system transaction can be embedded into the node's LedgerTransaction structure, eg as part of Genesis
+    #[test]
+    pub fn v1_system_transaction_structure() {
+        let instructions = vec![InstructionV1::ClearAuthZone];
+        let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
+        let instructions_v1 = InstructionsV1(instructions);
+
+        let blob1: Vec<u8> = vec![0, 1, 2, 3];
+        let blob2: Vec<u8> = vec![5, 6];
+        let expected_blobs_hash =
+            hash([hash(&blob1).0.as_slice(), hash(&blob2).0.as_slice()].concat());
+
+        let blobs_v1 = BlobsV1 {
+            blobs: vec![BlobV1(blob1), BlobV1(blob2)],
+        };
+
+        let prepared_blobs_v1 = PreparedBlobsV1::prepare_as_full_body_child_from_payload(
+            &manifest_encode(&blobs_v1).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
+
+        let pre_allocated_ids_v1 = indexset![XRD.into_node_id()];
+        let expected_preallocated_ids_hash =
+            hash_manifest_encoded_without_prefix_byte(&pre_allocated_ids_v1);
+
+        let hash_for_execution = hash(format!("Pretend genesis transaction"));
+
+        let system_transaction_v1 = SystemTransactionV1 {
+            instructions: instructions_v1.clone(),
+            blobs: blobs_v1.clone(),
+            pre_allocated_ids: pre_allocated_ids_v1.clone(),
+            hash_for_execution: hash_for_execution.clone(),
+        };
+        let expected_system_transaction_hash = SystemTransactionHash::from_hash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V1System as u8,
+                ]
+                .as_slice(),
+                expected_instructions_hash.0.as_slice(),
+                expected_blobs_hash.0.as_slice(),
+                expected_preallocated_ids_hash.0.as_slice(),
+                hash_for_execution.0.as_slice(),
+            ]
+            .concat(),
+        ));
+
+        let system_transaction_payload_bytes = system_transaction_v1.to_payload_bytes().unwrap();
+        let system_transaction_as_versioned =
+            manifest_decode::<VersionedTransactionPayload>(&system_transaction_payload_bytes)
+                .unwrap();
+        assert_eq!(
+            system_transaction_as_versioned,
+            VersionedTransactionPayload::SystemTransactionV1 {
+                instructions: instructions_v1,
+                blobs: blobs_v1,
+                pre_allocated_ids: pre_allocated_ids_v1,
+                hash_for_execution
+            }
+        );
+
+        let prepared_system_transaction =
+            PreparedSystemTransactionV1::prepare_from_payload(&system_transaction_payload_bytes)
+                .unwrap();
+
+        assert_eq!(
+            expected_system_transaction_hash,
+            prepared_system_transaction.system_transaction_hash()
+        );
+        assert_eq!(
+            expected_system_transaction_hash.to_string(),
+            "bab4dc066c63b9dfe3f88a295ce1b35873a98016f0a7148e3831580b322f62f7"
+        );
+        assert_eq!(
+            hex::encode(system_transaction_payload_bytes),
+            "4d220404202201120020200207040001020307020506202001071e5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c62007207646fcb3e6a2dbf0fd4830933c54928d3e8dafaf9f704afdae56336fc67aae0d"
         );
     }
 }

@@ -17,12 +17,12 @@ pub struct IntentV1 {
 
 impl TransactionPayloadEncode for IntentV1 {
     type EncodablePayload<'a> =
-        SborEnumVariant<{ TransactionDiscriminator::V1Intent as u8 }, &'a Self>;
+        SborFixedEnumVariant<{ TransactionDiscriminator::V1Intent as u8 }, &'a Self>;
 
     type Prepared = PreparedIntentV1;
 
     fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
-        SborEnumVariant::new(self)
+        SborFixedEnumVariant::new(self)
     }
 }
 
