@@ -10,6 +10,7 @@ use ::polyfit_rs::*;
 use blake2::digest::{consts::U32, Digest};
 use blake2::Blake2b;
 use std::io::{self, Write};
+use rand::Rng;
 
 pub struct SubstateStoreWithMetrics<S>
 where
@@ -620,6 +621,7 @@ fn test_store_db() {
     let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> = Vec::with_capacity(max_size);
 
     {
+        println!("Preparing database...");
         let mut p_key_cnt = 1u32;
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
         let mut sort_key_value: usize = 0;
@@ -647,25 +649,48 @@ fn test_store_db() {
             }
             substate_db.commit(&input_data);
         }
-        println!("Insert done");
+        println!("  done\n");
     }
+
+    println!("Random read start...");
 
     // reopen database
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
 
+    let mut rng = rand::thread_rng();
+
     //let mut p_key_cnt = 1u32;
     for i in 0..read_repeats {
         let time_start = std::time::Instant::now();
+        let mut idx_vector: Vec<usize> = (0..data_index_vector.len()).collect();
 
-        for (j, (p,s,v)) in data_index_vector.iter().enumerate() {
+        for j in 0..data_index_vector.len() {
+            assert!(!idx_vector.is_empty());
+            let idx = rng.gen_range(0..idx_vector.len());
+
+            let (p,s,v) = &data_index_vector[idx_vector[idx]];
+
             print!("\rRead {}/{}", j + 1, data_index_vector.len());
             std::io::stdout().flush().ok();
-
+    
             let read_value = substate_db.get_substate(&p, &s);
-
+    
             assert!(read_value.is_some());
             assert_eq!(read_value.unwrap().len(), *v);
+
+            idx_vector.remove(idx);
         }
+
+        // sequential read
+        // for (j, (p,s,v)) in data_index_vector.iter().enumerate() {
+        //     print!("\rRead {}/{}", j + 1, data_index_vector.len());
+        //     std::io::stdout().flush().ok();
+
+        //     let read_value = substate_db.get_substate(&p, &s);
+
+        //     assert!(read_value.is_some());
+        //     assert_eq!(read_value.unwrap().len(), *v);
+        // }
 
         let time_end = std::time::Instant::now();
         let mut duration = time_end.checked_duration_since(time_start).unwrap().as_secs();

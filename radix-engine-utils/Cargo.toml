@@ -13,6 +13,7 @@ plotters = "0.3.4"
 linreg = "0.2.0"
 polyfit-rs = "0.2.1"
 blake2 = { version = "0.10.6", default-features = false }
+rand = "0.8.5"
 
 [lib]
 bench = false
