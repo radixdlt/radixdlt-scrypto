@@ -9,6 +9,7 @@ use plotters::prelude::*;
 use ::polyfit_rs::*;
 use blake2::digest::{consts::U32, Digest};
 use blake2::Blake2b;
+use std::io::{self, Write};
 
 pub struct SubstateStoreWithMetrics<S>
 where
@@ -19,6 +20,251 @@ where
 }
 
 impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
+    pub fn bb(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let x_min = -5000;
+        let x_max = 705000;
+        let y_min = -1000;
+        let y_max = 60000;
+
+        let v = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796), (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519), (10007, 2355), (20008, 3100), (24161, 3251), (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500), (100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+
+        let v1 = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796),
+            (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519),
+            (10007, 2355), (20008, 3100), (24161, 3251)];
+        let v3 = vec![ (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500)];
+        let v4 = vec![(100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+
+        let (a1, b1): (f64, f64) = linear_regression_of(&v1).unwrap();
+        let (a3, b3): (f64, f64) = linear_regression_of(&v3).unwrap();
+        let (a4, b4): (f64, f64) = linear_regression_of(&v4).unwrap();
+        let lin_x_axis1 = (0..25000).step(10);
+        let lin_x_axis3 = (25000..100000).step(10);
+        let lin_x_axis4 = (100000..x_max).step(10);
+
+        let w_x: Vec<f64> = v.iter().map(|(a,_)|*a as f64).collect();
+        let w_y: Vec<f64> = v.iter().map(|(_,b)|*b as f64).collect();
+        let w = polyfit_rs::polyfit(w_x.as_slice(), w_y.as_slice(), 3).unwrap();
+        let w_axis = (x_min..x_max).step(10);
+
+
+        let root = BitMapBackend::new("/tmp/aa.png", (1024, 768)).into_drawing_area();
+        root.fill(&WHITE)?;
+        root.margin(20, 20, 20, 20);
+
+        let mut scatter_ctx = ChartBuilder::on(&root)
+            .x_label_area_size(40)
+            .y_label_area_size(80)
+            .margin(20)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+        scatter_ctx
+            .configure_mesh()
+            .x_desc("Size [bytes]")
+            .y_desc("DB read duration [nanoseconds]")
+            .axis_desc_style(("sans-serif", 16))
+            .draw()?;
+        // 1. draw all read points
+        scatter_ctx
+            .draw_series(
+                v1.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?;
+        scatter_ctx
+            .draw_series(
+                v3.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?;
+        scatter_ctx
+            .draw_series(
+                v4.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?
+            .label("Diff points (RocksDB - InMemory)")
+            .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+        // 3. draw linear approximetion line
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis1
+                    .values()
+                    .map(|x| (x, (a1 * x as f64 + b1) as i32 )),
+                &BLUE,
+            ))?
+            .label(format!(
+                "Linear approx. spline 1: f(x)={:.4}*x+{:.1}",
+                a1, b1
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis3
+                    .values()
+                    .map(|x| (x, (a3 * x as f64 + b3) as i32 )),
+                &BLUE,
+            ))?
+            .label(format!(
+                "Linear approx. spline 2: f(x)={:.4}*x+{:.1}",
+                a3, b3
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis4
+                    .values()
+                    .map(|x| (x, (a4 * x as f64 + b4) as i32 )),
+                &BLUE,
+            ))?
+            .label(format!(
+                "Linear approx. spline 3: f(x)={:.4}*x+{:.1}",
+                a4, b4
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        // polynominal
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                w_axis
+                    .values()
+                    .map(|x| (x, (w[3] * x as f64 * x as f64 * x as f64 + w[2] * x as f64 * x as f64 + w[1] * x as f64 + w[0] ) as i32 )),
+                &BLACK,
+            ))?
+            .label(format!(
+                "3rd degree polynomial: {} {} {} {}",
+                w[3], w[2], w[1], w[0]
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
+    
+        scatter_ctx
+            .configure_series_labels()
+            .background_style(&WHITE)
+            .border_style(&BLACK)
+            .label_font(("sans-serif", 16))
+            .position(SeriesLabelPosition::UpperMiddle)
+            .draw()?;
+
+        root.present().expect("Unable to write result to file");
+        Ok(())
+    }
+
+    pub fn aa(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let x_min = -5000;
+        let x_max = 705000;
+        let y_min = -1000;
+        let y_max = 60000;
+
+        let v = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796), (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519), (10007, 2355), (20008, 3100), (24161, 3251), (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500), (100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+
+        let v1 = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796),
+            (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519),
+            (10007, 2355), (20008, 3100), (24161, 3251)];
+        let v3 = vec![ (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500)];
+        let v4 = vec![(100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+
+        let (a1, b1): (f64, f64) = linear_regression_of(&v1).unwrap();
+        let (a3, b3): (f64, f64) = linear_regression_of(&v3).unwrap();
+        let (a4, b4): (f64, f64) = linear_regression_of(&v4).unwrap();
+        let lin_x_axis1 = (0..25000).step(10);
+        let lin_x_axis3 = (25000..100000).step(10);
+        let lin_x_axis4 = (100000..x_max).step(10);
+
+        let w_x: Vec<f64> = v.iter().map(|(a,_)|*a as f64).collect();
+        let w_y: Vec<f64> = v.iter().map(|(_,b)|*b as f64).collect();
+        let w = polyfit_rs::polyfit(w_x.as_slice(), w_y.as_slice(), 3).unwrap();
+        let w_axis = (x_min..x_max).step(10);
+
+
+        let root = BitMapBackend::new("/tmp/aa.png", (1024, 768)).into_drawing_area();
+        root.fill(&WHITE)?;
+        root.margin(20, 20, 20, 20);
+
+        let mut scatter_ctx = ChartBuilder::on(&root)
+            .x_label_area_size(40)
+            .y_label_area_size(80)
+            .margin(20)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+        scatter_ctx
+            .configure_mesh()
+            .x_desc("Size [bytes]")
+            .y_desc("DB read duration [nanoseconds]")
+            .axis_desc_style(("sans-serif", 16))
+            .draw()?;
+        // 1. draw all read points
+        scatter_ctx
+            .draw_series(
+                v1.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?;
+        scatter_ctx
+            .draw_series(
+                v3.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?;
+        scatter_ctx
+            .draw_series(
+                v4.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?
+            .label("Diff points (RocksDB - InMemory)")
+            .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+        // 3. draw linear approximetion line
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis1
+                    .values()
+                    .map(|x| (x, (a1 * x as f64 + b1) as i32 )),
+                &BLUE,
+            ))?
+            .label(format!(
+                "Linear approx. spline 1: f(x)={:.4}*x+{:.1}",
+                a1, b1
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis3
+                    .values()
+                    .map(|x| (x, (a3 * x as f64 + b3) as i32 )),
+                &BLUE,
+            ))?
+            .label(format!(
+                "Linear approx. spline 2: f(x)={:.4}*x+{:.1}",
+                a3, b3
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis4
+                    .values()
+                    .map(|x| (x, (a4 * x as f64 + b4) as i32 )),
+                &BLUE,
+            ))?
+            .label(format!(
+                "Linear approx. spline 3: f(x)={:.4}*x+{:.1}",
+                a4, b4
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        // polynominal
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                w_axis
+                    .values()
+                    .map(|x| (x, (w[3] * x as f64 * x as f64 * x as f64 + w[2] * x as f64 * x as f64 + w[1] * x as f64 + w[0] ) as i32 )),
+                &BLACK,
+            ))?
+            .label(format!(
+                "3rd degree polynomial: {} {} {} {}",
+                w[3], w[2], w[1], w[0]
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
+    
+        scatter_ctx
+            .configure_series_labels()
+            .background_style(&WHITE)
+            .border_style(&BLACK)
+            .label_font(("sans-serif", 16))
+            .position(SeriesLabelPosition::UpperMiddle)
+            .draw()?;
+
+        root.present().expect("Unable to write result to file");
+        Ok(())
+    }
     pub fn new_rocksdb(path: PathBuf) -> Self {
         let mut factory_opts = BlockBasedOptions::default();
         factory_opts.disable_cache();
@@ -365,19 +611,23 @@ fn test_store_db() {
     // clean database
     std::fs::remove_dir_all(path.clone()).ok();
 
+    let min_size = 1;
     let max_size = 4 * 1024 * 1024;
-    let size_step = 500 * 1024;
+    let size_step = 10 * 1024;
     let count = 10usize;
-    let read_repeats = 100usize;
+    let read_repeats = 200usize;
+
+    let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> = Vec::with_capacity(max_size);
 
     {
+        let mut p_key_cnt = 1u32;
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
         let mut sort_key_value: usize = 0;
-        for size in (1..=max_size).step_by(size_step) {
+        for size in (min_size..=max_size).step_by(size_step) {
             let mut input_data = DatabaseUpdates::new();
-            for i in 0..count {
+            for _ in 0..count {
                 let value = DatabaseUpdate::Set(vec![1; size]);
-            
+
                 let plain_bytes = sort_key_value.to_be_bytes().to_vec();
                 let mut hashed_prefix: Vec<u8> = Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
                 hashed_prefix.extend(plain_bytes);
@@ -386,9 +636,12 @@ fn test_store_db() {
                 sort_key_value += 1;
 
                 let mut partition = PartitionUpdates::new();
-                partition.insert(sort_key, value);
+                partition.insert(sort_key.clone(), value);
 
-                let partition_key = DbPartitionKey(i.to_be_bytes().to_vec());
+                let partition_key = DbPartitionKey(p_key_cnt.to_be_bytes().to_vec());
+                p_key_cnt += 1;
+
+                data_index_vector.push( (partition_key.clone(), sort_key, size) );
 
                 input_data.insert(partition_key, partition);
             }
@@ -400,27 +653,27 @@ fn test_store_db() {
     // reopen database
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
 
-    for _ in 0..read_repeats {
-        let mut sort_key_value: usize = 0;
-        for size in (1..=max_size).step_by(size_step) {
-            for i in 0..count
-            {
-                let plain_bytes = sort_key_value.to_be_bytes().to_vec();
-                let mut hashed_prefix: Vec<u8> = Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
-                hashed_prefix.extend(plain_bytes);
+    //let mut p_key_cnt = 1u32;
+    for i in 0..read_repeats {
+        let time_start = std::time::Instant::now();
 
-                let sort_key = DbSortKey(hashed_prefix);
-                sort_key_value += 1;
+        for (j, (p,s,v)) in data_index_vector.iter().enumerate() {
+            print!("\rRead {}/{}", j + 1, data_index_vector.len());
+            std::io::stdout().flush().ok();
 
-                let partition_key = DbPartitionKey(i.to_be_bytes().to_vec());
+            let read_value = substate_db.get_substate(&p, &s);
 
-                let read_value = substate_db.get_substate(&partition_key, &sort_key);
-
-                assert!(read_value.is_some());
-                assert_eq!(read_value.unwrap().len(), size);
-            }
+            assert!(read_value.is_some());
+            assert_eq!(read_value.unwrap().len(), *v);
         }
-}
+
+        let time_end = std::time::Instant::now();
+        let mut duration = time_end.checked_duration_since(time_start).unwrap().as_secs();
+        if duration == 0 {
+            duration = 1;
+        }
+        println!("\rRound {}/{}  read time: {} s, left: {} s\r", i + 1, read_repeats, duration, (read_repeats - (i + 1)) * duration as usize );
+    }
 
     println!("Read done");
 
