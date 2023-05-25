@@ -248,8 +248,8 @@ fn next_round_causes_epoch_change_on_reaching_target_duration() {
 
     // Assert
     let result = receipt.expect_commit_success();
-    let next_epoch = result.next_epoch().expect("Should have next epoch").1;
-    assert_eq!(next_epoch, initial_epoch + 1);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.epoch, initial_epoch + 1);
 }
 
 #[test]
