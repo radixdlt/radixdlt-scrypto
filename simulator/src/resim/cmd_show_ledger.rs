@@ -27,7 +27,7 @@ impl ShowLedger {
         drop(substate_db);
 
         let current_epoch = Self::get_current_epoch(out)?;
-        writeln!(out, "{}: {}", "Current Epoch".green().bold(), current_epoch)
+        writeln!(out, "{}: {}", "Current Epoch".green().bold(), current_epoch.number())
             .map_err(Error::IOError)?;
 
         let instant = Self::get_current_time(out, TimePrecision::Minute)?;
@@ -104,7 +104,7 @@ impl ShowLedger {
         Ok(())
     }
 
-    pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<u64, Error> {
+    pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<Epoch, Error> {
         let instructions = vec![InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
