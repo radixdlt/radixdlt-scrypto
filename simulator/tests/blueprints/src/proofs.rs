@@ -24,7 +24,7 @@ mod proofs {
 
             let component = Self {}
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .define_roles(roles! {
                     "auth" => organizational_access_rule;
                 })
