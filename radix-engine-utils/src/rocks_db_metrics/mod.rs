@@ -387,9 +387,9 @@ mod tests {
 
     const MIN_SIZE: usize = 1;
     const MAX_SIZE: usize = 4 * 1024 * 1024;
-    const SIZE_STEP: usize = 500 * 1024;
-    const COUNT: usize = 100;
-    const READ_REPEATS: usize = 10;
+    const SIZE_STEP: usize = 10 * 1024;
+    const COUNT: usize = 20;
+    const READ_REPEATS: usize = 200;
 
     #[test]
     fn test_store_db() {
