@@ -1,6 +1,5 @@
 use native_sdk::resource::*;
 use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
 use radix_engine_common::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -12,11 +11,6 @@ pub struct SingleResourcePoolSubstate {
 
     /// The address of the pool unit resource that the pool works with.
     pub pool_unit_resource: ResourceAddress,
-
-    /// The amount of pool unit resources that was minted when the pool was initially created. If
-    /// [`None`] then no resources have been contributed to this pool and not pool units have been
-    /// minted
-    pub initial_pool_unit_amount: Option<Decimal>,
 }
 
 impl SingleResourcePoolSubstate {

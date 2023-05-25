@@ -122,10 +122,7 @@ fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redeemed(
         .get(&test_runner.pool_unit_resource_address)
         .unwrap();
 
-    assert_eq!(
-        balance_change.clone(),
-        BalanceChange::Fungible(initial_contribution.into())
-    );
+    assert_eq!(balance_change.clone(), BalanceChange::Fungible(50.into()));
 }
 
 #[test]

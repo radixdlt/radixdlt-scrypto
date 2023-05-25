@@ -66,7 +66,6 @@ impl SingleResourcePoolBlueprint {
             let substate = SingleResourcePoolSubstate {
                 vault: vault.0,
                 pool_unit_resource,
-                initial_pool_unit_amount: None,
             };
             api.new_simple_object(
                 SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -110,49 +109,48 @@ impl SingleResourcePoolBlueprint {
         // No check that the bucket is of the same resource as the vault. This check will be handled
         // by the vault itself on deposit.
 
-        let (mut single_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::MUTABLE)?;
+        let (single_resource_pool_substate, handle) =
+            Self::lock_and_read(api, LockFlags::read_only())?;
         let mut pool_unit_resource_manager =
             single_resource_pool_substate.pool_unit_resource_manager();
         let mut vault = single_resource_pool_substate.vault();
 
-        let amount_of_resources_in_pool = vault.amount(api)?;
+        /*
+        There are four states that the pool could be in at this point of time depending on the total
+        supply of the pool units and the the total amount of reserves that the pool unit has. We can
+        examine each of those states.
+
+        Let PU denote the total supply of pool units where 0 means that none exists and 1 means that
+        some amount exists. Let R denote the total amount of reserves that the pool has where 0 here
+        means that no reserves exist in the pool and 1 means that some reserves exist in the pool.
+
+        PU, R
+        0 , 0 => This is a new pool - no pool units and no pool reserves.
+        0 , 1 => This is a pool which has been used but has dried out and all of the pool units have
+                 been burned. The first contribution to this pool gets whatever dust is left behind.
+        1 , 0 => This is an illegal state! Some amount of people own some % of zero which is invalid
+        1 , 1 => The pool is in normal operations.
+
+        Thus depending on the supply of these resources the pool behaves differently.
+         */
+
+        let reserves = vault.amount(api)?;
+        let pool_unit_total_supply = pool_unit_resource_manager.total_supply(api)?;
         let amount_of_contributed_resources = bucket.amount(api)?;
 
-        // Case: The pool has had contributions before
-        let (is_first_deposit, pool_units_to_mint) = if let Some(first_pool_unit_amount_minted) =
-            single_resource_pool_substate.initial_pool_unit_amount
-        {
-            // Case: If the pool units have all been burned then mint the initial amount upon a
-            // contribution
-            if pool_unit_resource_manager.total_supply(api)? == Decimal::ZERO {
-                (false, first_pool_unit_amount_minted)
-            }
-            // Case: There are no more resources in this pool - thus the regular calculation would
-            // result in a divide by zero error.
-            else if amount_of_resources_in_pool == Decimal::ZERO {
-                return Err(SingleResourcePoolError::IllegalState.into());
-            } else {
-                (
-                    false,
-                    (bucket.amount(api)? / amount_of_resources_in_pool)
-                        * pool_unit_resource_manager.total_supply(api)?,
-                )
-            }
-        }
-        // Case: This is the first contribution to the pool
-        else {
-            single_resource_pool_substate.initial_pool_unit_amount =
-                Some(amount_of_contributed_resources);
-            (true, amount_of_contributed_resources)
-        };
+        let pool_units_to_mint = match (
+            pool_unit_total_supply > Decimal::ZERO,
+            reserves > Decimal::ZERO,
+        ) {
+            (false, false) => Ok(amount_of_contributed_resources),
+            (false, true) => Ok(amount_of_contributed_resources + reserves),
+            (true, false) => Err(SingleResourcePoolError::IllegalState),
+            (true, true) => Ok(amount_of_contributed_resources / reserves * pool_unit_total_supply),
+        }?;
 
         vault.put(bucket, api)?;
         let pool_units = pool_unit_resource_manager.mint_fungible(pool_units_to_mint, api)?;
 
-        if is_first_deposit {
-            api.field_lock_write_typed(handle, single_resource_pool_substate)?;
-        }
         api.field_lock_release(handle)?;
 
         Runtime::emit_event(
