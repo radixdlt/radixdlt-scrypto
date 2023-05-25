@@ -42,41 +42,37 @@ fn build_access_rules(
         {
             roles.define_role(
                 SET_METADATA_UPDATE_ROLE,
-                update_metadata_mutability,
-                vec![SET_METADATA_UPDATE_ROLE],
+                RoleEntry::new(update_metadata_mutability, vec![SET_METADATA_UPDATE_ROLE]),
             );
 
             roles.define_role(
                 SET_METADATA_ROLE,
-                update_metadata_access_rule,
-                vec![SET_METADATA_UPDATE_ROLE],
+                RoleEntry::new(update_metadata_access_rule, vec![SET_METADATA_UPDATE_ROLE])
             );
         }
 
         // Mint
         {
-            roles.define_role(MINT_UPDATE_ROLE, mint_mutability, vec![MINT_UPDATE_ROLE]);
-            roles.define_role(MINT_ROLE, mint_access_rule, vec![MINT_UPDATE_ROLE]);
+            roles.define_role(MINT_UPDATE_ROLE, RoleEntry::new(mint_mutability, vec![MINT_UPDATE_ROLE]));
+            roles.define_role(MINT_ROLE, RoleEntry::new(mint_access_rule, vec![MINT_UPDATE_ROLE]));
         }
 
         // Burn
         {
-            roles.define_role(BURN_UPDATE_ROLE, burn_mutability, vec![BURN_UPDATE_ROLE]);
-            roles.define_role(BURN_ROLE, burn_access_rule, vec![BURN_UPDATE_ROLE]);
+            roles.define_role(BURN_UPDATE_ROLE, RoleEntry::new(burn_mutability, vec![BURN_UPDATE_ROLE]));
+            roles.define_role(BURN_ROLE, RoleEntry::new(burn_access_rule, vec![BURN_UPDATE_ROLE]));
         }
 
         // Non Fungible Update data
         {
             roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
-                update_non_fungible_data_mutability,
-                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
+                RoleEntry::new(update_non_fungible_data_mutability, vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE]),
             );
 
             roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_ROLE,
-                update_non_fungible_data_access_rule,
-                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
+                RoleEntry::new(update_non_fungible_data_access_rule, vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE]),
             );
         }
 
@@ -115,13 +111,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 WITHDRAW_UPDATE_ROLE,
-                withdraw_mutability,
-                vec![WITHDRAW_UPDATE_ROLE],
+                RoleEntry::new(withdraw_mutability, vec![WITHDRAW_UPDATE_ROLE]),
             );
             roles.define_role(
                 WITHDRAW_ROLE,
-                withdraw_access_rule,
-                vec![WITHDRAW_UPDATE_ROLE],
+                RoleEntry::new(withdraw_access_rule, vec![WITHDRAW_UPDATE_ROLE]),
             );
         }
 
@@ -129,29 +123,26 @@ fn build_access_rules(
         {
             roles.define_role(
                 RECALL_UPDATE_ROLE,
-                recall_mutability,
-                vec![RECALL_UPDATE_ROLE],
+                RoleEntry::new(recall_mutability, vec![RECALL_UPDATE_ROLE]),
             );
-            roles.define_role(RECALL_ROLE, recall_access_rule, vec![RECALL_UPDATE_ROLE]);
+            roles.define_role(RECALL_ROLE, RoleEntry::new(recall_access_rule, vec![RECALL_UPDATE_ROLE]));
         }
 
         // Deposit
         {
             roles.define_role(
                 DEPOSIT_UPDATE_ROLE,
-                deposit_mutability,
-                vec![DEPOSIT_UPDATE_ROLE],
+                RoleEntry::new(deposit_mutability, vec![DEPOSIT_UPDATE_ROLE]),
             );
 
-            roles.define_role(DEPOSIT_ROLE, deposit_access_rule, vec![DEPOSIT_UPDATE_ROLE]);
+            roles.define_role(DEPOSIT_ROLE, RoleEntry::new(deposit_access_rule, vec![DEPOSIT_UPDATE_ROLE]));
         }
 
         // Internal
         {
             roles.define_role(
                 "this_package",
-                rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-                vec![],
+                RoleEntry::new(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))), vec![]),
             );
         }
 

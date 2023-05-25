@@ -153,6 +153,29 @@ impl RoleKey {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct RoleEntry {
+    pub rule: AccessRule,
+    pub mutable: RoleList,
+}
+
+impl RoleEntry {
+    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(rule: A, mutable: M) -> Self {
+        Self {
+            rule: rule.into(),
+            mutable: mutable.into(),
+        }
+    }
+
+    pub fn immutable<A: Into<AccessRule>>(rule: A) -> Self {
+        Self {
+            rule: rule.into(),
+            mutable: RoleList::none(),
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct RoleList {
     pub list: Vec<RoleKey>,
@@ -193,11 +216,11 @@ pub enum OwnerRule {
 }
 
 impl OwnerRule {
-    pub fn to_rules(self, owner_role_name: &str) -> (AccessRule, RoleList) {
+    pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
         match self {
-            OwnerRule::Fixed(rule) => (rule, RoleList::none()),
-            OwnerRule::Updateable(rule) => (rule, [owner_role_name].into()),
-            OwnerRule::None => (AccessRule::DenyAll, RoleList::none()),
+            OwnerRule::Fixed(rule) => RoleEntry::new(rule, RoleList::none()),
+            OwnerRule::Updateable(rule) => RoleEntry::new(rule, [owner_role_name]),
+            OwnerRule::None => RoleEntry::new(AccessRule::DenyAll, RoleList::none()),
         }
     }
 }
@@ -206,7 +229,7 @@ impl OwnerRule {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
-    pub rules: BTreeMap<RoleKey, (AccessRule, RoleList)>,
+    pub rules: BTreeMap<RoleKey, RoleEntry>,
 }
 
 impl Roles {
@@ -216,18 +239,20 @@ impl Roles {
 
     pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> Roles {
         let mut authority_rules = Roles::new();
-        authority_rules.define_role("owner", rule!(require(owner_badge.clone())), ["owner"]);
+        authority_rules.define_role(
+            "owner",
+            RoleEntry::new(rule!(require(owner_badge.clone())), ["owner"]),
+        );
         authority_rules
     }
 
-    pub fn define_role<K: Into<RoleKey>, L: Into<RoleList>>(
+    pub fn define_role<K: Into<RoleKey>>(
         &mut self,
         authority: K,
-        rule: AccessRule,
-        mutability: L,
+        entry: RoleEntry,
     ) {
         self.rules
-            .insert(authority.into(), (rule, mutability.into()));
+            .insert(authority.into(), entry);
     }
 }
 
