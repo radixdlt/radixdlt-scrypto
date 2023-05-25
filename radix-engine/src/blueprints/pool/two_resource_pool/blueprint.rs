@@ -5,6 +5,7 @@ use native_sdk::modules::access_rules::*;
 use native_sdk::modules::metadata::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
+use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -225,10 +226,21 @@ impl TwoResourcePoolBlueprint {
             }
         }?;
 
+        // Construct the event - this will be emitted once the resources are contributed to the pool
+        let event = ContributionEvent {
+            contributed_resources: btreemap! {
+                bucket1.resource_address(api)? => bucket1.amount(api)?,
+                bucket2.resource_address(api)? => bucket2.amount(api)?,
+            },
+            pool_unit_tokens_minted: pool_units_to_mint,
+        };
+
+        // Minting the pool unit tokens
         let pool_units = substate
             .pool_unit_resource_manager()
             .mint_fungible(pool_units_to_mint, api)?;
 
+        // Deposit the calculated amount of each of the buckets into appropriate vault.
         bucket1
             .take(amount1, api)
             .and_then(|bucket| vault1.put(bucket, api))?;
@@ -236,6 +248,8 @@ impl TwoResourcePoolBlueprint {
             .take(amount2, api)
             .and_then(|bucket| vault2.put(bucket, api))?;
 
+        // Determine if there is any change to return back to the caller - if there is not then drop
+        // the empty buckets.
         let change_bucket = if !bucket1.is_empty(api)? {
             bucket2.drop_empty(api)?;
             Some(bucket1)
@@ -249,6 +263,8 @@ impl TwoResourcePoolBlueprint {
         };
 
         api.field_lock_release(handle)?;
+
+        Runtime::emit_event(api, event)?;
 
         Ok((pool_units, change_bucket))
     }
@@ -302,6 +318,11 @@ impl TwoResourcePoolBlueprint {
         let amounts_owed =
             Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
 
+        let event = RedemptionEvent {
+            redeemed_resources: amounts_owed.clone(),
+            pool_unit_tokens_redeemed: pool_units_to_redeem,
+        };
+
         // The following part does some unwraps and panic-able operations but should never panic.
         let buckets = {
             let buckets = amounts_owed
@@ -315,6 +336,8 @@ impl TwoResourcePoolBlueprint {
 
         bucket.burn(api)?;
         api.field_lock_release(handle)?;
+
+        Runtime::emit_event(api, event)?;
 
         Ok(buckets)
     }
@@ -330,8 +353,13 @@ impl TwoResourcePoolBlueprint {
         let resource_address = bucket.resource_address(api)?;
         let vault = substate.vault(resource_address);
         if let Some(mut vault) = vault {
+            let event = DepositEvent {
+                amount: bucket.amount(api)?,
+                resource_address,
+            };
             vault.put(bucket, api)?;
             api.field_lock_release(handle)?;
+            Runtime::emit_event(api, event)?;
             Ok(())
         } else {
             Err(TwoResourcePoolError::FailedToFindVaultOfResource { resource_address }.into())
@@ -348,10 +376,19 @@ impl TwoResourcePoolBlueprint {
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let vault = substate.vault(resource_address);
+
         if let Some(mut vault) = vault {
             let bucket = vault.take(amount, api)?;
 
             api.field_lock_release(handle)?;
+
+            Runtime::emit_event(
+                api,
+                WithdrawEvent {
+                    amount,
+                    resource_address,
+                },
+            )?;
 
             Ok(bucket)
         } else {

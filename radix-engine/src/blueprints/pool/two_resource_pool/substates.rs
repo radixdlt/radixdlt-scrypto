@@ -1,6 +1,5 @@
 use native_sdk::resource::*;
 use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
 use radix_engine_common::*;
 use radix_engine_interface::blueprints::resource::*;

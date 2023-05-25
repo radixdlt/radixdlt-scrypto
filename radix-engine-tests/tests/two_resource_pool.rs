@@ -1,7 +1,7 @@
+use radix_engine::blueprints::pool::two_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine_interface::blueprints::pool::*;
-use radix_engine_queries::typed_substate_layout::*;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::*;
@@ -346,6 +346,144 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
         .expect_specific_failure(is_two_resource_pool_does_not_support_non_fungible_resources_error)
 }
 
+#[test]
+fn contribution_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((2, 2));
+
+    // Act
+    let receipt = test_runner.contribute(
+        (test_runner.pool_resource1, dec!("2.22")),
+        (test_runner.pool_resource2, dec!("8.88")),
+        true,
+    );
+
+    // Assert
+    let ContributionEvent {
+        contributed_resources,
+        pool_unit_tokens_minted,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "ContributionEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(
+        contributed_resources,
+        btreemap!(
+            test_runner.pool_resource1 => dec!("2.22"),
+            test_runner.pool_resource2 => dec!("8.88"),
+        )
+    );
+    assert_eq!(pool_unit_tokens_minted, dec!("4.44"));
+}
+
+#[test]
+fn redemption_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((2, 2));
+
+    // Act
+    test_runner
+        .contribute(
+            (test_runner.pool_resource1, dec!("2.22")),
+            (test_runner.pool_resource2, dec!("8.88")),
+            true,
+        )
+        .expect_commit_success();
+    let receipt = test_runner.redeem(dec!("4.44"), true);
+
+    // Assert
+    let RedemptionEvent {
+        pool_unit_tokens_redeemed,
+        redeemed_resources,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "RedemptionEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(pool_unit_tokens_redeemed, dec!("4.44"));
+    assert_eq!(
+        redeemed_resources,
+        btreemap!(
+            test_runner.pool_resource1 => dec!("2.22"),
+            test_runner.pool_resource2 => dec!("8.88"),
+        )
+    );
+}
+
+#[test]
+fn deposits_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((2, 2));
+
+    // Act
+    let receipt = test_runner.protected_deposit(test_runner.pool_resource1, dec!("2.22"), true);
+
+    // Assert
+    let DepositEvent {
+        resource_address,
+        amount,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(resource_address, test_runner.pool_resource1);
+    assert_eq!(amount, dec!("2.22"));
+}
+
+#[test]
+fn withdraw_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((2, 2));
+
+    // Act
+    test_runner
+        .protected_deposit(test_runner.pool_resource1, dec!("2.22"), true)
+        .expect_commit_success();
+    let receipt = test_runner.protected_withdraw(test_runner.pool_resource1, dec!("2.22"), true);
+
+    // Assert
+    let WithdrawEvent {
+        resource_address,
+        amount,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(resource_address, test_runner.pool_resource1);
+    assert_eq!(amount, dec!("2.22"));
+}
+
 struct TestEnvironment {
     test_runner: TestRunner,
 
@@ -459,6 +597,45 @@ impl TestEnvironment {
                     to_manifest_value(&TwoResourcePoolRedeemManifestInput { bucket }),
                 )
             })
+            .try_deposit_batch_or_abort(self.account_component_address)
+            .build();
+        self.execute_manifest(manifest, sign)
+    }
+
+    fn protected_deposit<D: Into<Decimal>>(
+        &mut self,
+        resource_address: ResourceAddress,
+        amount: D,
+        sign: bool,
+    ) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .mint_fungible(resource_address, amount.into())
+            .take_all_from_worktop(resource_address, |builder, bucket| {
+                builder.call_method(
+                    self.pool_component_address,
+                    TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
+                    to_manifest_value(&TwoResourcePoolProtectedDepositManifestInput { bucket }),
+                )
+            })
+            .build();
+        self.execute_manifest(manifest, sign)
+    }
+
+    fn protected_withdraw<D: Into<Decimal>>(
+        &mut self,
+        resource_address: ResourceAddress,
+        amount: D,
+        sign: bool,
+    ) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                self.pool_component_address,
+                TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                to_manifest_value(&TwoResourcePoolProtectedWithdrawManifestInput {
+                    resource_address,
+                    amount: amount.into(),
+                }),
+            )
             .try_deposit_batch_or_abort(self.account_component_address)
             .build();
         self.execute_manifest(manifest, sign)

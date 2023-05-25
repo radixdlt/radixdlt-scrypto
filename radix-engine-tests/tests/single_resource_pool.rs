@@ -1,6 +1,4 @@
-use radix_engine::blueprints::pool::single_resource_pool::{
-    SingleResourcePoolError, SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
-};
+use radix_engine::blueprints::pool::single_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine_interface::blueprints::pool::*;
@@ -284,6 +282,116 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     receipt.expect_specific_failure(
         is_single_resource_pool_does_not_support_non_fungible_resources_error,
     )
+}
+
+#[test]
+fn contribution_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(2);
+
+    // Act
+    let receipt = test_runner.contribute(dec!("2.22"), true);
+
+    // Assert
+    let ContributionEvent {
+        amount_of_resources_contributed,
+        pool_unit_tokens_minted,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "ContributionEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(amount_of_resources_contributed, dec!("2.22"));
+    assert_eq!(pool_unit_tokens_minted, dec!("2.22"));
+}
+
+#[test]
+fn redemption_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(2);
+
+    // Act
+    test_runner
+        .contribute(dec!("2.22"), true)
+        .expect_commit_success();
+    let receipt = test_runner.redeem(dec!("2.22"), true);
+
+    // Assert
+    let RedemptionEvent {
+        pool_unit_tokens_redeemed,
+        redeemed_amount,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "RedemptionEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(pool_unit_tokens_redeemed, dec!("2.22"));
+    assert_eq!(redeemed_amount, dec!("2.22"));
+}
+
+#[test]
+fn deposits_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(2);
+
+    // Act
+    let receipt = test_runner.protected_deposit(dec!("2.22"), true);
+
+    // Assert
+    let DepositEvent { amount } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(amount, dec!("2.22"));
+}
+
+#[test]
+fn withdraw_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(2);
+
+    // Act
+    test_runner
+        .protected_deposit(dec!("2.22"), true)
+        .expect_commit_success();
+    let receipt = test_runner.protected_withdraw(dec!("2.22"), true);
+
+    // Assert
+    let WithdrawEvent { amount } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(amount, dec!("2.22"));
 }
 
 //===================================
