@@ -1460,16 +1460,14 @@ mod tests {
                     Array<String>()
                 )
                 Map<String, Enum>(
-                    "name", Enum<Metadata::String>("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>(),
-                    Tuple(
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>(),
-                    Tuple(
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1551,23 +1549,20 @@ mod tests {
                     Array<String>()
                 )
                 Map<String, Enum>(
-                    "name", Enum<Metadata::String>("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>(),
-                    Tuple(
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>(),
-                    Tuple(
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
                 )
                 Map<NonFungibleLocalId, Tuple>(
-                    NonFungibleLocalId("#1#"),
-                    Tuple(
+                    NonFungibleLocalId("#1#") => Tuple(
                         Tuple(
                             "Hello World",
                             Decimal("12")
@@ -1617,16 +1612,18 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE
                 18u8
                 Map<String, Enum>(
-                    "name", Enum<Metadata::String>("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>(),
-                    Tuple(Enum<AccessRule::AllowAll>(),
-                    Enum<AccessRule::DenyAll>()
-                ),
-                Enum<ResourceMethodAuthKey::Deposit>(),
-                Tuple(Enum<AccessRule::AllowAll>(),
-                Enum<AccessRule::DenyAll>()))
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
+                    ),
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
+                    )
+                )
             ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
@@ -1659,16 +1656,14 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 18u8
                 Map<String, Enum>(
-                    "name", Enum<Metadata::String>("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>(),
-                    Tuple(
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>(),
-                    Tuple(
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1715,7 +1710,7 @@ mod tests {
             r##"
             MINT_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
-                Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));
+                Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#") => Tuple(Tuple("Hello World", Decimal("12"))));
             "##,
             InstructionV1::CallMethod {
                 address: resource_address.into(),
