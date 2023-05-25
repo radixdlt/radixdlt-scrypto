@@ -125,7 +125,7 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Owned<T> {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names(T::OWNED_TYPE_NAME),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTyped(T::PACKAGE_ADDRESS, T::BLUEPRINT_NAME.to_string()),
+                OwnValidation::IsTypedObject(T::PACKAGE_ADDRESS, T::BLUEPRINT_NAME.to_string()),
             )),
         }
     }

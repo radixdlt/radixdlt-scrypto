@@ -41,7 +41,7 @@ pub enum OwnValidation {
     IsProof,
     IsVault,
     IsKeyValueStore,
-    IsTyped(Option<PackageAddress>, String),
+    IsTypedObject(Option<PackageAddress>, String),
 }
 
 impl OwnValidation {
@@ -52,7 +52,7 @@ impl OwnValidation {
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
             // Hard to validate without knowing package addresses from engine, assume fine
-            OwnValidation::IsTyped(_, _) => true,
+            OwnValidation::IsTypedObject(_, _) => true,
         }
     }
 
@@ -63,7 +63,7 @@ impl OwnValidation {
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
             // Hard to validate without knowing package addresses from engine, assume fine
-            OwnValidation::IsTyped(_, _) => true,
+            OwnValidation::IsTypedObject(_, _) => true,
         }
     }
 }

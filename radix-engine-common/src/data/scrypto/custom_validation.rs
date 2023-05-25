@@ -87,7 +87,7 @@ fn apply_static_custom_validation_to_custom_value(
                 OwnValidation::IsProof => node_id.is_internal(),
                 OwnValidation::IsVault => node_id.is_internal_vault(),
                 OwnValidation::IsKeyValueStore => node_id.is_internal_kv_store(),
-                OwnValidation::IsTyped(_, _) => true,
+                OwnValidation::IsTypedObject(_, _) => true,
             };
             if !is_valid {
                 return Err(PayloadValidationError::ValidationError(

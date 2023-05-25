@@ -228,7 +228,7 @@ fn apply_custom_validation_to_custom_value(
                 }
                 OwnValidation::IsVault => node_id.is_internal_vault(),
                 OwnValidation::IsKeyValueStore => node_id.is_internal_kv_store(),
-                OwnValidation::IsTyped(expected_package, expected_blueprint) => type_info
+                OwnValidation::IsTypedObject(expected_package, expected_blueprint) => type_info
                     .matches_with_origin(
                         expected_package,
                         expected_blueprint,

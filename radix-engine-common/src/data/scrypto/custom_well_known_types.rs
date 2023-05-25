@@ -87,10 +87,9 @@ pub mod well_known_scrypto_custom_types {
         named_type_kind(
             "FungibleBucket",
             ScryptoCustomTypeKind::Own,
-            Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                Some(RESOURCE_PACKAGE),
-                "FungibleBucket".to_string(),
-            ))),
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(Some(RESOURCE_PACKAGE), "FungibleBucket".to_string()),
+            )),
         )
     }
     pub const OWN_NON_FUNGIBLE_BUCKET_ID: u8 = VALUE_KIND_OWN + 3;
@@ -100,10 +99,12 @@ pub mod well_known_scrypto_custom_types {
         named_type_kind(
             "NonFungibleBucket",
             ScryptoCustomTypeKind::Own,
-            Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                Some(RESOURCE_PACKAGE),
-                "NonFungibleBucket".to_string(),
-            ))),
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(
+                    Some(RESOURCE_PACKAGE),
+                    "NonFungibleBucket".to_string(),
+                ),
+            )),
         )
     }
     pub const OWN_PROOF_ID: u8 = VALUE_KIND_OWN + 4;
@@ -121,10 +122,9 @@ pub mod well_known_scrypto_custom_types {
         named_type_kind(
             "FungibleProof",
             ScryptoCustomTypeKind::Own,
-            Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                Some(RESOURCE_PACKAGE),
-                "FungibleProof".to_string(),
-            ))),
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(Some(RESOURCE_PACKAGE), "FungibleProof".to_string()),
+            )),
         )
     }
     pub const OWN_NON_FUNGIBLE_PROOF_ID: u8 = VALUE_KIND_OWN + 6;
@@ -134,10 +134,12 @@ pub mod well_known_scrypto_custom_types {
         named_type_kind(
             "NonFungibleProof",
             ScryptoCustomTypeKind::Own,
-            Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                Some(RESOURCE_PACKAGE),
-                "NonFungibleProof".to_string(),
-            ))),
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(
+                    Some(RESOURCE_PACKAGE),
+                    "NonFungibleProof".to_string(),
+                ),
+            )),
         )
     }
     pub const OWN_VAULT_ID: u8 = VALUE_KIND_OWN + 7;
@@ -155,10 +157,9 @@ pub mod well_known_scrypto_custom_types {
         named_type_kind(
             "FungibleVault",
             ScryptoCustomTypeKind::Own,
-            Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                Some(RESOURCE_PACKAGE),
-                "FungibleVault".to_string(),
-            ))),
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(Some(RESOURCE_PACKAGE), "FungibleVault".to_string()),
+            )),
         )
     }
     pub const OWN_NON_FUNGIBLE_VAULT_ID: u8 = VALUE_KIND_OWN + 9;
@@ -168,10 +169,12 @@ pub mod well_known_scrypto_custom_types {
         named_type_kind(
             "NonFungibleVault",
             ScryptoCustomTypeKind::Own,
-            Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                Some(RESOURCE_PACKAGE),
-                "NonFungibleVault".to_string(),
-            ))),
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(
+                    Some(RESOURCE_PACKAGE),
+                    "NonFungibleVault".to_string(),
+                ),
+            )),
         )
     }
     pub const OWN_KEY_VALUE_STORE_ID: u8 = VALUE_KIND_OWN + 10;
