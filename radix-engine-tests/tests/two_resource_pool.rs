@@ -557,6 +557,45 @@ fn withdraw_emits_expected_event() {
     assert_eq!(amount, dec!("2.22"));
 }
 
+#[test]
+fn redemption_after_protected_deposit_redeems_expected_amount() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((18, 2));
+
+    test_runner
+        .contribute(
+            (test_runner.pool_resource1, 100),
+            (test_runner.pool_resource2, 100),
+            true,
+        )
+        .expect_commit_success();
+
+    // Act
+    test_runner
+        .protected_deposit(test_runner.pool_resource1, 500, true)
+        .expect_commit_success();
+    let receipt = test_runner.redeem(100, true);
+
+    // Assert
+    let account_balance_changes = receipt
+        .expect_commit_success()
+        .balance_changes()
+        .get(&GlobalAddress::from(test_runner.account_component_address))
+        .unwrap();
+    assert_eq!(
+        account_balance_changes
+            .get(&test_runner.pool_resource1)
+            .cloned(),
+        Some(BalanceChange::Fungible(600.into()))
+    );
+    assert_eq!(
+        account_balance_changes
+            .get(&test_runner.pool_resource2)
+            .cloned(),
+        Some(BalanceChange::Fungible(100.into()))
+    );
+}
+
 struct TestEnvironment {
     test_runner: TestRunner,
 
