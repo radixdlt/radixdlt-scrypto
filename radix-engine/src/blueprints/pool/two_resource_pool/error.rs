@@ -21,6 +21,7 @@ pub enum TwoResourcePoolError {
     },
     SameResourceError,
     NotAllBucketsProvidedError,
+    ContributionOfEmptyBucketError,
 }
 
 impl From<TwoResourcePoolError> for RuntimeError {

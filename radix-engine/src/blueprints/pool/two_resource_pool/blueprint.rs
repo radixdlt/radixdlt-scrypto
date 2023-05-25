@@ -180,6 +180,10 @@ impl TwoResourcePoolBlueprint {
             let contribution1 = bucket1.amount(api)?;
             let contribution2 = bucket2.amount(api)?;
 
+            if contribution1 == Decimal::ZERO || contribution2 == Decimal::ZERO {
+                return Err(TwoResourcePoolError::ContributionOfEmptyBucketError.into());
+            }
+
             match (
                 pool_unit_total_supply > Decimal::ZERO,
                 reserves1 > Decimal::ZERO,

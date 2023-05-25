@@ -113,6 +113,10 @@ impl SingleResourcePoolBlueprint {
         let mut pool_unit_resource_manager = substate.pool_unit_resource_manager();
         let mut vault = substate.vault();
 
+        if bucket.is_empty(api)? {
+            return Err(SingleResourcePoolError::ContributionOfEmptyBucketError.into());
+        }
+
         /*
         There are four states that the pool could be in at this point of time depending on the total
         supply of the pool units and the the total amount of reserves that the pool unit has. We can

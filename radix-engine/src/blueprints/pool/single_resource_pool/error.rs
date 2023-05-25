@@ -13,6 +13,7 @@ pub enum SingleResourcePoolError {
         expected: ResourceAddress,
         actual: ResourceAddress,
     },
+    ContributionOfEmptyBucketError,
 }
 
 impl From<SingleResourcePoolError> for RuntimeError {
