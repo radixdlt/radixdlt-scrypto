@@ -773,11 +773,7 @@ impl Parser {
             }
         }
         advance_match!(self, TokenKind::CloseParenthesis);
-        Ok(Value::Map(
-            generics[0],
-            generics[1],
-            entries,
-        ))
+        Ok(Value::Map(generics[0], generics[1], entries))
     }
 
     /// Parse a comma-separated value list, enclosed by a pair of marks.
@@ -900,7 +896,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::lexer::{tokenize, Span, Position};
+    use crate::manifest::lexer::{tokenize, Position, Span};
 
     #[macro_export]
     macro_rules! parse_instruction_ok {

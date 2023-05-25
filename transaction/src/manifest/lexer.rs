@@ -94,7 +94,7 @@ impl Lexer {
                 full_index: 0,
                 line_number: 1,
                 line_char_index: 0,
-            }
+            },
         }
     }
 
@@ -154,7 +154,9 @@ impl Lexer {
             '-' | '0'..='9' => self.tokenize_number(),
             '"' => self.tokenize_string(),
             'a'..='z' | 'A'..='Z' => self.tokenize_identifier(),
-            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => self.tokenize_punctuation(),
+            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => {
+                self.tokenize_punctuation()
+            }
             _ => Err(LexerError::UnexpectedChar(
                 self.text[self.current.full_index],
                 self.current,
@@ -274,7 +276,10 @@ impl Lexer {
                                 return Err(self.unexpected_char());
                             }
                         }
-                        s.push(char::from_u32(unicode).ok_or(LexerError::InvalidUnicode(unicode, self.current))?);
+                        s.push(
+                            char::from_u32(unicode)
+                                .ok_or(LexerError::InvalidUnicode(unicode, self.current))?,
+                        );
                     }
                     _ => {
                         return Err(self.unexpected_char());
@@ -338,9 +343,7 @@ impl Lexer {
             ';' => TokenKind::Semicolon,
             '=' => match self.advance()? {
                 '>' => TokenKind::FatArrow,
-                _ => {
-                    return Err(self.unexpected_char())
-                }
+                _ => return Err(self.unexpected_char()),
             },
             _ => {
                 return Err(self.unexpected_char());
