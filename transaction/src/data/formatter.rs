@@ -107,17 +107,21 @@ impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for Manifest
         f: &mut F,
         context: &ManifestDecompilationDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_manifest_value(f, self, context, 0)
+        format_manifest_value(f, self, context, false, 0)
     }
 }
 
 macro_rules! write_with_indent {
-    ($f:expr, $context:expr, $depth:expr, $($args:expr),*) => {
-        write!($f,
-            "{}{}",
-            $context.get_indent($depth),
-            format!($($args),*)
-        )
+    ($f:expr, $context:expr, $should_indent:expr, $depth:expr, $($args:expr),*) => {
+        if $should_indent {
+            write!($f,
+                "{}{}",
+                $context.get_indent($depth),
+                format!($($args),*)
+            )
+        } else {
+            write!($f, $($args),*)
+        }
     };
 }
 
@@ -125,22 +129,23 @@ pub fn format_manifest_value<F: fmt::Write>(
     f: &mut F,
     value: &ManifestValue,
     context: &ManifestDecompilationDisplayContext,
+    indent_start: bool,
     depth: usize,
 ) -> fmt::Result {
     match value {
         // primitive types
-        Value::Bool { value } => write_with_indent!(f, context, depth, "{}", value)?,
-        Value::I8 { value } => write_with_indent!(f, context, depth, "{}i8", value)?,
-        Value::I16 { value } => write_with_indent!(f, context, depth, "{}i16", value)?,
-        Value::I32 { value } => write_with_indent!(f, context, depth, "{}i32", value)?,
-        Value::I64 { value } => write_with_indent!(f, context, depth, "{}i64", value)?,
-        Value::I128 { value } => write_with_indent!(f, context, depth, "{}i128", value)?,
-        Value::U8 { value } => write_with_indent!(f, context, depth, "{}u8", value)?,
-        Value::U16 { value } => write_with_indent!(f, context, depth, "{}u16", value)?,
-        Value::U32 { value } => write_with_indent!(f, context, depth, "{}u32", value)?,
-        Value::U64 { value } => write_with_indent!(f, context, depth, "{}u64", value)?,
-        Value::U128 { value } => write_with_indent!(f, context, depth, "{}u128", value)?,
-        Value::String { value } => write_with_indent!(f, context, depth, "\"{}\"", value)?,
+        Value::Bool { value } => write_with_indent!(f, context, indent_start, depth, "{}", value)?,
+        Value::I8 { value } => write_with_indent!(f, context, indent_start, depth, "{}i8", value)?,
+        Value::I16 { value } => write_with_indent!(f, context, indent_start, depth, "{}i16", value)?,
+        Value::I32 { value } => write_with_indent!(f, context, indent_start, depth, "{}i32", value)?,
+        Value::I64 { value } => write_with_indent!(f, context, indent_start, depth, "{}i64", value)?,
+        Value::I128 { value } => write_with_indent!(f, context, indent_start, depth, "{}i128", value)?,
+        Value::U8 { value } => write_with_indent!(f, context, indent_start, depth, "{}u8", value)?,
+        Value::U16 { value } => write_with_indent!(f, context, indent_start, depth, "{}u16", value)?,
+        Value::U32 { value } => write_with_indent!(f, context, indent_start, depth, "{}u32", value)?,
+        Value::U64 { value } => write_with_indent!(f, context, indent_start, depth, "{}u64", value)?,
+        Value::U128 { value } => write_with_indent!(f, context, indent_start, depth, "{}u128", value)?,
+        Value::String { value } => write_with_indent!(f, context, indent_start, depth, "\"{}\"", value)?,
         Value::Tuple { fields } => {
             if fields.len() == 2 {
                 if let (
@@ -160,6 +165,7 @@ pub fn format_manifest_value<F: fmt::Write>(
                         return write_with_indent!(
                             f,
                             context,
+                            indent_start,
                             depth,
                             "NonFungibleGlobalId(\"{}\")",
                             global_id.display(context.bech32_encoder)
@@ -169,11 +175,11 @@ pub fn format_manifest_value<F: fmt::Write>(
             }
 
             if fields.is_empty() {
-                write_with_indent!(f, context, depth, "Tuple()")?;
+                write_with_indent!(f, context, indent_start, depth, "Tuple()")?;
             } else {
-                write_with_indent!(f, context, depth, "Tuple({}", context.get_new_line())?;
+                write_with_indent!(f, context, indent_start, depth, "Tuple({}", context.get_new_line())?;
                 format_elements(f, fields, context, depth + 1)?;
-                write_with_indent!(f, context, depth, ")")?;
+                write_with_indent!(f, context, true, depth, ")")?;
             }
         }
         Value::Enum {
@@ -181,18 +187,19 @@ pub fn format_manifest_value<F: fmt::Write>(
             fields,
         } => {
             if fields.is_empty() {
-                write_with_indent!(f, context, depth, "Enum<{}u8>()", discriminator)?;
+                write_with_indent!(f, context, indent_start, depth, "Enum<{}u8>()", discriminator)?;
             } else {
                 write_with_indent!(
                     f,
                     context,
+                    indent_start,
                     depth,
                     "Enum<{}u8>({}",
                     discriminator,
                     context.get_new_line()
                 )?;
                 format_elements(f, fields, context, depth + 1)?;
-                write_with_indent!(f, context, depth, ")")?;
+                write_with_indent!(f, context, true, depth, ")")?;
             }
         }
         Value::Array {
@@ -208,13 +215,14 @@ pub fn format_manifest_value<F: fmt::Write>(
                     })
                     .collect::<Result<_, _>>()?;
 
-                write_with_indent!(f, context, depth, "Bytes(\"{}\")", hex::encode(vec))?;
+                write_with_indent!(f, context, indent_start, depth, "Bytes(\"{}\")", hex::encode(vec))?;
             }
             _ => {
                 if elements.is_empty() {
                     write_with_indent!(
                         f,
                         context,
+                        indent_start,
                         depth,
                         "Array<{}>()",
                         format_value_kind(element_value_kind)
@@ -223,13 +231,14 @@ pub fn format_manifest_value<F: fmt::Write>(
                     write_with_indent!(
                         f,
                         context,
+                        indent_start,
                         depth,
                         "Array<{}>({}",
                         format_value_kind(element_value_kind),
                         context.get_new_line()
                     )?;
                     format_elements(f, elements, context, depth + 1)?;
-                    write_with_indent!(f, context, depth, ")")?;
+                    write_with_indent!(f, context, true, depth, ")")?;
                 }
             }
         },
@@ -242,6 +251,7 @@ pub fn format_manifest_value<F: fmt::Write>(
                 write_with_indent!(
                     f,
                     context,
+                    indent_start,
                     depth,
                     "Map<{}, {}>()",
                     format_value_kind(key_value_kind),
@@ -251,6 +261,7 @@ pub fn format_manifest_value<F: fmt::Write>(
                 write_with_indent!(
                     f,
                     context,
+                    indent_start,
                     depth,
                     "Map<{}, {}>({}",
                     format_value_kind(key_value_kind),
@@ -258,12 +269,12 @@ pub fn format_manifest_value<F: fmt::Write>(
                     context.get_new_line()
                 )?;
                 format_kv_entries(f, entries, context, depth + 1)?;
-                write_with_indent!(f, context, depth, ")")?;
+                write_with_indent!(f, context, true, depth, ")")?;
             }
         }
         // custom types
         Value::Custom { value } => {
-            format_custom_value(f, value, context, depth)?;
+            format_custom_value(f, value, context, indent_start, depth)?;
         }
     };
     Ok(())
@@ -276,7 +287,7 @@ pub fn format_elements<F: fmt::Write>(
     depth: usize,
 ) -> fmt::Result {
     for (i, x) in values.iter().enumerate() {
-        format_manifest_value(f, x, context, depth)?;
+        format_manifest_value(f, x, context, true, depth)?;
         if i == values.len() - 1 {
             write!(f, "{}", context.get_new_line())?;
         } else {
@@ -293,9 +304,9 @@ pub fn format_kv_entries<F: fmt::Write>(
     depth: usize,
 ) -> fmt::Result {
     for (i, x) in entries.iter().enumerate() {
-        format_manifest_value(f, &x.0, context, depth)?;
-        write!(f, ",{}", context.get_new_line())?;
-        format_manifest_value(f, &x.1, context, depth)?;
+        format_manifest_value(f, &x.0, context, true, depth)?;
+        write!(f, " => ")?;
+        format_manifest_value(f, &x.1, context, false, depth)?;
         if i == entries.len() - 1 {
             write!(f, "{}", context.get_new_line())?;
         } else {
@@ -309,6 +320,7 @@ pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ManifestCustomValue,
     context: &ManifestDecompilationDisplayContext,
+    indent_start: bool,
     depth: usize,
 ) -> fmt::Result {
     match value {
@@ -316,6 +328,7 @@ pub fn format_custom_value<F: fmt::Write>(
             write_with_indent!(
                 f,
                 context,
+                indent_start,
                 depth,
                 "Address(\"{}\")",
                 if let Some(encoder) = context.bech32_encoder {
@@ -331,22 +344,23 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         ManifestCustomValue::Bucket(value) => {
             if let Some(name) = context.get_bucket_name(&value) {
-                write_with_indent!(f, context, depth, "Bucket(\"{}\")", name)?;
+                write_with_indent!(f, context, indent_start, depth, "Bucket(\"{}\")", name)?;
             } else {
-                write_with_indent!(f, context, depth, "Bucket({}u32)", value.0)?;
+                write_with_indent!(f, context, indent_start, depth, "Bucket({}u32)", value.0)?;
             }
         }
         ManifestCustomValue::Proof(value) => {
             if let Some(name) = context.get_proof_name(&value) {
-                write_with_indent!(f, context, depth, "Proof(\"{}\")", name)?;
+                write_with_indent!(f, context, indent_start, depth, "Proof(\"{}\")", name)?;
             } else {
-                write_with_indent!(f, context, depth, "Proof({}u32)", value.0)?;
+                write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
             }
         }
         ManifestCustomValue::Expression(value) => {
             write_with_indent!(
                 f,
                 context,
+                indent_start,
                 depth,
                 "Expression(\"{}\")",
                 match value {
@@ -356,12 +370,13 @@ pub fn format_custom_value<F: fmt::Write>(
             )?;
         }
         ManifestCustomValue::Blob(value) => {
-            write_with_indent!(f, context, depth, "Blob(\"{}\")", hex::encode(&value.0))?;
+            write_with_indent!(f, context, indent_start, depth, "Blob(\"{}\")", hex::encode(&value.0))?;
         }
         ManifestCustomValue::Decimal(value) => {
             write_with_indent!(
                 f,
                 context,
+                indent_start,
                 depth,
                 "Decimal(\"{}\")",
                 to_decimal(value.clone())
@@ -371,6 +386,7 @@ pub fn format_custom_value<F: fmt::Write>(
             write_with_indent!(
                 f,
                 context,
+                indent_start,
                 depth,
                 "PreciseDecimal(\"{}\")",
                 to_precise_decimal(value.clone())
@@ -380,6 +396,7 @@ pub fn format_custom_value<F: fmt::Write>(
             write_with_indent!(
                 f,
                 context,
+                indent_start,
                 depth,
                 "NonFungibleLocalId(\"{}\")",
                 to_non_fungible_local_id(value.clone())
@@ -440,6 +457,6 @@ impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for Manifest
         f: &mut F,
         context: &ManifestDecompilationDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_custom_value(f, self, context, 0)
+        format_custom_value(f, self, context, false, 0)
     }
 }

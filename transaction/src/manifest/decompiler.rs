@@ -530,7 +530,7 @@ pub fn decompile_instruction<F: fmt::Write>(
     if let Value::Tuple { fields } = display_parameters {
         for field in fields {
             write!(f, "\n")?;
-            format_manifest_value(f, &field, &context.for_value_display(), 0)?;
+            format_manifest_value(f, &field, &context.for_value_display(), true, 0)?;
         }
         write!(f, ";\n")?;
     } else {

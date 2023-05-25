@@ -313,8 +313,7 @@ CALL_METHOD
         Map<U8, U16>()
     )
     Map<U8, U16>(
-        1u8,
-        5u16
+        1u8 => 5u16
     );
 CALL_METHOD
     Address("${component_address}")
@@ -351,11 +350,9 @@ CALL_METHOD
 SET_PACKAGE_ROYALTY_CONFIG
     Address("${package_address}")
     Map<String, Tuple>(
-        "Blueprint",
-        Tuple(
+        "Blueprint" => Tuple(
             Map<String, U32>(
-                "method",
-                1u32
+                "method" => 1u32
             ),
             0u32
         )
@@ -364,8 +361,7 @@ SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
     Tuple(
         Map<String, U32>(
-            "method",
-            1u32
+            "method" => 1u32
         ),
         0u32
     );
@@ -561,27 +557,22 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
     Map<String, Enum>(
-        "name",
-        Enum<0u8>(
+        "name" => Enum<0u8>(
             "MyResource"
         ),
-        "symbol",
-        Enum<0u8>(
+        "symbol" => Enum<0u8>(
             "RSRC"
         ),
-        "description",
-        Enum<0u8>(
+        "description" => Enum<0u8>(
             "A very innovative and important resource"
         )
     )
     Map<Enum, Tuple>(
-        Enum<4u8>(),
-        Tuple(
+        Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         ),
-        Enum<5u8>(),
-        Tuple(
+        Enum<5u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         )
@@ -615,27 +606,22 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, Enum>(
-        "name",
-        Enum<0u8>(
+        "name" => Enum<0u8>(
             "MyResource"
         ),
-        "symbol",
-        Enum<0u8>(
+        "symbol" => Enum<0u8>(
             "RSRC"
         ),
-        "description",
-        Enum<0u8>(
+        "description" => Enum<0u8>(
             "A very innovative and important resource"
         )
     )
     Map<Enum, Tuple>(
-        Enum<4u8>(),
-        Tuple(
+        Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         ),
-        Enum<5u8>(),
-        Tuple(
+        Enum<5u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         )
@@ -669,9 +655,9 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>( 64u8))
-    Map<String, Enum>("name", Enum<0u8>("MyResource"), "description", Enum<0u8>("A very innovative and important resource"))
-    Map<Enum, Tuple>(Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>()), Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>()))
-    Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
+    Map<String, Enum>("name" => Enum<0u8>("MyResource"), "description" => Enum<0u8>("A very innovative and important resource"))
+    Map<Enum, Tuple>(Enum<4u8>() => Tuple(Enum<0u8>(), Enum<1u8>()), Enum<5u8>() => Tuple(Enum<0u8>(), Enum<1u8>()))
+    Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#") => Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
 CALL_METHOD
     Address("${account_address}")
     "deposit_batch"
@@ -713,23 +699,19 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Array<String>()
     )
     Map<String, Enum>(
-        "name",
-        Enum<0u8>(
+        "name" => Enum<0u8>(
             "MyResource"
         ),
-        "description",
-        Enum<0u8>(
+        "description" => Enum<0u8>(
             "A very innovative and important resource"
         )
     )
     Map<Enum, Tuple>(
-        Enum<4u8>(),
-        Tuple(
+        Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         ),
-        Enum<5u8>(),
-        Tuple(
+        Enum<5u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         )
@@ -794,8 +776,7 @@ CALL_METHOD
 MINT_NON_FUNGIBLE
     Address("${mintable_non_fungible_resource_address}")
     Map<NonFungibleLocalId, Tuple>(
-        NonFungibleLocalId("${non_fungible_local_id}"),
-        Tuple(
+        NonFungibleLocalId("${non_fungible_local_id}") => Tuple(
             Tuple()
         )
     );

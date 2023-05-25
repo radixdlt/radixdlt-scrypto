@@ -761,10 +761,22 @@ impl Parser {
 
     pub fn parse_map_content(&mut self) -> Result<Value, ParserError> {
         let generics = self.parse_generics(2)?;
+        advance_match!(self, TokenKind::OpenParenthesis);
+        let mut entries = Vec::new();
+        while self.peek()?.kind != TokenKind::CloseParenthesis {
+            let key_value = self.parse_value()?;
+            advance_match!(self, TokenKind::FatArrow);
+            let value_value = self.parse_value()?;
+            entries.push((key_value, value_value));
+            if self.peek()?.kind != TokenKind::CloseParenthesis {
+                advance_match!(self, TokenKind::Comma);
+            }
+        }
+        advance_match!(self, TokenKind::CloseParenthesis);
         Ok(Value::Map(
             generics[0],
             generics[1],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
+            entries,
         ))
     }
 
@@ -888,7 +900,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::lexer::{tokenize, Span};
+    use crate::manifest::lexer::{tokenize, Span, Position};
 
     #[macro_export]
     macro_rules! parse_instruction_ok {
@@ -977,11 +989,22 @@ mod tests {
     #[test]
     fn test_map() {
         parse_value_ok!(
-            r#"Map<String, U8>("Hello", 123u8)"#,
+            r#"Map<String, U8>("Hello" => 123u8)"#,
             Value::Map(
                 ValueKind::String,
                 ValueKind::U8,
-                vec![Value::String("Hello".into()), Value::U8(123)]
+                vec![(Value::String("Hello".into()), Value::U8(123))]
+            )
+        );
+        parse_value_ok!(
+            r#"Map<String, U8>("Hello" => 123u8, "world!" => 1u8)"#,
+            Value::Map(
+                ValueKind::String,
+                ValueKind::U8,
+                vec![
+                    (Value::String("Hello".into()), Value::U8(123)),
+                    (Value::String("world!".into()), Value::U8(1)),
+                ]
             )
         );
     }
@@ -995,7 +1018,18 @@ mod tests {
                 expected: TokenType::Exact(TokenKind::GreaterThan),
                 actual: Token {
                     kind: TokenKind::CloseParenthesis,
-                    span: Span { start: 8, end: 9 }
+                    span: Span {
+                        start: Position {
+                            full_index: 8,
+                            line_number: 1,
+                            line_char_index: 8,
+                        },
+                        end: Position {
+                            full_index: 9,
+                            line_number: 1,
+                            line_char_index: 9,
+                        }
+                    }
                 },
             }
         );

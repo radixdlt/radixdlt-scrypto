@@ -107,7 +107,6 @@ pub enum GeneratorError {
         expected_length: usize,
         actual: usize,
     },
-    OddNumberOfElements,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1150,28 +1149,24 @@ fn generate_singletons(
 }
 
 fn generate_kv_entries(
-    elements: &Vec<ast::Value>,
+    entries: &[(ast::Value, ast::Value)],
     key_value_kind: ManifestValueKind,
     value_value_kind: ManifestValueKind,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Vec<(ManifestValue, ManifestValue)>, GeneratorError> {
-    if elements.len() % 2 != 0 {
-        return Err(GeneratorError::OddNumberOfElements);
-    }
-
     let mut result = vec![];
-    for i in 0..elements.len() / 2 {
+    for entry in entries {
         let key = generate_value(
-            &elements[i * 2],
+            &entry.0,
             Some(key_value_kind),
             resolver,
             bech32_decoder,
             blobs,
         )?;
         let value = generate_value(
-            &elements[i * 2 + 1],
+            &entry.1,
             Some(value_value_kind),
             resolver,
             bech32_decoder,
