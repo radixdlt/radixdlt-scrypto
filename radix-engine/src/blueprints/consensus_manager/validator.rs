@@ -246,7 +246,8 @@ impl ValidatorBlueprint {
                 ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
-            let manager_substate: ConsensusManagerSubstate = api.field_lock_read_typed(manager_handle)?;
+            let manager_substate: ConsensusManagerSubstate =
+                api.field_lock_read_typed(manager_handle)?;
             let current_epoch = manager_substate.epoch;
             api.field_lock_release(manager_handle)?;
 
@@ -275,8 +276,12 @@ impl ValidatorBlueprint {
         };
 
         // Update ConsensusManager
-        let new_index_key =
-            Self::index_update(&validator_substate, validator_substate.is_registered, new_stake_amount, api)?;
+        let new_index_key = Self::index_update(
+            &validator_substate,
+            validator_substate.is_registered,
+            new_stake_amount,
+            api,
+        )?;
 
         validator_substate.sorted_key = new_index_key;
         api.field_lock_write_typed(handle, &validator_substate)?;
