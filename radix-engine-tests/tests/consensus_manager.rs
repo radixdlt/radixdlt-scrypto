@@ -75,7 +75,7 @@ fn genesis_epoch_has_correct_initial_validators() {
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: dummy_consensus_manager_configuration()
+        initial_configuration: CustomGenesis::default_consensus_manager_configuration()
             .with_max_validators(max_validators),
         initial_time_ms: 1,
     };
@@ -179,7 +179,8 @@ fn next_round_with_validator_auth_succeeds() {
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -198,7 +199,8 @@ fn next_epoch_with_validator_auth_succeeds() {
     let rounds_per_epoch = 2u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -224,7 +226,7 @@ fn register_validator_with_auth_succeeds() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -257,7 +259,7 @@ fn register_validator_without_auth_fails() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -288,7 +290,7 @@ fn unregister_validator_with_auth_succeeds() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -321,7 +323,7 @@ fn unregister_validator_without_auth_fails() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -351,7 +353,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -424,7 +426,8 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let rounds_per_epoch = 2u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
@@ -495,7 +498,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: dummy_consensus_manager_configuration()
+        initial_configuration: CustomGenesis::default_consensus_manager_configuration()
             .with_rounds_per_epoch(1)
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd),
         initial_time_ms: 1,
@@ -606,7 +609,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         validator_initial_stake,
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_rounds_per_epoch(rounds_per_epoch)
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
             .with_min_validator_reliability(min_required_reliability),
@@ -683,7 +686,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         validator_stake,
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_rounds_per_epoch(rounds_per_epoch)
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
             .with_min_validator_reliability(min_required_reliability),
@@ -746,7 +749,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         initial_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
     );
@@ -853,7 +856,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         initial_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_num_fee_increase_delay_epochs(fee_increase_delay_epochs)
             .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
@@ -1021,7 +1024,7 @@ fn create_custom_genesis(
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: dummy_consensus_manager_configuration()
+        initial_configuration: CustomGenesis::default_consensus_manager_configuration()
             .with_max_validators(max_validators as u32)
             .with_rounds_per_epoch(rounds_per_epoch),
         initial_time_ms: 1,
@@ -1340,7 +1343,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
@@ -1383,7 +1387,8 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
@@ -1439,7 +1444,7 @@ fn cannot_claim_unstake_immediately() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        dummy_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
@@ -1497,7 +1502,8 @@ fn can_claim_unstake_after_epochs() {
         Decimal::from(10),
         account_with_su,
         initial_epoch as u64,
-        dummy_consensus_manager_configuration().with_num_unstake_epochs(num_unstake_epochs as u64),
+        CustomGenesis::default_consensus_manager_configuration()
+            .with_num_unstake_epochs(num_unstake_epochs as u64),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
@@ -1561,7 +1567,7 @@ fn owner_can_lock_stake_units() {
         total_stake_amount,
         validator_account,
         5,
-        dummy_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
@@ -1618,7 +1624,7 @@ fn owner_can_start_unlocking_stake_units() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1704,7 +1710,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1796,7 +1802,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1900,7 +1906,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -2005,7 +2011,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -2106,7 +2112,8 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
@@ -2171,7 +2178,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
                 Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
                 Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
                 1u64,
-                dummy_consensus_manager_configuration(),
+                CustomGenesis::default_consensus_manager_configuration(),
                 120000i64
             ),
         }],
@@ -2204,7 +2211,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
                 Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
                 Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
                 1u64,
-                dummy_consensus_manager_configuration(),
+                CustomGenesis::default_consensus_manager_configuration(),
                 120000i64
             ),
         }],
@@ -2214,18 +2221,6 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
 
     // Assert
     receipt.expect_commit_success();
-}
-
-fn dummy_consensus_manager_configuration() -> ConsensusManagerInitialConfiguration {
-    ConsensusManagerInitialConfiguration {
-        max_validators: 10,
-        rounds_per_epoch: 5,
-        num_unstake_epochs: 1,
-        total_emission_xrd_per_epoch: Decimal::one(),
-        min_validator_reliability: Decimal::one(),
-        num_owner_stake_units_unlock_epochs: 2,
-        num_fee_increase_delay_epochs: 1,
-    }
 }
 
 fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {

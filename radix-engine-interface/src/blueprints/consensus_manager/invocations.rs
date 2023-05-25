@@ -79,15 +79,6 @@ pub struct ConsensusManagerGetCurrentEpochInput;
 
 pub type ConsensusManagerGetCurrentEpochOutput = u64;
 
-pub const CONSENSUS_MANAGER_SET_EPOCH_IDENT: &str = "set_epoch";
-
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ConsensusManagerSetEpochInput {
-    pub epoch: u64,
-}
-
-pub type ConsensusManagerSetEpochOutput = ();
-
 pub const CONSENSUS_MANAGER_START_IDENT: &str = "start";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -120,15 +111,6 @@ pub struct ConsensusManagerCompareCurrentTimeInput {
 
 pub type ConsensusManagerCompareCurrentTimeOutput = bool;
 
-pub const CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT: &str = "set_current_time";
-
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ConsensusManagerSetCurrentTimeInput {
-    pub current_time_ms: i64,
-}
-
-pub type ConsensusManagerSetCurrentTimeOutput = ();
-
 pub const CONSENSUS_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -138,6 +120,9 @@ pub struct ConsensusManagerNextRoundInput {
     /// reported `round + 1`. Such gaps are considered "round leader's fault" and are penalized
     /// on emission, according to leader reliability statistics (see `LeaderProposalHistory`).
     pub round: u64,
+
+    /// Current millisecond timestamp of the proposer.
+    pub proposer_timestamp_ms: i64,
 
     /// A captured history of leader proposal reliability since the previously reported round.
     // TODO(post-babylon): we should change the approach here, so that the Engine drives the
@@ -152,9 +137,14 @@ impl ConsensusManagerNextRoundInput {
     /// progression, i.e. no missed proposals, no fallback rounds.
     /// Please note that the current round's number passed here should be an immediate successor of
     /// the previously reported round.
-    pub fn successful(current_round: u64, current_leader: ValidatorIndex) -> Self {
+    pub fn successful(
+        current_round: u64,
+        current_leader: ValidatorIndex,
+        current_timestamp_ms: i64,
+    ) -> Self {
         Self {
             round: current_round,
+            proposer_timestamp_ms: current_timestamp_ms,
             leader_proposal_history: LeaderProposalHistory {
                 gap_round_leaders: Vec::new(),
                 current_leader,
