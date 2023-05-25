@@ -18,7 +18,7 @@ mod data_validation {
                 reference: RADIX_TOKEN,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -52,7 +52,7 @@ mod data_validation {
                 reference: RADIX_TOKEN,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
         }
 

@@ -35,7 +35,11 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .update_role_mutability(token_address.into(), authority_key, (RoleList::none(), false))
+            .update_role_mutability(
+                token_address.into(),
+                authority_key,
+                (RoleList::none(), false),
+            )
             .build();
         test_runner
             .execute_manifest(
@@ -61,7 +65,11 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     };
 
     let builder = if lock {
-        builder.update_role_mutability(token_address.into(), role_key.clone(), (RoleList::none(), false))
+        builder.update_role_mutability(
+            token_address.into(),
+            role_key.clone(),
+            (RoleList::none(), false),
+        )
     } else {
         builder.update_role(token_address.into(), role_key, rule!(require(updated_auth)))
     };

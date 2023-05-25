@@ -210,7 +210,7 @@ pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create_advanced<Y>(
-        owner_rule: OwnerRule,
+        owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where

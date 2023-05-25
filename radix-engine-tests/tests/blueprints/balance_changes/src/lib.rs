@@ -12,17 +12,14 @@ mod balance_changes_test {
                 vault: Vault::new(RADIX_TOKEN),
             }
             .instantiate()
-            .prepare_to_globalize()
-            .define_roles(roles! {
-                "owner" => rule!(allow_all);
-            })
+            .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
             .royalties(royalties! {
                 init {
                     put => 1u32;
                     boom => 1u32;
                 },
                 permissions {
-                    claim_royalty => ["owner"];
+                    claim_royalty => [OWNER_ROLE];
                     set_royalty_config => [];
                 }
             })

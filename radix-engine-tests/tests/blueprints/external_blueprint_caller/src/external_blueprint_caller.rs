@@ -31,7 +31,10 @@ mod external_blueprint_caller {
 
     impl ExternalBlueprintCaller {
         pub fn create() -> Global<ExternalBlueprintCaller> {
-            Self {}.instantiate().prepare_to_globalize().globalize()
+            Self {}
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn run_tests_with_external_blueprint(&self, package_address: PackageAddress) {

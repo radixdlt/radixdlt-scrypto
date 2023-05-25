@@ -26,7 +26,7 @@ mod move_test {
             let bucket = Self::create_test_token(1000);
             let component = MoveTest { vaults: Vec::new() }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
             component.receive_bucket(bucket);
         }
@@ -35,7 +35,7 @@ mod move_test {
             let bucket = Self::create_test_token(1000);
             let component = MoveTest { vaults: Vec::new() }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
             component.receive_proof(bucket.create_proof());
 

@@ -12,7 +12,9 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{MethodEntry, MethodKey, MethodPermission, RoleList, Roles};
+use radix_engine_interface::blueprints::resource::{
+    MethodEntry, MethodKey, MethodPermission, OwnerRole, RoleList, Roles, OWNER_ROLE,
+};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -127,17 +129,16 @@ impl<C: HasStub> Describe<ScryptoCustomTypeKind> for Owned<C> {
 }
 
 impl<C: HasStub + HasMethods> Owned<C> {
-    pub fn prepare_to_globalize(self) -> Globalizing<C> {
-        C::Permissions::methods();
+    pub fn prepare_to_globalize(self, owner_entry: OwnerRole) -> Globalizing<C> {
+        let mut roles = Roles::new();
+        roles.define_role(OWNER_ROLE, owner_entry.to_role_entry(OWNER_ROLE));
 
         Globalizing {
             stub: self.0,
             metadata: None,
             royalty: RoyaltyConfig::default(),
-
-            authority_rules: Roles::new(),
+            roles,
             method_permissions: index_map_new(),
-
             address: None,
         }
     }
@@ -231,9 +232,8 @@ pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
-    pub authority_rules: Roles,
-    pub method_permissions:
-        IndexMap<ObjectModuleId, IndexMap<String, MethodEntry>>,
+    pub roles: Roles,
+    pub method_permissions: IndexMap<ObjectModuleId, IndexMap<String, MethodEntry>>,
     pub address: Option<ComponentAddress>,
 }
 
@@ -247,7 +247,7 @@ impl<C: HasStub> Deref for Globalizing<C> {
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
     pub fn define_roles(mut self, authority_rules: Roles) -> Self {
-        self.authority_rules = authority_rules;
+        self.roles = authority_rules;
         self
     }
 
@@ -306,7 +306,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             for method in C::Permissions::methods() {
                 method_permissions.insert(
                     MethodKey::new(ObjectModuleId::Main, method.to_string()),
-                        MethodEntry::new(MethodPermission::Public, RoleList::none()),
+                    MethodEntry::new(MethodPermission::Public, RoleList::none()),
                 );
             }
         }
@@ -317,7 +317,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             }
         }
 
-        let access_rules = AccessRules::new(method_permissions, self.authority_rules);
+        let access_rules = AccessRules::new(method_permissions, self.roles);
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),

@@ -14,7 +14,7 @@ mod non_existent_vault {
                 vaults: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -24,7 +24,7 @@ mod non_existent_vault {
                 vaults: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -40,7 +40,7 @@ mod non_existent_vault {
                 vaults,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 

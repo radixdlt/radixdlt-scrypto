@@ -72,7 +72,7 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .define_roles(roles! {
                 "system" => rule!(require(system_role.clone())), mut ["system"];
             })

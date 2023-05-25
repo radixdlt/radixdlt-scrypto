@@ -35,7 +35,7 @@ fn bench_radiswap(c: &mut Criterion) {
             }
         ),
         btreemap!(),
-        OwnerRule::Updateable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+        OwnerRole::Updateable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
     // Instantiate radiswap

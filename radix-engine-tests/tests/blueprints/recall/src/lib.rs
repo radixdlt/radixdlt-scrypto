@@ -21,7 +21,7 @@ mod recall {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 

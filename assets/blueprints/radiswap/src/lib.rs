@@ -69,7 +69,7 @@ mod radiswap {
                 lp_per_asset_ratio,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
             // Return the new Radiswap component, as well as the initial supply of LP tokens

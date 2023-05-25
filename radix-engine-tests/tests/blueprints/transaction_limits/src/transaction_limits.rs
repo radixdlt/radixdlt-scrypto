@@ -15,7 +15,7 @@ mod transaction_limits {
 
             TransactionLimitTest { kv_store }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -28,7 +28,7 @@ mod transaction_limits {
 
             TransactionLimitTest { kv_store }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -64,7 +64,7 @@ mod transaction_limits_substate {
 
             TransactionLimitSubstateTest { kv_store }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
     }

@@ -11,7 +11,7 @@ mod stored_resource {
             let resource_manager = ResourceBuilder::new_fungible().create_with_no_initial_supply();
             Self { resource_manager }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 

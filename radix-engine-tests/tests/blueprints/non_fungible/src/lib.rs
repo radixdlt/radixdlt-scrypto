@@ -303,7 +303,7 @@ mod non_fungible_test {
 
             NonFungibleTest { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
 
             non_fungible
@@ -363,7 +363,7 @@ mod non_fungible_test {
 
             NonFungibleTest { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
 
             non_fungible_bucket
@@ -385,7 +385,7 @@ mod non_fungible_test {
 
             NonFungibleTest { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
 
             non_fungible_bucket
@@ -413,7 +413,7 @@ mod non_fungible_test {
             vault.put(bucket);
             NonFungibleTest { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
 

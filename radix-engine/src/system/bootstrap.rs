@@ -757,7 +757,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRule::None,
+                owner_rule: OwnerRole::None,
             }),
         });
     }
@@ -780,7 +780,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRule::None,
+                owner_rule: OwnerRole::None,
             }),
         });
     }

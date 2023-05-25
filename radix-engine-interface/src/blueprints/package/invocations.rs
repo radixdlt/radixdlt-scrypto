@@ -39,7 +39,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub owner_rule: OwnerRule,
+    pub owner_rule: OwnerRole,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -49,7 +49,7 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub owner_rule: OwnerRule,
+    pub owner_rule: OwnerRole,
 }
 
 pub type PackagePublishWasmAdvancedOutput = PackageAddress;

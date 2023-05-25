@@ -12,7 +12,7 @@ mod blueprint {
                 vault: Vault::with_bucket(tokens),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
     }

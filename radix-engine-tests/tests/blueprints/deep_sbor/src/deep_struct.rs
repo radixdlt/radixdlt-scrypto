@@ -10,7 +10,7 @@ mod deep_struct {
         pub fn new() -> Global<DeepStruct> {
             Self { deep_object: None }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 

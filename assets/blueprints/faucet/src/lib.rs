@@ -15,7 +15,7 @@ mod faucet {
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
             .globalize()
         }

@@ -44,7 +44,7 @@ impl NewAccount {
         let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 100.into())
-            .new_account_advanced(OwnerRule::Fixed(withdraw_auth))
+            .new_account_advanced(OwnerRole::Fixed(withdraw_auth))
             .build();
 
         let receipt = handle_manifest(

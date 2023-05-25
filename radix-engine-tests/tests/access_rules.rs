@@ -13,12 +13,18 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
     let mut roles = Roles::new();
-    roles.define_role("deposit_funds_auth_update", RoleEntry::immutable(rule!(allow_all)));
+    roles.define_role(
+        "deposit_funds_auth_update",
+        RoleEntry::immutable(rule!(allow_all)),
+    );
     roles.define_role(
         "borrow_funds_auth",
         RoleEntry::new(rule!(allow_all), ["deposit_funds_auth_update"], false),
     );
-    roles.define_role("deposit_funds_auth", RoleEntry::immutable(rule!(require(RADIX_TOKEN))));
+    roles.define_role(
+        "deposit_funds_auth",
+        RoleEntry::immutable(rule!(require(RADIX_TOKEN))),
+    );
     let mut test_runner = MutableAccessRulesTestRunner::new(roles);
 
     // Act

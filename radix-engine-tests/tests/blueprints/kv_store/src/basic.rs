@@ -11,7 +11,7 @@ mod basic {
             let map = KeyValueStore::new();
             Self { map }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -20,7 +20,7 @@ mod basic {
             map.insert(key, value);
             Self { map }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -36,7 +36,7 @@ mod basic {
             }
             Self { map }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -52,7 +52,7 @@ mod basic {
 
             Self { map }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -87,7 +87,7 @@ mod kv_vault {
             map.insert("key".to_string(), vault);
             Self { map }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 

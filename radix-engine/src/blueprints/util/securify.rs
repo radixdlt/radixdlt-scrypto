@@ -16,10 +16,7 @@ pub trait SecurifiedAccessRules {
 
     fn create_roles(owner_rule: RoleEntry) -> Roles {
         let mut roles = Self::role_definitions();
-        roles.define_role(
-            RoleKey::new(Self::OWNER_ROLE),
-            owner_rule,
-        );
+        roles.define_role(RoleKey::new(Self::OWNER_ROLE), owner_rule);
         roles
     }
 
@@ -34,13 +31,12 @@ pub trait SecurifiedAccessRules {
     }
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        owner_rule: OwnerRule,
+        owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let owner_role_entry = owner_rule.to_role_entry(Self::OWNER_ROLE);
         let roles = Self::create_roles(owner_role_entry);
-        let method_permissions =
-            Self::create_method_permissions(MethodEntry::disabled());
+        let method_permissions = Self::create_method_permissions(MethodEntry::disabled());
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
 
         Ok(access_rules)
@@ -50,8 +46,7 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let roles = Self::create_roles(RoleEntry::new(AccessRule::DenyAll, [SELF_ROLE], true));
-        let method_permissions =
-            Self::create_method_permissions(MethodEntry::disabled());
+        let method_permissions = Self::create_method_permissions(MethodEntry::disabled());
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
         let bucket = Self::securify_access_rules(&access_rules, api)?;
         Ok((access_rules, bucket))

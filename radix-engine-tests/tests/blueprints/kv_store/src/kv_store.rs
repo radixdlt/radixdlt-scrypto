@@ -21,7 +21,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -36,7 +36,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -54,7 +54,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -68,7 +68,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -82,7 +82,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 

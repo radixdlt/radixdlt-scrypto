@@ -934,7 +934,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
             MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
 
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => [Self::OWNER_ROLE], ["self"];
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => [Self::OWNER_ROLE], [SELF_ROLE];
 
             MethodKey::main(VALIDATOR_REGISTER_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [Self::OWNER_ROLE];

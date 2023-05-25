@@ -8,17 +8,14 @@ mod metadata {
         pub fn new() -> Global<MetadataTest> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize()
-                .define_roles(roles! {
-                    "public" => rule!(allow_all);
-                })
+                .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     init {
                     },
                     permissions {
-                        set => ["public"];
-                        remove => ["public"];
-                        get => ["public"];
+                        set => Public;
+                        remove => Public;
+                        get => Public;
                     }
                 })
                 .globalize()

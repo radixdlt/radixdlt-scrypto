@@ -36,10 +36,7 @@ mod royalty_test {
         ) -> Global<RoyaltyTest> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize()
-                .define_roles(roles! {
-                    "auth" => rule!(require(badge)), mut ["auth"];
-                })
+                .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge))))
                 .royalties(royalties!(
                     init {
                         paid_method => 1u32;
@@ -47,8 +44,8 @@ mod royalty_test {
                         free_method => Free;
                     },
                     permissions {
-                        set_royalty_config => ["auth"];
-                        claim_royalty => ["auth"];
+                        set_royalty_config => [OWNER_ROLE];
+                        claim_royalty => [OWNER_ROLE];
                     }
                 ))
                 .globalize()

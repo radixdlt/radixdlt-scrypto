@@ -28,7 +28,7 @@ mod vault_test {
             let vault = Self::create_non_fungible_vault();
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -43,7 +43,7 @@ mod vault_test {
 
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -65,7 +65,7 @@ mod vault_test {
 
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -77,7 +77,7 @@ mod vault_test {
             vault.put(bucket.into());
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -86,7 +86,7 @@ mod vault_test {
             let _ids = vault.as_non_fungible().non_fungible_local_ids();
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -95,7 +95,7 @@ mod vault_test {
             let _id = vault.as_non_fungible().non_fungible_local_id();
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -104,7 +104,7 @@ mod vault_test {
             let _amount = vault.amount();
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -113,7 +113,7 @@ mod vault_test {
             let _resource_manager = vault.resource_address();
             Self { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 

@@ -28,7 +28,7 @@ mod super_key_value_store {
 
             SuperKeyValueStore { maps: map0 }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
     }

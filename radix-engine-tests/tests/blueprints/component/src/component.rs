@@ -21,7 +21,7 @@ mod component_test {
                 secret: "Secret".to_owned(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 

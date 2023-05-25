@@ -14,7 +14,8 @@ use utils::btreemap;
 
 use super::AccessRule;
 
-pub const SELF_ROLE: &'static str = "self";
+pub const SELF_ROLE: &'static str = "_self_";
+pub const OWNER_ROLE: &'static str = "_owner_";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct FnKey {
@@ -160,7 +161,11 @@ pub struct RoleEntry {
 }
 
 impl RoleEntry {
-    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(rule: A, mutable: M, mutable_mutable: bool) -> Self {
+    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(
+        rule: A,
+        mutable: M,
+        mutable_mutable: bool,
+    ) -> Self {
         Self {
             rule: rule.into(),
             mutable: mutable.into(),
@@ -212,18 +217,18 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
-pub enum OwnerRule {
+pub enum OwnerRole {
     None,
     Fixed(AccessRule),
     Updateable(AccessRule),
 }
 
-impl OwnerRule {
+impl OwnerRole {
     pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
         match self {
-            OwnerRule::Fixed(rule) => RoleEntry::immutable(rule),
-            OwnerRule::Updateable(rule) => RoleEntry::new(rule, [owner_role_name], false),
-            OwnerRule::None => RoleEntry::immutable(AccessRule::DenyAll),
+            OwnerRole::Fixed(rule) => RoleEntry::immutable(rule),
+            OwnerRole::Updateable(rule) => RoleEntry::new(rule, [owner_role_name], false),
+            OwnerRole::None => RoleEntry::immutable(AccessRule::DenyAll),
         }
     }
 }
@@ -240,13 +245,8 @@ impl Roles {
         Self { rules: btreemap!() }
     }
 
-    pub fn define_role<K: Into<RoleKey>>(
-        &mut self,
-        authority: K,
-        entry: RoleEntry,
-    ) {
-        self.rules
-            .insert(authority.into(), entry);
+    pub fn define_role<K: Into<RoleKey>>(&mut self, authority: K, entry: RoleEntry) {
+        self.rules.insert(authority.into(), entry);
     }
 }
 

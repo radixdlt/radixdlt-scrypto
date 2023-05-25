@@ -14,14 +14,11 @@ mod cross_component {
                 auth_vault: None,
             }
             .instantiate()
-            .prepare_to_globalize()
-            .define_roles(roles! {
-                "auth" => access_rule;
-            })
+            .prepare_to_globalize(OwnerRole::Fixed(access_rule))
             .methods(methods! {
                 put_auth => Public;
                 cross_component_call => Public;
-                get_component_state => ["auth"];
+                get_component_state => [OWNER_ROLE];
             })
             .globalize()
         }

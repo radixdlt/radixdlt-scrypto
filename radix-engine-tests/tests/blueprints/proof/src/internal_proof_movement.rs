@@ -28,7 +28,7 @@ mod outer {
             let inner = Inner::instantiate();
             Self { inner }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 

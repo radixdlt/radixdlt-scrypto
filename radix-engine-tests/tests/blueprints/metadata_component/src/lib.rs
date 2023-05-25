@@ -10,7 +10,7 @@ mod metadata_component {
         pub fn new(key: String, value: String) {
             let global = Self {}
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     init {
                         key.clone() => value.clone();
@@ -31,7 +31,7 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let global = MetadataComponent {}
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     init {},
                     permissions {

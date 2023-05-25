@@ -22,7 +22,7 @@ mod fee {
                 garbage_vaults: Vec::new(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 

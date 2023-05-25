@@ -47,32 +47,56 @@ fn build_access_rules(
 
             roles.define_role(
                 SET_METADATA_ROLE,
-                RoleEntry::new(update_metadata_access_rule, [SET_METADATA_UPDATE_ROLE], true)
+                RoleEntry::new(
+                    update_metadata_access_rule,
+                    [SET_METADATA_UPDATE_ROLE],
+                    true,
+                ),
             );
         }
 
         // Mint
         {
-            roles.define_role(MINT_UPDATE_ROLE, RoleEntry::new(mint_mutability, [MINT_UPDATE_ROLE], true));
-            roles.define_role(MINT_ROLE, RoleEntry::new(mint_access_rule, [MINT_UPDATE_ROLE], true));
+            roles.define_role(
+                MINT_UPDATE_ROLE,
+                RoleEntry::new(mint_mutability, [MINT_UPDATE_ROLE], true),
+            );
+            roles.define_role(
+                MINT_ROLE,
+                RoleEntry::new(mint_access_rule, [MINT_UPDATE_ROLE], true),
+            );
         }
 
         // Burn
         {
-            roles.define_role(BURN_UPDATE_ROLE, RoleEntry::new(burn_mutability, [BURN_UPDATE_ROLE], true));
-            roles.define_role(BURN_ROLE, RoleEntry::new(burn_access_rule, [BURN_UPDATE_ROLE], true));
+            roles.define_role(
+                BURN_UPDATE_ROLE,
+                RoleEntry::new(burn_mutability, [BURN_UPDATE_ROLE], true),
+            );
+            roles.define_role(
+                BURN_ROLE,
+                RoleEntry::new(burn_access_rule, [BURN_UPDATE_ROLE], true),
+            );
         }
 
         // Non Fungible Update data
         {
             roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
-                RoleEntry::new(update_non_fungible_data_mutability, [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE], true),
+                RoleEntry::new(
+                    update_non_fungible_data_mutability,
+                    [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
+                    true,
+                ),
             );
 
             roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_ROLE,
-                RoleEntry::new(update_non_fungible_data_access_rule, [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE], true),
+                RoleEntry::new(
+                    update_non_fungible_data_access_rule,
+                    [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
+                    true,
+                ),
             );
         }
 
@@ -125,7 +149,10 @@ fn build_access_rules(
                 RECALL_UPDATE_ROLE,
                 RoleEntry::new(recall_mutability, [RECALL_UPDATE_ROLE], true),
             );
-            roles.define_role(RECALL_ROLE, RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], true));
+            roles.define_role(
+                RECALL_ROLE,
+                RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], true),
+            );
         }
 
         // Deposit
@@ -135,7 +162,10 @@ fn build_access_rules(
                 RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], true),
             );
 
-            roles.define_role(DEPOSIT_ROLE, RoleEntry::new(deposit_access_rule, [DEPOSIT_UPDATE_ROLE], true));
+            roles.define_role(
+                DEPOSIT_ROLE,
+                RoleEntry::new(deposit_access_rule, [DEPOSIT_UPDATE_ROLE], true),
+            );
         }
 
         // Internal

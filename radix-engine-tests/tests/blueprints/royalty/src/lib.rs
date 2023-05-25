@@ -20,7 +20,7 @@ mod royalty_test {
         pub fn create_component_with_royalty_enabled() -> Global<RoyaltyTest> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .royalties(royalties! {
                     init {
                         free_method => Free;

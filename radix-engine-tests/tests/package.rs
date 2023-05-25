@@ -29,7 +29,7 @@ fn missing_memory_should_cause_error() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            OwnerRule::None,
+            OwnerRole::None,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -125,7 +125,7 @@ fn test_basic_package() {
             single_function_package_schema("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
-            OwnerRule::None,
+            OwnerRole::None,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -171,7 +171,7 @@ fn test_basic_package_missing_export() {
             package_schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            OwnerRule::None,
+            OwnerRole::None,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

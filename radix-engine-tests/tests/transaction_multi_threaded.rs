@@ -41,7 +41,7 @@ mod multi_threaded_test {
             .map(|i| {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(FAUCET, 100.into())
-                    .new_account_advanced(OwnerRule::Fixed(rule!(require(
+                    .new_account_advanced(OwnerRole::Fixed(rule!(require(
                         NonFungibleGlobalId::from_public_key(&public_key)
                     ))))
                     .build();

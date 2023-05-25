@@ -40,7 +40,7 @@ mod cyclic_map {
 
             CyclicMap { store: kv_store0 }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
@@ -65,7 +65,7 @@ mod cyclic_map {
 
             CyclicMap { store: kv_store }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
     }

@@ -12,7 +12,7 @@ mod deep_auth_rules_on_create {
             let component = Self {}.instantiate();
             let roles = generate_deep_access_rules(resource_address, access_rules_depth);
             component
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .define_roles(roles)
                 .globalize()
         }

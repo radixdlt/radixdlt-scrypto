@@ -477,7 +477,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity_advanced(&mut self, owner_rule: OwnerRule) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, owner_rule: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
@@ -661,7 +661,7 @@ impl ManifestBuilder {
         &mut self,
         address: GlobalAddress,
         role_key: RoleKey,
-        mutability: (RoleList, bool)
+        mutability: (RoleList, bool),
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
@@ -696,7 +696,7 @@ impl ManifestBuilder {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        owner_rule: OwnerRule,
+        owner_rule: OwnerRole,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -756,7 +756,7 @@ impl ManifestBuilder {
                 schema,
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRule::Fixed(rule!(require(owner_badge.clone()))),
+                owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });
         self
@@ -942,7 +942,7 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(&mut self, owner_rule: OwnerRule) -> &mut Self {
+    pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),

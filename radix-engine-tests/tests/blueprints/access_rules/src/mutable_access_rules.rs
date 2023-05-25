@@ -8,7 +8,7 @@ mod mutable_access_rules_component {
         pub fn new(roles: Roles) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .define_roles(roles)
                 .methods(methods! {
                     borrow_funds => ["borrow_funds_auth"];
@@ -24,7 +24,7 @@ mod mutable_access_rules_component {
         ) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .define_roles(roles! {
                     "owner" => rule!(require(RADIX_TOKEN)), mut ["owner_update"];
                     "owner_update" => owner_update_access_rule;

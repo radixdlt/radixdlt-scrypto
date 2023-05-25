@@ -97,7 +97,7 @@ mod pc {
             proof.drop();
             ProofCreation { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
         pub fn create_proof_from_fungible_vault_of_amount() {
@@ -107,7 +107,7 @@ mod pc {
             proof.drop();
             ProofCreation { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
         pub fn create_proof_from_fungible_vault_of_non_fungibles() {
@@ -123,7 +123,7 @@ mod pc {
             proof.drop();
             ProofCreation { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
 
@@ -134,7 +134,7 @@ mod pc {
             proof.drop();
             ProofCreation { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
         pub fn create_proof_from_non_fungible_vault_of_amount() {
@@ -144,7 +144,7 @@ mod pc {
             proof.drop();
             ProofCreation { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
         pub fn create_proof_from_non_fungible_vault_of_non_fungibles() {
@@ -160,7 +160,7 @@ mod pc {
             proof.drop();
             ProofCreation { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
 

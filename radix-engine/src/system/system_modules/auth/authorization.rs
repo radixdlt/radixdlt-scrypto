@@ -347,7 +347,7 @@ impl Authorization {
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        let access_rule = if key.key.eq("self") {
+        let access_rule = if key.key.eq(SELF_ROLE) {
             if let Some(access_rules_of) = access_rules_of {
                 rule!(require(global_caller(GlobalAddress::new_or_panic(
                     access_rules_of.0

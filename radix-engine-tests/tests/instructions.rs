@@ -73,7 +73,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let rule = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-    let other_account = test_runner.new_account_advanced(OwnerRule::Updateable(rule));
+    let other_account = test_runner.new_account_advanced(OwnerRole::Updateable(rule));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -102,7 +102,7 @@ fn clear_signature_proofs_should_not_invalid_physical_proof() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let rule = rule!(require_amount(dec!(5), RADIX_TOKEN));
-    let other_account = test_runner.new_account_advanced(OwnerRule::Updateable(rule));
+    let other_account = test_runner.new_account_advanced(OwnerRole::Updateable(rule));
 
     // Act
     let manifest = ManifestBuilder::new()

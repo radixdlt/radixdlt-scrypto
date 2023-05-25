@@ -513,7 +513,7 @@ impl PackageNativePackage {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        owner_rule: OwnerRule,
+        owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where

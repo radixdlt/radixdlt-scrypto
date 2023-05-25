@@ -26,7 +26,7 @@ mod ref_check {
                 store_store: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -53,7 +53,7 @@ mod ref_check {
                 store_store,
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -72,7 +72,7 @@ mod ref_check {
                 store_store: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
             let vault = Vault(vault_id);

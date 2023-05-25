@@ -10,12 +10,9 @@ mod factory {
         pub fn create_raw() -> Global<Factory> {
             Self { my_component: None }
                 .instantiate()
-                .prepare_to_globalize()
-                .define_roles(roles! {
-                    "auth" => rule!(require(Runtime::package_token()));
-                })
+                .prepare_to_globalize(OwnerRole::Fixed(rule!(require(Runtime::package_token()))))
                 .methods(methods! {
-                    set_address => ["auth"];
+                    set_address => [OWNER_ROLE];
                 })
                 .globalize()
         }

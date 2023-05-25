@@ -24,14 +24,14 @@ mod execution_trace_test {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
             let target_component = ExecutionTraceTest {
                 vault: Vault::new(resource_address),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
             let transfer_bucket: Bucket = source_component.take(amount);
@@ -52,7 +52,7 @@ mod execution_trace_test {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
             ExecutionTraceTest { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 

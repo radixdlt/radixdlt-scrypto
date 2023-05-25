@@ -86,7 +86,7 @@ mod bucket_test {
 
             BucketTest { vault }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
             vec![auth_bucket, token_bucket]
         }
@@ -143,7 +143,7 @@ mod bucket_test {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
         }
 
@@ -156,7 +156,7 @@ mod bucket_test {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .prepare_to_globalize()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
         }
     }

@@ -529,7 +529,7 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_advanced(&mut self, owner_rule: OwnerRule) -> ComponentAddress {
+    pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .new_account_advanced(owner_rule)
             .build();
@@ -612,7 +612,7 @@ impl TestRunner {
     ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
-        let account = self.new_account_advanced(OwnerRule::Fixed(withdraw_auth));
+        let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
     }
 
@@ -642,7 +642,7 @@ impl TestRunner {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
-                .create_identity_advanced(OwnerRule::Fixed(rule!(require(owner_id))))
+                .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
@@ -694,7 +694,7 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        owner_rule: OwnerRule,
+        owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
@@ -727,7 +727,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            OwnerRule::None,
+            OwnerRole::None,
         )
     }
 

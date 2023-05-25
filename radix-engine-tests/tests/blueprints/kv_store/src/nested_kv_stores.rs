@@ -23,7 +23,7 @@ mod nested_kv_stores {
 
             Self { counters }
                 .instantiate()
-                .prepare_to_globalize()
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
     }
