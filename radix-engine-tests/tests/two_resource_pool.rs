@@ -596,6 +596,81 @@ fn redemption_after_protected_deposit_redeems_expected_amount() {
     );
 }
 
+#[test]
+pub fn test_complete_interactions() {
+    let mut test_runner = TestEnvironment::new((18, 2));
+
+    {
+        // Act
+        let receipt = test_runner.contribute(
+            (test_runner.pool_resource1, 500),
+            (test_runner.pool_resource2, 200),
+            true,
+        );
+
+        // Assert
+        let account_balance_changes = receipt
+            .expect_commit_success()
+            .balance_changes()
+            .get(&GlobalAddress::from(test_runner.account_component_address))
+            .unwrap();
+        assert_eq!(
+            account_balance_changes
+                .get(&test_runner.pool_unit_resource_address)
+                .cloned(),
+            Some(BalanceChange::Fungible(
+                (dec!("500") * dec!("200")).sqrt().unwrap()
+            ))
+        );
+        assert_eq!(
+            account_balance_changes
+                .get(&test_runner.pool_resource1)
+                .cloned(),
+            None
+        );
+        assert_eq!(
+            account_balance_changes
+                .get(&test_runner.pool_resource2)
+                .cloned(),
+            None
+        );
+    }
+
+    {
+        // Act
+        let receipt = test_runner.contribute(
+            (test_runner.pool_resource1, 700),
+            (test_runner.pool_resource2, 700),
+            true,
+        );
+
+        // Assert
+        let account_balance_changes = receipt
+            .expect_commit_success()
+            .balance_changes()
+            .get(&GlobalAddress::from(test_runner.account_component_address))
+            .unwrap();
+        assert_eq!(
+            account_balance_changes
+                .get(&test_runner.pool_unit_resource_address)
+                .cloned(),
+            Some(BalanceChange::Fungible(dec!("442.718872423573106478")))
+        );
+        assert_eq!(
+            account_balance_changes
+                .get(&test_runner.pool_resource1)
+                .cloned(),
+            None
+        );
+        assert_eq!(
+            account_balance_changes
+                .get(&test_runner.pool_resource2)
+                .cloned(),
+            Some(BalanceChange::Fungible(420.into()))
+        );
+    }
+}
+
 struct TestEnvironment {
     test_runner: TestRunner,
 
