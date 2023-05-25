@@ -48,7 +48,7 @@ impl TwoResourcePoolBlueprint {
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
         let address = {
-            let node_id = api.kernel_allocate_node_id(EntityType::GlobalSingleResourcePool)?;
+            let node_id = api.kernel_allocate_node_id(EntityType::GlobalTwoResourcePool)?;
             GlobalAddress::new_or_panic(node_id.0)
         };
 
@@ -125,7 +125,7 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
 
         let (mut vault1, mut vault2) = {
             let vault1 = Vault(substate.vaults[0].1);
@@ -294,6 +294,7 @@ impl TwoResourcePoolBlueprint {
             (Bucket(buckets[0].0), Bucket(buckets[1].0))
         };
 
+        bucket.burn(api)?;
         api.field_lock_release(handle)?;
 
         Ok(buckets)
@@ -446,38 +447,6 @@ impl TwoResourcePoolBlueprint {
                 },
             )
             .collect()
-    }
-
-    fn calculate_contributions<Y>(
-        substate: &TwoResourcePoolSubstate,
-        primary_resource_address: ResourceAddress,
-        primary_contribution: Decimal,
-        api: &mut Y,
-    ) -> Result<Option<BTreeMap<ResourceAddress, Decimal>>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let primary_vault = substate.vault(primary_resource_address);
-        if let Some(primary_vault) = primary_vault {
-            let mut contributions = BTreeMap::new();
-
-            for (secondary_resource_address, secondary_vault) in substate.vaults {
-                let secondary_vault = Vault(secondary_vault);
-
-                if secondary_resource_address == primary_resource_address {
-                    contributions.insert(primary_resource_address, primary_contribution);
-                } else {
-                    let secondary_contribution = primary_contribution
-                        * secondary_vault.amount(api)?
-                        / primary_vault.amount(api)?;
-                    contributions.insert(secondary_resource_address, secondary_contribution);
-                }
-            }
-
-            Ok(Some(contributions))
-        } else {
-            Ok(None)
-        }
     }
 }
 

@@ -10,13 +10,13 @@ use transaction::builder::*;
 
 #[test]
 fn single_resource_pool_can_be_instantiated() {
-    SingleResourcePoolTestRunner::new(18);
+    TestEnvironment::new(18);
 }
 
 #[test]
 fn initial_contribution_to_pool_mints_expected_amount() {
     // Arrange
-    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let mut test_runner = TestEnvironment::new(18);
 
     // Act
     let receipt = test_runner.contribute(100, true);
@@ -36,7 +36,7 @@ fn initial_contribution_to_pool_mints_expected_amount() {
 #[test]
 fn contribution_to_pool_mints_expected_amount_1() {
     // Arrange
-    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let mut test_runner = TestEnvironment::new(18);
 
     // Act
     let _ = test_runner.contribute(100, true);
@@ -57,7 +57,7 @@ fn contribution_to_pool_mints_expected_amount_1() {
 #[test]
 fn contribution_to_pool_mints_expected_amount_2() {
     // Arrange
-    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let mut test_runner = TestEnvironment::new(18);
 
     // Act
     let _ = test_runner.contribute(100, true);
@@ -78,7 +78,7 @@ fn contribution_to_pool_mints_expected_amount_2() {
 #[test]
 fn contribution_to_pool_mints_expected_amount_3() {
     // Arrange
-    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let mut test_runner = TestEnvironment::new(18);
 
     // Act
     let _ = test_runner.contribute(100, true);
@@ -99,7 +99,7 @@ fn contribution_to_pool_mints_expected_amount_3() {
 #[test]
 fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redeemed() {
     // Arrange
-    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let mut test_runner = TestEnvironment::new(18);
     let initial_contribution = 100;
 
     // Act
@@ -132,7 +132,7 @@ fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redeemed(
 fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18() {
     // Arrange
     let divisibility = 2;
-    let mut test_runner = SingleResourcePoolTestRunner::new(divisibility);
+    let mut test_runner = TestEnvironment::new(divisibility);
 
     test_runner.contribute(100, true).expect_commit_success();
 
@@ -158,7 +158,7 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
 fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming() {
     // Arrange
     let divisibility = 2;
-    let mut test_runner = SingleResourcePoolTestRunner::new(divisibility);
+    let mut test_runner = TestEnvironment::new(divisibility);
 
     test_runner.contribute(100, true).expect_commit_success();
 
@@ -186,7 +186,7 @@ fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming_after_p
     // Arrange
     let divisibility = 2;
     let amount_to_redeem = dec!("1.111111111111");
-    let mut test_runner = SingleResourcePoolTestRunner::new(divisibility);
+    let mut test_runner = TestEnvironment::new(divisibility);
 
     test_runner.contribute(100, true).expect_commit_success();
 
@@ -217,7 +217,7 @@ fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming_after_p
 #[test]
 fn protected_withdraw_from_the_pool_lowers_how_much_resources_the_pool_units_are_redeemable_for() {
     // Arrange
-    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let mut test_runner = TestEnvironment::new(18);
 
     test_runner.contribute(100, true).expect_commit_success();
 
@@ -241,7 +241,7 @@ fn protected_withdraw_from_the_pool_lowers_how_much_resources_the_pool_units_are
 fn protected_deposit_into_the_pool_increases_how_much_resources_the_pool_units_are_redeemable_for()
 {
     // Arrange
-    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let mut test_runner = TestEnvironment::new(18);
 
     test_runner.contribute(100, true).expect_commit_success();
 
@@ -293,7 +293,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
 // Test Runner and Utility Functions
 //===================================
 
-struct SingleResourcePoolTestRunner {
+struct TestEnvironment {
     test_runner: TestRunner,
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -302,7 +302,7 @@ struct SingleResourcePoolTestRunner {
     account_component_address: ComponentAddress,
 }
 
-impl SingleResourcePoolTestRunner {
+impl TestEnvironment {
     fn new(divisibility: u8) -> Self {
         let mut test_runner = TestRunner::builder().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);

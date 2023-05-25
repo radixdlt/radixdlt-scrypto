@@ -14,7 +14,7 @@ define_invocation! {
     },
     output: type ComponentAddress,
     manifest_input: struct {
-        resource_address: (ResourceAddress, ResourceAddress),
+        resource_addresses: (ResourceAddress, ResourceAddress),
         pool_manager_rule: AccessRule
     }
 }
@@ -39,7 +39,7 @@ define_invocation! {
     },
     output: type (Bucket, Bucket),
     manifest_input: struct {
-        buckets: ManifestBucket
+        bucket: ManifestBucket
     }
 }
 
