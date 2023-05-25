@@ -101,12 +101,30 @@ pub enum TypeInfoForValidation {
 }
 
 impl TypeInfoForValidation {
-    fn matches_object(&self, expected_package: &PackageAddress, expected_blueprint: &str) -> bool {
+    fn matches(&self, expected_package: &PackageAddress, expected_blueprint: &str) -> bool {
         matches!(
             self,
             TypeInfoForValidation::Object { package, blueprint }
                 if package == expected_package && blueprint == expected_blueprint
         )
+    }
+
+    fn matches_with_origin(
+        &self,
+        expected_package: &Option<PackageAddress>,
+        expected_blueprint: &str,
+        schema_origin: &SchemaOrigin,
+    ) -> bool {
+        match expected_package {
+            Some(package_address) => self.matches(package_address, expected_blueprint),
+            None => match schema_origin {
+                SchemaOrigin::Blueprint(blueprint_id) => {
+                    self.matches(&blueprint_id.package_address, expected_blueprint)
+                }
+                SchemaOrigin::Instance => false,
+                SchemaOrigin::KeyValueStore => false,
+            },
+        }
     }
 }
 
@@ -166,12 +184,22 @@ fn apply_custom_validation_to_custom_value(
                 ReferenceValidation::IsGlobalResourceManager => {
                     node_id.is_global_resource_manager()
                 }
-                ReferenceValidation::IsGlobalTyped(expect_package, expect_blueprint) => {
-                    node_id.is_global() && todo!()
+                ReferenceValidation::IsGlobalTyped(expected_package, expected_blueprint) => {
+                    node_id.is_global()
+                        && type_info.matches_with_origin(
+                            expected_package,
+                            expected_blueprint,
+                            lookup.schema_origin(),
+                        )
                 }
                 ReferenceValidation::IsInternal => node_id.is_internal(),
-                ReferenceValidation::IsInternalTyped(expect_package, expect_blueprint) => {
-                    node_id.is_internal() && todo!()
+                ReferenceValidation::IsInternalTyped(expected_package, expected_blueprint) => {
+                    node_id.is_global()
+                        && type_info.matches_with_origin(
+                            expected_package,
+                            expected_blueprint,
+                            lookup.schema_origin(),
+                        )
                 }
             };
             if !is_valid {
@@ -191,19 +219,21 @@ fn apply_custom_validation_to_custom_value(
             let type_info = resolve_type_info(&node_id, lookup)?;
             let is_valid = match own_validation {
                 OwnValidation::IsBucket => {
-                    type_info.matches_object(&RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
-                        || type_info
-                            .matches_object(&RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT)
+                    type_info.matches(&RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
+                        || type_info.matches(&RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT)
                 }
                 OwnValidation::IsProof => {
-                    type_info.matches_object(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
-                        || type_info.matches_object(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT)
+                    type_info.matches(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
+                        || type_info.matches(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT)
                 }
                 OwnValidation::IsVault => node_id.is_internal_vault(),
                 OwnValidation::IsKeyValueStore => node_id.is_internal_kv_store(),
-                OwnValidation::IsTyped(expect_package, expect_blueprint) => {
-                    todo!()
-                }
+                OwnValidation::IsTyped(expected_package, expected_blueprint) => type_info
+                    .matches_with_origin(
+                        expected_package,
+                        expected_blueprint,
+                        lookup.schema_origin(),
+                    ),
             };
             if !is_valid {
                 return Err(PayloadValidationError::ValidationError(
