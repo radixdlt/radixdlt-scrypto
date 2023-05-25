@@ -627,7 +627,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 fn consensus_manager_round_update_emits_correct_event() {
     let genesis = CustomGenesis::default(
         1u64,
-        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: 100, // we do not want the "epoch change" event here
                 max_round_count: 100,
@@ -667,7 +667,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
                 max_round_count: rounds_per_epoch,
@@ -717,7 +717,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
         Decimal::one(),
         ComponentAddress::virtual_account_from_public_key(&validator_key),
         4,
-        CustomGenesis::default_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
                 max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
@@ -762,7 +762,7 @@ fn validator_registration_emits_correct_event() {
         .public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
@@ -814,7 +814,7 @@ fn validator_unregistration_emits_correct_event() {
         .public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
@@ -877,7 +877,7 @@ fn validator_staking_emits_correct_event() {
         .public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
@@ -1010,7 +1010,7 @@ fn validator_unstake_emits_correct_events() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1167,7 +1167,7 @@ fn validator_claim_xrd_emits_correct_events() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
+        CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1302,7 +1302,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let initial_epoch = 5u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration(),
+        CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account) = test_runner.new_account(false);

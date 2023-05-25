@@ -21,7 +21,7 @@ use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerInitialConfiguration, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
+    ConsensusManagerConfig, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
     CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
@@ -136,7 +136,7 @@ where
         self.bootstrap_with_genesis_data(
             vec![],
             1u64,
-            ConsensusManagerInitialConfiguration {
+            ConsensusManagerConfig {
                 max_validators: 10,
                 epoch_change_condition: EpochChangeCondition {
                     min_round_count: 1,
@@ -157,7 +157,7 @@ where
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
@@ -169,11 +169,8 @@ where
             );
 
         if xrd_info.is_none() {
-            let system_bootstrap_receipt = self.execute_system_bootstrap(
-                initial_epoch,
-                initial_configuration,
-                initial_time_ms,
-            );
+            let system_bootstrap_receipt =
+                self.execute_system_bootstrap(initial_epoch, initial_config, initial_time_ms);
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -196,14 +193,11 @@ where
     fn execute_system_bootstrap(
         &mut self,
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> TransactionReceipt {
-        let transaction = create_system_bootstrap_transaction(
-            initial_epoch,
-            initial_configuration,
-            initial_time_ms,
-        );
+        let transaction =
+            create_system_bootstrap_transaction(initial_epoch, initial_config, initial_time_ms);
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -273,7 +267,7 @@ where
 
 pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
-    initial_configuration: ConsensusManagerInitialConfiguration,
+    initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
 ) -> SystemTransactionV1 {
     // NOTES
@@ -804,7 +798,7 @@ pub fn create_system_bootstrap_transaction(
                 validator_owner_token,
                 consensus_manager_component_address,
                 initial_epoch,
-                initial_configuration,
+                initial_config,
                 initial_time_ms
             ),
         });

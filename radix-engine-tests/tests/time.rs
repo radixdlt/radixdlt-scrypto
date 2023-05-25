@@ -8,7 +8,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
             1,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
 
@@ -40,7 +40,7 @@ fn advancing_round_changes_internal_milli_timestamp() {
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
             1,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
     let epoch_milli = 123456789;

@@ -23,13 +23,7 @@ const MILLIS_IN_MINUTE: i64 = MILLIS_IN_SECOND * SECONDS_IN_MINUTE;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerConfigSubstate {
-    pub max_validators: u32,
-    pub epoch_change_condition: EpochChangeCondition,
-    pub num_unstake_epochs: u64,
-    pub total_emission_xrd_per_epoch: Decimal,
-    pub min_validator_reliability: Decimal,
-    pub num_owner_stake_units_unlock_epochs: u64,
-    pub num_fee_increase_delay_epochs: u64,
+    pub config: ConsensusManagerConfig,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -186,7 +180,7 @@ impl ConsensusManagerBlueprint {
         validator_token_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -218,20 +212,8 @@ impl ConsensusManagerBlueprint {
         };
 
         let consensus_manager_id = {
-            // TODO(resolve during review): it becomes more and more apparent that "initial configuration"
-            // simply must specify the entire "configuration substate" (read: it will be always structs
-            // of the same schema).
-            // Is this observation true? (and will hold true in future?) If so, then can we have
-            // a single `ConsensusManagerConfig` struct simply passed here and stored as substate?
             let config = ConsensusManagerConfigSubstate {
-                max_validators: initial_configuration.max_validators,
-                epoch_change_condition: initial_configuration.epoch_change_condition,
-                num_unstake_epochs: initial_configuration.num_unstake_epochs,
-                total_emission_xrd_per_epoch: initial_configuration.total_emission_xrd_per_epoch,
-                min_validator_reliability: initial_configuration.min_validator_reliability,
-                num_owner_stake_units_unlock_epochs: initial_configuration
-                    .num_owner_stake_units_unlock_epochs,
-                num_fee_increase_delay_epochs: initial_configuration.num_fee_increase_delay_epochs,
+                config: initial_config,
             };
             let consensus_manager = ConsensusManagerSubstate {
                 epoch: initial_epoch,
@@ -325,16 +307,20 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let config_substate: ConsensusManagerConfigSubstate =
+            api.field_lock_read_typed(config_handle)?;
+        api.field_lock_release(config_handle)?;
 
-        let mgr_handle = api.actor_lock_field(
+        let manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
-        let mgr: ConsensusManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
+        let manager_substate: ConsensusManagerSubstate =
+            api.field_lock_read_typed(manager_handle)?;
+        api.field_lock_release(manager_handle)?;
 
-        Self::epoch_change(mgr.epoch, &config, api)?;
+        Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_authority_rule_and_mutability(
@@ -428,23 +414,24 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let config_substate: ConsensusManagerConfigSubstate =
+            api.field_lock_read_typed(config_handle)?;
         api.field_lock_release(config_handle)?;
 
-        let consensus_manager_handle = api.actor_lock_field(
+        let manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut consensus_manager: ConsensusManagerSubstate =
-            api.field_lock_read_typed(consensus_manager_handle)?;
+        let mut manager_substate: ConsensusManagerSubstate =
+            api.field_lock_read_typed(manager_handle)?;
 
-        let progressed_rounds = round as i128 - consensus_manager.round as i128;
+        let progressed_rounds = round as i128 - manager_substate.round as i128;
         if progressed_rounds <= 0 {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
                     ConsensusManagerError::InvalidRoundUpdate {
-                        from: consensus_manager.round,
+                        from: manager_substate.round,
                         to: round,
                     },
                 ),
@@ -453,23 +440,24 @@ impl ConsensusManagerBlueprint {
 
         Self::update_proposal_statistics(progressed_rounds as u64, proposal_history, api)?;
 
-        let epoch_duration_millis = proposer_timestamp_milli - consensus_manager.epoch_start_milli;
+        let config = &config_substate.config;
+        let epoch_duration_millis = proposer_timestamp_milli - manager_substate.epoch_start_milli;
         if config
             .epoch_change_condition
             .is_met(epoch_duration_millis, round)
         {
-            let next_epoch = consensus_manager.epoch + 1;
-            Self::epoch_change(next_epoch, &config, api)?;
-            consensus_manager.epoch = next_epoch;
-            consensus_manager.epoch_start_milli = proposer_timestamp_milli;
-            consensus_manager.round = 0;
+            let next_epoch = manager_substate.epoch + 1;
+            Self::epoch_change(next_epoch, config, api)?;
+            manager_substate.epoch = next_epoch;
+            manager_substate.epoch_start_milli = proposer_timestamp_milli;
+            manager_substate.round = 0;
         } else {
             Runtime::emit_event(api, RoundChangeEvent { round })?;
-            consensus_manager.round = round;
+            manager_substate.round = round;
         }
 
-        api.field_lock_write_typed(consensus_manager_handle, &consensus_manager)?;
-        api.field_lock_release(consensus_manager_handle)?;
+        api.field_lock_write_typed(manager_handle, &manager_substate)?;
+        api.field_lock_release(manager_handle)?;
 
         Self::update_timestamps(proposer_timestamp_milli, api)?;
 
@@ -562,7 +550,7 @@ impl ConsensusManagerBlueprint {
 
     fn epoch_change<Y>(
         next_epoch: u64,
-        config: &ConsensusManagerConfigSubstate,
+        config: &ConsensusManagerConfig,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -663,7 +651,7 @@ impl ConsensusManagerBlueprint {
     fn apply_validator_emissions<Y>(
         validator_set: ActiveValidatorSet,
         validator_statistics: Vec<ProposalStatistic>,
-        config: &ConsensusManagerConfigSubstate,
+        config: &ConsensusManagerConfig,
         epoch: u64, // the concluded epoch, for event creation
         api: &mut Y,
     ) -> Result<(), RuntimeError>

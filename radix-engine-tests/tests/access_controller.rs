@@ -1661,7 +1661,7 @@ impl AccessControllerTestRunner {
         let mut test_runner = TestRunner::builder()
             .with_custom_genesis(CustomGenesis::default(
                 1,
-                CustomGenesis::default_consensus_manager_configuration(),
+                CustomGenesis::default_consensus_manager_config(),
             ))
             .build();
 

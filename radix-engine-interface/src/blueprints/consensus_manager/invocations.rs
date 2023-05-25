@@ -18,12 +18,12 @@ pub struct ConsensusManagerCreateInput {
     pub validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
     pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
     pub initial_epoch: u64,
-    pub initial_configuration: ConsensusManagerInitialConfiguration,
+    pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
 }
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ConsensusManagerInitialConfiguration {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct ConsensusManagerConfig {
     pub max_validators: u32,
     pub epoch_change_condition: EpochChangeCondition,
     pub num_unstake_epochs: u64,
@@ -33,7 +33,7 @@ pub struct ConsensusManagerInitialConfiguration {
     pub num_fee_increase_delay_epochs: u64,
 }
 
-impl ConsensusManagerInitialConfiguration {
+impl ConsensusManagerConfig {
     pub fn with_max_validators(mut self, new_value: u32) -> Self {
         self.max_validators = new_value;
         self
