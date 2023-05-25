@@ -1,5 +1,6 @@
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
+use component::HasTypeInfo;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
