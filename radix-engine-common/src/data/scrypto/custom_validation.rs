@@ -60,9 +60,11 @@ fn apply_static_custom_validation_to_custom_value(
                 ReferenceValidation::IsGlobalResourceManager => {
                     node_id.is_global_resource_manager()
                 }
+                // We can't check this statically without a type_info lookup, so assume valid
+                ReferenceValidation::IsGlobalTyped(_, _) => node_id.is_global(),
                 ReferenceValidation::IsInternal => node_id.is_internal(),
                 // We can't check this statically without a type_info lookup, so assume valid
-                ReferenceValidation::IsGlobalTyped(_, _) => true,
+                ReferenceValidation::IsInternalTyped(_, _) => node_id.is_internal(),
             };
             if !is_valid {
                 return Err(PayloadValidationError::ValidationError(

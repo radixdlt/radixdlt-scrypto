@@ -88,7 +88,7 @@ pub mod well_known_scrypto_custom_types {
             "FungibleBucket",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                RESOURCE_PACKAGE,
+                Some(RESOURCE_PACKAGE),
                 "FungibleBucket".to_string(),
             ))),
         )
@@ -101,7 +101,7 @@ pub mod well_known_scrypto_custom_types {
             "NonFungibleBucket",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                RESOURCE_PACKAGE,
+                Some(RESOURCE_PACKAGE),
                 "NonFungibleBucket".to_string(),
             ))),
         )
@@ -122,7 +122,7 @@ pub mod well_known_scrypto_custom_types {
             "FungibleProof",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                RESOURCE_PACKAGE,
+                Some(RESOURCE_PACKAGE),
                 "FungibleProof".to_string(),
             ))),
         )
@@ -135,7 +135,7 @@ pub mod well_known_scrypto_custom_types {
             "NonFungibleProof",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                RESOURCE_PACKAGE,
+                Some(RESOURCE_PACKAGE),
                 "NonFungibleProof".to_string(),
             ))),
         )
@@ -156,7 +156,7 @@ pub mod well_known_scrypto_custom_types {
             "FungibleVault",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                RESOURCE_PACKAGE,
+                Some(RESOURCE_PACKAGE),
                 "FungibleVault".to_string(),
             ))),
         )
@@ -169,7 +169,7 @@ pub mod well_known_scrypto_custom_types {
             "NonFungibleVault",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsTyped(
-                RESOURCE_PACKAGE,
+                Some(RESOURCE_PACKAGE),
                 "NonFungibleVault".to_string(),
             ))),
         )

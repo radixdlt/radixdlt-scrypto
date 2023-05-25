@@ -30,7 +30,7 @@ impl Describe<ScryptoCustomTypeKind> for OwnedWorktop {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names("OwnedWorktop"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, WORKTOP_BLUEPRINT.to_string()),
+                OwnValidation::IsTyped(Some(RESOURCE_PACKAGE), WORKTOP_BLUEPRINT.to_string()),
             )),
         }
     }

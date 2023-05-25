@@ -139,7 +139,7 @@ impl Describe<ScryptoCustomTypeKind> for OwnedAuthZone {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names("OwnedAuthZone"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT.to_string()),
+                OwnValidation::IsTyped(Some(RESOURCE_PACKAGE), AUTH_ZONE_BLUEPRINT.to_string()),
             )),
         }
     }

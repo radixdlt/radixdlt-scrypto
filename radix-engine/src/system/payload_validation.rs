@@ -148,9 +148,14 @@ fn apply_custom_validation_to_custom_value(
                 ReferenceValidation::IsGlobalResourceManager => {
                     node_id.is_global_resource_manager()
                 }
+                ReferenceValidation::IsGlobalTyped(expect_package, expect_blueprint) => {
+                    node_id.is_global()
+                        && type_info.matches_object(expect_package, &expect_blueprint)
+                }
                 ReferenceValidation::IsInternal => node_id.is_internal(),
-                ReferenceValidation::IsTypedObject(expect_package, expect_blueprint) => {
-                    type_info.matches_object(expect_package, &expect_blueprint)
+                ReferenceValidation::IsInternalTyped(expect_package, expect_blueprint) => {
+                    node_id.is_internal()
+                        && type_info.matches_object(expect_package, &expect_blueprint)
                 }
             };
             if !is_valid {
