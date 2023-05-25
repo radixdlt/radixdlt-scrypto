@@ -62,7 +62,7 @@ fn apply_static_custom_validation_to_custom_value(
                 }
                 ReferenceValidation::IsInternal => node_id.is_internal(),
                 // We can't check this statically without a type_info lookup, so assume valid
-                ReferenceValidation::IsTypedObject(_, _) => true,
+                ReferenceValidation::IsGlobalTyped(_, _) => true,
             };
             if !is_valid {
                 return Err(PayloadValidationError::ValidationError(
@@ -85,7 +85,7 @@ fn apply_static_custom_validation_to_custom_value(
                 OwnValidation::IsProof => node_id.is_internal(),
                 OwnValidation::IsVault => node_id.is_internal_vault(),
                 OwnValidation::IsKeyValueStore => node_id.is_internal_kv_store(),
-                OwnValidation::IsTypedObject(_, _) => true,
+                OwnValidation::IsTyped(_, _) => true,
             };
             if !is_valid {
                 return Err(PayloadValidationError::ValidationError(
