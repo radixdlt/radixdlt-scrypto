@@ -14,30 +14,21 @@ use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
+    pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct KeyValueStoreInfo {
-    pub schema: ScryptoSchema,
-    pub kv_store_schema: KeyValueStoreSchema,
-}
-
-impl KeyValueStoreInfo {
-    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
+impl KeyValueStoreSchema {
+    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>() -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
         let value_type_index = aggregator.add_child_type_and_descendents::<V>();
         let schema = generate_full_schema(aggregator);
         Self {
             schema,
-            kv_store_schema: KeyValueStoreSchema {
-                key: key_type_index,
-                value: value_type_index,
-                can_own,
-            },
+            key: key_type_index,
+            value: value_type_index,
         }
     }
 }

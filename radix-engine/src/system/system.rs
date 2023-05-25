@@ -38,7 +38,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
-    InstanceSchema, KeyValueStoreInfo, TypeRef,
+    InstanceSchema, KeyValueStoreSchema, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -1156,7 +1156,7 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, RuntimeError> {
+    fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
             .schema
             .validate()
@@ -1182,7 +1182,7 @@ where
     fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreInfo, RuntimeError> {
+    ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. } => {

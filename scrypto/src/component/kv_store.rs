@@ -13,7 +13,7 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
-use scrypto_schema::KeyValueStoreInfo;
+use scrypto_schema::KeyValueStoreSchema;
 
 use crate::engine::scrypto_env::ScryptoEnv;
 
@@ -38,7 +38,7 @@ impl<
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
 
-        let schema = KeyValueStoreInfo::new::<K, V>(true);
+        let schema = KeyValueStoreSchema::new::<K, V>();
 
         let id = env.key_value_store_new(schema).unwrap();
 
