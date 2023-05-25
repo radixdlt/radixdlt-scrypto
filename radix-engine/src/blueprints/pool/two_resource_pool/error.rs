@@ -20,6 +20,7 @@ pub enum TwoResourcePoolError {
         resource_address: ResourceAddress,
     },
     SameResourceError,
+    NotAllBucketsProvidedError,
 }
 
 impl From<TwoResourcePoolError> for RuntimeError {

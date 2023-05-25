@@ -119,13 +119,119 @@ impl TwoResourcePoolBlueprint {
     }
 
     pub fn contribute<Y>(
-        (_first_bucket, _second_bucket): (Bucket, Bucket),
-        _api: &mut Y,
+        (bucket1, bucket2): (Bucket, Bucket),
+        api: &mut Y,
     ) -> Result<TwoResourcePoolContributeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!()
+        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+
+        let (mut vault1, mut vault2) = {
+            let vault1 = Vault(substate.vaults[0].1);
+            let vault2 = Vault(substate.vaults[1].1);
+
+            let resource_address1 = vault1.resource_address(api)?;
+            let resource_address2 = vault2.resource_address(api)?;
+
+            if resource_address1 > resource_address2 {
+                (vault1, vault2)
+            } else {
+                (vault2, vault1)
+            }
+        };
+
+        let (bucket1, bucket2) = {
+            let resource_address1 = bucket1.resource_address(api)?;
+            let resource_address2 = bucket2.resource_address(api)?;
+
+            if resource_address1 > resource_address2 {
+                (bucket1, bucket2)
+            } else {
+                (bucket2, bucket1)
+            }
+        };
+
+        if bucket1.resource_address(api)? != vault1.resource_address(api)? {
+            let resource_address = bucket1.resource_address(api)?;
+            return Err(
+                TwoResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into(),
+            );
+        }
+        if bucket2.resource_address(api)? != vault2.resource_address(api)? {
+            let resource_address = bucket2.resource_address(api)?;
+            return Err(
+                TwoResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into(),
+            );
+        }
+
+        let (pool_units_to_mint, contribution1, contribution2) =
+            if let Some(initially_minted_pool_units) = substate.initial_pool_unit_amount {
+                let pool_unit_total_supply =
+                    substate.pool_unit_resource_manager().total_supply(api)?;
+                let reserves1 = vault1.amount(api)?;
+                let reserves2 = vault2.amount(api)?;
+
+                if pool_unit_total_supply == Decimal::ZERO {
+                    // TODO: Use the same ratio here as the initial contribution? That would not be
+                    // right as the ratio could've changed to very drastically over the years.
+                    let contribution1 = bucket1.amount(api)?;
+                    let contribution2 = bucket2.amount(api)?;
+                    (initially_minted_pool_units, contribution1, contribution2)
+                } else if reserves1 == Decimal::ZERO || reserves2 == Decimal::ZERO {
+                    return Err(TwoResourcePoolError::IllegalState.into());
+                } else {
+                    // Calculating everything in terms of m, n, dm, and dn where they're defined as
+                    // follows:
+                    // m:  the reserves of the first resource.
+                    // n:  the reserves of the second resource.
+                    // dm: the change of m or the amount in the bucket of m being contributed.
+                    // dn: the change of n or the amount in the bucket of n being contributed.
+
+                    let m = reserves1;
+                    let n = reserves2;
+                    let dm = bucket1.amount(api)?;
+                    let dn = bucket2.amount(api)?;
+
+                    let (contribution1, contribution2) = if (m / n) == (dm / dn) {
+                        (dm, dn)
+                    } else if (m / n) < (dm / dn) {
+                        (dn * m / n, dn)
+                    } else {
+                        (dm, dm * n / m)
+                    };
+
+                    let pool_units_to_mint = contribution1 / reserves1 * pool_unit_total_supply;
+
+                    (pool_units_to_mint, contribution1, contribution2)
+                }
+            } else {
+                let contribution1 = bucket1.amount(api)?;
+                let contribution2 = bucket2.amount(api)?;
+                let pool_units_to_mint = (contribution1 * contribution2).sqrt().unwrap();
+
+                (pool_units_to_mint, contribution1, contribution2)
+            };
+
+        bucket1
+            .take(contribution1, api)
+            .and_then(|bucket| vault1.put(bucket, api))?;
+        bucket2
+            .take(contribution2, api)
+            .and_then(|bucket| vault2.put(bucket, api))?;
+
+        let change_buckets = vec![bucket1, bucket2];
+        let pool_units = substate
+            .pool_unit_resource_manager()
+            .mint_fungible(pool_units_to_mint, api)?;
+
+        if substate.initial_pool_unit_amount.is_none() {
+            substate.initial_pool_unit_amount = Some(pool_units_to_mint);
+            api.field_lock_write_typed(handle, substate)?;
+        }
+        api.field_lock_release(handle)?;
+
+        Ok((pool_units, change_buckets))
     }
 
     pub fn redeem<Y>(
@@ -340,6 +446,38 @@ impl TwoResourcePoolBlueprint {
                 },
             )
             .collect()
+    }
+
+    fn calculate_contributions<Y>(
+        substate: &TwoResourcePoolSubstate,
+        primary_resource_address: ResourceAddress,
+        primary_contribution: Decimal,
+        api: &mut Y,
+    ) -> Result<Option<BTreeMap<ResourceAddress, Decimal>>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let primary_vault = substate.vault(primary_resource_address);
+        if let Some(primary_vault) = primary_vault {
+            let mut contributions = BTreeMap::new();
+
+            for (secondary_resource_address, secondary_vault) in substate.vaults {
+                let secondary_vault = Vault(secondary_vault);
+
+                if secondary_resource_address == primary_resource_address {
+                    contributions.insert(primary_resource_address, primary_contribution);
+                } else {
+                    let secondary_contribution = primary_contribution
+                        * secondary_vault.amount(api)?
+                        / primary_vault.amount(api)?;
+                    contributions.insert(secondary_resource_address, secondary_contribution);
+                }
+            }
+
+            Ok(Some(contributions))
+        } else {
+            Ok(None)
+        }
     }
 }
 
