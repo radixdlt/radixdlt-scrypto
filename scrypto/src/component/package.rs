@@ -4,11 +4,28 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::package_address_type_data;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::PACKAGE_ADDRESS_ID;
+use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::*;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
+use sbor::*;
 
-pub type Package = Global<PackageStub>;
+#[derive(Debug, Clone, Copy, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[sbor(transparent)]
+pub struct Package(Global<PackageStub>);
+
+impl Describe<ScryptoCustomTypeKind> for Package {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([PACKAGE_ADDRESS_ID]);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        package_address_type_data()
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PackageStub(ObjectStubHandle);
