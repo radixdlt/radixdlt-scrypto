@@ -959,6 +959,11 @@ mod tests {
             r#"Enum<PublicKey::Secp256k1>()"#,
             Value::Enum(0, Vec::new())
         );
+        // Check we allow trailing commas
+        parse_value_ok!(
+            r#"Enum<0u8>("Hello", 123u8,)"#,
+            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
+        );
     }
 
     #[test]
@@ -967,17 +972,28 @@ mod tests {
             r#"Array<U8>(1u8, 2u8)"#,
             Value::Array(ValueKind::U8, vec![Value::U8(1), Value::U8(2)])
         );
+        parse_value_ok!(r#"Array<U8>()"#, Value::Array(ValueKind::U8, vec![]));
+        // Check we allow trailing commas
+        parse_value_ok!(
+            r#"Array<U8>(1u8, 2u8,)"#,
+            Value::Array(ValueKind::U8, vec![Value::U8(1), Value::U8(2)])
+        );
     }
 
     #[test]
     fn test_tuple() {
+        parse_value_ok!(r#"Tuple()"#, Value::Tuple(vec![]));
         parse_value_ok!(
             r#"Tuple("Hello", 123u8)"#,
             Value::Tuple(vec![Value::String("Hello".into()), Value::U8(123),])
         );
-        parse_value_ok!(r#"Tuple()"#, Value::Tuple(Vec::new()));
         parse_value_ok!(
             r#"Tuple(1u8, 2u8)"#,
+            Value::Tuple(vec![Value::U8(1), Value::U8(2)])
+        );
+        // Check we allow trailing commas
+        parse_value_ok!(
+            r#"Tuple(1u8, 2u8,)"#,
             Value::Tuple(vec![Value::U8(1), Value::U8(2)])
         );
     }
@@ -994,6 +1010,18 @@ mod tests {
         );
         parse_value_ok!(
             r#"Map<String, U8>("Hello" => 123u8, "world!" => 1u8)"#,
+            Value::Map(
+                ValueKind::String,
+                ValueKind::U8,
+                vec![
+                    (Value::String("Hello".into()), Value::U8(123)),
+                    (Value::String("world!".into()), Value::U8(1)),
+                ]
+            )
+        );
+        // Check we allow trailing commas
+        parse_value_ok!(
+            r#"Map<String, U8>("Hello" => 123u8, "world!" => 1u8,)"#,
             Value::Map(
                 ValueKind::String,
                 ValueKind::U8,
