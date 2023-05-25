@@ -661,7 +661,7 @@ impl ManifestBuilder {
         &mut self,
         address: GlobalAddress,
         role_key: RoleKey,
-        mutability: RoleList,
+        mutability: (RoleList, bool)
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,

@@ -326,12 +326,12 @@ impl MutableAccessRulesTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn lock_group_auth(&mut self, authority_key: RoleKey) -> TransactionReceipt {
+    pub fn lock_group_auth(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .update_role_mutability(
                 self.component_address.into(),
-                authority_key,
-                RoleList::none(),
+                role_key,
+                (RoleList::none(), false),
             )
             .build();
         self.execute_manifest(manifest)

@@ -73,6 +73,7 @@ pub trait AccessRulesObject {
         role_key: R,
         rule: A,
         mutability: L,
+        mutable_mutable: bool,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
@@ -84,7 +85,7 @@ pub trait AccessRulesObject {
             scrypto_encode(&AccessRulesUpdateRoleInput {
                 role_key: role_key.into(),
                 rule: Some(rule.into()),
-                mutability: Some(mutability.into()),
+                mutability: Some((mutability.into(), mutable_mutable)),
             })
             .unwrap(),
         )?;
@@ -113,34 +114,6 @@ pub trait AccessRulesObject {
                 role_key: role_key.into(),
                 rule: Some(entry.into()),
                 mutability: None,
-            })
-            .unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    fn update_role_mutability<
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
-        R: Into<RoleKey>,
-        A: Into<RoleList>,
-    >(
-        &self,
-        role_key: R,
-        mutability: A,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
-            node_id,
-            false,
-            module_id,
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            scrypto_encode(&AccessRulesUpdateRoleInput {
-                role_key: role_key.into(),
-                mutability: Some(mutability.into()),
-                rule: None,
             })
             .unwrap(),
         )?;

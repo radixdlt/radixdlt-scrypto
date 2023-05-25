@@ -78,6 +78,7 @@ pub trait SecurifiedAccessRules {
             RoleKey::new(Self::OWNER_ROLE),
             rule!(require(global_id.clone())),
             [Self::OWNER_ROLE],
+            false,
             api,
         )?;
 

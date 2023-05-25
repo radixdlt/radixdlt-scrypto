@@ -57,7 +57,7 @@ impl AccessRules {
             &AccessRulesUpdateRoleInput {
                 role_key: RoleKey::new(name),
                 rule: None,
-                mutability: Some(mutability.into()),
+                mutability: Some((mutability.into(), true)),
             },
         );
     }

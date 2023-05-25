@@ -207,7 +207,7 @@ where
             ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 roles: BTreeMap::new(),
-                protected_roles: BTreeMap::new(),
+                role_mutability: BTreeMap::new(),
                 access_rules: NodeAuthorizationRules::new(),
                 inner_blueprint_access_rules: BTreeMap::new(),
             }),
