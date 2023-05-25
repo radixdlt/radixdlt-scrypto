@@ -156,13 +156,15 @@ impl RoleKey {
 pub struct RoleEntry {
     pub rule: AccessRule,
     pub mutable: RoleList,
+    pub mutable_mutable: bool,
 }
 
 impl RoleEntry {
-    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(rule: A, mutable: M) -> Self {
+    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(rule: A, mutable: M, mutable_mutable: bool) -> Self {
         Self {
             rule: rule.into(),
             mutable: mutable.into(),
+            mutable_mutable,
         }
     }
 
@@ -170,6 +172,7 @@ impl RoleEntry {
         Self {
             rule: rule.into(),
             mutable: RoleList::none(),
+            mutable_mutable: false,
         }
     }
 }
@@ -218,9 +221,9 @@ pub enum OwnerRule {
 impl OwnerRule {
     pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
         match self {
-            OwnerRule::Fixed(rule) => RoleEntry::new(rule, RoleList::none()),
-            OwnerRule::Updateable(rule) => RoleEntry::new(rule, [owner_role_name]),
-            OwnerRule::None => RoleEntry::new(AccessRule::DenyAll, RoleList::none()),
+            OwnerRule::Fixed(rule) => RoleEntry::immutable(rule),
+            OwnerRule::Updateable(rule) => RoleEntry::new(rule, [owner_role_name], false),
+            OwnerRule::None => RoleEntry::immutable(AccessRule::DenyAll),
         }
     }
 }
@@ -235,15 +238,6 @@ pub struct Roles {
 impl Roles {
     pub fn new() -> Self {
         Self { rules: btreemap!() }
-    }
-
-    pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> Roles {
-        let mut authority_rules = Roles::new();
-        authority_rules.define_role(
-            "owner",
-            RoleEntry::new(rule!(require(owner_badge.clone())), ["owner"]),
-        );
-        authority_rules
     }
 
     pub fn define_role<K: Into<RoleKey>>(

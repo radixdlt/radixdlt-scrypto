@@ -49,7 +49,7 @@ pub trait SecurifiedAccessRules {
     fn create_securified<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
-        let roles = Self::create_roles(RoleEntry::new(AccessRule::DenyAll, [SELF_ROLE]));
+        let roles = Self::create_roles(RoleEntry::new(AccessRule::DenyAll, [SELF_ROLE], true));
         let method_permissions =
             Self::create_method_permissions(MethodEntry::disabled());
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
@@ -90,7 +90,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let roles = Self::create_roles(RoleEntry::new(rule!(require(owner_id)), [SELF_ROLE]));
+        let roles = Self::create_roles(RoleEntry::new(rule!(require(owner_id)), [SELF_ROLE], true));
         let method_permissions =
             Self::create_method_permissions(MethodEntry::new([Self::OWNER_ROLE], [SELF_ROLE]));
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;

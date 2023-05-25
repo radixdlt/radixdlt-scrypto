@@ -100,7 +100,7 @@ macro_rules! role_entry {
         $roles.define_role($role, RoleEntry::immutable($rule));
     }};
     ($roles: expr, $role: expr, $rule:expr, mut $mutability:expr) => {{
-        $roles.define_role($role, RoleEntry::new($rule, $mutability));
+        $roles.define_role($role, RoleEntry::new($rule, $mutability, true));
     }};
 }
 

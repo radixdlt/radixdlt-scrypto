@@ -42,37 +42,37 @@ fn build_access_rules(
         {
             roles.define_role(
                 SET_METADATA_UPDATE_ROLE,
-                RoleEntry::new(update_metadata_mutability, vec![SET_METADATA_UPDATE_ROLE]),
+                RoleEntry::new(update_metadata_mutability, [SET_METADATA_UPDATE_ROLE], true),
             );
 
             roles.define_role(
                 SET_METADATA_ROLE,
-                RoleEntry::new(update_metadata_access_rule, vec![SET_METADATA_UPDATE_ROLE])
+                RoleEntry::new(update_metadata_access_rule, [SET_METADATA_UPDATE_ROLE], true)
             );
         }
 
         // Mint
         {
-            roles.define_role(MINT_UPDATE_ROLE, RoleEntry::new(mint_mutability, vec![MINT_UPDATE_ROLE]));
-            roles.define_role(MINT_ROLE, RoleEntry::new(mint_access_rule, vec![MINT_UPDATE_ROLE]));
+            roles.define_role(MINT_UPDATE_ROLE, RoleEntry::new(mint_mutability, [MINT_UPDATE_ROLE], true));
+            roles.define_role(MINT_ROLE, RoleEntry::new(mint_access_rule, [MINT_UPDATE_ROLE], true));
         }
 
         // Burn
         {
-            roles.define_role(BURN_UPDATE_ROLE, RoleEntry::new(burn_mutability, vec![BURN_UPDATE_ROLE]));
-            roles.define_role(BURN_ROLE, RoleEntry::new(burn_access_rule, vec![BURN_UPDATE_ROLE]));
+            roles.define_role(BURN_UPDATE_ROLE, RoleEntry::new(burn_mutability, [BURN_UPDATE_ROLE], true));
+            roles.define_role(BURN_ROLE, RoleEntry::new(burn_access_rule, [BURN_UPDATE_ROLE], true));
         }
 
         // Non Fungible Update data
         {
             roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
-                RoleEntry::new(update_non_fungible_data_mutability, vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE]),
+                RoleEntry::new(update_non_fungible_data_mutability, [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE], true),
             );
 
             roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_ROLE,
-                RoleEntry::new(update_non_fungible_data_access_rule, vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE]),
+                RoleEntry::new(update_non_fungible_data_access_rule, [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE], true),
             );
         }
 
@@ -111,11 +111,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 WITHDRAW_UPDATE_ROLE,
-                RoleEntry::new(withdraw_mutability, vec![WITHDRAW_UPDATE_ROLE]),
+                RoleEntry::new(withdraw_mutability, [WITHDRAW_UPDATE_ROLE], true),
             );
             roles.define_role(
                 WITHDRAW_ROLE,
-                RoleEntry::new(withdraw_access_rule, vec![WITHDRAW_UPDATE_ROLE]),
+                RoleEntry::new(withdraw_access_rule, [WITHDRAW_UPDATE_ROLE], true),
             );
         }
 
@@ -123,26 +123,26 @@ fn build_access_rules(
         {
             roles.define_role(
                 RECALL_UPDATE_ROLE,
-                RoleEntry::new(recall_mutability, vec![RECALL_UPDATE_ROLE]),
+                RoleEntry::new(recall_mutability, [RECALL_UPDATE_ROLE], true),
             );
-            roles.define_role(RECALL_ROLE, RoleEntry::new(recall_access_rule, vec![RECALL_UPDATE_ROLE]));
+            roles.define_role(RECALL_ROLE, RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], true));
         }
 
         // Deposit
         {
             roles.define_role(
                 DEPOSIT_UPDATE_ROLE,
-                RoleEntry::new(deposit_mutability, vec![DEPOSIT_UPDATE_ROLE]),
+                RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], true),
             );
 
-            roles.define_role(DEPOSIT_ROLE, RoleEntry::new(deposit_access_rule, vec![DEPOSIT_UPDATE_ROLE]));
+            roles.define_role(DEPOSIT_ROLE, RoleEntry::new(deposit_access_rule, [DEPOSIT_UPDATE_ROLE], true));
         }
 
         // Internal
         {
             roles.define_role(
                 "this_package",
-                RoleEntry::new(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))), vec![]),
+                RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
             );
         }
 
