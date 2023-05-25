@@ -125,50 +125,61 @@ impl TwoResourcePoolBlueprint {
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
 
-        // Getting the vaults of the two resource pool - before getting them we sort them according
-        // to a deterministic and predictable order. This helps make the code less generalized and
-        // simple.
-        let (mut vault1, mut vault2) = {
-            let vault1 = Vault(substate.vaults[0].1);
-            let vault2 = Vault(substate.vaults[1].1);
+        let (resource_address1, resource_address2, mut vault1, mut vault2, bucket1, bucket2) = {
+            // Getting the vaults of the two resource pool - before getting them we sort them according
+            // to a deterministic and predictable order. This helps make the code less generalized and
+            // simple.
+            let ((vault1, vault1_resource_address), (vault2, vault2_resource_address)) = {
+                let vault1 = Vault(substate.vaults[0].1);
+                let vault2 = Vault(substate.vaults[1].1);
 
-            let resource_address1 = vault1.resource_address(api)?;
-            let resource_address2 = vault2.resource_address(api)?;
+                let resource_address1 = vault1.resource_address(api)?;
+                let resource_address2 = vault2.resource_address(api)?;
 
-            if resource_address1 > resource_address2 {
-                (vault1, vault2)
-            } else {
-                (vault2, vault1)
+                if resource_address1 > resource_address2 {
+                    ((vault1, resource_address1), (vault2, resource_address2))
+                } else {
+                    ((vault2, resource_address2), (vault1, resource_address1))
+                }
+            };
+
+            // Getting the buckets of the two resource pool - before getting them we sort them according
+            // to a deterministic and predictable order. This helps make the code less generalized and
+            // simple.
+            let ((bucket1, bucket1_resource_address), (bucket2, bucket2_resource_address)) = {
+                let resource_address1 = bucket1.resource_address(api)?;
+                let resource_address2 = bucket2.resource_address(api)?;
+
+                if resource_address1 > resource_address2 {
+                    ((bucket1, resource_address1), (bucket2, resource_address2))
+                } else {
+                    ((bucket2, resource_address2), (bucket1, resource_address1))
+                }
+            };
+
+            // Ensure that the two buckets given as arguments match the two vaults that the pool has.
+            if bucket1_resource_address != vault1_resource_address {
+                return Err(TwoResourcePoolError::ResourceDoesNotBelongToPool {
+                    resource_address: bucket1_resource_address,
+                }
+                .into());
             }
-        };
-
-        // Getting the buckets of the two resource pool - before getting them we sort them according
-        // to a deterministic and predictable order. This helps make the code less generalized and
-        // simple.
-        let (bucket1, bucket2) = {
-            let resource_address1 = bucket1.resource_address(api)?;
-            let resource_address2 = bucket2.resource_address(api)?;
-
-            if resource_address1 > resource_address2 {
-                (bucket1, bucket2)
-            } else {
-                (bucket2, bucket1)
+            if bucket2_resource_address != vault2_resource_address {
+                return Err(TwoResourcePoolError::ResourceDoesNotBelongToPool {
+                    resource_address: bucket2_resource_address,
+                }
+                .into());
             }
-        };
 
-        // Ensure that the two buckets given as arguments match the two vaults that the pool has.
-        if bucket1.resource_address(api)? != vault1.resource_address(api)? {
-            let resource_address = bucket1.resource_address(api)?;
-            return Err(
-                TwoResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into(),
-            );
-        }
-        if bucket2.resource_address(api)? != vault2.resource_address(api)? {
-            let resource_address = bucket2.resource_address(api)?;
-            return Err(
-                TwoResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into(),
-            );
-        }
+            (
+                bucket1_resource_address,
+                bucket2_resource_address,
+                vault1,
+                vault2,
+                bucket1,
+                bucket2,
+            )
+        };
 
         // Determine the amount of pool units to mint based on the the current state of the pool.
         let (pool_units_to_mint, amount1, amount2) = {
@@ -177,6 +188,20 @@ impl TwoResourcePoolBlueprint {
             let reserves2 = vault2.amount(api)?;
             let contribution1 = bucket1.amount(api)?;
             let contribution2 = bucket2.amount(api)?;
+            let divisibility1 = ResourceManager(resource_address1).resource_type(api).map(|resource_type| {
+                if let ResourceType::Fungible { divisibility } = resource_type {
+                    divisibility
+                } else {
+                    panic!("Impossible case, we check for this in the constructor and have a test for this.")
+                }
+            })?;
+            let divisibility2 = ResourceManager(resource_address2).resource_type(api).map(|resource_type| {
+                if let ResourceType::Fungible { divisibility } = resource_type {
+                    divisibility
+                } else {
+                    panic!("Impossible case, we check for this in the constructor and have a test for this.")
+                }
+            })?;
 
             if contribution1 == Decimal::ZERO || contribution2 == Decimal::ZERO {
                 return Err(TwoResourcePoolError::ContributionOfEmptyBucketError.into());
@@ -212,13 +237,22 @@ impl TwoResourcePoolBlueprint {
                     let dm = contribution1;
                     let dn = contribution2;
 
-                    let (amount1, amount2) = if (m / n) == (dm / dn) {
+                    let (mut amount1, mut amount2) = if (m / n) == (dm / dn) {
                         (dm, dn)
                     } else if (m / n) < (dm / dn) {
                         (dn * m / n, dn)
                     } else {
                         (dm, dm * n / m)
                     };
+
+                    if divisibility1 != 18 {
+                        amount1 = amount1
+                            .round(divisibility1 as u32, RoundingMode::TowardsNegativeInfinity)
+                    }
+                    if divisibility2 != 18 {
+                        amount2 = amount2
+                            .round(divisibility2 as u32, RoundingMode::TowardsNegativeInfinity)
+                    }
 
                     let pool_units_to_mint = amount1 / reserves1 * pool_unit_total_supply;
 

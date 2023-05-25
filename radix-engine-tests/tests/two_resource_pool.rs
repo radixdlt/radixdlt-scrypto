@@ -347,6 +347,79 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
 }
 
 #[test]
+fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((18, 2));
+
+    let contribution1 = (test_runner.pool_resource1, 100);
+    let contribution2 = (test_runner.pool_resource2, 100);
+    test_runner
+        .contribute(contribution1, contribution2, true)
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.redeem(dec!("1.11111111111111"), true);
+
+    // Assert
+    let account_balance_changes = receipt
+        .expect_commit_success()
+        .balance_changes()
+        .get(&GlobalAddress::from(test_runner.account_component_address))
+        .unwrap();
+
+    assert_eq!(
+        account_balance_changes
+            .get(&test_runner.pool_resource1)
+            .cloned(),
+        Some(BalanceChange::Fungible(dec!("1.11111111111111")))
+    );
+    assert_eq!(
+        account_balance_changes
+            .get(&test_runner.pool_resource2)
+            .cloned(),
+        Some(BalanceChange::Fungible(dec!("1.11")))
+    );
+}
+
+#[test]
+fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((18, 2));
+
+    let contribution1 = (test_runner.pool_resource1, 100);
+    let contribution2 = (test_runner.pool_resource2, 100);
+    test_runner
+        .contribute(contribution1, contribution2, true)
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.contribute(
+        (test_runner.pool_resource1, dec!("1.1111111111111")),
+        (test_runner.pool_resource2, 500),
+        true,
+    );
+
+    // Assert
+    let pool_balance_changes = receipt
+        .expect_commit_success()
+        .balance_changes()
+        .get(&GlobalAddress::from(test_runner.pool_component_address))
+        .unwrap();
+    assert_eq!(
+        pool_balance_changes
+            .get(&test_runner.pool_resource1)
+            .cloned(),
+        Some(BalanceChange::Fungible(dec!("1.1111111111111")))
+    );
+    assert_eq!(
+        pool_balance_changes
+            .get(&test_runner.pool_resource2)
+            .cloned(),
+        Some(BalanceChange::Fungible(dec!("1.11")))
+    );
+}
+
+#[test]
 fn contribution_emits_expected_event() {
     // Arrange
     let mut test_runner = TestEnvironment::new((2, 2));
