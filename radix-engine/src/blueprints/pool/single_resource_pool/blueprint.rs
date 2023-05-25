@@ -109,11 +109,9 @@ impl SingleResourcePoolBlueprint {
         // No check that the bucket is of the same resource as the vault. This check will be handled
         // by the vault itself on deposit.
 
-        let (single_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::read_only())?;
-        let mut pool_unit_resource_manager =
-            single_resource_pool_substate.pool_unit_resource_manager();
-        let mut vault = single_resource_pool_substate.vault();
+        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        let mut pool_unit_resource_manager = substate.pool_unit_resource_manager();
+        let mut vault = substate.vault();
 
         /*
         There are four states that the pool could be in at this point of time depending on the total
@@ -172,12 +170,11 @@ impl SingleResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let (pool_unit_resource_manager, mut vault, handle) = {
-            let (single_resource_pool_substate, lock_handle) =
-                Self::lock_and_read(api, LockFlags::read_only())?;
+            let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
             (
-                single_resource_pool_substate.pool_unit_resource_manager(),
-                single_resource_pool_substate.vault(),
+                substate.pool_unit_resource_manager(),
+                substate.vault(),
                 lock_handle,
             )
         };
@@ -238,14 +235,13 @@ impl SingleResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (single_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::read_only())?;
+        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let event = DepositEvent {
             amount: bucket.amount(api)?,
         };
 
-        single_resource_pool_substate.vault().put(bucket, api)?;
+        substate.vault().put(bucket, api)?;
         api.field_lock_release(handle)?;
 
         Runtime::emit_event(api, event)?;
@@ -260,10 +256,9 @@ impl SingleResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (single_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::read_only())?;
+        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
-        let bucket = single_resource_pool_substate.vault().take(amount, api)?;
+        let bucket = substate.vault().take(amount, api)?;
         api.field_lock_release(handle)?;
 
         Runtime::emit_event(api, WithdrawEvent { amount })?;
@@ -279,12 +274,11 @@ impl SingleResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let (pool_unit_resource_manager, vault, handle) = {
-            let (single_resource_pool_substate, lock_handle) =
-                Self::lock_and_read(api, LockFlags::read_only())?;
+            let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
             (
-                single_resource_pool_substate.pool_unit_resource_manager(),
-                single_resource_pool_substate.vault(),
+                substate.pool_unit_resource_manager(),
+                substate.vault(),
                 lock_handle,
             )
         };
@@ -321,9 +315,8 @@ impl SingleResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (single_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::read_only())?;
-        let amount = single_resource_pool_substate.vault().amount(api)?;
+        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        let amount = substate.vault().amount(api)?;
         api.field_lock_release(handle)?;
         Ok(amount)
     }
@@ -359,10 +352,9 @@ impl SingleResourcePoolBlueprint {
     {
         let substate_key = SingleResourcePoolField::SingleResourcePool.into();
         let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let single_resource_pool_substate =
-            api.field_lock_read_typed::<SingleResourcePoolSubstate>(handle)?;
+        let substate = api.field_lock_read_typed::<SingleResourcePoolSubstate>(handle)?;
 
-        Ok((single_resource_pool_substate, handle))
+        Ok((substate, handle))
     }
 }
 
