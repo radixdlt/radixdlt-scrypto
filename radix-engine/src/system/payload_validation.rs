@@ -27,6 +27,15 @@ use super::system_callback_api::SystemCallbackObject;
 /// We use a trait here so it can be implemented either by the System API (mid-execution) or by off-ledger systems
 pub trait TypeInfoLookup {
     fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfoForValidation>;
+
+    fn schema_origin(&self) -> &SchemaOrigin;
+}
+
+#[derive(Debug, Clone)]
+pub enum SchemaOrigin {
+    Blueprint(BlueprintId),
+    Instance,
+    KeyValueStore, // TODO: remove
 }
 
 //==================
@@ -40,14 +49,19 @@ pub struct SystemServiceTypeInfoLookup<
     V: SystemCallbackObject,
 > {
     system_service: RefCell<&'s mut SystemService<'a, Y, V>>,
+    schema_origin: SchemaOrigin,
 }
 
 impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>
     SystemServiceTypeInfoLookup<'s, 'a, Y, V>
 {
-    pub fn new(system_service: &'s mut SystemService<'a, Y, V>) -> Self {
+    pub fn new(
+        system_service: &'s mut SystemService<'a, Y, V>,
+        schema_origin: SchemaOrigin,
+    ) -> Self {
         Self {
             system_service: system_service.into(),
+            schema_origin,
         }
     }
 }
@@ -70,6 +84,10 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
             TypeInfoSubstate::KeyValueStore(_) => TypeInfoForValidation::KeyValueStore,
         };
         Some(mapped)
+    }
+
+    fn schema_origin(&self) -> &SchemaOrigin {
+        &self.schema_origin
     }
 }
 
