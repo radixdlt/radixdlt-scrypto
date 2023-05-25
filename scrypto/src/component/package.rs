@@ -1,37 +1,32 @@
+use super::HasTypeInfo;
 use crate::prelude::{Global, HasStub, ObjectStub, ObjectStubHandle};
+use radix_engine_common::prelude::PACKAGE_PACKAGE;
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
-    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::package_address_type_data;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::PACKAGE_ADDRESS_ID;
-use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
-use sbor::*;
+use sbor::rust::prelude::*;
 
-#[derive(Debug, Clone, Copy, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
-#[sbor(transparent)]
-pub struct Package(Global<PackageStub>);
-
-impl Describe<ScryptoCustomTypeKind> for Package {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([PACKAGE_ADDRESS_ID]);
-
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
-        package_address_type_data()
-    }
-
-    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
-}
+pub type Package = Global<PackageStub>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PackageStub(ObjectStubHandle);
 
 impl HasStub for PackageStub {
     type Stub = Self;
+}
+
+impl HasTypeInfo for PackageStub {
+    const PACKAGE_ADDRESS: Option<PackageAddress> = Some(PACKAGE_PACKAGE);
+
+    const BLUEPRINT_NAME: &'static str = PACKAGE_BLUEPRINT;
+
+    const OWNED_TYPE_NAME: &'static str = "OwnedPackage";
+
+    const GLOBAL_TYPE_NAME: &'static str = "GlobalPackage";
 }
 
 impl ObjectStub for PackageStub {

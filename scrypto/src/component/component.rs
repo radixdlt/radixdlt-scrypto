@@ -3,6 +3,9 @@ use crate::modules::{AccessRules, Attachable, Royalty};
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
+use radix_engine_common::prelude::well_known_scrypto_custom_types::{
+    component_address_type_data, COMPONENT_ADDRESS_ID,
+};
 use radix_engine_interface::api::node_modules::metadata::MetadataVal;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
@@ -455,6 +458,16 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Global<T> {
                 ),
             )),
         }
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}
+
+impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([COMPONENT_ADDRESS_ID]);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        component_address_type_data()
     }
 
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
