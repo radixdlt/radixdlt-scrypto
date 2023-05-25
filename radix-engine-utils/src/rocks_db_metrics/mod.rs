@@ -1,20 +1,19 @@
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
-    PartitionEntry, SubstateDatabase, PartitionUpdates, DatabaseUpdate,
-};
-use radix_engine_stores::{rocks_db::{BlockBasedOptions, Options, /*LogLevel,*/ RocksdbSubstateStore}, memory_db::InMemorySubstateDatabase};
-use std::{path::PathBuf, time::Duration, cell::RefCell, collections::BTreeMap};
+use ::polyfit_rs::*;
 use linreg::linear_regression_of;
 use plotters::prelude::*;
-use ::polyfit_rs::*;
-use blake2::digest::{consts::U32, Digest};
-use blake2::Blake2b;
-use std::io::{self, Write};
-use rand::Rng;
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey,
+    DbSubstateValue, PartitionEntry, SubstateDatabase,
+};
+use radix_engine_stores::{
+    memory_db::InMemorySubstateDatabase,
+    rocks_db::{BlockBasedOptions, Options, /*LogLevel,*/ RocksdbSubstateStore},
+};
+use std::{cell::RefCell, collections::BTreeMap, path::PathBuf, time::Duration};
 
 pub struct SubstateStoreWithMetrics<S>
 where
-    S: SubstateDatabase + CommittableSubstateDatabase
+    S: SubstateDatabase + CommittableSubstateDatabase,
 {
     db: S,
     read_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
@@ -27,13 +26,125 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         let y_min = -1000;
         let y_max = 60000;
 
-        let v = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796), (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519), (10007, 2355), (20008, 3100), (24161, 3251), (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500), (100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+        let v = vec![
+            (3, 1598),
+            (4, 1322),
+            (6, 691),
+            (7, 1124),
+            (10, 1568),
+            (14, 1127),
+            (21, 820),
+            (31, 1654),
+            (34, 3224),
+            (39, 831),
+            (55, 2343),
+            (56, 4322),
+            (61, 2041),
+            (62, 1190),
+            (65, 2414),
+            (72, 1116),
+            (79, 2184),
+            (83, 1196),
+            (92, 872),
+            (93, 1929),
+            (127, 3550),
+            (454, 1316),
+            (498, 1189),
+            (797, 3796),
+            (1825, 2464),
+            (1950, 5780),
+            (2711, 1311),
+            (3203, 1637),
+            (3931, 1063),
+            (5269, 1519),
+            (10007, 2355),
+            (20008, 3100),
+            (24161, 3251),
+            (30008, 5202),
+            (50008, 7777),
+            (60008, 8807),
+            (70008, 15102),
+            (80008, 8093),
+            (90008, 19500),
+            (100008, 13218),
+            (150008, 13713),
+            (200008, 35152),
+            (214772, 16167),
+            (250008, 39320),
+            (289696, 33243),
+            (300008, 33737),
+            (350008, 28390),
+            (400008, 36344),
+            (450008, 32362),
+            (500008, 32423),
+            (550008, 40388),
+            (566509, 44225),
+            (600008, 41552),
+            (650008, 46570),
+            (700008, 44102),
+        ];
 
-        let v1 = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796),
-            (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519),
-            (10007, 2355), (20008, 3100), (24161, 3251)];
-        let v3 = vec![ (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500)];
-        let v4 = vec![(100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+        let v1 = vec![
+            (3, 1598),
+            (4, 1322),
+            (6, 691),
+            (7, 1124),
+            (10, 1568),
+            (14, 1127),
+            (21, 820),
+            (31, 1654),
+            (34, 3224),
+            (39, 831),
+            (55, 2343),
+            (56, 4322),
+            (61, 2041),
+            (62, 1190),
+            (65, 2414),
+            (72, 1116),
+            (79, 2184),
+            (83, 1196),
+            (92, 872),
+            (93, 1929),
+            (127, 3550),
+            (454, 1316),
+            (498, 1189),
+            (797, 3796),
+            (1825, 2464),
+            (1950, 5780),
+            (2711, 1311),
+            (3203, 1637),
+            (3931, 1063),
+            (5269, 1519),
+            (10007, 2355),
+            (20008, 3100),
+            (24161, 3251),
+        ];
+        let v3 = vec![
+            (30008, 5202),
+            (50008, 7777),
+            (60008, 8807),
+            (70008, 15102),
+            (80008, 8093),
+            (90008, 19500),
+        ];
+        let v4 = vec![
+            (100008, 13218),
+            (150008, 13713),
+            (200008, 35152),
+            (214772, 16167),
+            (250008, 39320),
+            (289696, 33243),
+            (300008, 33737),
+            (350008, 28390),
+            (400008, 36344),
+            (450008, 32362),
+            (500008, 32423),
+            (550008, 40388),
+            (566509, 44225),
+            (600008, 41552),
+            (650008, 46570),
+            (700008, 44102),
+        ];
 
         let (a1, b1): (f64, f64) = linear_regression_of(&v1).unwrap();
         let (a3, b3): (f64, f64) = linear_regression_of(&v3).unwrap();
@@ -42,11 +153,10 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         let lin_x_axis3 = (25000..100000).step(10);
         let lin_x_axis4 = (100000..x_max).step(10);
 
-        let w_x: Vec<f64> = v.iter().map(|(a,_)|*a as f64).collect();
-        let w_y: Vec<f64> = v.iter().map(|(_,b)|*b as f64).collect();
+        let w_x: Vec<f64> = v.iter().map(|(a, _)| *a as f64).collect();
+        let w_y: Vec<f64> = v.iter().map(|(_, b)| *b as f64).collect();
         let w = polyfit_rs::polyfit(w_x.as_slice(), w_y.as_slice(), 3).unwrap();
         let w_axis = (x_min..x_max).step(10);
-
 
         let root = BitMapBackend::new("/tmp/aa.png", (1024, 768)).into_drawing_area();
         root.fill(&WHITE)?;
@@ -64,16 +174,14 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .axis_desc_style(("sans-serif", 16))
             .draw()?;
         // 1. draw all read points
-        scatter_ctx
-            .draw_series(
-                v1.iter()
-                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
-            )?;
-        scatter_ctx
-            .draw_series(
-                v3.iter()
-                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
-            )?;
+        scatter_ctx.draw_series(
+            v1.iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?;
+        scatter_ctx.draw_series(
+            v3.iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?;
         scatter_ctx
             .draw_series(
                 v4.iter()
@@ -86,7 +194,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .draw_series(LineSeries::new(
                 lin_x_axis1
                     .values()
-                    .map(|x| (x, (a1 * x as f64 + b1) as i32 )),
+                    .map(|x| (x, (a1 * x as f64 + b1) as i32)),
                 &BLUE,
             ))?
             .label(format!(
@@ -98,7 +206,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .draw_series(LineSeries::new(
                 lin_x_axis3
                     .values()
-                    .map(|x| (x, (a3 * x as f64 + b3) as i32 )),
+                    .map(|x| (x, (a3 * x as f64 + b3) as i32)),
                 &BLUE,
             ))?
             .label(format!(
@@ -110,7 +218,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .draw_series(LineSeries::new(
                 lin_x_axis4
                     .values()
-                    .map(|x| (x, (a4 * x as f64 + b4) as i32 )),
+                    .map(|x| (x, (a4 * x as f64 + b4) as i32)),
                 &BLUE,
             ))?
             .label(format!(
@@ -121,9 +229,15 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         // polynominal
         scatter_ctx
             .draw_series(LineSeries::new(
-                w_axis
-                    .values()
-                    .map(|x| (x, (w[3] * x as f64 * x as f64 * x as f64 + w[2] * x as f64 * x as f64 + w[1] * x as f64 + w[0] ) as i32 )),
+                w_axis.values().map(|x| {
+                    (
+                        x,
+                        (w[3] * x as f64 * x as f64 * x as f64
+                            + w[2] * x as f64 * x as f64
+                            + w[1] * x as f64
+                            + w[0]) as i32,
+                    )
+                }),
                 &BLACK,
             ))?
             .label(format!(
@@ -131,7 +245,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
                 w[3], w[2], w[1], w[0]
             ))
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
-    
+
         scatter_ctx
             .configure_series_labels()
             .background_style(&WHITE)
@@ -150,13 +264,125 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         let y_min = -1000;
         let y_max = 60000;
 
-        let v = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796), (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519), (10007, 2355), (20008, 3100), (24161, 3251), (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500), (100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+        let v = vec![
+            (3, 1598),
+            (4, 1322),
+            (6, 691),
+            (7, 1124),
+            (10, 1568),
+            (14, 1127),
+            (21, 820),
+            (31, 1654),
+            (34, 3224),
+            (39, 831),
+            (55, 2343),
+            (56, 4322),
+            (61, 2041),
+            (62, 1190),
+            (65, 2414),
+            (72, 1116),
+            (79, 2184),
+            (83, 1196),
+            (92, 872),
+            (93, 1929),
+            (127, 3550),
+            (454, 1316),
+            (498, 1189),
+            (797, 3796),
+            (1825, 2464),
+            (1950, 5780),
+            (2711, 1311),
+            (3203, 1637),
+            (3931, 1063),
+            (5269, 1519),
+            (10007, 2355),
+            (20008, 3100),
+            (24161, 3251),
+            (30008, 5202),
+            (50008, 7777),
+            (60008, 8807),
+            (70008, 15102),
+            (80008, 8093),
+            (90008, 19500),
+            (100008, 13218),
+            (150008, 13713),
+            (200008, 35152),
+            (214772, 16167),
+            (250008, 39320),
+            (289696, 33243),
+            (300008, 33737),
+            (350008, 28390),
+            (400008, 36344),
+            (450008, 32362),
+            (500008, 32423),
+            (550008, 40388),
+            (566509, 44225),
+            (600008, 41552),
+            (650008, 46570),
+            (700008, 44102),
+        ];
 
-        let v1 = vec![(3, 1598), (4, 1322), (6, 691), (7, 1124), (10, 1568), (14, 1127), (21, 820), (31, 1654), (34, 3224), (39, 831), (55, 2343), (56, 4322), (61, 2041), (62, 1190), (65, 2414), (72, 1116), (79, 2184), (83, 1196), (92, 872), (93, 1929), (127, 3550), (454, 1316), (498, 1189), (797, 3796),
-            (1825, 2464), (1950, 5780), (2711, 1311), (3203, 1637), (3931, 1063), (5269, 1519),
-            (10007, 2355), (20008, 3100), (24161, 3251)];
-        let v3 = vec![ (30008, 5202), (50008, 7777), (60008, 8807), (70008, 15102), (80008, 8093), (90008, 19500)];
-        let v4 = vec![(100008, 13218), (150008, 13713), (200008, 35152), (214772, 16167), (250008, 39320), (289696, 33243), (300008, 33737), (350008, 28390), (400008, 36344), (450008, 32362), (500008, 32423), (550008, 40388), (566509, 44225), (600008, 41552), (650008, 46570), (700008, 44102)];
+        let v1 = vec![
+            (3, 1598),
+            (4, 1322),
+            (6, 691),
+            (7, 1124),
+            (10, 1568),
+            (14, 1127),
+            (21, 820),
+            (31, 1654),
+            (34, 3224),
+            (39, 831),
+            (55, 2343),
+            (56, 4322),
+            (61, 2041),
+            (62, 1190),
+            (65, 2414),
+            (72, 1116),
+            (79, 2184),
+            (83, 1196),
+            (92, 872),
+            (93, 1929),
+            (127, 3550),
+            (454, 1316),
+            (498, 1189),
+            (797, 3796),
+            (1825, 2464),
+            (1950, 5780),
+            (2711, 1311),
+            (3203, 1637),
+            (3931, 1063),
+            (5269, 1519),
+            (10007, 2355),
+            (20008, 3100),
+            (24161, 3251),
+        ];
+        let v3 = vec![
+            (30008, 5202),
+            (50008, 7777),
+            (60008, 8807),
+            (70008, 15102),
+            (80008, 8093),
+            (90008, 19500),
+        ];
+        let v4 = vec![
+            (100008, 13218),
+            (150008, 13713),
+            (200008, 35152),
+            (214772, 16167),
+            (250008, 39320),
+            (289696, 33243),
+            (300008, 33737),
+            (350008, 28390),
+            (400008, 36344),
+            (450008, 32362),
+            (500008, 32423),
+            (550008, 40388),
+            (566509, 44225),
+            (600008, 41552),
+            (650008, 46570),
+            (700008, 44102),
+        ];
 
         let (a1, b1): (f64, f64) = linear_regression_of(&v1).unwrap();
         let (a3, b3): (f64, f64) = linear_regression_of(&v3).unwrap();
@@ -165,11 +391,10 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         let lin_x_axis3 = (25000..100000).step(10);
         let lin_x_axis4 = (100000..x_max).step(10);
 
-        let w_x: Vec<f64> = v.iter().map(|(a,_)|*a as f64).collect();
-        let w_y: Vec<f64> = v.iter().map(|(_,b)|*b as f64).collect();
+        let w_x: Vec<f64> = v.iter().map(|(a, _)| *a as f64).collect();
+        let w_y: Vec<f64> = v.iter().map(|(_, b)| *b as f64).collect();
         let w = polyfit_rs::polyfit(w_x.as_slice(), w_y.as_slice(), 3).unwrap();
         let w_axis = (x_min..x_max).step(10);
-
 
         let root = BitMapBackend::new("/tmp/aa.png", (1024, 768)).into_drawing_area();
         root.fill(&WHITE)?;
@@ -187,16 +412,14 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .axis_desc_style(("sans-serif", 16))
             .draw()?;
         // 1. draw all read points
-        scatter_ctx
-            .draw_series(
-                v1.iter()
-                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
-            )?;
-        scatter_ctx
-            .draw_series(
-                v3.iter()
-                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
-            )?;
+        scatter_ctx.draw_series(
+            v1.iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?;
+        scatter_ctx.draw_series(
+            v3.iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?;
         scatter_ctx
             .draw_series(
                 v4.iter()
@@ -209,7 +432,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .draw_series(LineSeries::new(
                 lin_x_axis1
                     .values()
-                    .map(|x| (x, (a1 * x as f64 + b1) as i32 )),
+                    .map(|x| (x, (a1 * x as f64 + b1) as i32)),
                 &BLUE,
             ))?
             .label(format!(
@@ -221,7 +444,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .draw_series(LineSeries::new(
                 lin_x_axis3
                     .values()
-                    .map(|x| (x, (a3 * x as f64 + b3) as i32 )),
+                    .map(|x| (x, (a3 * x as f64 + b3) as i32)),
                 &BLUE,
             ))?
             .label(format!(
@@ -233,7 +456,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
             .draw_series(LineSeries::new(
                 lin_x_axis4
                     .values()
-                    .map(|x| (x, (a4 * x as f64 + b4) as i32 )),
+                    .map(|x| (x, (a4 * x as f64 + b4) as i32)),
                 &BLUE,
             ))?
             .label(format!(
@@ -244,9 +467,15 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         // polynominal
         scatter_ctx
             .draw_series(LineSeries::new(
-                w_axis
-                    .values()
-                    .map(|x| (x, (w[3] * x as f64 * x as f64 * x as f64 + w[2] * x as f64 * x as f64 + w[1] * x as f64 + w[0] ) as i32 )),
+                w_axis.values().map(|x| {
+                    (
+                        x,
+                        (w[3] * x as f64 * x as f64 * x as f64
+                            + w[2] * x as f64 * x as f64
+                            + w[1] * x as f64
+                            + w[0]) as i32,
+                    )
+                }),
                 &BLACK,
             ))?
             .label(format!(
@@ -254,7 +483,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
                 w[3], w[2], w[1], w[0]
             ))
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
-    
+
         scatter_ctx
             .configure_series_labels()
             .background_style(&WHITE)
@@ -298,7 +527,7 @@ impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
 }
 
 impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics<S> {
-    pub fn calculate_median_points(&self) -> (Vec<(i32,i32)>, Vec<(i32,i32)>) {
+    pub fn calculate_median_points(&self) -> (Vec<(i32, i32)>, Vec<(i32, i32)>) {
         // 1. calculate max values
         let mut max_values = Vec::with_capacity(100000);
         let binding = self.read_metrics.borrow();
@@ -336,7 +565,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         }
     }
 
-    pub fn calculate_percent_to_max_points(&mut self, percent: f32) -> Vec<(i32,i32)> {
+    pub fn calculate_percent_to_max_points(&mut self, percent: f32) -> Vec<(i32, i32)> {
         assert!(percent <= 100f32);
         let mut output_values = Vec::new();
         let mut binding = self.read_metrics.borrow_mut();
@@ -348,8 +577,12 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         output_values
     }
 
-
-    pub fn export_graph_and_print_summary(&mut self, data: &Vec<(i32, i32)>, median_data: &Vec<(i32, i32)>, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn export_graph_and_print_summary(
+        &mut self,
+        data: &Vec<(i32, i32)>,
+        median_data: &Vec<(i32, i32)>,
+        output_png_file: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // calculate axis max/min values
         let y_ofs = 1000;
         let x_ofs = 5000;
@@ -441,14 +674,18 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         Ok(())
     }
 
-    pub fn export_graph_and_print_summary_for_two_series(&mut self, data_series1: &Vec<(i32, i32)>, data_series2: &Vec<(i32, i32)>, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn export_graph_and_print_summary_for_two_series(
+        &mut self,
+        data_series1: &Vec<(i32, i32)>,
+        data_series2: &Vec<(i32, i32)>,
+        output_png_file: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // calculate diff points
         assert_eq!(data_series1.len(), data_series2.len());
         let mut v1 = data_series1.clone();
         for (idx, (size, median_value)) in v1.iter_mut().enumerate() {
             assert_eq!(*size, data_series2[idx].0);
             *median_value -= data_series2[idx].1;
-
         }
         // calculate linear approximation of diff points
         let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&v1).unwrap();
@@ -458,7 +695,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         let x_ofs = 5000;
         let x_min = data_series1.iter().map(|i| i.0).min().unwrap() - x_ofs;
         let x_max = data_series1.iter().map(|i| i.0).max().unwrap() + x_ofs;
-        let y_min = data_series1.iter().map(|i| i.1).min().unwrap() - y_ofs;
+        let y_min = 0; //data_series1.iter().map(|i| i.1).min().unwrap() - y_ofs;
         let y_max = data_series1.iter().map(|i| i.1).max().unwrap() + y_ofs;
 
         let lin_x_axis = (x_min..x_max).step(10);
@@ -482,7 +719,8 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         // 1. draw read series1 points
         scatter_ctx
             .draw_series(
-                data_series1.iter()
+                data_series1
+                    .iter()
                     .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
             )?
             .label("RocksDB read (median points)")
@@ -490,17 +728,15 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         // 2. draw read series2 points
         scatter_ctx
             .draw_series(
-                data_series2.iter()
+                data_series2
+                    .iter()
                     .map(|(x, y)| Circle::new((*x, *y), 2, BLUE.filled())),
             )?
             .label("InMemory read (median points)")
             .legend(|(x, y)| Circle::new((x + 10, y), 2, BLUE.filled()));
         // 3. draw read series1-series2 points
         scatter_ctx
-            .draw_series(
-                v1.iter()
-                    .map(|(x, y)| Cross::new((*x, *y), 6, MAGENTA)),
-            )?
+            .draw_series(v1.iter().map(|(x, y)| Cross::new((*x, *y), 6, MAGENTA)))?
             .label("Diff points (RocksDB/green - InMemory/blue)")
             .legend(|(x, y)| Cross::new((x + 10, y), 6, MAGENTA));
         // 4. draw linear approximetion line
@@ -557,10 +793,11 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
             }
         });
     }
-
 }
 
-impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase for SubstateStoreWithMetrics<S> {
+impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase
+    for SubstateStoreWithMetrics<S>
+{
     fn get_substate(
         &self,
         partition_key: &DbPartitionKey,
@@ -597,41 +834,112 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase for Sub
     }
 }
 
-impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatabase for SubstateStoreWithMetrics<S> {
+impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatabase
+    for SubstateStoreWithMetrics<S>
+{
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
         self.db.commit(database_updates)
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use blake2::digest::{consts::U32, Digest};
+    use blake2::Blake2b;
+    use radix_engine_store_interface::interface::{
+        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
+        PartitionUpdates, SubstateDatabase,
+    };
+    use rand::Rng;
+    use std::io::Write;
+    use std::path::PathBuf;
 
-#[test]
-fn test_store_db() {
+    const MIN_SIZE: usize = 1;
+    const MAX_SIZE: usize = 4 * 1024 * 1024;
+    const SIZE_STEP: usize = 500 * 1024;
+    const COUNT: usize = 100;
+    const READ_REPEATS: usize = 10;
 
-    // RocksDB part
-    let path = PathBuf::from(r"/tmp/radix-scrypto-db");
-    // clean database
-    std::fs::remove_dir_all(path.clone()).ok();
+    #[test]
+    fn test_store_db() {
+        // RocksDB part
+        let path = PathBuf::from(r"/tmp/radix-scrypto-db");
+        // clean database
+        std::fs::remove_dir_all(path.clone()).ok();
 
-    let min_size = 1;
-    let max_size = 4 * 1024 * 1024;
-    let size_step = 10 * 1024;
-    let count = 10usize;
-    let read_repeats = 200usize;
+        // prepare database
+        let data_index_vector = {
+            let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
+            prepare_db(&mut substate_db)
+        };
 
-    let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> = Vec::with_capacity(max_size);
+        // reopen database
+        let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
+        run_read_test(&mut substate_db, data_index_vector);
 
-    {
+        // prepare data for linear approximation
+        substate_db.drop_edge_values();
+        let rocksdb_output_data = substate_db.calculate_percent_to_max_points(95f32);
+
+        // prepare data for plot
+        let mut rocksdb_data = Vec::with_capacity(100000);
+        for (k, v) in substate_db.read_metrics.borrow().iter() {
+            for i in v {
+                rocksdb_data.push((*k as i32, i.as_nanos() as i32));
+            }
+        }
+
+        // export results
+        substate_db
+            .export_graph_and_print_summary(&rocksdb_data, &rocksdb_output_data, "/tmp/aa_rocksdb_1.png")
+            .unwrap();
+
+
+        // InMemory DB part
+        let mut substate_db = SubstateStoreWithMetrics::new_inmem();
+        let data_index_vector = prepare_db(&mut substate_db);
+        run_read_test(&mut substate_db, data_index_vector);
+
+        // prepare data for linear approximation
+        substate_db.drop_edge_values();
+        let inmem_output_data = substate_db.calculate_percent_to_max_points(95f32);
+
+        // prepare data for plot
+        let mut inmem_data = Vec::with_capacity(100000);
+        for (k, v) in substate_db.read_metrics.borrow().iter() {
+            for i in v {
+                inmem_data.push((*k as i32, i.as_nanos() as i32));
+            }
+        }
+
+        // export results
+        substate_db
+            .export_graph_and_print_summary(&inmem_data, &inmem_output_data, "/tmp/aa_inmem_1.png")
+            .unwrap();
+
+        // Calculate RocksDB - InMemory diff and export results
+        substate_db.export_graph_and_print_summary_for_two_series(&rocksdb_output_data, &inmem_output_data, "/tmp/aa_diff_1.png").unwrap();
+    }
+
+    fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
+        substate_db: &mut S,
+    ) -> Vec<(DbPartitionKey, DbSortKey, usize)> {
+        let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> =
+            Vec::with_capacity(MAX_SIZE);
+
         println!("Preparing database...");
         let mut p_key_cnt = 1u32;
-        let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
+        //let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
         let mut sort_key_value: usize = 0;
-        for size in (min_size..=max_size).step_by(size_step) {
+        for size in (MIN_SIZE..=MAX_SIZE).step_by(SIZE_STEP) {
             let mut input_data = DatabaseUpdates::new();
-            for _ in 0..count {
+            for _ in 0..COUNT {
                 let value = DatabaseUpdate::Set(vec![1; size]);
 
                 let plain_bytes = sort_key_value.to_be_bytes().to_vec();
-                let mut hashed_prefix: Vec<u8> = Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
+                let mut hashed_prefix: Vec<u8> =
+                    Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
                 hashed_prefix.extend(plain_bytes);
 
                 let sort_key = DbSortKey(hashed_prefix);
@@ -643,77 +951,75 @@ fn test_store_db() {
                 let partition_key = DbPartitionKey(p_key_cnt.to_be_bytes().to_vec());
                 p_key_cnt += 1;
 
-                data_index_vector.push( (partition_key.clone(), sort_key, size) );
+                data_index_vector.push((partition_key.clone(), sort_key, size));
 
                 input_data.insert(partition_key, partition);
             }
             substate_db.commit(&input_data);
         }
         println!("  done\n");
+
+        data_index_vector
     }
 
-    println!("Random read start...");
+    fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
+        substate_db: &mut S,
+        data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)>,
+    ) {
+        println!("Random read start...");
 
-    // reopen database
-    let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
+        let mut rng = rand::thread_rng();
 
-    let mut rng = rand::thread_rng();
+        //let mut p_key_cnt = 1u32;
+        for i in 0..READ_REPEATS {
+            let time_start = std::time::Instant::now();
+            let mut idx_vector: Vec<usize> = (0..data_index_vector.len()).collect();
 
-    //let mut p_key_cnt = 1u32;
-    for i in 0..read_repeats {
-        let time_start = std::time::Instant::now();
-        let mut idx_vector: Vec<usize> = (0..data_index_vector.len()).collect();
+            for j in 0..data_index_vector.len() {
+                assert!(!idx_vector.is_empty());
+                let idx = rng.gen_range(0..idx_vector.len());
 
-        for j in 0..data_index_vector.len() {
-            assert!(!idx_vector.is_empty());
-            let idx = rng.gen_range(0..idx_vector.len());
+                let (p, s, v) = &data_index_vector[idx_vector[idx]];
 
-            let (p,s,v) = &data_index_vector[idx_vector[idx]];
+                print!("\rRead {}/{}", j + 1, data_index_vector.len());
+                std::io::stdout().flush().ok();
 
-            print!("\rRead {}/{}", j + 1, data_index_vector.len());
-            std::io::stdout().flush().ok();
-    
-            let read_value = substate_db.get_substate(&p, &s);
-    
-            assert!(read_value.is_some());
-            assert_eq!(read_value.unwrap().len(), *v);
+                let read_value = substate_db.get_substate(&p, &s);
 
-            idx_vector.remove(idx);
+                assert!(read_value.is_some());
+                assert_eq!(read_value.unwrap().len(), *v);
+
+                idx_vector.remove(idx);
+            }
+
+            // sequential read
+            // for (j, (p,s,v)) in data_index_vector.iter().enumerate() {
+            //     print!("\rRead {}/{}", j + 1, data_index_vector.len());
+            //     std::io::stdout().flush().ok();
+
+            //     let read_value = substate_db.get_substate(&p, &s);
+
+            //     assert!(read_value.is_some());
+            //     assert_eq!(read_value.unwrap().len(), *v);
+            // }
+
+            let time_end = std::time::Instant::now();
+            let mut duration = time_end
+                .checked_duration_since(time_start)
+                .unwrap()
+                .as_secs();
+            if duration == 0 {
+                duration = 1;
+            }
+            println!(
+                "\rRound {}/{}  read time: {} s, left: {} s\r",
+                i + 1,
+                READ_REPEATS,
+                duration,
+                (READ_REPEATS - (i + 1)) * duration as usize
+            );
         }
 
-        // sequential read
-        // for (j, (p,s,v)) in data_index_vector.iter().enumerate() {
-        //     print!("\rRead {}/{}", j + 1, data_index_vector.len());
-        //     std::io::stdout().flush().ok();
-
-        //     let read_value = substate_db.get_substate(&p, &s);
-
-        //     assert!(read_value.is_some());
-        //     assert_eq!(read_value.unwrap().len(), *v);
-        // }
-
-        let time_end = std::time::Instant::now();
-        let mut duration = time_end.checked_duration_since(time_start).unwrap().as_secs();
-        if duration == 0 {
-            duration = 1;
-        }
-        println!("\rRound {}/{}  read time: {} s, left: {} s\r", i + 1, read_repeats, duration, (read_repeats - (i + 1)) * duration as usize );
+        println!("Read done");
     }
-
-    println!("Read done");
-
-
-    substate_db.drop_edge_values();
-    let output_data = substate_db.calculate_percent_to_max_points(95f32);
-
-    let mut data = Vec::with_capacity(100000);
-    for (k, v) in substate_db.read_metrics.borrow().iter() {
-        for i in v {
-            data.push((*k as i32, i.as_nanos() as i32));
-        }
-    }
-
-    // export results
-    substate_db.export_graph_and_print_summary(&data, &output_data, "/tmp/aa_1.png").unwrap();
-
 }
