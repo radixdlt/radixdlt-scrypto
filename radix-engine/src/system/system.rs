@@ -38,7 +38,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
-    InstanceSchema, KeyValueStoreInfo, TypeSchema,
+    InstanceSchema, KeyValueStoreInfo, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -97,15 +97,15 @@ where
     fn validate_payload_against_blueprint_or_instance_schema<'s>(
         &'s mut self,
         payload: &Vec<u8>,
-        type_schema: &TypeSchema,
+        type_ref: &TypeRef,
         blueprint_schema: &'s ScryptoSchema,
         instance_schema: &'s Option<InstanceSchema>,
     ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
-        match type_schema {
-            TypeSchema::Blueprint(index) => {
+        match type_ref {
+            TypeRef::Blueprint(index) => {
                 self.validate_payload(payload, blueprint_schema, *index)?;
             }
-            TypeSchema::Instance(instance_index) => {
+            TypeRef::Instance(instance_index) => {
                 let instance_schema = instance_schema.as_ref().unwrap();
                 let index = instance_schema
                     .type_index
@@ -1610,7 +1610,7 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
             match kv_schema.value {
-                TypeSchema::Instance(index) => {
+                TypeRef::Instance(index) => {
                     let mut instance_schema = object_info.instance_schema.unwrap();
                     KeyValueEntryLockData::Write {
                         schema: instance_schema.schema,
@@ -1618,7 +1618,7 @@ where
                         can_own,
                     }
                 }
-                TypeSchema::Blueprint(index) => KeyValueEntryLockData::Write {
+                TypeRef::Blueprint(index) => KeyValueEntryLockData::Write {
                     schema,
                     index,
                     can_own,

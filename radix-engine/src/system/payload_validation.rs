@@ -149,13 +149,11 @@ fn apply_custom_validation_to_custom_value(
                     node_id.is_global_resource_manager()
                 }
                 ReferenceValidation::IsGlobalTyped(expect_package, expect_blueprint) => {
-                    node_id.is_global()
-                        && type_info.matches_object(expect_package, &expect_blueprint)
+                    node_id.is_global() && todo!()
                 }
                 ReferenceValidation::IsInternal => node_id.is_internal(),
                 ReferenceValidation::IsInternalTyped(expect_package, expect_blueprint) => {
-                    node_id.is_internal()
-                        && type_info.matches_object(expect_package, &expect_blueprint)
+                    node_id.is_internal() && todo!()
                 }
             };
             if !is_valid {
@@ -185,8 +183,8 @@ fn apply_custom_validation_to_custom_value(
                 }
                 OwnValidation::IsVault => node_id.is_internal_vault(),
                 OwnValidation::IsKeyValueStore => node_id.is_internal_kv_store(),
-                OwnValidation::IsTypedObject(expect_package, expect_blueprint) => {
-                    type_info.matches_object(expect_package, &expect_blueprint)
+                OwnValidation::IsTyped(expect_package, expect_blueprint) => {
+                    todo!()
                 }
             };
             if !is_valid {

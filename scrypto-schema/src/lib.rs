@@ -69,15 +69,15 @@ pub struct BlueprintSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum TypeSchema {
+pub enum TypeRef {
     Blueprint(LocalTypeIndex),
     Instance(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintKeyValueStoreSchema {
-    pub key: TypeSchema,
-    pub value: TypeSchema,
+    pub key: TypeRef,
+    pub value: TypeRef,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
@@ -307,8 +307,8 @@ impl IndexedBlueprintSchema {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
                     match &kv_schema.key {
-                        TypeSchema::Blueprint(..) => {}
-                        TypeSchema::Instance(type_index) => {
+                        TypeRef::Blueprint(..) => {}
+                        TypeRef::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;
@@ -320,8 +320,8 @@ impl IndexedBlueprintSchema {
                     }
 
                     match &kv_schema.value {
-                        TypeSchema::Blueprint(..) => {}
-                        TypeSchema::Instance(type_index) => {
+                        TypeRef::Blueprint(..) => {}
+                        TypeRef::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;
