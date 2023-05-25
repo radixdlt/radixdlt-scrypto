@@ -231,8 +231,10 @@ pub enum Instruction {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Type {
-    /* Rust types */
+pub enum ValueKind {
+    // ==============
+    // Simple basic value kinds
+    // ==============
     Bool,
     I8,
     I16,
@@ -246,15 +248,16 @@ pub enum Type {
     U128,
     String,
 
-    /* Struct and enum */
+    // ==============
+    // Composite basic value kinds
+    // ==============
     Enum,
-
-    /* [T; N] and (A, B, C) */
     Array,
     Tuple,
+    Map,
 
     // ==============
-    // Alias
+    // Value kind aliases
     // ==============
     Bytes,
     NonFungibleGlobalId,
@@ -263,57 +266,73 @@ pub enum Type {
     ResourceAddress,
 
     // ==============
-    // Custom Types
+    // Custom value kinds
     // ==============
     Address,
     Bucket,
     Proof,
     Expression,
     Blob,
-
-    // Uninterpreted,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
 }
 
-impl Type {
+impl ValueKind {
     pub fn value_kind(&self) -> ManifestValueKind {
         match self {
-            Type::Bool => ManifestValueKind::Bool,
-            Type::I8 => ManifestValueKind::I8,
-            Type::I16 => ManifestValueKind::I16,
-            Type::I32 => ManifestValueKind::I32,
-            Type::I64 => ManifestValueKind::I64,
-            Type::I128 => ManifestValueKind::I128,
-            Type::U8 => ManifestValueKind::U8,
-            Type::U16 => ManifestValueKind::U16,
-            Type::U32 => ManifestValueKind::U32,
-            Type::U64 => ManifestValueKind::U64,
-            Type::U128 => ManifestValueKind::U128,
-            Type::String => ManifestValueKind::String,
-            Type::Enum => ManifestValueKind::Enum,
-            Type::Array => ManifestValueKind::Array,
-            Type::Tuple => ManifestValueKind::Tuple,
+            // ==============
+            // Simple basic value kinds
+            // ==============
+            ValueKind::Bool => ManifestValueKind::Bool,
+            ValueKind::I8 => ManifestValueKind::I8,
+            ValueKind::I16 => ManifestValueKind::I16,
+            ValueKind::I32 => ManifestValueKind::I32,
+            ValueKind::I64 => ManifestValueKind::I64,
+            ValueKind::I128 => ManifestValueKind::I128,
+            ValueKind::U8 => ManifestValueKind::U8,
+            ValueKind::U16 => ManifestValueKind::U16,
+            ValueKind::U32 => ManifestValueKind::U32,
+            ValueKind::U64 => ManifestValueKind::U64,
+            ValueKind::U128 => ManifestValueKind::U128,
+            ValueKind::String => ManifestValueKind::String,
 
-            // Aliases
-            Type::Bytes => ManifestValueKind::Array,
-            Type::NonFungibleGlobalId => ManifestValueKind::Tuple,
-            Type::PackageAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
-            Type::ComponentAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
-            Type::ResourceAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
+            // ==============
+            // Composite basic value kinds
+            // ==============
+            ValueKind::Enum => ManifestValueKind::Enum,
+            ValueKind::Array => ManifestValueKind::Array,
+            ValueKind::Tuple => ManifestValueKind::Tuple,
+            ValueKind::Map => ManifestValueKind::Map,
 
-            // Custom types
-            Type::Address => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
-            Type::Bucket => ManifestValueKind::Custom(ManifestCustomValueKind::Bucket),
-            Type::Proof => ManifestValueKind::Custom(ManifestCustomValueKind::Proof),
-            Type::Expression => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
-            Type::Blob => ManifestValueKind::Custom(ManifestCustomValueKind::Blob),
-            Type::Decimal => ManifestValueKind::Custom(ManifestCustomValueKind::Decimal),
-            Type::PreciseDecimal => {
+            // ==============
+            // Value kind aliases
+            // ==============
+            ValueKind::Bytes => ManifestValueKind::Array,
+            ValueKind::NonFungibleGlobalId => ManifestValueKind::Tuple,
+            ValueKind::PackageAddress => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::Address)
+            }
+            ValueKind::ComponentAddress => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::Address)
+            }
+            ValueKind::ResourceAddress => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::Address)
+            }
+
+            // ==============
+            // Custom value kinds
+            // ==============
+            ValueKind::Address => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
+            ValueKind::Bucket => ManifestValueKind::Custom(ManifestCustomValueKind::Bucket),
+            ValueKind::Proof => ManifestValueKind::Custom(ManifestCustomValueKind::Proof),
+            ValueKind::Expression => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
+            ValueKind::Blob => ManifestValueKind::Custom(ManifestCustomValueKind::Blob),
+            ValueKind::Decimal => ManifestValueKind::Custom(ManifestCustomValueKind::Decimal),
+            ValueKind::PreciseDecimal => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::PreciseDecimal)
             }
-            Type::NonFungibleLocalId => {
+            ValueKind::NonFungibleLocalId => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
             }
         }
@@ -323,7 +342,7 @@ impl Type {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     // ==============
-    // Basic Types
+    // Basic values
     // ==============
     Bool(bool),
     I8(i8),
@@ -338,13 +357,16 @@ pub enum Value {
     U128(u128),
     String(String),
 
+    // ==============
+    // Composite basic values
+    // ==============
     Enum(u8, Vec<Value>),
-    Array(Type, Vec<Value>),
+    Array(ValueKind, Vec<Value>),
     Tuple(Vec<Value>),
-    Map(Type, Type, Vec<Value>),
+    Map(ValueKind, ValueKind, Vec<Value>),
 
     // ==============
-    // Aliases
+    // Alias values
     // ==============
     Some(Box<Value>),
     None,
@@ -354,7 +376,7 @@ pub enum Value {
     NonFungibleGlobalId(Box<Value>),
 
     // ==============
-    // Custom Types
+    // Custom values
     // ==============
     Address(Box<Value>),
     Bucket(Box<Value>),
@@ -370,7 +392,7 @@ impl Value {
     pub const fn value_kind(&self) -> ManifestValueKind {
         match self {
             // ==============
-            // Basic Types
+            // Basic values
             // ==============
             Value::Bool(_) => ManifestValueKind::Bool,
             Value::I8(_) => ManifestValueKind::I8,
@@ -390,7 +412,7 @@ impl Value {
             Value::Map(_, _, _) => ManifestValueKind::Map,
 
             // ==============
-            // Aliases
+            // Aliase values
             // ==============
             Value::Some(_) => ManifestValueKind::Enum,
             Value::None => ManifestValueKind::Enum,
@@ -400,7 +422,7 @@ impl Value {
             Value::NonFungibleGlobalId(_) => ManifestValueKind::Tuple,
 
             // ==============
-            // Custom Types
+            // Custom values
             // ==============
             Value::Address(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
             Value::Bucket(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Bucket),

@@ -18,10 +18,10 @@ CALL_METHOD
     Enum<0u8>( "test")
     Err("test123")
     Enum<1u8>( "test123")
-    Enum<"Option::None">()
-    Enum<"Option::Some">( "a")
-    Enum<"Result::Ok">( "b")
-    Enum<"Result::Err">( "c")
+    Enum<Option::None>()
+    Enum<Option::Some>( "a")
+    Enum<Result::Ok>( "b")
+    Enum<Result::Err>( "c")
 
     # bytes
     Bytes("deadbeef")
@@ -39,7 +39,14 @@ CALL_METHOD
     Array<Bytes>(Bytes("dead"), Array<U8>(5u8, 10u8, 255u8))
     Array<Array>(Bytes("dead"), Array<U8>(5u8, 10u8, 255u8))
     Array<NonFungibleGlobalId>(NonFungibleGlobalId("${non_fungible_resource_address}:<value>"), Tuple(Address("${non_fungible_resource_address}"), NonFungibleLocalId("#1#")))
-    Array<Tuple>(NonFungibleGlobalId("${non_fungible_resource_address}:<value>"), Tuple(Address("${non_fungible_resource_address}"), NonFungibleLocalId("#1#")));
+    Array<Tuple>(NonFungibleGlobalId("${non_fungible_resource_address}:<value>"), Tuple(Address("${non_fungible_resource_address}"), NonFungibleLocalId("#1#")))
+    Array<Enum>(Some("hello"))
+    Array<Enum>(Enum<1u8>(), Enum<Option::None>())
+    Array<Map>(Map<U8, U16>())
+
+    # map
+    Map<U8, U16>(1u8, 5u16)
+;
 
 CALL_METHOD 
     Address("${component_address}")
@@ -62,4 +69,5 @@ CALL_METHOD
     NonFungibleLocalId("<SomeId>")
     NonFungibleLocalId("#12#")
     NonFungibleLocalId("[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
-    NonFungibleLocalId("{43968a72-5954-45da-9678-8659dd399faa}");
+    NonFungibleLocalId("{43968a72-5954-45da-9678-8659dd399faa}")
+;
