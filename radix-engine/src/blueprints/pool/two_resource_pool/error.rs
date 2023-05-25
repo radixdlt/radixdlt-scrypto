@@ -5,22 +5,18 @@ use radix_engine_common::ScryptoSbor;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TwoResourcePoolError {
-    PoolsDoNotSupportNonFungibleResources {
+    NonFungibleResourcesAreNotAccepted {
         resource_address: ResourceAddress,
     },
-    IllegalState,
+    NonZeroPoolUnitSupplyButZeroReserves,
     InvalidPoolUnitResource {
         expected: ResourceAddress,
         actual: ResourceAddress,
     },
-    FailedToFindVaultOfResource {
-        resource_address: ResourceAddress,
-    },
     ResourceDoesNotBelongToPool {
         resource_address: ResourceAddress,
     },
-    SameResourceError,
-    NotAllBucketsProvidedError,
+    PoolCreationWithSameResource,
     ContributionOfEmptyBucketError,
 }
 

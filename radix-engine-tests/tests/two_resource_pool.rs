@@ -343,7 +343,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
 
     // Assert
     receipt
-        .expect_specific_failure(is_two_resource_pool_does_not_support_non_fungible_resources_error)
+        .expect_specific_failure(is_two_resource_pool_does_non_fungible_resources_are_not_accepted)
 }
 
 #[test]
@@ -674,13 +674,13 @@ fn is_two_resource_pool_resource_does_not_belong_to_the_pool_error(
     )
 }
 
-fn is_two_resource_pool_does_not_support_non_fungible_resources_error(
+fn is_two_resource_pool_does_non_fungible_resources_are_not_accepted(
     runtime_error: &RuntimeError,
 ) -> bool {
     matches!(
         runtime_error,
         RuntimeError::ApplicationError(ApplicationError::TwoResourcePoolError(
-            TwoResourcePoolError::PoolsDoNotSupportNonFungibleResources { .. }
+            TwoResourcePoolError::NonFungibleResourcesAreNotAccepted { .. }
         ))
     )
 }

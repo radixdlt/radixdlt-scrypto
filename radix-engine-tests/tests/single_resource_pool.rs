@@ -280,7 +280,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
 
     // Assert
     receipt.expect_specific_failure(
-        is_single_resource_pool_does_not_support_non_fungible_resources_error,
+        is_single_resource_pool_does_non_fungible_resources_are_not_accepted,
     )
 }
 
@@ -577,13 +577,13 @@ impl TestEnvironment {
     }
 }
 
-fn is_single_resource_pool_does_not_support_non_fungible_resources_error(
+fn is_single_resource_pool_does_non_fungible_resources_are_not_accepted(
     runtime_error: &RuntimeError,
 ) -> bool {
     matches!(
         runtime_error,
         RuntimeError::ApplicationError(ApplicationError::SingleResourcePoolError(
-            SingleResourcePoolError::PoolsDoNotSupportNonFungibleResources { .. }
+            SingleResourcePoolError::NonFungibleResourcesAreNotAccepted { .. }
         ))
     )
 }

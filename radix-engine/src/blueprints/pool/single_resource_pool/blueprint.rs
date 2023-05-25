@@ -31,9 +31,7 @@ impl SingleResourcePoolBlueprint {
         // fungible resources.
         let resource_manager = ResourceManager(resource_address);
         if let ResourceType::NonFungible { .. } = resource_manager.resource_type(api)? {
-            Err(
-                SingleResourcePoolError::PoolsDoNotSupportNonFungibleResources { resource_address },
-            )?
+            Err(SingleResourcePoolError::NonFungibleResourcesAreNotAccepted { resource_address })?
         }
 
         // Allowing the component address of the pool - this will be used later for the component
@@ -126,12 +124,12 @@ impl SingleResourcePoolBlueprint {
         some amount exists. Let R denote the total amount of reserves that the pool has where 0 here
         means that no reserves exist in the pool and 1 means that some reserves exist in the pool.
 
-        PU, R
-        0 , 0 => This is a new pool - no pool units and no pool reserves.
-        0 , 1 => This is a pool which has been used but has dried out and all of the pool units have
+        PU  R
+        0   0 => This is a new pool - no pool units and no pool reserves.
+        0   1 => This is a pool which has been used but has dried out and all of the pool units have
                  been burned. The first contribution to this pool gets whatever dust is left behind.
-        1 , 0 => This is an illegal state! Some amount of people own some % of zero which is invalid
-        1 , 1 => The pool is in normal operations.
+        1   0 => This is an illegal state! Some amount of people own some % of zero which is invalid
+        1   1 => The pool is in normal operations.
 
         Thus depending on the supply of these resources the pool behaves differently.
          */
@@ -146,7 +144,7 @@ impl SingleResourcePoolBlueprint {
         ) {
             (false, false) => Ok(amount_of_contributed_resources),
             (false, true) => Ok(amount_of_contributed_resources + reserves),
-            (true, false) => Err(SingleResourcePoolError::IllegalState),
+            (true, false) => Err(SingleResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
             (true, true) => Ok(amount_of_contributed_resources / reserves * pool_unit_total_supply),
         }?;
 

@@ -29,7 +29,7 @@ impl TwoResourcePoolBlueprint {
     {
         // A pool can't be created between the same resources - error out if it's
         if resource_address1 == resource_address2 {
-            return Err(TwoResourcePoolError::SameResourceError.into());
+            return Err(TwoResourcePoolError::ContributionOfEmptyBucketError.into());
         }
 
         // A pool can't be created where one of the resources is non-fungible - error out if any of
@@ -37,12 +37,10 @@ impl TwoResourcePoolBlueprint {
         for resource_address in [resource_address1, resource_address2] {
             let resource_manager = ResourceManager(resource_address);
             if let ResourceType::NonFungible { .. } = resource_manager.resource_type(api)? {
-                return Err(
-                    TwoResourcePoolError::PoolsDoNotSupportNonFungibleResources {
-                        resource_address,
-                    }
-                    .into(),
-                );
+                return Err(TwoResourcePoolError::NonFungibleResourcesAreNotAccepted {
+                    resource_address,
+                }
+                .into());
             }
         }
 
@@ -226,7 +224,7 @@ impl TwoResourcePoolBlueprint {
 
                     Ok((pool_units_to_mint, amount1, amount2))
                 }
-                (true, _, _) => Err(TwoResourcePoolError::IllegalState),
+                (true, _, _) => Err(TwoResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
             }
         }?;
 
@@ -366,7 +364,7 @@ impl TwoResourcePoolBlueprint {
             Runtime::emit_event(api, event)?;
             Ok(())
         } else {
-            Err(TwoResourcePoolError::FailedToFindVaultOfResource { resource_address }.into())
+            Err(TwoResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
         }
     }
 
@@ -396,7 +394,7 @@ impl TwoResourcePoolBlueprint {
 
             Ok(bucket)
         } else {
-            Err(TwoResourcePoolError::FailedToFindVaultOfResource { resource_address }.into())
+            Err(TwoResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
         }
     }
 
