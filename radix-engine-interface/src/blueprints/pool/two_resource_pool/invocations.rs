@@ -25,7 +25,7 @@ define_invocation! {
     input: struct {
         buckets: (Bucket, Bucket)
     },
-    output: type (Bucket, Vec<Bucket>),
+    output: type (Bucket, Option<Bucket>),
     manifest_input: struct {
         buckets: (ManifestBucket, ManifestBucket)
     }

@@ -81,7 +81,6 @@ impl TwoResourcePoolBlueprint {
                     (resource_address2, Vault::create(resource_address2, api)?.0),
                 ],
                 pool_unit_resource,
-                initial_pool_unit_amount: None,
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -125,8 +124,11 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
+        let (substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
 
+        // Getting the vaults of the two resource pool - before getting them we sort them according
+        // to a deterministic and predictable order. This helps make the code less generalized and
+        // simple.
         let (mut vault1, mut vault2) = {
             let vault1 = Vault(substate.vaults[0].1);
             let vault2 = Vault(substate.vaults[1].1);
@@ -141,6 +143,9 @@ impl TwoResourcePoolBlueprint {
             }
         };
 
+        // Getting the buckets of the two resource pool - before getting them we sort them according
+        // to a deterministic and predictable order. This helps make the code less generalized and
+        // simple.
         let (bucket1, bucket2) = {
             let resource_address1 = bucket1.resource_address(api)?;
             let resource_address2 = bucket2.resource_address(api)?;
@@ -152,6 +157,7 @@ impl TwoResourcePoolBlueprint {
             }
         };
 
+        // Ensure that the two buckets given as arguments match the two vaults that the pool has.
         if bucket1.resource_address(api)? != vault1.resource_address(api)? {
             let resource_address = bucket1.resource_address(api)?;
             return Err(
@@ -165,22 +171,32 @@ impl TwoResourcePoolBlueprint {
             );
         }
 
-        let (pool_units_to_mint, contribution1, contribution2) =
-            if let Some(initially_minted_pool_units) = substate.initial_pool_unit_amount {
-                let pool_unit_total_supply =
-                    substate.pool_unit_resource_manager().total_supply(api)?;
-                let reserves1 = vault1.amount(api)?;
-                let reserves2 = vault2.amount(api)?;
+        // Determine the amount of pool units to mint based on the the current state of the pool.
+        let (pool_units_to_mint, amount1, amount2) = {
+            let pool_unit_total_supply = substate.pool_unit_resource_manager().total_supply(api)?;
+            let reserves1 = vault1.amount(api)?;
+            let reserves2 = vault2.amount(api)?;
+            let contribution1 = bucket1.amount(api)?;
+            let contribution2 = bucket2.amount(api)?;
 
-                if pool_unit_total_supply == Decimal::ZERO {
-                    // TODO: Use the same ratio here as the initial contribution? That would not be
-                    // right as the ratio could've changed to very drastically over the years.
-                    let contribution1 = bucket1.amount(api)?;
-                    let contribution2 = bucket2.amount(api)?;
-                    (initially_minted_pool_units, contribution1, contribution2)
-                } else if reserves1 == Decimal::ZERO || reserves2 == Decimal::ZERO {
-                    return Err(TwoResourcePoolError::IllegalState.into());
-                } else {
+            match (
+                pool_unit_total_supply > Decimal::ZERO,
+                reserves1 > Decimal::ZERO,
+                reserves2 > Decimal::ZERO,
+            ) {
+                (false, false, false) => Ok((
+                    (contribution1 * contribution2).sqrt().unwrap(),
+                    contribution1,
+                    contribution2,
+                )),
+                (false, _, _) => Ok((
+                    ((contribution1 + reserves1) * (contribution2 + reserves2))
+                        .sqrt()
+                        .unwrap(),
+                    contribution1,
+                    contribution2,
+                )),
+                (true, true, true) => {
                     // Calculating everything in terms of m, n, dm, and dn where they're defined as
                     // follows:
                     // m:  the reserves of the first resource.
@@ -190,10 +206,10 @@ impl TwoResourcePoolBlueprint {
 
                     let m = reserves1;
                     let n = reserves2;
-                    let dm = bucket1.amount(api)?;
-                    let dn = bucket2.amount(api)?;
+                    let dm = contribution1;
+                    let dn = contribution2;
 
-                    let (contribution1, contribution2) = if (m / n) == (dm / dn) {
+                    let (amount1, amount2) = if (m / n) == (dm / dn) {
                         (dm, dn)
                     } else if (m / n) < (dm / dn) {
                         (dn * m / n, dn)
@@ -201,37 +217,40 @@ impl TwoResourcePoolBlueprint {
                         (dm, dm * n / m)
                     };
 
-                    let pool_units_to_mint = contribution1 / reserves1 * pool_unit_total_supply;
+                    let pool_units_to_mint = amount1 / reserves1 * pool_unit_total_supply;
 
-                    (pool_units_to_mint, contribution1, contribution2)
+                    Ok((pool_units_to_mint, amount1, amount2))
                 }
-            } else {
-                let contribution1 = bucket1.amount(api)?;
-                let contribution2 = bucket2.amount(api)?;
-                let pool_units_to_mint = (contribution1 * contribution2).sqrt().unwrap();
+                (true, _, _) => Err(TwoResourcePoolError::IllegalState),
+            }
+        }?;
 
-                (pool_units_to_mint, contribution1, contribution2)
-            };
-
-        bucket1
-            .take(contribution1, api)
-            .and_then(|bucket| vault1.put(bucket, api))?;
-        bucket2
-            .take(contribution2, api)
-            .and_then(|bucket| vault2.put(bucket, api))?;
-
-        let change_buckets = vec![bucket1, bucket2];
         let pool_units = substate
             .pool_unit_resource_manager()
             .mint_fungible(pool_units_to_mint, api)?;
 
-        if substate.initial_pool_unit_amount.is_none() {
-            substate.initial_pool_unit_amount = Some(pool_units_to_mint);
-            api.field_lock_write_typed(handle, substate)?;
-        }
+        bucket1
+            .take(amount1, api)
+            .and_then(|bucket| vault1.put(bucket, api))?;
+        bucket2
+            .take(amount2, api)
+            .and_then(|bucket| vault2.put(bucket, api))?;
+
+        let change_bucket = if !bucket1.is_empty(api)? {
+            bucket2.drop_empty(api)?;
+            Some(bucket1)
+        } else if !bucket2.is_empty(api)? {
+            bucket1.drop_empty(api)?;
+            Some(bucket2)
+        } else {
+            bucket1.drop_empty(api)?;
+            bucket2.drop_empty(api)?;
+            None
+        };
+
         api.field_lock_release(handle)?;
 
-        Ok((pool_units, change_buckets))
+        Ok((pool_units, change_bucket))
     }
 
     pub fn redeem<Y>(

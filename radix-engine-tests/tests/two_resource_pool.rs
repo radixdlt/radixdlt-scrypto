@@ -254,7 +254,7 @@ pub fn contribution_provides_expected_pool_unit_resources5() {
     // Arrange
     let contribution1 = (test_runner.pool_resource1, 50);
     let contribution2 = (test_runner.pool_resource2, 50);
-    let expected_pool_units = 100;
+    let expected_pool_units = 50;
     let expected_change1 = 0;
     let expected_change2 = 0;
 
