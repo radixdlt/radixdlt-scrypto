@@ -927,7 +927,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_ROLE: &'static str = "owner";
     const SECURIFY_METHOD: Option<&'static str> = None;
 
-    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
+    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
         method_permissions!(
             MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
 

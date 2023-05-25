@@ -1294,7 +1294,7 @@ fn locked_access_rules() -> RuleSet {
 
 fn init_access_rules_from_rule_set(
     rule_set: RuleSet,
-) -> (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>) {
+) -> (Roles, BTreeMap<MethodKey, MethodEntry>) {
     let role_definitions = roles! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, mut ["self"];

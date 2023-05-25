@@ -17,10 +17,10 @@ fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
     Roles,
-    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
-    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
-    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
-    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
+    BTreeMap<MethodKey, MethodEntry>,
+    BTreeMap<MethodKey, MethodEntry>,
+    BTreeMap<MethodKey, MethodEntry>,
+    BTreeMap<MethodKey, MethodEntry>,
 ) {
     let mut roles = Roles::new();
 

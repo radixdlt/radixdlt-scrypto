@@ -17,22 +17,22 @@ macro_rules! event_schema {
 #[macro_export]
 macro_rules! permission_entry {
     ($permissions: expr, $method: expr, $permission:expr) => {{
-        $permissions.insert($method, ($permission.into(), RoleList::none()))
+        $permissions.insert($method, MethodEntry::new($permission, RoleList::none()))
     }};
     ($permissions: expr, $method: expr, $permission:expr, $mutability:expr) => {{
-        $permissions.insert($method, ($permission.into(), $mutability.into()))
+        $permissions.insert($method, MethodEntry::new($permission, $mutability))
     }};
 }
 
 #[macro_export]
 macro_rules! method_permissions {
     ( $($key:expr => $($entry:expr),* );* ) => ({
-        let mut temp: BTreeMap<MethodKey, (MethodPermission, RoleList)>
+        let mut methods: BTreeMap<MethodKey, MethodEntry>
             = BTreeMap::new();
         $(
-            permission_entry!(temp, $key, $($entry),*);
+            permission_entry!(methods, $key, $($entry),*);
         )*
-        temp
+        methods
     });
     ( $($key:expr => $($entry:expr),*;)* ) => (
         method_permissions!{$($key => $($entry),*);*}

@@ -117,7 +117,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
+    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
         method_permissions!(
             MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [Self::OWNER_ROLE];

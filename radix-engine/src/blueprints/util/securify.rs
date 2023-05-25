@@ -10,7 +10,7 @@ pub trait SecurifiedAccessRules {
     const OWNER_ROLE: &'static str;
     const SECURIFY_METHOD: Option<&'static str> = None;
 
-    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)>;
+    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry>;
 
     fn role_definitions() -> Roles;
 
@@ -25,8 +25,8 @@ pub trait SecurifiedAccessRules {
     }
 
     fn create_method_permissions(
-        securify_permission: (MethodPermission, RoleList),
-    ) -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
+        securify_permission: MethodEntry,
+    ) -> BTreeMap<MethodKey, MethodEntry> {
         let mut method_permissions = Self::method_permissions();
         if let Some(securify) = Self::SECURIFY_METHOD {
             method_permissions.insert(MethodKey::main(securify), securify_permission);
@@ -41,7 +41,7 @@ pub trait SecurifiedAccessRules {
         let (rule, mutability) = owner_rule.to_rules(Self::OWNER_ROLE);
         let roles = Self::create_roles(rule, mutability);
         let method_permissions =
-            Self::create_method_permissions((MethodPermission::nobody(), RoleList::none()));
+            Self::create_method_permissions(MethodEntry::disabled());
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
 
         Ok(access_rules)
@@ -52,7 +52,7 @@ pub trait SecurifiedAccessRules {
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let roles = Self::create_roles(AccessRule::DenyAll, [SELF_ROLE]);
         let method_permissions =
-            Self::create_method_permissions((MethodPermission::nobody(), RoleList::none()));
+            Self::create_method_permissions(MethodEntry::disabled());
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
         let bucket = Self::securify_access_rules(&access_rules, api)?;
         Ok((access_rules, bucket))
@@ -93,7 +93,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let roles = Self::create_roles(rule!(require(owner_id)), [SELF_ROLE]);
         let method_permissions =
-            Self::create_method_permissions(([Self::OWNER_ROLE].into(), [SELF_ROLE].into()));
+            Self::create_method_permissions(MethodEntry::new([Self::OWNER_ROLE], [SELF_ROLE]));
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
         Ok(access_rules)
     }

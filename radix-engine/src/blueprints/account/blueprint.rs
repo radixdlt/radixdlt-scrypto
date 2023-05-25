@@ -55,7 +55,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_METHOD: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
 
-    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
+    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
         method_permissions!(
             MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT) => [Self::OWNER_ROLE];
