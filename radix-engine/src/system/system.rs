@@ -1,3 +1,4 @@
+use super::node_modules::type_info::KeyValueStoreInfo;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
@@ -1164,13 +1165,23 @@ where
 
         let entity_type = EntityType::InternalKeyValueStore;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
+        let created_in = self
+            .api
+            .kernel_get_system_state()
+            .current
+            .blueprint()
+            .package_address;
 
         self.api.kernel_create_node(
             node_id,
             btreemap!(
                 OBJECT_BASE_PARTITION => btreemap!(),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::KeyValueStore(schema)
+                    TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
+                        schema,
+                        can_own: true,
+                        created_in
+                    })
                 ).to_substates(),
             ),
         )?;
@@ -1184,14 +1195,14 @@ where
         node_id: &NodeId,
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
-        let schema = match type_info {
+        let info = match type_info {
             TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
-            TypeInfoSubstate::KeyValueStore(schema) => schema,
+            TypeInfoSubstate::KeyValueStore(info) => info,
         };
 
-        Ok(schema)
+        Ok(info.schema)
     }
 
     #[trace_resources]
@@ -1215,22 +1226,22 @@ where
 
         self.validate_payload(
             key,
-            &info.schema,
-            info.kv_store_schema.key,
+            &info.schema.schema,
+            info.schema.key,
             SchemaOrigin::KeyValueStore,
         )
         .map_err(|e| {
             RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
-                e.error_message(&info.schema),
+                e.error_message(&info.schema.schema),
             ))
         })?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
                 schema_origin: SchemaOrigin::KeyValueStore,
-                schema: info.schema,
-                index: info.kv_store_schema.value,
-                can_own: info.kv_store_schema.can_own,
+                schema: info.schema.schema,
+                index: info.schema.value,
+                can_own: info.can_own,
             })
         } else {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
