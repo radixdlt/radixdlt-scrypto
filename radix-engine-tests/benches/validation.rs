@@ -58,8 +58,8 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(100),
             nonce: 1,
             notary_public_key: signer.public_key().into(),
             notary_is_signatory: true,

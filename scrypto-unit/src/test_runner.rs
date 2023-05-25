@@ -131,13 +131,13 @@ impl Compile {
 
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
-    pub initial_epoch: u64,
+    pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
-    pub fn default(initial_epoch: u64, initial_config: ConsensusManagerConfig) -> CustomGenesis {
+    pub fn default(initial_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
             .public_key();
@@ -170,7 +170,7 @@ impl CustomGenesis {
         validator_public_key: EcdsaSecp256k1PublicKey,
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
-        initial_epoch: u64,
+        initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
@@ -1196,7 +1196,7 @@ impl TestRunner {
         receipt.expect_commit(true).new_component_addresses()[0]
     }
 
-    pub fn set_current_epoch(&mut self, epoch: u32) {
+    pub fn set_current_epoch(&mut self, epoch: Epoch) {
         let mut substate = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
@@ -1205,7 +1205,7 @@ impl TestRunner {
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();
-        substate.epoch = epoch as u64;
+        substate.epoch = epoch;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             OBJECT_BASE_PARTITION,
@@ -1214,7 +1214,7 @@ impl TestRunner {
         );
     }
 
-    pub fn get_current_epoch(&mut self) -> u32 {
+    pub fn get_current_epoch(&mut self) -> Epoch {
         let receipt = self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
@@ -1223,7 +1223,7 @@ impl TestRunner {
             }],
             btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit(true).output::<u64>(0) as u32
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1287,7 +1287,7 @@ impl TestRunner {
     /// Please note that this assumes that state is right at the beginning of an epoch.
     pub fn advance_to_round_at_timestamp(
         &mut self,
-        round: u64,
+        round: Round,
         proposer_timestamp_ms: i64,
     ) -> TransactionReceipt {
         self.execute_system_transaction(
@@ -1298,7 +1298,7 @@ impl TestRunner {
                     round,
                     proposer_timestamp_ms,
                     leader_proposal_history: LeaderProposalHistory {
-                        gap_round_leaders: (1..round).map(|_| 0).collect(),
+                        gap_round_leaders: (1..round.number()).map(|_| 0).collect(),
                         current_leader: 0,
                         is_fallback: false,
                     },
@@ -1309,7 +1309,7 @@ impl TestRunner {
     }
 
     /// Performs an [`advance_to_round_at_timestamp()`] with an unchanged timestamp.
-    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+    pub fn advance_to_round(&mut self, round: Round) -> TransactionReceipt {
         let current_timestamp_ms = self.get_current_proposer_timestamp_ms();
         self.advance_to_round_at_timestamp(round, current_timestamp_ms)
     }

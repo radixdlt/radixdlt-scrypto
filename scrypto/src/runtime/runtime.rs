@@ -23,7 +23,7 @@ pub struct Runtime {}
 
 impl Runtime {
     /// Returns the current epoch
-    pub fn current_epoch() -> u64 {
+    pub fn current_epoch() -> Epoch {
         let rtn = ScryptoEnv
             .call_method(
                 CONSENSUS_MANAGER.as_node_id(),

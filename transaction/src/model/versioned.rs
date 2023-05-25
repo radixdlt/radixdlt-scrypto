@@ -116,8 +116,8 @@ mod tests {
         //===================
         let header_v1 = TransactionHeaderV1 {
             network_id: network.id,
-            start_epoch_inclusive: 1,
-            end_epoch_exclusive: 5,
+            start_epoch_inclusive: Epoch::of(1),
+            end_epoch_exclusive: Epoch::of(5),
             nonce: 0,
             notary_public_key: notary_private_key.public_key().into(),
             notary_is_signatory: false,

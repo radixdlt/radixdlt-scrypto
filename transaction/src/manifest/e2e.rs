@@ -925,8 +925,8 @@ CREATE_ACCESS_CONTROLLER
         IntentV1 {
             header: TransactionHeaderV1 {
                 network_id: network.id,
-                start_epoch_inclusive: 0,
-                end_epoch_exclusive: 1000,
+                start_epoch_inclusive: Epoch::zero(),
+                end_epoch_exclusive: Epoch::of(1000),
                 nonce: 5,
                 notary_public_key: sk_notary.public_key().into(),
                 notary_is_signatory: false,

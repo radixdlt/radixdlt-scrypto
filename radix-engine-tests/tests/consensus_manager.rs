@@ -21,7 +21,7 @@ use transaction::model::InstructionV1;
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
     // Arrange
-    let initial_epoch = 1u64;
+    let initial_epoch = Epoch::of(1);
     let max_validators = 100u32;
 
     let mut stake_allocations = Vec::new();
@@ -137,8 +137,8 @@ fn get_epoch_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let epoch: u64 = receipt.expect_commit_success().output(1);
-    assert_eq!(epoch, 1);
+    let epoch: Epoch = receipt.expect_commit_success().output(1);
+    assert_eq!(epoch.number(), 1);
 }
 
 #[test]
@@ -148,7 +148,7 @@ fn next_round_without_supervisor_auth_fails() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/consensus_manager");
 
     // Act
-    let round = 9876u64;
+    let round = Round::of(9876);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
@@ -175,8 +175,8 @@ fn next_round_without_supervisor_auth_fails() {
 #[test]
 fn next_round_with_validator_auth_succeeds() {
     // Arrange
-    let initial_epoch = 1u64;
-    let rounds_per_epoch = 5u64;
+    let initial_epoch = Epoch::of(1);
+    let rounds_per_epoch = 5;
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
@@ -190,7 +190,7 @@ fn next_round_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch - 1);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -200,8 +200,8 @@ fn next_round_with_validator_auth_succeeds() {
 #[test]
 fn next_round_causes_epoch_change_on_reaching_max_rounds() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 100u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 100;
     let epoch_duration_millis = 1000;
     let genesis = CustomGenesis::default(
         initial_epoch,
@@ -216,20 +216,20 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let receipt =
-        test_runner.advance_to_round_at_timestamp(rounds_per_epoch, epoch_duration_millis - 1);
+    let receipt = test_runner
+        .advance_to_round_at_timestamp(Round::of(rounds_per_epoch), epoch_duration_millis - 1);
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch").epoch;
-    assert_eq!(next_epoch, initial_epoch + 1);
+    assert_eq!(next_epoch, initial_epoch.next());
 }
 
 #[test]
 fn next_round_causes_epoch_change_on_reaching_target_duration() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 100u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 100;
     let epoch_duration_millis = 1000;
     let genesis = CustomGenesis::default(
         initial_epoch,
@@ -244,19 +244,20 @@ fn next_round_causes_epoch_change_on_reaching_target_duration() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let receipt = test_runner.advance_to_round_at_timestamp(1, epoch_duration_millis as i64);
+    let receipt =
+        test_runner.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
 }
 
 #[test]
 fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_round_count() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 100u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 100;
     let epoch_duration_millis = 1000;
     let genesis = CustomGenesis::default(
         initial_epoch,
@@ -271,7 +272,8 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let receipt = test_runner.advance_to_round_at_timestamp(1, epoch_duration_millis as i64);
+    let receipt =
+        test_runner.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -281,7 +283,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
 #[test]
 fn register_validator_with_auth_succeeds() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -314,7 +316,7 @@ fn register_validator_with_auth_succeeds() {
 #[test]
 fn register_validator_without_auth_fails() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -345,7 +347,7 @@ fn register_validator_without_auth_fails() {
 #[test]
 fn unregister_validator_with_auth_succeeds() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -378,7 +380,7 @@ fn unregister_validator_with_auth_succeeds() {
 #[test]
 fn unregister_validator_without_auth_fails() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -408,7 +410,7 @@ fn unregister_validator_without_auth_fails() {
 
 fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -487,8 +489,8 @@ fn not_allowing_delegated_stake_should_not_let_non_owner_stake() {
 #[test]
 fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_epoch_change() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 2;
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
@@ -514,12 +516,12 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
     assert!(!next_epoch
         .validator_set
         .get_by_address(&validator_address)
@@ -529,7 +531,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
 #[test]
 fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     // Arrange
-    let initial_epoch = 2;
+    let initial_epoch = Epoch::of(2);
     let epoch_emissions_xrd = dec!("0.1");
     let a_initial_stake = dec!("2.5");
     let b_initial_stake = dec!("7.5");
@@ -580,7 +582,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let receipt = test_runner.advance_to_round(1);
+    let receipt = test_runner.advance_to_round(Round::of(1));
 
     // Assert
     let a_substate = test_runner.get_active_validator_info_by_key(&a_key);
@@ -672,7 +674,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
 #[test]
 fn validator_receives_emission_penalty_when_some_proposals_missed() {
     // Arrange
-    let initial_epoch = 5;
+    let initial_epoch = Epoch::of(5);
     let epoch_emissions_xrd = dec!("10");
     let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
     let min_required_reliability = dec!("0.2"); // ...which barely meets the threshold
@@ -695,7 +697,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert: stake vault balance increased by the given emission * reliability factor
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_pub_key);
@@ -753,7 +755,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
 #[test]
 fn validator_receives_no_emission_when_too_many_proposals_missed() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let epoch_emissions_xrd = dec!("10");
     let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
     let min_required_reliability = dec!("0.3"); // ...which does NOT meet the threshold
@@ -776,7 +778,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_pub_key);
@@ -818,7 +820,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 #[test]
 fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let initial_stake_amount = dec!("4000.0"); // big and round numbers
     let emission_xrd_per_epoch = dec!("1000.0"); // to avoid rounding errors
     let next_epoch_fee_factor = dec!("0.25"); // for easier asserts
@@ -860,7 +862,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         .expect_commit_success();
 
     // Act: change epoch
-    let receipt = test_runner.advance_to_round(1);
+    let receipt = test_runner.advance_to_round(Round::of(1));
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during that epoch)
     let result = receipt.expect_commit_success();
@@ -888,7 +890,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     );
 
     // Act: change epoch
-    let receipt = test_runner.advance_to_round(1);
+    let receipt = test_runner.advance_to_round(Round::of(1));
 
     // Assert: during that next epoch, the `next_epoch_fee_factor` was already effective
     let result = receipt.expect_commit_success();
@@ -898,7 +900,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     assert_eq!(
         test_runner.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result),
         vec![ValidatorEmissionAppliedEvent {
-            epoch: initial_epoch + 1,
+            epoch: initial_epoch.next(),
             starting_stake_pool_xrd: next_epoch_start_stake_xrd,
             stake_pool_added_xrd: next_epoch_net_emission_xrd,
             total_stake_unit_supply: next_epoch_start_stake_xrd, // we auto-staked 100%, so the rate is still 1:1
@@ -928,7 +930,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
 #[test]
 fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let fee_increase_delay_epochs = 4;
     let initial_stake_amount = dec!("9.0");
     let emission_xrd_per_epoch = dec!("2.0");
@@ -975,8 +977,10 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         .expect_commit_success();
 
     // ... and wait 1 epoch to make it effective
-    test_runner.advance_to_round(1).expect_commit_success();
-    let current_epoch = initial_epoch + 1;
+    test_runner
+        .advance_to_round(Round::of(1))
+        .expect_commit_success();
+    let current_epoch = initial_epoch.next();
 
     // Act: request the fee increase
     test_runner
@@ -993,26 +997,32 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
         )
         .expect_commit_success();
-    let increase_effective_at_epoch = current_epoch + fee_increase_delay_epochs;
+    let increase_effective_at_epoch = current_epoch.after(fee_increase_delay_epochs);
 
     // advance a few epochs (just 1 short of the increase being effective)
-    for _ in current_epoch..increase_effective_at_epoch {
-        test_runner.advance_to_round(1).expect_commit_success();
+    // Note: we deliberately do not use `set_current_epoch()`, since we want the "next epoch" engine logic to execute
+    for _ in current_epoch.number()..increase_effective_at_epoch.number() {
+        test_runner
+            .advance_to_round(Round::of(1))
+            .expect_commit_success();
     }
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during all these epochs)
-    let num_epochs_with_default_fee = Decimal::from(increase_effective_at_epoch - initial_epoch);
+    let num_epochs_with_default_fee = increase_effective_at_epoch.number() - initial_epoch.number();
     assert_eq!(
         precise_enough(
             test_runner
                 .inspect_vault_balance(stake_xrd_vault_id)
                 .unwrap()
         ),
-        precise_enough(initial_stake_amount + num_epochs_with_default_fee * emission_xrd_per_epoch)
+        precise_enough(
+            initial_stake_amount
+                + Decimal::from(num_epochs_with_default_fee) * emission_xrd_per_epoch
+        )
     );
 
     // Act: advance one more epoch
-    let receipt = test_runner.advance_to_round(1);
+    let receipt = test_runner.advance_to_round(Round::of(1));
 
     // Assert: during that next epoch, the `increased_fee_factor` was already effective
     let result = receipt.expect_commit_success();
@@ -1033,7 +1043,8 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         ValidatorEmissionAppliedEvent {
             epoch: increase_effective_at_epoch,
             starting_stake_pool_xrd: precise_enough(
-                initial_stake_amount + num_epochs_with_default_fee * emission_xrd_per_epoch
+                initial_stake_amount
+                    + Decimal::from(num_epochs_with_default_fee) * emission_xrd_per_epoch
             ),
             stake_pool_added_xrd: precise_enough(
                 emission_xrd_per_epoch * (Decimal::one() - increased_fee_factor)
@@ -1048,8 +1059,8 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 }
 
 fn create_custom_genesis(
-    initial_epoch: u64,
-    rounds_per_epoch: u64,
+    initial_epoch: Epoch,
+    rounds_per_epoch: u32,
     num_initial_validators: usize,
     max_validators: usize,
     initial_stakes: Decimal,
@@ -1272,8 +1283,8 @@ fn registered_validator_test(
     expected_num_validators_in_next_epoch: usize,
 ) {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 2;
     let (genesis, accounts) = create_custom_genesis(
         initial_epoch,
         rounds_per_epoch,
@@ -1294,7 +1305,7 @@ fn registered_validator_test(
     );
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -1303,7 +1314,7 @@ fn registered_validator_test(
         next_epoch.validator_set.validators_by_stake_desc.len(),
         expected_num_validators_in_next_epoch
     );
-    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
     assert_eq!(
         next_epoch
             .validator_set
@@ -1370,8 +1381,8 @@ fn low_stakes_should_cause_no_problems() {
 #[test]
 fn test_registering_and_staking_many_validators() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 2;
     let (genesis, accounts) = create_custom_genesis(
         initial_epoch,
         rounds_per_epoch,
@@ -1413,20 +1424,20 @@ fn test_registering_and_staking_many_validators() {
     }
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.validator_set.validators_by_stake_desc.len(), 10);
-    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
 }
 
 #[test]
 fn unregistered_validator_gets_removed_on_epoch_change() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 2;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1459,12 +1470,12 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
     assert!(!next_epoch
         .validator_set
         .validators_by_stake_desc
@@ -1474,8 +1485,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 #[test]
 fn updated_validator_keys_gets_updated_on_epoch_change() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 2;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1515,12 +1526,12 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
     assert_eq!(
         next_epoch
             .validator_set
@@ -1535,7 +1546,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
 #[test]
 fn cannot_claim_unstake_immediately() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1592,7 +1603,7 @@ fn cannot_claim_unstake_immediately() {
 #[test]
 fn can_claim_unstake_after_epochs() {
     // Arrange
-    let initial_epoch = 5u32;
+    let initial_epoch = Epoch::of(5);
     let num_unstake_epochs = 7u32;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
@@ -1605,9 +1616,9 @@ fn can_claim_unstake_after_epochs() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch as u64,
+        initial_epoch,
         CustomGenesis::default_consensus_manager_config()
-            .with_num_unstake_epochs(num_unstake_epochs as u64),
+            .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
@@ -1633,7 +1644,7 @@ fn can_claim_unstake_after_epochs() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1670,7 +1681,7 @@ fn owner_can_lock_stake_units() {
         validator_key,
         total_stake_amount,
         validator_account,
-        5,
+        Epoch::of(5),
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1714,7 +1725,7 @@ fn owner_can_lock_stake_units() {
 #[test]
 fn owner_can_start_unlocking_stake_units() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let unlock_epochs_delay = 2;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -1789,7 +1800,7 @@ fn owner_can_start_unlocking_stake_units() {
     );
     assert_eq!(
         substate.pending_owner_stake_unit_withdrawals, // scheduled for unlock in future
-        btreemap!(initial_epoch + unlock_epochs_delay => stake_units_to_unlock_amount)
+        btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_amount)
     );
     assert_eq!(
         test_runner.account_balance(validator_account, stake_unit_resource),
@@ -1800,7 +1811,7 @@ fn owner_can_start_unlocking_stake_units() {
 #[test]
 fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let unlock_epochs_delay = 2;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -1879,7 +1890,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     );
     assert_eq!(
         substate.pending_owner_stake_unit_withdrawals, // scheduled for unlock in future
-        btreemap!(initial_epoch + unlock_epochs_delay => stake_units_to_unlock_total_amount)
+        btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_total_amount)
     );
     assert_eq!(
         test_runner.account_balance(validator_account, stake_unit_resource),
@@ -1890,7 +1901,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
 #[test]
 fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate_field() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let unlock_epochs_delay = 2;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("1.0");
@@ -1957,7 +1968,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .expect_commit_success();
 
     // Act (start unlock again after sufficient delay)
-    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
+    test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -1989,14 +2000,14 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     );
     assert_eq!(
         substate.pending_owner_stake_unit_withdrawals, // the "next unlock" is scheduled much later
-        btreemap!(initial_epoch + 2 * unlock_epochs_delay => stake_units_to_unlock_next_amount)
+        btreemap!(initial_epoch.after(2 * unlock_epochs_delay) => stake_units_to_unlock_next_amount)
     );
 }
 
 #[test]
 fn owner_can_finish_unlocking_stake_units_after_delay() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let unlock_epochs_delay = 5;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -2061,7 +2072,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after sufficient delay)
-    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
+    test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -2101,7 +2112,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
 #[test]
 fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     // Arrange
-    let initial_epoch = 7;
+    let initial_epoch = Epoch::of(7);
     let unlock_epochs_delay = 5;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -2166,7 +2177,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after insufficient delay)
-    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32 / 2);
+    test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay / 2));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -2190,7 +2201,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     );
     assert_eq!(
         substate.pending_owner_stake_unit_withdrawals, // still scheduled for unlock in future
-        btreemap!(initial_epoch + unlock_epochs_delay => stake_units_to_unlock_amount)
+        btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_amount)
     );
     assert_eq!(
         test_runner.account_balance(validator_account, stake_unit_resource),
@@ -2201,8 +2212,8 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
 #[test]
 fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 2;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -2250,12 +2261,12 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
     assert_eq!(
         next_epoch
             .validator_set
@@ -2319,7 +2330,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
             args: manifest_args!(
                 Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
                 Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
-                1u64,
+                Epoch::of(1),
                 CustomGenesis::default_consensus_manager_config(),
                 120000i64
             ),

@@ -25,15 +25,15 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
-    const CURRENT_EPOCH: u32 = 150;
-    const VALID_FROM_EPOCH: u32 = 151;
-    const VALID_UNTIL_EPOCH: u32 = 151;
+    let current_epoch = Epoch::of(150);
+    let valid_from_epoch = Epoch::of(151);
+    let valid_until_epoch = Epoch::of(151);
 
-    test_runner.set_current_epoch(CURRENT_EPOCH);
+    test_runner.set_current_epoch(current_epoch);
 
     let transaction = create_notarized_transaction(TransactionParams {
-        start_epoch_inclusive: VALID_FROM_EPOCH,
-        end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
+        start_epoch_inclusive: valid_from_epoch,
+        end_epoch_exclusive: valid_until_epoch.next(),
     });
 
     // Act
@@ -42,18 +42,13 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 
     // Assert
     let rejection_error = receipt.expect_rejection();
-    if !matches!(
+    assert_eq!(
         rejection_error,
-        RejectionError::TransactionEpochNotYetValid {
-            valid_from: VALID_FROM_EPOCH,
-            current_epoch: CURRENT_EPOCH
+        &RejectionError::TransactionEpochNotYetValid {
+            valid_from: valid_from_epoch,
+            current_epoch
         }
-    ) {
-        panic!(
-            "Expected TransactionEpochNotYetValid error but was {}",
-            rejection_error
-        );
-    }
+    );
 }
 
 #[test]
@@ -61,15 +56,15 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
-    const CURRENT_EPOCH: u32 = 157;
-    const VALID_FROM_EPOCH: u32 = 151;
-    const VALID_UNTIL_EPOCH: u32 = 154;
+    let current_epoch = Epoch::of(157);
+    let valid_from_epoch = Epoch::of(151);
+    let valid_until_epoch = Epoch::of(154);
 
-    test_runner.set_current_epoch(CURRENT_EPOCH);
+    test_runner.set_current_epoch(current_epoch);
 
     let transaction = create_notarized_transaction(TransactionParams {
-        start_epoch_inclusive: VALID_FROM_EPOCH,
-        end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
+        start_epoch_inclusive: valid_from_epoch,
+        end_epoch_exclusive: valid_until_epoch.next(),
     });
 
     // Act
@@ -78,18 +73,13 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 
     // Assert
     let rejection_error = receipt.expect_rejection();
-    if !matches!(
+    assert_eq!(
         rejection_error,
-        RejectionError::TransactionEpochNoLongerValid {
-            valid_until: VALID_UNTIL_EPOCH,
-            current_epoch: CURRENT_EPOCH
+        &RejectionError::TransactionEpochNoLongerValid {
+            valid_until: valid_until_epoch,
+            current_epoch
         }
-    ) {
-        panic!(
-            "Expected TransactionEpochNoLongerValid error but was {}",
-            rejection_error
-        );
-    }
+    );
 }
 
 #[test]
@@ -108,8 +98,8 @@ fn test_normal_transaction_flow() {
     let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::standard().with_trace(true);
     let raw_transaction = create_notarized_transaction(TransactionParams {
-        start_epoch_inclusive: 0,
-        end_epoch_exclusive: 100,
+        start_epoch_inclusive: Epoch::zero(),
+        end_epoch_exclusive: Epoch::of(100),
     })
     .to_payload_bytes()
     .unwrap();
@@ -133,8 +123,8 @@ fn test_normal_transaction_flow() {
     receipt.expect_commit_success();
 }
 
-fn get_validated<'a>(
-    transaction: &'a NotarizedTransactionV1,
+fn get_validated(
+    transaction: &NotarizedTransactionV1,
 ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
@@ -142,8 +132,8 @@ fn get_validated<'a>(
 }
 
 struct TransactionParams {
-    start_epoch_inclusive: u32,
-    end_epoch_exclusive: u32,
+    start_epoch_inclusive: Epoch,
+    end_epoch_exclusive: Epoch,
 }
 
 fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransactionV1 {

@@ -43,12 +43,12 @@ pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
     TransactionEpochNotYetValid {
-        valid_from: u32,
-        current_epoch: u32,
+        valid_from: Epoch,
+        current_epoch: Epoch,
     },
     TransactionEpochNoLongerValid {
-        valid_until: u32,
-        current_epoch: u32,
+        valid_until: Epoch,
+        current_epoch: Epoch,
     },
 }
 

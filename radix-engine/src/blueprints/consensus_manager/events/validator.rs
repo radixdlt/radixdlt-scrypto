@@ -30,7 +30,7 @@ pub struct UpdateAcceptingStakeDelegationStateEvent {
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct ValidatorEmissionAppliedEvent {
     /// An epoch number of the *concluded* epoch (i.e. for which this emission applies).
-    pub epoch: u64,
+    pub epoch: Epoch,
     /// An amount of XRD in the validator's stake pool, captured *before* this emission.
     pub starting_stake_pool_xrd: Decimal,
     /// An amount of XRD added to the validator's stake pool from this epoch's emissions.
