@@ -79,7 +79,6 @@ impl Publish {
             let package_info = PackageInfoSubstate {
                 schema: schema.into(),
                 dependent_resources: BTreeSet::new(),
-                dependent_components: BTreeSet::new(),
             };
             let database_updates = indexmap!(
                 db_partition_key => indexmap!(
