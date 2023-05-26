@@ -176,7 +176,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let mut dependencies = BTreeSet::new();
                 #({
-                    dependencies.insert(#raw_package_dependencies);
+                    dependencies.insert(#raw_package_dependencies.into());
                 })*
 
                 let return_data = BlueprintSchema {

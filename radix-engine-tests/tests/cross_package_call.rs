@@ -21,11 +21,11 @@ fn test_call_package_address_undeclared() {
     let package_address1 = test_runner.compile_and_publish("./tests/blueprints/cross_package_call");
 
     let (mut code, mut schema) = Compile::compile("./tests/blueprints/cross_package_call");
-    let place_holder = PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER);
+    let place_holder: GlobalAddress = PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER).into();
     for (_, blueprint) in &mut schema.blueprints {
         if blueprint.dependencies.contains(&place_holder) {
             blueprint.dependencies.remove(&place_holder);
-            blueprint.dependencies.insert(package_address1);
+            blueprint.dependencies.insert(package_address1.into());
         }
     }
 
