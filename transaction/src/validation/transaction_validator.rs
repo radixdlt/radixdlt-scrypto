@@ -30,7 +30,7 @@ pub struct ValidationConfig {
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
-    pub max_epoch_range: u32,
+    pub max_epoch_range: u64,
 }
 
 impl ValidationConfig {

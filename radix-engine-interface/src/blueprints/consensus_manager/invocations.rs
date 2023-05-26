@@ -26,11 +26,11 @@ pub struct ConsensusManagerCreateInput {
 pub struct ConsensusManagerConfig {
     pub max_validators: u32,
     pub epoch_change_condition: EpochChangeCondition,
-    pub num_unstake_epochs: u32,
+    pub num_unstake_epochs: u64,
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
-    pub num_owner_stake_units_unlock_epochs: u32,
-    pub num_fee_increase_delay_epochs: u32,
+    pub num_owner_stake_units_unlock_epochs: u64,
+    pub num_fee_increase_delay_epochs: u64,
 }
 
 impl ConsensusManagerConfig {
@@ -44,7 +44,7 @@ impl ConsensusManagerConfig {
         self
     }
 
-    pub fn with_num_unstake_epochs(mut self, new_value: u32) -> Self {
+    pub fn with_num_unstake_epochs(mut self, new_value: u64) -> Self {
         self.num_unstake_epochs = new_value;
         self
     }
@@ -59,12 +59,12 @@ impl ConsensusManagerConfig {
         self
     }
 
-    pub fn with_num_owner_stake_units_unlock_epochs(mut self, new_value: u32) -> Self {
+    pub fn with_num_owner_stake_units_unlock_epochs(mut self, new_value: u64) -> Self {
         self.num_owner_stake_units_unlock_epochs = new_value;
         self
     }
 
-    pub fn with_num_fee_increase_delay_epochs(mut self, new_value: u32) -> Self {
+    pub fn with_num_fee_increase_delay_epochs(mut self, new_value: u64) -> Self {
         self.num_fee_increase_delay_epochs = new_value;
         self
     }
@@ -76,13 +76,13 @@ pub struct EpochChangeCondition {
     /// The timestamp will not drive the epoch progression until at least this number of rounds is
     /// reached (i.e. if an actual number of rounds after [`duration_millis`] is less than this
     /// value, the epoch change will wait until this value is reached).
-    pub min_round_count: u32,
+    pub min_round_count: u64,
 
     /// A maximum number of rounds that *can* happen in an epoch.
     /// If an actual number of rounds reaches this value before [`duration_millis`], then the
     /// timestamp no longer drives the epoch progression (i.e. the epoch change will happen right
     /// away, to prevent more than [`max_round_count`] rounds).
-    pub max_round_count: u32,
+    pub max_round_count: u64,
 
     /// An "ideal" duration of an epoch, which should be applied if the number of epochs is within
     /// the `min_round_count..max_round_count` range.

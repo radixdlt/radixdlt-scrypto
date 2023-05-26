@@ -1060,7 +1060,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 
 fn create_custom_genesis(
     initial_epoch: Epoch,
-    rounds_per_epoch: u32,
+    rounds_per_epoch: u64,
     num_initial_validators: usize,
     max_validators: usize,
     initial_stakes: Decimal,
@@ -1604,7 +1604,7 @@ fn cannot_claim_unstake_immediately() {
 fn can_claim_unstake_after_epochs() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let num_unstake_epochs = 7u32;
+    let num_unstake_epochs = 7;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();

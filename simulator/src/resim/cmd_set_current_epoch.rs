@@ -7,7 +7,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct SetCurrentEpoch {
     /// The new epoch number
-    pub epoch_number: u32,
+    pub epoch_number: u64,
 }
 
 impl SetCurrentEpoch {
