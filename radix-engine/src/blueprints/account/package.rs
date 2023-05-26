@@ -304,7 +304,8 @@ impl AccountNativePackage {
                     collections,
                     functions,
                     virtual_lazy_load_functions,
-                    event_schema: [].into()
+                    event_schema: [].into(),
+                    dependencies: btreeset!(),
                 }
             ),
         }

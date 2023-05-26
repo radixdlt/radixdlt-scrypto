@@ -1181,6 +1181,7 @@ mod tests {
                 ),
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
             },
         );
 
