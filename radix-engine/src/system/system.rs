@@ -125,7 +125,9 @@ where
                     payload,
                     &instance_schema.schema,
                     index,
-                    SchemaOrigin::Instance(blueprint_id.package_address),
+                    SchemaOrigin::Instance {
+                        created_by: blueprint_id.package_address,
+                    },
                 )?;
             }
         }
@@ -1165,7 +1167,7 @@ where
 
         let entity_type = EntityType::InternalKeyValueStore;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let created_in = self
+        let created_by = self
             .api
             .kernel_get_system_state()
             .current
@@ -1179,7 +1181,7 @@ where
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
                         schema,
-                        created_in
+                        created_by
                     })
                 ).to_substates(),
             ),
@@ -1227,7 +1229,9 @@ where
             key,
             &info.schema.schema,
             info.schema.key,
-            SchemaOrigin::KeyValueStore(info.created_in),
+            SchemaOrigin::KeyValueStore {
+                created_by: info.created_by,
+            },
         )
         .map_err(|e| {
             RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
@@ -1237,7 +1241,9 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema_origin: SchemaOrigin::KeyValueStore(info.created_in),
+                schema_origin: SchemaOrigin::KeyValueStore {
+                    created_by: info.created_by,
+                },
                 schema: info.schema.schema,
                 index: info.schema.value,
                 can_own: info.schema.can_own,
@@ -1654,9 +1660,9 @@ where
                 TypeRef::Instance(index) => {
                     let mut instance_schema = object_info.instance_schema.unwrap();
                     KeyValueEntryLockData::Write {
-                        schema_origin: SchemaOrigin::Instance(
-                            object_info.blueprint.package_address,
-                        ),
+                        schema_origin: SchemaOrigin::Instance {
+                            created_by: object_info.blueprint.package_address,
+                        },
                         schema: instance_schema.schema,
                         index: instance_schema.type_index.remove(index as usize),
                         can_own,
