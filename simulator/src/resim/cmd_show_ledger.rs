@@ -27,8 +27,13 @@ impl ShowLedger {
         drop(substate_db);
 
         let current_epoch = Self::get_current_epoch(out)?;
-        writeln!(out, "{}: {}", "Current Epoch".green().bold(), current_epoch.number())
-            .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {}",
+            "Current Epoch".green().bold(),
+            current_epoch.number()
+        )
+        .map_err(Error::IOError)?;
 
         let instant = Self::get_current_time(out, TimePrecision::Minute)?;
         let date_time = UtcDateTime::from_instant(&instant).unwrap();

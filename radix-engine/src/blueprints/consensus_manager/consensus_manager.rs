@@ -157,7 +157,7 @@ pub enum ConsensusManagerError {
     },
     InconsistentGapRounds {
         gap_rounds: usize,
-        progressed_rounds: u32,
+        progressed_rounds: u64,
     },
     InvalidValidatorIndex {
         index: ValidatorIndex,
@@ -504,14 +504,14 @@ impl ConsensusManagerBlueprint {
     }
 
     fn update_proposal_statistics<Y>(
-        progressed_rounds: u32,
+        progressed_rounds: u64,
         proposal_history: LeaderProposalHistory,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        if proposal_history.gap_round_leaders.len() != progressed_rounds as usize - 1 {
+        if proposal_history.gap_round_leaders.len() as u64 != progressed_rounds - 1 {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
                     ConsensusManagerError::InconsistentGapRounds {
