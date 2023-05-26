@@ -12,7 +12,7 @@ use crate::system::system_modules::costing::FeeTable;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::system::system_modules::events::EventsModule;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
-use crate::system::system_modules::kernel_trace::KernelTraceModule;
+use crate::system::system_modules::kernel_trace::KernelDebugModule;
 use crate::system::system_modules::logger::LoggerModule;
 use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_limits::{
@@ -44,12 +44,41 @@ bitflags! {
     }
 }
 
+impl EnabledModules {
+    pub fn for_system_transaction() -> Self {
+        Self::NODE_MOVE
+            | Self::AUTH
+            | Self::LOGGER
+            | Self::TRANSACTION_RUNTIME
+            | Self::TRANSACTION_LIMITS
+            | Self::EVENTS
+    }
+
+    pub fn for_notarized_transaction() -> Self {
+        Self::COSTING
+            | Self::NODE_MOVE
+            | Self::AUTH
+            | Self::LOGGER
+            | Self::TRANSACTION_RUNTIME
+            | Self::TRANSACTION_LIMITS
+            | Self::EVENTS
+    }
+
+    pub fn for_test_transaction() -> Self {
+        Self::for_notarized_transaction() | Self::KERNEL_DEBUG
+    }
+
+    pub fn for_preview() -> Self {
+        Self::for_notarized_transaction() | Self::EXECUTION_TRACE
+    }
+}
+
 pub struct SystemModuleMixer {
     /* flags */
     pub enabled_modules: EnabledModules,
 
     /* states */
-    pub kernel_debug: KernelTraceModule,
+    pub kernel_debug: KernelDebugModule,
     pub costing: CostingModule,
     pub node_move: NodeMoveModule,
     pub auth: AuthModule,
@@ -68,7 +97,7 @@ macro_rules! internal_call_dispatch {
         {
             let modules: EnabledModules = $api.kernel_get_system().modules.enabled_modules;
             if modules.contains(EnabledModules::KERNEL_DEBUG) {
-                KernelTraceModule::[< $fn >]($($param, )*)?;
+                KernelDebugModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::COSTING) {
                 CostingModule::[< $fn >]($($param, )*)?;
@@ -132,7 +161,7 @@ impl SystemModuleMixer {
 
         Self {
             enabled_modules: modules,
-            kernel_debug: KernelTraceModule {},
+            kernel_debug: KernelDebugModule {},
             costing: CostingModule {
                 fee_reserve,
                 fee_table,
@@ -213,7 +242,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
         // Enable debug
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_init(api)?;
+            KernelDebugModule::on_init(api)?;
         }
 
         // Enable events
