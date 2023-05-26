@@ -32,7 +32,7 @@ use transaction::model::AuthZoneParams;
 
 bitflags! {
     pub struct EnabledModules: u32 {
-        const KERNEL_DEBUG = 0x1 << 0;
+        const KERNEL_TRACE = 0x1 << 0;
         const COSTING = 0x01 << 1;
         const NODE_MOVE = 0x01 << 2;
         const AUTH = 0x01 << 3;
@@ -65,7 +65,7 @@ impl EnabledModules {
     }
 
     pub fn for_test_transaction() -> Self {
-        Self::for_notarized_transaction() | Self::KERNEL_DEBUG
+        Self::for_notarized_transaction() | Self::KERNEL_TRACE
     }
 
     pub fn for_preview() -> Self {
@@ -78,7 +78,7 @@ pub struct SystemModuleMixer {
     pub enabled_modules: EnabledModules,
 
     /* states */
-    pub kernel_debug: KernelDebugModule,
+    pub kernel_trace: KernelDebugModule,
     pub costing: CostingModule,
     pub node_move: NodeMoveModule,
     pub auth: AuthModule,
@@ -96,7 +96,7 @@ macro_rules! internal_call_dispatch {
         paste! {
         {
             let modules: EnabledModules = $api.kernel_get_system().modules.enabled_modules;
-            if modules.contains(EnabledModules::KERNEL_DEBUG) {
+            if modules.contains(EnabledModules::KERNEL_TRACE) {
                 KernelDebugModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::COSTING) {
@@ -129,7 +129,8 @@ macro_rules! internal_call_dispatch {
 }
 
 impl SystemModuleMixer {
-    pub fn standard(
+    pub fn new(
+        enabled_modules: EnabledModules,
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
         fee_reserve: SystemLoanFeeReserve,
@@ -138,30 +139,9 @@ impl SystemModuleMixer {
         num_of_signatures: usize,
         execution_config: &ExecutionConfig,
     ) -> Self {
-        let mut modules = EnabledModules::empty();
-
-        if execution_config.kernel_trace {
-            modules |= EnabledModules::KERNEL_DEBUG
-        };
-
-        if execution_config.execution_trace.is_some() {
-            modules |= EnabledModules::EXECUTION_TRACE;
-        }
-
-        if !execution_config.genesis {
-            modules |= EnabledModules::COSTING;
-            modules |= EnabledModules::AUTH;
-            modules |= EnabledModules::TRANSACTION_LIMITS;
-        }
-
-        modules |= EnabledModules::NODE_MOVE;
-        modules |= EnabledModules::LOGGER;
-        modules |= EnabledModules::TRANSACTION_RUNTIME;
-        modules |= EnabledModules::EVENTS;
-
         Self {
-            enabled_modules: modules,
-            kernel_debug: KernelDebugModule {},
+            enabled_modules,
+            kernel_trace: KernelDebugModule {},
             costing: CostingModule {
                 fee_reserve,
                 fee_table,
@@ -187,9 +167,7 @@ impl SystemModuleMixer {
                 max_substate_size: execution_config.max_substate_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
             }),
-            execution_trace: ExecutionTraceModule::new(
-                execution_config.execution_trace.unwrap_or(0),
-            ),
+            execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
             events: EventsModule::default(),
             virtualization: VirtualizationModule,
         }
@@ -211,7 +189,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         }
 
         // Enable execution trace
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
             ExecutionTraceModule::on_init(api)?;
         }
 
@@ -241,7 +219,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         }
 
         // Enable debug
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
             KernelDebugModule::on_init(api)?;
         }
 

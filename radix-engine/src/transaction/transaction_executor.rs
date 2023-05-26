@@ -4,7 +4,7 @@ use crate::blueprints::transaction_processor::{
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::module_mixer::SystemModuleMixer;
+use crate::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::track::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
@@ -47,9 +47,8 @@ impl FeeReserveConfig {
 }
 
 pub struct ExecutionConfig {
-    pub genesis: bool,
-    pub kernel_trace: bool,
-    pub execution_trace: Option<usize>,
+    pub enabled_modules: EnabledModules,
+    pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
     pub cost_unit_limit: u32,
     pub abort_when_loan_repaid: bool,
@@ -70,9 +69,8 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
-            genesis: false,
-            kernel_trace: false,
-            execution_trace: Some(1),
+            enabled_modules: EnabledModules::for_notarized_transaction(),
+            max_execution_trace_depth: DEFAULT_MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
@@ -85,15 +83,40 @@ impl ExecutionConfig {
         }
     }
 
-    pub fn genesis() -> Self {
+    pub fn for_system_transaction() -> Self {
         Self {
-            genesis: true,
-            ..Self::default()
+            enabled_modules: EnabledModules::for_system_transaction(),
+            ..Self::standard()
         }
     }
 
-    pub fn with_trace(mut self, kernel_trace: bool) -> Self {
-        self.kernel_trace = kernel_trace;
+    pub fn for_notarized_transaction() -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_notarized_transaction(),
+            ..Self::standard()
+        }
+    }
+
+    pub fn for_test_transaction() -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_test_transaction(),
+            ..Self::standard()
+        }
+    }
+
+    pub fn for_preview() -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_preview(),
+            ..Self::standard()
+        }
+    }
+
+    pub fn with_kernel_trace(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.enabled_modules.insert(EnabledModules::KERNEL_TRACE);
+        } else {
+            self.enabled_modules.remove(EnabledModules::KERNEL_TRACE);
+        }
         self
     }
 
@@ -102,19 +125,9 @@ impl ExecutionConfig {
         self
     }
 
-    pub fn up_to_loan_repayment() -> Self {
-        Self {
-            abort_when_loan_repaid: true,
-            ..Self::default()
-        }
-    }
-
-    pub fn up_to_loan_repayment_with_debug() -> Self {
-        Self {
-            abort_when_loan_repaid: true,
-            kernel_trace: true,
-            ..Self::default()
-        }
+    pub fn up_to_loan_repayment(mut self, enabled: bool) -> Self {
+        self.abort_when_loan_repaid = enabled;
+        self
     }
 }
 
@@ -169,7 +182,10 @@ where
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
-        if execution_config.kernel_trace {
+        if execution_config
+            .enabled_modules
+            .contains(EnabledModules::KERNEL_TRACE)
+        {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", executable.transaction_hash());
             println!("Payload size: {}", executable.payload_size());
@@ -201,7 +217,8 @@ where
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
-            modules: SystemModuleMixer::standard(
+            modules: SystemModuleMixer::new(
+                execution_config.enabled_modules,
                 executable.transaction_hash().clone(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
@@ -309,7 +326,10 @@ where
         };
 
         #[cfg(not(feature = "alloc"))]
-        if execution_config.kernel_trace {
+        if execution_config
+            .enabled_modules
+            .contains(EnabledModules::KERNEL_TRACE)
+        {
             TransactionExecutor::<S, W>::print_execution_summary(&receipt);
         }
 

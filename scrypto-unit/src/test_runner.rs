@@ -9,7 +9,7 @@ use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::module_mixer::SystemModuleMixer;
+use radix_engine::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
@@ -793,14 +793,14 @@ impl TestRunner {
                 .get_executable(initial_proofs.into_iter().collect()),
             &FeeReserveConfig::default(),
             &ExecutionConfig::default()
-                .with_trace(self.trace)
+                .with_kernel_trace(self.trace)
                 .with_cost_unit_limit(cost_unit_limit),
         )
     }
 
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
         let fee_config = FeeReserveConfig::default();
-        let execution_config = ExecutionConfig::default().with_trace(self.trace);
+        let execution_config = ExecutionConfig::default().with_kernel_trace(self.trace);
 
         self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }
@@ -1321,7 +1321,8 @@ impl TestRunner {
             callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },
-            modules: SystemModuleMixer::standard(
+            modules: SystemModuleMixer::new(
+                EnabledModules::for_notarized_transaction(),
                 transaction_hash,
                 AuthZoneParams {
                     initial_proofs: btreeset![],

@@ -24,16 +24,6 @@ pub const ROLA_HASHABLE_PAYLOAD_PREFIX: u8 = 0x52;
 pub const TRANSACTION_HASHABLE_PAYLOAD_PREFIX: u8 = 0x54;
 
 //==========================
-// Transaction construction
-//==========================
-
-/// The default cost unit limit.
-pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
-
-/// The default free credit (for preview and system transaction; 1000 XRD)
-pub const DEFAULT_FREE_CREDIT_IN_XRD: u128 = 1_000_000_000_000_000_000_000u128;
-
-//==========================
 // Transaction validation
 //==========================
 
@@ -63,8 +53,16 @@ pub const MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
 // Transaction execution
 //==========================
 
+/// The default cost unit limit.
+pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
+
+/// The default free credit (for preview and system transaction; 1000 XRD)
+pub const DEFAULT_FREE_CREDIT_IN_XRD: u128 = 1_000_000_000_000_000_000_000u128;
+
 /// The default system loan amount, used by transaction executor.
 pub const DEFAULT_SYSTEM_LOAN: u32 = 10_000_000;
+
+pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 1;
 
 /// The default max call depth, used by transaction executor.
 pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;
