@@ -144,14 +144,11 @@ impl<C: HasStub + HasMethods> Owned<C> {
     }
 }
 
-pub enum MethodRoyalty {
-    Free,
-    Charge(u32),
-}
+pub struct MethodRoyalty(RoyaltyAmount);
 
-impl From<u32> for MethodRoyalty {
-    fn from(value: u32) -> Self {
-        Self::Charge(value)
+impl From<RoyaltyAmount> for MethodRoyalty {
+    fn from(value: RoyaltyAmount) -> Self {
+        Self(value)
     }
 }
 
@@ -268,10 +265,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn royalties(mut self, royalties: RoyaltiesConfig<C::Royalties>) -> Self {
         for (method, royalty) in royalties.method_royalties.to_mapping() {
-            match royalty {
-                MethodRoyalty::Free => {}
-                MethodRoyalty::Charge(amount) => self.royalty.set_rule(method, amount),
-            }
+            self.royalty.set_rule(method, royalty.0)
         }
 
         self.set_permissions(royalties.permissions);

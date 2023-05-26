@@ -1,12 +1,11 @@
+use crate::internal_prelude::*;
 use radix_engine_interface::{
     api::node_modules::auth::AuthAddresses, blueprints::transaction_processor::RuntimeValidation,
 };
 
-use crate::internal_prelude::*;
-
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct PreviewFlags {
-    pub unlimited_loan: bool,
+    pub with_free_credit: bool,
     pub assume_all_signature_proofs: bool,
     pub permit_duplicate_intent_hash: bool,
     pub permit_invalid_header_epoch: bool,
@@ -38,12 +37,13 @@ impl ValidatedPreviewIntent {
         }
 
         let header = &intent.header.inner;
-        let fee_payment = if flags.unlimited_loan {
-            FeePayment::NoFee
-        } else {
-            FeePayment::User {
-                tip_percentage: header.tip_percentage,
-            }
+        let fee_payment = FeePayment {
+            tip_percentage: header.tip_percentage,
+            free_credit_in_xrd: if self.flags.with_free_credit {
+                DEFAULT_FREE_CREDIT_IN_XRD
+            } else {
+                0
+            },
         };
         let initial_proofs = AuthAddresses::signer_set(&self.signer_public_keys);
 

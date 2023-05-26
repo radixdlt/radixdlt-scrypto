@@ -1,18 +1,15 @@
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::str;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::*;
+use radix_engine_common::types::RoyaltyAmount;
+use sbor::rust::prelude::*;
 
 use crate::*;
 
 /// Royalty rules
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct RoyaltyConfig {
-    pub rules: BTreeMap<String, u32>,
+    pub rules: BTreeMap<String, RoyaltyAmount>,
 }
 
 impl Default for RoyaltyConfig {
@@ -24,11 +21,14 @@ impl Default for RoyaltyConfig {
 }
 
 impl RoyaltyConfig {
-    pub fn get_rule(&self, method_name: &str) -> u32 {
-        self.rules.get(method_name).cloned().unwrap_or(0)
+    pub fn get_rule(&self, method_name: &str) -> RoyaltyAmount {
+        self.rules
+            .get(method_name)
+            .cloned()
+            .unwrap_or(RoyaltyAmount::Free)
     }
 
-    pub fn set_rule<S: ToString>(&mut self, method: S, amount: u32) {
+    pub fn set_rule<S: ToString>(&mut self, method: S, amount: RoyaltyAmount) {
         self.rules.insert(method.to_string(), amount);
     }
 }

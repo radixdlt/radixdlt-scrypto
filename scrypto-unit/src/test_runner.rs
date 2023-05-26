@@ -1327,7 +1327,7 @@ impl TestRunner {
                     initial_proofs: btreeset![],
                     virtual_resources: BTreeSet::new(),
                 },
-                SystemLoanFeeReserve::no_fee(),
+                SystemLoanFeeReserve::default(),
                 FeeTable::new(),
                 0,
                 0,

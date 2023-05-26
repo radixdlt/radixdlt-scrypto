@@ -57,7 +57,10 @@ impl PreparedTestTransaction {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment::User { tip_percentage: 0 },
+                fee_payment: FeePayment {
+                    tip_percentage: 0,
+                    free_credit_in_xrd: 0,
+                },
                 runtime_validations: vec![],
                 pre_allocated_ids: index_set_new(),
             },

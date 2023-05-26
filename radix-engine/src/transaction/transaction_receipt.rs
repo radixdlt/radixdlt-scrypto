@@ -44,8 +44,6 @@ impl TransactionExecutionTrace {
 pub struct ExecutionMetrics {
     /// Consumed cost units (excluding royalties)
     pub execution_cost_units_consumed: usize,
-    /// Consumed royalties cost units
-    pub royalties_cost_units_consumed: usize,
     /// Total substate read size in bytes.
     pub substate_read_size: usize,
     /// Substate read count.

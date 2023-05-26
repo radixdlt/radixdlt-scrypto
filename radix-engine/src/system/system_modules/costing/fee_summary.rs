@@ -18,7 +18,7 @@ pub struct FeeSummary {
     /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
     pub total_bad_debt_xrd: Decimal,
     /// The vaults locked for XRD payment
-    pub locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
+    pub locked_fees: Vec<(Option<NodeId>, LiquidFungibleResource, bool)>,
     /// The execution cost breakdown
     pub execution_cost_breakdown: BTreeMap<CostingReason, u32>,
     /// The total number of cost units consumed (excluding royalties).
@@ -26,7 +26,7 @@ pub struct FeeSummary {
     /// The royalty cost breakdown
     pub royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, (NodeId, Decimal)>,
     /// The total number of cost units consumed for royalties.
-    pub royalty_cost_sum: u32,
+    pub royalty_cost_sum: Decimal,
 }
 
 impl FeeSummary {

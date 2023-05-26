@@ -116,7 +116,10 @@ impl PreparedSystemTransactionV1 {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment::NoFee,
+                fee_payment: FeePayment {
+                    tip_percentage: 0,
+                    free_credit_in_xrd: DEFAULT_FREE_CREDIT_IN_XRD,
+                },
                 runtime_validations: vec![],
                 pre_allocated_ids: self.pre_allocated_ids.inner.clone(),
             },

@@ -26,6 +26,7 @@ use transaction::model::*;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
+    pub usd_price: u128,
     pub system_loan: u32,
 }
 
@@ -39,6 +40,7 @@ impl FeeReserveConfig {
     pub fn standard() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE,
+            usd_price: DEFAULT_USD_PRICE,
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
@@ -146,16 +148,15 @@ where
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let fee_reserve = match transaction.fee_payment() {
-            FeePayment::User { tip_percentage } => SystemLoanFeeReserve::new(
-                fee_reserve_config.cost_unit_price,
-                *tip_percentage,
-                execution_config.cost_unit_limit,
-                fee_reserve_config.system_loan,
-                execution_config.abort_when_loan_repaid,
-            ),
-            FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
-        };
+        let fee_reserve = SystemLoanFeeReserve::new(
+            fee_reserve_config.cost_unit_price,
+            fee_reserve_config.usd_price,
+            transaction.fee_payment().tip_percentage,
+            execution_config.cost_unit_limit,
+            fee_reserve_config.system_loan,
+            execution_config.abort_when_loan_repaid,
+        )
+        .with_free_credit(transaction.fee_payment().free_credit_in_xrd);
 
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve, FeeTable::new())
     }
@@ -560,23 +561,25 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         locked.take_by_amount(amount).unwrap();
         required -= amount;
 
-        // Refund overpayment
-        let (handle, _store_access) = track
-            .acquire_lock(
-                &vault_id,
-                OBJECT_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
-                LockFlags::MUTABLE,
-            )
-            .unwrap();
-        let (substate_value, _store_access) = track.read_substate(handle);
-        let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
-        substate.put(locked).unwrap();
-        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-        track.release_lock(handle);
+        if let Some(vault_id) = vault_id {
+            // Refund overpayment
+            let (handle, _store_access) = track
+                .acquire_lock(
+                    &vault_id,
+                    OBJECT_BASE_PARTITION,
+                    &FungibleVaultField::LiquidFungible.into(),
+                    LockFlags::MUTABLE,
+                )
+                .unwrap();
+            let (substate_value, _store_access) = track.read_substate(handle);
+            let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
+            substate.put(locked).unwrap();
+            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+            track.release_lock(handle);
 
-        // Record final payments
-        *fee_payments.entry(vault_id).or_default() += amount;
+            // Record final payments
+            *fee_payments.entry(vault_id).or_default() += amount;
+        };
     }
 
     // TODO: distribute fees

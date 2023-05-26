@@ -30,6 +30,9 @@ pub const TRANSACTION_HASHABLE_PAYLOAD_PREFIX: u8 = 0x54;
 /// The default cost unit limit.
 pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 
+/// The default free credit (for preview and system transaction; 1000 XRD)
+pub const DEFAULT_FREE_CREDIT_IN_XRD: u128 = 1_000_000_000_000_000_000_000u128;
+
 //==========================
 // Transaction validation
 //==========================
@@ -69,8 +72,8 @@ pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;
 /// The default cost unit price.
 pub const DEFAULT_COST_UNIT_PRICE: u128 = 100_000_000_000u128;
 
-/// The default royalty (USD) price
-pub const DEFAULT_ROYALTY_USD_PRICE: u128 = 14_000_000_000_000_000_000u128;
+/// The default USD price
+pub const DEFAULT_USD_PRICE: u128 = 14_000_000_000_000_000_000u128;
 
 /// The default maximum WASM memory per transaction (multiple WASM instances up to call depth).
 pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
