@@ -72,16 +72,16 @@ impl ConsensusManagerConfig {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct EpochChangeCondition {
-    /// A lower bound (inclusive) on number of rounds that is assumed to happen during the
-    /// [`duration_millis`].
-    /// If an actual number of rounds after [`duration_millis`] is less than this value, the epoch
-    /// change will wait until this value is reached.
+    /// A minimum number of rounds that *must* happen in an epoch.
+    /// The timestamp will not drive the epoch progression until at least this number of rounds is
+    /// reached (i.e. if an actual number of rounds after [`duration_millis`] is less than this
+    /// value, the epoch change will wait until this value is reached).
     pub min_round_count: u64,
 
-    /// An upper bound (exclusive) on number of rounds that is assumed to happen during the
-    /// [`duration_millis`].
-    /// If an actual number of rounds before [`duration_millis`] reaches this value, the epoch
-    /// change will happen right away.
+    /// A maximum number of rounds that *can* happen in an epoch.
+    /// If an actual number of rounds reaches this value before [`duration_millis`], then the
+    /// timestamp no longer drives the epoch progression (i.e. the epoch change will happen right
+    /// away, to prevent more than [`max_round_count`] rounds).
     pub max_round_count: u64,
 
     /// An "ideal" duration of an epoch, which should be applied if the number of epochs is within
