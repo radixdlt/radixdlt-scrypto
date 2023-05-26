@@ -12,7 +12,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
             1,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
@@ -78,7 +78,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
             1,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");

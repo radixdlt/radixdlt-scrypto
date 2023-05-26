@@ -46,7 +46,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -102,7 +102,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -161,7 +161,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -223,7 +223,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -328,7 +328,7 @@ fn test_genesis_stake_allocation() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -380,7 +380,7 @@ fn test_genesis_time() {
         .bootstrap_with_genesis_data(
             vec![],
             1u64,
-            CustomGenesis::default_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
         )
         .unwrap();

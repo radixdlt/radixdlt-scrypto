@@ -33,9 +33,9 @@ use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerGetCurrentEpochInput, ConsensusManagerGetCurrentTimeInput,
-    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput, LeaderProposalHistory,
-    TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
+    ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
+    LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
@@ -132,15 +132,12 @@ impl Compile {
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
-    pub initial_configuration: ConsensusManagerInitialConfiguration,
+    pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
-    pub fn default(
-        initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
-    ) -> CustomGenesis {
+    pub fn default(initial_epoch: u64, initial_config: ConsensusManagerConfig) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
             .public_key();
@@ -149,14 +146,18 @@ impl CustomGenesis {
             Decimal::one(),
             ComponentAddress::virtual_account_from_public_key(&pub_key),
             initial_epoch,
-            initial_configuration,
+            initial_config,
         )
     }
 
-    pub fn default_consensus_manager_configuration() -> ConsensusManagerInitialConfiguration {
-        ConsensusManagerInitialConfiguration {
+    pub fn default_consensus_manager_config() -> ConsensusManagerConfig {
+        ConsensusManagerConfig {
             max_validators: 10,
-            rounds_per_epoch: 1,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1,
+                target_duration_millis: 0,
+            },
             num_unstake_epochs: 1,
             total_emission_xrd_per_epoch: Decimal::one(),
             min_validator_reliability: Decimal::one(),
@@ -170,7 +171,7 @@ impl CustomGenesis {
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
@@ -189,8 +190,8 @@ impl CustomGenesis {
         CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
-            initial_configuration,
-            initial_time_ms: 1,
+            initial_config,
+            initial_time_ms: 0,
         }
     }
 }
@@ -233,7 +234,7 @@ impl TestRunnerBuilder {
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
                     custom_genesis.initial_epoch,
-                    custom_genesis.initial_configuration,
+                    custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
                 )
                 .unwrap(),
@@ -1196,14 +1197,20 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u32) {
+        let mut substate = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+                &CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+            )
+            .unwrap();
+        substate.epoch = epoch as u64;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             OBJECT_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
-            &ConsensusManagerSubstate {
-                epoch: epoch as u64,
-                round: 0,
-            },
+            &substate,
         );
     }
 

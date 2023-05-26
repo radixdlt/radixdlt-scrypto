@@ -323,7 +323,7 @@ impl ConsensusManagerNativePackage {
                     input.validator_owner_token,
                     input.component_address,
                     input.initial_epoch,
-                    input.initial_configuration,
+                    input.initial_config,
                     input.initial_time_ms,
                     api,
                 )?;
