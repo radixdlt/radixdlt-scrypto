@@ -27,7 +27,7 @@ pub trait Describe<C: CustomTypeKind<GlobalTypeId>> {
     ///
     /// If needing to generate a novel type id, this can be generated via helper methods on [`GlobalTypeId`]:
     /// ```ignore
-    /// impl Describe<C: CustomTypeRef, T1: Describe<C>> for MyType<T1> {
+    /// impl Describe<C: CustomTypeSchema, T1: Describe<C>> for MyType<T1> {
     ///     const TYPE_ID: GlobalTypeId = GlobalTypeId::complex(stringify!(MyType), &[T1::TYPE_ID]);
     /// #   fn type_data() -> TypeData<C, GlobalTypeId> { todo!() }
     /// }
