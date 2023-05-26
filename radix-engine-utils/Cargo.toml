@@ -4,8 +4,8 @@ version = "0.9.0"
 edition = "2021"
 
 [dependencies]
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
+radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false, optional = true }
+radix-engine-stores = { path = "../radix-engine-stores", default-features = false, optional = true }
 fixedstr = "0.2.9"
 shared_memory = { version = "0.12.4", optional = true }
 plotters = { version = "0.3.4", optional = true }
