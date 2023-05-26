@@ -1179,7 +1179,6 @@ where
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
                         schema,
-                        can_own: true,
                         created_in
                     })
                 ).to_substates(),
@@ -1228,7 +1227,7 @@ where
             key,
             &info.schema.schema,
             info.schema.key,
-            SchemaOrigin::KeyValueStore,
+            SchemaOrigin::KeyValueStore(info.created_in),
         )
         .map_err(|e| {
             RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
@@ -1238,10 +1237,10 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema_origin: SchemaOrigin::KeyValueStore,
+                schema_origin: SchemaOrigin::KeyValueStore(info.created_in),
                 schema: info.schema.schema,
                 index: info.schema.value,
-                can_own: info.can_own,
+                can_own: info.schema.can_own,
             })
         } else {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)

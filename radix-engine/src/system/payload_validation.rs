@@ -35,7 +35,7 @@ pub trait TypeInfoLookup {
 pub enum SchemaOrigin {
     Blueprint(BlueprintId),
     Instance,
-    KeyValueStore, // TODO: remove
+    KeyValueStore(PackageAddress),
 }
 
 //==================
@@ -122,7 +122,9 @@ impl TypeInfoForValidation {
                     self.matches(&blueprint_id.package_address, expected_blueprint)
                 }
                 SchemaOrigin::Instance => false,
-                SchemaOrigin::KeyValueStore => false,
+                SchemaOrigin::KeyValueStore(package_address) => {
+                    self.matches(&package_address, expected_blueprint)
+                }
             },
         }
     }
