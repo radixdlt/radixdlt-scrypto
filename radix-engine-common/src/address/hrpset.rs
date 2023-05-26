@@ -58,7 +58,7 @@ impl From<&NetworkDefinition> for HrpSet {
             consensus_manager: format!("consensusmanager_{}", suffix),
             validator: format!("validator_{}", suffix),
             access_controller: format!("accesscontroller_{}", suffix),
-            pool: format!("pool{}", suffix),
+            pool: format!("pool_{}", suffix),
             internal_vault: format!("internal_vault_{}", suffix),
             internal_account: format!("internal_account_{}", suffix),
             internal_component: format!("internal_component_{}", suffix),
