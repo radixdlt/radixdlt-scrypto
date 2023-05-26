@@ -40,7 +40,7 @@ impl SingleResourcePoolBlueprint {
         let address = GlobalAddress::new_or_panic(node_id.0);
 
         let pool_unit_resource = {
-            let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address.into());
+            let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
             let access_rules = btreemap!(
                 Mint => (

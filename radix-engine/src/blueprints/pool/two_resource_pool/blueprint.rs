@@ -53,7 +53,7 @@ impl TwoResourcePoolBlueprint {
 
         // Creating the pool unit resource
         let pool_unit_resource = {
-            let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address.into());
+            let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
             let access_rules = btreemap!(
                 Mint => (
