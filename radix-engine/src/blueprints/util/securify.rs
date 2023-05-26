@@ -2,69 +2,47 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
-pub enum MethodType {
-    Public,
-    Custom(AccessRuleEntry, AccessRuleEntry),
-}
-
 pub trait SecurifiedAccessRules {
-    const SECURIFY_IDENT: Option<&'static str> = None;
-    const OWNER_GROUP_NAME: &'static str;
     const OWNER_BADGE: ResourceAddress;
+    const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
-        vec![]
-    }
+    fn authority_rules() -> AuthorityRules;
 
-    fn set_non_owner_rules(access_rules_config: &mut AccessRulesConfig) {
-        for (method, method_type) in Self::non_owner_methods() {
-            let (access_rule, mutability) = match method_type {
-                MethodType::Public => (
-                    AccessRuleEntry::AccessRule(AccessRule::AllowAll),
-                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                ),
-                MethodType::Custom(access_rule, mutability) => (access_rule, mutability),
-            };
-
-            access_rules_config.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, method),
-                access_rule,
-                mutability,
-            );
+    fn create_config(authority_rules: AuthorityRules) -> AuthorityRules {
+        let mut authority_rules_to_use = Self::authority_rules();
+        for (authority, (access_rule, mutability)) in authority_rules.rules {
+            authority_rules_to_use.set_rule(authority, access_rule, mutability);
         }
+
+        authority_rules_to_use
     }
 
     fn init_securified_rules<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules = access_rules.default(
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-        );
-        Self::set_non_owner_rules(&mut access_rules);
-        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?;
+        let authority_rules = Self::create_config(AuthorityRules::new());
+        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?;
         Ok(access_rules)
     }
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        mut access_rules_config: AccessRulesConfig,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        Self::set_non_owner_rules(&mut access_rules_config);
-        let access_rules = AccessRules::sys_new(access_rules_config, btreemap!(), api)?;
+        let mut authority_rules = Self::create_config(authority_rules);
 
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                api,
-            )?;
+        if let Some(securify) = Self::SECURIFY_AUTHORITY {
+            authority_rules.set_main_authority_rule(
+                securify,
+                AccessRule::DenyAll,
+                AccessRule::DenyAll,
+            );
         }
+
+        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?;
 
         Ok(access_rules)
     }
@@ -83,19 +61,20 @@ pub trait SecurifiedAccessRules {
     ) -> Result<Bucket, RuntimeError> {
         let owner_token = ResourceManager(Self::OWNER_BADGE);
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        if let Some(securify) = Self::SECURIFY_AUTHORITY {
+            access_rules.set_authority_rule_and_mutability(
+                AuthorityKey::main(securify),
+                AccessRule::DenyAll,
+                AccessRule::DenyAll,
                 api,
             )?;
         }
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
-        access_rules.set_group_access_rule_and_mutability(
-            Self::OWNER_GROUP_NAME,
-            rule!(require(global_id)),
-            AccessRule::DenyAll,
+
+        access_rules.set_authority_rule_and_mutability(
+            AuthorityKey::Owner,
+            rule!(require(global_id.clone())),
+            rule!(require_owner()),
             api,
         )?;
 
@@ -113,20 +92,21 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let access_rules = Self::init_securified_rules(api)?;
 
         let this_package_rule = rule!(require(package_of_direct_caller(Self::PACKAGE)));
-
         let access_rule = rule!(require(owner_id));
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                AccessRuleEntry::AccessRule(access_rule.clone()),
-                AccessRuleEntry::AccessRule(this_package_rule.clone()),
+
+        if let Some(securify) = Self::SECURIFY_AUTHORITY {
+            access_rules.set_authority_rule_and_mutability(
+                AuthorityKey::main(securify),
+                access_rule.clone(),
+                this_package_rule.clone(),
                 api,
             )?;
         }
-        access_rules.set_group_access_rule_and_mutability(
-            Self::OWNER_GROUP_NAME,
-            access_rule,
-            this_package_rule,
+
+        access_rules.set_authority_rule_and_mutability(
+            AuthorityKey::Owner,
+            access_rule.clone(),
+            this_package_rule.clone(),
             api,
         )?;
 

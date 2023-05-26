@@ -15,11 +15,11 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum("NonFungibleIdType::Integer")
-    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8), Array<String>())
-    Map<String, String>(
-        "name", "MyResource",                                        # Resource Name
-        "description", "A very innovative and important resource"    # Resource Description
+    Enum<NonFungibleIdType::Integer>()
+    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
+    Map<String, Enum>(
+        "name" => Enum<Metadata::String>("MyResource"),                                        # Resource Name
+        "description" => Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
     )
     Map<Enum, Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array
@@ -35,10 +35,10 @@ CREATE_NON_FUNGIBLE_RESOURCE
         #       b. The mutability of the behaviour. As in, who can change the current behavior in
         #          the future.
         #
-        # Lets take `Tuple(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")))` as an
+        # Lets take `Tuple(Enum<ResourceMethodAuthKey::Withdraw>(), Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()))` as an
         # example. This means that anybody who is in possession of the resource may withdraw it from
         # a vault that they control. This behavior is permanent and can not be changed by anybody
-        # as the mutability is a `Enum("AccessRule::DenyAll")`.
+        # as the mutability is a `Enum<AccessRule::DenyAll>()`.
         #
         #        ┌ We Are customizing the "Withdraw" behavior of the resource
         #        │
@@ -48,6 +48,6 @@ CREATE_NON_FUNGIBLE_RESOURCE
         #        │                       │                 │ by anybody who has the resource) is permanent and can't
         #        │                       │                 │ be changed in the future.
         #        │                       │                 │
-        Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")),
-        Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))
+        Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
+        Enum<ResourceMethodAuthKey::Deposit>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
     );

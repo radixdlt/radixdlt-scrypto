@@ -40,3 +40,30 @@ pub use radix_engine_derive::{
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 pub extern crate self as radix_engine_common;
+
+/// Each module should have its own prelude, which:
+/// * Adds preludes of upstream crates
+/// * Exports types with specific-enough names which mean they can safely be used downstream.
+///
+/// The idea is that we can just include the current crate's prelude and avoid messing around with tons of includes.
+/// This makes refactors easier, and makes integration into the node less painful.
+pub mod prelude {
+    // Exports from upstream libaries
+    pub use radix_engine_derive::{
+        ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
+        ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
+    };
+    pub use sbor::prelude::*;
+    pub use sbor::{Categorize, Decode, Encode, Sbor};
+
+    // Exports from this crate
+    pub use super::address::*;
+    pub use super::crypto::*;
+    pub use super::data::manifest::*;
+    pub use super::data::scrypto::model::*;
+    pub use super::data::scrypto::*;
+    pub use super::native_addresses::*;
+    pub use super::network::*;
+    pub use super::time::*;
+    pub use super::types::*;
+}

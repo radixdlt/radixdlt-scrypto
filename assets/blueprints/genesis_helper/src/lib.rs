@@ -1,6 +1,6 @@
 use native_sdk::account::*;
-use native_sdk::epoch_manager::*;
-use scrypto::api::node_modules::metadata::MetadataValue;
+use native_sdk::consensus_manager::*;
+use scrypto::api::node_modules::metadata::*;
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -52,7 +52,7 @@ pub enum GenesisDataChunk {
 #[blueprint]
 mod genesis_helper {
     struct GenesisHelper {
-        epoch_manager: ComponentAddress,
+        consensus_manager: ComponentAddress,
         xrd_vault: Vault,
         resource_vaults: KeyValueStore<ResourceAddress, Vault>,
         validators: KeyValueStore<EcdsaSecp256k1PublicKey, ComponentAddress>,
@@ -62,28 +62,28 @@ mod genesis_helper {
         pub fn new(
             preallocated_address_bytes: [u8; 30],
             whole_lotta_xrd: Bucket,
-            epoch_manager: ComponentAddress,
+            consensus_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
-        ) -> ComponentAddress {
-            let access_rules = AccessRules::new(AccessRulesConfig::new().default(
-                rule!(require(system_role.clone())),
-                rule!(require(system_role)),
-            ));
-            let metadata = Metadata::new();
-
+        ) -> Global<GenesisHelper> {
             Self {
-                epoch_manager,
+                consensus_manager,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),
                 resource_vaults: KeyValueStore::new(),
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_at_address_with_modules(
-                ComponentAddress::new_or_panic(preallocated_address_bytes),
-                access_rules,
-                metadata,
-                Royalty::new(RoyaltyConfig::default()),
+            .authority_rule(
+                "ingest_data_chunk",
+                rule!(require("system")),
+                rule!(deny_all),
             )
+            .authority_rule("wrap_up", rule!(require("system")), rule!(deny_all))
+            .authority_rule(
+                "system",
+                rule!(require(system_role.clone())),
+                rule!(require(system_role)),
+            )
+            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
@@ -109,7 +109,7 @@ mod genesis_helper {
         }
 
         fn create_validator(&mut self, validator: GenesisValidator) {
-            let (validator_address, owner_token_bucket) = EpochManager(self.epoch_manager)
+            let (validator_address, owner_token_bucket) = ConsensusManager(self.consensus_manager)
                 .create_validator(validator.key, &mut ScryptoEnv)
                 .unwrap();
 
@@ -144,12 +144,12 @@ mod genesis_helper {
                 } in stake_allocations.into_iter()
                 {
                     let staker_account_address = accounts[account_index as usize].clone();
-                    let stake_bucket = self.xrd_vault.take(xrd_amount);
-                    let lp_bucket = Validator(validator_address.clone())
-                        .stake(stake_bucket, &mut ScryptoEnv)
+                    let stake_xrd_bucket = self.xrd_vault.take(xrd_amount);
+                    let stake_unit_bucket = Validator(validator_address.clone())
+                        .stake(stake_xrd_bucket, &mut ScryptoEnv)
                         .unwrap();
                     let _: () = Account(staker_account_address)
-                        .deposit(lp_bucket, &mut ScryptoEnv)
+                        .deposit(stake_unit_bucket, &mut ScryptoEnv)
                         .unwrap();
                 }
             }
@@ -164,10 +164,14 @@ mod genesis_helper {
         }
 
         fn create_resource(resource: GenesisResource) -> (ResourceAddress, Bucket) {
-            let metadata: BTreeMap<String, String> = resource.metadata.into_iter().collect();
+            let metadata: BTreeMap<String, MetadataValue> = resource
+                .metadata
+                .into_iter()
+                .map(|(k, v)| (k, MetadataValue::String(v)))
+                .collect();
 
             let address_bytes = NodeId::new(
-                EntityType::GlobalFungibleResource as u8,
+                EntityType::GlobalFungibleResourceManager as u8,
                 &resource.address_bytes_without_entity_id,
             )
             .0;
@@ -182,13 +186,18 @@ mod genesis_helper {
                     .divisibility(DIVISIBILITY_NONE)
                     .metadata(
                         "name",
-                        format!("Resource Owner Badge ({})", metadata.get("symbol").unwrap()),
+                        format!(
+                            "Resource Owner Badge ({})",
+                            String::from_metadata_value(metadata.get("symbol").unwrap().clone())
+                                .unwrap()
+                        ),
                     )
                     .mint_initial_supply(1);
 
-                borrow_resource_manager!(owner_badge.resource_address())
+                owner_badge
+                    .resource_manager()
                     .metadata()
-                    .set_list("tags", vec![MetadataValue::String("badge".to_string())]);
+                    .set("tags", vec!["badge".to_string()]);
 
                 access_rules.insert(
                     Mint,
@@ -267,7 +276,7 @@ mod genesis_helper {
         }
 
         pub fn wrap_up(&mut self) -> Bucket {
-            EpochManager(self.epoch_manager)
+            ConsensusManager(self.consensus_manager)
                 .start(&mut ScryptoEnv)
                 .unwrap();
 

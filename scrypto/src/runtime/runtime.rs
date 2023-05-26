@@ -1,10 +1,12 @@
+use crate::modules::{AccessRules, Attachable};
+use crate::prelude::Attached;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobalId};
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
@@ -24,17 +26,21 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                EPOCH_MANAGER.as_node_id(),
-                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
-                scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+                CONSENSUS_MANAGER.as_node_id(),
+                CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+                scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
             )
             .unwrap();
 
         scrypto_decode(&rtn).unwrap()
     }
 
+    pub fn access_rules() -> Attached<'static, AccessRules> {
+        Attached::new(AccessRules::self_attached())
+    }
+
     /// Returns the running entity.
-    pub fn blueprint() -> Blueprint {
+    pub fn blueprint() -> BlueprintId {
         ScryptoEnv.actor_get_blueprint().unwrap()
     }
 

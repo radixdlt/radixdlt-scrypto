@@ -2,14 +2,14 @@ use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::{
-    AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
+    AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 #[test]
 fn can_securify_virtual_account() {
@@ -43,7 +43,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
         )
         .call_method(
             storing_account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -97,7 +97,7 @@ where
         .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN, 1.into())
         .call_method(
             other_account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -138,7 +138,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw(account, 10.into(), resource_address, 1.into())
         .call_method(
             other_account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -171,7 +171,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
         .withdraw_from_account(other_account, RADIX_TOKEN, 1.into())
         .call_method(
             account,
-            "deposit_batch",
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -200,9 +200,7 @@ fn virtual_account_is_created_with_public_key_hash_metadata() {
     let public_key_hash = public_key.get_hash().into_enum();
     assert_eq!(
         entry,
-        Some(MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
-            public_key_hash
-        )]))
+        Some(MetadataValue::PublicKeyHashArray(vec![public_key_hash])),
     );
 }
 
@@ -224,9 +222,9 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN, 1.into())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallMethod {
-                    component_address: account,
-                    method_name: "deposit".to_string(),
+                .add_instruction(InstructionV1::CallMethod {
+                    address: account.into(),
+                    method_name: "try_deposit_or_abort".to_string(),
                     args: manifest_args!(bucket_id),
                 })
                 .0

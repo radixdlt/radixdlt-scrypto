@@ -1,3 +1,5 @@
+use crate::resource::*;
+use crate::*;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -8,243 +10,126 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
+use runtime::LocalAuthZone;
+use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
-use crate::resource::*;
-use crate::*;
+// Different from the native SDK, in Scrypto we use `CheckedProof`, `CheckedFungibleProof`
+// and `CheckedNonFungibleProof` (instead of `Proof`/`FungibleProof`/`NonFungibleProof`)
+// to prevent developers from reading proof states (and having business logic relying on them)
+// without checking the resource address.
 
-pub trait ScryptoProof: Sized {
-    fn clone(&self) -> Self;
-    fn validate_proof<T>(
-        self,
-        validation_mode: T,
-    ) -> Result<ValidatedProof, (Self, ProofValidationError)>
-    where
-        T: Into<ProofValidationMode>;
-    fn unsafe_skip_proof_validation(self) -> ValidatedProof;
-    fn from_validated_proof(validated_proof: ValidatedProof) -> Self;
-    fn validate(&self, validation_mode: ProofValidationMode) -> Result<(), ProofValidationError>;
-    fn validate_resource_address(
-        &self,
-        resource_address: ResourceAddress,
-    ) -> Result<(), ProofValidationError>;
-    fn validate_resource_address_belongs_to(
-        &self,
-        resource_addresses: &BTreeSet<ResourceAddress>,
-    ) -> Result<(), ProofValidationError>;
-    fn validate_contains_non_fungible_local_id(
-        &self,
-        non_fungible_local_id: &NonFungibleLocalId,
-    ) -> Result<(), ProofValidationError>;
-    fn validate_contains_non_fungible_local_ids(
-        &self,
-        expected_non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<(), ProofValidationError>;
-    fn validate_contains_amount(&self, amount: Decimal) -> Result<(), ProofValidationError>;
-    fn amount(&self) -> Decimal;
-    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
+//========
+// Traits
+//========
+
+pub trait ScryptoUncheckedProof {
+    type CheckedProofType;
+
+    // Apply basic resource address check and converts self into `CheckedProof`.
+    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType;
+
+    // Converts self into `CheckedProof` with no address check.
+    fn skip_checking(self) -> Self::CheckedProofType;
+
     fn resource_address(&self) -> ResourceAddress;
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn drop(self);
+
+    fn clone(&self) -> Self;
+
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 }
 
-impl ScryptoProof for Proof {
-    /// Uses resources in this proof as authorization for an operation.
-    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        LocalAuthZone::push(ScryptoProof::clone(self));
-        let output = f();
-        LocalAuthZone::pop().drop();
-        output
+pub trait ScryptoProof {
+    fn contains_amount(&self, amount: Decimal) -> bool;
+
+    fn amount(&self) -> Decimal;
+
+    fn resource_address(&self) -> ResourceAddress;
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
-    fn clone(&self) -> Self {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                PROOF_CLONE_IDENT,
-                scrypto_encode(&ProofCloneInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+    fn drop(self);
+
+    fn clone(&self) -> Self;
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+
+    fn as_fungible(&self) -> CheckedFungibleProof;
+
+    fn as_non_fungible(&self) -> CheckedNonFungibleProof;
+}
+
+pub trait ScryptoFungibleProof {}
+
+pub trait ScryptoNonFungibleProof {
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool;
+
+    fn contains_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> bool;
+
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
+
+    fn non_fungible_local_id(&self) -> NonFungibleLocalId;
+
+    fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
+
+    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
+}
+
+//=====================
+// Checked proof types
+//=====================
+
+/// Represents an address-checked proof
+///
+/// This may become unnecessary when `Proof<X>` is supported.
+///
+// TODO: cache resource address in `CheckedProof`!
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct CheckedProof(pub Proof);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct CheckedFungibleProof(pub CheckedProof);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct CheckedNonFungibleProof(pub CheckedProof);
+
+impl From<CheckedFungibleProof> for CheckedProof {
+    fn from(value: CheckedFungibleProof) -> Self {
+        value.0
+    }
+}
+
+impl From<CheckedNonFungibleProof> for CheckedProof {
+    fn from(value: CheckedNonFungibleProof) -> Self {
+        value.0
+    }
+}
+
+//=================
+// Unchecked proof
+//=================
+
+impl ScryptoUncheckedProof for Proof {
+    type CheckedProofType = CheckedProof;
+
+    fn check(self, expected_resource_address: ResourceAddress) -> CheckedProof {
+        assert_eq!(self.resource_address(), expected_resource_address);
+        CheckedProof(self)
     }
 
-    /// Validates a `Proof`'s resource address creating a `ValidatedProof` if the validation succeeds.
-    ///
-    /// This method takes ownership of the proof and validates that its resource address matches that expected by the
-    /// caller. If the validation is successful, then a `ValidatedProof` is returned, otherwise, a `ValidateProofError`
-    /// is returned.
-    ///
-    /// # Example:
-    ///
-    /// ```ignore
-    /// let proof: Proof = bucket.create_proof();
-    /// match proof.validate_proof(admin_badge_resource_address) {
-    ///     Ok(validated_proof) => {
-    ///         info!(
-    ///             "Validation successful. Proof has a resource address of {} and amount of {}",
-    ///             validated_proof.resource_address(),
-    ///             validated_proof.amount(),
-    ///         );
-    ///     },
-    ///     Err(error) => {
-    ///         info!("Error validating proof: {:?}", error);
-    ///     },
-    /// }
-    /// ```
-    fn validate_proof<T>(
-        self,
-        validation_mode: T,
-    ) -> Result<ValidatedProof, (Self, ProofValidationError)>
-    where
-        T: Into<ProofValidationMode>,
-    {
-        let validation_mode: ProofValidationMode = validation_mode.into();
-        match self.validate(validation_mode) {
-            Ok(()) => Ok(ValidatedProof(self)),
-            Err(error) => Err((self, error)),
-        }
-    }
-
-    /// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.
-    ///
-    /// # WARNING:
-    ///
-    /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleLocalId`
-    /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
-    /// resource address. If you call this method, you should perform your own validation.
-    fn unsafe_skip_proof_validation(self) -> ValidatedProof {
-        ValidatedProof(self)
-    }
-
-    /// Converts a `ValidatedProof` into a `Proof`.
-    fn from_validated_proof(validated_proof: ValidatedProof) -> Self {
-        validated_proof.into()
-    }
-
-    fn validate(&self, validation_mode: ProofValidationMode) -> Result<(), ProofValidationError> {
-        match validation_mode {
-            ProofValidationMode::ValidateResourceAddress(resource_address) => {
-                self.validate_resource_address(resource_address)?;
-                Ok(())
-            }
-            ProofValidationMode::ValidateResourceAddressBelongsTo(resource_addresses) => {
-                self.validate_resource_address_belongs_to(&resource_addresses)?;
-                Ok(())
-            }
-            ProofValidationMode::ValidateContainsNonFungible(non_fungible_global_id) => {
-                self.validate_resource_address(non_fungible_global_id.resource_address())?;
-                self.validate_contains_non_fungible_local_id(non_fungible_global_id.local_id())?;
-                Ok(())
-            }
-            ProofValidationMode::ValidateContainsNonFungibles(
-                resource_address,
-                non_fungible_local_ids,
-            ) => {
-                self.validate_resource_address(resource_address)?;
-                self.validate_contains_non_fungible_local_ids(&non_fungible_local_ids)?;
-                Ok(())
-            }
-            ProofValidationMode::ValidateContainsAmount(resource_address, amount) => {
-                self.validate_resource_address(resource_address)?;
-                self.validate_contains_amount(amount)?;
-                Ok(())
-            }
-        }
-    }
-
-    fn validate_resource_address(
-        &self,
-        resource_address: ResourceAddress,
-    ) -> Result<(), ProofValidationError> {
-        if self.resource_address() == resource_address {
-            Ok(())
-        } else {
-            Err(ProofValidationError::InvalidResourceAddress(
-                resource_address,
-            ))
-        }
-    }
-
-    fn validate_resource_address_belongs_to(
-        &self,
-        resource_addresses: &BTreeSet<ResourceAddress>,
-    ) -> Result<(), ProofValidationError> {
-        if resource_addresses.contains(&self.resource_address()) {
-            Ok(())
-        } else {
-            Err(ProofValidationError::ResourceAddressDoesNotBelongToList)
-        }
-    }
-
-    fn validate_contains_non_fungible_local_id(
-        &self,
-        non_fungible_local_id: &NonFungibleLocalId,
-    ) -> Result<(), ProofValidationError> {
-        if self
-            .non_fungible_local_ids()
-            .get(non_fungible_local_id)
-            .is_some()
-        {
-            Ok(())
-        } else {
-            Err(ProofValidationError::NonFungibleLocalIdNotFound)
-        }
-    }
-
-    fn validate_contains_non_fungible_local_ids(
-        &self,
-        expected_non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<(), ProofValidationError> {
-        let actual_non_fungible_local_ids = self.non_fungible_local_ids();
-        let contains_all_non_fungible_local_ids =
-            expected_non_fungible_local_ids
-                .iter()
-                .all(|non_fungible_local_id| {
-                    actual_non_fungible_local_ids
-                        .get(non_fungible_local_id)
-                        .is_some()
-                });
-        if contains_all_non_fungible_local_ids {
-            Ok(())
-        } else {
-            Err(ProofValidationError::NonFungibleLocalIdNotFound)
-        }
-    }
-
-    fn validate_contains_amount(&self, amount: Decimal) -> Result<(), ProofValidationError> {
-        if self.amount() >= amount {
-            Ok(())
-        } else {
-            Err(ProofValidationError::InvalidAmount(amount))
-        }
-    }
-
-    fn amount(&self) -> Decimal {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                PROOF_GET_AMOUNT_IDENT,
-                scrypto_encode(&ProofGetAmountInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
-    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
-                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+    fn skip_checking(self) -> CheckedProof {
+        CheckedProof(self)
     }
 
     fn resource_address(&self) -> ResourceAddress {
@@ -257,6 +142,10 @@ impl ScryptoProof for Proof {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn drop(self) {
@@ -274,21 +163,93 @@ impl ScryptoProof for Proof {
         )
         .unwrap();
     }
-}
 
-/// Represents a proof of owning some resource that has had its resource address validated.
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct ValidatedProof(pub(crate) Proof);
-
-#[cfg(target_arch = "wasm32")]
-impl Clone for ValidatedProof {
     fn clone(&self) -> Self {
-        ValidatedProof(ScryptoProof::clone(&self.0))
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                PROOF_CLONE_IDENT,
+                scrypto_encode(&ProofCloneInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        LocalAuthZone::push(self.clone());
+        let output = f();
+        LocalAuthZone::pop().drop();
+        output
     }
 }
 
-impl ValidatedProof {
-    pub fn amount(&self) -> Decimal {
+impl ScryptoUncheckedProof for FungibleProof {
+    type CheckedProofType = CheckedFungibleProof;
+
+    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType {
+        CheckedFungibleProof(Proof::check(self.0, resource_address))
+    }
+
+    fn skip_checking(self) -> Self::CheckedProofType {
+        CheckedFungibleProof(Proof::skip_checking(self.0))
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+
+    fn drop(self) {
+        self.0.drop()
+    }
+
+    fn clone(&self) -> Self {
+        FungibleProof(self.0.clone())
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize(f)
+    }
+}
+
+impl ScryptoUncheckedProof for NonFungibleProof {
+    type CheckedProofType = CheckedNonFungibleProof;
+
+    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType {
+        CheckedNonFungibleProof(Proof::check(self.0, resource_address))
+    }
+
+    fn skip_checking(self) -> Self::CheckedProofType {
+        CheckedNonFungibleProof(Proof::skip_checking(self.0))
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+
+    fn drop(self) {
+        self.0.drop()
+    }
+
+    fn clone(&self) -> Self {
+        NonFungibleProof(self.0.clone())
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize(f)
+    }
+}
+
+//===================
+// Any checked Proof
+//===================
+
+impl ScryptoProof for CheckedProof {
+    fn contains_amount(&self, amount: Decimal) -> bool {
+        self.amount() >= amount
+    }
+
+    fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
@@ -300,62 +261,144 @@ impl ValidatedProof {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
-                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
     }
 
-    pub fn resource_address(&self) -> ResourceAddress {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                PROOF_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
-    #[cfg(target_arch = "wasm32")]
-    pub fn drop(self) {
+    fn drop(self) {
         self.0.drop()
     }
 
-    /// Whether this proof includes an ownership proof of any of the given resource.
-    pub fn contains(&self, resource_address: ResourceAddress) -> bool {
-        self.resource_address() == resource_address
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 
-    /// Whether this proof includes an ownership proof of at least the given amount of resource.
-    pub fn contains_resource(&self, amount: Decimal, resource_address: ResourceAddress) -> bool {
-        self.resource_address() == resource_address && self.amount() > amount
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize(f)
     }
 
-    /// Whether this proof includes an ownership proof of the given non-fungible.
-    pub fn contains_non_fungible(&self, non_fungible_global_id: &NonFungibleGlobalId) -> bool {
-        if self.resource_address() != non_fungible_global_id.resource_address() {
-            return false;
-        }
+    fn as_fungible(&self) -> CheckedFungibleProof {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_fungible_resource_manager());
+        CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
+    }
 
-        self.non_fungible_local_ids()
-            .iter()
-            .any(|k| k.eq(&non_fungible_global_id.local_id()))
+    fn as_non_fungible(&self) -> CheckedNonFungibleProof {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_non_fungible_resource_manager());
+        CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
+    }
+}
+
+//========================
+// Checked fungible proof
+//========================
+
+impl ScryptoProof for CheckedFungibleProof {
+    fn contains_amount(&self, amount: Decimal) -> bool {
+        self.0.contains_amount(amount)
+    }
+
+    fn amount(&self) -> Decimal {
+        self.0.amount()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+
+    fn drop(self) {
+        self.0.drop()
+    }
+
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize(f)
+    }
+
+    fn as_fungible(&self) -> CheckedFungibleProof {
+        self.0.as_fungible()
+    }
+
+    fn as_non_fungible(&self) -> CheckedNonFungibleProof {
+        self.0.as_non_fungible()
+    }
+}
+
+impl ScryptoFungibleProof for CheckedFungibleProof {}
+
+//============================
+// Checked non-fungible proof
+//============================
+
+impl ScryptoProof for CheckedNonFungibleProof {
+    fn contains_amount(&self, amount: Decimal) -> bool {
+        self.0.contains_amount(amount)
+    }
+
+    fn amount(&self) -> Decimal {
+        self.0.amount()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+
+    fn drop(self) {
+        self.0.drop()
+    }
+
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize(f)
+    }
+
+    fn as_fungible(&self) -> CheckedFungibleProof {
+        self.0.as_fungible()
+    }
+
+    fn as_non_fungible(&self) -> CheckedNonFungibleProof {
+        self.0.as_non_fungible()
+    }
+}
+
+impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
+        self.non_fungible_local_ids().contains(&id)
+    }
+
+    fn contains_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> bool {
+        self.non_fungible_local_ids().is_superset(&ids)
     }
 
     /// Returns all the non-fungible units contained.
     ///
     /// # Panics
     /// Panics if this is not a non-fungible proof.
-    pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let resource_address = self.resource_address();
+    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+        let resource_address = self.0.resource_address();
         self.non_fungible_local_ids()
             .iter()
             .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
@@ -366,7 +409,7 @@ impl ValidatedProof {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    pub fn non_fungible_local_id(&self) -> NonFungibleLocalId {
+    fn non_fungible_local_id(&self) -> NonFungibleLocalId {
         let non_fungible_local_ids = self.non_fungible_local_ids();
         if non_fungible_local_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");
@@ -378,7 +421,7 @@ impl ValidatedProof {
     ///
     /// # Panics
     /// Panics if this is not a singleton proof
-    pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
+    fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
         let non_fungibles = self.non_fungibles();
         if non_fungibles.len() != 1 {
             panic!("Expecting singleton NFT proof");
@@ -386,14 +429,15 @@ impl ValidatedProof {
         non_fungibles.into_iter().next().unwrap()
     }
 
-    /// Checks if the referenced bucket is empty.
-    pub fn is_empty(&self) -> bool {
-        self.amount() == 0.into()
-    }
-}
-
-impl Into<Proof> for ValidatedProof {
-    fn into(self) -> Proof {
-        self.0
+    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0 .0 .0.as_node_id(),
+                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 }

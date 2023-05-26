@@ -1,6 +1,6 @@
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
-use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
+use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
@@ -43,12 +43,12 @@ pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
     TransactionEpochNotYetValid {
-        valid_from: u64,
-        current_epoch: u64,
+        valid_from: u32,
+        current_epoch: u32,
     },
     TransactionEpochNoLongerValid {
-        valid_until: u64,
-        current_epoch: u64,
+        valid_until: u32,
+        current_epoch: u32,
     },
 }
 
@@ -200,12 +200,13 @@ pub enum SystemError {
     NoParent,
     NotAnObject,
     NotAMethod,
+    OuterObjectDoesNotExist,
     NotAFieldLock,
     NotAFieldWriteLock,
-    FieldDoesNotExist(Blueprint, u8),
-    KeyValueStoreDoesNotExist(Blueprint, u8),
-    SortedIndexDoesNotExist(Blueprint, u8),
-    IndexDoesNotExist(Blueprint, u8),
+    FieldDoesNotExist(BlueprintId, u8),
+    KeyValueStoreDoesNotExist(BlueprintId, u8),
+    SortedIndexDoesNotExist(BlueprintId, u8),
+    IndexDoesNotExist(BlueprintId, u8),
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,
@@ -227,7 +228,7 @@ pub enum SystemError {
     InvalidInstanceSchema,
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
-    BlueprintDoesNotExist(Blueprint),
+    BlueprintDoesNotExist(BlueprintId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -239,7 +240,7 @@ pub enum SystemUpstreamError {
     NativeExportDoesNotExist(String),
     NativeInvalidCodeId(u8),
 
-    BlueprintNotFound(Blueprint),
+    BlueprintNotFound(BlueprintId),
     FunctionNotFound(String),
     ReceiverNotMatch(String),
     InputSchemaNotMatch(String, String),
@@ -259,9 +260,9 @@ pub enum VmError {
 pub enum CreateObjectError {
     BlueprintNotFound(String),
     InvalidModule,
-    WrongNumberOfKeyValueStores(Blueprint, usize, usize),
-    WrongNumberOfSubstates(Blueprint, usize, usize),
-    SchemaValidationError(Blueprint, String),
+    WrongNumberOfKeyValueStores(BlueprintId, usize, usize),
+    WrongNumberOfSubstates(BlueprintId, usize, usize),
+    SchemaValidationError(BlueprintId, String),
     InvalidSubstateWrite(String),
 }
 
@@ -275,8 +276,8 @@ pub enum ModuleError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidModuleType {
-    pub expected_blueprint: Blueprint,
-    pub actual_blueprint: Blueprint,
+    pub expected_blueprint: BlueprintId,
+    pub actual_blueprint: BlueprintId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -377,7 +378,7 @@ pub enum ApplicationError {
 
     PackageError(PackageError),
 
-    EpochManagerError(EpochManagerError),
+    ConsensusManagerError(ConsensusManagerError),
 
     ValidatorError(ValidatorError),
 
@@ -420,9 +421,9 @@ impl From<PackageError> for ApplicationError {
     }
 }
 
-impl From<EpochManagerError> for ApplicationError {
-    fn from(value: EpochManagerError) -> Self {
-        Self::EpochManagerError(value)
+impl From<ConsensusManagerError> for ApplicationError {
+    fn from(value: ConsensusManagerError) -> Self {
+        Self::ConsensusManagerError(value)
     }
 }
 

@@ -6,7 +6,6 @@ mod multi_threaded_test {
     use radix_engine::types::*;
     use radix_engine::vm::wasm::WasmInstrumenter;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
-    use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
     use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -37,24 +36,27 @@ mod multi_threaded_test {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
-        let config = AccessRulesConfig::new().default(
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_owner_authority(
             rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
             AccessRule::DenyAll,
         );
 
         // Create two accounts
         let accounts = (0..2)
-            .map(|_| {
+            .map(|i| {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(FAUCET, 100.into())
-                    .new_account_advanced(config.clone())
+                    .new_account_advanced(authority_rules.clone())
                     .build();
                 let account = execute_and_commit_transaction(
                     &mut substate_db,
                     &mut scrypto_interpreter,
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
-                    &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
+                    &TestTransaction::new(manifest.clone(), hash(format!("Account creation: {i}")))
+                        .prepare()
+                        .unwrap()
                         .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
                             &public_key
                         )]),
@@ -74,7 +76,7 @@ mod multi_threaded_test {
             .call_method(FAUCET, "free", manifest_args!())
             .call_method(
                 account1,
-                "deposit_batch",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -84,7 +86,9 @@ mod multi_threaded_test {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+                &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
+                    .prepare()
+                    .expect("Expected transaction to be preparable")
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
             .expect_commit(true);
@@ -96,30 +100,31 @@ mod multi_threaded_test {
             .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
             .call_method(
                 account2,
-                "deposit_batch",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
-
-        let nonce = 3;
 
         // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to
         // account2
         thread::scope(|s| {
             for _i in 0..20 {
+                // Note - we run the same transaction on all threads, but don't commit anything
                 s.spawn(|_| {
                     let receipt = execute_transaction(
                         &substate_db,
                         &scrypto_interpreter,
                         &FeeReserveConfig::default(),
                         &ExecutionConfig::default(),
-                        &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+                        &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
+                            .prepare()
+                            .expect("Expected transaction to be preparable")
                             .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
                                 &public_key,
                             )]),
                     );
                     receipt.expect_commit_success();
-                    println!("recept = {:?}", receipt);
+                    println!("receipt = {:?}", receipt);
                 });
             }
         })

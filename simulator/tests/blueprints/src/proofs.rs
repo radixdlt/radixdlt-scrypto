@@ -5,7 +5,7 @@ mod proofs {
     struct Proofs {}
 
     impl Proofs {
-        pub fn new() -> (ComponentAddress, Vec<Bucket>) {
+        pub fn new() -> (Global<Proofs>, Vec<Bucket>) {
             // Creating three badges: admin badge, supervisor badge, super admin badge
             let supervisor_badge = Self::new_badge("supervisor badge");
             let admin_badge = Self::new_badge("admin badge");
@@ -22,19 +22,16 @@ mod proofs {
                 .restrict_withdraw(organizational_access_rule.clone(), LOCKED)
                 .mint_initial_supply(100);
 
-            // Creating the access rules for the component and instantiating an new component
-            let access_rules: AccessRulesConfig = AccessRulesConfig::new()
-                .method(
+            let component = Self {}
+                .instantiate()
+                .authority_rule(
                     "organizational_authenticated_method",
                     organizational_access_rule,
-                    LOCKED,
+                    AccessRule::DenyAll,
                 )
-                .default(rule!(deny_all), rule!(deny_all));
-
-            let local_component = Self {}.instantiate();
-
+                .globalize();
             (
-                local_component.globalize_with_access_rules(access_rules),
+                component,
                 vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }

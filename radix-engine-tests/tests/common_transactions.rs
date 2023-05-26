@@ -136,14 +136,15 @@ fn minting_of_fungible_resource_succeeds() {
         ResourceType::Fungible { divisibility: 18 },
         |account_address,
          minter_badge_resource_address,
-         mintable_resource_address,
+         mintable_fungible_resource_address,
          bech32_encoder| {
             let mint_amount = dec!("800");
 
             let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
                 account_address = account_address.display(bech32_encoder),
-                mintable_resource_address = mintable_resource_address.display(bech32_encoder),
+                mintable_fungible_resource_address =
+                    mintable_fungible_resource_address.display(bech32_encoder),
                 minter_badge_resource_address =
                     minter_badge_resource_address.display(bech32_encoder),
                 mint_amount = mint_amount
@@ -162,15 +163,35 @@ fn minting_of_non_fungible_resource_succeeds() {
         },
         |account_address,
          minter_badge_resource_address,
-         mintable_resource_address,
+         mintable_non_fungible_resource_address,
          bech32_encoder| {
             let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
                 account_address = account_address.display(bech32_encoder),
-                mintable_resource_address = mintable_resource_address.display(bech32_encoder),
+                mintable_non_fungible_resource_address =
+                    mintable_non_fungible_resource_address.display(bech32_encoder),
                 minter_badge_resource_address =
                     minter_badge_resource_address.display(bech32_encoder),
                 non_fungible_local_id = "#1#"
+            );
+            (manifest, Vec::new())
+        },
+    );
+}
+
+#[test]
+fn changing_account_default_deposit_rule_succeeds() {
+    test_manifest_with_restricted_minting_resource(
+        ResourceType::Fungible { divisibility: 18 },
+        |account_address,
+         minter_badge_resource_address,
+         mintable_resource_address,
+         bech32_encoder| {
+            let manifest = replace_variables!(
+                include_str!("../../transaction/examples/account/deposit_modes.rtm"),
+                account_address = account_address.display(bech32_encoder),
+                first_resource_address = mintable_resource_address.display(bech32_encoder),
+                second_resource_address = minter_badge_resource_address.display(bech32_encoder)
             );
             (manifest, Vec::new())
         },
@@ -250,13 +271,14 @@ fn test_manifest_with_restricted_minting_resource<F>(
             .build(),
     };
     let result = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    let mintable_resource_address = result.expect_commit(true).new_resource_addresses()[0].clone();
+    let mintable_non_fungible_resource_address =
+        result.expect_commit(true).new_resource_addresses()[0].clone();
 
     // Run the function and get the manifest string
     let (manifest_string, blobs) = string_manifest_builder(
         &component_address,
         &minter_badge_resource_address,
-        &mintable_resource_address,
+        &mintable_non_fungible_resource_address,
         &bech32_encoder,
     );
     let manifest = compile(&manifest_string, &network, blobs)

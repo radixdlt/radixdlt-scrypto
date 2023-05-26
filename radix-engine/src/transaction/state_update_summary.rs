@@ -41,7 +41,7 @@ impl StateUpdateSummary {
                 if node_id.is_global_component() {
                     new_components.insert(ComponentAddress::new_or_panic(node_id.0));
                 }
-                if node_id.is_global_resource() {
+                if node_id.is_global_resource_manager() {
                     new_resources.insert(ResourceAddress::new_or_panic(node_id.0));
                 }
             }
@@ -269,7 +269,10 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             _ => panic!("Unexpected"),
         };
 
-        if resource_address.as_node_id().is_global_fungible_resource() {
+        if resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager()
+        {
             // If there is an update to the liquid resource
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(

@@ -1,83 +1,120 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 
+use crate::modules::ModuleHandle;
+use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetMethodAccessRuleInput,
-    AccessRulesSetMethodMutabilityInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+    AccessRulesCreateInput, AccessRulesSetAuthorityMutabilityInput,
+    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
+    AccessRule, AuthorityKey, AuthorityRules, ObjectKey, METADATA_AUTHORITY,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub struct AccessRules(pub Own);
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(access_rules: AccessRulesConfig) -> Self {
+    pub fn new(authority_rules: AuthorityRules) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
                 scrypto_encode(&AccessRulesCreateInput {
-                    access_rules,
-                    child_blueprint_rules: btreemap!(),
+                    authority_rules,
+                    inner_blueprint_rules: btreemap!(),
                 })
                 .unwrap(),
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
-        Self(access_rules)
+        Self(ModuleHandle::Own(access_rules))
+    }
+
+    pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            &AccessRulesSetAuthorityRuleInput {
+                object_key: ObjectKey::SELF,
+                authority_key: AuthorityKey::main(name),
+                rule: entry.into(),
+            },
+        );
+    }
+
+    pub fn set_metadata_authority_rule<A: Into<AccessRule>>(&self, entry: A) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            &AccessRulesSetAuthorityRuleInput {
+                object_key: ObjectKey::SELF,
+                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
+                rule: entry.into(),
+            },
+        );
+    }
+
+    pub fn set_authority_rule_on_inner_blueprint<A: Into<AccessRule>>(
+        &self,
+        inner_blueprint: &str,
+        name: &str,
+        entry: A,
+    ) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            &AccessRulesSetAuthorityRuleInput {
+                object_key: ObjectKey::inner_blueprint(inner_blueprint),
+                authority_key: AuthorityKey::main(name),
+                rule: entry.into(),
+            },
+        );
+    }
+
+    pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+            &AccessRulesSetAuthorityMutabilityInput {
+                object_key: ObjectKey::SELF,
+                authority_key: AuthorityKey::main(name),
+                mutability,
+            },
+        );
+    }
+
+    pub fn set_metadata_mutability(&self, mutability: AccessRule) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+            &AccessRulesSetAuthorityMutabilityInput {
+                object_key: ObjectKey::SELF,
+                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
+                mutability,
+            },
+        );
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct AttachedAccessRules(pub GlobalAddress);
+impl Attachable for AccessRules {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::AccessRules;
 
-impl AttachedAccessRules {
-    pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
-        // TODO: allow setting method auth on other modules besides self
-        ScryptoEnv
-            .call_method_advanced(
-                self.0.as_node_id(),
-                false,
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
-                })
-                .unwrap(),
-            )
-            .unwrap();
+    fn new(handle: ModuleHandle) -> Self {
+        Self(handle)
     }
 
-    pub fn lock_method_auth(&mut self, method_name: &str) {
-        // TODO: allow locking method auth on other modules besides self
-        ScryptoEnv
-            .call_method_advanced(
-                self.0.as_node_id(),
-                false,
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                })
-                .unwrap(),
-            )
-            .unwrap();
+    fn handle(&self) -> &ModuleHandle {
+        &self.0
+    }
+}
+
+impl Default for AccessRules {
+    fn default() -> Self {
+        AccessRules::new(AuthorityRules::new())
     }
 }
 
@@ -92,15 +129,6 @@ impl From<Mutability> for AccessRule {
         match val {
             Mutability::LOCKED => AccessRule::DenyAll,
             Mutability::MUTABLE(rule) => rule,
-        }
-    }
-}
-
-impl From<Mutability> for AccessRuleEntry {
-    fn from(val: Mutability) -> Self {
-        match val {
-            Mutability::LOCKED => AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            Mutability::MUTABLE(rule) => AccessRuleEntry::AccessRule(rule),
         }
     }
 }

@@ -26,28 +26,33 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (token_address, _, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
-    let (object_key, group) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
-        ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
-        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
+    let (object_key, authority_key) = match action {
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
+        ResourceAuth::Burn => (
+            ObjectKey::SELF,
+            AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT),
+        ),
+        ResourceAuth::UpdateMetadata => {
+            (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
+        }
         ResourceAuth::Withdraw => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "withdraw",
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            AuthorityKey::main(VAULT_TAKE_IDENT),
         ),
         ResourceAuth::Deposit => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "deposit",
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            AuthorityKey::main(VAULT_PUT_IDENT),
         ),
         ResourceAuth::Recall => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "recall",
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            AuthorityKey::main(VAULT_RECALL_IDENT),
         ),
     };
     {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_group_mutability(token_address.into(), object_key, group.to_string(), DenyAll)
+            .set_authority_mutability(token_address.into(), object_key, authority_key, DenyAll)
             .build();
         test_runner
             .execute_manifest(
@@ -63,31 +68,41 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .lock_fee(test_runner.faucet_component(), 100u32.into())
         .create_proof_from_account(account, admin_auth);
 
-    let (object_key, group) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
-        ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
-        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
+    let (object_key, authority_key) = match action {
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
+        ResourceAuth::Burn => (
+            ObjectKey::SELF,
+            AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT),
+        ),
+        ResourceAuth::UpdateMetadata => {
+            (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
+        }
         ResourceAuth::Withdraw => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "withdraw",
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            AuthorityKey::main(VAULT_TAKE_IDENT),
         ),
         ResourceAuth::Deposit => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "deposit",
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            AuthorityKey::main(VAULT_PUT_IDENT),
         ),
         ResourceAuth::Recall => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "recall",
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            AuthorityKey::main(VAULT_RECALL_IDENT),
         ),
     };
 
     let builder = if lock {
-        builder.set_group_mutability(token_address.into(), object_key, group.to_string(), DenyAll)
-    } else {
-        builder.set_group_access_rule(
+        builder.set_authority_mutability(
             token_address.into(),
             object_key,
-            group.to_string(),
+            authority_key.clone(),
+            DenyAll,
+        )
+    } else {
+        builder.set_authority_access_rule(
+            token_address.into(),
+            object_key,
+            authority_key,
             rule!(require(updated_auth)),
         )
     };
@@ -95,7 +110,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let manifest = builder
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

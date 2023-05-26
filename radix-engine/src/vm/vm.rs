@@ -70,14 +70,6 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .callback_obj
                         .scrypto_vm
                         .create_instance(address, &package_code.code)
-                        // It is expected that we can always create an instance of a package.
-                        // All code is checked upon upload that it can be instantiated - so if it can't be instantiated
-                        // now, something is fundamentally wrong. So for now, we panic here.
-                        // In future - we could return an error instead, and have this flagged as a broken invariant
-                        // in a TransactionResult::SystemInvariantFailed
-                        // Which would let the node decide how to handle it (eg by logging/panicking).
-                        // See thread here: https://github.com/radixdlt/radixdlt-scrypto/pull/984#discussion_r1181973193
-                        .expect("Package WASM could not be instantiated despite the fact this was checked at upload time")
                 };
 
                 let output = { scrypto_vm_instance.invoke(receiver, &export_name, input, api)? };

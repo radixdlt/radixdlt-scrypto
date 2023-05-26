@@ -3,7 +3,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -12,358 +12,210 @@ use radix_engine_interface::*;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (AccessRulesConfig, AccessRulesConfig, AccessRulesConfig) {
-    let (mint_access_rule, mint_mutability) = access_rules_map
-        .remove(&Mint)
-        .unwrap_or((DenyAll, rule!(deny_all)));
-    let (burn_access_rule, burn_mutability) = access_rules_map
-        .remove(&Burn)
-        .unwrap_or((DenyAll, rule!(deny_all)));
-    let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
-        access_rules_map
-            .remove(&UpdateNonFungibleData)
-            .unwrap_or((AllowAll, rule!(deny_all)));
-    let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
-        .remove(&UpdateMetadata)
-        .unwrap_or((DenyAll, rule!(deny_all)));
+) -> (AuthorityRules, AuthorityRules, AuthorityRules) {
+    let resman_authority_rules = {
+        let (mint_access_rule, mint_mutability) = access_rules_map
+            .remove(&Mint)
+            .unwrap_or((DenyAll, rule!(deny_all)));
+        let (burn_access_rule, burn_mutability) = access_rules_map
+            .remove(&Burn)
+            .unwrap_or((DenyAll, rule!(deny_all)));
+        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
+            access_rules_map
+                .remove(&UpdateNonFungibleData)
+                .unwrap_or((AllowAll, rule!(deny_all)));
+        let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
+            .remove(&UpdateMetadata)
+            .unwrap_or((DenyAll, rule!(deny_all)));
 
-    let mut resman_access_rules = AccessRulesConfig::new();
-    {
-        resman_access_rules.set_group_access_rule_and_mutability(
-            "update_metadata",
-            update_metadata_access_rule,
-            update_metadata_mutability,
-        );
-        resman_access_rules.set_group_and_mutability(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            "update_metadata",
-            DenyAll,
-        );
-    }
+        let mut resman_authority_rules = AuthorityRules::new();
+        resman_authority_rules
+            .set_metadata_authority(update_metadata_access_rule, update_metadata_mutability);
+        resman_authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
 
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Metadata, METADATA_GET_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-
-    {
-        resman_access_rules.set_group_access_rule_and_mutability(
-            "mint",
-            mint_access_rule,
-            mint_mutability,
-        );
-        resman_access_rules.set_group_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::Main,
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-            ),
-            "mint",
-            DenyAll,
-        );
-        resman_access_rules.set_group_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::Main,
+        // Mint
+        {
+            resman_authority_rules.set_main_authority_rule(
+                MINT_AUTHORITY,
+                mint_access_rule,
+                mint_mutability,
+            );
+            resman_authority_rules
+                .redirect_to_fixed(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
+            resman_authority_rules.redirect_to_fixed(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-            ),
-            "mint",
-            DenyAll,
-        );
-        resman_access_rules.set_group_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::Main,
+                MINT_AUTHORITY,
+            );
+            resman_authority_rules.redirect_to_fixed(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
-            ),
-            "mint",
-            DenyAll,
-        );
-        resman_access_rules.set_group_and_mutability(
-            MethodKey::new(ObjectModuleId::Main, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
-            "mint",
-            DenyAll,
-        );
-    }
+                MINT_AUTHORITY,
+            );
+            resman_authority_rules
+                .redirect_to_fixed(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
+        }
 
-    {
-        resman_access_rules.set_group_access_rule_and_mutability(
-            "burn",
+        resman_authority_rules.set_main_authority_rule(
+            RESOURCE_MANAGER_BURN_IDENT,
             burn_access_rule,
             burn_mutability,
         );
-        resman_access_rules.set_group_and_mutability(
-            MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
-            "burn",
-            DenyAll,
-        );
-    }
-
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
+        resman_authority_rules.set_main_authority_rule(
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-        ),
-        update_non_fungible_data_access_rule,
-        update_non_fungible_data_mutability,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
+            update_non_fungible_data_access_rule,
+            update_non_fungible_data_mutability,
+        );
 
-    let (deposit_access_rule, deposit_mutability) = access_rules_map
-        .remove(&ResourceMethodAuthKey::Deposit)
-        .unwrap_or((AllowAll, rule!(deny_all)));
-    let (withdraw_access_rule, withdraw_mutability) = access_rules_map
-        .remove(&ResourceMethodAuthKey::Withdraw)
-        .unwrap_or((AllowAll, rule!(deny_all)));
-    let (recall_access_rule, recall_mutability) = access_rules_map
-        .remove(&ResourceMethodAuthKey::Recall)
-        .unwrap_or((DenyAll, rule!(deny_all)));
+        resman_authority_rules
+    };
 
-    let mut vault_access_rules = AccessRulesConfig::new();
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "withdraw",
-        withdraw_access_rule,
-        withdraw_mutability,
-    );
-    vault_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, VAULT_TAKE_IDENT),
-        "withdraw",
-        DenyAll,
-    );
-    vault_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
-        ),
-        "withdraw",
-        DenyAll,
-    );
-    vault_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
-        "withdraw",
-        DenyAll,
-    );
+    let vault_authority_rules = {
+        let (deposit_access_rule, deposit_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Deposit)
+            .unwrap_or((AllowAll, rule!(deny_all)));
+        let (withdraw_access_rule, withdraw_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Withdraw)
+            .unwrap_or((AllowAll, rule!(deny_all)));
+        let (recall_access_rule, recall_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Recall)
+            .unwrap_or((DenyAll, rule!(deny_all)));
 
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "recall",
-        recall_access_rule,
-        recall_mutability,
-    );
-    vault_access_rules.set_direct_access_group(
-        MethodKey::new(ObjectModuleId::Main, VAULT_RECALL_IDENT),
-        "recall",
-    );
-    vault_access_rules.set_direct_access_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
-        ),
-        "recall",
-    );
+        let mut vault_authority_rules = AuthorityRules::new();
 
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "deposit",
-        deposit_access_rule,
-        deposit_mutability,
-    );
-    vault_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
-        "deposit",
-        DenyAll,
-    );
+        // Withdraw
+        {
+            vault_authority_rules.set_main_authority_rule(
+                VAULT_TAKE_IDENT,
+                withdraw_access_rule,
+                withdraw_mutability,
+            );
+            vault_authority_rules.set_fixed_main_authority_rule(
+                NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+                rule!(require(VAULT_TAKE_IDENT)),
+            );
+            vault_authority_rules.set_fixed_main_authority_rule(
+                FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+                rule!(require(VAULT_TAKE_IDENT)),
+            );
+        }
 
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, VAULT_GET_AMOUNT_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
-        ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
-        ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
-        ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
-        ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
+        // Recall
+        {
+            vault_authority_rules.set_main_authority_rule(
+                VAULT_RECALL_IDENT,
+                recall_access_rule,
+                recall_mutability,
+            );
+            vault_authority_rules.set_fixed_main_authority_rule(
+                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
+                rule!(require(VAULT_RECALL_IDENT)),
+            );
+        }
+
+        // Deposit
+        {
+            vault_authority_rules.set_main_authority_rule(
+                VAULT_PUT_IDENT,
+                deposit_access_rule,
+                deposit_mutability,
+            );
+        }
+
+        // Internal
+        {
+            vault_authority_rules
+                .redirect_to_fixed(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
+            vault_authority_rules
+                .redirect_to_fixed(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT, "this_package");
+            vault_authority_rules
+                .redirect_to_fixed(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
+            vault_authority_rules.redirect_to_fixed(
+                NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
+                "this_package",
+            );
+
+            vault_authority_rules.set_fixed_main_authority_rule(
+                "this_package",
+                rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+            );
+        }
+
+        vault_authority_rules
+    };
 
     // Note that if a local reference to a bucket is passed to another actor, the recipient will be able
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
-    let mut bucket_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
-    bucket_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
-    bucket_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
-    bucket_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
-        ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
-    bucket_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
-        ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
-    );
 
-    (resman_access_rules, vault_access_rules, bucket_access_rules)
+    let bucket_authority_rules = {
+        let mut bucket_authority_rules = AuthorityRules::new();
+        bucket_authority_rules.set_fixed_main_authority_rule(
+            "this_package",
+            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+        );
+        bucket_authority_rules.redirect_to_fixed(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT, "this_package");
+        bucket_authority_rules
+            .redirect_to_fixed(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT, "this_package");
+        bucket_authority_rules
+            .redirect_to_fixed(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT, "this_package");
+        bucket_authority_rules.redirect_to_fixed(
+            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+            "this_package",
+        );
+
+        bucket_authority_rules
+    };
+
+    (
+        resman_authority_rules,
+        vault_authority_rules,
+        bucket_authority_rules,
+    )
 }
 
 pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataValue>,
     api: &mut Y,
 ) -> Result<(), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
-    let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
-        if resource_address.as_node_id().is_global_fungible_resource() {
-            (
-                FUNGIBLE_VAULT_BLUEPRINT,
-                FUNGIBLE_BUCKET_BLUEPRINT,
-                FUNGIBLE_PROOF_BLUEPRINT,
-            )
-        } else {
-            (
-                NON_FUNGIBLE_VAULT_BLUEPRINT,
-                NON_FUNGIBLE_BUCKET_BLUEPRINT,
-                NON_FUNGIBLE_PROOF_BLUEPRINT,
-            )
-        };
+    let proof_config = AuthorityRules::new();
 
-    let resman_access_rules = AccessRules::sys_new(
-        resman_access_rules,
+    let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) = if resource_address
+        .as_node_id()
+        .is_global_fungible_resource_manager()
+    {
+        (
+            FUNGIBLE_VAULT_BLUEPRINT,
+            FUNGIBLE_BUCKET_BLUEPRINT,
+            FUNGIBLE_PROOF_BLUEPRINT,
+        )
+    } else {
+        (
+            NON_FUNGIBLE_VAULT_BLUEPRINT,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
+        )
+    };
+
+    let resman_access_rules = AccessRules::create(
+        resman_authorities,
         btreemap!(
-            vault_blueprint_name.to_string() => vault_access_rules,
-            bucket_blueprint_name.to_string() => bucket_access_rules,
-            proof_blueprint_name.to_string() => proof_access_rules
+            vault_blueprint_name.to_string() => vault_authorities,
+            bucket_blueprint_name.to_string() => proof_config,
+            proof_blueprint_name.to_string() => bucket_authorities,
         ),
         api,
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     api.globalize_with_address(
         btreemap!(
@@ -382,30 +234,30 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataValue>,
     initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+    let proof_authorities = AuthorityRules::new();
 
-    let resman_access_rules = AccessRules::sys_new(
-        resman_access_rules,
+    let resman_access_rules = AccessRules::create(
+        resman_authorities,
         btreemap!(
-            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
-            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_access_rules,
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_access_rules
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_authorities,
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_authorities
         ),
         api,
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(
@@ -429,30 +281,30 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataValue>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+    let proof_authorities = AuthorityRules::new();
 
-    let resman_access_rules = AccessRules::sys_new(
-        resman_access_rules,
+    let resman_access_rules = AccessRules::create(
+        resman_authorities,
         btreemap!(
-            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
-            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_access_rules,
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_access_rules
+            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_authorities,
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_authorities
         ),
         api,
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(

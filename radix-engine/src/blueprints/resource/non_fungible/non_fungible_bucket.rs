@@ -145,7 +145,7 @@ impl NonFungibleBucket {
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<NonFungibleProof, RuntimeError>
+    ) -> Result<NonFungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -181,7 +181,7 @@ impl NonFungibleBucket {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(NonFungibleProof::new(
+        Ok(NonFungibleProofSubstate::new(
             ids_for_proof.clone(),
             btreemap!(
                 LocalRef::Bucket(Reference(receiver.clone())) => ids_for_proof
@@ -199,7 +199,7 @@ impl NonFungibleBucket {
         receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<NonFungibleProof, RuntimeError>
+    ) -> Result<NonFungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -226,7 +226,7 @@ impl NonFungibleBucket {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(NonFungibleProof::new(
+        Ok(NonFungibleProofSubstate::new(
             ids.clone(),
             btreemap!(
                 LocalRef::Bucket(Reference(receiver.clone())) => ids

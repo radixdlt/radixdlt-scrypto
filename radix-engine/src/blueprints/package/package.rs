@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate, NodeAuthorityRules,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
@@ -11,16 +11,16 @@ use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
-use native_sdk::resource::{ResourceManager, Vault};
+use native_sdk::resource::NativeVault;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRulesConfig, Bucket, FnKey,
-};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
@@ -110,8 +110,16 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
-    const OWNER_GROUP_NAME: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
+
+    fn authority_rules() -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
+        authority_rules.redirect_to_fixed(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
+        authority_rules.redirect_to_fixed(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
+        authority_rules.set_fixed_main_authority_rule("package_royalty", rule!(require_owner()));
+        authority_rules
+    }
 }
 
 fn globalize_package<Y>(
@@ -121,7 +129,7 @@ fn globalize_package<Y>(
     code: PackageCodeSubstate,
     royalty: PackageRoyaltySubstate,
     function_access_rules: FunctionAccessRulesSubstate,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
@@ -145,7 +153,7 @@ where
     node_modules.insert(
         TYPE_INFO_FIELD_PARTITION,
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-            blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            blueprint: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
             outer_object: None,
             instance_schema: None,
@@ -155,7 +163,7 @@ where
     for (key, value) in metadata {
         metadata_init.insert(
             SubstateKey::Map(scrypto_encode(&key).unwrap()),
-            IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
+            IndexedScryptoValue::from_typed(&Some(value)),
         );
     }
     node_modules.insert(
@@ -190,8 +198,8 @@ where
         node_modules.insert(
             ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
-                access_rules: AccessRulesConfig::new(),
-                child_blueprint_rules: BTreeMap::new(),
+                access_rules: NodeAuthorityRules::new(),
+                inner_blueprint_access_rules: BTreeMap::new(),
             }),
         );
     }
@@ -260,7 +268,7 @@ impl PackageNativePackage {
         functions.insert(
             PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(schema::Receiver::SelfRefMut),
+                receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyConfigInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<PackageSetRoyaltyConfigOutput>(),
@@ -270,7 +278,7 @@ impl PackageNativePackage {
         functions.insert(
             PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(schema::Receiver::SelfRefMut),
+                receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyOutput>(),
                 export_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
@@ -390,7 +398,7 @@ impl PackageNativePackage {
                     input.schema,
                     input.royalty_config,
                     input.metadata,
-                    input.access_rules,
+                    input.authority_rules,
                     api,
                 )?;
 
@@ -419,7 +427,7 @@ impl PackageNativePackage {
         schema: PackageSchema,
         dependent_resources: Vec<ResourceAddress>,
         dependent_components: Vec<ComponentAddress>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         package_access_rules: BTreeMap<FnKey, AccessRule>,
         default_package_access_rule: AccessRule,
         api: &mut Y,
@@ -469,7 +477,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
@@ -494,14 +502,14 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-        config: AccessRulesConfig,
+        metadata: BTreeMap<String, MetadataValue>,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedPackage::create_advanced(config, api)?;
+        let access_rules = SecurifiedPackage::create_advanced(authority_rules, api)?;
         let address = Self::publish_wasm_internal(
             package_address,
             code,
@@ -520,7 +528,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -536,6 +544,7 @@ impl PackageNativePackage {
             collections,
             outer_blueprint: parent,
             virtual_lazy_load_functions,
+            functions,
             ..
         } in schema.blueprints.values()
         {
@@ -559,6 +568,18 @@ impl PackageNativePackage {
                         "Static collections not supported".to_string(),
                     )),
                 ));
+            }
+
+            for (_name, schema) in functions {
+                if let Some(info) = &schema.receiver {
+                    if info.ref_types != RefTypes::NORMAL {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Irregular ref types not supported".to_string(),
+                            )),
+                        ));
+                    }
+                }
             }
         }
 
@@ -647,7 +668,7 @@ impl PackageNativePackage {
 
         let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
-            Some(vault) => Vault(vault).sys_take_all(api)?,
+            Some(vault) => Vault(vault).take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
         };
 

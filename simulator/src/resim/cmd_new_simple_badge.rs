@@ -1,6 +1,7 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::blueprints::resource::{
     NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -10,7 +11,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 use crate::resim::*;
 
@@ -34,7 +35,7 @@ pub struct NewSimpleBadge {
 
     /// The website URL
     #[clap(long)]
-    pub url: Option<String>,
+    pub info_url: Option<String>,
 
     /// The ICON url
     #[clap(long)]
@@ -66,24 +67,27 @@ impl NewSimpleBadge {
         let default_account = get_default_account()?;
         let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
-            metadata.insert("symbol".to_string(), symbol);
+            metadata.insert("symbol".to_string(), MetadataValue::String(symbol));
         }
         if let Some(name) = self.name.clone() {
-            metadata.insert("name".to_string(), name);
+            metadata.insert("name".to_string(), MetadataValue::String(name));
         }
         if let Some(description) = self.description.clone() {
-            metadata.insert("description".to_string(), description);
+            metadata.insert(
+                "description".to_string(),
+                MetadataValue::String(description),
+            );
         }
-        if let Some(url) = self.url.clone() {
-            metadata.insert("url".to_string(), url);
+        if let Some(info_url) = self.info_url.clone() {
+            metadata.insert("info_url".to_string(), MetadataValue::Url(Url(info_url)));
         }
         if let Some(icon_url) = self.icon_url.clone() {
-            metadata.insert("icon_url".to_string(), icon_url);
+            metadata.insert("icon_url".to_string(), MetadataValue::Url(Url(icon_url)));
         };
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 100.into())
-            .add_instruction(Instruction::CallFunction {
+            .add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -103,7 +107,7 @@ impl NewSimpleBadge {
             .0
             .call_method(
                 default_account,
-                "deposit_batch",
+                "try_deposit_batch_or_refund",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

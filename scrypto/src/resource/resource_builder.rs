@@ -1,5 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -12,6 +13,7 @@ use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
 use scrypto::prelude::ScryptoValue;
+use scrypto::resource::ResourceManager;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -87,7 +89,7 @@ impl ResourceBuilder {
 #[must_use]
 pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
     resource_type: T,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataValue>,
     auth: A,
 }
 
@@ -176,7 +178,7 @@ pub trait UpdateMetadataBuilder: private::CanAddMetadata {
     ///
     /// If a previous attribute with the same name has been set, it will be overwritten.
     fn metadata<K: Into<String>, V: Into<String>>(self, name: K, value: V) -> Self::OutputBuilder {
-        self.add_metadata(name.into(), value.into())
+        self.add_metadata(name.into(), MetadataValue::String(value.into()))
     }
 }
 impl<B: private::CanAddMetadata> UpdateMetadataBuilder for B {}
@@ -405,7 +407,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
     /// Creates the resource with no initial supply.
     ///
     /// The resource's address is returned.
-    fn create_with_no_initial_supply(self) -> ResourceAddress {
+    fn create_with_no_initial_supply(self) -> ResourceManager {
         match self.into_create_with_no_supply_invocation() {
             private::CreateWithNoSupply::Fungible {
                 divisibility,
@@ -738,7 +740,7 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanAddMetadata
 {
     type OutputBuilder = Self;
 
-    fn add_metadata(mut self, key: String, value: String) -> Self::OutputBuilder {
+    fn add_metadata(mut self, key: String, value: MetadataValue) -> Self::OutputBuilder {
         self.metadata.insert(key, value);
         self
     }
@@ -826,14 +828,15 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{
-        AccessRule, NonFungibleGlobalId, ResourceMethodAuthKey,
+    use radix_engine_interface::{
+        api::node_modules::metadata::MetadataValue,
+        blueprints::resource::{AccessRule, NonFungibleGlobalId, ResourceMethodAuthKey},
     };
 
     pub trait CanAddMetadata: Sized {
         type OutputBuilder;
 
-        fn add_metadata(self, key: String, value: String) -> Self::OutputBuilder;
+        fn add_metadata(self, key: String, value: MetadataValue) -> Self::OutputBuilder;
     }
 
     pub trait CanAddAuth: Sized {
@@ -860,13 +863,13 @@ mod private {
     pub enum CreateWithNoSupply {
         Fungible {
             divisibility: u8,
-            metadata: BTreeMap<String, String>,
+            metadata: BTreeMap<String, MetadataValue>,
             access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         },
         NonFungible {
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            metadata: BTreeMap<String, String>,
+            metadata: BTreeMap<String, MetadataValue>,
             access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         },
     }

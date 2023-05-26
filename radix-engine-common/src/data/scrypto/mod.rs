@@ -38,8 +38,7 @@ use sbor::rust::vec::Vec;
 use sbor::traversal::VecTraverser;
 use sbor::*;
 
-// 0x5c for [5c]rypto - (91 in decimal)
-pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
+pub use radix_engine_constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
@@ -61,6 +60,12 @@ pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
 // TODO: Change these to be Trait aliases once stable in rust: https://github.com/rust-lang/rust/issues/41517
 pub trait ScryptoCategorize: Categorize<ScryptoCustomValueKind> {}
 impl<T: Categorize<ScryptoCustomValueKind> + ?Sized> ScryptoCategorize for T {}
+
+pub trait ScryptoSborEnum: SborEnum<ScryptoCustomValueKind> {}
+impl<T: SborEnum<ScryptoCustomValueKind> + ?Sized> ScryptoSborEnum for T {}
+
+pub trait ScryptoSborTuple: SborTuple<ScryptoCustomValueKind> {}
+impl<T: SborTuple<ScryptoCustomValueKind> + ?Sized> ScryptoSborTuple for T {}
 
 pub trait ScryptoDecode: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>> {}
 impl<T: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>>> ScryptoDecode for T {}

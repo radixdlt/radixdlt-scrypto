@@ -7,9 +7,8 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::clock::TimePrecision;
-use scrypto_unit::TestRunner;
-use transaction::{builder::ManifestBuilder, model::TransactionManifest};
+use scrypto_unit::{CustomGenesis, TestRunner};
+use transaction::builder::*;
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {
@@ -104,7 +103,7 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
         rule!(require(RADIX_TOKEN)),
         Some(10),
     );
-    test_runner.push_time_forward(9);
+    test_runner.set_current_minute(9);
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
@@ -130,7 +129,7 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
         rule!(require(RADIX_TOKEN)),
         Some(10),
     );
-    test_runner.push_time_forward(10);
+    test_runner.set_current_minute(10);
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
@@ -156,7 +155,7 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
         rule!(require(RADIX_TOKEN)),
         Some(10),
     );
-    test_runner.push_time_forward(10);
+    test_runner.set_current_minute(10);
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
@@ -182,7 +181,7 @@ pub fn timed_confirm_recovery_with_non_recovery_role_fails() {
         rule!(require(RADIX_TOKEN)),
         Some(10),
     );
-    test_runner.push_time_forward(10);
+    test_runner.set_current_minute(10);
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
@@ -212,7 +211,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
         .lock_primary_role(Role::Recovery)
         .expect_commit_success();
 
-    test_runner.push_time_forward(10);
+    test_runner.set_current_minute(10);
 
     test_runner
         .timed_confirm_recovery(
@@ -459,6 +458,63 @@ pub fn recovery_can_cancel_their_badge_withdraw_attempt() {
         // Assert
         receipt.expect_specific_failure(is_no_badge_withdraw_attempts_exists_for_proposer_error);
     }
+}
+
+#[test]
+pub fn minting_of_recovery_badges_succeeds_for_primary_role() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
+    // Act
+    let receipt = test_runner.mint_recovery_badges(Role::Primary, non_fungible_local_ids);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn minting_of_recovery_badges_succeeds_for_recovery_role() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
+    // Act
+    let receipt = test_runner.mint_recovery_badges(Role::Recovery, non_fungible_local_ids);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn minting_of_recovery_badges_fails_for_confirmation_role() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
+    // Act
+    let receipt = test_runner.mint_recovery_badges(Role::Confirmation, non_fungible_local_ids);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_unauthorized_error);
+}
+
+#[test]
+pub fn post_instantiation_method_can_not_be_called_on_access_controller_publicly() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    // Act
+    let receipt = test_runner.post_instantiation(Role::Primary);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_unauthorized_error);
 }
 
 //=============
@@ -1602,7 +1658,12 @@ struct AccessControllerTestRunner {
 #[allow(dead_code)]
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
-        let mut test_runner = TestRunner::builder().build();
+        let mut test_runner = TestRunner::builder()
+            .with_custom_genesis(CustomGenesis::default(
+                1,
+                CustomGenesis::default_consensus_manager_config(),
+            ))
+            .build();
 
         // Creating a new account - this is where the badges will be held
         let (public_key, _, account) = test_runner.new_account(false);
@@ -1911,7 +1972,42 @@ impl AccessControllerTestRunner {
         self.execute_manifest(manifest)
     }
 
-    fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
+    pub fn mint_recovery_badges(
+        &mut self,
+        as_role: Role,
+        non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
+    ) -> TransactionReceipt {
+        let manifest = self
+            .manifest_builder(as_role)
+            .call_method(
+                self.access_controller_address,
+                ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT,
+                to_manifest_value(&AccessControllerMintRecoveryBadgesInput {
+                    non_fungible_local_ids,
+                }),
+            )
+            .call_method(
+                self.account.0,
+                "try_deposit_batch_or_abort",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn post_instantiation(&mut self, as_role: Role) -> TransactionReceipt {
+        let manifest = self
+            .manifest_builder(as_role)
+            .call_method(
+                self.access_controller_address,
+                ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
+                to_manifest_value(&AccessControllerPostInstantiationInput),
+            )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner.execute_manifest_ignoring_fee(
             manifest,
             [NonFungibleGlobalId::from_public_key(&self.account.1)],
@@ -1929,10 +2025,10 @@ impl AccessControllerTestRunner {
         manifest_builder
     }
 
-    fn push_time_forward(&mut self, minutes: i64) {
-        let current_time = self.test_runner.get_current_time(TimePrecision::Minute);
-        let new_time = current_time.add_minutes(minutes).unwrap();
+    fn set_current_minute(&mut self, minutes: i64) {
+        // we use a single-round epochs, so the only possible round advance is to round 1
         self.test_runner
-            .set_current_time(new_time.seconds_since_unix_epoch * 1000);
+            .advance_to_round_at_timestamp(1, minutes * 60 * 1000)
+            .expect_commit_success();
     }
 }

@@ -5,6 +5,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -95,14 +96,15 @@ impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         id_type: NonFungibleIdType,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         Self::create_with_address(
             id_type,
@@ -117,7 +119,7 @@ impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create_with_address<Y>(
         id_type: NonFungibleIdType,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         api: &mut Y,
@@ -154,7 +156,7 @@ impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create_with_initial_supply<Y>(
         id_type: NonFungibleIdType,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
@@ -175,7 +177,8 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         let supply: Decimal = Decimal::from(entries.len());
@@ -230,7 +233,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_uuid_with_initial_supply<Y>(
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
@@ -255,7 +258,8 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         let instance_schema = InstanceSchema {

@@ -1,0 +1,52 @@
+# This transaction manifest file shows how an account could be configured to use any of the four 
+# allowed deposit modes. This manifest shows it for all four; thus, you're likely only going to need
+# a subset of this full manifest.
+
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+CALL_METHOD 
+    Address("${account_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Example 1: Allow All deposits mode
+CALL_METHOD 
+    Address("${account_address}") 
+    "change_account_default_deposit_rule" 
+    Enum<AccountDefaultDepositRule::Accept>();
+
+# Example 2: Deny All deposits mode
+CALL_METHOD 
+    Address("${account_address}") 
+    "change_account_default_deposit_rule" 
+    Enum<AccountDefaultDepositRule::Reject>();
+
+# Example 3: Allow existing deposits mode
+CALL_METHOD 
+    Address("${account_address}") 
+    "change_account_default_deposit_rule" 
+    Enum<AccountDefaultDepositRule::AllowExisting>();
+
+# Example 4a: Adding a resource to the allow list
+CALL_METHOD
+    Address("${account_address}")
+    "configure_resource_deposit_rule"
+    Address("${second_resource_address}")
+    Enum<ResourceDepositRule::Allowed>();
+
+# Example 4a: Adding a resource to the deny list
+CALL_METHOD
+    Address("${account_address}")
+    "configure_resource_deposit_rule"
+    Address("${second_resource_address}")
+    Enum<ResourceDepositRule::Disallowed>();
+
+# Example 4a: Removing a resource from the allow and deny lists
+CALL_METHOD
+    Address("${account_address}")
+    "configure_resource_deposit_rule"
+    Address("${second_resource_address}")
+    Enum<ResourceDepositRule::Neither>();

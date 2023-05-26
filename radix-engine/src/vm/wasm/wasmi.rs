@@ -4,6 +4,7 @@ use sbor::rust::mem::MaybeUninit;
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
 use wasmi::core::{HostError, Trap};
+use wasmi::errors::InstantiationError;
 use wasmi::*;
 
 use super::InstrumentedCode;
@@ -108,6 +109,33 @@ fn consume_buffer(
         }
         Err(e) => Err(e),
     }
+}
+
+fn actor_call_module_method(
+    mut caller: Caller<'_, HostState>,
+    object_handle: u32,
+    module_id: u32,
+    ident_ptr: u32,
+    ident_len: u32,
+    args_ptr: u32,
+    args_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
+    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
+
+    // Get current memory consumption and update it in transaction limit kernel module
+    // for current call frame through runtime call.
+    let mem = memory
+        .current_pages(caller.as_context())
+        .to_bytes()
+        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
+    runtime.update_wasm_memory_usage(mem)?;
+
+    runtime
+        .actor_call_module_method(object_handle, module_id, ident, args)
+        .map(|buffer| buffer.0)
 }
 
 fn call_method(
@@ -501,18 +529,25 @@ macro_rules! linker_define {
     };
 }
 
+#[derive(Debug)]
+pub enum WasmiInstantiationError {
+    ValidationError(Error),
+    PreInstantiationError(Error),
+    InstantiationError(InstantiationError),
+}
+
 impl WasmiModule {
-    pub fn new(code: &[u8]) -> Result<Self, PrepareError> {
+    pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
         let engine = Engine::default();
-        let module = Module::new(&engine, code).expect("WASM undecodable, prepare step missed?");
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
+        let module =
+            Module::new(&engine, code).map_err(WasmiInstantiationError::ValidationError)?;
+
         let instance = Self::host_funcs_set(&module, &mut store)
-            .map_err(|err| PrepareError::NotInstantiatable {
-                reason: format!("{err:?}"),
-            })?
+            .map_err(WasmiInstantiationError::PreInstantiationError)?
             .ensure_no_start(store.as_context_mut())
-            .expect("WASM contains start function, prepare step missed?");
+            .map_err(WasmiInstantiationError::InstantiationError)?;
 
         Ok(Self {
             template_store: unsafe { transmute(store) },
@@ -532,6 +567,29 @@ impl WasmiModule {
              destination_ptr: u32|
              -> Result<(), Trap> {
                 consume_buffer(caller, buffer_id, destination_ptr).map_err(|e| e.into())
+            },
+        );
+
+        let host_actor_call_module_method = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             object_handle: u32,
+             module_id: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                actor_call_module_method(
+                    caller,
+                    object_handle,
+                    module_id,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
@@ -881,6 +939,11 @@ impl WasmiModule {
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+        linker_define!(
+            linker,
+            ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME,
+            host_actor_call_module_method
+        );
 
         linker_define!(
             linker,
@@ -1135,10 +1198,7 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
-    fn instantiate(
-        &self,
-        instrumented_code: &InstrumentedCode,
-    ) -> Result<WasmiInstance, PrepareError> {
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 
@@ -1147,17 +1207,17 @@ impl WasmEngine for WasmiEngine {
             #[cfg(not(feature = "moka"))]
             {
                 if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
-                    return Ok(cached_module.instantiate());
+                    return cached_module.instantiate();
                 }
             }
             #[cfg(feature = "moka")]
             if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-                return Ok(cached_module.as_ref().instantiate());
+                return cached_module.as_ref().instantiate();
             }
         }
 
         let code = &instrumented_code.code.as_ref()[..];
-        let module = WasmiModule::new(code)?;
+        let module = WasmiModule::new(code).expect("Failed to instantiate module");
         let instance = module.instantiate();
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -1171,6 +1231,6 @@ impl WasmEngine for WasmiEngine {
                 .insert(*metered_code_key, Arc::new(module));
         }
 
-        Ok(instance)
+        instance
     }
 }

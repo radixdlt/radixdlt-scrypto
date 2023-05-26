@@ -5,7 +5,7 @@ mod inner {
     struct Inner {}
 
     impl Inner {
-        pub fn instantiate() -> InnerComponent {
+        pub fn instantiate() -> Owned<Inner> {
             Self {}.instantiate()
         }
 
@@ -17,18 +17,16 @@ mod inner {
 
 #[blueprint]
 mod outer {
-    use super::inner::{Inner, InnerComponent};
+    use super::inner::Inner;
 
     struct Outer {
-        inner: InnerComponent,
+        inner: Owned<Inner>,
     }
 
     impl Outer {
-        pub fn instantiate() -> ComponentAddress {
+        pub fn instantiate() -> Global<Outer> {
             let inner = Inner::instantiate();
-            Self { inner }.instantiate().globalize_with_access_rules(
-                AccessRulesConfig::new().default(rule!(allow_all), rule!(allow_all)),
-            )
+            Self { inner }.instantiate().globalize()
         }
 
         pub fn pass_fungible_proof(&self, proof: Proof) {

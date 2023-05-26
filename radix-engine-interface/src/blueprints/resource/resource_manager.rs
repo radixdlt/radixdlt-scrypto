@@ -3,6 +3,9 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
+pub const MINT_AUTHORITY: &str = "mint_auth";
+
+// TODO: Remove?
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceMethodAuthKey {

@@ -10,7 +10,7 @@ mod fee {
     }
 
     impl Fee {
-        pub fn new(xrd: Bucket) -> ComponentAddress {
+        pub fn new(xrd: Bucket) -> Global<Fee> {
             let doge_tokens = ResourceBuilder::new_fungible()
                 .metadata("name", "DogeCoin")
                 .mint_initial_supply(100);
@@ -26,20 +26,20 @@ mod fee {
         }
 
         pub fn lock_fee(&mut self, amount: Decimal) {
-            self.xrd.lock_fee(amount);
+            self.xrd.as_fungible().lock_fee(amount);
         }
 
         pub fn lock_fee_with_empty_vault(&mut self, amount: Decimal) {
-            self.xrd_empty.lock_fee(amount);
+            self.xrd_empty.as_fungible().lock_fee(amount);
         }
 
         pub fn lock_fee_with_doge(&mut self, amount: Decimal) {
-            self.doge.lock_fee(amount);
+            self.doge.as_fungible().lock_fee(amount);
         }
 
         pub fn lock_fee_with_temp_vault(&mut self, amount: Decimal) {
-            let mut vault = Vault::with_bucket(self.xrd.take(amount));
-            vault.lock_fee(amount);
+            let vault = Vault::with_bucket(self.xrd.take(amount));
+            vault.as_fungible().lock_fee(amount);
             self.garbage_vaults.push(vault);
         }
 
@@ -47,16 +47,16 @@ mod fee {
             info!("Balance: {}", self.xrd.amount());
             let bucket = self.xrd.take(Decimal::from(1u32));
             self.xrd.put(bucket);
-            self.xrd.lock_fee(amount);
+            self.xrd.as_fungible().lock_fee(amount);
         }
 
         pub fn query_vault_and_lock_fee(&mut self, amount: Decimal) {
             info!("Balance: {}", self.xrd.amount());
-            self.xrd.lock_fee(amount);
+            self.xrd.as_fungible().lock_fee(amount);
         }
 
         pub fn lock_fee_and_query_vault(&mut self, amount: Decimal) {
-            self.xrd.lock_fee(amount);
+            self.xrd.as_fungible().lock_fee(amount);
             info!("Balance: {}", self.xrd.amount());
         }
 

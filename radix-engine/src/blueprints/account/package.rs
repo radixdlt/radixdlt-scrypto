@@ -6,13 +6,15 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, Receiver, TypeSchema, VirtualLazyLoadSchema,
+    PackageSchema, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema,
 };
 
 use crate::blueprints::account::AccountBlueprint;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
+
+use super::AccountSubstate;
 
 const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_ecdsa_ed25519";
@@ -23,7 +25,8 @@ impl AccountNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let fields = Vec::new();
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<AccountSubstate>());
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -33,6 +36,17 @@ impl AccountNativePackage {
                 ),
                 value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
                 can_own: true,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceAddress>(),
+                ),
+                value: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
+                ),
+                can_own: false,
             },
         ));
 
@@ -71,7 +85,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_SECURIFY_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountSecurifyInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountSecurifyOutput>(),
                 export_name: ACCOUNT_SECURIFY_IDENT.to_string(),
@@ -81,7 +95,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_FEE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountLockFeeInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountLockFeeOutput>(),
                 export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
@@ -91,7 +105,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountLockContingentFeeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccountLockContingentFeeOutput>(),
@@ -102,7 +116,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_DEPOSIT_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountDepositInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountDepositOutput>(),
                 export_name: ACCOUNT_DEPOSIT_IDENT.to_string(),
@@ -112,7 +126,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountDepositBatchInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountDepositBatchOutput>(),
                 export_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
@@ -122,7 +136,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_WITHDRAW_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountWithdrawInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountWithdrawOutput>(),
                 export_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
@@ -132,7 +146,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountWithdrawNonFungiblesInput>(),
                 output: aggregator
@@ -144,7 +158,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountLockFeeAndWithdrawInput>(),
                 output: aggregator
@@ -156,7 +170,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesInput>(),
                 output: aggregator
@@ -169,7 +183,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_CREATE_PROOF_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator.add_child_type_and_descendents::<AccountCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountCreateProofOutput>(),
                 export_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
@@ -179,7 +193,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofOfAmountInput>(),
                 output: aggregator
@@ -191,12 +205,83 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesOutput>(),
                 export_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(),
+                export_name: ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleOutput>(),
+                export_name: ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositOrRefundInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositOrRefundOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountTryDepositOrAbortInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositOrAbortOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
             },
         );
 
@@ -282,7 +367,7 @@ impl AccountNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_advanced(input.config, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.authority_rules, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -372,6 +457,46 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::deposit_batch(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountTryDepositOrRefundInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::try_deposit_or_refund(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountTryDepositBatchOrRefundInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::try_deposit_batch_or_refund(input.buckets, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountTryDepositOrAbortInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::try_deposit_or_abort(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountTryDepositBatchOrAbortInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::try_deposit_batch_or_abort(input.buckets, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             ACCOUNT_WITHDRAW_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -456,6 +581,36 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::create_proof_of_non_fungibles(
                     input.resource_address,
                     input.ids,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let AccountChangeDefaultDepositRuleInput {
+                    default_deposit_rule,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::change_account_default_deposit_rule(
+                    default_deposit_rule,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let AccountConfigureResourceDepositRuleInput {
+                    resource_address,
+                    resource_deposit_configuration,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::configure_resource_deposit_rule(
+                    resource_address,
+                    resource_deposit_configuration,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

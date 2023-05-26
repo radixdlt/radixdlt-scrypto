@@ -5,8 +5,11 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use utils::rust::prelude::{index_set_new, IndexSet};
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -53,21 +56,67 @@ pub enum ProofRule {
     AnyOf(Vec<ResourceOrNonFungible>),
 }
 
-impl From<ResourceAddress> for ProofRule {
+impl From<ResourceAddress> for AccessRuleNode {
     fn from(resource_address: ResourceAddress) -> Self {
-        ProofRule::Require(resource_address.into())
+        AccessRuleNode::ProofRule(ProofRule::Require(resource_address.into()))
+    }
+}
+
+impl From<NonFungibleGlobalId> for AccessRuleNode {
+    fn from(id: NonFungibleGlobalId) -> Self {
+        AccessRuleNode::ProofRule(ProofRule::Require(id.into()))
+    }
+}
+
+impl From<ResourceOrNonFungible> for AccessRuleNode {
+    fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
+        AccessRuleNode::ProofRule(ProofRule::Require(resource_or_non_fungible))
+    }
+}
+
+impl From<String> for AccessRuleNode {
+    fn from(authority: String) -> Self {
+        AccessRuleNode::Authority(AuthorityRule::Custom(authority))
+    }
+}
+
+impl From<&str> for AccessRuleNode {
+    fn from(authority: &str) -> Self {
+        AccessRuleNode::Authority(AuthorityRule::Custom(authority.to_string()))
     }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum AuthorityRule {
+    Owner,
+    Custom(String),
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleNode {
+    Authority(AuthorityRule),
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),
 }
 
 impl AccessRuleNode {
+    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<AuthorityRule>) {
+        match self {
+            AccessRuleNode::Authority(authority) => {
+                authorities.insert(authority.clone());
+            }
+            AccessRuleNode::ProofRule(..) => {}
+            AccessRuleNode::AnyOf(nodes) | AccessRuleNode::AllOf(nodes) => {
+                for node in nodes {
+                    node.get_referenced_authorities(authorities);
+                }
+            }
+        }
+    }
+
     pub fn or(self, other: AccessRuleNode) -> Self {
         match self {
             AccessRuleNode::AnyOf(mut rules) => {
@@ -103,44 +152,48 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
     ))
 }
 
-pub fn require<T>(resource: T) -> ProofRule
-where
-    T: Into<ResourceOrNonFungible>,
-{
-    ProofRule::Require(resource.into())
+pub fn require_owner() -> AccessRuleNode {
+    AccessRuleNode::Authority(AuthorityRule::Owner)
 }
 
-pub fn require_any_of<T>(resources: T) -> ProofRule
+pub fn require<T>(required: T) -> AccessRuleNode
 where
-    T: Into<ResourceOrNonFungibleList>,
+    T: Into<AccessRuleNode>,
 {
-    let list: ResourceOrNonFungibleList = resources.into();
-    ProofRule::AnyOf(list.list)
+    required.into()
 }
 
-pub fn require_all_of<T>(resources: T) -> ProofRule
+pub fn require_any_of<T>(resources: T) -> AccessRuleNode
 where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    ProofRule::AllOf(list.list)
+    AccessRuleNode::ProofRule(ProofRule::AnyOf(list.list))
 }
 
-pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
+pub fn require_all_of<T>(resources: T) -> AccessRuleNode
+where
+    T: Into<ResourceOrNonFungibleList>,
+{
+    let list: ResourceOrNonFungibleList = resources.into();
+    AccessRuleNode::ProofRule(ProofRule::AllOf(list.list))
+}
+
+pub fn require_n_of<C, T>(count: C, resources: T) -> AccessRuleNode
 where
     C: Into<u8>,
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    ProofRule::CountOf(count.into(), list.list)
+    AccessRuleNode::ProofRule(ProofRule::CountOf(count.into(), list.list))
 }
 
-pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
+pub fn require_amount<D, T>(amount: D, resource: T) -> AccessRuleNode
 where
     D: Into<Decimal>,
     T: Into<ResourceAddress>,
 {
-    ProofRule::AmountOf(amount.into(), resource.into())
+    AccessRuleNode::ProofRule(ProofRule::AmountOf(amount.into(), resource.into()))
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -149,4 +202,15 @@ pub enum AccessRule {
     AllowAll,
     DenyAll,
     Protected(AccessRuleNode),
+}
+
+impl AccessRule {
+    pub fn get_referenced_authorities(&self) -> IndexSet<AuthorityRule> {
+        let mut authorities = index_set_new();
+        match self {
+            AccessRule::AllowAll | AccessRule::DenyAll => {}
+            AccessRule::Protected(node) => node.get_referenced_authorities(&mut authorities),
+        }
+        authorities
+    }
 }

@@ -384,6 +384,30 @@ impl WasmModule {
                                 ));
                             }
                         }
+                        ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
                         FIELD_LOCK_READ_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
@@ -897,8 +921,11 @@ impl WasmModule {
         // we're using the `wasmi` logic as a shortcut.
         let code = parity_wasm::serialize(self.module.clone())
             .map_err(|_| PrepareError::SerializationError)?;
+        WasmiModule::new(&code[..]).map_err(|e| PrepareError::NotInstantiatable {
+            reason: format!("{:?}", e),
+        })?;
 
-        WasmiModule::new(&code[..]).map(|_| self)
+        Ok(self)
     }
 
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {

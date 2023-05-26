@@ -2,7 +2,7 @@ use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
 };
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -394,21 +394,21 @@ fn test_worktop_changes() {
             .into(),
         )
         .take_all_from_worktop(fungible_resource, return_to_worktop)
-        .take_from_worktop(20.into(), fungible_resource, return_to_worktop)
+        .take_from_worktop(fungible_resource, 20.into(), return_to_worktop)
         .take_all_from_worktop(non_fungible_resource, return_to_worktop)
-        .take_from_worktop(2.into(), non_fungible_resource, return_to_worktop)
+        .take_from_worktop(non_fungible_resource, 2.into(), return_to_worktop)
         .take_non_fungibles_from_worktop(
+            non_fungible_resource,
             &[
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(3),
             ]
             .into(),
-            non_fungible_resource,
             return_to_worktop,
         )
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

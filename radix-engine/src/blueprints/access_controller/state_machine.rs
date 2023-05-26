@@ -1,10 +1,10 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use native_sdk::resource::Vault;
+use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::clock::*;
+use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::time::TimeComparisonOperator;
 use sbor::rust::boxed::Box;
@@ -65,7 +65,7 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         // recovery or withdraw attempts.
         match self.state {
             (PrimaryRoleLockingState::Unlocked, _, _, _, _) => {
-                Vault(self.controlled_asset).sys_create_proof(api)
+                Vault(self.controlled_asset).create_proof(api)
             }
             _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
         }
@@ -140,7 +140,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
                 _,
             ) => match self.timed_recovery_delay_in_minutes {
                 Some(delay_in_minutes) => {
-                    let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
+                    let current_time = Runtime::current_time(api, TimePrecision::Minute)?;
                     let timed_recovery_allowed_after = current_time
                         .add_minutes(delay_in_minutes as i64)
                         .map_or(access_controller_runtime_error!(TimeOverflow), |instant| {
@@ -355,7 +355,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSt
             (_, _, PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt, _, _) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Vault(self.controlled_asset).sys_take_all(api)
+                Vault(self.controlled_asset).take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
@@ -387,7 +387,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptS
             (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Vault(self.controlled_asset).sys_take_all(api)
+                Vault(self.controlled_asset).take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
@@ -438,7 +438,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
                 // Ensure that the caller has passed in the expected proposal
                 validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
 
-                let recovery_time_has_elapsed = Runtime::sys_compare_against_current_time(
+                let recovery_time_has_elapsed = Runtime::compare_against_current_time(
                     api,
                     timed_recovery_allowed_after.clone(),
                     TimePrecision::Minute,

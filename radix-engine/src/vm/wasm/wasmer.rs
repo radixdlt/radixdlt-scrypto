@@ -161,7 +161,7 @@ impl From<WasmRuntimeError> for RuntimeError {
 }
 
 impl WasmerModule {
-    fn instantiate(&self) -> Result<WasmerInstance, PrepareError> {
+    fn instantiate(&self) -> WasmerInstance {
         // native functions starts
         pub fn consume_buffer(
             env: &WasmerInstanceEnv,
@@ -177,6 +177,33 @@ impl WasmerModule {
             write_memory(&instance, destination_ptr, &slice)?;
 
             Ok(())
+        }
+
+        pub fn actor_call_module_method(
+            env: &WasmerInstanceEnv,
+            object_handle: u32,
+            module_id: u32,
+            ident_ptr: u32,
+            ident_len: u32,
+            args_ptr: u32,
+            args_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let ident = read_memory(&instance, ident_ptr, ident_len)?;
+            let args = read_memory(&instance, args_ptr, args_len)?;
+
+            // Get current memory consumption and update it in transaction limit kernel module
+            // for current call frame through runtime call.
+            runtime
+                .update_wasm_memory_usage(get_memory_size(&instance)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            let buffer = runtime
+                .actor_call_module_method(object_handle, module_id, ident, args)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
         }
 
         pub fn call_method(
@@ -613,6 +640,7 @@ impl WasmerModule {
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
                 ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_lock_field),
+                ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),
                 KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),
                 KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_lock_entry),
                 KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),
@@ -636,16 +664,13 @@ impl WasmerModule {
         };
 
         // instantiate
-        let instance = Instance::new(&self.module, &import_object).map_err(|err| {
-            PrepareError::NotInstantiatable {
-                reason: format!("{err:?}"),
-            }
-        })?;
+        let instance =
+            Instance::new(&self.module, &import_object).expect("Failed to instantiate module");
 
-        Ok(WasmerInstance {
+        WasmerInstance {
             instance,
             runtime_ptr: env.runtime_ptr,
-        })
+        }
     }
 }
 
@@ -751,10 +776,7 @@ impl WasmerEngine {
 impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
-    fn instantiate(
-        &self,
-        instrumented_code: &InstrumentedCode,
-    ) -> Result<WasmerInstance, PrepareError> {
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 

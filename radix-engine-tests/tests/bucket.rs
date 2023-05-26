@@ -20,7 +20,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
         .call_function(package_address, "BucketTest", method_name, args)
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -111,7 +111,7 @@ fn test_bucket_of_badges() {
         .call_function(package_address, "BadgeTest", "query", manifest_args!())
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -211,12 +211,12 @@ fn create_empty_bucket() {
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
-        .take_from_worktop(Decimal::zero(), RADIX_TOKEN, |builder, bucket_id| {
+        .take_from_worktop(RADIX_TOKEN, Decimal::zero(), |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
         .take_non_fungibles_from_worktop(
-            &BTreeSet::new(),
             non_fungible_resource,
+            &BTreeSet::new(),
             |builder, bucket_id| builder.return_to_worktop(bucket_id),
         )
         .build();
@@ -248,7 +248,7 @@ fn test_drop_locked_fungible_bucket() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -287,7 +287,7 @@ fn test_drop_locked_non_fungible_bucket() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

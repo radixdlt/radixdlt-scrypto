@@ -7,18 +7,16 @@ mod balance_changes_test {
     }
 
     impl BalanceChangesTest {
-        pub fn instantiate() -> ComponentAddress {
-            let local_component = Self {
+        pub fn instantiate() -> Global<BalanceChangesTest> {
+            Self {
                 vault: Vault::new(RADIX_TOKEN),
             }
-            .instantiate();
-
-            let config = RoyaltyConfigBuilder::new()
-                .add_rule("put", 1)
-                .add_rule("boom", 1)
-                .default(0);
-
-            local_component.globalize_with_royalty_config(config)
+            .instantiate()
+            .royalty("put", 1)
+            .royalty("boom", 1)
+            .royalty_default(0)
+            .owner_authority(rule!(allow_all), rule!(allow_all))
+            .globalize()
         }
 
         pub fn put(&mut self, bucket: Bucket) {

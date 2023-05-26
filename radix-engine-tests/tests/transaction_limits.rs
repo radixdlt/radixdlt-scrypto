@@ -24,7 +24,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRulesConfig::new(),
+        AuthorityRules::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -105,14 +105,17 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(btreeset![]);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate reads limit to avoid Fee limit transaction result
     execution_config.max_substate_reads_per_transaction = 150;
-    let receipt =
-        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
+    let receipt = test_runner.execute_transaction_with_config(
+        prepared.get_executable(btreeset!()),
+        &fee_config,
+        &execution_config,
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -142,14 +145,17 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(btreeset![]);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate writes limit to avoid Fee limit transaction result
     execution_config.max_substate_writes_per_transaction = 100;
-    let receipt =
-        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
+    let receipt = test_runner.execute_transaction_with_config(
+        prepared.get_executable(btreeset!()),
+        &fee_config,
+        &execution_config,
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -179,15 +185,18 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(btreeset![]);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // Setting maximum substate size to small value to activate transaction limit
     execution_config.max_substate_size = 10;
     execution_config.kernel_trace = true;
-    let receipt =
-        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
+    let receipt = test_runner.execute_transaction_with_config(
+        prepared.get_executable(btreeset!()),
+        &fee_config,
+        &execution_config,
+    );
 
     // Assert
     receipt.expect_specific_rejection(|e| match e {
@@ -219,14 +228,17 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(btreeset![]);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     execution_config.max_substate_size = SIZE as usize + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
     execution_config.kernel_trace = true;
-    let receipt =
-        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
+    let receipt = test_runner.execute_transaction_with_config(
+        prepared.get_executable(btreeset!()),
+        &fee_config,
+        &execution_config,
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -260,7 +272,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
         .build();
 

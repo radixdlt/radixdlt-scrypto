@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
@@ -14,11 +14,13 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::track::db_key_mapper::{
+    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
-    PreviewResult, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
+    PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -29,17 +31,15 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::blueprints::clock::{
-    ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
-    CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
-};
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInput, EpochManagerInitialConfiguration, EpochManagerSetEpochInput,
-    EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
+use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
+    ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
+    LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
@@ -58,10 +58,12 @@ use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
+use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{AuthZoneParams, PreviewIntent, TestTransaction};
-use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
-use transaction::validation::TestIntentHashManager;
+use transaction::model::{
+    AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
+    SystemTransactionV1, TestTransaction, TransactionPayloadEncode,
+};
 
 pub struct Compile;
 
@@ -130,14 +132,12 @@ impl Compile {
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
-    pub initial_configuration: EpochManagerInitialConfiguration,
+    pub initial_config: ConsensusManagerConfig,
+    pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
-    pub fn default(
-        initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
-    ) -> CustomGenesis {
+    pub fn default(initial_epoch: u64, initial_config: ConsensusManagerConfig) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
             .public_key();
@@ -146,8 +146,24 @@ impl CustomGenesis {
             Decimal::one(),
             ComponentAddress::virtual_account_from_public_key(&pub_key),
             initial_epoch,
-            initial_configuration,
+            initial_config,
         )
+    }
+
+    pub fn default_consensus_manager_config() -> ConsensusManagerConfig {
+        ConsensusManagerConfig {
+            max_validators: 10,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1,
+                target_duration_millis: 0,
+            },
+            num_unstake_epochs: 1,
+            total_emission_xrd_per_epoch: Decimal::one(),
+            min_validator_reliability: Decimal::one(),
+            num_owner_stake_units_unlock_epochs: 2,
+            num_fee_increase_delay_epochs: 4,
+        }
     }
 
     pub fn single_validator_and_staker(
@@ -155,7 +171,7 @@ impl CustomGenesis {
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
@@ -174,7 +190,8 @@ impl CustomGenesis {
         CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
-            initial_configuration,
+            initial_config,
+            initial_time_ms: 0,
         }
     }
 }
@@ -201,7 +218,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, BTreeMap<ComponentAddress, Validator>) {
+    pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -217,7 +234,8 @@ impl TestRunnerBuilder {
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
                     custom_genesis.initial_epoch,
-                    custom_genesis.initial_configuration,
+                    custom_genesis.initial_config,
+                    custom_genesis.initial_time_ms,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
@@ -235,7 +253,6 @@ impl TestRunnerBuilder {
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
-            intent_hash_manager: TestIntentHashManager::new(),
             next_private_key,
             next_transaction_nonce,
             trace: self.trace,
@@ -245,7 +262,7 @@ impl TestRunnerBuilder {
             .expect_commit_success()
             .next_epoch()
             .unwrap();
-        (runner, next_epoch.0)
+        (runner, next_epoch.validator_set)
     }
 
     pub fn build(self) -> TestRunner {
@@ -256,9 +273,8 @@ impl TestRunnerBuilder {
 pub struct TestRunner {
     scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
-    intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
-    next_transaction_nonce: u64,
+    next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
 }
@@ -267,7 +283,7 @@ pub struct TestRunner {
 pub struct TestRunnerSnapshot {
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
-    next_transaction_nonce: u64,
+    next_transaction_nonce: u32,
     state_hash_support: Option<StateHashSupport>,
 }
 
@@ -299,8 +315,8 @@ impl TestRunner {
         self.state_hash_support = snapshot.state_hash_support;
     }
 
-    pub fn faucet_component(&self) -> ComponentAddress {
-        FAUCET
+    pub fn faucet_component(&self) -> GlobalAddress {
+        FAUCET.clone().into()
     }
 
     pub fn substate_db(&self) -> &InMemorySubstateDatabase {
@@ -316,7 +332,7 @@ impl TestRunner {
         self.next_private_key - 1
     }
 
-    pub fn next_transaction_nonce(&mut self) -> u64 {
+    pub fn next_transaction_nonce(&mut self) -> u32 {
         self.next_transaction_nonce += 1;
         self.next_transaction_nonce - 1
     }
@@ -355,7 +371,7 @@ impl TestRunner {
             .set_metadata(
                 address,
                 key.to_string(),
-                MetadataEntry::Value(MetadataValue::String(value.to_string())),
+                MetadataValue::String(value.to_string()),
             )
             .build();
 
@@ -363,28 +379,19 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
+    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataValue> {
         // TODO: Move this to system wrapper around substate_store
         let key = scrypto_encode(key).unwrap();
 
-        let metadata_entry = self
+        let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
+            .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
             )?;
 
-        let metadata_entry = match metadata_entry {
-            Option::Some(value) => {
-                let value: MetadataEntry =
-                    scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
-                Some(value)
-            }
-            Option::None => None,
-        };
-
-        metadata_entry
+        metadata_value
     }
 
     pub fn inspect_component_royalty(
@@ -523,7 +530,11 @@ impl TestRunner {
             .lock_fee(self.faucet_component(), 100u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.call_method(account_address, "deposit", manifest_args!(bucket))
+                builder.call_method(
+                    account_address,
+                    ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                    manifest_args!(bucket),
+                )
             })
             .build();
 
@@ -536,10 +547,11 @@ impl TestRunner {
         withdraw_auth: AccessRule,
         mutability: AccessRule,
     ) -> ComponentAddress {
-        let access_rules_config = AccessRulesConfig::new().default(withdraw_auth, mutability);
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_owner_authority(withdraw_auth, mutability);
 
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(access_rules_config)
+            .new_account_advanced(authority_rules)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -550,7 +562,7 @@ impl TestRunner {
             .call_method(self.faucet_component(), "free", manifest_args!())
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -575,8 +587,11 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
-    pub fn get_validator_info_by_key(&self, key: &EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
-        let address = self.get_validator_with_key(key);
+    pub fn get_active_validator_info_by_key(
+        &self,
+        key: &EcdsaSecp256k1PublicKey,
+    ) -> ValidatorSubstate {
+        let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
     }
 
@@ -590,20 +605,19 @@ impl TestRunner {
             .unwrap()
     }
 
-    pub fn get_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+    pub fn get_active_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
-                EPOCH_MANAGER.as_node_id(),
+                CONSENSUS_MANAGER.as_node_id(),
                 OBJECT_BASE_PARTITION,
-                &EpochManagerField::CurrentValidatorSet.into(),
+                &ConsensusManagerField::CurrentValidatorSet.into(),
             )
             .unwrap();
 
         substate
             .validator_set
-            .iter()
-            .find(|(_, v)| v.key.eq(key))
+            .get_by_public_key(key)
             .unwrap()
             .0
             .clone()
@@ -646,11 +660,12 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let config = AccessRulesConfig::new()
-                .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules
+                .set_owner_authority(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
-                .create_identity_advanced(config)
+                .create_identity_advanced(authority_rules)
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
@@ -666,7 +681,7 @@ impl TestRunner {
             .create_identity()
             .call_method(
                 account,
-                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -687,7 +702,7 @@ impl TestRunner {
             .create_validator(pub_key)
             .call_method(
                 account,
-                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -701,12 +716,12 @@ impl TestRunner {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
+        metadata: BTreeMap<String, MetadataValue>,
+        authority_rules: AuthorityRules,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, schema, royalty_config, metadata, access_rules)
+            .publish_package_advanced(code, schema, royalty_config, metadata, authority_rules)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -735,7 +750,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
     }
 
@@ -750,7 +765,7 @@ impl TestRunner {
 
     pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
-        mut manifest: TransactionManifest,
+        mut manifest: TransactionManifestV1,
         initial_proofs: T,
     ) -> TransactionReceipt
     where
@@ -758,8 +773,8 @@ impl TestRunner {
     {
         manifest.instructions.insert(
             0,
-            transaction::model::Instruction::CallMethod {
-                component_address: self.faucet_component(),
+            transaction::model::InstructionV1::CallMethod {
+                address: self.faucet_component(),
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
             },
@@ -769,36 +784,41 @@ impl TestRunner {
 
     pub fn execute_manifest<T>(
         &mut self,
-        manifest: TransactionManifest,
+        manifest: TransactionManifestV1,
         initial_proofs: T,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        self.execute_manifest_with_cost_unit_limit(
-            manifest,
-            initial_proofs,
-            DEFAULT_COST_UNIT_LIMIT,
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
         )
     }
 
     pub fn execute_manifest_with_cost_unit_limit<T>(
         &mut self,
-        manifest: TransactionManifest,
+        manifest: TransactionManifestV1,
         initial_proofs: T,
         cost_unit_limit: u32,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        let transactions =
-            TestTransaction::new(manifest, self.next_transaction_nonce(), cost_unit_limit);
-        let executable = transactions.get_executable(initial_proofs.into_iter().collect());
-
-        let fee_reserve_config = FeeReserveConfig::default();
-        let execution_config = ExecutionConfig::default().with_trace(self.trace);
-
-        self.execute_transaction_with_config(executable, &fee_reserve_config, &execution_config)
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction_with_config(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default()
+                .with_trace(self.trace)
+                .with_cost_unit_limit(cost_unit_limit),
+        )
     }
 
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
@@ -833,13 +853,12 @@ impl TestRunner {
 
     pub fn preview(
         &mut self,
-        preview_intent: PreviewIntent,
+        preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
-    ) -> Result<PreviewResult, PreviewError> {
+    ) -> Result<TransactionReceipt, PreviewError> {
         execute_preview(
             &self.substate_db,
             &mut self.scrypto_interpreter,
-            &self.intent_hash_manager,
             network,
             preview_intent,
         )
@@ -911,7 +930,7 @@ impl TestRunner {
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(
                 to,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1053,7 +1072,7 @@ impl TestRunner {
             )
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1075,7 +1094,7 @@ impl TestRunner {
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1099,7 +1118,7 @@ impl TestRunner {
             .create_fungible_resource(1u8, BTreeMap::new(), access_rules, None)
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1110,7 +1129,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_fungible_resource(
         &mut self,
-        amount: Decimal,
+        amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
@@ -1120,10 +1139,34 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
-                "deposit_batch",
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
+    pub fn create_freely_mintable_and_burnable_fungible_resource(
+        &mut self,
+        amount: Option<Decimal>,
+        divisibility: u8,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
+        let manifest = ManifestBuilder::new()
+            .lock_fee(self.faucet_component(), 100u32.into())
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
+            .call_method(
+                account,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1153,47 +1196,34 @@ impl TestRunner {
         receipt.expect_commit(true).new_component_addresses()[0]
     }
 
-    pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
-            method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
-        }];
-        let blobs = vec![];
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
-            }
-            .get_executable(btreeset![AuthAddresses::system_role()]),
+    pub fn set_current_epoch(&mut self, epoch: u32) {
+        let mut substate = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+                &CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+            )
+            .unwrap();
+        substate.epoch = epoch as u64;
+        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+            &CONSENSUS_MANAGER.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &ConsensusManagerField::ConsensusManager.into(),
+            &substate,
         );
-        receipt.expect_commit_success();
     }
 
-    pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
-            method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
-        }];
-
-        let blobs = vec![];
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
-            }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
+    pub fn get_current_epoch(&mut self) -> u32 {
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
+            }],
+            btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit(true).output(0)
+        receipt.expect_commit(true).output::<u64>(0) as u32
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1203,63 +1233,108 @@ impl TestRunner {
             .get_current()
     }
 
-    pub fn execute_system_transaction(
+    pub fn execute_system_transaction_with_preallocation(
         &mut self,
-        instructions: Vec<Instruction>,
-        pre_allocated_ids: BTreeSet<NodeId>,
+        instructions: Vec<InstructionV1>,
+        proofs: BTreeSet<NonFungibleGlobalId>,
+        pre_allocated_ids: IndexSet<NodeId>,
     ) -> TransactionReceipt {
-        let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
         self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
+            SystemTransactionV1 {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_ids,
             }
-            .get_executable(btreeset![]),
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
         )
     }
 
-    pub fn set_current_time(&mut self, current_time_ms: i64) {
-        let instructions = vec![Instruction::CallMethod {
-            component_address: CLOCK,
-            method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
-        }];
-        let blobs = vec![];
+    pub fn execute_validator_transaction(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+    ) -> TransactionReceipt {
+        self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
+    }
+
+    pub fn execute_system_transaction(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+        proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
 
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
+        self.execute_transaction(
+            SystemTransactionV1 {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_ids: index_set_new(),
             }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
-        );
-        receipt.expect_commit(true).output(0)
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
+        )
+    }
+
+    /// Executes a "start round number `round` at timestamp `timestamp_ms`" system transaction, as
+    /// if it was proposed by the first validator from the validator set, after `round - 1` missed
+    /// rounds by that validator.
+    /// Please note that this assumes that state is right at the beginning of an epoch.
+    pub fn advance_to_round_at_timestamp(
+        &mut self,
+        round: u64,
+        proposer_timestamp_ms: i64,
+    ) -> TransactionReceipt {
+        self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerNextRoundInput {
+                    round,
+                    proposer_timestamp_ms,
+                    leader_proposal_history: LeaderProposalHistory {
+                        gap_round_leaders: (1..round).map(|_| 0).collect(),
+                        current_leader: 0,
+                        is_fallback: false,
+                    },
+                }),
+            }],
+            btreeset![AuthAddresses::validator_role()],
+        )
+    }
+
+    /// Performs an [`advance_to_round_at_timestamp()`] with an unchanged timestamp.
+    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+        let current_timestamp_ms = self.get_current_proposer_timestamp_ms();
+        self.advance_to_round_at_timestamp(round, current_timestamp_ms)
+    }
+
+    /// Reads out the substate holding the "epoch milli" timestamp reported by the proposer on the
+    /// most recent round change.
+    pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
+        self.substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, ProposerMilliTimestampSubstate>(
+                CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::CurrentTime.into(),
+            )
+            .unwrap()
+            .epoch_milli
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
-        let instructions = vec![Instruction::CallMethod {
-            component_address: CLOCK,
-            method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
-        }];
-        let blobs = vec![];
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
-            }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
+            }],
+            btreeset![AuthAddresses::validator_role()],
         );
         receipt.expect_commit(true).output(0)
     }
@@ -1307,10 +1382,11 @@ impl TestRunner {
             store: &mut track,
         };
 
-        kernel_boot.call_function(
+        kernel_boot.call_boot_function(
             package_address,
             blueprint_name,
             function_name,
+            &indexset!(),
             scrypto_args!(&args),
         )
     }
@@ -1411,6 +1487,15 @@ impl TestRunner {
         };
         let actual_type_name = self.event_name(event_type_identifier);
         expected_type_name == actual_type_name
+    }
+
+    pub fn extract_events_of_type<T: ScryptoEvent>(&self, result: &CommitResult) -> Vec<T> {
+        result
+            .application_events
+            .iter()
+            .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
+            .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
+            .collect::<Vec<_>>()
     }
 }
 

@@ -47,16 +47,17 @@ impl ObjectModuleId {
         }
     }
 
-    pub fn static_blueprint(&self) -> Option<Blueprint> {
+    pub fn static_blueprint(&self) -> Option<BlueprintId> {
         match self {
-            ObjectModuleId::Metadata => {
-                Some(Blueprint::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT))
-            }
-            ObjectModuleId::Royalty => Some(Blueprint::new(
+            ObjectModuleId::Metadata => Some(BlueprintId::new(
+                &METADATA_MODULE_PACKAGE,
+                METADATA_BLUEPRINT,
+            )),
+            ObjectModuleId::Royalty => Some(BlueprintId::new(
                 &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,
             )),
-            ObjectModuleId::AccessRules => Some(Blueprint::new(
+            ObjectModuleId::AccessRules => Some(BlueprintId::new(
                 &ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
             )),

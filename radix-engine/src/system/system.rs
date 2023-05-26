@@ -1,5 +1,5 @@
 use super::payload_validation::*;
-use super::system_modules::auth::Authentication;
+use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
@@ -15,7 +15,7 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::ActingLocation;
+use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -32,8 +32,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -126,7 +125,7 @@ where
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
         if node_id.eq(RADIX_TOKEN.as_node_id()) {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
-                blueprint: Blueprint {
+                blueprint: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
@@ -145,7 +144,7 @@ where
             || node_id.eq(ACCOUNT_OWNER_BADGE.as_node_id())
         {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
-                blueprint: Blueprint {
+                blueprint: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
@@ -178,7 +177,7 @@ where
 
     fn new_object_internal(
         &mut self,
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
@@ -238,7 +237,7 @@ where
 
     pub fn get_blueprint_schema(
         &mut self,
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
     ) -> Result<IndexedBlueprintSchema, RuntimeError> {
         let schema = self
             .api
@@ -286,7 +285,7 @@ where
 
     fn verify_instance_schema_and_state(
         &mut self,
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -585,7 +584,7 @@ where
     fn resolve_blueprint_from_modules(
         &mut self,
         modules: &BTreeMap<ObjectModuleId, NodeId>,
-    ) -> Result<Blueprint, RuntimeError> {
+    ) -> Result<BlueprintId, RuntimeError> {
         let node_id = modules
             .get(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
@@ -723,9 +722,11 @@ where
         Ok(())
     }
 
-    pub fn actor_get_receiver_node_id(&mut self) -> Option<NodeId> {
+    pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
         let actor = self.api.kernel_get_system_state().current;
-        actor.try_as_method().map(|a| a.node_id)
+        actor
+            .try_as_method()
+            .map(|a| (a.node_id, a.is_direct_access))
     }
 
     pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
@@ -813,7 +814,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
-        let blueprint = Blueprint::new(&package_address, blueprint_ident);
+        let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
         self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
     }
@@ -871,7 +872,7 @@ where
 
         self.globalize_with_address_internal(modules, address)?;
 
-        let blueprint = Blueprint::new(&actor_blueprint.package_address, inner_object_blueprint);
+        let blueprint = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
 
         self.new_object_internal(
             &blueprint,
@@ -1410,7 +1411,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let identifier = FunctionIdentifier::new(
-            Blueprint::new(&package_address, blueprint_name),
+            BlueprintId::new(&package_address, blueprint_name),
             function_name.to_string(),
         );
 
@@ -1553,11 +1554,38 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
+    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.blueprint().clone())
+    }
+
+    #[trace_resources]
+    fn actor_call_module_method(
+        &mut self,
+        object_handle: ObjectHandle,
+        module_id: ObjectModuleId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let node_id = match actor_object_type {
+            ActorObjectType::SELF => {
+                self.actor_get_receiver_node_id()
+                    .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
+                    .0
+            }
+            ActorObjectType::OuterObject => self
+                .actor_get_info()?
+                .outer_object
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::OuterObjectDoesNotExist,
+                ))?
+                .into_node_id(),
+        };
+
+        self.call_method_advanced(&node_id, false, module_id, method_name, args)
     }
 }
 
@@ -1659,19 +1687,38 @@ where
             .last_auth_zone()
             .expect("Missing auth zone");
 
-        // Authenticate
-        if !Authentication::verify_method_auth(
+        let config = {
+            let node_id = self.actor_get_global_address()?.into_node_id();
+            let handle = self.kernel_lock_substate(
+                &node_id,
+                ACCESS_RULES_FIELD_PARTITION,
+                &AccessRulesField::AccessRules.into(),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
+            let access_rules = self
+                .kernel_read_substate(handle)?
+                .as_typed::<super::node_modules::access_rules::MethodAccessRulesSubstate>()
+                .unwrap();
+            self.kernel_drop_lock(handle)?;
+            access_rules.access_rules
+        };
+
+        // Authorize
+        let auth_result = Authorization::check_authorization_against_access_rule(
             ActingLocation::InCallFrame,
             auth_zone_id,
+            &config,
+            ObjectModuleId::Main,
             &rule,
             self,
-        )? {
-            return Err(RuntimeError::SystemError(
+        )?;
+        match auth_result {
+            AuthorizationCheckResult::Authorized => Ok(()),
+            AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
                 SystemError::AssertAccessRuleFailed,
-            ));
+            )),
         }
-
-        Ok(())
     }
 }
 
@@ -2030,7 +2077,7 @@ where
 
 pub fn check_address_allowed_for_blueprint(
     address: &GlobalAddress,
-    blueprint: &Blueprint,
+    blueprint: &BlueprintId,
 ) -> Result<(), RuntimeError> {
     let entity_type = address.as_node_id().entity_type();
 
@@ -2060,19 +2107,20 @@ pub fn check_address_allowed_for_blueprint(
     Ok(())
 }
 
-pub fn get_entity_type_for_blueprint(blueprint: &Blueprint) -> EntityType {
+pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
     // FIXME check completeness of modules
     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
         (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
         (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalFungibleResource
+            EntityType::GlobalFungibleResourceManager
         }
         (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalNonFungibleResource
+            EntityType::GlobalNonFungibleResourceManager
         }
-        (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => EntityType::GlobalEpochManager,
-        (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
-        (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => EntityType::GlobalClock,
+        (CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT) => {
+            EntityType::GlobalConsensusManager
+        }
+        (CONSENSUS_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
         (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
             EntityType::GlobalAccessController
         }

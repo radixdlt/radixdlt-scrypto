@@ -8,17 +8,17 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct FungibleProof {
+pub struct FungibleProofSubstate {
     pub total_locked: Decimal,
     /// The supporting containers.
     pub evidence: BTreeMap<LocalRef, Decimal>,
 }
 
-impl FungibleProof {
+impl FungibleProofSubstate {
     pub fn new(
         total_locked: Decimal,
         evidence: BTreeMap<LocalRef, Decimal>,
-    ) -> Result<FungibleProof, ProofError> {
+    ) -> Result<FungibleProofSubstate, ProofError> {
         if total_locked.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
@@ -92,7 +92,7 @@ impl FungibleProofBlueprint {
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
+        let substate_ref: FungibleProofSubstate = api.field_lock_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
@@ -119,7 +119,7 @@ impl FungibleProofBlueprint {
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
+        let substate_ref: FungibleProofSubstate = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;
         Ok(amount)
@@ -149,7 +149,8 @@ impl FungibleProofBlueprint {
             LockFlags::read_only(),
             SystemLockData::Default,
         )?;
-        let proof_substate: FungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let proof_substate: FungibleProofSubstate =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
         proof_substate.drop_proof(api)?;
         api.kernel_drop_lock(handle)?;
 

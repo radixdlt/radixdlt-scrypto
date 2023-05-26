@@ -4,8 +4,7 @@ use sbor::rust::prelude::*;
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
-pub use radix_engine::blueprints::clock::*;
-pub use radix_engine::blueprints::epoch_manager::*;
+pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::system::node_modules::access_rules::*;
@@ -97,12 +96,13 @@ pub enum TypedMainModuleSubstateKey {
     FungibleVaultField(FungibleVaultField),
     NonFungibleVaultField(NonFungibleVaultField),
     NonFungibleVaultContentsIndexKey(NonFungibleLocalId),
-    EpochManagerField(EpochManagerField),
-    EpochManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
-    ClockField(ClockField),
+    ConsensusManagerField(ConsensusManagerField),
+    ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
     ValidatorField(ValidatorField),
-    AccountVaultIndexKey(ResourceAddress),
     AccessControllerField(AccessControllerField),
+    AccountField(AccountField),
+    AccountVaultIndexKey(ResourceAddress),
+    AccountResourceDepositRuleIndexKey(ResourceAddress),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -194,10 +194,12 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalPackage => {
             TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
         }
-        EntityType::GlobalFungibleResource => TypedMainModuleSubstateKey::FungibleResourceField(
-            FungibleResourceManagerField::try_from(substate_key)?,
-        ),
-        EntityType::GlobalNonFungibleResource => {
+        EntityType::GlobalFungibleResourceManager => {
+            TypedMainModuleSubstateKey::FungibleResourceField(
+                FungibleResourceManagerField::try_from(substate_key)?,
+            )
+        }
+        EntityType::GlobalNonFungibleResourceManager => {
             let partition_offset =
                 NonFungibleResourceManagerPartitionOffset::try_from(partition_offset)?;
             match partition_offset {
@@ -214,17 +216,17 @@ fn to_typed_object_substate_key_internal(
                 }
             }
         }
-        EntityType::GlobalEpochManager => {
-            let partition_offset = EpochManagerPartitionOffset::try_from(partition_offset)?;
+        EntityType::GlobalConsensusManager => {
+            let partition_offset = ConsensusManagerPartitionOffset::try_from(partition_offset)?;
             match partition_offset {
-                EpochManagerPartitionOffset::EpochManager => {
-                    TypedMainModuleSubstateKey::EpochManagerField(EpochManagerField::try_from(
-                        substate_key,
-                    )?)
+                ConsensusManagerPartitionOffset::ConsensusManager => {
+                    TypedMainModuleSubstateKey::ConsensusManagerField(
+                        ConsensusManagerField::try_from(substate_key)?,
+                    )
                 }
-                EpochManagerPartitionOffset::RegisteredValidatorsByStakeIndex => {
+                ConsensusManagerPartitionOffset::RegisteredValidatorsByStakeIndex => {
                     let key = substate_key.for_sorted().ok_or(())?;
-                    TypedMainModuleSubstateKey::EpochManagerRegisteredValidatorsByStakeIndexKey(
+                    TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(
                         key.clone().try_into().map_err(|_| ())?,
                     )
                 }
@@ -233,9 +235,6 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalValidator => {
             TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
         }
-        EntityType::GlobalClock => {
-            TypedMainModuleSubstateKey::ClockField(ClockField::try_from(substate_key)?)
-        }
         EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessControllerField(
             AccessControllerField::try_from(substate_key)?,
         ),
@@ -243,8 +242,25 @@ fn to_typed_object_substate_key_internal(
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            let key = substate_key.for_map().ok_or(())?;
-            TypedMainModuleSubstateKey::AccountVaultIndexKey(scrypto_decode(&key).map_err(|_| ())?)
+            let partition_offset = AccountPartitionOffset::try_from(partition_offset)?;
+
+            match partition_offset {
+                AccountPartitionOffset::AccountVaultsByResourceAddress => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::AccountVaultIndexKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                AccountPartitionOffset::AccountResourceDepositRuleByAddress => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                AccountPartitionOffset::Account => {
+                    TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
+                }
+            }
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
@@ -310,19 +326,20 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(GenericScryptoSborPayload),
+    NonFungibleResourceData(Option<ScryptoOwnedRawValue>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
-    EpochManagerField(TypedEpochManagerFieldValue),
-    EpochManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
-    Clock(TypedClockFieldValue),
+    ConsensusManagerField(TypedConsensusManagerFieldValue),
+    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
     Validator(TypedValidatorFieldValue),
-    AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
     AccessController(TypedAccessControllerFieldValue),
+    Account(TypedAccountFieldValue),
+    AccountVaultIndex(AccountVaultIndexEntry),
+    AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(GenericScryptoSborPayload),
+    GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -358,16 +375,13 @@ pub enum TypedNonFungibleVaultFieldValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedEpochManagerFieldValue {
-    Config(EpochManagerConfigSubstate),
-    EpochManager(EpochManagerSubstate),
+pub enum TypedConsensusManagerFieldValue {
+    Config(ConsensusManagerConfigSubstate),
+    ConsensusManager(ConsensusManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
     CurrentProposalStatistic(CurrentProposalStatisticSubstate),
-}
-
-#[derive(Debug, Clone)]
-pub enum TypedClockFieldValue {
-    CurrentTimeRoundedToMinutes(ClockSubstate),
+    CurrentTimeRoundedToMinutes(ProposerMinuteTimestampSubstate),
+    CurrentTime(ProposerMilliTimestampSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -383,6 +397,11 @@ pub enum TypedAccessControllerFieldValue {
 #[derive(Debug, Clone)]
 pub enum GenericScryptoComponentFieldValue {
     State(GenericScryptoSborPayload),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedAccountFieldValue {
+    Account(AccountSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -481,9 +500,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            TypedMainModuleSubstateValue::NonFungibleResourceData(GenericScryptoSborPayload {
-                data: data.to_vec(),
-            })
+            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
             TypedMainModuleSubstateValue::FungibleVault(match offset {
@@ -506,33 +523,34 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_) => {
             TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::EpochManagerField(offset) => {
-            TypedMainModuleSubstateValue::EpochManagerField(match offset {
-                EpochManagerField::Config => {
-                    TypedEpochManagerFieldValue::Config(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::ConsensusManagerField(offset) => {
+            TypedMainModuleSubstateValue::ConsensusManagerField(match offset {
+                ConsensusManagerField::Config => {
+                    TypedConsensusManagerFieldValue::Config(scrypto_decode(data)?)
                 }
-                EpochManagerField::EpochManager => {
-                    TypedEpochManagerFieldValue::EpochManager(scrypto_decode(data)?)
+                ConsensusManagerField::ConsensusManager => {
+                    TypedConsensusManagerFieldValue::ConsensusManager(scrypto_decode(data)?)
                 }
-                EpochManagerField::CurrentValidatorSet => {
-                    TypedEpochManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)
+                ConsensusManagerField::CurrentValidatorSet => {
+                    TypedConsensusManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)
                 }
-                EpochManagerField::CurrentProposalStatistic => {
-                    TypedEpochManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
+                ConsensusManagerField::CurrentProposalStatistic => {
+                    TypedConsensusManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
+                }
+                ConsensusManagerField::CurrentTimeRoundedToMinutes => {
+                    TypedConsensusManagerFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(
+                        data,
+                    )?)
+                }
+                ConsensusManagerField::CurrentTime => {
+                    TypedConsensusManagerFieldValue::CurrentTime(scrypto_decode(data)?)
                 }
             })
         }
-        TypedMainModuleSubstateKey::EpochManagerRegisteredValidatorsByStakeIndexKey(_) => {
-            TypedMainModuleSubstateValue::EpochManagerRegisteredValidatorsByStakeIndexEntry(
+        TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(_) => {
+            TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
                 scrypto_decode(data)?,
             )
-        }
-        TypedMainModuleSubstateKey::ClockField(offset) => {
-            TypedMainModuleSubstateValue::Clock(match offset {
-                ClockField::CurrentTimeRoundedToMinutes => {
-                    TypedClockFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(data)?)
-                }
-            })
         }
         TypedMainModuleSubstateKey::ValidatorField(offset) => {
             TypedMainModuleSubstateValue::Validator(match offset {
@@ -541,8 +559,16 @@ fn to_typed_object_substate_value(
                 }
             })
         }
+        TypedMainModuleSubstateKey::AccountField(offset) => {
+            TypedMainModuleSubstateValue::Account(match offset {
+                AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
+            })
+        }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
+            TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {
@@ -561,9 +587,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            TypedMainModuleSubstateValue::GenericKeyValueStore(GenericScryptoSborPayload {
-                data: data.to_vec(),
-            })
+            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
         }
     };
     Ok(substate_value)

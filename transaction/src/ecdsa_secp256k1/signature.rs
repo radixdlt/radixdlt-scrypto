@@ -13,10 +13,6 @@ pub struct EcdsaSecp256k1Signature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
 
-/// Represents an error ocurred when validating a signature.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SignatureValidationError {}
-
 /// EcdsaSecp256k1 signature verifier.
 pub struct EcdsaSecp256k1Verifier;
 

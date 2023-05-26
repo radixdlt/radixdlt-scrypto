@@ -16,7 +16,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .lock_fee_and_withdraw(account, 10.into(), token_resource_address, Decimal::one())
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -47,8 +47,8 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             BTreeSet::from([NonFungibleLocalId::integer(1)]),
         )
         .take_non_fungibles_from_worktop(
-            &BTreeSet::from([NonFungibleLocalId::integer(1)]),
             auth_resource_address,
+            &BTreeSet::from([NonFungibleLocalId::integer(1)]),
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder
@@ -61,7 +61,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         )
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

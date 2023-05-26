@@ -30,7 +30,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -196,7 +196,7 @@ fn can_use_bucket_for_authorization() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -380,7 +380,7 @@ fn can_move_locked_bucket() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -421,7 +421,7 @@ fn can_compose_bucket_and_vault_proof() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, resource_address, 99u32.into())
-        .take_from_worktop(99u32.into(), resource_address, |builder, bucket_id| {
+        .take_from_worktop(resource_address, 99u32.into(), |builder, bucket_id| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
@@ -466,7 +466,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, resource_address, 99u32.into())
-        .take_from_worktop(99u32.into(), resource_address, |builder, bucket_id| {
+        .take_from_worktop(resource_address, 99u32.into(), |builder, bucket_id| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
@@ -522,11 +522,11 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             ]),
         )
         .take_non_fungibles_from_worktop(
+            resource_address,
             &BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
-            resource_address,
             |builder, bucket_id| {
                 builder.call_method(
                     component_address,
@@ -614,11 +614,11 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             &BTreeSet::from([NonFungibleLocalId::integer(3)]),
         )
         .create_proof_from_auth_zone_of_non_fungibles(
+            resource_address,
             &BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
-            resource_address,
             |builder, proof_id| {
                 builder.call_function(
                     package_address,

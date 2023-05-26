@@ -1,8 +1,9 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRulesConfig, FromPublicKey, NonFungibleDataSchema,
+    require, FromPublicKey, NonFungibleDataSchema,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -41,10 +42,11 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
-        let config = AccessRulesConfig::new().default(withdraw_auth.clone(), withdraw_auth);
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_owner_authority(withdraw_auth.clone(), withdraw_auth);
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 100.into())
-            .new_account_advanced(config)
+            .new_account_advanced(authority_rules)
             .build();
 
         let receipt = handle_manifest(
@@ -69,7 +71,7 @@ impl NewAccount {
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET, 100.into())
                 .call_method(FAUCET, "free", manifest_args!())
-                .add_instruction(Instruction::CallFunction {
+                .add_instruction(InstructionV1::CallFunction {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -78,7 +80,7 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: btreemap!(
-                            "name".to_owned() => "Owner Badge".to_owned()
+                            "name".to_owned() => MetadataValue::String("Owner Badge".to_owned()) 
                         ),
                         access_rules: btreemap!(
                             ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
@@ -91,7 +93,7 @@ impl NewAccount {
                 .0
                 .call_method(
                     account,
-                    "deposit_batch",
+                    "try_deposit_batch_or_refund",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build();

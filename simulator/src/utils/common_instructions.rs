@@ -7,7 +7,7 @@ use radix_engine::types::*;
 use radix_engine_interface::schema::IndexedBlueprintSchema;
 use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 use super::{parse_resource_specifier, ResourceSpecifier};
 
@@ -96,7 +96,7 @@ pub fn add_call_function_instruction_with_schema<'a>(
         account,
     )?;
 
-    builder.add_instruction(Instruction::CallFunction {
+    builder.add_instruction(InstructionV1::CallFunction {
         package_address,
         blueprint_name: blueprint_name.to_string(),
         function_name: function.to_string(),
@@ -134,8 +134,8 @@ pub fn add_call_method_instruction_with_schema<'a>(
         account,
     )?;
 
-    builder.add_instruction(Instruction::CallMethod {
-        component_address,
+    builder.add_instruction(InstructionV1::CallMethod {
+        address: component_address.into(),
         method_name: method_name.to_owned(),
         args: built_args,
     });
@@ -309,7 +309,7 @@ fn build_call_argument<'a>(
             if matches!(
                 type_validation,
                 TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalResource
+                    ReferenceValidation::IsGlobalResourceManager
                 ))
             ) =>
         {
@@ -336,7 +336,7 @@ fn build_call_argument<'a>(
                         builder.withdraw_from_account(account, resource_address, amount);
                     }
                     builder
-                        .add_instruction(Instruction::TakeFromWorktop {
+                        .add_instruction(InstructionV1::TakeFromWorktop {
                             amount,
                             resource_address,
                         })
@@ -352,8 +352,8 @@ fn build_call_argument<'a>(
                         );
                     }
                     builder
-                        .add_instruction(Instruction::TakeNonFungiblesFromWorktop {
-                            ids,
+                        .add_instruction(InstructionV1::TakeNonFungiblesFromWorktop {
+                            ids: ids.into_iter().collect(),
                             resource_address,
                         })
                         .1
@@ -384,7 +384,7 @@ fn build_call_argument<'a>(
                             amount,
                         );
                         builder
-                            .add_instruction(Instruction::PopFromAuthZone)
+                            .add_instruction(InstructionV1::PopFromAuthZone)
                             .2
                             .unwrap()
                     } else {
@@ -399,7 +399,7 @@ fn build_call_argument<'a>(
                             &ids,
                         );
                         builder
-                            .add_instruction(Instruction::PopFromAuthZone)
+                            .add_instruction(InstructionV1::PopFromAuthZone)
                             .2
                             .unwrap()
                     } else {
@@ -622,14 +622,14 @@ mod test {
     #[test]
     pub fn parsing_of_resource_address_succeeds() {
         // Arrange
-        let resource_address = resource_address(EntityType::GlobalFungibleResource, 5);
+        let resource_address = resource_address(EntityType::GlobalFungibleResourceManager, 5);
 
         let arg = Bech32Encoder::for_simulator()
             .encode(resource_address.as_ref())
             .unwrap();
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
         let type_validation = TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-            ReferenceValidation::IsGlobalResource,
+            ReferenceValidation::IsGlobalResourceManager,
         ));
 
         // Act

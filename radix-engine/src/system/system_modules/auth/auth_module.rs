@@ -1,18 +1,18 @@
-use super::Authentication;
+use super::Authorization;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
+    AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
+    MethodAccessRulesSubstate, NodeAuthorityRules,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
@@ -28,13 +28,15 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
+    CycleCheckError(CycleCheckError<AuthorityKey>),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub access_rule: AccessRule,
+    pub module_id: ObjectModuleId,
+    pub access_rule_stack: Vec<AccessRule>,
     pub fn_identifier: FnIdentifier,
 }
 
@@ -48,11 +50,16 @@ pub struct AuthModule {
     pub auth_zone_stack: Vec<NodeId>,
 }
 
+pub enum AuthorizationCheckResult {
+    Authorized,
+    Failed(ObjectModuleId, Vec<AccessRule>),
+}
+
 impl AuthModule {
-    fn function_auth<Y: KernelApi<M>, M: KernelCallbackObject>(
-        blueprint: &Blueprint,
+    fn function_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        blueprint: &BlueprintId,
         ident: &str,
-        api: &mut Y,
+        api: &mut SystemService<Y, V>,
     ) -> Result<AccessRule, RuntimeError> {
         let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
@@ -71,7 +78,7 @@ impl AuthModule {
                 OBJECT_BASE_PARTITION,
                 &PackageField::FunctionAccessRules.into(),
                 LockFlags::read_only(),
-                M::LockData::default(),
+                SystemLockData::default(),
             )?;
             let package_access_rules: FunctionAccessRulesSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -86,154 +93,228 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        is_direct_access: bool,
-        node_id: &NodeId,
-        module_id: &ObjectModuleId,
-        ident: &str,
+    fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        auth_zone_id: &NodeId,
+        callee: &MethodActor,
         args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<Vec<AccessRule>, RuntimeError> {
-        let auths = match (node_id, module_id, ident) {
+        api: &mut SystemService<Y, V>,
+    ) -> Result<(), RuntimeError> {
+        let node_id = callee.node_id;
+        let module_id = callee.module_id;
+        let ident = callee.ident.as_str();
+        let acting_location = if callee.object_info.global {
+            ActingLocation::AtBarrier
+        } else {
+            ActingLocation::AtLocalBarrier
+        };
+
+        match (node_id, module_id, ident) {
             (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
-                vec![AccessRulesNativePackage::authorization(
-                    node_id, ident, args, api,
-                )?]
+                let access_rule =
+                    AccessRulesNativePackage::authorization(&node_id, ident, args, api)?;
+
+                let auth_result = Authorization::check_authorization_against_access_rule(
+                    acting_location,
+                    *auth_zone_id,
+                    &NodeAuthorityRules::new(),
+                    module_id,
+                    &access_rule,
+                    api,
+                )?;
+                match auth_result {
+                    AuthorizationCheckResult::Authorized => {}
+                    AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                        return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                            AuthError::Unauthorized(Box::new(Unauthorized {
+                                module_id,
+                                access_rule_stack,
+                                fn_identifier: callee.fn_identifier(),
+                            })),
+                        )));
+                    }
+                }
             }
             (node_id, module_id, ..) => {
-                let mut authorizations = Vec::new();
+                let method_key = MethodKey::new(module_id, ident);
 
-                let method_key = MethodKey::new(*module_id, ident);
-                let object_info = {
-                    let mut system = SystemService::new(api);
-                    system.get_object_info(node_id)?
-                };
-                if let Some(parent) = object_info.outer_object {
-                    let method_key = MethodKey::new(*module_id, ident);
-                    let auth = Self::method_authorization_stateless(
-                        is_direct_access,
+                let info = api.get_object_info(&node_id)?;
+
+                if let Some(parent) = info.outer_object {
+                    let method_key = MethodKey::new(module_id, ident);
+                    Self::check_authorization_against_access_rules(
+                        callee.fn_identifier(),
+                        auth_zone_id,
+                        acting_location,
                         parent.as_node_id(),
-                        ObjectKey::ChildBlueprint(object_info.blueprint.blueprint_name),
+                        ObjectKey::InnerBlueprint(info.blueprint.blueprint_name),
                         method_key,
                         api,
                     )?;
-
-                    authorizations.push(auth);
                 }
 
-                if object_info.global {
-                    let auth = Self::method_authorization_stateless(
-                        is_direct_access,
+                if info.global {
+                    Self::check_authorization_against_access_rules(
+                        callee.fn_identifier(),
+                        auth_zone_id,
+                        acting_location,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
                         api,
                     )?;
-                    authorizations.push(auth);
                 }
-
-                authorizations
             }
-        };
+        }
 
-        Ok(auths)
+        Ok(())
     }
 
-    fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
-        is_direct_access: bool,
+    fn check_authorization_against_access_rules<
+        Y: KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
+    >(
+        fn_identifier: FnIdentifier, // TODO: Cleanup
+        auth_zone_id: &NodeId,
+        acting_location: ActingLocation,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
-        api: &mut Y,
-    ) -> Result<AccessRule, RuntimeError> {
+        api: &mut SystemService<Y, V>,
+    ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
             ACCESS_RULES_FIELD_PARTITION,
             &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
-            M::LockData::default(),
+            SystemLockData::default(),
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-        let method_auth = match object_key {
-            ObjectKey::SELF => access_rules
-                .access_rules
-                .get_access_rule(is_direct_access, &key),
-            ObjectKey::ChildBlueprint(blueprint_name) => {
+        let access_rules_config = match object_key {
+            ObjectKey::SELF => &access_rules.access_rules,
+            ObjectKey::InnerBlueprint(blueprint_name) => {
                 let child_rules = access_rules
-                    .child_blueprint_rules
+                    .inner_blueprint_access_rules
                     .get(&blueprint_name)
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
                         AuthError::InnerBlueprintDoesNotExist(blueprint_name),
                     )))?;
-                child_rules.get_access_rule(is_direct_access, &key)
+                child_rules
             }
         };
 
+        Self::check_authorization_against_config(
+            fn_identifier,
+            auth_zone_id,
+            acting_location,
+            &access_rules_config,
+            &key,
+            api,
+        )?;
+
         api.kernel_drop_lock(handle)?;
 
-        Ok(method_auth)
+        Ok(())
+    }
+
+    pub fn check_authorization_against_config<
+        Y: KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
+    >(
+        fn_identifier: FnIdentifier, // TODO: Cleanup
+        auth_zone_id: &NodeId,
+        acting_location: ActingLocation,
+        access_rules: &NodeAuthorityRules,
+        key: &MethodKey,
+        api: &mut SystemService<Y, V>,
+    ) -> Result<(), RuntimeError> {
+        /*
+        let authority_key = AuthorityKey::Module(key.module_id.clone(), key.ident.clone());
+        if access_rules.rules.get(authority_key) {
+        }
+
+        let authority = match access_rules.rules.get(authority_key) {
+            Some(entry) => &entry.authority,
+            None => return Ok(()),
+        };
+         */
+
+        let result = Authorization::check_authorization_against_access_rule(
+            acting_location,
+            *auth_zone_id,
+            access_rules,
+            key.module_id,
+            &rule!(require(key.ident.as_str())),
+            api,
+        )?;
+        match result {
+            AuthorizationCheckResult::Authorized => Ok(()),
+            AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::Unauthorized(Box::new(Unauthorized {
+                        module_id,
+                        access_rule_stack,
+                        fn_identifier,
+                    })),
+                )))
+            }
+        }
     }
 
     pub fn last_auth_zone(&self) -> Option<NodeId> {
         self.auth_zone_stack.last().cloned()
     }
 
-    /// Check authorization
-    fn check_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        api: &mut Y,
+    fn check_authorization<V, Y>(
         callee: &Actor,
         args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
-            // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-            let authorizations = match &callee {
-                Actor::Method(MethodActor {
-                    node_id,
-                    is_direct_access,
-                    module_id,
-                    ident,
-                    ..
-                }) => Self::method_auth(
-                    *is_direct_access,
-                    node_id,
-                    module_id,
-                    ident.as_str(),
-                    &args,
-                    api,
-                )?,
-                Actor::Function { blueprint, ident } => {
-                    vec![Self::function_auth(blueprint, ident.as_str(), api)?]
-                }
-                Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
-            };
-            let acting_location = if callee.is_barrier() {
-                ActingLocation::AtBarrier
-            } else {
-                ActingLocation::AtLocalBarrier
-            };
-
-            // Authenticate
             let mut system = SystemService::new(api);
-            for access_rule in authorizations {
-                if !Authentication::verify_method_auth(
-                    acting_location,
-                    auth_zone_id,
-                    &access_rule,
-                    &mut system,
-                )? {
-                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                        AuthError::Unauthorized(Box::new(Unauthorized {
-                            access_rule,
-                            fn_identifier: callee.fn_identifier(),
-                        })),
-                    )));
+
+            // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
+            match &callee {
+                Actor::Method(actor) => {
+                    Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
                 }
-            }
+                Actor::Function { blueprint, ident } => {
+                    let access_rule = Self::function_auth(blueprint, ident.as_str(), &mut system)?;
+                    let acting_location = ActingLocation::AtBarrier;
+
+                    // Verify authorization
+                    let auth_result = Authorization::check_authorization_against_access_rule(
+                        acting_location,
+                        auth_zone_id,
+                        &NodeAuthorityRules::new(),
+                        ObjectModuleId::Main, // Mocked, does it make sense to add FunctionAuthorities?
+                        &access_rule,
+                        &mut system,
+                    )?;
+                    match auth_result {
+                        AuthorizationCheckResult::Authorized => {}
+                        AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                AuthError::Unauthorized(Box::new(Unauthorized {
+                                    module_id,
+                                    access_rule_stack,
+                                    fn_identifier: callee.fn_identifier(),
+                                })),
+                            )));
+                        }
+                    }
+                }
+                Actor::VirtualLazyLoad { .. } | Actor::Root => {}
+            };
         } else {
             // Bypass auth check for ROOT frame
         }
+
         Ok(())
     }
 
@@ -292,7 +373,7 @@ impl AuthModule {
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,
                     instance_schema: None,
@@ -321,7 +402,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        AuthModule::check_authorization(api, callee, args)
+        AuthModule::check_authorization(callee, args, api)
             .and_then(|_| AuthModule::create_auth_zone(api, callee, message))
     }
 

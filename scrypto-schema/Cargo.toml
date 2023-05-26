@@ -7,6 +7,7 @@ edition = "2021"
 sbor = { path = "../sbor", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 serde = { version = "1.0.137", default-features = false, optional = true }
+bitflags = { version = "1.3" }
 
 [features]
 # You should enable either `std` or `alloc`

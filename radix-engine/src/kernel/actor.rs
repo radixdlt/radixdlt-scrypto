@@ -21,12 +21,27 @@ pub struct MethodActor {
     pub is_direct_access: bool,
 }
 
+impl MethodActor {
+    pub fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier {
+            blueprint: self.object_info.blueprint.clone(),
+            ident: FnIdent::Application(self.ident.to_string()),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Root,
     Method(MethodActor),
-    Function { blueprint: Blueprint, ident: String },
-    VirtualLazyLoad { blueprint: Blueprint, ident: u8 },
+    Function {
+        blueprint: BlueprintId,
+        ident: String,
+    },
+    VirtualLazyLoad {
+        blueprint: BlueprintId,
+        ident: u8,
+    },
 }
 
 impl Actor {
@@ -71,14 +86,7 @@ impl Actor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         match self {
             Actor::Root => panic!("Should never be called"),
-            Actor::Method(MethodActor {
-                object_info: ObjectInfo { blueprint, .. },
-                ident,
-                ..
-            }) => FnIdentifier {
-                blueprint: blueprint.clone(),
-                ident: FnIdent::Application(ident.to_string()),
-            },
+            Actor::Method(method_actor) => method_actor.fn_identifier(),
             Actor::Function { blueprint, ident } => FnIdentifier {
                 blueprint: blueprint.clone(),
                 ident: FnIdent::Application(ident.to_string()),
@@ -98,7 +106,7 @@ impl Actor {
                 ..
             })
             | Actor::Function { blueprint, .. }
-            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.eq(&Blueprint::new(
+            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.eq(&BlueprintId::new(
                 &TRANSACTION_PROCESSOR_PACKAGE,
                 TRANSACTION_PROCESSOR_BLUEPRINT,
             )),
@@ -129,7 +137,7 @@ impl Actor {
         }
     }
 
-    pub fn blueprint(&self) -> &Blueprint {
+    pub fn blueprint(&self) -> &BlueprintId {
         match self {
             Actor::Method(MethodActor {
                 object_info: ObjectInfo { blueprint, .. },
@@ -201,11 +209,11 @@ impl Actor {
         })
     }
 
-    pub fn function(blueprint: Blueprint, ident: String) -> Self {
+    pub fn function(blueprint: BlueprintId, ident: String) -> Self {
         Self::Function { blueprint, ident }
     }
 
-    pub fn virtual_lazy_load(blueprint: Blueprint, ident: u8) -> Self {
+    pub fn virtual_lazy_load(blueprint: BlueprintId, ident: u8) -> Self {
         Self::VirtualLazyLoad { blueprint, ident }
     }
 }

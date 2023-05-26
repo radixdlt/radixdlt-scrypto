@@ -152,7 +152,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {}, storage_acces_total_read = {}",
+            "Reading substate: handle = {}, size = {}, storage_access_total_read = {}",
             lock_handle,
             value_size,
             store_access.total_read_size()

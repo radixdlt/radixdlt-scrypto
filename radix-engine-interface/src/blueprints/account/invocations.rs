@@ -10,6 +10,31 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+pub enum ResourceDepositRule {
+    /// The resource is neither on the allow or deny list.
+    Neither,
+
+    /// The resource is on the allow list.
+    Allowed,
+
+    /// The resource is on the deny list.
+    Disallowed,
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
+pub enum AccountDefaultDepositRule {
+    /// Allows the deposit of all resources - the deny list is honored in this state.o
+    Accept,
+
+    /// Disallows the deposit of all resources - the allow list is honored in this state.
+    Reject,
+
+    /// Only deposits of existing resources is accepted - both allow and deny lists are honored in
+    /// this mode.
+    AllowExisting,
+}
+
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID: u8 = 0u8;
@@ -35,7 +60,7 @@ pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateAdvancedInput {
-    pub config: AccessRulesConfig,
+    pub authority_rules: AuthorityRules,
 }
 
 pub type AccountCreateAdvancedOutput = ComponentAddress;
@@ -214,3 +239,82 @@ pub struct AccountCreateProofOfNonFungiblesInput {
 }
 
 pub type AccountCreateProofOfNonFungiblesOutput = Proof;
+
+//=================================
+// Account Transition Deposit Mode
+//=================================
+
+pub const ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT: &str = "change_account_default_deposit_rule";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountChangeDefaultDepositRuleInput {
+    pub default_deposit_rule: AccountDefaultDepositRule,
+}
+
+pub type AccountChangeDefaultDepositRuleOutput = ();
+
+//============================
+// Configure Resource Deposit Rule
+//============================
+
+pub const ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT: &str = "configure_resource_deposit_rule";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountConfigureResourceDepositRuleInput {
+    pub resource_address: ResourceAddress,
+    pub resource_deposit_configuration: ResourceDepositRule,
+}
+
+pub type AccountConfigureResourceDepositRuleOutput = ();
+
+//===============================
+// Account Try Deposit Or Refund
+//===============================
+
+pub const ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT: &str = "try_deposit_or_refund";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositOrRefundInput {
+    pub bucket: Bucket,
+}
+
+pub type AccountTryDepositOrRefundOutput = Option<Bucket>;
+
+//=====================================
+// Account Try Deposit Batch Or Refund
+//=====================================
+
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT: &str = "try_deposit_batch_or_refund";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositBatchOrRefundInput {
+    pub buckets: Vec<Bucket>,
+}
+
+pub type AccountTryDepositBatchOrRefundOutput = Vec<Bucket>;
+
+//==============================
+// Account Try Deposit Or Abort
+//==============================
+
+pub const ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT: &str = "try_deposit_or_abort";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositOrAbortInput {
+    pub bucket: Bucket,
+}
+
+pub type AccountTryDepositOrAbortOutput = ();
+
+//====================================
+// Account Try Deposit Batch Or Abort
+//====================================
+
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT: &str = "try_deposit_batch_or_abort";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositBatchOrAbortInput {
+    pub buckets: Vec<Bucket>,
+}
+
+pub type AccountTryDepositBatchOrAbortOutput = ();

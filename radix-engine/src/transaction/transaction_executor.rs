@@ -1,4 +1,6 @@
-use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::blueprints::transaction_processor::{
+    TransactionProcessorError, TransactionProcessorRunInputEfficientEncodable,
+};
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
@@ -15,14 +17,11 @@ use crate::vm::{ScryptoVm, Vm};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::blueprints::transaction_processor::{
-    InstructionOutput, TransactionProcessorRunInput,
-};
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_store_interface::interface::*;
-use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -50,6 +49,7 @@ pub struct ExecutionConfig {
     pub kernel_trace: bool,
     pub execution_trace: Option<usize>,
     pub max_call_depth: usize,
+    pub cost_unit_limit: u32,
     pub abort_when_loan_repaid: bool,
     pub max_wasm_mem_per_transaction: usize,
     pub max_wasm_mem_per_call_frame: usize,
@@ -72,6 +72,7 @@ impl ExecutionConfig {
             kernel_trace: false,
             execution_trace: Some(1),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
             max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
             max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
@@ -91,6 +92,11 @@ impl ExecutionConfig {
 
     pub fn with_trace(mut self, kernel_trace: bool) -> Self {
         self.kernel_trace = kernel_trace;
+        self
+    }
+
+    pub fn with_cost_unit_limit(mut self, cost_unit_limit: u32) -> Self {
+        self.cost_unit_limit = cost_unit_limit;
         self
     }
 
@@ -141,13 +147,10 @@ where
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let fee_reserve = match transaction.fee_payment() {
-            FeePayment::User {
-                cost_unit_limit,
-                tip_percentage,
-            } => SystemLoanFeeReserve::new(
+            FeePayment::User { tip_percentage } => SystemLoanFeeReserve::new(
                 fee_reserve_config.cost_unit_price,
                 *tip_percentage,
-                *cost_unit_limit,
+                execution_config.cost_unit_limit,
                 fee_reserve_config.system_loan,
                 execution_config.abort_when_loan_repaid,
             ),
@@ -186,7 +189,11 @@ where
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             executable.transaction_hash().clone(),
-            executable.pre_allocated_ids().clone(),
+            executable
+                .pre_allocated_ids()
+                .into_iter()
+                .cloned()
+                .collect(),
         );
         let mut system = SystemConfig {
             blueprint_schema_cache: NonIterMap::new(),
@@ -211,20 +218,17 @@ where
         };
 
         let invoke_result = kernel_boot
-            .call_function(
+            .call_boot_function(
                 TRANSACTION_PROCESSOR_PACKAGE,
                 TRANSACTION_PROCESSOR_BLUEPRINT,
                 TRANSACTION_PROCESSOR_RUN_IDENT,
-                scrypto_encode(&TransactionProcessorRunInput {
-                    transaction_hash: executable.transaction_hash().clone(),
-                    runtime_validations: executable.runtime_validations().clone(),
-                    instructions: executable.instructions().clone(),
-                    blobs: executable
-                        .blobs()
-                        .into_iter()
-                        .map(|(hash, blob)| (*hash, Cow::from(*blob)))
-                        .collect(),
-                    references: executable.references().clone(),
+                executable.references(),
+                scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                    transaction_hash: executable.transaction_hash(),
+                    runtime_validations: executable.runtime_validations(),
+                    manifest_encoded_instructions: executable.encoded_instructions(),
+                    references: executable.references(),
+                    blobs: executable.blobs(),
                 })
                 .unwrap(),
             )

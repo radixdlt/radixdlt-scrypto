@@ -1,5 +1,3 @@
-use scrypto::api::node_modules::metadata::METADATA_SET_IDENT;
-use scrypto::api::ObjectModuleId;
 use scrypto::prelude::*;
 
 // Faucet - TestNet only
@@ -11,28 +9,13 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> ComponentAddress {
-            let access_rules = AccessRules::new({
-                let mut config = AccessRulesConfig::new();
-                config.set_method_access_rule(
-                    MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                );
-                config.default(AccessRule::AllowAll, AccessRule::DenyAll)
-            });
-            let metadata = Metadata::new();
-
+        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_at_address_with_modules(
-                ComponentAddress::new_or_panic(preallocated_address_bytes),
-                access_rules,
-                metadata,
-                Royalty::new(RoyaltyConfig::default()),
-            )
+            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }
 
         /// Gives away tokens.
@@ -48,7 +31,7 @@ mod faucet {
         pub fn lock_fee(&mut self, amount: Decimal) {
             // There is MAX_COST_UNIT_LIMIT and COST_UNIT_PRICE which limit how much fee can be spent
             // per transaction, thus no further limitation is applied.
-            self.vault.lock_fee(amount);
+            self.vault.as_fungible().lock_fee(amount);
         }
     }
 }

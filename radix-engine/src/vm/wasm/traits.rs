@@ -15,6 +15,14 @@ pub trait WasmRuntime {
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 
+    fn actor_call_module_method(
+        &mut self,
+        object_handle: u32,
+        module_id: u32,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
@@ -170,8 +178,7 @@ pub trait WasmEngine {
     type WasmInstance: WasmInstance;
 
     /// Instantiate a Scrypto module.
-    fn instantiate(
-        &self,
-        instrumented_code: &InstrumentedCode,
-    ) -> Result<Self::WasmInstance, PrepareError>;
+    ///
+    /// It's assumed that the code have been validated.
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> Self::WasmInstance;
 }

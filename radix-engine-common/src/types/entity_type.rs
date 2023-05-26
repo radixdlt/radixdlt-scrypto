@@ -20,14 +20,11 @@ pub enum EntityType {
     //=========================================================================
     // System Components (start with char s for system)
     //=========================================================================
-    /// The global epoch manager entity (134 in decimal). Gives Bech32 prefix: `s` followed by one of `c`, `e`, `6` or `m`.
-    GlobalEpochManager = 0b10000110, //-------------- 10000 => s, 110xx => ce6m [se vanity prefix]
+    /// The global consensus manager entity (134 in decimal). Gives Bech32 prefix: `s` followed by one of `c`, `e`, `6` or `m`.
+    GlobalConsensusManager = 0b10000110, //-------------- 10000 => s, 110xx => ce6m [se vanity prefix]
 
     /// A global validator entity (130 in decimal). Gives Bech32 prefix: `s` followed by one of `v`, `d`, `w` or `0`.
     GlobalValidator = 0b10000010, //----------------- 10000 => s, 110xx => vdw0
-
-    /// The global clock entity (133 in decimal). Gives Bech32 prefix: `s` followed by one of `5`, `4`, `k` or `h`.
-    GlobalClock = 0b10000101, //--------------------- 10000 => s, 101xx => 54kh
 
     //=========================================================================
     // Standard Global Components (start with char c for component)
@@ -66,15 +63,15 @@ pub enum EntityType {
     // Fungible-related (start with letter t for token)
     //=========================================================================
     /// A global fungible resource entity (93 in decimal). Gives Bech32 prefix: `t` followed by one of `5`, `4`, `k` or `h`.
-    GlobalFungibleResource = 0b01011101, //---------- 01011 => t, 101xx => 54kh [tkn vanity prefix]
+    GlobalFungibleResourceManager = 0b01011101, //---------- 01011 => t, 101xx => 54kh [tkn vanity prefix]
     /// An internal fungible vault entity (88 in decimal). Gives Bech32 prefix: `t` followed by one of `q`, `p`, `z` or `r`.
-    InternalFungibleVault = 0b01011000, //----------- 01011 => t, 000xx => qpzr (000 = vault under t/f prefix)
+    InternalFungibleVault = 0b01011000, //------------------ 01011 => t, 000xx => qpzr (000 = vault under t/f prefix)
 
     //=========================================================================
     // Non-fungible-related (start with letter n for non-fungible)
     //=========================================================================
     /// A global non-fungible resource entity (154 in decimal). Gives Bech32 prefix: `n` followed by one of `g`, `f`, `2` or `t`.
-    GlobalNonFungibleResource = 0b10011010, //------- 10011 => n, 010xx => gf2t [nf  vanity prefix]
+    GlobalNonFungibleResourceManager = 0b10011010, //------- 10011 => n, 010xx => gf2t [nf  vanity prefix]
 
     /// An internal non-fungible vault entity (152 in decimal). Gives Bech32 prefix: `n` followed by one of `q`, `p`, `z` or `r`.
     InternalNonFungibleVault = 0b10011000, //-------- 10011 => n, 000xx => qpzr (000 = vault under t/f prefix)
@@ -102,11 +99,10 @@ impl EntityType {
     pub const fn is_global(&self) -> bool {
         match self {
             EntityType::GlobalPackage
-            | EntityType::GlobalFungibleResource
-            | EntityType::GlobalNonFungibleResource
-            | EntityType::GlobalEpochManager
+            | EntityType::GlobalFungibleResourceManager
+            | EntityType::GlobalNonFungibleResourceManager
+            | EntityType::GlobalConsensusManager
             | EntityType::GlobalValidator
-            | EntityType::GlobalClock
             | EntityType::GlobalAccessController
             | EntityType::GlobalAccount
             | EntityType::GlobalIdentity
@@ -129,9 +125,8 @@ impl EntityType {
 
     pub const fn is_global_component(&self) -> bool {
         match self {
-            EntityType::GlobalEpochManager
+            EntityType::GlobalConsensusManager
             | EntityType::GlobalValidator
-            | EntityType::GlobalClock
             | EntityType::GlobalAccessController
             | EntityType::GlobalAccount
             | EntityType::GlobalIdentity
@@ -141,8 +136,8 @@ impl EntityType {
             | EntityType::GlobalVirtualSecp256k1Identity
             | EntityType::GlobalVirtualEd25519Identity => true,
             EntityType::GlobalPackage
-            | EntityType::GlobalFungibleResource
-            | EntityType::GlobalNonFungibleResource
+            | EntityType::GlobalFungibleResourceManager
+            | EntityType::GlobalNonFungibleResourceManager
             | EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalAccount
@@ -155,11 +150,24 @@ impl EntityType {
         matches!(self, EntityType::GlobalPackage)
     }
 
-    pub const fn is_global_resource(&self) -> bool {
+    pub const fn is_global_consensus_manager(&self) -> bool {
+        matches!(self, EntityType::GlobalConsensusManager)
+    }
+
+    pub const fn is_global_resource_manager(&self) -> bool {
         matches!(
             self,
-            EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource
+            EntityType::GlobalFungibleResourceManager
+                | EntityType::GlobalNonFungibleResourceManager
         )
+    }
+
+    pub const fn is_global_fungible_resource_manager(&self) -> bool {
+        matches!(self, EntityType::GlobalFungibleResourceManager)
+    }
+
+    pub const fn is_global_non_fungible_resource_manager(&self) -> bool {
+        matches!(self, EntityType::GlobalNonFungibleResourceManager)
     }
 
     pub const fn is_global_virtual(&self) -> bool {
@@ -172,16 +180,16 @@ impl EntityType {
         }
     }
 
-    pub const fn is_global_fungible_resource(&self) -> bool {
-        matches!(self, EntityType::GlobalFungibleResource)
-    }
-
     pub const fn is_internal_kv_store(&self) -> bool {
         matches!(self, EntityType::InternalKeyValueStore)
     }
 
     pub const fn is_internal_fungible_vault(&self) -> bool {
         matches!(self, EntityType::InternalFungibleVault)
+    }
+
+    pub const fn is_internal_non_fungible_vault(&self) -> bool {
+        matches!(self, EntityType::InternalNonFungibleVault)
     }
 
     pub const fn is_internal_vault(&self) -> bool {

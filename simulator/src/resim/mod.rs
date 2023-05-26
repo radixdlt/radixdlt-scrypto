@@ -53,9 +53,14 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
+use radix_engine::blueprints::consensus_manager::{
+    ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
+};
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::track::db_key_mapper::{
+    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -76,16 +81,16 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema, PackageSchema};
 use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
+use sbor::rust::prelude::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use transaction::builder::ManifestBuilder;
+use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
-use transaction::model::Instruction;
-use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
-use transaction::model::TransactionManifest;
+use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
+use transaction::model::{SystemTransactionV1, TransactionPayloadEncode};
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -158,7 +163,7 @@ pub fn run() -> Result<(), Error> {
 }
 
 pub fn handle_system_transaction<O: std::io::Write>(
-    instructions: Vec<Instruction>,
+    instructions: Vec<InstructionV1>,
     blobs: Vec<Vec<u8>>,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
     trace: bool,
@@ -170,11 +175,13 @@ pub fn handle_system_transaction<O: std::io::Write>(
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let nonce = get_nonce()?;
-    let transaction = SystemTransaction {
-        instructions,
-        blobs,
-        nonce,
-        pre_allocated_ids: BTreeSet::new(),
+    let transaction = SystemTransactionV1 {
+        instructions: InstructionsV1(instructions),
+        blobs: BlobsV1 {
+            blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
+        },
+        hash_for_execution: hash(format!("Simulator system transaction: {}", nonce)),
+        pre_allocated_ids: index_set_new(),
     };
 
     let receipt = execute_and_commit_transaction(
@@ -182,7 +189,10 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
         &ExecutionConfig::standard().with_trace(trace),
-        &transaction.get_executable(initial_proofs),
+        &transaction
+            .prepare()
+            .map_err(Error::ConvertToPreparedError)?
+            .get_executable(initial_proofs),
     );
 
     if print_receipt {
@@ -201,7 +211,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 }
 
 pub fn handle_manifest<O: std::io::Write>(
-    manifest: TransactionManifest,
+    manifest: TransactionManifestV1,
     signing_keys: &Option<String>,
     network: &Option<String>,
     write_manifest: &Option<PathBuf>,
@@ -219,7 +229,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 let manifest_str =
                     decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
                 fs::write(path, manifest_str).map_err(Error::IOError)?;
-                for blob in manifest.blobs {
+                for blob in manifest.blobs.values() {
                     let blob_hash = hash(&blob);
                     let mut blob_path = path
                         .parent()
@@ -243,14 +253,17 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
+            let transaction = TestTransaction::new_from_nonce(manifest, nonce);
 
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::standard().with_trace(trace),
-                &transaction.get_executable(initial_proofs),
+                &transaction
+                    .prepare()
+                    .map_err(Error::ConvertToPreparedError)?
+                    .get_executable(initial_proofs),
             );
 
             if print_receipt {
@@ -345,7 +358,7 @@ pub fn export_blueprint_schema(
     Ok(schema)
 }
 
-pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
+pub fn get_blueprint(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
@@ -430,4 +443,58 @@ pub fn get_event_schema<S: SubstateDatabase>(
             .schema
             .clone(),
     ))
+}
+
+pub fn db_upsert_timestamps(
+    milli_timestamp: ProposerMilliTimestampSubstate,
+    minute_timestamp: ProposerMinuteTimestampSubstate,
+) -> Result<(), Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+        &CONSENSUS_MANAGER.as_node_id(),
+        OBJECT_BASE_PARTITION,
+        &ConsensusManagerField::CurrentTime.into(),
+        &milli_timestamp,
+    );
+
+    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+        &CONSENSUS_MANAGER.as_node_id(),
+        OBJECT_BASE_PARTITION,
+        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+        &minute_timestamp,
+    );
+
+    Ok(())
+}
+
+pub fn db_upsert_epoch(epoch: u64) -> Result<(), Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+    let mut consensus_manager_substate = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+            &CONSENSUS_MANAGER.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &ConsensusManagerField::ConsensusManager.into(),
+        )
+        .unwrap_or_else(|| ConsensusManagerSubstate {
+            epoch: 0,
+            epoch_start_milli: 0,
+            round: 0,
+        });
+
+    consensus_manager_substate.epoch = epoch;
+
+    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+        &CONSENSUS_MANAGER.as_node_id(),
+        OBJECT_BASE_PARTITION,
+        &ConsensusManagerField::ConsensusManager.into(),
+        &consensus_manager_substate,
+    );
+
+    Ok(())
 }

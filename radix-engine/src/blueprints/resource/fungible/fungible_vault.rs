@@ -299,7 +299,7 @@ impl FungibleVault {
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<FungibleProof, RuntimeError>
+    ) -> Result<FungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -322,7 +322,7 @@ impl FungibleVault {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(FungibleProof::new(
+        Ok(FungibleProofSubstate::new(
             amount,
             btreemap!(
                 LocalRef::Vault(Reference(receiver.clone().into())) => amount
