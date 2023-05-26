@@ -51,6 +51,11 @@ pub enum GenesisDataChunk {
 
 #[blueprint]
 mod genesis_helper {
+    const FAUCET_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+        13, 144, 99, 24, 198, 49, 140, 100, 247, 152, 202, 204, 99, 24, 198, 49, 140, 247, 189, 241,
+        172, 105, 67, 234, 38, 49, 140, 99, 24, 198,
+    ]);
+
     struct GenesisHelper {
         consensus_manager: ComponentAddress,
         xrd_vault: Vault,

@@ -75,6 +75,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
+    let const_statements = bp.const_statements.clone();
+
     let output_original_code = quote! {
         #[derive(::scrypto::prelude::ScryptoSbor)]
         pub struct #bp_ident #bp_fields #bp_semi_token
@@ -106,6 +108,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
+        let raw_package_dependencies: Vec<Ident> = {
+            let const_statements = bp.const_statements;
+            const_statements.iter().map(|stmt| stmt.ident.clone()).collect()
+        };
+
         let schema_ident = format_ident!("{}_schema", bp_ident);
         let (function_names, function_schemas) = generate_schema(bp_ident, bp_items)?;
 
@@ -166,6 +173,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     event_schema.insert(#event_type_names.to_owned(), local_type_index);
                 })*
 
+
+                let mut dependencies = BTreeSet::new();
+                #({
+                    dependencies.insert(#raw_package_dependencies);
+                })*
+
                 let return_data = BlueprintSchema {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
@@ -174,7 +187,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
-                    dependencies: BTreeSet::new(),
+                    dependencies,
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -191,6 +204,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         pub mod #module_ident {
             #(#use_statements)*
+
+            #(#const_statements)*
 
             #output_original_code
 

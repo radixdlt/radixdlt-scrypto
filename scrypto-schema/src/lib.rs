@@ -178,6 +178,7 @@ pub struct IndexedBlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    pub dependencies: BTreeSet<PackageAddress>,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -204,6 +205,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
+            dependencies: schema.dependencies,
         }
     }
 }
