@@ -1,4 +1,4 @@
-use crate::rust::marker::PhantomData;
+use crate::rust::prelude::*;
 use crate::value_kind::*;
 use crate::*;
 
@@ -30,6 +30,8 @@ pub enum DecodeError {
     InvalidSize,
 
     MaxDepthExceeded(usize),
+
+    DuplicateKey,
 
     InvalidCustomValue, // TODO: generify custom error codes
 }
@@ -339,14 +341,8 @@ impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::borrow::ToOwned;
-    use crate::rust::boxed::Box;
     use crate::rust::cell::RefCell;
-    use crate::rust::collections::*;
     use crate::rust::rc::Rc;
-    use crate::rust::string::String;
-    use crate::rust::vec;
-    use crate::rust::vec::Vec;
 
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
         // Encode
@@ -469,6 +465,69 @@ mod tests {
         let mut dec = BasicDecoder::new(&bytes, 256);
         let x = dec.decode::<RefCell<u8>>().unwrap();
         assert_eq!(RefCell::new(5u8), x);
+    }
+
+    #[test]
+    pub fn test_decode_duplicates_in_set() {
+        let input_with_duplicates = vec![5u16, 5u16];
+        let payload = basic_encode(&input_with_duplicates).unwrap();
+        // Check decode works into vec and BasicValue - which represent sets as arrays
+        assert_eq!(
+            basic_decode::<Vec<u16>>(&payload),
+            Ok(input_with_duplicates)
+        );
+        assert!(matches!(basic_decode::<BasicValue>(&payload), Ok(_)));
+        // Decode doesn't work into any typed sets
+        assert_eq!(
+            basic_decode::<HashSet<u16>>(&payload),
+            Err(DecodeError::DuplicateKey)
+        );
+        assert_eq!(
+            basic_decode::<BTreeSet<u16>>(&payload),
+            Err(DecodeError::DuplicateKey)
+        );
+        assert_eq!(
+            basic_decode::<IndexSet<u16>>(&payload),
+            Err(DecodeError::DuplicateKey)
+        );
+    }
+
+    #[test]
+    pub fn test_decode_duplicates_in_map() {
+        let input_with_duplicates = BasicValue::Map {
+            key_value_kind: ValueKind::U16,
+            value_value_kind: ValueKind::String,
+            entries: vec![
+                (
+                    BasicValue::U16 { value: 5 },
+                    BasicValue::String {
+                        value: "test".to_string(),
+                    },
+                ),
+                (
+                    BasicValue::U16 { value: 5 },
+                    BasicValue::String {
+                        value: "test2".to_string(),
+                    },
+                ),
+            ],
+        };
+        let payload = basic_encode(&input_with_duplicates).unwrap();
+        // Check decode works into BasicValue - which represent sets as arrays of (k, v) tuples
+        assert!(matches!(basic_decode::<BasicValue>(&payload), Ok(_)));
+        // Decode doesn't work into any typed maps
+        assert_eq!(
+            basic_decode::<HashMap<u16, String>>(&payload),
+            Err(DecodeError::DuplicateKey)
+        );
+        assert_eq!(
+            basic_decode::<BTreeMap<u16, String>>(&payload),
+            Err(DecodeError::DuplicateKey)
+        );
+        assert_eq!(
+            basic_decode::<IndexMap<u16, String>>(&payload),
+            Err(DecodeError::DuplicateKey)
+        );
     }
 
     #[derive(sbor::Categorize, sbor::Encode, sbor::Decode, PartialEq, Eq, Debug)]
