@@ -5,7 +5,7 @@ use scrypto::prelude::*;
 mod faucet {
     struct Faucet {
         vault: Vault,
-        transactions: KeyValueStore<Hash, u64>,
+        transactions: KeyValueStore<Hash, Epoch>,
     }
 
     impl Faucet {

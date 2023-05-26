@@ -8,11 +8,11 @@ mod consensus_manager_test {
     struct ConsensusManagerTest;
 
     impl ConsensusManagerTest {
-        pub fn get_epoch() -> u64 {
+        pub fn get_epoch() -> Epoch {
             Runtime::current_epoch()
         }
 
-        pub fn next_round(consensus_manager: ComponentAddress, round: u64) {
+        pub fn next_round(consensus_manager: ComponentAddress, round: Round) {
             ScryptoEnv
                 .call_method(
                     &consensus_manager.into(),

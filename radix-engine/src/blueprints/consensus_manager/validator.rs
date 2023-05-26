@@ -102,7 +102,7 @@ pub struct ValidatorSubstate {
     /// [`OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT`]: starting another withdrawal will first
     /// attempt to move any already-available amount to [`already_unlocked_owner_stake_unit_amount`]
     /// and only then will fail if the limit is exceeded.
-    pub pending_owner_stake_unit_withdrawals: BTreeMap<u64, Decimal>,
+    pub pending_owner_stake_unit_withdrawals: BTreeMap<Epoch, Decimal>,
 
     /// An amount of owner's stake units that has already waited for a sufficient number of epochs
     /// in the [`pending_owner_stake_unit_withdrawals`] and was automatically moved from there.
@@ -114,7 +114,7 @@ pub struct ValidatorSubstate {
 pub struct UnstakeData {
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
     /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
-    epoch_unlocked: u64,
+    epoch_unlocked: Epoch,
 
     /// An XRD amount to be claimed.
     amount: Decimal,
@@ -129,7 +129,7 @@ pub struct ValidatorFeeChangeRequest {
     /// Note: when requesting a fee decrease, this will be "next epoch"; and when requesting an
     /// increase, this will be set to [`ConsensusManagerConfigSubstate.num_fee_increase_delay_epochs`]
     /// epochs away.
-    epoch_effective: u64,
+    epoch_effective: Epoch,
 
     /// A requested new value of [`ConsensusManagerSubstate.validator_fee_factor`].
     new_fee_factor: Decimal,
@@ -260,7 +260,7 @@ impl ValidatorBlueprint {
                 api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
 
-            let epoch_unlocked = current_epoch + config_substate.config.num_unstake_epochs;
+            let epoch_unlocked = current_epoch.after(config_substate.config.num_unstake_epochs);
             let data = UnstakeData {
                 epoch_unlocked,
                 amount: xrd_amount,
@@ -512,9 +512,9 @@ impl ValidatorBlueprint {
 
         // - calculate the effective epoch of the requested change
         let epoch_effective = if new_fee_factor > substate.validator_fee_factor {
-            current_epoch + config_substate.config.num_fee_increase_delay_epochs
+            current_epoch.after(config_substate.config.num_fee_increase_delay_epochs)
         } else {
-            current_epoch + 1 // make it effective on the *beginning* of next epoch
+            current_epoch.next() // make it effective on the *beginning* of next epoch
         };
 
         // ...end the read+modify+write of the validator substate
@@ -634,7 +634,7 @@ impl ValidatorBlueprint {
         // - insert the requested withdrawal as pending
         substate
             .pending_owner_stake_unit_withdrawals
-            .entry(current_epoch + config_substate.config.num_owner_stake_units_unlock_epochs)
+            .entry(current_epoch.after(config_substate.config.num_owner_stake_units_unlock_epochs))
             .and_modify(|pending_amount| pending_amount.add_assign(requested_stake_unit_amount))
             .or_insert(requested_stake_unit_amount);
 
@@ -704,7 +704,7 @@ impl ValidatorBlueprint {
     /// which would affect performance (or exceed the substate size limit).
     fn normalize_available_owner_stake_unit_withdrawals(
         substate: &mut ValidatorSubstate,
-        current_epoch: u64,
+        current_epoch: Epoch,
     ) {
         let available_withdrawal_epochs = substate
             .pending_owner_stake_unit_withdrawals
@@ -726,7 +726,7 @@ impl ValidatorBlueprint {
     /// an event (i.e. they are only informational and they do not drive any logic at this point).
     pub fn apply_emission<Y>(
         xrd_bucket: Bucket,
-        concluded_epoch: u64,
+        concluded_epoch: Epoch,
         proposals_made: u64,
         proposals_missed: u64,
         api: &mut Y,

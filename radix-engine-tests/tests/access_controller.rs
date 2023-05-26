@@ -1660,7 +1660,7 @@ impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         let mut test_runner = TestRunner::builder()
             .with_custom_genesis(CustomGenesis::default(
-                1,
+                Epoch::of(1),
                 CustomGenesis::default_consensus_manager_config(),
             ))
             .build();
@@ -2028,7 +2028,7 @@ impl AccessControllerTestRunner {
     fn set_current_minute(&mut self, minutes: i64) {
         // we use a single-round epochs, so the only possible round advance is to round 1
         self.test_runner
-            .advance_to_round_at_timestamp(1, minutes * 60 * 1000)
+            .advance_to_round_at_timestamp(Round::of(1), minutes * 60 * 1000)
             .expect_commit_success();
     }
 }

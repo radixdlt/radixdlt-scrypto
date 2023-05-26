@@ -109,8 +109,8 @@ impl TransactionFuzzer {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let header = TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(100),
             nonce: 5,
             notary_public_key: private_key.public_key().into(),
             notary_is_signatory: false,

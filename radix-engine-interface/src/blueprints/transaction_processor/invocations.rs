@@ -1,6 +1,7 @@
 use crate::*;
 use radix_engine_common::crypto::*;
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use radix_engine_common::prelude::Epoch;
 use sbor::rust::prelude::*;
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
@@ -48,8 +49,8 @@ pub enum RuntimeValidation {
     IntentHashUniqueness { intent_hash: Hash },
     /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
     WithinEpochRange {
-        start_epoch_inclusive: u32,
-        end_epoch_exclusive: u32,
+        start_epoch_inclusive: Epoch,
+        end_epoch_exclusive: Epoch,
     },
 }
 

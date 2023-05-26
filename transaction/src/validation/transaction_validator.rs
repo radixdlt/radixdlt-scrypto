@@ -30,7 +30,7 @@ pub struct ValidationConfig {
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
-    pub max_epoch_range: u32,
+    pub max_epoch_range: u64,
 }
 
 impl ValidationConfig {
@@ -244,7 +244,10 @@ impl NotarizedTransactionValidator {
         if header.end_epoch_exclusive <= header.start_epoch_inclusive {
             return Err(HeaderValidationError::InvalidEpochRange);
         }
-        if header.end_epoch_exclusive - header.start_epoch_inclusive > self.config.max_epoch_range {
+        let max_end_epoch = header
+            .start_epoch_inclusive
+            .after(self.config.max_epoch_range);
+        if header.end_epoch_exclusive > max_end_epoch {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
 
@@ -354,13 +357,13 @@ mod tests {
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::InvalidEpochRange
             ),
-            (0, 0, 5, vec![1], 2)
+            (Epoch::zero(), Epoch::zero(), 5, vec![1], 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::EpochRangeTooLarge
             ),
-            (0, 1000, 5, vec![1], 2)
+            (Epoch::zero(), Epoch::of(1000), 5, vec![1], 2)
         );
     }
 
@@ -370,20 +373,20 @@ mod tests {
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::TooManySignatures
             ),
-            (0, 100, 5, (1..20).collect(), 2)
+            (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::DuplicateSigner
             ),
-            (0, 100, 5, vec![1, 1], 2)
+            (Epoch::zero(), Epoch::of(100), 5, vec![1, 1], 2)
         );
     }
 
     #[test]
     fn test_valid_preview() {
         // Build the whole transaction but only really care about the intent
-        let tx = create_transaction(0, 100, 5, vec![1, 2], 2);
+        let tx = create_transaction(Epoch::zero(), Epoch::of(100), 5, vec![1, 2], 2);
 
         let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
@@ -404,8 +407,8 @@ mod tests {
     }
 
     fn create_transaction(
-        start_epoch: u32,
-        end_epoch: u32,
+        start_epoch: Epoch,
+        end_epoch: Epoch,
         nonce: u32,
         signers: Vec<u64>,
         notary: u64,

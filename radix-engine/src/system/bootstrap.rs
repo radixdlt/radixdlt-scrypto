@@ -135,7 +135,7 @@ where
     pub fn bootstrap_test_default(&mut self) -> Option<GenesisReceipts> {
         self.bootstrap_with_genesis_data(
             vec![],
-            1u64,
+            Epoch::of(1),
             ConsensusManagerConfig {
                 max_validators: 10,
                 epoch_change_condition: EpochChangeCondition {
@@ -156,7 +156,7 @@ where
     pub fn bootstrap_with_genesis_data(
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
-        initial_epoch: u64,
+        initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> Option<GenesisReceipts> {
@@ -192,7 +192,7 @@ where
 
     fn execute_system_bootstrap(
         &mut self,
-        initial_epoch: u64,
+        initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> TransactionReceipt {
@@ -266,7 +266,7 @@ where
 }
 
 pub fn create_system_bootstrap_transaction(
-    initial_epoch: u64,
+    initial_epoch: Epoch,
     initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
 ) -> SystemTransactionV1 {

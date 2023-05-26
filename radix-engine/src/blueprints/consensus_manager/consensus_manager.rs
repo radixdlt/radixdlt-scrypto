@@ -28,9 +28,9 @@ pub struct ConsensusManagerConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerSubstate {
-    pub epoch: u64,
+    pub epoch: Epoch,
     pub epoch_start_milli: i64,
-    pub round: u64,
+    pub round: Round,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
@@ -119,8 +119,8 @@ impl CurrentProposalStatisticSubstate {
             .get_mut(validator_index as usize)
             .ok_or_else(|| {
                 RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
-                    ConsensusManagerError::InvalidaValidatorIndex {
-                        index: validator_index as usize,
+                    ConsensusManagerError::InvalidValidatorIndex {
+                        index: validator_index,
                         count: validator_count,
                     },
                 ))
@@ -152,15 +152,15 @@ impl ProposalStatistic {
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum ConsensusManagerError {
     InvalidRoundUpdate {
-        from: u64,
-        to: u64,
+        from: Round,
+        to: Round,
     },
     InconsistentGapRounds {
-        gap_rounds: u64,
+        gap_rounds: usize,
         progressed_rounds: u64,
     },
-    InvalidaValidatorIndex {
-        index: usize,
+    InvalidValidatorIndex {
+        index: ValidatorIndex,
         count: usize,
     },
 }
@@ -179,7 +179,7 @@ impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
-        initial_epoch: u64,
+        initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
         api: &mut Y,
@@ -218,7 +218,7 @@ impl ConsensusManagerBlueprint {
             let consensus_manager = ConsensusManagerSubstate {
                 epoch: initial_epoch,
                 epoch_start_milli: initial_time_milli,
-                round: 0,
+                round: Round::zero(),
             };
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: ActiveValidatorSet {
@@ -283,7 +283,7 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn get_current_epoch<Y>(api: &mut Y) -> Result<u64, RuntimeError>
+    pub(crate) fn get_current_epoch<Y>(api: &mut Y) -> Result<Epoch, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -401,7 +401,7 @@ impl ConsensusManagerBlueprint {
     }
 
     pub(crate) fn next_round<Y>(
-        round: u64,
+        round: Round,
         proposer_timestamp_milli: i64,
         proposal_history: LeaderProposalHistory,
         api: &mut Y,
@@ -426,19 +426,17 @@ impl ConsensusManagerBlueprint {
         let mut manager_substate: ConsensusManagerSubstate =
             api.field_lock_read_typed(manager_handle)?;
 
-        let progressed_rounds = round as i128 - manager_substate.round as i128;
-        if progressed_rounds <= 0 {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ConsensusManagerError(
+        let progressed_rounds = Round::calculate_progress(manager_substate.round, round)
+            .ok_or_else(|| {
+                RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
                     ConsensusManagerError::InvalidRoundUpdate {
                         from: manager_substate.round,
                         to: round,
                     },
-                ),
-            ));
-        }
+                ))
+            })?;
 
-        Self::update_proposal_statistics(progressed_rounds as u64, proposal_history, api)?;
+        Self::update_proposal_statistics(progressed_rounds, proposal_history, api)?;
 
         let config = &config_substate.config;
         let epoch_duration_millis = proposer_timestamp_milli - manager_substate.epoch_start_milli;
@@ -446,11 +444,11 @@ impl ConsensusManagerBlueprint {
             .epoch_change_condition
             .is_met(epoch_duration_millis, round)
         {
-            let next_epoch = manager_substate.epoch + 1;
+            let next_epoch = manager_substate.epoch.next();
             Self::epoch_change(next_epoch, config, api)?;
             manager_substate.epoch = next_epoch;
             manager_substate.epoch_start_milli = proposer_timestamp_milli;
-            manager_substate.round = 0;
+            manager_substate.round = Round::zero();
         } else {
             Runtime::emit_event(api, RoundChangeEvent { round })?;
             manager_substate.round = round;
@@ -517,7 +515,7 @@ impl ConsensusManagerBlueprint {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
                     ConsensusManagerError::InconsistentGapRounds {
-                        gap_rounds: proposal_history.gap_round_leaders.len() as u64,
+                        gap_rounds: proposal_history.gap_round_leaders.len(),
                         progressed_rounds,
                     },
                 ),
@@ -549,7 +547,7 @@ impl ConsensusManagerBlueprint {
     }
 
     fn epoch_change<Y>(
-        next_epoch: u64,
+        next_epoch: Epoch,
         config: &ConsensusManagerConfig,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -581,7 +579,7 @@ impl ConsensusManagerBlueprint {
             previous_validator_set,
             previous_statistics,
             config,
-            next_epoch - 1,
+            next_epoch.previous(),
             api,
         )?;
 
@@ -652,7 +650,7 @@ impl ConsensusManagerBlueprint {
         validator_set: ActiveValidatorSet,
         validator_statistics: Vec<ProposalStatistic>,
         config: &ConsensusManagerConfig,
-        epoch: u64, // the concluded epoch, for event creation
+        epoch: Epoch, // the concluded epoch, for event creation
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

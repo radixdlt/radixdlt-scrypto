@@ -111,8 +111,8 @@ fn bench_radiswap(c: &mut Criterion) {
     let transaction_payload = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(100),
             nonce: 0,
             notary_public_key: pk3.clone().into(),
             notary_is_signatory: true,
