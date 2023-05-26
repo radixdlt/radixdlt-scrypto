@@ -45,6 +45,16 @@ bitflags! {
 }
 
 impl EnabledModules {
+    /// The difference between genesis transaction and system transaction is "no auth".
+    /// TODO: double check if this is the right assumption.
+    pub fn for_genesis_transaction() -> Self {
+        Self::NODE_MOVE
+            | Self::LOGGER
+            | Self::TRANSACTION_RUNTIME
+            | Self::TRANSACTION_LIMITS
+            | Self::EVENTS
+    }
+
     pub fn for_system_transaction() -> Self {
         Self::NODE_MOVE
             | Self::AUTH

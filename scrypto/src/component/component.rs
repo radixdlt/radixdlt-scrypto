@@ -146,9 +146,9 @@ impl<C: HasStub + HasMethods> Owned<C> {
 }
 
 pub enum MethodRoyalty {
+    Free,
     Xrd(Decimal),
     Usd(Decimal),
-    Free,
 }
 
 pub trait MethodMapping<T> {
