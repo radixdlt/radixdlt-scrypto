@@ -5,6 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::PreviewFlags;
 
 #[test]
 fn test_trace_resource_transfers() {
@@ -24,9 +25,11 @@ fn test_trace_resource_transfers() {
             manifest_args!(transfer_amount),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = test_runner.preview_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![public_key.clone().into()],
+        0,
+        PreviewFlags::default(),
     );
 
     // Assert
@@ -131,7 +134,7 @@ fn test_trace_fee_payments() {
         .clear_auth_zone()
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
 
     // Assert
     let resource_changes = &receipt.execution_trace.resource_changes;
@@ -170,7 +173,7 @@ fn test_instruction_traces() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
 
     receipt.expect_commit_success();
 
@@ -412,8 +415,12 @@ fn test_worktop_changes() {
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![pk.clone().into()],
+        0,
+        PreviewFlags::default(),
+    );
 
     // Assert
     {

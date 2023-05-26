@@ -68,10 +68,10 @@ fn test_balance_changes_when_success() {
                 RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
             ),
             package_address.into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(dec!("0.0000002"))
+                RADIX_TOKEN => BalanceChange::Fungible(dec!("2"))
             ),
             component_address.into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(dec!("1.0000001"))
+                RADIX_TOKEN => BalanceChange::Fungible(dec!("2"))
             ),
             account.into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(dec!("-1"))

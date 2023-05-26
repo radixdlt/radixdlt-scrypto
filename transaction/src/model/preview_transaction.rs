@@ -3,7 +3,7 @@ use radix_engine_interface::{
     api::node_modules::auth::AuthAddresses, blueprints::transaction_processor::RuntimeValidation,
 };
 
-#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Default)]
 pub struct PreviewFlags {
     pub use_free_credit: bool,
     pub assume_all_signature_proofs: bool,

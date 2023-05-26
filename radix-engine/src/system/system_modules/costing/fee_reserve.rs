@@ -269,7 +269,12 @@ impl SystemLoanFeeReserve {
     ) -> Result<(), FeeReserveError> {
         let amount = match royalty_amount {
             RoyaltyAmount::Xrd(xrd_amount) => decimal_to_u128(xrd_amount)?,
-            RoyaltyAmount::Usd(usd_amount) => decimal_to_u128(usd_amount)?, // FIXME multiplier
+            RoyaltyAmount::Usd(usd_amount) => {
+                decimal_to_u128(usd_amount)?
+                    .checked_mul(self.usd_price)
+                    .ok_or(FeeReserveError::Overflow)?
+                    / 1_000_000_000_000_000_000
+            }
             RoyaltyAmount::Free => 0u128,
         };
         if self.xrd_balance < amount {
@@ -616,7 +621,7 @@ mod tests {
     fn test_royalty_execution_mix() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
             decimal_to_u128(dec!(5)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
+            decimal_to_u128(dec!(2)).unwrap(),
             1,
             100,
             50,
@@ -633,13 +638,20 @@ mod tests {
             )
             .unwrap();
         fee_reserve
+            .consume_royalty(
+                RoyaltyAmount::Usd(7.into()),
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE),
+                TEST_VAULT_ID,
+            )
+            .unwrap();
+        fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
-        assert_eq!(summary.total_royalty_cost_xrd, dec!("10"));
+        assert_eq!(summary.total_royalty_cost_xrd, dec!("16"));
         assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
         assert_eq!(
             summary.locked_fees,
@@ -655,7 +667,7 @@ mod tests {
         assert_eq!(
             summary.royalty_cost_breakdown,
             btreemap!(
-                RoyaltyRecipient::Package(PACKAGE_PACKAGE) => (TEST_VAULT_ID, dec!("10"))
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE) => (TEST_VAULT_ID, dec!("16"))
             )
         );
     }
@@ -687,33 +699,6 @@ mod tests {
                 TEST_VAULT_ID_2
             ),
             Err(FeeReserveError::InsufficientBalance)
-        );
-    }
-
-    #[test]
-    fn test_royalty_exceeds_cost_unit_limit() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(1)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
-            0,
-            100,
-            50,
-            false,
-        );
-        fee_reserve
-            .lock_fee(TEST_VAULT_ID, xrd(500), false)
-            .unwrap();
-        assert_eq!(
-            fee_reserve.consume_royalty(
-                RoyaltyAmount::Xrd(200.into()),
-                RoyaltyRecipient::Component(TEST_COMPONENT),
-                TEST_VAULT_ID_2
-            ),
-            Err(FeeReserveError::LimitExceeded {
-                limit: 100,
-                committed: 0,
-                new: 200
-            })
         );
     }
 }
