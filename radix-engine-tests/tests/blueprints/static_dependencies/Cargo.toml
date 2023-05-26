@@ -1,6 +1,6 @@
 [package]
-name = "cross_package_call"
-version = "0.10.0"
+name = "static_dependencies"
+version = "0.1.0"
 edition = "2021"
 
 [dependencies]

@@ -13,14 +13,13 @@ const PACKAGE_ADDRESS_PLACE_HOLDER: [u8; NodeId::LENGTH] = [
     172, 105, 67, 234, 38, 49, 140, 99, 24, 198,
 ];
 
-// TODO: disallow this behavior once every package is forced to declare dependencies.
 #[test]
-fn test_call_package_address_undeclared() {
+fn test_static_package_address() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address1 = test_runner.compile_and_publish("./tests/blueprints/cross_package_call");
+    let package_address1 = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
 
-    let (mut code, mut schema) = Compile::compile("./tests/blueprints/cross_package_call");
+    let (mut code, mut schema) = Compile::compile("./tests/blueprints/static_dependencies");
     let place_holder: GlobalAddress =
         PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER).into();
     for (_, blueprint) in &mut schema.blueprints {
@@ -51,6 +50,29 @@ fn test_call_package_address_undeclared() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_static_component_address() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+    let (key, _priv, account) = test_runner.new_account(false);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, 10.into())
+        .call_function(
+            package_address,
+            "FaucetCall",
+            "call_faucet_lock_fee",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
