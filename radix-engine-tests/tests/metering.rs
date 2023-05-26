@@ -100,7 +100,7 @@ mod tests {
             manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
             btreemap!(
                 "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
-                    .add_rule("instantiate_pool", 5)
+                    .add_rule("new", 5)
                     .add_rule("add_liquidity", 1)
                     .add_rule("remove_liquidity", 1)
                     .add_rule("swap", 2)
@@ -110,13 +110,29 @@ mod tests {
             AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
         );
 
-        // Instantiate radiswap
+        // Instantiate Radiswap
         let btc = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
         let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
+        let component_address: ComponentAddress = test_runner
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee(account2, 10u32.into())
+                    .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
+                    .call_method(
+                        account2,
+                        "try_deposit_batch_or_abort",
+                        manifest_args!(ManifestExpression::EntireWorktop),
+                    )
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&pk2)],
+            )
+            .expect_commit(true)
+            .output(1);
+
+        // Contributing an initial amount to radiswap
         let btc_init_amount = Decimal::from(500_000);
         let eth_init_amount = Decimal::from(300_000);
-        let fee_amount = dec!("0.01");
-        let (component_address, _) = test_runner
+        test_runner
             .execute_manifest(
                 ManifestBuilder::new()
                     .lock_fee(account2, 10u32.into())
@@ -124,19 +140,10 @@ mod tests {
                     .withdraw_from_account(account2, eth, eth_init_amount)
                     .take_all_from_worktop(btc, |builder, bucket1| {
                         builder.take_all_from_worktop(eth, |builder, bucket2| {
-                            builder.call_function(
-                                package_address,
-                                "Radiswap",
-                                "instantiate_pool",
-                                manifest_args!(
-                                    bucket1,
-                                    bucket2,
-                                    dec!("1000"),
-                                    "LP_BTC_ETH",
-                                    "LP token for BTC/ETH swap",
-                                    "https://www.radiswap.com",
-                                    fee_amount
-                                ),
+                            builder.call_method(
+                                component_address,
+                                "add_liquidity",
+                                manifest_args!(bucket1, bucket2),
                             )
                         })
                     })
@@ -148,8 +155,7 @@ mod tests {
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&pk2)],
             )
-            .expect_commit(true)
-            .output::<(ComponentAddress, Own)>(5);
+            .expect_commit(true);
 
         // Transfer `10,000 BTC` from `account2` to `account3`
         let btc_amount = Decimal::from(10_000);
@@ -189,32 +195,27 @@ mod tests {
         let remaining_btc = test_runner.account_balance(account3, btc).unwrap();
         let eth_received = test_runner.account_balance(account3, eth).unwrap();
         assert_eq!(remaining_btc, btc_amount - btc_to_swap);
-        assert_eq!(
-            eth_received,
-            eth_init_amount
-                - (btc_init_amount * eth_init_amount)
-                    / (btc_init_amount + (btc_to_swap - btc_to_swap * fee_amount))
-        );
+        assert_eq!(eth_received, dec!("1195.219123505976095617"));
         let commit_result = receipt.expect_commit(true);
 
         // NOTE: If this test fails, it should print out the actual fee table in the error logs.
         // Or you can run just this test with the below:
         // cargo test -p radix-engine-tests --test metering -- test_radiswap
         assert_eq!(
-            2484 /* AllocateNodeId */
-            + 3935 /* CreateNode */
-            + 14356 /* DropLock */
-            + 3675 /* DropNode */
-            + 3395011 /* Invoke */
-            + 5935915 /* LockSubstate */
-            + 20104 /* ReadSubstate */
-            + 137500 /* RunNative */
-            + 15000 /* RunSystem */
-            + 1535475 /* RunWasm */
+            2415 /* AllocateNodeId */
+            + 3826 /* CreateNode */
+            + 14208 /* DropLock */
+            + 3570 /* DropNode */
+            + 3783136 /* Invoke */
+            + 4266311 /* LockSubstate */
+            + 19880 /* ReadSubstate */
+            + 135000 /* RunNative */
+            + 20000 /* RunSystem */
+            + 730865 /* RunWasm */
             + 50000 /* TxBaseCost */
             + 1675 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */
-            + 2371, /* WriteSubstate */
+            + 2180, /* WriteSubstate */
             commit_result.fee_summary.execution_cost_sum
         );
     }
@@ -317,11 +318,11 @@ mod tests {
             + 22755 /* DropLock */
             + 6090 /* DropNode */
             + 4768533 /* Invoke */
-            + 7212486 /* LockSubstate */
+            + 7125243 /* LockSubstate */
             + 32256 /* ReadSubstate */
             + 205000 /* RunNative */
             + 40000 /* RunSystem */
-            + 1328225 /* RunWasm */
+            + 1320465 /* RunWasm */
             + 50000 /* TxBaseCost */
             + 2455 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */
