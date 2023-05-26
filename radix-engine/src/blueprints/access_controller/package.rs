@@ -413,7 +413,9 @@ impl AccessControllerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema,
-                    dependencies: btreeset!(),
+                    dependencies: btreeset!(
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    ),
                 }
             ),
         }

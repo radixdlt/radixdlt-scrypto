@@ -110,7 +110,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_schema = {
         let raw_package_dependencies: Vec<Ident> = {
             let const_statements = bp.const_statements;
-            const_statements.iter().map(|stmt| stmt.ident.clone()).collect()
+            const_statements
+                .iter()
+                .map(|stmt| stmt.ident.clone())
+                .collect()
         };
 
         let schema_ident = format_ident!("{}_schema", bp_ident);
@@ -753,6 +756,9 @@ mod tests {
                             }
                         );
                         let mut event_schema = BTreeMap::new();
+
+                        let mut dependencies = BTreeSet::new();
+
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
                             schema: generate_full_schema(aggregator),
@@ -760,7 +766,8 @@ mod tests {
                             collections: Vec::new(),
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
-                            event_schema
+                            event_schema,
+                            dependencies,
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

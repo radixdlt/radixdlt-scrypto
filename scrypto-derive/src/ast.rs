@@ -1,7 +1,10 @@
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Brace, Paren};
-use syn::{braced, parenthesized, Attribute, Ident, ItemImpl, ItemStruct, ItemUse, Path, Result, Token, Visibility, ItemConst};
+use syn::{
+    braced, parenthesized, Attribute, Ident, ItemConst, ItemImpl, ItemStruct, ItemUse, Path,
+    Result, Token, Visibility,
+};
 
 /// Represents a blueprint which is a module with an optional set of attributes
 pub struct Blueprint {

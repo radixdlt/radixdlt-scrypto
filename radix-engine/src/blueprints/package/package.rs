@@ -296,7 +296,10 @@ impl PackageNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    dependencies: btreeset!(),
+                    dependencies: btreeset!(
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                        PACKAGE_OWNER_BADGE.into(),
+                    ),
                 }
             ),
         }
@@ -349,7 +352,6 @@ impl PackageNativePackage {
                     input.package_address,
                     input.native_package_code_id,
                     input.schema,
-                    input.dependent_resources,
                     input.metadata,
                     input.package_access_rules,
                     input.default_package_access_rule,
@@ -425,7 +427,6 @@ impl PackageNativePackage {
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         native_package_code_id: u8,
         schema: PackageSchema,
-        dependent_resources: Vec<ResourceAddress>,
         metadata: BTreeMap<String, MetadataValue>,
         package_access_rules: BTreeMap<FnKey, AccessRule>,
         default_package_access_rule: AccessRule,
@@ -443,7 +444,6 @@ impl PackageNativePackage {
         // Build node init
         let info = PackageInfoSubstate {
             schema: schema.into(),
-            dependent_resources: dependent_resources.into_iter().collect(),
         };
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
@@ -593,7 +593,6 @@ impl PackageNativePackage {
         // Build node init
         let info = PackageInfoSubstate {
             schema: schema.into(),
-            dependent_resources: BTreeSet::new(),
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;

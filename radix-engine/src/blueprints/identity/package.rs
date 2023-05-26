@@ -79,7 +79,12 @@ impl IdentityNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
-                    dependencies: btreeset!(),
+                    dependencies: btreeset!(
+                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                        IDENTITY_OWNER_BADGE.into(),
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    ),
                 }
             ),
         }

@@ -38,7 +38,6 @@ impl Debug for PackageCodeSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
     pub schema: IndexedPackageSchema,
-    pub dependent_resources: BTreeSet<ResourceAddress>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

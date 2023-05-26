@@ -128,7 +128,12 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            dependencies: btreeset!(),
+            dependencies: btreeset!(
+                RADIX_TOKEN.into(),
+                PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                SYSTEM_TRANSACTION_BADGE.into(),
+                VALIDATOR_OWNER_BADGE.into(),
+            ),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
