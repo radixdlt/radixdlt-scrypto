@@ -2,5 +2,5 @@ UPDATE_ROLE
     Address("${resource_address}")
     Enum<0u8>()
     "auth"
-    Enum<1u8>(Enum<"AccessRule::AllowAll">())
+    Enum<1u8>(Enum<AccessRule::AllowAll>())
     Enum<0u8>();

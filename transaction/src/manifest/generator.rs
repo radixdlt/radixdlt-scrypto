@@ -60,11 +60,11 @@ use sbor::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
     InvalidAstType {
-        expected_type: ast::Type,
-        actual: ast::Type,
+        expected_type: ast::ValueKind,
+        actual: ast::ValueKind,
     },
     InvalidAstValue {
-        expected_type: Vec<ast::Type>,
+        expected_type: Vec<ast::ValueKind>,
         actual: ast::Value,
     },
     UnexpectedValue {
@@ -102,11 +102,10 @@ pub enum GeneratorError {
     InvalidGlobalAddress(String),
     InvalidInternalAddress(String),
     InvalidLength {
-        value_type: ast::Type,
+        value_type: ast::ValueKind,
         expected_length: usize,
         actual: usize,
     },
-    OddNumberOfElements,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -687,7 +686,7 @@ fn generate_args(
 fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
-        v => invalid_type!(v, ast::Type::String),
+        v => invalid_type!(v, ast::ValueKind::String),
     }
 }
 
@@ -697,9 +696,9 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
             ast::Value::String(s) => {
                 Decimal::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Decimal),
+        v => invalid_type!(v, ast::ValueKind::Decimal),
     }
 }
 
@@ -709,9 +708,9 @@ fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, Genera
             ast::Value::String(s) => PreciseDecimal::from_str(s)
                 .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
 
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Decimal),
+        v => invalid_type!(v, ast::ValueKind::Decimal),
     }
 }
 
@@ -729,9 +728,9 @@ fn generate_package_address(
                 }
                 return Err(GeneratorError::InvalidGlobalAddress(s.into()));
             }
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::PackageAddress),
+        v => invalid_type!(v, ast::ValueKind::PackageAddress),
     }
 }
 
@@ -749,9 +748,9 @@ fn generate_resource_address(
                 }
                 return Err(GeneratorError::InvalidGlobalAddress(s.into()));
             }
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::ResourceAddress),
+        v => invalid_type!(v, ast::ValueKind::ResourceAddress),
     }
 }
 
@@ -769,14 +768,14 @@ fn generate_global_address(
                 }
                 return Err(GeneratorError::InvalidGlobalAddress(s.into()));
             }
-            v => return invalid_type!(v, ast::Type::String),
+            v => return invalid_type!(v, ast::ValueKind::String),
         },
         v => invalid_type!(
             v,
-            ast::Type::Address,
-            ast::Type::PackageAddress,
-            ast::Type::ResourceAddress,
-            ast::Type::ComponentAddress
+            ast::ValueKind::Address,
+            ast::ValueKind::PackageAddress,
+            ast::ValueKind::ResourceAddress,
+            ast::ValueKind::ComponentAddress
         ),
     }
 }
@@ -795,14 +794,14 @@ fn generate_local_address(
                 }
                 return Err(GeneratorError::InvalidInternalAddress(s.into()));
             }
-            v => return invalid_type!(v, ast::Type::String),
+            v => return invalid_type!(v, ast::ValueKind::String),
         },
         v => invalid_type!(
             v,
-            ast::Type::Address,
-            ast::Type::PackageAddress,
-            ast::Type::ResourceAddress,
-            ast::Type::ComponentAddress
+            ast::ValueKind::Address,
+            ast::ValueKind::PackageAddress,
+            ast::ValueKind::ResourceAddress,
+            ast::ValueKind::ComponentAddress
         ),
     }
 }
@@ -817,9 +816,9 @@ fn declare_bucket(
             ast::Value::String(name) => resolver
                 .insert_bucket(name.to_string(), bucket_id)
                 .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Bucket),
+        v => invalid_type!(v, ast::ValueKind::Bucket),
     }
 }
 
@@ -833,9 +832,9 @@ fn generate_bucket(
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
                 .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Bucket),
+        v => invalid_type!(v, ast::ValueKind::Bucket),
     }
 }
 
@@ -849,9 +848,9 @@ fn declare_proof(
             ast::Value::String(name) => resolver
                 .insert_proof(name.to_string(), proof_id)
                 .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Proof),
+        v => invalid_type!(v, ast::ValueKind::Proof),
     }
 }
 
@@ -865,9 +864,9 @@ fn generate_proof(
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
                 .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Proof),
+        v => invalid_type!(v, ast::ValueKind::Proof),
     }
 }
 
@@ -878,9 +877,9 @@ fn generate_non_fungible_local_id(
         ast::Value::NonFungibleLocalId(inner) => match inner.as_ref() {
             ast::Value::String(s) => NonFungibleLocalId::from_str(s.as_str())
                 .map_err(|_| GeneratorError::InvalidNonFungibleLocalId(s.clone())),
-            v => invalid_type!(v, ast::Type::String)?,
+            v => invalid_type!(v, ast::ValueKind::String)?,
         },
-        v => invalid_type!(v, ast::Type::NonFungibleLocalId),
+        v => invalid_type!(v, ast::ValueKind::NonFungibleLocalId),
     }
 }
 
@@ -892,9 +891,9 @@ fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, Generat
                 "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
                 _ => Err(GeneratorError::InvalidExpression(s.into())),
             },
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Expression),
+        v => invalid_type!(v, ast::ValueKind::Expression),
     }
 }
 
@@ -911,9 +910,9 @@ fn generate_blob(
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
                 Ok(ManifestBlobRef(hash.0))
             }
-            v => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::Type::Blob),
+        v => invalid_type!(v, ast::ValueKind::Blob),
     }
 }
 
@@ -922,9 +921,9 @@ fn generate_non_fungible_local_ids(
 ) -> Result<Vec<NonFungibleLocalId>, GeneratorError> {
     match value {
         ast::Value::Array(kind, values) => {
-            if kind != &ast::Type::NonFungibleLocalId {
+            if kind != &ast::ValueKind::NonFungibleLocalId {
                 return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::Type::String,
+                    expected_type: ast::ValueKind::String,
                     actual: kind.clone(),
                 });
             }
@@ -934,7 +933,7 @@ fn generate_non_fungible_local_ids(
                 .map(|v| generate_non_fungible_local_id(v))
                 .collect()
         }
-        v => invalid_type!(v, ast::Type::Array),
+        v => invalid_type!(v, ast::ValueKind::Array),
     }
 }
 
@@ -943,7 +942,7 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
         ast::Value::String(s) => {
             hex::decode(s).map_err(|_| GeneratorError::InvalidBytesHex(s.to_owned()))?
         }
-        v => invalid_type!(v, ast::Type::String)?,
+        v => invalid_type!(v, ast::ValueKind::String)?,
     };
     Ok(bytes)
 }
@@ -1068,7 +1067,7 @@ pub fn generate_value(
                     NonFungibleGlobalId::try_from_canonical_string(bech32_decoder, s.as_str())
                         .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId)
                 }
-                v => invalid_type!(v, ast::Type::String)?,
+                v => invalid_type!(v, ast::ValueKind::String)?,
             }?;
             Ok(Value::Tuple {
                 fields: vec![
@@ -1121,7 +1120,7 @@ pub fn generate_value(
 
 fn generate_singletons(
     elements: &Vec<ast::Value>,
-    expected_type: Option<ManifestValueKind>,
+    expected_value_kind: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
@@ -1130,7 +1129,7 @@ fn generate_singletons(
     for element in elements {
         result.push(generate_value(
             element,
-            expected_type,
+            expected_value_kind,
             resolver,
             bech32_decoder,
             blobs,
@@ -1140,28 +1139,24 @@ fn generate_singletons(
 }
 
 fn generate_kv_entries(
-    elements: &Vec<ast::Value>,
+    entries: &[(ast::Value, ast::Value)],
     key_value_kind: ManifestValueKind,
     value_value_kind: ManifestValueKind,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Vec<(ManifestValue, ManifestValue)>, GeneratorError> {
-    if elements.len() % 2 != 0 {
-        return Err(GeneratorError::OddNumberOfElements);
-    }
-
     let mut result = vec![];
-    for i in 0..elements.len() / 2 {
+    for entry in entries {
         let key = generate_value(
-            &elements[i * 2],
+            &entry.0,
             Some(key_value_kind),
             resolver,
             bech32_decoder,
             blobs,
         )?;
         let value = generate_value(
-            &elements[i * 2 + 1],
+            &entry.1,
             Some(value_value_kind),
             resolver,
             bech32_decoder,
@@ -1312,7 +1307,7 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"Enum<"AccessRule::AllowAll">()"#,
+            r#"Enum<AccessRule::AllowAll>()"#,
             Value::Enum {
                 discriminator: 0,
                 fields: vec![]
@@ -1331,7 +1326,7 @@ mod tests {
         generate_value_error!(
             r#"Address(100u32)"#,
             GeneratorError::InvalidAstValue {
-                expected_type: vec![ast::Type::String],
+                expected_type: vec![ast::ValueKind::String],
                 actual: ast::Value::U32(100),
             }
         );
@@ -1443,7 +1438,7 @@ mod tests {
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE
-                Enum<"NonFungibleIdType::Integer">()
+                Enum<NonFungibleIdType::Integer>()
                 Tuple(
                     Tuple(
                         Array<Enum>(),
@@ -1454,18 +1449,16 @@ mod tests {
                     Array<String>()
                 )
                 Map<String, Enum>(
-                    "name", Enum<"Metadata::String">("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<"ResourceMethodAuthKey::Withdraw">(),
-                    Tuple(
-                        Enum<"AccessRule::AllowAll">(),
-                        Enum<"AccessRule::DenyAll">()
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<"ResourceMethodAuthKey::Deposit">(),
-                    Tuple(
-                        Enum<"AccessRule::AllowAll">(),
-                        Enum<"AccessRule::DenyAll">()
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
                     )
                 );"#,
             InstructionV1::CallFunction {
@@ -1534,7 +1527,7 @@ mod tests {
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
-                Enum<"NonFungibleIdType::Integer">()
+                Enum<NonFungibleIdType::Integer>()
                 Tuple(
                     Tuple(
                         Array<Enum>(),
@@ -1545,23 +1538,20 @@ mod tests {
                     Array<String>()
                 )
                 Map<String, Enum>(
-                    "name", Enum<"Metadata::String">("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<"ResourceMethodAuthKey::Withdraw">(),
-                    Tuple(
-                        Enum<"AccessRule::AllowAll">(),
-                        Enum<"AccessRule::DenyAll">()
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<"ResourceMethodAuthKey::Deposit">(),
-                    Tuple(
-                        Enum<"AccessRule::AllowAll">(),
-                        Enum<"AccessRule::DenyAll">()
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
                     )
                 )
                 Map<NonFungibleLocalId, Tuple>(
-                    NonFungibleLocalId("#1#"),
-                    Tuple(
+                    NonFungibleLocalId("#1#") => Tuple(
                         Tuple(
                             "Hello World",
                             Decimal("12")
@@ -1611,16 +1601,18 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE
                 18u8
                 Map<String, Enum>(
-                    "name", Enum<"Metadata::String">("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<"ResourceMethodAuthKey::Withdraw">(),
-                    Tuple(Enum<"AccessRule::AllowAll">(),
-                    Enum<"AccessRule::DenyAll">()
-                ),
-                Enum<"ResourceMethodAuthKey::Deposit">(),
-                Tuple(Enum<"AccessRule::AllowAll">(),
-                Enum<"AccessRule::DenyAll">()))
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
+                    ),
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
+                    )
+                )
             ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
@@ -1653,18 +1645,16 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 18u8
                 Map<String, Enum>(
-                    "name", Enum<"Metadata::String">("Token")
+                    "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<"ResourceMethodAuthKey::Withdraw">(),
-                    Tuple(
-                        Enum<"AccessRule::AllowAll">(),
-                        Enum<"AccessRule::DenyAll">()
+                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<"ResourceMethodAuthKey::Deposit">(),
-                    Tuple(
-                        Enum<"AccessRule::AllowAll">(),
-                        Enum<"AccessRule::DenyAll">()
+                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),
+                        Enum<AccessRule::DenyAll>()
                     )
                 )
                 Decimal("500")
@@ -1709,7 +1699,7 @@ mod tests {
             r##"
             MINT_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
-                Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));
+                Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#") => Tuple(Tuple("Hello World", Decimal("12"))));
             "##,
             InstructionV1::CallMethod {
                 address: resource_address.into(),
