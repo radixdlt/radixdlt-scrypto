@@ -218,6 +218,10 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         // calculate linear approximation of diff points
         let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&v1).unwrap();
 
+        // calculate linethrough 1st and last diff points
+        let v2: Vec<(f32, f32)> = vec![*v1.first().unwrap(), *v1.last().unwrap()];
+        let (lin_slope_2, lin_intercept_2): (f64, f64) = linear_regression_of(&v2).unwrap();
+
         // calculate axis max/min values
         let y_ofs = 10f32;
         let x_ofs = 5000f32;
@@ -281,6 +285,18 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
                 lin_slope, lin_intercept
             ))
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis
+                    .values()
+                    .map(|x| (x, (lin_slope_2 * x as f64 + lin_intercept_2) as f32)),
+                &BLACK,
+            ))?
+            .label(format!(
+                "Line by 1st and last diff point: f(x)={:.4}*x+{:.1}",
+                lin_slope_2, lin_intercept_2
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
         scatter_ctx
             .configure_series_labels()
             .background_style(&WHITE)
