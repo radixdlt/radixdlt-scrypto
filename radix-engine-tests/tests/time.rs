@@ -3,56 +3,51 @@ use radix_engine_interface::time::UtcDateTime;
 use scrypto_unit::*;
 
 #[test]
-fn setting_single_time_succeeds() {
+fn advancing_round_changes_app_facing_minute_resolution_clock() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunner::builder()
+        .with_custom_genesis(CustomGenesis::default(
+            1,
+            CustomGenesis::default_consensus_manager_config(),
+        ))
+        .build();
 
-    let time_rounded_to_minutes = UtcDateTime::new(2022, 1, 1, 0, 0, 0)
+    let epoch_seconds_rounded_to_minutes = UtcDateTime::new(2022, 1, 1, 0, 0, 0)
         .unwrap()
         .to_instant()
         .seconds_since_unix_epoch;
 
-    let time_in_ms = time_rounded_to_minutes * 1000;
+    // the 13 seconds and 337 millis are supposed to be lost via rounding down to a minute
+    let epoch_milli = (epoch_seconds_rounded_to_minutes + 13) * 1000 + 337;
 
     // Act
-    test_runner.set_current_time(time_in_ms);
+    test_runner
+        .advance_to_round_at_timestamp(1, epoch_milli)
+        .expect_commit_success();
 
     // Assert
     assert_eq!(
         test_runner
             .get_current_time(TimePrecision::Minute)
             .seconds_since_unix_epoch,
-        time_rounded_to_minutes
+        epoch_seconds_rounded_to_minutes
     );
 }
 
 #[test]
-fn setting_multiple_time_succeed() {
+fn advancing_round_changes_internal_milli_timestamp() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let times = vec![
-        UtcDateTime::new(2022, 1, 1, 0, 0, 0),
-        UtcDateTime::new(2022, 2, 1, 0, 0, 0),
-        UtcDateTime::new(2022, 3, 1, 0, 0, 0),
-        UtcDateTime::new(2022, 4, 1, 0, 0, 0),
-        UtcDateTime::new(2022, 5, 1, 0, 0, 0),
-        UtcDateTime::new(2022, 6, 1, 0, 0, 0),
-    ];
+    let mut test_runner = TestRunner::builder()
+        .with_custom_genesis(CustomGenesis::default(
+            1,
+            CustomGenesis::default_consensus_manager_config(),
+        ))
+        .build();
+    let epoch_milli = 123456789;
 
-    for time in times.into_iter() {
-        // Act
-        let time_rounded_to_minutes = time.unwrap().to_instant().seconds_since_unix_epoch;
+    // Act
+    test_runner.advance_to_round_at_timestamp(1, epoch_milli);
 
-        let time_in_ms = time_rounded_to_minutes * 1000;
-
-        test_runner.set_current_time(time_in_ms);
-
-        // Assert
-        assert_eq!(
-            test_runner
-                .get_current_time(TimePrecision::Minute)
-                .seconds_since_unix_epoch,
-            time_rounded_to_minutes
-        );
-    }
+    // Assert
+    assert_eq!(test_runner.get_current_proposer_timestamp_ms(), epoch_milli);
 }
