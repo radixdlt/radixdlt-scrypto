@@ -154,10 +154,7 @@ jobs:
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Install RocksDB metrics dependency
-      uses: awalsh128/cache-apt-pkgs-action@latest
-      with:
-        packages: pkg-config libfreetype6-dev libfontconfig1-dev
-        version: 1.0
+      run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Build with resource tracking
