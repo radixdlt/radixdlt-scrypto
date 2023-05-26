@@ -45,7 +45,7 @@ CALL_METHOD
     Array<Map>(Map<U8, U16>())
 
     # map
-    Map<U8, U16>(1u8, 5u16)
+    Map<U8, U16>(1u8 => 5u16)
 ;
 
 CALL_METHOD 

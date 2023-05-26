@@ -363,7 +363,7 @@ pub enum Value {
     Enum(u8, Vec<Value>),
     Array(ValueKind, Vec<Value>),
     Tuple(Vec<Value>),
-    Map(ValueKind, ValueKind, Vec<Value>),
+    Map(ValueKind, ValueKind, Vec<(Value, Value)>),
 
     // ==============
     // Alias values

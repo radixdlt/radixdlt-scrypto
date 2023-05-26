@@ -2,12 +2,22 @@ use sbor::rust::str::FromStr;
 
 /// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
 /// byte-based / UTF-8 index.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
     /// The start of the span, exclusive
-    pub start: usize,
+    pub start: Position,
     /// The end of the span, inclusive
-    pub end: usize,
+    pub end: Position,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Position {
+    /// A 0-indexed cursor indicating the next unicode char from the start
+    pub full_index: usize,
+    /// A 1-indexed cursor indicating the line number (assuming \n is a line break)
+    pub line_number: usize,
+    /// A 0-indexed cursor indicating the character offset in the line
+    pub line_char_index: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,6 +47,7 @@ pub enum TokenKind {
     GreaterThan,
     Comma,
     Semicolon,
+    FatArrow,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,18 +59,18 @@ pub struct Token {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LexerError {
     UnexpectedEof,
-    UnexpectedChar(char, usize),
-    InvalidInteger(String),
-    InvalidUnicode(u32),
-    UnknownIdentifier(String),
+    UnexpectedChar(char, Position),
+    InvalidInteger(String, Position),
+    InvalidUnicode(u32, Position),
+    UnknownIdentifier(String, Position),
 }
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
     /// The input text chars
     text: Vec<char>,
-    /// A 0-indexed cursor indicating the next char
-    current: usize,
+    /// The current position in the text
+    current: Position,
 }
 
 pub fn tokenize(s: &str) -> Result<Vec<Token>, LexerError> {
@@ -79,24 +90,34 @@ impl Lexer {
     pub fn new(text: &str) -> Self {
         Self {
             text: text.chars().collect(),
-            current: 0,
+            current: Position {
+                full_index: 0,
+                line_number: 1,
+                line_char_index: 0,
+            },
         }
     }
 
     pub fn is_eof(&self) -> bool {
-        self.current == self.text.len()
+        self.current.full_index == self.text.len()
     }
 
     fn peek(&self) -> Result<char, LexerError> {
         self.text
-            .get(self.current)
+            .get(self.current.full_index)
             .cloned()
             .ok_or(LexerError::UnexpectedEof)
     }
 
     fn advance(&mut self) -> Result<char, LexerError> {
         let c = self.peek()?;
-        self.current += 1;
+        self.current.full_index += 1;
+        if c == '\n' {
+            self.current.line_number += 1;
+            self.current.line_char_index = 0;
+        } else {
+            self.current.line_char_index += 1;
+        }
         Ok(c)
     }
 
@@ -133,9 +154,11 @@ impl Lexer {
             '-' | '0'..='9' => self.tokenize_number(),
             '"' => self.tokenize_string(),
             'a'..='z' | 'A'..='Z' => self.tokenize_identifier(),
-            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' => self.tokenize_punctuation(),
+            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => {
+                self.tokenize_punctuation()
+            }
             _ => Err(LexerError::UnexpectedChar(
-                self.text[self.current],
+                self.text[self.current.full_index],
                 self.current,
             )),
         }
@@ -171,41 +194,41 @@ impl Lexer {
             'i' => match self.advance()? {
                 '1' => match self.advance()? {
                     '2' => match self.advance()? {
-                        '8' => Self::parse_int(&s, "i128", TokenKind::I128Literal),
+                        '8' => self.parse_int(&s, "i128", TokenKind::I128Literal),
                         _ => Err(self.unexpected_char()),
                     },
-                    '6' => Self::parse_int(&s, "i16", TokenKind::I16Literal),
+                    '6' => self.parse_int(&s, "i16", TokenKind::I16Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '3' => match self.advance()? {
-                    '2' => Self::parse_int(&s, "i32", TokenKind::I32Literal),
+                    '2' => self.parse_int(&s, "i32", TokenKind::I32Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '6' => match self.advance()? {
-                    '4' => Self::parse_int(&s, "i64", TokenKind::I64Literal),
+                    '4' => self.parse_int(&s, "i64", TokenKind::I64Literal),
                     _ => Err(self.unexpected_char()),
                 },
-                '8' => Self::parse_int(&s, "i8", TokenKind::I8Literal),
+                '8' => self.parse_int(&s, "i8", TokenKind::I8Literal),
                 _ => Err(self.unexpected_char()),
             },
             'u' => match self.advance()? {
                 '1' => match self.advance()? {
                     '2' => match self.advance()? {
-                        '8' => Self::parse_int(&s, "u128", TokenKind::U128Literal),
+                        '8' => self.parse_int(&s, "u128", TokenKind::U128Literal),
                         _ => Err(self.unexpected_char()),
                     },
-                    '6' => Self::parse_int(&s, "u16", TokenKind::U16Literal),
+                    '6' => self.parse_int(&s, "u16", TokenKind::U16Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '3' => match self.advance()? {
-                    '2' => Self::parse_int(&s, "u32", TokenKind::U32Literal),
+                    '2' => self.parse_int(&s, "u32", TokenKind::U32Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '6' => match self.advance()? {
-                    '4' => Self::parse_int(&s, "u64", TokenKind::U64Literal),
+                    '4' => self.parse_int(&s, "u64", TokenKind::U64Literal),
                     _ => Err(self.unexpected_char()),
                 },
-                '8' => Self::parse_int(&s, "u8", TokenKind::U8Literal),
+                '8' => self.parse_int(&s, "u8", TokenKind::U8Literal),
                 _ => Err(self.unexpected_char()),
             },
             _ => Err(self.unexpected_char()),
@@ -214,13 +237,14 @@ impl Lexer {
     }
 
     fn parse_int<T: FromStr>(
+        &self,
         int: &str,
         ty: &str,
         map: fn(T) -> TokenKind,
     ) -> Result<TokenKind, LexerError> {
         int.parse::<T>()
             .map(map)
-            .map_err(|_| LexerError::InvalidInteger(format!("{}{}", int, ty)))
+            .map_err(|_| LexerError::InvalidInteger(format!("{}{}", int, ty), self.current))
     }
 
     fn tokenize_string(&mut self) -> Result<Token, LexerError> {
@@ -252,7 +276,10 @@ impl Lexer {
                                 return Err(self.unexpected_char());
                             }
                         }
-                        s.push(char::from_u32(unicode).ok_or(LexerError::InvalidUnicode(unicode))?);
+                        s.push(
+                            char::from_u32(unicode)
+                                .ok_or(LexerError::InvalidUnicode(unicode, self.current))?,
+                        );
                     }
                     _ => {
                         return Err(self.unexpected_char());
@@ -314,6 +341,10 @@ impl Lexer {
             '>' => TokenKind::GreaterThan,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
+            '=' => match self.advance()? {
+                '>' => TokenKind::FatArrow,
+                _ => return Err(self.unexpected_char()),
+            },
             _ => {
                 return Err(self.unexpected_char());
             }
@@ -322,7 +353,7 @@ impl Lexer {
         Ok(self.new_token(token_kind, start, self.current))
     }
 
-    fn new_token(&self, kind: TokenKind, start: usize, end: usize) -> Token {
+    fn new_token(&self, kind: TokenKind, start: Position, end: Position) -> Token {
         Token {
             kind,
             span: Span { start, end },
@@ -330,7 +361,7 @@ impl Lexer {
     }
 
     fn unexpected_char(&self) -> LexerError {
-        LexerError::UnexpectedChar(self.text[self.current - 1], self.current - 1)
+        LexerError::UnexpectedChar(self.text[self.current.full_index], self.current)
     }
 }
 
