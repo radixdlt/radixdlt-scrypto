@@ -754,6 +754,25 @@ impl TestRunner {
         )
     }
 
+    pub fn compile_and_publish_retain_blueprints<
+        P: AsRef<Path>,
+        F: FnMut(&String, &mut BlueprintSchema) -> bool,
+    >(
+        &mut self,
+        package_dir: P,
+        retain: F,
+    ) -> PackageAddress {
+        let (code, mut schema) = Compile::compile(package_dir);
+        schema.blueprints.retain(retain);
+        self.publish_package(
+            code,
+            schema,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AuthorityRules::new(),
+        )
+    }
+
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
@@ -1265,8 +1284,10 @@ impl TestRunner {
         &mut self,
         instructions: Vec<InstructionV1>,
         pre_allocated_ids: IndexSet<NodeId>,
+        mut proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
+        proofs.insert(AuthAddresses::system_role());
         self.execute_transaction(
             SystemTransactionV1 {
                 instructions: InstructionsV1(instructions),
@@ -1276,7 +1297,7 @@ impl TestRunner {
             }
             .prepare()
             .expect("expected transaction to be preparable")
-            .get_executable(btreeset!(AuthAddresses::system_role())),
+            .get_executable(proofs),
         )
     }
 

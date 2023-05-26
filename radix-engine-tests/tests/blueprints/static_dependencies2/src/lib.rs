@@ -37,3 +37,20 @@ mod preallocated_call {
         }
     }
 }
+
+#[blueprint]
+mod some_resource {
+    const SOME_RESOURCE: ResourceManager =
+        ResourceManager::from_address(ResourceAddress::new_or_panic([
+            93, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+            1,
+        ]));
+
+    struct SomeResource {}
+
+    impl SomeResource {
+        pub fn call_some_resource_total_supply() -> Decimal {
+            SOME_RESOURCE.total_supply()
+        }
+    }
+}
