@@ -176,7 +176,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     event_schema.insert(#event_type_names.to_owned(), local_type_index);
                 })*
 
-
                 let mut dependencies = BTreeSet::new();
                 #({
                     dependencies.insert(#raw_package_dependencies.into());

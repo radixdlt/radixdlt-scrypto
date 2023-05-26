@@ -1,6 +1,7 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::InstructionV1;
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
@@ -17,7 +18,8 @@ const PACKAGE_ADDRESS_PLACE_HOLDER: [u8; NodeId::LENGTH] = [
 fn test_static_package_address() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address1 = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+    let package_address1 =
+        test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
 
     let (mut code, mut schema) = Compile::compile("./tests/blueprints/static_dependencies");
     let place_holder: GlobalAddress =
@@ -72,8 +74,49 @@ fn test_static_component_address() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
+}
+
+const PRE_ALLOCATED: [u8; NodeId::LENGTH] = [
+    192, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+];
+
+#[test]
+fn create_preallocated() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+    let receipt = test_runner.execute_system_transaction_with_preallocated_ids(
+        vec![InstructionV1::CallFunction {
+            package_address,
+            blueprint_name: "Preallocated".to_string(),
+            function_name: "new".to_string(),
+            args: manifest_args!(PRE_ALLOCATED, "my_secret".to_string()),
+        }],
+        indexset!(NodeId::from(PRE_ALLOCATED)),
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let package_address2 =
+        test_runner.compile_and_publish("./tests/blueprints/static_dependencies2");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address2,
+            "PreallocatedCall",
+            "call_preallocated",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let output = result.outcome.expect_success();
+    output[1].expect_return_value(&"my_secret".to_string());
 }

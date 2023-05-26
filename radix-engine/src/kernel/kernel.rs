@@ -179,10 +179,9 @@ where
                 .can_be_invoked(*is_direct_access),
             Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
                 // TODO: Josh comment: what's the purpose of this?
-                self
-                 .current_frame
-                 .get_node_visibility(blueprint.package_address.as_node_id())
-                 .can_be_invoked(false)
+                self.current_frame
+                    .get_node_visibility(blueprint.package_address.as_node_id())
+                    .can_be_invoked(false)
             }
             Actor::Root => true,
         };

@@ -1261,6 +1261,25 @@ impl TestRunner {
         self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
     }
 
+    pub fn execute_system_transaction_with_preallocated_ids(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+        pre_allocated_ids: IndexSet<NodeId>,
+    ) -> TransactionReceipt {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            SystemTransactionV1 {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_ids,
+            }
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(btreeset!(AuthAddresses::system_role())),
+        )
+    }
+
     pub fn execute_system_transaction(
         &mut self,
         instructions: Vec<InstructionV1>,
