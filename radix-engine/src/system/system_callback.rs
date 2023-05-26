@@ -299,6 +299,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
+        let package_node_id = callee.package_address().as_node_id().clone();
+        update.copy_references.push(package_node_id);
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
