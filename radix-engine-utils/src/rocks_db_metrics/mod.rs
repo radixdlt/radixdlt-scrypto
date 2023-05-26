@@ -51,7 +51,7 @@ impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
 }
 
 impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics<S> {
-    pub fn calculate_median_points(&self) -> (Vec<(i32, i32)>, Vec<(i32, i32)>) {
+    pub fn calculate_median_points(&self) -> (Vec<(f32, f32)>, Vec<(f32, f32)>) {
         // 1. calculate max values
         let mut max_values = Vec::with_capacity(100000);
         let binding = self.read_metrics.borrow();
@@ -72,9 +72,9 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
             //     discard_spikes(&mut w, max_spike_offset);
             // }
             for i in w {
-                data.push((*k as i32, i.as_micros() as i32));
+                data.push((*k as f32, i.as_micros() as f32));
             }
-            median_data.push((*k as i32, median.as_micros() as i32));
+            median_data.push((*k as f32, median.as_micros() as f32));
             //idx += 1;
         }
 
@@ -89,14 +89,14 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         }
     }
 
-    pub fn calculate_percent_to_max_points(&mut self, percent: f32) -> Vec<(i32, i32)> {
+    pub fn calculate_percent_to_max_points(&mut self, percent: f32) -> Vec<(f32, f32)> {
         assert!(percent <= 100f32);
         let mut output_values = Vec::new();
         let mut binding = self.read_metrics.borrow_mut();
         for (k, v) in binding.iter_mut() {
             v.sort();
             let idx = (((v.len() - 1) as f32 * percent) / 100f32).round() as usize;
-            output_values.push((*k as i32, v[idx].as_micros() as i32));
+            output_values.push((*k as f32, v[idx].as_micros() as f32));
         }
         output_values
     }
@@ -104,22 +104,22 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
     pub fn export_graph_and_print_summary(
         &mut self,
         caption: &str,
-        data: &Vec<(i32, i32)>,
-        output_data: &Vec<(i32, i32)>,
+        data: &Vec<(f32, f32)>,
+        output_data: &Vec<(f32, f32)>,
         output_png_file: &str,
         output_data_name: &str
     ) -> Result<(), Box<dyn std::error::Error>> {
         // calculate axis max/min values
-        let y_ofs = 10;
-        let x_ofs = 5000;
-        let x_min = data.iter().map(|i| i.0).min().unwrap() - x_ofs;
-        let x_max = data.iter().map(|i| i.0).max().unwrap() + x_ofs;
-        let y_min = data.iter().map(|i| i.1).min().unwrap() - y_ofs;
-        let y_max = data.iter().map(|i| i.1).max().unwrap() + y_ofs;
+        let y_ofs = 10f32;
+        let x_ofs = 5000f32;
+        let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32 - x_ofs;
+        let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32 + x_ofs;
+        let y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
+        let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
 
         // 4. calculate linear approximation
         let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&output_data).unwrap();
-        let lin_x_axis = (x_min..x_max).step(10);
+        let lin_x_axis = (x_min as f32..x_max as f32).step(10f32);
 
         // draw scatter plot
         let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
@@ -160,7 +160,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
             .draw_series(LineSeries::new(
                 lin_x_axis
                     .values()
-                    .map(|x| (x, (lin_slope * x as f64 + lin_intercept) as i32)),
+                    .map(|x| (x, (lin_slope * x as f64 + lin_intercept) as f32)),
                 &BLUE,
             ))?
             .label(format!(
@@ -204,8 +204,8 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
     pub fn export_graph_and_print_summary_for_two_series(
         &mut self,
         caption: &str,
-        data_series1: &Vec<(i32, i32)>,
-        data_series2: &Vec<(i32, i32)>,
+        data_series1: &Vec<(f32, f32)>,
+        data_series2: &Vec<(f32, f32)>,
         output_png_file: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // calculate diff points
@@ -219,14 +219,14 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&v1).unwrap();
 
         // calculate axis max/min values
-        let y_ofs = 10;
-        let x_ofs = 5000;
+        let y_ofs = 10f32;
+        let x_ofs = 5000f32;
         let x_min = - x_ofs;
-        let x_max = data_series1.iter().map(|i| i.0).max().unwrap() + x_ofs;
-        let y_min = 0;
-        let y_max = data_series1.iter().map(|i| i.1).max().unwrap() + y_ofs;
+        let x_max = data_series1.iter().map(|i| i.0 as i32).max().unwrap() as f32 + x_ofs;
+        let y_min = 0f32;
+        let y_max = data_series1.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
 
-        let lin_x_axis = (x_min..x_max).step(10);
+        let lin_x_axis = (x_min..x_max).step(10f32);
 
         // draw scatter plot
         let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
@@ -273,7 +273,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
             .draw_series(LineSeries::new(
                 lin_x_axis
                     .values()
-                    .map(|x| (x, (lin_slope * x as f64 + lin_intercept) as i32)),
+                    .map(|x| (x, (lin_slope * x as f64 + lin_intercept) as f32)),
                 &RED,
             ))?
             .label(format!(
@@ -386,7 +386,8 @@ mod tests {
     use std::path::PathBuf;
 
     const MIN_SIZE: usize = 1;
-    const MAX_SIZE: usize = 4 * 1024 * 1024;
+    const MAX_SIZE: usize = 512 * 1024;
+//    const MAX_SIZE: usize = 4 * 1024 * 1024;
     const SIZE_STEP: usize = 10 * 1024;
     const COUNT: usize = 20;
     const READ_REPEATS: usize = 200;
@@ -416,7 +417,7 @@ mod tests {
         let mut rocksdb_data = Vec::with_capacity(100000);
         for (k, v) in substate_db.read_metrics.borrow().iter() {
             for i in v {
-                rocksdb_data.push((*k as i32, i.as_micros() as i32));
+                rocksdb_data.push((*k as f32, i.as_micros() as f32));
             }
         }
 
@@ -439,7 +440,7 @@ mod tests {
         let mut inmem_data = Vec::with_capacity(100000);
         for (k, v) in substate_db.read_metrics.borrow().iter() {
             for i in v {
-                inmem_data.push((*k as i32, i.as_micros() as i32));
+                inmem_data.push((*k as f32, i.as_micros() as f32));
             }
         }
 
