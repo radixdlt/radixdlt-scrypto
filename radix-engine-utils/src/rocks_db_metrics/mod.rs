@@ -408,7 +408,7 @@ mod tests {
         let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&v1).unwrap();
 
         // calculate linethrough 1st and last diff points
-        let v2: Vec<(f32, f32)> = vec![*v1.first().unwrap(), *v1.last().unwrap()];
+        let v2: Vec<(f32, f32)> = vec![*data_series1.first().unwrap(), *data_series1.last().unwrap()];
         let (lin_slope_2, lin_intercept_2): (f64, f64) = linear_regression_of(&v2).unwrap();
 
         // calculate axis max/min values
@@ -482,7 +482,7 @@ mod tests {
                 &BLACK,
             ))?
             .label(format!(
-                "Line by 1st and last diff point: f(x)={:.4}*x+{:.1}",
+                "Line by 1st and last RocksDB point: f(x)={:.4}*x+{:.1}",
                 lin_slope_2, lin_intercept_2
             ))
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
@@ -503,7 +503,7 @@ mod tests {
             lin_slope, lin_intercept
         );
         println!(
-            "Liny by 1st and last diff point:  f(size) = {} * size + {}\n",
+            "Liny by 1st and last RocksDB point:  f(size) = {} * size + {}\n",
             lin_slope_2, lin_intercept_2
         );
 
