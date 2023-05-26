@@ -125,7 +125,7 @@ where
                     payload,
                     &instance_schema.schema,
                     index,
-                    SchemaOrigin::Instance,
+                    SchemaOrigin::Instance(blueprint_id.package_address),
                 )?;
             }
         }
@@ -1654,7 +1654,9 @@ where
                 TypeRef::Instance(index) => {
                     let mut instance_schema = object_info.instance_schema.unwrap();
                     KeyValueEntryLockData::Write {
-                        schema_origin: SchemaOrigin::Instance,
+                        schema_origin: SchemaOrigin::Instance(
+                            object_info.blueprint.package_address,
+                        ),
                         schema: instance_schema.schema,
                         index: instance_schema.type_index.remove(index as usize),
                         can_own,
