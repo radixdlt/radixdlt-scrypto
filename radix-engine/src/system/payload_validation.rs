@@ -34,8 +34,8 @@ pub trait TypeInfoLookup {
 #[derive(Debug, Clone)]
 pub enum SchemaOrigin {
     Blueprint(BlueprintId),
-    Instance { created_by: PackageAddress },
-    KeyValueStore { created_by: PackageAddress },
+    Instance,
+    KeyValueStore,
 }
 
 //==================
@@ -121,10 +121,7 @@ impl TypeInfoForValidation {
                 SchemaOrigin::Blueprint(blueprint_id) => {
                     self.matches(&blueprint_id.package_address, expected_blueprint)
                 }
-                SchemaOrigin::Instance { created_by }
-                | SchemaOrigin::KeyValueStore { created_by } => {
-                    self.matches(&created_by, expected_blueprint)
-                }
+                SchemaOrigin::Instance | SchemaOrigin::KeyValueStore => false,
             },
         }
     }
