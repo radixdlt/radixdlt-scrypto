@@ -1309,7 +1309,7 @@ impl TestRunner {
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
-        let execution_config = ExecutionConfig::standard();
+        let execution_config = ExecutionConfig::default();
         let scrypto_interpreter = ScryptoVm {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),

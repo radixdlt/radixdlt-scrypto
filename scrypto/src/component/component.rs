@@ -4,6 +4,7 @@ use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFER
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
+use radix_engine_common::math::Decimal;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
@@ -144,12 +145,10 @@ impl<C: HasStub + HasMethods> Owned<C> {
     }
 }
 
-pub struct MethodRoyalty(RoyaltyAmount);
-
-impl From<RoyaltyAmount> for MethodRoyalty {
-    fn from(value: RoyaltyAmount) -> Self {
-        Self(value)
-    }
+pub enum MethodRoyalty {
+    Xrd(Decimal),
+    Usd(Decimal),
+    Free,
 }
 
 pub trait MethodMapping<T> {
@@ -265,7 +264,11 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn royalties(mut self, royalties: RoyaltiesConfig<C::Royalties>) -> Self {
         for (method, royalty) in royalties.method_royalties.to_mapping() {
-            self.royalty.set_rule(method, royalty.0)
+            match royalty {
+                MethodRoyalty::Xrd(x) => self.royalty.set_rule(method, RoyaltyAmount::Xrd(x)),
+                MethodRoyalty::Usd(x) => self.royalty.set_rule(method, RoyaltyAmount::Usd(x)),
+                MethodRoyalty::Free => {}
+            }
         }
 
         self.set_permissions(royalties.permissions);

@@ -106,7 +106,7 @@ fn test_normal_transaction_flow() {
         .unwrap();
 
     let fee_reserve_config = FeeReserveConfig::default();
-    let execution_config = ExecutionConfig::standard().with_kernel_trace(true);
+    let execution_config = ExecutionConfig::default().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(TransactionParams {
         start_epoch_inclusive: 0,
         end_epoch_exclusive: 100,

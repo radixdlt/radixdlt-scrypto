@@ -56,7 +56,7 @@ pub const MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
 /// The default cost unit limit.
 pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 
-/// The default free credit (for preview and system transaction; 1000 XRD)
+/// The default free credit, for preview only.
 pub const DEFAULT_FREE_CREDIT_IN_XRD: u128 = 1_000_000_000_000_000_000_000u128;
 
 /// The default system loan amount, used by transaction executor.

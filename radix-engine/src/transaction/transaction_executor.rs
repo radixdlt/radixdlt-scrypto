@@ -62,12 +62,6 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
-        ExecutionConfig::standard()
-    }
-}
-
-impl ExecutionConfig {
-    pub fn standard() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
             max_execution_trace_depth: DEFAULT_MAX_EXECUTION_TRACE_DEPTH,
@@ -82,32 +76,34 @@ impl ExecutionConfig {
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
         }
     }
+}
 
+impl ExecutionConfig {
     pub fn for_system_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_system_transaction(),
-            ..Self::standard()
+            ..Self::default()
         }
     }
 
     pub fn for_notarized_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            ..Self::standard()
+            ..Self::default()
         }
     }
 
     pub fn for_test_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_test_transaction(),
-            ..Self::standard()
+            ..Self::default()
         }
     }
 
     pub fn for_preview() -> Self {
         Self {
             enabled_modules: EnabledModules::for_preview(),
-            ..Self::standard()
+            ..Self::default()
         }
     }
 

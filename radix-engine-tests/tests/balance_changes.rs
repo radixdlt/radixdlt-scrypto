@@ -28,8 +28,8 @@ fn test_balance_changes_when_success() {
                 btreemap!(
                     "BalanceChangesTest".to_owned() => {
                         let mut config = RoyaltyConfig::default();
-                        config.set_rule("put", 2);
-                        config.set_rule("boom", 2);
+                        config.set_rule("put",  RoyaltyAmount::Xrd(2.into()));
+                        config.set_rule("boom",  RoyaltyAmount::Xrd(2.into()));
                         config
                     }
                 ),
@@ -105,8 +105,8 @@ fn test_balance_changes_when_failure() {
                 btreemap!(
                     "BalanceChangesTest".to_owned() => {
                         let mut config = RoyaltyConfig::default();
-                        config.set_rule("put", 2);
-                        config.set_rule("boom", 2);
+                        config.set_rule("put",  RoyaltyAmount::Xrd(2.into()));
+                        config.set_rule("boom",  RoyaltyAmount::Xrd(2.into()));
                         config
                     }
                 ),

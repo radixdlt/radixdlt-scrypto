@@ -391,7 +391,7 @@ mod tests {
             intent: tx.signed_intent.intent,
             signer_public_keys: Vec::new(),
             flags: PreviewFlags {
-                unlimited_loan: true,
+                use_free_credit: true,
                 assume_all_signature_proofs: false,
                 permit_invalid_header_epoch: false,
                 permit_duplicate_intent_hash: false,

@@ -24,8 +24,8 @@ mod royalty_test {
                 .royalties(royalties! {
                     init {
                         free_method => Free;
-                        paid_method => 1u32;
-                        paid_method_panic => 1u32;
+                        paid_method => Xrd(1.into());
+                        paid_method_panic => Xrd(1.into());
                     },
                     permissions {
                         claim_royalty => Public;

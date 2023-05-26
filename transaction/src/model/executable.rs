@@ -20,7 +20,7 @@ pub struct ExecutionContext {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FeePayment {
     pub tip_percentage: u16,
-    /// Free credit for execution, used by transaction preview
+    /// Free credit for execution, for preview only!
     /// This is the `u128` representation of Decimal, see `decimal_to_u128`.
     pub free_credit_in_xrd: u128,
 }

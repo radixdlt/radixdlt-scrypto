@@ -101,10 +101,10 @@ mod tests {
             btreemap!(
                 "Radiswap".to_owned() => {
                     let mut config = RoyaltyConfig::default();
-                    config.set_rule("instantiate_pool", 5);
-                    config.set_rule("add_liquidity", 1);
-                    config.set_rule("remove_liquidity", 1);
-                    config.set_rule("swap", 2);
+                    config.set_rule("instantiate_pool", RoyaltyAmount::Xrd(5.into()));
+                    config.set_rule("add_liquidity",  RoyaltyAmount::Xrd(1.into()));
+                    config.set_rule("remove_liquidity",  RoyaltyAmount::Xrd(1.into()));
+                    config.set_rule("swap",  RoyaltyAmount::Xrd(2.into()));
                     config
                 }
             ),
@@ -239,8 +239,8 @@ mod tests {
             btreemap!(
                 "BasicFlashLoan".to_owned() => {
                     let mut config = RoyaltyConfig::default();
-                    config.set_rule("instantiate_default", 5);
-                    config.set_rule("take_loan", 2);
+                    config.set_rule("instantiate_default",  RoyaltyAmount::Xrd(5.into()));
+                    config.set_rule("take_loan",  RoyaltyAmount::Xrd(2.into()));
                     config
                 }
             ),

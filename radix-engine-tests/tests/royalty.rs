@@ -91,8 +91,8 @@ fn set_up_package_and_component() -> (
                 btreemap!(
                     "RoyaltyTest".to_string() => {
                         let mut config = RoyaltyConfig::default();
-                        config.set_rule("paid_method", 2);
-                        config.set_rule("paid_method_panic", 2);
+                        config.set_rule("paid_method",  RoyaltyAmount::Xrd(2.into()));
+                        config.set_rule("paid_method_panic",  RoyaltyAmount::Xrd(2.into()));
                         config
                     }
                 ),
