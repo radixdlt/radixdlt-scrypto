@@ -1,6 +1,6 @@
 use radix_engine_store_interface::interface::*;
+pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-pub use rocksdb::{Options, LogLevel, BlockBasedOptions};
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
 use utils::copy_u8_array;

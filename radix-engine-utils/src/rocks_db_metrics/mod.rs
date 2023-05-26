@@ -1,6 +1,6 @@
 use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey,
-    DbSubstateValue, PartitionEntry, SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
+    PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::{
     memory_db::InMemorySubstateDatabase,
@@ -93,15 +93,18 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
 #[cfg(test)]
 mod tests {
     use super::*;
+    use blake2::{
+        digest::{consts::U32, Digest},
+        Blake2b,
+    };
+    use linreg::linear_regression_of;
+    use plotters::prelude::*;
     use radix_engine_store_interface::interface::{
         CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
         PartitionUpdates, SubstateDatabase,
     };
-    use std::{io::Write, path::PathBuf};
-    use blake2::{digest::{consts::U32, Digest}, Blake2b};
     use rand::Rng;
-    use linreg::linear_regression_of;
-    use plotters::prelude::*;
+    use std::{io::Write, path::PathBuf};
 
     /// Range start of the measuremnts
     const MIN_SIZE: usize = 1;
@@ -118,7 +121,7 @@ mod tests {
     /// Database is created in /tmp/radix-scrypto-db folder.
     /// Outputs are genered in png files: /tmp/scrypto_rocksdb_1.png, /tmp/scrypto_inmem_1.png, /tmp/scrypto_diff_1.png
     /// point list is printed to stdout.
-    /// To run test casea use command: 
+    /// To run test casea use command:
     /// cargo test -p radix-engine-utils -p radix-engine-stores --features rocksdb test_store_db --release -- --nocapture
     /// from main radixdlt-scrypto folder.
     fn test_store_db() {
@@ -150,9 +153,15 @@ mod tests {
         }
 
         // export results
-        export_graph_and_print_summary(&mut substate_db, "RocksDB random reads", &rocksdb_data, &rocksdb_output_data, "/tmp/scrypto_rocksdb_1.png", "95th percentile of reads")
-            .unwrap();
-
+        export_graph_and_print_summary(
+            &mut substate_db,
+            "RocksDB random reads",
+            &rocksdb_data,
+            &rocksdb_output_data,
+            "/tmp/scrypto_rocksdb_1.png",
+            "95th percentile of reads",
+        )
+        .unwrap();
 
         // InMemory DB part
         let mut substate_db = SubstateStoreWithMetrics::new_inmem();
@@ -172,14 +181,29 @@ mod tests {
         }
 
         // export results
-        export_graph_and_print_summary(&mut substate_db, "InMemoryDB random reads", &inmem_data, &inmem_output_data, "/tmp/scrypto_inmem_1.png", "95th percentile of reads")
-            .unwrap();
+        export_graph_and_print_summary(
+            &mut substate_db,
+            "InMemoryDB random reads",
+            &inmem_data,
+            &inmem_output_data,
+            "/tmp/scrypto_inmem_1.png",
+            "95th percentile of reads",
+        )
+        .unwrap();
 
         // Calculate RocksDB - InMemory diff and export results
-        export_graph_and_print_summary_for_two_series("RocksDB - InMemoryDB random reads", &rocksdb_output_data, &inmem_output_data, "/tmp/scrypto_diff_1.png").unwrap();
+        export_graph_and_print_summary_for_two_series(
+            "RocksDB - InMemoryDB random reads",
+            &rocksdb_output_data,
+            &inmem_output_data,
+            "/tmp/scrypto_diff_1.png",
+        )
+        .unwrap();
     }
 
-    fn drop_edge_values<S: SubstateDatabase + CommittableSubstateDatabase>(substate_store: &mut SubstateStoreWithMetrics<S>) {
+    fn drop_edge_values<S: SubstateDatabase + CommittableSubstateDatabase>(
+        substate_store: &mut SubstateStoreWithMetrics<S>,
+    ) {
         for (_, v) in substate_store.read_metrics.borrow_mut().iter_mut() {
             v.sort();
             v.pop();
@@ -187,7 +211,10 @@ mod tests {
         }
     }
 
-    pub fn calculate_percent_to_max_points<S: SubstateDatabase + CommittableSubstateDatabase>(substate_store: &mut SubstateStoreWithMetrics<S>, percent: f32) -> Vec<(f32, f32)> {
+    pub fn calculate_percent_to_max_points<S: SubstateDatabase + CommittableSubstateDatabase>(
+        substate_store: &mut SubstateStoreWithMetrics<S>,
+        percent: f32,
+    ) -> Vec<(f32, f32)> {
         assert!(percent <= 100f32);
         let mut output_values = Vec::new();
         let mut binding = substate_store.read_metrics.borrow_mut();
@@ -289,15 +316,13 @@ mod tests {
         println!("Read done");
     }
 
-
-
     pub fn export_graph_and_print_summary<S: SubstateDatabase + CommittableSubstateDatabase>(
         substate_db: &mut SubstateStoreWithMetrics<S>,
         caption: &str,
         data: &Vec<(f32, f32)>,
         output_data: &Vec<(f32, f32)>,
         output_png_file: &str,
-        output_data_name: &str
+        output_data_name: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // calculate axis max/min values
         let y_ofs = 10f32;
@@ -376,13 +401,17 @@ mod tests {
         );
         println!(
             "Read counts list (size, count): {:?}",
-            substate_db.read_metrics
+            substate_db
+                .read_metrics
                 .borrow()
                 .iter()
                 .map(|(k, v)| (*k, v.len()))
                 .collect::<Vec<(usize, usize)>>()
         );
-        println!("{} points list (size, time): {:?}", output_data_name, output_data);
+        println!(
+            "{} points list (size, time): {:?}",
+            output_data_name, output_data
+        );
         println!(
             "Linear approx.:  f(size) = {} * size + {}\n",
             lin_slope, lin_intercept
@@ -408,13 +437,16 @@ mod tests {
         let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&v1).unwrap();
 
         // calculate linethrough 1st and last diff points
-        let v2: Vec<(f32, f32)> = vec![*data_series1.first().unwrap(), *data_series1.last().unwrap()];
+        let v2: Vec<(f32, f32)> = vec![
+            *data_series1.first().unwrap(),
+            *data_series1.last().unwrap(),
+        ];
         let (lin_slope_2, lin_intercept_2): (f64, f64) = linear_regression_of(&v2).unwrap();
 
         // calculate axis max/min values
         let y_ofs = 10f32;
         let x_ofs = 5000f32;
-        let x_min = - x_ofs;
+        let x_min = -x_ofs;
         let x_max = data_series1.iter().map(|i| i.0 as i32).max().unwrap() as f32 + x_ofs;
         let y_min = 0f32;
         let y_max = data_series1.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
