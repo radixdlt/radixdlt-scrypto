@@ -227,3 +227,24 @@ impl CustomExtension for ScryptoCustomExtension {
         false
     }
 }
+
+pub fn replace_self_package_address(schema: &mut ScryptoSchema, package_address: PackageAddress) {
+    for type_validation in &mut schema.type_validations {
+        match type_validation {
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(package, _),
+            ))
+            | TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                ReferenceValidation::IsGlobalTyped(package, _),
+            ))
+            | TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                ReferenceValidation::IsInternalTyped(package, _),
+            )) => {
+                if package.is_none() {
+                    *package = Some(package_address)
+                }
+            }
+            _ => {}
+        }
+    }
+}

@@ -7,7 +7,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
-use radix_engine_common::types::PartitionOffset;
+use radix_engine_common::prelude::replace_self_package_address;
+use radix_engine_common::types::{PackageAddress, PartitionOffset};
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -32,6 +33,10 @@ impl KeyValueStoreSchema {
             value: value_type_index,
             can_own,
         }
+    }
+
+    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
+        replace_self_package_address(&mut self.schema, package_address);
     }
 }
 

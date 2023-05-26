@@ -1,4 +1,3 @@
-use super::node_modules::type_info::KeyValueStoreInfo;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
