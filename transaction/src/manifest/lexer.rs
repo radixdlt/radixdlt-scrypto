@@ -28,47 +28,7 @@ pub enum TokenKind {
     U128Literal(u128),
     StringLiteral(String),
 
-    // ==============
-    // SBOR basic types
-    // ==============
-    Bool,
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    U8,
-    U16,
-    U32,
-    U64,
-    U128,
-    String,
-    Enum,
-    Array,
-    Tuple,
-    Map,
-
-    // ==============
-    // SBOR aliases
-    // ==============
-    Some,
-    None,
-    Ok,
-    Err,
-    Bytes,
-    NonFungibleGlobalId,
-
-    // ==============
-    // SBOR custom types
-    // ==============
-    Address,
-    Bucket,
-    Proof,
-    Expression,
-    Blob,
-    Decimal,
-    PreciseDecimal,
-    NonFungibleLocalId,
+    Ident(String),
 
     /* Punctuations */
     OpenParenthesis,
@@ -77,66 +37,6 @@ pub enum TokenKind {
     GreaterThan,
     Comma,
     Semicolon,
-
-    /* Instructions */
-    TakeFromWorktop,
-    TakeNonFungiblesFromWorktop,
-    TakeAllFromWorktop,
-    ReturnToWorktop,
-    AssertWorktopContains,
-    AssertWorktopContainsNonFungibles,
-
-    PopFromAuthZone,
-    PushToAuthZone,
-    ClearAuthZone,
-    CreateProofFromAuthZone,
-    CreateProofFromAuthZoneOfAmount,
-    CreateProofFromAuthZoneOfNonFungibles,
-    CreateProofFromAuthZoneOfAll,
-    ClearSignatureProofs,
-    CreateProofFromBucket,
-    CreateProofFromBucketOfAmount,
-    CreateProofFromBucketOfNonFungibles,
-    CreateProofFromBucketOfAll,
-    BurnResource,
-    CloneProof,
-    DropProof,
-    CallFunction,
-    CallMethod,
-    CallRoyaltyMethod,
-    CallMetadataMethod,
-    CallAccessRulesMethod,
-    RecallResource,
-    DropAllProofs,
-
-    /* Call function aliases */
-    PublishPackage,
-    PublishPackageAdvanced,
-    CreateFungibleResource,
-    CreateFungibleResourceWithInitialSupply,
-    CreateNonFungibleResource,
-    CreateNonFungibleResourceWithInitialSupply,
-    CreateAccessController,
-    CreateIdentity,
-    CreateIdentityAdvanced,
-    CreateAccount,
-    CreateAccountAdvanced,
-
-    /* Call non-main method aliases */
-    SetMetadata,
-    RemoveMetadata,
-    SetComponentRoyaltyConfig,
-    ClaimComponentRoyalty,
-    SetAuthorityAccessRule,
-    SetAuthorityMutability,
-
-    /* Call main method aliases */
-    SetPackageRoyaltyConfig,
-    ClaimPackageRoyalty,
-    MintFungible,
-    MintNonFungible,
-    MintUuidNonFungible,
-    CreateValidator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -386,125 +286,22 @@ impl Lexer {
         let start = self.current;
 
         let mut id = String::from(self.advance()?);
-        while !self.is_eof() && (self.peek()?.is_ascii_alphanumeric() || self.peek()? == '_') {
+        while !self.is_eof() {
+            let next_char = self.peek()?;
+            let next_char_can_be_part_of_ident =
+                next_char.is_ascii_alphanumeric() || next_char == '_' || next_char == ':';
+            if !next_char_can_be_part_of_ident {
+                break;
+            }
             id.push(self.advance()?);
         }
 
-        match id.as_str() {
-            "true" => Ok(TokenKind::BoolLiteral(true)),
-            "false" => Ok(TokenKind::BoolLiteral(false)),
-
-            "Bool" => Ok(TokenKind::Bool),
-            "I8" => Ok(TokenKind::I8),
-            "I16" => Ok(TokenKind::I16),
-            "I32" => Ok(TokenKind::I32),
-            "I64" => Ok(TokenKind::I64),
-            "I128" => Ok(TokenKind::I128),
-            "U8" => Ok(TokenKind::U8),
-            "U16" => Ok(TokenKind::U16),
-            "U32" => Ok(TokenKind::U32),
-            "U64" => Ok(TokenKind::U64),
-            "U128" => Ok(TokenKind::U128),
-            "String" => Ok(TokenKind::String),
-            "Enum" => Ok(TokenKind::Enum),
-            "Array" => Ok(TokenKind::Array),
-            "Tuple" => Ok(TokenKind::Tuple),
-            "Map" => Ok(TokenKind::Map),
-
-            "Some" => Ok(TokenKind::Some),
-            "None" => Ok(TokenKind::None),
-            "Ok" => Ok(TokenKind::Ok),
-            "Err" => Ok(TokenKind::Err),
-            "Bytes" => Ok(TokenKind::Bytes),
-            "NonFungibleGlobalId" => Ok(TokenKind::NonFungibleGlobalId),
-
-            "Address" => Ok(TokenKind::Address),
-            "Bucket" => Ok(TokenKind::Bucket),
-            "Proof" => Ok(TokenKind::Proof),
-            "Expression" => Ok(TokenKind::Expression),
-            "Blob" => Ok(TokenKind::Blob),
-            "Decimal" => Ok(TokenKind::Decimal),
-            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
-
-            "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
-            "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
-            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
-            "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
-            "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
-            "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES" => {
-                Ok(TokenKind::AssertWorktopContainsNonFungibles)
-            }
-
-            "POP_FROM_AUTH_ZONE" => Ok(TokenKind::PopFromAuthZone),
-            "PUSH_TO_AUTH_ZONE" => Ok(TokenKind::PushToAuthZone),
-            "CLEAR_AUTH_ZONE" => Ok(TokenKind::ClearAuthZone),
-            "CREATE_PROOF_FROM_AUTH_ZONE" => Ok(TokenKind::CreateProofFromAuthZone),
-            "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT" => {
-                Ok(TokenKind::CreateProofFromAuthZoneOfAmount)
-            }
-            "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES" => {
-                Ok(TokenKind::CreateProofFromAuthZoneOfNonFungibles)
-            }
-            "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => Ok(TokenKind::CreateProofFromAuthZoneOfAll),
-            "CLEAR_SIGNATURE_PROOFS" => Ok(TokenKind::ClearSignatureProofs),
-
-            "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
-            "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => Ok(TokenKind::CreateProofFromBucketOfAmount),
-            "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
-                Ok(TokenKind::CreateProofFromBucketOfNonFungibles)
-            }
-            "CREATE_PROOF_FROM_BUCKET_OF_ALL" => Ok(TokenKind::CreateProofFromBucketOfAll),
-            "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
-
-            "CLONE_PROOF" => Ok(TokenKind::CloneProof),
-            "DROP_PROOF" => Ok(TokenKind::DropProof),
-
-            "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
-            "CALL_METHOD" => Ok(TokenKind::CallMethod),
-            "CALL_ROYALTY_METHOD" => Ok(TokenKind::CallRoyaltyMethod),
-            "CALL_METADATA_METHOD" => Ok(TokenKind::CallMetadataMethod),
-            "CALL_ACCESS_RULES_METHOD" => Ok(TokenKind::CallAccessRulesMethod),
-            "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
-
-            "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
-
-            /* call function aliases */
-            "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
-            "PUBLISH_PACKAGE_ADVANCED" => Ok(TokenKind::PublishPackageAdvanced),
-            "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
-            "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
-                Ok(TokenKind::CreateFungibleResourceWithInitialSupply)
-            }
-            "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
-            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
-                Ok(TokenKind::CreateNonFungibleResourceWithInitialSupply)
-            }
-            "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
-            "CREATE_IDENTITY_ADVANCED" => Ok(TokenKind::CreateIdentityAdvanced),
-            "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
-            "CREATE_ACCOUNT_ADVANCED" => Ok(TokenKind::CreateAccountAdvanced),
-            "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
-
-            /* call non-main method aliases */
-            "SET_METADATA" => Ok(TokenKind::SetMetadata),
-            "REMOVE_METADATA" => Ok(TokenKind::RemoveMetadata),
-            "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
-            "CLAIM_COMPONENT_ROYALTY" => Ok(TokenKind::ClaimComponentRoyalty),
-            "SET_AUTHORITY_ACCESS_RULE" => Ok(TokenKind::SetAuthorityAccessRule),
-            "SET_AUTHORITY_MUTABILITY" => Ok(TokenKind::SetAuthorityMutability),
-
-            /* call main method aliases */
-            "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
-            "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
-            "MINT_UUID_NON_FUNGIBLE" => Ok(TokenKind::MintUuidNonFungible),
-            "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
-            "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
-            "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
-
-            s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
-        }
-        .map(|kind| self.new_token(kind, start, self.current))
+        let kind = match id.as_str() {
+            "true" => TokenKind::BoolLiteral(true),
+            "false" => TokenKind::BoolLiteral(false),
+            other => TokenKind::Ident(other.to_string()),
+        };
+        Ok(self.new_token(kind, start, self.current))
     }
 
     fn tokenize_punctuation(&mut self) -> Result<Token, LexerError> {
@@ -585,10 +382,7 @@ mod tests {
     fn test_bool() {
         lex_ok!("true", vec![TokenKind::BoolLiteral(true)]);
         lex_ok!("false", vec![TokenKind::BoolLiteral(false)]);
-        lex_error!(
-            "false123u8",
-            LexerError::UnknownIdentifier("false123u8".into())
-        );
+        lex_ok!("false123u8", vec![TokenKind::Ident("false123u8".into())]);
     }
 
     #[test]
@@ -615,7 +409,7 @@ mod tests {
         lex_ok!("1u8 # comment", vec![TokenKind::U8Literal(1),]);
         lex_ok!(
             "# multiple\n# line\nCALL_FUNCTION",
-            vec![TokenKind::CallFunction,]
+            vec![TokenKind::Ident("CALL_FUNCTION".to_string()),]
         );
     }
 
@@ -637,19 +431,19 @@ mod tests {
         lex_ok!(
             r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
             vec![
-                TokenKind::CallFunction,
-                TokenKind::Map,
+                TokenKind::Ident("CALL_FUNCTION".to_string()),
+                TokenKind::Ident("Map".to_string()),
                 TokenKind::LessThan,
-                TokenKind::String,
+                TokenKind::Ident("String".to_string()),
                 TokenKind::Comma,
-                TokenKind::Array,
+                TokenKind::Ident("Array".to_string()),
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
-                TokenKind::Array,
+                TokenKind::Ident("Array".to_string()),
                 TokenKind::LessThan,
-                TokenKind::String,
+                TokenKind::Ident("String".to_string()),
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("abc".into()),
@@ -665,7 +459,7 @@ mod tests {
         lex_ok!(
             "PreciseDecimal(\"12\")",
             vec![
-                TokenKind::PreciseDecimal,
+                TokenKind::Ident("PreciseDecimal".to_string()),
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("12".into()),
                 TokenKind::CloseParenthesis,
@@ -678,22 +472,22 @@ mod tests {
         lex_ok!(
             "Array<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
             vec![
-                TokenKind::Array,
+                TokenKind::Ident("Array".to_string()),
                 TokenKind::LessThan,
-                TokenKind::PreciseDecimal,
+                TokenKind::Ident("PreciseDecimal".to_string()),
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
-                TokenKind::PreciseDecimal,
+                TokenKind::Ident("PreciseDecimal".to_string()),
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("12".into()),
                 TokenKind::CloseParenthesis,
                 TokenKind::Comma,
-                TokenKind::PreciseDecimal,
+                TokenKind::Ident("PreciseDecimal".to_string()),
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("212".into()),
                 TokenKind::CloseParenthesis,
                 TokenKind::Comma,
-                TokenKind::PreciseDecimal,
+                TokenKind::Ident("PreciseDecimal".to_string()),
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("1984".into()),
                 TokenKind::CloseParenthesis,

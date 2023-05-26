@@ -299,6 +299,22 @@ CALL_METHOD
     Array<Tuple>(
         NonFungibleGlobalId("${non_fungible_resource_address}:<value>"),
         NonFungibleGlobalId("${non_fungible_resource_address}:#1#")
+    )
+    Array<Enum>(
+        Enum<1u8>(
+            "hello"
+        )
+    )
+    Array<Enum>(
+        Enum<1u8>(),
+        Enum<0u8>()
+    )
+    Array<Map>(
+        Map<U8, U16>()
+    )
+    Map<U8, U16>(
+        1u8,
+        5u16
     );
 CALL_METHOD
     Address("${component_address}")

@@ -3,7 +3,7 @@ SET_METADATA
     Address("${package_address}")
     "field_name"
     # "Metadata::String" is equivalent to 0u8
-    Enum<"Metadata::String">(
+    Enum<Metadata::String>(
         "Metadata string value, eg description"
     );
 
@@ -12,7 +12,7 @@ SET_METADATA
     Address("${account_address}")
     "field_name"
     # "Metadata::String" is equivalent to 0u8
-    Enum<"Metadata::String">(
+    Enum<Metadata::String>(
         "Metadata string value, eg description"
     );
 
@@ -21,7 +21,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::String" is equivalent to 0u8
-    Enum<"Metadata::String">(
+    Enum<Metadata::String>(
         "Metadata string value, eg description"
     );
 
@@ -30,7 +30,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::Bool" is equivalent to 1u8
-    Enum<"Metadata::Bool">(
+    Enum<Metadata::Bool>(
         true
     );
 
@@ -39,7 +39,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::U8" is equivalent to 2u8
-    Enum<"Metadata::U8">(
+    Enum<Metadata::U8>(
         123u8
     );
 
@@ -48,7 +48,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::U32" is equivalent to 3u8
-    Enum<"Metadata::U32">(
+    Enum<Metadata::U32>(
         123u32
     );
 
@@ -57,7 +57,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::U64" is equivalent to 4u8
-    Enum<"Metadata::U64">(
+    Enum<Metadata::U64>(
         123u64
     );
 
@@ -66,7 +66,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::I32" is equivalent to 5u8
-    Enum<"Metadata::I32">(
+    Enum<Metadata::I32>(
         -123i32
     );
 
@@ -75,7 +75,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::I64" is equivalent to 6u8
-    Enum<"Metadata::I64">(
+    Enum<Metadata::I64>(
         -123i64
     );
 
@@ -84,7 +84,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::Decimal" is equivalent to 7u8
-    Enum<"Metadata::Decimal">( # Single item
+    Enum<Metadata::Decimal>( # Single item
         Decimal("10.5")
     );
 
@@ -93,7 +93,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::Address" is equivalent to 8u8
-    Enum<"Metadata::Address">(
+    Enum<Metadata::Address>(
         Address("${account_address}")
     );
 
@@ -103,8 +103,8 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::PublicKey" is equivalent to 9u8
-    Enum<"Metadata::PublicKey">(
-        Enum<"PublicKey::Secp256k1">( # 0u8 = Secp256k1, 1u8 = Ed25519
+    Enum<Metadata::PublicKey>(
+        Enum<PublicKey::Secp256k1>( # 0u8 = Secp256k1, 1u8 = Ed25519
             # Hex-encoded canonical-Radix encoding of the public key
             Bytes("0000000000000000000000000000000000000000000000000000000000000000ff")
         )
@@ -115,7 +115,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::NonFungibleGlobalId" is equivalent to 10u8
-    Enum<"Metadata::NonFungibleGlobalId">(
+    Enum<Metadata::NonFungibleGlobalId>(
         NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")
     );
 
@@ -124,7 +124,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::NonFungibleLocalId" is equivalent to 11u8
-    Enum<"Metadata::NonFungibleLocalId">(
+    Enum<Metadata::NonFungibleLocalId>(
         NonFungibleLocalId("<some_string>")
     );
 
@@ -133,7 +133,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::Instant" is equivalent to 12u8
-    Enum<"Metadata::Instant">(
+    Enum<Metadata::Instant>(
         # Value in seconds since Unix Epoch
         10000i64
     );
@@ -143,7 +143,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::Url" is equivalent to 13u8
-    Enum<"Metadata::Url">( # Single item
+    Enum<Metadata::Url>( # Single item
         "https://radixdlt.com/index.html"
     );
 
@@ -152,7 +152,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::Origin" is equivalent to 14u8
-    Enum<"Metadata::Origin">(
+    Enum<Metadata::Origin>(
         "https://radixdlt.com"
     );
 
@@ -161,8 +161,8 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::PublicKeyHash" is equivalent to 15u8
-    Enum<"Metadata::PublicKeyHash">(
-        Enum<"PublicKeyHash::Secp256k1">( # 0u8 = Secp256k1, 1u8 = Ed25519
+    Enum<Metadata::PublicKeyHash>(
+        Enum<PublicKeyHash::Secp256k1>( # 0u8 = Secp256k1, 1u8 = Ed25519
             # The hex-encoded final 29 bytes of the Blake2b-256 hash of the public key bytes (in the canonical Radix encoding)
             Bytes("0000000000000000000000000000000000000000000000000000000000")
         )
@@ -180,7 +180,7 @@ SET_METADATA
     Address("${resource_address}")
     "field_name"
     # "Metadata::StringArray" is equivalent to 128u8
-    Enum<"Metadata::StringArray">(
+    Enum<Metadata::StringArray>(
         Array<String>(
             "some_string",
             "another_string",
