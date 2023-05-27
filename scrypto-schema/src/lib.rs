@@ -51,6 +51,13 @@ pub struct PackageSchema {
     pub blueprints: BTreeMap<String, BlueprintSchema>,
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum SchemaMethodPermission {
+    Public,
+    Protected(Vec<String>),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
@@ -68,7 +75,7 @@ pub struct BlueprintSchema {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 
     // TODO: Move out of schema
-    pub method_permissions_instance: BTreeMap<String, BTreeSet<String>>,
+    pub method_permissions_instance: BTreeMap<String, SchemaMethodPermission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

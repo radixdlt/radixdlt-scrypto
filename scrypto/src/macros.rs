@@ -498,6 +498,16 @@ macro_rules! define_permissions {
         fn method_permissions() -> Methods::<MethodPermission> {
             method_permissions!($($method => $permission;)*)
         }
+
+        fn method_permissions_instance() -> BTreeMap<String, scrypto::schema::SchemaMethodPermission> {
+            method_permissions().to_mapping().into_iter().map(|(method, permission)| {
+                let permission = match permission {
+                    MethodPermission::Public => scrypto::schema::SchemaMethodPermission::Public,
+                    MethodPermission::Protected(role_list) => scrypto::schema::SchemaMethodPermission::Protected(role_list.to_list()),
+                };
+                (method, permission)
+            }).collect()
+        }
     )
 }
 

@@ -192,6 +192,10 @@ impl RoleList {
     pub fn insert<R: Into<RoleKey>>(&mut self, role: R) {
         self.list.push(role.into());
     }
+
+    pub fn to_list(self) -> Vec<String> {
+        self.list.into_iter().map(|k| k.key).collect()
+    }
 }
 
 impl From<Vec<&str>> for RoleList {
