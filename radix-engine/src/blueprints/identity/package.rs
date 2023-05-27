@@ -83,6 +83,7 @@ impl IdentityNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
+                    method_permissions_instance: btreemap!(),
                 }
             ),
         }

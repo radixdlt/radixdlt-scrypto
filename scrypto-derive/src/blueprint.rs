@@ -162,6 +162,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
+                    method_permissions_instance: BTreeMap::new(),
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -853,6 +854,7 @@ mod tests {
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
+                            method_permissions_instance: BTreeMap::new(),
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

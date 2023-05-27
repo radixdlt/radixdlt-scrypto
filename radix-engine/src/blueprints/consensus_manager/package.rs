@@ -133,6 +133,7 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            method_permissions_instance: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -281,6 +282,7 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            method_permissions_instance: btreemap!(),
         };
 
         PackageSchema {

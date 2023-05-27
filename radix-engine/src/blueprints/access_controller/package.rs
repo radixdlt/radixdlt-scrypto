@@ -413,6 +413,7 @@ impl AccessControllerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema,
+                    method_permissions_instance: btreemap!(),
                 }
             ),
         }

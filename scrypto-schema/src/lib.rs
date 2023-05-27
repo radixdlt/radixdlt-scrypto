@@ -66,6 +66,9 @@ pub struct BlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    // TODO: Move out of schema
+    pub method_permissions_instance: BTreeMap<String, BTreeSet<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -157,6 +160,7 @@ impl Default for BlueprintSchema {
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
+            method_permissions_instance: BTreeMap::default(),
         }
     }
 }
