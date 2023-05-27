@@ -61,9 +61,7 @@ pub trait SecurifiedAccessRules {
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
         access_rules.update_role(
             RoleKey::new(Self::OWNER_ROLE),
-            rule!(require(global_id.clone())),
-            [Self::OWNER_ROLE],
-            false,
+            RoleEntry::immutable(rule!(require(global_id.clone()))),
             api,
         )?;
 
@@ -93,9 +91,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             access_rules.update_role(
                 RoleKey::new(securify_role),
-                AccessRule::DenyAll,
-                RoleList::none(),
-                false,
+                RoleEntry::disabled(),
                 api,
             )?;
         }

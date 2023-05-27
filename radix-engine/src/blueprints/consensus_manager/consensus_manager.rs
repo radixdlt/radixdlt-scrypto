@@ -1,5 +1,5 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
-use crate::blueprints::consensus_manager::VALIDATOR_ROLE;
+use crate::blueprints::consensus_manager::{START_ROLE, VALIDATOR_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -252,11 +252,12 @@ impl ConsensusManagerBlueprint {
 
         let role_definitions = roles! {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
+            START_ROLE => rule!(require(AuthAddresses::system_role()));
         };
 
         let access_rules = AccessRules::create(
             method_permissions!(
-                MethodKey::main(CONSENSUS_MANAGER_START_IDENT) => RoleList::none();
+                MethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
                 MethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
 
                 MethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public;
@@ -327,10 +328,9 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.update_method(
-            MethodKey::main(CONSENSUS_MANAGER_START_IDENT),
-            MethodPermission::nobody(),
-            RoleList::none(),
+        access_rules.update_role(
+            RoleKey::new(START_ROLE),
+            RoleEntry::disabled(),
             api,
         )?;
 

@@ -17,6 +17,7 @@ use resources_tracker_macro::trace_resources;
 use super::*;
 
 pub const VALIDATOR_ROLE: &str = "validator";
+pub const START_ROLE: &str = "start";
 
 pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
 
