@@ -1,14 +1,8 @@
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesUpdateMethod, ACCESS_RULES_UPDATE_METHOD_IDENT,
-};
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{
-    MethodKey, MethodPermission, ObjectKey, RoleList,
-};
 use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::{Debug, ToOwned};
@@ -39,34 +33,6 @@ impl BorrowedObject {
             scrypto_encode(&MetadataSetInput {
                 key: key.as_ref().to_owned(),
                 value: value.to_metadata_value(),
-            })
-            .unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    pub fn set_method_permission_and_mutability<Y, E>(
-        &mut self,
-        method_key: MethodKey,
-        permission: MethodPermission,
-        mutability: RoleList,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
-    {
-        api.call_method_advanced(
-            &self.0,
-            false,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_METHOD_IDENT,
-            scrypto_encode(&AccessRulesUpdateMethod {
-                object_key: ObjectKey::SELF,
-                method_key,
-                permission: Some(permission),
-                mutability: Some(mutability),
             })
             .unwrap(),
         )?;
