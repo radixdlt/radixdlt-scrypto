@@ -180,6 +180,10 @@ impl RoleEntry {
             mutable_mutable: false,
         }
     }
+
+    pub fn disabled() -> Self {
+        Self::immutable(AccessRule::DenyAll)
+    }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]

@@ -929,7 +929,7 @@ struct SecurifiedValidator;
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const OWNER_ROLE: &'static str = "owner";
-    const SECURIFY_METHOD: Option<&'static str> = None;
+    const SECURIFY_ROLE: Option<&'static str> = None;
 
     fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
         method_permissions!(

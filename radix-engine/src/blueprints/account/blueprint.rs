@@ -48,12 +48,14 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
+const SECURIFY_ROLE: &'static str = "securify";
+
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
-    const SECURIFY_METHOD: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
+    const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 
     fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
         method_permissions!(
@@ -69,7 +71,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => [SECURIFY_ROLE];
             MethodKey::main(ACCOUNT_DEPOSIT_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => [Self::OWNER_ROLE];
 
