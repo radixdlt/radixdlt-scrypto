@@ -83,11 +83,31 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
-    let definition_statements = bp.macro_statements;
+
 
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
+
+
+    // TODO: Just move into schema creation
+    let definition_statements = bp.macro_statements;
+    let definition_statements = if !definition_statements.is_empty() {
+        quote! {
+            #(#definition_statements)*
+        }
+    } else {
+        quote! {
+            fn method_permissions_instance() -> BTreeMap<String, scrypto::schema::SchemaMethodPermission> {
+                btreemap!(
+                    #(
+                        #method_names.to_string() => scrypto::schema::SchemaMethodPermission::Public,
+                    )*
+                )
+            }
+        }
+    };
+
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
@@ -162,7 +182,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
-                    method_permissions_instance: BTreeMap::new(),
+                    method_permissions_instance: method_permissions_instance(),
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -255,7 +275,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         pub mod #module_ident {
             #(#use_statements)*
 
-            #(#definition_statements)*
+            #definition_statements
 
             #output_original_code
 
