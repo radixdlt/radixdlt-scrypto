@@ -1,4 +1,4 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
@@ -203,8 +203,8 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
         )
     }
 
-    fn role_definitions() -> Roles {
-        roles! {}
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!()
     }
 }
 

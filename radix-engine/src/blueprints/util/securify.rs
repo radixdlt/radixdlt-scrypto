@@ -5,6 +5,14 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
+pub enum SecurifiedRoleEntry {
+    Owner {
+        mutable: RoleList,
+        mutable_mutable: bool,
+    },
+    Normal(RoleEntry)
+}
+
 pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
     const OWNER_ROLE: &'static str;
@@ -12,10 +20,22 @@ pub trait SecurifiedAccessRules {
 
     fn method_permissions() -> BTreeMap<MethodKey, MethodEntry>;
 
-    fn role_definitions() -> Roles;
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry>;
 
     fn create_roles(owner_rule: RoleEntry, presecurify: bool) -> Roles {
-        let mut roles = Self::role_definitions();
+        let role_entries = Self::role_definitions();
+
+        let mut roles = Roles::new();
+        for (role, entry) in role_entries {
+            let role_entry = match entry {
+                SecurifiedRoleEntry::Owner { mutable, mutable_mutable } => {
+                    RoleEntry::new(owner_rule.rule.clone(), mutable, mutable_mutable)
+                }
+                SecurifiedRoleEntry::Normal(entry) => entry,
+            };
+            roles.define_role(role, role_entry);
+        }
+
         roles.define_role(RoleKey::new(Self::OWNER_ROLE), owner_rule.clone());
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             let securify_rule = if presecurify {
@@ -38,34 +58,27 @@ pub trait SecurifiedAccessRules {
         let roles = Self::create_roles(owner_role_entry, false);
         let method_permissions = Self::method_permissions();
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
-
         Ok(access_rules)
+    }
+
+    fn create_securified_badge<Y: ClientApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<(Bucket, RoleEntry), RuntimeError> {
+        let owner_token = ResourceManager(Self::OWNER_BADGE);
+        let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
+        let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
+        let owner_entry = RoleEntry::immutable(rule!(require(global_id)));
+        Ok((bucket, owner_entry))
     }
 
     fn create_securified<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
-        let roles = Self::create_roles(RoleEntry::new(AccessRule::DenyAll, [SELF_ROLE], true), false);
+        let (bucket, owner_entry) = Self::create_securified_badge(api)?;
+        let roles = Self::create_roles(owner_entry, false);
         let method_permissions = Self::method_permissions();
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
-        let bucket = Self::securify_access_rules(&access_rules, api)?;
         Ok((access_rules, bucket))
-    }
-
-    fn securify_access_rules<A: AccessRulesObject, Y: ClientApi<RuntimeError>>(
-        access_rules: &A,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError> {
-        let owner_token = ResourceManager(Self::OWNER_BADGE);
-        let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
-        let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
-        access_rules.update_role(
-            RoleKey::new(Self::OWNER_ROLE),
-            RoleEntry::immutable(rule!(require(global_id.clone()))),
-            api,
-        )?;
-
-        Ok(bucket)
     }
 }
 
@@ -96,7 +109,14 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
             )?;
         }
 
-        let bucket = Self::securify_access_rules(&access_rules, api)?;
+        let (bucket, owner_entry) = Self::create_securified_badge(api)?;
+
+        access_rules.update_role(
+            RoleKey::new(Self::OWNER_ROLE),
+            owner_entry,
+            api,
+        )?;
+
         Ok(bucket)
     }
 }

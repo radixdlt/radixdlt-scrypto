@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::*;
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -13,9 +13,7 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesUpdateMethod, ACCESS_RULES_UPDATE_METHOD_IDENT,
-};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_UPDATE_ROLE_IDENT, AccessRulesUpdateRoleInput, ACCESS_RULES_GET_ROLE_IDENT, AccessRulesGetRoleInput};
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
@@ -537,23 +535,30 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let permission = if accept_delegated_stake {
-            MethodPermission::Public
+        let rule = if accept_delegated_stake {
+            AccessRule::AllowAll
         } else {
-            ["owner"].into()
+            let rtn = api.actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_GET_ROLE_IDENT,
+                scrypto_encode(&AccessRulesGetRoleInput {
+                    role_key: RoleKey::new(SecurifiedValidator::OWNER_ROLE),
+                }).unwrap()
+            )?;
+            let rule: Option<AccessRule> = scrypto_decode(&rtn).unwrap();
+            rule.unwrap()
         };
 
         api.actor_call_module_method(
             OBJECT_HANDLE_SELF,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_METHOD_IDENT,
-            scrypto_encode(&AccessRulesUpdateMethod {
-                object_key: ObjectKey::SELF,
-                method_key: MethodKey::main(VALIDATOR_STAKE_IDENT),
-                permission: Some(permission),
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(STAKE_ROLE),
+                rule: Some(rule),
                 mutability: None,
-            })
-            .unwrap(),
+            }).unwrap()
         )?;
 
         Runtime::emit_event(
@@ -924,6 +929,8 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     u16::MAX - stake_u16
 }
 
+const STAKE_ROLE: &'static str = "stake";
+
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
@@ -938,7 +945,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
             MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
 
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => [Self::OWNER_ROLE], [SELF_ROLE];
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
 
             MethodKey::main(VALIDATOR_REGISTER_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [Self::OWNER_ROLE];
@@ -952,10 +959,11 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         )
     }
 
-    fn role_definitions() -> Roles {
-        roles! {
-            VALIDATOR_APPLY_EMISSION_AUTHORITY => rule!(require(global_caller(CONSENSUS_MANAGER)));
-        }
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!(
+            RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
+            RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { mutable: [SELF_ROLE].into(), mutable_mutable: false },
+        )
     }
 }
 

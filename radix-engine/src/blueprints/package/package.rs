@@ -1,4 +1,4 @@
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
@@ -125,8 +125,8 @@ impl SecurifiedAccessRules for SecurifiedPackage {
         )
     }
 
-    fn role_definitions() -> Roles {
-        roles! {}
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!()
     }
 }
 

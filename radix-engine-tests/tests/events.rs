@@ -5,7 +5,7 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::UpdateMethodEvent;
+use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
@@ -1365,7 +1365,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<UpdateMethodEvent>(event_identifier) => true,
+            )) if test_runner.is_event_name_equal::<UpdateRoleEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
