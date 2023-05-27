@@ -48,7 +48,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     )));
 
     // Act
-    let receipt = test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
+    let receipt = test_runner.set_authority_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -67,7 +67,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     )));
 
     // Act
-    let receipt = test_runner.lock_group_auth(RoleKey::new("owner"));
+    let receipt = test_runner.lock_group_auth(RoleKey::new("borrow_funds_auth"));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -87,7 +87,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
 
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
-    let receipt = test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
+    let receipt = test_runner.set_authority_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -105,13 +105,13 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.lock_group_auth(RoleKey::new("owner"));
+    let receipt = test_runner.lock_group_auth(RoleKey::new("borrow_funds_auth"));
 
     // Assert
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
+    let receipt = test_runner.set_authority_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -134,7 +134,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         MutableAccessRulesTestRunner::manifest_builder()
             .update_role(
                 test_runner.component_address.into(),
-                RoleKey::new("owner"),
+                RoleKey::new("borrow_funds_auth"),
                 to_rule,
             )
             .build(),

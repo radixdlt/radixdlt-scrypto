@@ -83,6 +83,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
+    let definition_statements = bp.macro_statements;
+
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
@@ -251,6 +253,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         pub mod #module_ident {
             #(#use_statements)*
+
+            #(#definition_statements)*
 
             #output_original_code
 

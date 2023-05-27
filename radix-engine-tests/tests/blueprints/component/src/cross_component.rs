@@ -2,6 +2,12 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod cross_component {
+    define_permissions! {
+        put_auth => Public;
+        cross_component_call => Public;
+        get_component_state => [OWNER_ROLE];
+    }
+
     struct CrossComponent {
         secret: String,
         auth_vault: Option<Vault>,
@@ -15,11 +21,7 @@ mod cross_component {
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(access_rule))
-            .methods(methods! {
-                put_auth => Public;
-                cross_component_call => Public;
-                get_component_state => [OWNER_ROLE];
-            })
+            .methods(method_permissions())
             .globalize()
         }
 

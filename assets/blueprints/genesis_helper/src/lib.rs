@@ -51,6 +51,11 @@ pub enum GenesisDataChunk {
 
 #[blueprint]
 mod genesis_helper {
+    define_permissions! {
+        ingest_data_chunk => ["system"];
+        wrap_up => ["system"];
+    }
+
     struct GenesisHelper {
         consensus_manager: ComponentAddress,
         xrd_vault: Vault,
@@ -76,10 +81,7 @@ mod genesis_helper {
             .define_roles(roles! {
                 "system" => rule!(require(system_role.clone())), mut ["system"];
             })
-            .methods(methods! {
-                ingest_data_chunk => ["system"];
-                wrap_up => ["system"];
-            })
+            .methods(method_permissions())
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
             .globalize()
         }

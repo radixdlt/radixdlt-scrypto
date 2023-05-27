@@ -482,7 +482,7 @@ macro_rules! royalty_methods {
 }
 
 #[macro_export]
-macro_rules! methods {
+macro_rules! method_permissions {
     ($($method:ident => $permission:expr;)*) => ({
         Methods::<MethodPermission> {
             $(
@@ -490,6 +490,15 @@ macro_rules! methods {
             )*
         }
     })
+}
+
+#[macro_export]
+macro_rules! define_permissions {
+    ($($method:ident => $permission:expr;)*) => (
+        fn method_permissions() -> Methods::<MethodPermission> {
+            method_permissions!($($method => $permission;)*)
+        }
+    )
 }
 
 #[macro_export]

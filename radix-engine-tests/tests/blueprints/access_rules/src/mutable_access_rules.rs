@@ -2,6 +2,13 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod mutable_access_rules_component {
+    define_permissions! {
+        borrow_funds => ["borrow_funds_auth"];
+        deposit_funds => ["deposit_funds_auth"];
+        set_authority_rules => Public;
+        lock_authority => Public;
+    }
+
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
@@ -10,12 +17,7 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .define_roles(roles)
-                .methods(methods! {
-                    borrow_funds => ["borrow_funds_auth"];
-                    deposit_funds => ["deposit_funds_auth"];
-                    set_authority_rules => Public;
-                    lock_authority => Public;
-                })
+                .methods(method_permissions())
                 .globalize()
         }
 
@@ -26,15 +28,10 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .define_roles(roles! {
-                    "owner" => rule!(require(RADIX_TOKEN)), mut ["owner_update"];
-                    "owner_update" => owner_update_access_rule;
+                    "borrow_funds_auth" => rule!(require(RADIX_TOKEN)), mut ["deposit_funds_auth"];
+                    "deposit_funds_auth" => owner_update_access_rule;
                 })
-                .methods(methods! {
-                    borrow_funds => ["owner"];
-                    deposit_funds => ["owner"];
-                    set_authority_rules => Public;
-                    lock_authority => Public;
-                })
+                .methods(method_permissions())
                 .globalize()
         }
 
