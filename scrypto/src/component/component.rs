@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
-    MethodEntry, MethodKey, MethodPermission, OwnerRole, RoleList, Roles, OWNER_ROLE,
+    MethodEntry, MethodKey, MethodPermission, OwnerRole, Roles, OWNER_ROLE,
 };
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
@@ -290,7 +290,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         let mut method_permissions = index_map_new();
         for (method, permission) in permissions.to_mapping() {
-            method_permissions.insert(method, MethodEntry::new(permission, RoleList::none()));
+            method_permissions.insert(method, MethodEntry::new(permission));
         }
 
         self.method_permissions
@@ -306,7 +306,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             for method in C::Permissions::methods() {
                 method_permissions.insert(
                     MethodKey::new(ObjectModuleId::Main, method.to_string()),
-                    MethodEntry::new(MethodPermission::Public, RoleList::none()),
+                    MethodEntry::new(MethodPermission::Public),
                 );
             }
         }

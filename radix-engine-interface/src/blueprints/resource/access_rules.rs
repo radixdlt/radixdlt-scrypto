@@ -76,21 +76,12 @@ impl MethodKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodEntry {
     pub permission: MethodPermission,
-    pub mutable: RoleList,
 }
 
 impl MethodEntry {
-    pub fn disabled() -> Self {
-        Self {
-            permission: MethodPermission::nobody(),
-            mutable: RoleList::none(),
-        }
-    }
-
-    pub fn new<P: Into<MethodPermission>, M: Into<RoleList>>(permission: P, mutable: M) -> Self {
+    pub fn new<P: Into<MethodPermission>>(permission: P) -> Self {
         Self {
             permission: permission.into(),
-            mutable: mutable.into(),
         }
     }
 }

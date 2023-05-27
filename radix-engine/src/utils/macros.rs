@@ -17,10 +17,7 @@ macro_rules! event_schema {
 #[macro_export]
 macro_rules! permission_entry {
     ($permissions: expr, $method: expr, $permission:expr) => {{
-        $permissions.insert($method, MethodEntry::new($permission, RoleList::none()))
-    }};
-    ($permissions: expr, $method: expr, $permission:expr, $mutability:expr) => {{
-        $permissions.insert($method, MethodEntry::new($permission, $mutability))
+        $permissions.insert($method, MethodEntry::new($permission))
     }};
 }
 
