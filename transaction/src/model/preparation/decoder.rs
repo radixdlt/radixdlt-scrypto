@@ -71,7 +71,14 @@ impl<'a> TransactionDecoder<'a> {
         Ok(())
     }
 
-    pub fn read_enum_header(
+    pub fn read_enum_header(&mut self) -> Result<(u8, usize), PrepareError> {
+        self.0.read_and_check_value_kind(ValueKind::Enum)?;
+        let discriminator = self.0.read_discriminator()?;
+        let length = self.0.read_size()?;
+        Ok((discriminator, length))
+    }
+
+    pub fn read_expected_enum_variant_header(
         &mut self,
         expected_discriminator: u8,
         length: usize,
