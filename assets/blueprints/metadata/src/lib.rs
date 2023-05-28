@@ -25,15 +25,6 @@ mod metadata {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .metadata(metadata! {
-                    init {
-                    },
-                    permissions {
-                        set => Public;
-                        remove => Public;
-                        get => Public;
-                    }
-                })
                 .globalize()
         }
 

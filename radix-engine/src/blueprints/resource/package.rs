@@ -266,6 +266,7 @@ impl ResourceManagerNativePackage {
             let method_permissions_instance = method_permissions2! {
                 SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
 
                 SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
                 SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
@@ -520,6 +521,7 @@ impl ResourceManagerNativePackage {
             let method_permissions_instance = method_permissions2! {
                 SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
 
                 SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];

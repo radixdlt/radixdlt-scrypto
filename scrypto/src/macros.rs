@@ -573,10 +573,9 @@ macro_rules! metadata_init {
 
 #[macro_export]
 macro_rules! metadata {
-    (init $init:tt, permissions $permissions:tt) => ({
+    (init $init:tt) => ({
         MetadataInit {
             metadata: metadata_init!$init,
-            permissions: metadata_methods!$permissions,
         }
     })
 }

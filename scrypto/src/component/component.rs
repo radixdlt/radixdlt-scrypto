@@ -224,7 +224,6 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
 
 pub struct MetadataInit {
     pub metadata: Metadata,
-    pub permissions: MetadataMethods<MethodPermission>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -251,17 +250,11 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn methods(mut self, permissions: C::Permissions) -> Self {
-        self.set_permissions(permissions);
-        self
-    }
-
     pub fn metadata(mut self, init: MetadataInit) -> Self {
         if self.metadata.is_some() {
             panic!("Metadata already set.");
         }
         self.metadata = Some(init.metadata);
-        self.set_permissions(init.permissions);
 
         self
     }
