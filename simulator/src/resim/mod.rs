@@ -191,7 +191,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &ExecutionConfig::standard().with_trace(trace),
         &transaction
             .prepare()
-            .map_err(Error::ConvertToPreparedError)?
+            .map_err(Error::TransactionPrepareError)?
             .get_executable(initial_proofs),
     );
 
@@ -262,7 +262,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &ExecutionConfig::standard().with_trace(trace),
                 &transaction
                     .prepare()
-                    .map_err(Error::ConvertToPreparedError)?
+                    .map_err(Error::TransactionPrepareError)?
                     .get_executable(initial_proofs),
             );
 

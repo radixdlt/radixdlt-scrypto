@@ -49,7 +49,7 @@ pub trait TransactionPayload:
         Ok(manifest_decode::<Self::Versioned>(&payload_bytes)?.into_fields())
     }
 
-    fn prepare(&self) -> Result<Self::Prepared, ConvertToPreparedError> {
+    fn prepare(&self) -> Result<Self::Prepared, PrepareError> {
         Ok(Self::Prepared::prepare_from_payload(
             &self.to_payload_bytes()?,
         )?)
@@ -59,7 +59,7 @@ pub trait TransactionPayload:
 pub trait TransactionPartialEncode: ManifestEncode {
     type Prepared: TransactionFullChildPreparable;
 
-    fn prepare_partial(&self) -> Result<Self::Prepared, ConvertToPreparedError> {
+    fn prepare_partial(&self) -> Result<Self::Prepared, PrepareError> {
         Ok(Self::Prepared::prepare_as_full_body_child_from_payload(
             &manifest_encode(self)?,
         )?)

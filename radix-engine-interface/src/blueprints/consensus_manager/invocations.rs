@@ -28,6 +28,8 @@ pub struct ConsensusManagerConfig {
     pub epoch_change_condition: EpochChangeCondition,
     pub num_unstake_epochs: u64,
     pub total_emission_xrd_per_epoch: Decimal,
+    /// The proportion of proposals a validator needs to complete in an epoch to get emissions
+    /// Should be between 0 and 1
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
     pub num_fee_increase_delay_epochs: u64,
