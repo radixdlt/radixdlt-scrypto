@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate, NodeAuthorizationRules,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
@@ -16,18 +16,21 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, MetadataValue};
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_GET_IDENT};
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey,
+    SchemaMethodPermission,
+};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
+use crate::method_permissions2;
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
-use crate::{method_permissions, method_permissions2, permission_entry};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
@@ -109,8 +112,12 @@ fn validate_package_event_schema(schema: &mut PackageSchema) -> Result<(), Packa
         }
 
         // TODO: Is this the right place for this?
-        if !method_permissions_instance.contains_key(&SchemaMethodKey::metadata(METADATA_GET_IDENT)) {
-            method_permissions_instance.insert(SchemaMethodKey::metadata(METADATA_GET_IDENT), SchemaMethodPermission::Public);
+        if !method_permissions_instance.contains_key(&SchemaMethodKey::metadata(METADATA_GET_IDENT))
+        {
+            method_permissions_instance.insert(
+                SchemaMethodKey::metadata(METADATA_GET_IDENT),
+                SchemaMethodPermission::Public,
+            );
         }
     }
 
@@ -122,14 +129,6 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
-
-    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
-        method_permissions!(
-            MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [Self::OWNER_ROLE];
-        )
-    }
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
         btreemap!()
@@ -214,8 +213,6 @@ where
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 roles: BTreeMap::new(),
                 role_mutability: BTreeMap::new(),
-                access_rules: NodeAuthorizationRules::new(),
-                inner_blueprint_access_rules: BTreeMap::new(),
             }),
         );
     }

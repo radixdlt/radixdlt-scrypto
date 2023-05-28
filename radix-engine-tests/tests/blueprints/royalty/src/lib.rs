@@ -38,10 +38,6 @@ mod royalty_test {
                         free_method => Free;
                         paid_method => 1u32;
                         paid_method_panic => 1u32;
-                    },
-                    permissions {
-                        claim_royalty => Public;
-                        set_royalty_config => [];
                     }
                 })
                 .globalize()

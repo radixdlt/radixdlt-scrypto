@@ -181,12 +181,12 @@ impl AuthModule {
                 let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
                 schema.method_permissions_instance
                 //&access_rules.access_rules
-            },
+            }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
                 let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
                 schema.outer_method_permissions_instance
 
-                    /*
+                /*
                 let blueprint_id = BlueprintId::new(&callee.node_object_info.blueprint.package_address, blueprint_name);
                 let schema = api.get_blueprint_schema(&blueprint_id)?;
                 let parent_blueprint_id = BlueprintId::new(&callee.node_object_info.blueprint.package_address, schema.outer_blueprint.unwrap());
@@ -212,8 +212,6 @@ impl AuthModule {
             }
         };
 
-
-
         let permission = match method_key.module_id {
             ObjectModuleId::AccessRules => {
                 match &object_key {
@@ -235,7 +233,9 @@ impl AuthModule {
                 if let Some(permission) = node_authority_rules.get(&method_key) {
                     match permission {
                         SchemaMethodPermission::Public => MethodPermission::Public,
-                        SchemaMethodPermission::Protected(list) => MethodPermission::Protected(list.clone().into()),
+                        SchemaMethodPermission::Protected(list) => {
+                            MethodPermission::Protected(list.clone().into())
+                        }
                     }
                 } else {
                     match &object_key {
@@ -244,9 +244,8 @@ impl AuthModule {
                                 AuthError::NoMethod(callee.fn_identifier()),
                             )));
                         }
-                        _ => return Ok(())
+                        _ => return Ok(()),
                     }
-
                 }
             }
         };

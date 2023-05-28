@@ -463,7 +463,9 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Actor::Method(MethodActor {
-                                  module_object_info: object_info, ident, ..
+                    module_object_info: object_info,
+                    ident,
+                    ..
                 }) => Origin::ScryptoMethod(ApplicationFnIdentifier {
                     package_address: object_info.blueprint.package_address.clone(),
                     blueprint_name: object_info.blueprint.blueprint_name.clone(),
@@ -494,7 +496,7 @@ impl ExecutionTraceModule {
         match &callee {
             Actor::Method(MethodActor {
                 node_id,
-                              module_object_info: object_info,
+                module_object_info: object_info,
                 ident,
                 ..
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
@@ -504,7 +506,7 @@ impl ExecutionTraceModule {
             }
             Actor::Method(MethodActor {
                 node_id,
-                              module_object_info: object_info,
+                module_object_info: object_info,
                 ident,
                 ..
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
@@ -526,7 +528,7 @@ impl ExecutionTraceModule {
         match current_actor {
             Actor::Method(MethodActor {
                 node_id,
-                              module_object_info: object_info,
+                module_object_info: object_info,
                 ident,
                 ..
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)

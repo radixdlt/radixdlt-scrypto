@@ -20,11 +20,6 @@ mod metadata_component {
                 .metadata(metadata! {
                     init {
                         key.clone() => value.clone();
-                    },
-                    permissions {
-                        set => [];
-                        remove => [];
-                        get => Public;
                     }
                 })
                 .globalize();
@@ -39,12 +34,7 @@ mod metadata_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
-                    init {},
-                    permissions {
-                        set => Public;
-                        remove => Public;
-                        get => Public;
-                    }
+                    init {}
                 })
                 .globalize();
 

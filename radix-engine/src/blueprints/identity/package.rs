@@ -1,9 +1,11 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry};
+use crate::blueprints::util::{
+    PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
+};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::method_permissions2;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use crate::{method_permissions, method_permissions2, permission_entry};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -194,7 +196,6 @@ impl IdentityNativePackage {
     }
 }
 
-
 const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedIdentity;
@@ -203,15 +204,6 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const OWNER_ROLE: &'static str = "owner";
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
-
-    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
-        method_permissions!(
-            MethodKey::new(ObjectModuleId::Main, IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [Self::OWNER_ROLE];
-        )
-    }
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
         btreemap!()

@@ -54,10 +54,6 @@ mod royalty_test {
                         paid_method => 1u32;
                         paid_method_panic => 1u32;
                         free_method => Free;
-                    },
-                    permissions {
-                        set_royalty_config => [OWNER_ROLE];
-                        claim_royalty => [OWNER_ROLE];
                     }
                 ))
                 .globalize()

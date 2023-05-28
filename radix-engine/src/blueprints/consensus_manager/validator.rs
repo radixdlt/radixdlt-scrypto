@@ -4,7 +4,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use crate::{method_permissions, permission_entry};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
@@ -13,8 +12,10 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_UPDATE_ROLE_IDENT, AccessRulesUpdateRoleInput, ACCESS_RULES_GET_ROLE_IDENT, AccessRulesGetRoleInput};
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesGetRoleInput, AccessRulesUpdateRoleInput, ACCESS_RULES_GET_ROLE_IDENT,
+    ACCESS_RULES_UPDATE_ROLE_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -544,7 +545,8 @@ impl ValidatorBlueprint {
                 ACCESS_RULES_GET_ROLE_IDENT,
                 scrypto_encode(&AccessRulesGetRoleInput {
                     role_key: RoleKey::new(SecurifiedValidator::OWNER_ROLE),
-                }).unwrap()
+                })
+                .unwrap(),
             )?;
             let rule: Option<AccessRule> = scrypto_decode(&rtn).unwrap();
             rule.unwrap()
@@ -558,7 +560,8 @@ impl ValidatorBlueprint {
                 role_key: RoleKey::new(STAKE_ROLE),
                 rule: Some(rule),
                 mutability: None,
-            }).unwrap()
+            })
+            .unwrap(),
         )?;
 
         Runtime::emit_event(
@@ -937,27 +940,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const OWNER_ROLE: &'static str = "owner";
     const SECURIFY_ROLE: Option<&'static str> = None;
-
-    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
-        method_permissions!(
-            MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
-
-            MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
-            MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
-
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
-
-            MethodKey::main(VALIDATOR_REGISTER_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
-        )
-    }
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
         btreemap!(

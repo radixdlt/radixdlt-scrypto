@@ -1,15 +1,19 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
-use crate::{event_schema, method_permissions2};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
+use crate::{event_schema, method_permissions2};
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, PackageSchema, SchemaMethodKey, SchemaMethodPermission,
+};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
@@ -1217,7 +1221,6 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-
             let outer_method_permissions_instance = method_permissions2!(
                 SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
@@ -1297,7 +1300,6 @@ impl ResourceManagerNativePackage {
                     export_name: NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 },
             );
-
 
             let outer_method_permissions_instance = method_permissions2!(
                 SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;

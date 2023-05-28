@@ -8,9 +8,10 @@ pub use crate::modules::*;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
-    blueprint, debug, error, external_blueprint, external_component, include_code, include_schema,
-    info, metadata, metadata_init, metadata_methods, method_royalties, method_permissions, module_permissions, main_permissions, define_permissions, resource_list,
-    royalties, royalty_methods, this_package, trace, warn, NonFungibleData,
+    blueprint, debug, define_permissions, error, external_blueprint, external_component,
+    include_code, include_schema, info, main_permissions, metadata, metadata_init,
+    method_permissions, method_royalties, module_permissions, resource_list, royalties,
+    this_package, trace, warn, NonFungibleData,
 };
 
 //=========================

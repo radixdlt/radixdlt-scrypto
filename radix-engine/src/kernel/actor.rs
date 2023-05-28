@@ -67,7 +67,10 @@ impl Actor {
 
     pub fn is_auth_zone(&self) -> bool {
         match self {
-            Actor::Method(MethodActor { module_object_info: object_info, .. }) => {
+            Actor::Method(MethodActor {
+                module_object_info: object_info,
+                ..
+            }) => {
                 object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
                     && object_info.blueprint.blueprint_name.eq(AUTH_ZONE_BLUEPRINT)
             }
@@ -79,7 +82,10 @@ impl Actor {
 
     pub fn is_barrier(&self) -> bool {
         match self {
-            Actor::Method(MethodActor { module_object_info: object_info, .. }) => object_info.global,
+            Actor::Method(MethodActor {
+                module_object_info: object_info,
+                ..
+            }) => object_info.global,
             Actor::Function { .. } => true,
             Actor::VirtualLazyLoad { .. } => false,
             Actor::Root { .. } => false,

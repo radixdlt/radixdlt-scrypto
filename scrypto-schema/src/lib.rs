@@ -90,7 +90,9 @@ pub enum SchemaMethodPermission {
 
 impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
     fn from(value: [&str; N]) -> Self {
-        SchemaMethodPermission::Protected(value.to_vec().into_iter().map(|s| s.to_string()).collect())
+        SchemaMethodPermission::Protected(
+            value.to_vec().into_iter().map(|s| s.to_string()).collect(),
+        )
     }
 }
 

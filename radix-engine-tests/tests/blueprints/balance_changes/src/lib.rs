@@ -2,6 +2,17 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod balance_changes_test {
+    define_permissions! {
+        main {
+            put => Public;
+            boom => Public;
+        },
+        royalties {
+            claim_royalty => [OWNER_ROLE];
+            set_royalty_config => [];
+        }
+    }
+
     struct BalanceChangesTest {
         vault: Vault,
     }
@@ -17,10 +28,6 @@ mod balance_changes_test {
                 init {
                     put => 1u32;
                     boom => 1u32;
-                },
-                permissions {
-                    claim_royalty => [OWNER_ROLE];
-                    set_royalty_config => [];
                 }
             })
             .globalize()

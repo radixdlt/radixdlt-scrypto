@@ -460,28 +460,6 @@ macro_rules! external_component_members {
 }
 
 #[macro_export]
-macro_rules! metadata_methods {
-    ($($method:ident => $permission:expr;)*) => ({
-        MetadataMethods::<MethodPermission> {
-            $(
-                $method: $permission.into(),
-            )*
-        }
-    })
-}
-
-#[macro_export]
-macro_rules! royalty_methods {
-    ($($method:ident => $permission:expr;)*) => ({
-        RoyaltyMethods::<MethodPermission> {
-            $(
-                $method: $permission.into(),
-            )*
-        }
-    })
-}
-
-#[macro_export]
 macro_rules! method_permissions {
     ($module_methods:ident, $($method:ident => $permission:expr;)*) => ({
         $module_methods::<MethodPermission> {
@@ -491,7 +469,6 @@ macro_rules! method_permissions {
         }
     })
 }
-
 
 #[macro_export]
 macro_rules! main_permissions {
@@ -546,10 +523,9 @@ macro_rules! method_royalties {
 
 #[macro_export]
 macro_rules! royalties {
-    (init $method_royalties:tt, permissions $permissions:tt) => ({
+    (init $method_royalties:tt) => ({
         RoyaltiesConfig {
             method_royalties: method_royalties!$method_royalties,
-            permissions: royalty_methods!$permissions,
         }
     });
 }

@@ -1,29 +1,21 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesUpdateRoleInput,
-    ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_UPDATE_ROLE_IDENT,
+    AccessRulesCreateInput, AccessRulesUpdateRoleInput, ACCESS_RULES_BLUEPRINT,
+    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, MethodEntry, MethodKey, RoleEntry, RoleKey, Roles};
+use radix_engine_interface::blueprints::resource::{AccessRule, RoleEntry, RoleKey, Roles};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::NodeId;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
-use sbor::rust::string::String;
 
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn create<Y, E: Debug + ScryptoDecode>(
-        method_permissions: BTreeMap<MethodKey, MethodEntry>,
-        roles: Roles,
-        inner_blueprint_rules: BTreeMap<String, BTreeMap<MethodKey, MethodEntry>>,
-        api: &mut Y,
-    ) -> Result<Self, E>
+    pub fn create<Y, E: Debug + ScryptoDecode>(roles: Roles, api: &mut Y) -> Result<Self, E>
     where
         Y: ClientApi<E>,
     {
@@ -31,12 +23,7 @@ impl AccessRules {
             ACCESS_RULES_MODULE_PACKAGE,
             ACCESS_RULES_BLUEPRINT,
             ACCESS_RULES_CREATE_IDENT,
-            scrypto_encode(&AccessRulesCreateInput {
-                method_permissions,
-                roles,
-                inner_blueprint_rules,
-            })
-            .unwrap(),
+            scrypto_encode(&AccessRulesCreateInput { roles }).unwrap(),
         )?;
 
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
@@ -62,11 +49,7 @@ impl AccessRulesObject for AttachedAccessRules {
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn update_role<
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
-        R: Into<RoleKey>,
-    >(
+    fn update_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
         &self,
         role_key: R,
         entry: RoleEntry,

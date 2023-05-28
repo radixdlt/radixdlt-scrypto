@@ -4,7 +4,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use crate::{method_permissions, permission_entry};
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -255,23 +254,7 @@ impl ConsensusManagerBlueprint {
             START_ROLE => rule!(require(AuthAddresses::system_role()));
         };
 
-        let access_rules = AccessRules::create(
-            method_permissions!(
-                MethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
-                MethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
-
-                MethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public;
-                MethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT) => MethodPermission::Public;
-                MethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT) => MethodPermission::Public;
-                MethodKey::main(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT) => MethodPermission::Public;
-            ),
-            role_definitions,
-            btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => btreemap!(),
-            ),
-            api,
-        )?
-        .0;
+        let access_rules = AccessRules::create(role_definitions, api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
@@ -328,11 +311,7 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.update_role(
-            RoleKey::new(START_ROLE),
-            RoleEntry::disabled(),
-            api,
-        )?;
+        access_rules.update_role(RoleKey::new(START_ROLE), RoleEntry::disabled(), api)?;
 
         Ok(())
     }

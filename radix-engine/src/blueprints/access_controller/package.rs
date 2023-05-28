@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use crate::{event_schema, method_permissions, method_permissions2, permission_entry};
+use crate::{event_schema, method_permissions2};
 use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
@@ -13,13 +13,15 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, Url};
+use radix_engine_interface::api::node_modules::metadata::{
+    Url, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
+use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
@@ -700,9 +702,8 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let (authority_rules, protected_methods) = init_access_rules_from_rule_set(input.rule_set);
-        let access_rules =
-            AccessRules::create(protected_methods, authority_rules, btreemap!(), api)?.0;
+        let authority_rules = init_roles_from_rule_set(input.rule_set);
+        let access_rules = AccessRules::create(authority_rules, api)?.0;
 
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
@@ -1325,43 +1326,13 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_access_rules_from_rule_set(rule_set: RuleSet) -> (Roles, BTreeMap<MethodKey, MethodEntry>) {
-    let role_definitions = roles! {
+fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
+    roles! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, mut [SELF_ROLE];
         "recovery" => rule_set.recovery_role, mut [SELF_ROLE];
         "confirmation" => rule_set.confirmation_role, mut [SELF_ROLE];
-    };
-
-    let protected_methods = method_permissions!(
-        MethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"];
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"];
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"];
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"];
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
-        MethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => ["recovery"];
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
-        MethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
-        MethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
-
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"];
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"];
-
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"];
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"];
-
-
-        MethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"];
-
-        MethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"];
-
-        MethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"];
-    );
-
-    (role_definitions, protected_methods)
+    }
 }
 
 fn transition<Y, I>(

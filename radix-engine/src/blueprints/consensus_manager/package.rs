@@ -5,11 +5,14 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_permissions2, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
+    PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
+};
 use resources_tracker_macro::trace_resources;
 
 use super::*;

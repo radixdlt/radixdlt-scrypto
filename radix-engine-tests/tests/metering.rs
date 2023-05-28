@@ -37,7 +37,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_basic_transfer() {
         // Arrange
         let mut test_runner = TestRunner::builder().build();
@@ -72,7 +71,7 @@ mod tests {
             + 6031 /* DropLock */
             + 1680 /* DropNode */
             + 1140299 /* Invoke */
-            + 700423 /* LockSubstate */
+            + 650511 /* LockSubstate */
             + 8456 /* ReadSubstate */
             + 65000 /* RunNative */
             + 7500 /* RunSystem */
@@ -85,7 +84,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_radiswap() {
         let mut test_runner = TestRunner::builder().build();
 
@@ -224,7 +222,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_flash_loan() {
         let mut test_runner = TestRunner::builder().build();
 

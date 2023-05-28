@@ -15,28 +15,6 @@ macro_rules! event_schema {
 }
 
 #[macro_export]
-macro_rules! permission_entry {
-    ($permissions: expr, $method: expr, $permission:expr) => {{
-        $permissions.insert($method, MethodEntry::new($permission))
-    }};
-}
-
-#[macro_export]
-macro_rules! method_permissions {
-    ( $($key:expr => $($entry:expr),* );* ) => ({
-        let mut methods: BTreeMap<MethodKey, MethodEntry>
-            = BTreeMap::new();
-        $(
-            permission_entry!(methods, $key, $($entry),*);
-        )*
-        methods
-    });
-    ( $($key:expr => $($entry:expr),*;)* ) => (
-        method_permissions!{$($key => $($entry),*);*}
-    );
-}
-
-#[macro_export]
 macro_rules! method_permissions2 {
     ( $($method:expr => $entry:expr );* ) => ({
         let mut methods: BTreeMap<SchemaMethodKey, SchemaMethodPermission>

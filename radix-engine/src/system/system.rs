@@ -1758,7 +1758,8 @@ where
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
                 Actor::Method(MethodActor {
-                                  module_object_info: ref object_info, ..
+                    module_object_info: ref object_info,
+                    ..
                 }) => Ok(object_info.blueprint.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
