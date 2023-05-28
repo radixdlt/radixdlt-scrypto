@@ -1182,6 +1182,7 @@ mod tests {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             },
         );
 

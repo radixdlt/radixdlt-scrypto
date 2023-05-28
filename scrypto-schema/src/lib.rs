@@ -92,6 +92,7 @@ pub struct BlueprintSchema {
 
     // TODO: Move out of schema
     pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub inner_method_permissions_instance: BTreeMap<String, BTreeMap<SchemaMethodKey, SchemaMethodPermission>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -184,6 +185,7 @@ impl Default for BlueprintSchema {
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
             method_permissions_instance: BTreeMap::default(),
+            inner_method_permissions_instance: BTreeMap::default(),
         }
     }
 }

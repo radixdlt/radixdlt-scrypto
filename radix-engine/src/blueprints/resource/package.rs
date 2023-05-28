@@ -272,6 +272,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -512,6 +513,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -639,6 +641,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -810,6 +813,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -925,6 +929,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -1074,6 +1079,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -1134,6 +1140,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -1206,6 +1213,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 method_permissions_instance: btreemap!(),
+                inner_method_permissions_instance: btreemap!(),
             }
         };
 
@@ -1311,6 +1319,7 @@ impl ResourceManagerNativePackage {
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
             method_permissions_instance: btreemap!(),
+            inner_method_permissions_instance: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -1427,6 +1436,7 @@ impl ResourceManagerNativePackage {
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
             method_permissions_instance: btreemap!(),
+            inner_method_permissions_instance: btreemap!(),
         };
 
         PackageSchema {
