@@ -483,8 +483,8 @@ macro_rules! royalty_methods {
 
 #[macro_export]
 macro_rules! method_permissions {
-    ($($method:ident => $permission:expr;)*) => ({
-        Methods::<MethodPermission> {
+    ($module_methods:ident, $($method:ident => $permission:expr;)*) => ({
+        $module_methods::<MethodPermission> {
             $(
                 $method: $permission.into(),
             )*
@@ -495,24 +495,33 @@ macro_rules! method_permissions {
 
 #[macro_export]
 macro_rules! main_permissions {
-    ($permissions:expr, $($method:ident => $permission:expr;)*) => ({
-        let permissions = method_permissions!($($method => $permission;)*);
+    ($permissions:expr, $module_methods:ident, $key:ident, $($method:ident => $permission:expr;)*) => ({
+        let permissions = method_permissions!($module_methods, $($method => $permission;)*);
         for (method, permission) in permissions.to_mapping() {
             let permission = match permission {
                 MethodPermission::Public => scrypto::schema::SchemaMethodPermission::Public,
                 MethodPermission::Protected(role_list) => scrypto::schema::SchemaMethodPermission::Protected(role_list.to_list()),
             };
-            $permissions.insert(scrypto::schema::SchemaMethodKey::main(method), permission);
+            $permissions.insert(scrypto::schema::SchemaMethodKey::$key(method), permission);
         }
     })
 }
 
 #[macro_export]
+macro_rules! module_permissions {
+    ($permissions:expr, main { $($method:ident => $permission:expr;)* }) => ({
+        main_permissions!($permissions, Methods, main, $($method => $permission;)*);
+    })
+}
+
+#[macro_export]
 macro_rules! define_permissions {
-    ($($method:ident => $permission:expr;)*) => (
+    ($($module:ident { $($method:ident => $permission:expr;)* }),*) => (
         fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
             let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
-            main_permissions!(permissions, $($method => $permission;)*);
+            $(
+                module_permissions!(permissions, $module { $($method => $permission;)* });
+            )*
             permissions
         }
     )

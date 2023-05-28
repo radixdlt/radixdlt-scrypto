@@ -3,10 +3,12 @@ use scrypto::prelude::*;
 #[blueprint]
 mod mutable_access_rules_component {
     define_permissions! {
-        borrow_funds => ["borrow_funds_auth"];
-        deposit_funds => ["deposit_funds_auth"];
-        set_authority_rules => Public;
-        lock_authority => Public;
+        main {
+            borrow_funds => ["borrow_funds_auth"];
+            deposit_funds => ["deposit_funds_auth"];
+            set_authority_rules => Public;
+            lock_authority => Public;
+        }
     }
 
     struct MutableAccessRulesComponent {}

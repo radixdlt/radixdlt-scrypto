@@ -3,7 +3,9 @@ use scrypto::prelude::*;
 #[blueprint]
 mod factory {
     define_permissions! {
-        set_address => [OWNER_ROLE];
+        main {
+            set_address => [OWNER_ROLE];
+        }
     }
 
     struct Factory {

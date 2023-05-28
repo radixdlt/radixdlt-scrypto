@@ -52,8 +52,10 @@ pub enum GenesisDataChunk {
 #[blueprint]
 mod genesis_helper {
     define_permissions! {
-        ingest_data_chunk => ["system"];
-        wrap_up => ["system"];
+        main {
+            ingest_data_chunk => ["system"];
+            wrap_up => ["system"];
+        }
     }
 
     struct GenesisHelper {

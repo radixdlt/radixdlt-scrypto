@@ -3,9 +3,11 @@ use scrypto::prelude::*;
 #[blueprint]
 mod cross_component {
     define_permissions! {
-        put_auth => Public;
-        cross_component_call => Public;
-        get_component_state => [OWNER_ROLE];
+        main {
+            put_auth => Public;
+            cross_component_call => Public;
+            get_component_state => [OWNER_ROLE];
+        }
     }
 
     struct CrossComponent {
