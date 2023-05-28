@@ -82,6 +82,7 @@ pub trait IsFixedEnumVariant<X: CustomValueKind, T: SborTuple<X>>:
 where
     T: for<'a> Encode<X, VecEncoder<'a, X>>,
 {
+    const DISCRIMINATOR: u8;
     type EncodingFixedEnumVariant<'a>: IsFixedEnumVariant<X, &'a T>
     where
         T: 'a;
@@ -95,6 +96,7 @@ impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> IsFixedEnumVa
 where
     T: for<'a> Encode<X, VecEncoder<'a, X>>,
 {
+    const DISCRIMINATOR: u8 = DISCRIMINATOR;
     type EncodingFixedEnumVariant<'a> = FixedEnumVariant<DISCRIMINATOR, &'a T> where T: 'a;
 
     fn new(fields: T) -> Self {
