@@ -1,3 +1,5 @@
+use sbor::IsFixedEnumVariant;
+
 use super::v1::*;
 use crate::internal_prelude::*;
 
@@ -29,16 +31,22 @@ const V1_CONSENSUS_TRANSACTION: u8 = 5;
 const V1_PREVIEW_TRANSACTION: u8 = 6;
 const V1_LEDGER_TRANSACTION: u8 = 7;
 
-pub trait TransactionPayloadEncode {
-    type EncodablePayload<'a>: ManifestEncode + ManifestCategorize
-    where
-        Self: 'a;
+pub trait TransactionPayload:
+    ManifestEncode + ManifestDecode + ManifestCategorize + ManifestSborTuple
+{
+    // Note - really we just want to define Self::DISCRIMINATOR and use FixedEnumVariant<{ Self::DISCRIMINATOR }, X>,
+    // but that causes an issue because "type parameters may not be used in const expressions"
+    // See: https://github.com/rust-lang/rust/issues/76560
+    // Instead we use this helper-trait IsFixedEnumVariant which hides the DISCRIMINATOR
+    type Versioned: ManifestDecode + IsFixedEnumVariant<ManifestCustomValueKind, Self>;
     type Prepared: TransactionPayloadPreparable;
 
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a>;
-
     fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&self.as_payload())
+        manifest_encode(&Self::Versioned::for_encoding(self))
+    }
+
+    fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
+        Ok(manifest_decode::<Self::Versioned>(&payload_bytes)?.into_fields())
     }
 
     fn prepare(&self) -> Result<Self::Prepared, ConvertToPreparedError> {
@@ -169,6 +177,7 @@ mod tests {
         ));
 
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
+        IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
         let intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
         assert_eq!(
@@ -226,6 +235,8 @@ mod tests {
         ));
 
         let signed_intent_payload_bytes = signed_intent_v1.to_payload_bytes().unwrap();
+        SignedIntentV1::from_payload_bytes(&signed_intent_payload_bytes)
+            .expect("SignedIntent can be decoded");
         let signed_intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&signed_intent_payload_bytes).unwrap();
         assert_eq!(
@@ -283,6 +294,8 @@ mod tests {
 
         let notarized_transaction_payload_bytes =
             notarized_transaction_v1.to_payload_bytes().unwrap();
+        NotarizedTransactionV1::from_payload_bytes(&notarized_transaction_payload_bytes)
+            .expect("NotarizedTransaction can be decoded");
         let notarized_transaction_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&notarized_transaction_payload_bytes)
                 .unwrap();
@@ -370,6 +383,8 @@ mod tests {
         ));
 
         let system_transaction_payload_bytes = system_transaction_v1.to_payload_bytes().unwrap();
+        SystemTransactionV1::from_payload_bytes(&system_transaction_payload_bytes)
+            .expect("SystemTransaction can be decoded");
         let system_transaction_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&system_transaction_payload_bytes)
                 .unwrap();

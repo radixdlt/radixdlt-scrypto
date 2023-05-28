@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
 use transaction::model::{
-    BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayloadEncode,
+    BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
 use transaction::validation::ManifestIdAllocator;
 

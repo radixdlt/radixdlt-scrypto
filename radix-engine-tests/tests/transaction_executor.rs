@@ -13,7 +13,7 @@ use transaction::builder::TransactionBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
-    NotarizedTransactionV1, TransactionHeaderV1, TransactionPayloadEncode,
+    NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     ValidatedNotarizedTransactionV1,
 };
 use transaction::validation::{

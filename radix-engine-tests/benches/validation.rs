@@ -7,7 +7,7 @@ use transaction::builder::TransactionBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::eddsa_ed25519::EddsaEd25519PrivateKey;
 use transaction::model::TransactionHeaderV1;
-use transaction::model::TransactionPayloadEncode;
+use transaction::model::TransactionPayload;
 use transaction::validation::verify_ecdsa_secp256k1;
 use transaction::validation::verify_eddsa_ed25519;
 use transaction::validation::NotarizedTransactionValidator;

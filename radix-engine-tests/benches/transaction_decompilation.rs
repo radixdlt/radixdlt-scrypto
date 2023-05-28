@@ -13,7 +13,7 @@ use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::{compile, decompile};
 use transaction::model::{
-    PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayloadEncode,
+    PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     TransactionPayloadPreparable,
 };
 

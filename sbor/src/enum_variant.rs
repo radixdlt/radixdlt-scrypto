@@ -8,6 +8,10 @@ impl<const DISCRIMINATOR: u8, T> FixedEnumVariant<DISCRIMINATOR, T> {
     pub fn new(fields: T) -> Self {
         Self { fields }
     }
+
+    pub fn for_encoding(fields: &T) -> FixedEnumVariant<DISCRIMINATOR, &T> {
+        FixedEnumVariant { fields }
+    }
 }
 
 impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> Categorize<X>
@@ -64,5 +68,44 @@ impl<
         // The fields is actually a tuple type - so we pass in ValueKind::Tuple to trick the encoding
         let fields = T::decode_body_with_value_kind(decoder, ValueKind::Tuple)?;
         Ok(Self { fields })
+    }
+}
+
+//=======================================================================================
+// Now define a trait `IsFixedEnumVariant` - which hides the discriminator.
+// This is only really needed because of https://github.com/rust-lang/rust/issues/76560
+// In particular, see eg `TransactionPayload` where we couldn't define FixedEnumVariant<{ Self::DISCRIMINATOR }, X>
+//=======================================================================================
+
+pub trait IsFixedEnumVariant<X: CustomValueKind, T: SborTuple<X>>:
+    SborEnum<X> + Categorize<X> + for<'a> Encode<X, VecEncoder<'a, X>>
+where
+    T: for<'a> Encode<X, VecEncoder<'a, X>>,
+{
+    type EncodingFixedEnumVariant<'a>: IsFixedEnumVariant<X, &'a T>
+    where
+        T: 'a;
+    fn new(fields: T) -> Self;
+    fn for_encoding<'a>(fields: &'a T) -> Self::EncodingFixedEnumVariant<'a>;
+    fn into_fields(self) -> T;
+}
+
+impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> IsFixedEnumVariant<X, T>
+    for FixedEnumVariant<DISCRIMINATOR, T>
+where
+    T: for<'a> Encode<X, VecEncoder<'a, X>>,
+{
+    type EncodingFixedEnumVariant<'a> = FixedEnumVariant<DISCRIMINATOR, &'a T> where T: 'a;
+
+    fn new(fields: T) -> Self {
+        Self::new(fields)
+    }
+
+    fn for_encoding<'a>(fields: &'a T) -> Self::EncodingFixedEnumVariant<'a> {
+        Self::for_encoding(fields)
+    }
+
+    fn into_fields(self) -> T {
+        self.fields
     }
 }

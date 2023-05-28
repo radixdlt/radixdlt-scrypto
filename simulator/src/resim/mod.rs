@@ -90,7 +90,7 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
-use transaction::model::{SystemTransactionV1, TransactionPayloadEncode};
+use transaction::model::{SystemTransactionV1, TransactionPayload};
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction

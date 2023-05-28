@@ -5,7 +5,7 @@ use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
-    model::{TransactionHeaderV1, TransactionPayloadEncode},
+    model::{TransactionHeaderV1, TransactionPayload},
     validation::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
 };
 

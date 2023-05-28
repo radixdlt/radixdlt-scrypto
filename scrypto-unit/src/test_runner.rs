@@ -62,7 +62,7 @@ use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
     AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
-    SystemTransactionV1, TestTransaction, TransactionPayloadEncode,
+    SystemTransactionV1, TestTransaction, TransactionPayload,
 };
 
 pub struct Compile;
