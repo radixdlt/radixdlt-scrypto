@@ -53,6 +53,22 @@ pub struct PackageSchema {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct SchemaMethodKey {
+    pub module_id: u8,
+    pub ident: String,
+}
+
+impl SchemaMethodKey {
+    pub fn main<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 0u8,
+            ident: method_ident.to_string(),
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SchemaMethodPermission {
     Public,
     Protected(Vec<String>),
@@ -75,7 +91,7 @@ pub struct BlueprintSchema {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 
     // TODO: Move out of schema
-    pub method_permissions_instance: BTreeMap<String, SchemaMethodPermission>,
+    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

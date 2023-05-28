@@ -98,10 +98,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     } else {
         quote! {
-            fn method_permissions_instance() -> BTreeMap<String, scrypto::schema::SchemaMethodPermission> {
+            fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
                 btreemap!(
                     #(
-                        #method_names.to_string() => scrypto::schema::SchemaMethodPermission::Public,
+                        scrypto::schema::SchemaMethodKey::main(#method_names) => scrypto::schema::SchemaMethodPermission::Public,
                     )*
                 )
             }
