@@ -2,7 +2,13 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata_component {
-    use scrypto::prelude::*;
+    define_permissions! {
+        metadata {
+            set => Public;
+            remove => Public;
+            get => Public;
+        }
+    }
 
     struct MetadataComponent {}
 

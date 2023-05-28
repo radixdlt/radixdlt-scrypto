@@ -2,6 +2,22 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata {
+    define_permissions! {
+        main {
+            set_string => Public;
+            set_address => Public;
+            set_array => Public;
+            get_string => Public;
+            get_address => Public;
+            get_array => Public;
+        },
+        metadata {
+            set => Public;
+            remove => Public;
+            get => Public;
+        }
+    }
+
     struct MetadataTest {}
 
     impl MetadataTest {

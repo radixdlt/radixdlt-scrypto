@@ -511,7 +511,10 @@ macro_rules! main_permissions {
 macro_rules! module_permissions {
     ($permissions:expr, main { $($method:ident => $permission:expr;)* }) => ({
         main_permissions!($permissions, Methods, main, $($method => $permission;)*);
-    })
+    });
+    ($permissions:expr, metadata { $($method:ident => $permission:expr;)* }) => ({
+        main_permissions!($permissions, MetadataMethods, metadata, $($method => $permission;)*);
+    });
 }
 
 #[macro_export]

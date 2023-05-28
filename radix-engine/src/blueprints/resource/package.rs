@@ -664,26 +664,17 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let method_permissions_instance = method_permissions2! {
+            let outer_method_permissions_instance = method_permissions2! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_TAKE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
-                SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
-            };
-
-            let outer_method_permissions_instance = method_permissions2! {
                 SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
                 SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+                SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
             };
-
 
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -693,7 +684,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_permissions_instance,
+                method_permissions_instance: btreemap!(),
                 outer_method_permissions_instance,
             }
         };
@@ -857,11 +848,10 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let method_permissions_instance = method_permissions2! {
+            let outer_method_permissions_instance = method_permissions2! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-
                 SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
@@ -879,8 +869,8 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_permissions_instance,
-                outer_method_permissions_instance: btreemap!(),
+                method_permissions_instance: btreemap!(),
+                outer_method_permissions_instance,
             }
         };
 
@@ -986,11 +976,7 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            let method_permissions_instance = method_permissions2! {
-                SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
-                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
-                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
+            let outer_method_permissions_instance = method_permissions2! {
                 SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -1012,8 +998,8 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                method_permissions_instance,
-                outer_method_permissions_instance: btreemap!(),
+                method_permissions_instance: btreemap!(),
+                outer_method_permissions_instance,
             }
         };
 
@@ -1153,11 +1139,7 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            let method_permissions_instance = method_permissions2! {
-                SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
-                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
-                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
+            let outer_method_permissions_instance = method_permissions2! {
                 SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -1181,8 +1163,8 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                method_permissions_instance,
-                outer_method_permissions_instance: btreemap!(),
+                method_permissions_instance: btreemap!(),
+                outer_method_permissions_instance,
             }
         };
 
@@ -1234,7 +1216,7 @@ impl ResourceManagerNativePackage {
             );
 
 
-            let method_permissions_instance = method_permissions2!(
+            let outer_method_permissions_instance = method_permissions2!(
                 SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
@@ -1250,8 +1232,8 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                method_permissions_instance,
-                outer_method_permissions_instance: btreemap!(),
+                method_permissions_instance: btreemap!(),
+                outer_method_permissions_instance,
             }
         };
 
@@ -1315,7 +1297,7 @@ impl ResourceManagerNativePackage {
             );
 
 
-            let method_permissions_instance = method_permissions2!(
+            let outer_method_permissions_instance = method_permissions2!(
                 SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
@@ -1332,8 +1314,8 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                method_permissions_instance,
-                outer_method_permissions_instance: btreemap!(),
+                method_permissions_instance: btreemap!(),
+                outer_method_permissions_instance,
             }
         };
 
