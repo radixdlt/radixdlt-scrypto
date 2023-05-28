@@ -2,6 +2,18 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod royalty_test {
+    define_permissions! {
+        main {
+            paid_method => Public;
+            paid_method_panic => Public;
+            free_method => Public;
+        },
+        royalties {
+            claim_royalty => [OWNER_ROLE];
+            set_royalty_config => [OWNER_ROLE];
+        }
+    }
+
     struct RoyaltyTest {}
 
     impl RoyaltyTest {
