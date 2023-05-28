@@ -304,7 +304,7 @@ impl<L: Clone> CallFrame<L> {
             Actor::Root => {}
             Actor::Method(MethodActor {
                 global_address,
-                object_info,
+                              module_object_info: object_info,
                 instance_context,
                 ..
             }) => {

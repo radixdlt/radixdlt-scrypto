@@ -206,6 +206,14 @@ impl From<Vec<&str>> for RoleList {
     }
 }
 
+impl From<Vec<String>> for RoleList {
+    fn from(value: Vec<String>) -> Self {
+        Self {
+            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+        }
+    }
+}
+
 impl<const N: usize> From<[&str; N]> for RoleList {
     fn from(value: [&str; N]) -> Self {
         Self {

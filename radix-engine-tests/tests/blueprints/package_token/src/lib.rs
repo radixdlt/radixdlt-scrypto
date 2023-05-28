@@ -15,7 +15,6 @@ mod factory {
             Self { my_component: None }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::Fixed(rule!(require(Runtime::package_token()))))
-                .methods(method_permissions())
                 .globalize()
         }
 

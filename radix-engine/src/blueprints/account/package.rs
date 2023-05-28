@@ -3,16 +3,15 @@ use crate::errors::SystemUpstreamError;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeSchema, VirtualLazyLoadSchema};
 
 use crate::blueprints::account::AccountBlueprint;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
+use crate::{method_permissions2};
 
 use super::AccountSubstate;
 
@@ -294,6 +293,29 @@ impl AccountNativePackage {
             }
         );
 
+        let method_permissions_instance = method_permissions2!(
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_WITHDRAW_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_SECURIFY_IDENT) => ["securify"];
+            SchemaMethodKey::main(ACCOUNT_DEPOSIT_IDENT) => ["owner"];
+            SchemaMethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => ["owner"];
+
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT) => SchemaMethodPermission::Public;
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -305,8 +327,8 @@ impl AccountNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
-                    method_permissions_instance: btreemap!(),
-                    inner_method_permissions_instance: btreemap!(),
+                    method_permissions_instance,
+                    outer_method_permissions_instance: btreemap!(),
                 }
             ),
         }

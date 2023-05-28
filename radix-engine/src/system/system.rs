@@ -457,14 +457,14 @@ where
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
         match actor_object_type {
             ActorObjectType::OuterObject => {
-                let address = method.object_info.outer_object.unwrap();
+                let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
                 Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
-                let info = method.object_info.clone();
+                let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
                 Ok((node_id, object_module_id.base_partition_num(), info, schema))
@@ -928,7 +928,7 @@ where
                     }
                 };
 
-                (receiver_info, global_address)
+                (receiver_info.clone(), global_address)
             }
             // TODO: Check if type has these object modules
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
@@ -972,6 +972,7 @@ where
             actor: Actor::method(
                 global_address,
                 identifier,
+                receiver_info,
                 object_info,
                 instance_context,
                 direct_access,
@@ -1526,7 +1527,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let object_info = actor
             .try_as_method()
-            .map(|m| m.object_info.clone())
+            .map(|m| m.module_object_info.clone())
             .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
 
         Ok(object_info)
@@ -1757,7 +1758,7 @@ where
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
                 Actor::Method(MethodActor {
-                    ref object_info, ..
+                                  module_object_info: ref object_info, ..
                 }) => Ok(object_info.blueprint.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(

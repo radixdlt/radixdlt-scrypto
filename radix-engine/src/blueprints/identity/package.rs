@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use crate::{method_permissions, permission_entry};
+use crate::{method_permissions, method_permissions2, permission_entry};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -16,7 +16,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
@@ -72,6 +72,14 @@ impl IdentityNativePackage {
             }
         );
 
+        let method_permissions_instance = method_permissions2! {
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => ["owner"];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => ["owner"];
+
+            SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -83,8 +91,8 @@ impl IdentityNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
-                    method_permissions_instance: btreemap!(),
-                    inner_method_permissions_instance: btreemap!(),
+                    method_permissions_instance,
+                    outer_method_permissions_instance: btreemap!(),
                 }
             ),
         }

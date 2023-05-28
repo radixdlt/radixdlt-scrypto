@@ -65,6 +65,20 @@ impl SchemaMethodKey {
             ident: method_ident.to_string(),
         }
     }
+
+    pub fn metadata<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 1u8,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn royalty<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 2u8,
+            ident: method_ident.to_string(),
+        }
+    }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -72,6 +86,12 @@ impl SchemaMethodKey {
 pub enum SchemaMethodPermission {
     Public,
     Protected(Vec<String>),
+}
+
+impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
+    fn from(value: [&str; N]) -> Self {
+        SchemaMethodPermission::Protected(value.to_vec().into_iter().map(|s| s.to_string()).collect())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -92,7 +112,7 @@ pub struct BlueprintSchema {
 
     // TODO: Move out of schema
     pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub inner_method_permissions_instance: BTreeMap<String, BTreeMap<SchemaMethodKey, SchemaMethodPermission>>,
+    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -185,7 +205,7 @@ impl Default for BlueprintSchema {
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
             method_permissions_instance: BTreeMap::default(),
-            inner_method_permissions_instance: BTreeMap::default(),
+            outer_method_permissions_instance: BTreeMap::default(),
         }
     }
 }
@@ -204,6 +224,9 @@ pub struct IndexedBlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -230,6 +253,8 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
+            method_permissions_instance: schema.method_permissions_instance,
+            outer_method_permissions_instance: schema.outer_method_permissions_instance,
         }
     }
 }

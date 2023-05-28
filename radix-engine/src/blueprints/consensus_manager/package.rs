@@ -3,15 +3,13 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use crate::{event_schema, types::*};
+use crate::{event_schema, method_permissions2, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission};
 use resources_tracker_macro::trace_resources;
 
 use super::*;
@@ -124,6 +122,16 @@ impl ConsensusManagerNativePackage {
             ]
         };
 
+        let method_permissions_instance = method_permissions2!(
+            SchemaMethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
+            SchemaMethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
+
+            SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => SchemaMethodPermission::Public;
+        );
+
         let schema = generate_full_schema(aggregator);
         let consensus_manager_schema = BlueprintSchema {
             outer_blueprint: None,
@@ -133,8 +141,8 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_permissions_instance: btreemap!(),
-            inner_method_permissions_instance: btreemap!(),
+            method_permissions_instance,
+            outer_method_permissions_instance: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -275,6 +283,23 @@ impl ConsensusManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
+        let method_permissions_instance = method_permissions2! {
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
+
+            SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+        };
+
         let validator_schema = BlueprintSchema {
             outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
             schema,
@@ -283,8 +308,8 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_permissions_instance: btreemap!(),
-            inner_method_permissions_instance: btreemap!(),
+            method_permissions_instance,
+            outer_method_permissions_instance: btreemap!(),
         };
 
         PackageSchema {

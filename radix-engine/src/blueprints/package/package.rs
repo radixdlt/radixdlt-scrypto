@@ -21,13 +21,13 @@ use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
-use crate::{method_permissions, permission_entry};
+use crate::{method_permissions, method_permissions2, permission_entry};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
@@ -295,6 +295,12 @@ impl PackageNativePackage {
             },
         );
 
+        let method_permissions_instance = method_permissions2! {
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
+            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => ["owner"];
+            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => ["owner"];
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -306,8 +312,8 @@ impl PackageNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    method_permissions_instance: btreemap!(),
-                    inner_method_permissions_instance: btreemap!(),
+                    method_permissions_instance,
+                    outer_method_permissions_instance: btreemap!(),
                 }
             ),
         }

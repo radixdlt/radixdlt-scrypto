@@ -492,21 +492,28 @@ macro_rules! method_permissions {
     })
 }
 
+
+#[macro_export]
+macro_rules! main_permissions {
+    ($permissions:expr, $($method:ident => $permission:expr;)*) => ({
+        let permissions = method_permissions!($($method => $permission;)*);
+        for (method, permission) in permissions.to_mapping() {
+            let permission = match permission {
+                MethodPermission::Public => scrypto::schema::SchemaMethodPermission::Public,
+                MethodPermission::Protected(role_list) => scrypto::schema::SchemaMethodPermission::Protected(role_list.to_list()),
+            };
+            $permissions.insert(scrypto::schema::SchemaMethodKey::main(method), permission);
+        }
+    })
+}
+
 #[macro_export]
 macro_rules! define_permissions {
     ($($method:ident => $permission:expr;)*) => (
-        fn method_permissions() -> Methods::<MethodPermission> {
-            method_permissions!($($method => $permission;)*)
-        }
-
         fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
-            method_permissions().to_mapping().into_iter().map(|(method, permission)| {
-                let permission = match permission {
-                    MethodPermission::Public => scrypto::schema::SchemaMethodPermission::Public,
-                    MethodPermission::Protected(role_list) => scrypto::schema::SchemaMethodPermission::Protected(role_list.to_list()),
-                };
-                (scrypto::schema::SchemaMethodKey::main(method), permission)
-            }).collect()
+            let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
+            main_permissions!(permissions, $($method => $permission;)*);
+            permissions
         }
     )
 }

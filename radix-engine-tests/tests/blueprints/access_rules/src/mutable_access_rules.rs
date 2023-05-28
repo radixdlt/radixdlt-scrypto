@@ -17,7 +17,6 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .define_roles(roles)
-                .methods(method_permissions())
                 .globalize()
         }
 
@@ -31,7 +30,6 @@ mod mutable_access_rules_component {
                     "borrow_funds_auth" => rule!(require(RADIX_TOKEN)), mut ["deposit_funds_auth"];
                     "deposit_funds_auth" => owner_update_access_rule;
                 })
-                .methods(method_permissions())
                 .globalize()
         }
 

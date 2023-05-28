@@ -81,7 +81,6 @@ mod genesis_helper {
             .define_roles(roles! {
                 "system" => rule!(require(system_role.clone())), mut ["system"];
             })
-            .methods(method_permissions())
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
             .globalize()
         }

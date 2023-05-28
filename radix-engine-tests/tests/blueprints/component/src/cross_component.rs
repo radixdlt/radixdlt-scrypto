@@ -21,7 +21,6 @@ mod cross_component {
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(access_rule))
-            .methods(method_permissions())
             .globalize()
         }
 

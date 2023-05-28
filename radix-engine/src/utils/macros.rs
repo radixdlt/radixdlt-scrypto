@@ -35,3 +35,18 @@ macro_rules! method_permissions {
         method_permissions!{$($key => $($entry),*);*}
     );
 }
+
+#[macro_export]
+macro_rules! method_permissions2 {
+    ( $($method:expr => $entry:expr );* ) => ({
+        let mut methods: BTreeMap<SchemaMethodKey, SchemaMethodPermission>
+            = BTreeMap::new();
+        $(
+            methods.insert($method, $entry.into());
+        )*
+        methods
+    });
+    ( $($key:expr => $entry:expr;)* ) => (
+        method_permissions2!{$($key => $entry);*}
+    );
+}
