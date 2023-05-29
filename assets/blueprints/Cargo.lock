@@ -942,6 +942,7 @@ name = "scrypto"
 version = "0.10.0"
 dependencies = [
  "bech32",
+ "const-sha1",
  "hex",
  "num-bigint",
  "num-traits",

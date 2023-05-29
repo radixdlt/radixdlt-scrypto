@@ -13,9 +13,10 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
-use scrypto_schema::KeyValueStoreInfo;
+use scrypto_schema::KeyValueStoreSchema;
 
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::runtime::Runtime;
 
 // TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
@@ -38,12 +39,11 @@ impl<
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
 
-        let schema = KeyValueStoreInfo::new::<K, V>(true);
-
-        let id = env.key_value_store_new(schema).unwrap();
+        let mut store_schema = KeyValueStoreSchema::new::<K, V>(true);
+        store_schema.replace_self_package_address(Runtime::package_address());
 
         Self {
-            id: Own(id),
+            id: Own(env.key_value_store_new(store_schema).unwrap()),
             key: PhantomData,
             value: PhantomData,
         }

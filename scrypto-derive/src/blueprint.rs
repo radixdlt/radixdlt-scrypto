@@ -87,6 +87,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
 
+    let blueprint_name = bp_ident.to_string();
+    let owned_typed_name = format!("Owned{}", blueprint_name);
+    let global_typed_name = format!("Global{}", blueprint_name);
+
     let definition_statements = bp.macro_statements;
     let definition_statements = if !definition_statements.is_empty() {
         quote! {
@@ -214,6 +218,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         impl HasMethods for #bp_ident {
             type Permissions = Methods<MethodPermission>;
             type Royalties = Methods<MethodRoyalty>;
+        }
+
+        impl HasTypeInfo for #bp_ident {
+            const PACKAGE_ADDRESS: Option<PackageAddress> = None;
+            const BLUEPRINT_NAME: &'static str = #blueprint_name;
+            const OWNED_TYPE_NAME: &'static str = #owned_typed_name;
+            const GLOBAL_TYPE_NAME: &'static str = #global_typed_name;
         }
     };
 
@@ -792,6 +803,13 @@ mod tests {
                     impl HasMethods for Test {
                         type Permissions = Methods<MethodPermission>;
                         type Royalties = Methods<MethodRoyalty>;
+                    }
+
+                    impl HasTypeInfo for Test {
+                        const PACKAGE_ADDRESS: Option<PackageAddress> = None;
+                        const BLUEPRINT_NAME: &'static str = "Test";
+                        const OWNED_TYPE_NAME: &'static str = "OwnedTest";
+                        const GLOBAL_TYPE_NAME: &'static str = "GlobalTest";
                     }
 
                     pub struct Methods<T> {
