@@ -3,9 +3,9 @@ use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-    COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyInput,
+    COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
+    COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -51,17 +51,17 @@ impl Royalty {
         Self(ModuleHandle::Own(royalty))
     }
 
-    pub fn set_config(&self, royalty_config: RoyaltyConfig) {
+    pub fn set_royalty(&self, method: String, amount: u32) {
         self.call_ignore_rtn(
-            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-            &ComponentSetRoyaltyConfigInput { royalty_config },
+            COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+            &ComponentSetRoyaltyInput { method, amount },
         );
     }
 
-    pub fn claim_royalty(&self) -> Bucket {
+    pub fn claim_royalties(&self) -> Bucket {
         self.call(
-            COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-            &ComponentClaimRoyaltyInput {},
+            COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
+            &ComponentClaimRoyaltiesInput {},
         )
     }
 }

@@ -194,7 +194,7 @@ fn test_only_component_owner_can_set_royalty_config() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_component_royalty_config(component_address, RoyaltyConfig::default())
+            .set_component_royalty(component_address, "paid_method".to_string(), 0u32)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -204,7 +204,7 @@ fn test_only_component_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .set_component_royalty_config(component_address, RoyaltyConfig::default())
+            .set_component_royalty(component_address, "paid_method".to_string(), 0u32)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -230,7 +230,7 @@ fn test_only_component_owner_can_claim_royalty() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .claim_component_royalty(component_address)
+            .claim_component_royalties(component_address)
             .call_method(
                 account,
                 "try_deposit_batch_or_abort",
@@ -245,7 +245,7 @@ fn test_only_component_owner_can_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .claim_component_royalty(component_address)
+            .claim_component_royalties(component_address)
             .call_method(
                 account,
                 "try_deposit_batch_or_abort",

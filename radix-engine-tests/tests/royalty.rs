@@ -284,7 +284,7 @@ fn test_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .claim_component_royalty(component_address)
+            .claim_component_royalties(component_address)
             .call_method(
                 account,
                 "try_deposit_batch_or_abort",

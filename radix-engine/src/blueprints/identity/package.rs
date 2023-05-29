@@ -12,7 +12,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
@@ -79,8 +79,8 @@ impl IdentityNativePackage {
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
 
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
 
             SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
         };

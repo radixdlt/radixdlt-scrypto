@@ -4,8 +4,8 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -617,24 +617,25 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn set_component_royalty_config(
+    pub fn set_component_royalty<S: ToString>(
         &mut self,
         component_address: ComponentAddress,
-        royalty_config: RoyaltyConfig,
+        method: S,
+        amount: u32,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&ComponentSetRoyaltyInput { method: method.to_string(), amount }),
         })
         .0
     }
 
-    pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
+    pub fn claim_component_royalties(&mut self, component_address: ComponentAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
+            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
+            args: to_manifest_value(&ComponentClaimRoyaltiesInput {}),
         })
         .0
     }
