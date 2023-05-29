@@ -249,7 +249,7 @@ impl ConsensusManagerBlueprint {
             )?
         };
 
-        let role_definitions = roles! {
+        let role_definitions = roles2! {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
             START_ROLE => rule!(require(AuthAddresses::system_role()));
         };

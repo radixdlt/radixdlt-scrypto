@@ -105,7 +105,7 @@ macro_rules! role_entry {
 }
 
 #[macro_export]
-macro_rules! roles {
+macro_rules! roles2 {
     ( ) => ({
         $crate::blueprints::resource::Roles::new()
     });
@@ -117,6 +117,6 @@ macro_rules! roles {
         roles
     });
     ( $($role:expr => $rule:expr $(, mut $mutability:expr)?;)* ) => ({
-        roles!($($role => $rule $(, mut $mutability)?);*)
+        roles2!($($role => $rule $(, mut $mutability)?);*)
     })
 }

@@ -2,8 +2,8 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod royalty_test {
-    define_permissions! {
-        main {
+    define_static_auth! {
+        methods {
             paid_method => PUBLIC;
             paid_method_panic => PUBLIC;
             free_method => PUBLIC;
@@ -49,13 +49,11 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge))))
-                .royalties(royalties!(
-                    init {
-                        paid_method => 1u32;
-                        paid_method_panic => 1u32;
-                        free_method => Free;
-                    }
-                ))
+                .royalties(royalties! {
+                    paid_method => 1u32;
+                    paid_method_panic => 1u32;
+                    free_method => Free;
+                })
                 .globalize()
         }
 

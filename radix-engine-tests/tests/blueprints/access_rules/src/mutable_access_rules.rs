@@ -2,12 +2,12 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod mutable_access_rules_component {
-    define_permissions! {
+    define_static_auth! {
         roles {
             borrow_funds_auth,
             deposit_funds_auth
         },
-        main {
+        methods {
             borrow_funds => borrow_funds_auth;
             deposit_funds => deposit_funds_auth;
             set_authority_rules => PUBLIC;
@@ -22,7 +22,7 @@ mod mutable_access_rules_component {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .define_roles(roles)
+                .roles(roles)
                 .globalize()
         }
 
@@ -32,7 +32,7 @@ mod mutable_access_rules_component {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .define_roles(define_roles! {
+                .roles(roles! {
                     borrow_funds_auth => rule!(require(RADIX_TOKEN)), mut deposit_funds_auth;
                     deposit_funds_auth => owner_update_access_rule;
                 })

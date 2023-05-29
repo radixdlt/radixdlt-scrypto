@@ -2,8 +2,8 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod cross_component {
-    define_permissions! {
-        main {
+    define_static_auth! {
+        methods {
             put_auth => PUBLIC;
             cross_component_call => PUBLIC;
             get_component_state => OWNER;

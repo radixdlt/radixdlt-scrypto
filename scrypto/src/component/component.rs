@@ -220,10 +220,6 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
     }
 }
 
-pub struct MetadataInit {
-    pub metadata: Metadata,
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
@@ -242,22 +238,22 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
-    pub fn define_roles(mut self, authority_rules: Roles) -> Self {
-        self.roles = authority_rules;
+    pub fn roles(mut self, roles: Roles) -> Self {
+        self.roles = roles;
         self
     }
 
-    pub fn metadata(mut self, init: MetadataInit) -> Self {
+    pub fn metadata(mut self, metadata: Metadata) -> Self {
         if self.metadata.is_some() {
             panic!("Metadata already set.");
         }
-        self.metadata = Some(init.metadata);
+        self.metadata = Some(metadata);
 
         self
     }
 
-    pub fn royalties(mut self, royalties: RoyaltiesConfig<C::Royalties>) -> Self {
-        for (method, royalty) in royalties.method_royalties.to_mapping() {
+    pub fn royalties(mut self, royalties: C::Royalties) -> Self {
+        for (method, royalty) in royalties.to_mapping() {
             match royalty {
                 MethodRoyalty::Free => {}
                 MethodRoyalty::Charge(amount) => self.royalty.set_rule(method, amount),

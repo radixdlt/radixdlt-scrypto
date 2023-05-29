@@ -1327,7 +1327,7 @@ fn locked_access_rules() -> RuleSet {
 }
 
 fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
-    roles! {
+    roles2! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, mut [SELF_ROLE];
         "recovery" => rule_set.recovery_role, mut [SELF_ROLE];

@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata_component {
-    define_permissions! {
+    define_static_auth! {
         metadata {
             set => PUBLIC;
             remove => PUBLIC;
@@ -18,9 +18,7 @@ mod metadata_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
-                    init {
-                        key.clone() => value.clone();
-                    }
+                    key.clone() => value.clone()
                 })
                 .globalize();
 

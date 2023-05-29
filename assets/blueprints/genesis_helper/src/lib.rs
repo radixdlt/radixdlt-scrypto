@@ -51,11 +51,11 @@ pub enum GenesisDataChunk {
 
 #[blueprint]
 mod genesis_helper {
-    define_permissions! {
+    define_static_auth! {
         roles {
             system
         },
-        main {
+        methods {
             ingest_data_chunk => system;
             wrap_up => system;
         }
@@ -83,7 +83,7 @@ mod genesis_helper {
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
-            .define_roles(define_roles! {
+            .roles(roles! {
                 system => rule!(require(system_role.clone())), mut system;
             })
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))

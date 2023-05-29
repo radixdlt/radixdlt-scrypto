@@ -8,10 +8,10 @@ pub use crate::modules::*;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
-    blueprint, debug, define_permissions, error, external_blueprint, external_component,
-    include_code, include_schema, info, main_permissions, metadata, metadata_init,
-    method_permission, method_permissions, method_royalties, module_permissions, resource_list, royalties,
-    this_package, trace, warn, NonFungibleData, define_roles, role_definition_entry
+    blueprint, debug, define_static_auth, error, external_blueprint, external_component,
+    include_code, include_schema, info, main_permissions, metadata,
+    method_permission, method_permissions, module_permissions, permission_role_list, resource_list, royalties,
+    this_package, trace, warn, NonFungibleData, roles, role_definition_entry, to_role_key,
 };
 
 //=========================
@@ -34,7 +34,7 @@ pub use radix_engine_interface::time::*;
 pub use radix_engine_interface::traits::*;
 pub use radix_engine_interface::types::*;
 pub use radix_engine_interface::{
-    access_and_or, access_rule_node, dec, i, manifest_args, pdec, role_entry, roles, rule,
+    access_and_or, access_rule_node, dec, i, manifest_args, pdec, role_entry, roles2, rule,
     scrypto_args, ScryptoCategorize, ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
 };
 

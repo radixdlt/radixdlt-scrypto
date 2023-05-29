@@ -460,19 +460,35 @@ macro_rules! external_component_members {
 }
 
 #[macro_export]
+macro_rules! to_role_key {
+    (OWNER) => ({ OWNER_ROLE });
+    (SELF) => ({ SELF_ROLE });
+    ($role:ident) => ({ ROLE_STRINGS.$role });
+}
+
+#[macro_export]
+macro_rules! permission_role_list {
+    ($list:ident, $role:ident) => ({
+        $list.insert(to_role_key!($role));
+    });
+    ($list:ident, $role:ident, $($roles:ident),*) => ({
+        $list.insert(to_role_key!($role));
+        permission_role_list!($list, $($roles),*);
+    });
+}
+
+#[macro_export]
 macro_rules! method_permission {
     (PUBLIC) => ({
         MethodPermission::Public
     });
-    (OWNER) => ({
-        [
-            OWNER_ROLE
-        ].into()
+    (NOBODY) => ({
+        [].into()
     });
-    ($protected:ident) => ({
-        [
-            ROLE_STRINGS.$protected
-        ].into()
+    ($($roles:ident),*) => ({
+        let mut list = RoleList::none();
+        permission_role_list!(list, $($roles),*);
+        MethodPermission::Protected(list)
     });
 }
 
@@ -503,7 +519,7 @@ macro_rules! main_permissions {
 
 #[macro_export]
 macro_rules! module_permissions {
-    ($permissions:expr, main { $($method:ident => $permission:ident;)* }) => ({
+    ($permissions:expr, methods { $($method:ident => $permission:ident;)* }) => ({
         main_permissions!($permissions, Methods, main, $($method => $permission;)*);
     });
     ($permissions:expr, metadata { $($method:ident => $permission:ident;)* }) => ({
@@ -515,7 +531,7 @@ macro_rules! module_permissions {
 }
 
 #[macro_export]
-macro_rules! define_permissions {
+macro_rules! define_static_auth {
     (
         roles {
             $($role:ident),*
@@ -570,7 +586,7 @@ macro_rules! role_definition_entry {
 }
 
 #[macro_export]
-macro_rules! define_roles {
+macro_rules! roles {
     ( $($role:ident => $rule:expr $(, mut $mutability:ident)? ;)* ) => ({
         let method_roles = MethodRoles::<RoleEntry> {
             $($role: role_definition_entry!($rule $(, mut $mutability)?)),*
@@ -586,47 +602,32 @@ macro_rules! define_roles {
 }
 
 #[macro_export]
-macro_rules! method_royalties {
-    ($($method:ident => $royalty:expr;)*) => ({
+macro_rules! royalties {
+    ($($method:ident => $royalty:expr),*) => ({
         Methods::<MethodRoyalty> {
             $(
                 $method: $royalty.into(),
             )*
         }
-    })
-}
-
-#[macro_export]
-macro_rules! royalties {
-    (init $method_royalties:tt) => ({
-        RoyaltiesConfig {
-            method_royalties: method_royalties!$method_royalties,
-        }
+    });
+    ($($method:ident => $royalty:expr,)*) => ({
+        royalties!($($method => $royalty),*)
     });
 }
 
 #[macro_export]
-macro_rules! metadata_init {
+macro_rules! metadata {
     ( ) => ({
         ::scrypto::prelude::Metadata::new()
     });
-    ( $($key:expr => $value:expr);* ) => ({
+    ( $($key:expr => $value:expr),* ) => ({
         let mut metadata = ::scrypto::prelude::Metadata::new();
         $(
             metadata.set($key, $value);
         )*
         metadata
     });
-    ( $($key:expr => $value:expr;)* ) => ({
-        metadata_init!{$($key => $value);*}
-    })
-}
-
-#[macro_export]
-macro_rules! metadata {
-    (init $init:tt) => ({
-        MetadataInit {
-            metadata: metadata_init!$init,
-        }
-    })
+    ( $($key:expr => $value:expr,)* ) => ({
+        metadata!{$($key => $value),*}
+    });
 }

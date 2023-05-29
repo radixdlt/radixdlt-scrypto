@@ -2,8 +2,8 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata {
-    define_permissions! {
-        main {
+    define_static_auth! {
+        methods {
             set_string => PUBLIC;
             set_address => PUBLIC;
             set_array => PUBLIC;

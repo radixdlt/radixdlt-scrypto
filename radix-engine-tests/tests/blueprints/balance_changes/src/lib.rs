@@ -2,14 +2,14 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod balance_changes_test {
-    define_permissions! {
-        main {
+    define_static_auth! {
+        methods {
             put => PUBLIC;
             boom => PUBLIC;
         },
         royalties {
             claim_royalty => OWNER;
-            set_royalty_config => OWNER;
+            set_royalty_config => NOBODY;
         }
     }
 
@@ -25,10 +25,8 @@ mod balance_changes_test {
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
             .royalties(royalties! {
-                init {
-                    put => 1u32;
-                    boom => 1u32;
-                }
+                put => 1u32,
+                boom => 1u32,
             })
             .globalize()
         }
