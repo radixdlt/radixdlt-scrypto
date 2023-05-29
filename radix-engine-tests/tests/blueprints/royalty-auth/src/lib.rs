@@ -51,8 +51,8 @@ mod royalty_test {
                 .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge))))
                 .royalties(royalties! {
                     paid_method => Xrd(1.into()),
-                        paid_method_panic => Xrd(1.into()),
-                        free_method => Free,
+                    paid_method_panic => Xrd(1.into()),
+                    free_method => Free,
                 })
                 .globalize()
         }

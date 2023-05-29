@@ -205,10 +205,10 @@ pub struct TransactionReceipt {
     pub result: TransactionResult,
     /// Metrics gathered during transaction execution.
     pub execution_metrics: ExecutionMetrics,
-    /// Optional, only if `EnabledModule::ExecutionTrace` is ON.
+    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
     /// Mainly for transaction preview.
     pub execution_trace: TransactionExecutionTrace,
-    /// Optional, only if compile-time feature flag `resources_usage` is ON.
+    /// Optional, only when compile-time feature flag `resources_usage` is ON.
     pub resources_usage: ResourcesUsage,
 }
 
