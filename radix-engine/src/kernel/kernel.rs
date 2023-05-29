@@ -111,7 +111,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..) => {
+                TypeInfoSubstate::PhantomObject(..) | TypeInfoSubstate::KeyValueStore(..) => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }

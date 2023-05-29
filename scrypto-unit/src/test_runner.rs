@@ -1461,7 +1461,8 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::KeyValueStore(..) => {
+                            TypeInfoSubstate::PhantomObject(..)
+                            | TypeInfoSubstate::KeyValueStore(..) => {
                                 panic!("No event schema.")
                             }
                         }

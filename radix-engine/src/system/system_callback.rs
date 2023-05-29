@@ -485,7 +485,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         }
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(_) => {}
+                TypeInfoSubstate::PhantomObject(_) | TypeInfoSubstate::KeyValueStore(_) => {}
             }
         }
 
