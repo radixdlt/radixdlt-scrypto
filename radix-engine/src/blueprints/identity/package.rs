@@ -75,7 +75,10 @@ impl IdentityNativePackage {
         );
 
         let method_permissions_instance = method_permissions2! {
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => ["owner"];
+
             SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => ["owner"];
             SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => ["owner"];
 

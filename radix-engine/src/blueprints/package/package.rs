@@ -17,7 +17,7 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_GET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue};
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
@@ -70,13 +70,12 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn validate_package_event_schema(schema: &mut PackageSchema) -> Result<(), PackageError> {
+fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     for BlueprintSchema {
         schema,
         event_schema,
-        method_permissions_instance,
         ..
-    } in schema.blueprints.values_mut()
+    } in schema.blueprints.values()
     {
         // Package schema validation happens when the package is published. No need to redo
         // it here again.
@@ -109,15 +108,6 @@ fn validate_package_event_schema(schema: &mut PackageSchema) -> Result<(), Packa
                     actual: actual_event_name,
                 })?
             }
-        }
-
-        // TODO: Is this the right place for this?
-        if !method_permissions_instance.contains_key(&SchemaMethodKey::metadata(METADATA_GET_IDENT))
-        {
-            method_permissions_instance.insert(
-                SchemaMethodKey::metadata(METADATA_GET_IDENT),
-                SchemaMethodPermission::Public,
-            );
         }
     }
 
@@ -445,7 +435,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_native<Y>(
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         native_package_code_id: u8,
-        mut schema: PackageSchema,
+        schema: PackageSchema,
         dependent_resources: Vec<ResourceAddress>,
         dependent_components: Vec<ComponentAddress>,
         metadata: BTreeMap<String, MetadataValue>,
@@ -459,7 +449,7 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&mut schema)
+        validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
@@ -547,7 +537,7 @@ impl PackageNativePackage {
     fn publish_wasm_internal<Y>(
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
-        mut schema: PackageSchema,
+        schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
@@ -559,7 +549,7 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&mut schema)
+        validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
             collections,

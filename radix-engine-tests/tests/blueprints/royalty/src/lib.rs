@@ -34,9 +34,9 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .royalties(royalties! {
-                    free_method => Free;
-                    paid_method => 1u32;
-                    paid_method_panic => 1u32;
+                    free_method => Free,
+                    paid_method => 1u32,
+                    paid_method_panic => 1u32,
                 })
                 .globalize()
         }

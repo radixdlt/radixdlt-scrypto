@@ -176,39 +176,15 @@ impl AuthModule {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
+        // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
                 let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
                 schema.method_permissions_instance
-                //&access_rules.access_rules
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
                 let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
                 schema.outer_method_permissions_instance
-
-                /*
-                let blueprint_id = BlueprintId::new(&callee.node_object_info.blueprint.package_address, blueprint_name);
-                let schema = api.get_blueprint_schema(&blueprint_id)?;
-                let parent_blueprint_id = BlueprintId::new(&callee.node_object_info.blueprint.package_address, schema.outer_blueprint.unwrap());
-
-                let schema = api.get_blueprint_schema(&parent_blueprint_id)?;
-
-                if let Some(inner_instance) = schema.outer_method_permissions_instance.get(blueprint_name.as_str()) {
-                    inner_instance.clone()
-                } else {
-                    return Ok(());
-                }
-                     */
-
-                /*
-                let child_rules = access_rules
-                    .inner_blueprint_access_rules
-                    .get(blueprint_name)
-                    .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                        AuthError::InnerBlueprintDoesNotExist(blueprint_name.clone()),
-                    )))?;
-                child_rules
-                 */
             }
         };
 

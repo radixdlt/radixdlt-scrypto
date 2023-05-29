@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
@@ -298,7 +298,10 @@ impl AccountNativePackage {
         );
 
         let method_permissions_instance = method_permissions2!(
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => ["owner"];
+
             SchemaMethodKey::main(ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT) => ["owner"];
             SchemaMethodKey::main(ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT) => ["owner"];
             SchemaMethodKey::main(ACCOUNT_WITHDRAW_IDENT) => ["owner"];
