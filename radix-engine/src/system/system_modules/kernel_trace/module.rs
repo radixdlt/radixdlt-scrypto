@@ -70,15 +70,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelDebugModul
 
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_type: Option<EntityType>,
-        virtual_node: bool,
+        request: &IDAllocationRequest,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Allocating node id: type = {:?}  virtual = {}",
-            node_type,
-            virtual_node
-        );
+        log!(api, "Allocating node id: request = {:?}", request);
+        Ok(())
+    }
+
+    fn on_allocate_virtual_node_id<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        request: &NodeId,
+    ) -> Result<(), RuntimeError> {
+        log!(api, "Allocating virtual node id: request = {:?}", request);
         Ok(())
     }
 

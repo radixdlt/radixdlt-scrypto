@@ -377,8 +377,13 @@ impl AuthModule {
         );
 
         // Create node
-        let auth_zone_node_id =
-            api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        let auth_zone_node_id = api.kernel_allocate_node_id(IDAllocationRequest::Object {
+            blueprint_id: BlueprintId {
+                package_address: RESOURCE_PACKAGE,
+                blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+            },
+            global: false,
+        })?;
 
         api.kernel_create_node(
             auth_zone_node_id,

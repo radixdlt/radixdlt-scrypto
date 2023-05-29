@@ -556,13 +556,19 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn on_allocate_node_id<Y>(
-        entity_type: Option<EntityType>,
-        virtual_node: bool,
+        request: &IDAllocationRequest,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_allocate_node_id(api, entity_type, virtual_node)
+        SystemModuleMixer::on_allocate_node_id(api, request)
+    }
+
+    fn on_allocate_virtual_node_id<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_allocate_virtual_node_id(api, node_id)
     }
 }

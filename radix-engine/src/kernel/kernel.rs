@@ -292,17 +292,20 @@ where
     }
 
     #[trace_resources(log=entity_type)]
-    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
-        M::on_allocate_node_id(Some(entity_type), false, self)?;
+    fn kernel_allocate_node_id(
+        &mut self,
+        request: IDAllocationRequest,
+    ) -> Result<NodeId, RuntimeError> {
+        M::on_allocate_node_id(&request, self)?;
 
-        let node_id = self.id_allocator.allocate_node_id(entity_type)?;
+        let node_id = self.id_allocator.allocate_node_id(request)?;
 
         Ok(node_id)
     }
 
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        M::on_allocate_node_id(node_id.entity_type(), true, self)?;
+        M::on_allocate_virtual_node_id(&node_id, self)?;
 
         self.id_allocator.allocate_virtual_node_id(node_id);
 

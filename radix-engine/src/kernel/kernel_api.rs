@@ -17,7 +17,10 @@ pub trait KernelNodeApi {
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
 
     /// Allocates a new node id useable for create_node
-    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError>;
+    fn kernel_allocate_node_id(
+        &mut self,
+        request: IDAllocationRequest,
+    ) -> Result<NodeId, RuntimeError>;
 
     /// Creates a new RENode
     fn kernel_create_node(

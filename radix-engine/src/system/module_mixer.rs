@@ -296,10 +296,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources(log=entity_type)]
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        entity_type: Option<EntityType>,
-        virtual_node: bool,
+        request: &IDAllocationRequest,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_allocate_node_id(api, entity_type, virtual_node))
+        internal_call_dispatch!(api, on_allocate_node_id(api, request))
+    }
+
+    #[trace_resources(log=entity_type)]
+    fn on_allocate_virtual_node_id<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        node_id: &NodeId,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_allocate_virtual_node_id(api, node_id))
     }
 
     #[trace_resources]

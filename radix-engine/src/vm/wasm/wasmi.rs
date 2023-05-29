@@ -254,11 +254,20 @@ fn new_key_value_store(
 }
 
 fn preallocate_global_address(
-    caller: Caller<'_, HostState>,
+    mut caller: Caller<'_, HostState>,
+    blueprint_id_ptr: u32,
+    blueprint_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.preallocate_global_address().map(|buffer| buffer.0)
+    runtime
+        .preallocate_global_address(read_memory(
+            caller.as_context_mut(),
+            memory,
+            blueprint_id_ptr,
+            blueprint_id_len,
+        )?)
+        .map(|buffer| buffer.0)
 }
 
 fn globalize_object(
@@ -678,8 +687,12 @@ impl WasmiModule {
 
         let host_preallocate_global_address = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                preallocate_global_address(caller).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>,
+             blueprint_id_ptr: u32,
+             blueprint_id_len: u32|
+             -> Result<u64, Trap> {
+                preallocate_global_address(caller, blueprint_id_ptr, blueprint_id_len)
+                    .map_err(|e| e.into())
             },
         );
 

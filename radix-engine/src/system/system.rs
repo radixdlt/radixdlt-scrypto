@@ -199,18 +199,12 @@ where
             None
         };
 
-        let node_id = {
-            let entity_type = match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                (RESOURCE_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => EntityType::InternalFungibleVault,
-                (RESOURCE_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
-                    EntityType::InternalNonFungibleVault
-                }
-                (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
-                _ => EntityType::InternalGenericComponent,
-            };
-
-            self.api.kernel_allocate_node_id(entity_type)?
-        };
+        let node_id = self
+            .api
+            .kernel_allocate_node_id(IDAllocationRequest::Object {
+                blueprint_id: blueprint.clone(),
+                global: false,
+            })?;
 
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
@@ -821,10 +815,16 @@ where
     }
 
     #[trace_resources]
-    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+    fn preallocate_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+    ) -> Result<GlobalAddress, RuntimeError> {
         let allocated_node_id = self
             .api
-            .kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
+            .kernel_allocate_node_id(IDAllocationRequest::Object {
+                blueprint_id,
+                global: true,
+            })?;
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
     }
 
@@ -835,10 +835,13 @@ where
     ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME ensure that only the package actor can globalize its own blueprints
 
-        let blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        let entity_type = get_entity_type_for_blueprint(&blueprint);
-
-        let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
+        let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
+        let global_node_id = self
+            .api
+            .kernel_allocate_node_id(IDAllocationRequest::Object {
+                blueprint_id,
+                global: true,
+            })?;
         let global_address = GlobalAddress::new_or_panic(global_node_id.into());
 
         self.globalize_with_address_internal(modules, global_address)?;
@@ -1140,8 +1143,9 @@ where
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
-        let entity_type = EntityType::InternalKeyValueStore;
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
+        let node_id = self
+            .api
+            .kernel_allocate_node_id(IDAllocationRequest::KeyValueStore)?;
 
         self.api.kernel_create_node(
             node_id,
@@ -1896,8 +1900,11 @@ where
         self.api.kernel_allocate_virtual_node_id(node_id)
     }
 
-    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError> {
-        self.api.kernel_allocate_node_id(node_type)
+    fn kernel_allocate_node_id(
+        &mut self,
+        request: IDAllocationRequest,
+    ) -> Result<NodeId, RuntimeError> {
+        self.api.kernel_allocate_node_id(request)
     }
 
     fn kernel_create_node(
@@ -2089,27 +2096,4 @@ pub fn check_address_allowed_for_blueprint(
         )));
     }
     Ok(())
-}
-
-pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
-    // FIXME check completeness of modules
-    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-        (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
-        (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalFungibleResourceManager
-        }
-        (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalNonFungibleResourceManager
-        }
-        (CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalConsensusManager
-        }
-        (CONSENSUS_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
-        (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
-            EntityType::GlobalAccessController
-        }
-        (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
-        (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
-        _ => EntityType::GlobalGenericComponent,
-    }
 }
