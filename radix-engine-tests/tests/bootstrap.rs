@@ -166,14 +166,18 @@ fn test_genesis_xrd_allocation_to_accounts() {
         )
         .unwrap();
 
-    assert!(data_ingestion_receipts[0]
-        .execution_trace
-        .resource_changes
-        .iter()
-        .flat_map(|(_, rc)| rc)
-        .any(|rc| rc.amount == allocation_amount
-            && rc.node_id.eq(account_component_address.as_node_id())
-            && rc.resource_address == RADIX_TOKEN));
+    let receipt = &data_ingestion_receipts[0];
+    assert_eq!(
+        receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(account_component_address))
+            .unwrap()
+            .get(&RADIX_TOKEN)
+            .unwrap(),
+        &BalanceChange::Fungible(allocation_amount)
+    );
 }
 
 #[test]
@@ -192,7 +196,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .0,
     );
 
-    let owner = ComponentAddress::virtual_account_from_public_key(
+    let resource_owner = ComponentAddress::virtual_account_from_public_key(
         &EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key(),
     );
     let allocation_amount = dec!("105");
@@ -200,7 +204,7 @@ fn test_genesis_resource_with_initial_allocation() {
         address_bytes_without_entity_id,
         initial_supply: allocation_amount,
         metadata: vec![("symbol".to_string(), "TST".to_string())],
-        owner: Some(owner),
+        owner: Some(resource_owner),
     };
     let resource_allocation = GenesisResourceAllocation {
         account_index: 0,
@@ -255,24 +259,34 @@ fn test_genesis_resource_with_initial_allocation() {
     let allocation_receipt = data_ingestion_receipts.pop().unwrap();
     let resource_creation_receipt = data_ingestion_receipts.pop().unwrap();
 
-    assert!(resource_creation_receipt
-        .execution_trace
-        .resource_changes
-        .iter()
-        .flat_map(|(_, rc)| rc)
-        .any(|rc|
-            // Not an ideal condition, but assuming this is the owner badge
-            rc.amount == dec!("1")
-                && rc.node_id.eq(owner.as_node_id())));
-
-    assert!(allocation_receipt
-        .execution_trace
-        .resource_changes
-        .iter()
-        .flat_map(|(_, rc)| rc)
-        .any(|rc| rc.amount == allocation_amount
-            && rc.node_id.eq(token_holder.as_node_id())
-            && rc.resource_address.eq(&resource_address)));
+    let created_owner_badge = resource_creation_receipt
+        .expect_commit_success()
+        .new_resource_addresses()[0];
+    let created_resource = resource_creation_receipt
+        .expect_commit_success()
+        .new_resource_addresses()[1];
+    assert_eq!(
+        resource_creation_receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(resource_owner))
+            .unwrap()
+            .get(&created_owner_badge)
+            .unwrap(),
+        &BalanceChange::Fungible(1.into())
+    );
+    assert_eq!(
+        allocation_receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(token_holder))
+            .unwrap()
+            .get(&created_resource)
+            .unwrap(),
+        &BalanceChange::Fungible(allocation_amount)
+    );
 }
 
 #[test]
