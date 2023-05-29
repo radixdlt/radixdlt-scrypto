@@ -44,8 +44,14 @@ pub trait TransactionFullChildPreparable: HasSummary + Sized {
 }
 
 pub trait TransactionPayloadPreparable: HasSummary + Sized {
+    type Raw: RawTransactionPayload;
+
     /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
+
+    fn prepare_from_raw(raw: &Self::Raw) -> Result<Self, PrepareError> {
+        Self::prepare_from_payload(raw.as_ref())
+    }
 
     /// Prepares from a full payload
     fn prepare_from_payload(payload: &[u8]) -> Result<Self, PrepareError> {
@@ -56,4 +62,35 @@ pub trait TransactionPayloadPreparable: HasSummary + Sized {
         transaction_decoder.destructure().check_end()?;
         Ok(prepared)
     }
+}
+
+pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {}
+
+#[macro_export]
+macro_rules! define_raw_transaction_payload {
+    ($name: ident) => {
+        #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Sbor)]
+        #[sbor(transparent)]
+        pub struct $name(pub Vec<u8>);
+
+        impl AsRef<[u8]> for $name {
+            fn as_ref(&self) -> &[u8] {
+                self.0.as_ref()
+            }
+        }
+
+        impl From<Vec<u8>> for $name {
+            fn from(value: Vec<u8>) -> Self {
+                Self(value)
+            }
+        }
+
+        impl From<$name> for Vec<u8> {
+            fn from(value: $name) -> Self {
+                value.0
+            }
+        }
+
+        impl RawTransactionPayload for $name {}
+    };
 }

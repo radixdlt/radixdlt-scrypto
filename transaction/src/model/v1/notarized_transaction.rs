@@ -1,5 +1,5 @@
 use super::*;
-use crate::internal_prelude::*;
+use crate::{define_raw_transaction_payload, internal_prelude::*};
 
 //=================================================================================
 // NOTE:
@@ -16,7 +16,10 @@ pub struct NotarizedTransactionV1 {
 impl TransactionPayload for NotarizedTransactionV1 {
     type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1Notarized as u8 }, Self>;
     type Prepared = PreparedNotarizedTransactionV1;
+    type Raw = RawNotarizedTransactionV1;
 }
+
+define_raw_transaction_payload!(RawNotarizedTransactionV1);
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -49,6 +52,8 @@ impl TransactionFullChildPreparable for PreparedNotarizedTransactionV1 {
 }
 
 impl TransactionPayloadPreparable for PreparedNotarizedTransactionV1 {
+    type Raw = RawNotarizedTransactionV1;
+
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
         let ((signed_intent, notary_signature), summary) =

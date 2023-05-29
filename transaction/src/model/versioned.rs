@@ -39,14 +39,23 @@ pub trait TransactionPayload:
     // See: https://github.com/rust-lang/rust/issues/76560
     // Instead we use this helper-trait IsFixedEnumVariant which hides the DISCRIMINATOR
     type Versioned: ManifestDecode + IsFixedEnumVariant<ManifestCustomValueKind, Self>;
-    type Prepared: TransactionPayloadPreparable;
+    type Prepared: TransactionPayloadPreparable<Raw = Self::Raw>;
+    type Raw: RawTransactionPayload;
+
+    fn to_raw(&self) -> Result<Self::Raw, EncodeError> {
+        Ok(self.to_payload_bytes()?.into())
+    }
 
     fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
         manifest_encode(&Self::Versioned::for_encoding(self))
     }
 
+    fn from_raw(raw: &Self::Raw) -> Result<Self, DecodeError> {
+        Self::from_payload_bytes(raw.as_ref())
+    }
+
     fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        Ok(manifest_decode::<Self::Versioned>(&payload_bytes)?.into_fields())
+        Ok(manifest_decode::<Self::Versioned>(payload_bytes)?.into_fields())
     }
 
     fn prepare(&self) -> Result<Self::Prepared, PrepareError> {

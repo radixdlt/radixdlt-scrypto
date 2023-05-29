@@ -15,7 +15,10 @@ pub struct SystemTransactionV1 {
 impl TransactionPayload for SystemTransactionV1 {
     type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1System as u8 }, Self>;
     type Prepared = PreparedSystemTransactionV1;
+    type Raw = RawSystemTransactionV1;
 }
+
+define_raw_transaction_payload!(RawSystemTransactionV1);
 
 type PreparedPreAllocatedIds = SummarizedRawFullBody<IndexSet<NodeId>>;
 type PreparedHash = SummarizedHash;
@@ -42,6 +45,8 @@ impl HasSummary for PreparedSystemTransactionV1 {
 }
 
 impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
+    type Raw = RawSystemTransactionV1;
+
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let ((prepared_instructions, blobs, pre_allocated_ids, hash_for_execution), summary) =
             ConcatenatedDigest::prepare_from_transaction_payload_enum::<(
