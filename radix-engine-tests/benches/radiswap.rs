@@ -5,11 +5,8 @@ use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
-    model::{NotarizedTransaction, TransactionHeader},
-    validation::{
-        NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
-        ValidationConfig,
-    },
+    model::{TransactionHeaderV1, TransactionPayloadEncode},
+    validation::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
 };
 
 #[allow(unused_variables)]
@@ -71,7 +68,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 })
                 .call_method(
                     account2,
-                    "deposit_batch",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -89,7 +86,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
-                    "deposit_batch",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -106,27 +103,25 @@ fn bench_radiswap(c: &mut Criterion) {
         })
         .call_method(
             account3,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
     let transaction_payload = TransactionBuilder::new()
-        .header(TransactionHeader {
-            version: 1,
+        .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 0,
             notary_public_key: pk3.clone().into(),
-            notary_as_signatory: true,
-            cost_unit_limit: 100_000_000,
+            notary_is_signatory: true,
             tip_percentage: 5,
         })
         .manifest(manifest.clone())
         .notarize(&sk3)
         .build()
-        .to_bytes()
+        .to_payload_bytes()
         .unwrap();
 
     // To profile with flamegraph, run
@@ -153,22 +148,17 @@ fn do_swap(
     transaction_payload: &[u8],
     nonce: u32,
 ) -> TransactionReceipt {
-    // Decode payload
-    let transaction: NotarizedTransaction = manifest_decode(&transaction_payload).unwrap();
-
     // Validate
-    let mut executable = NotarizedTransactionValidator::new(ValidationConfig::default(
+    let validated = NotarizedTransactionValidator::new(ValidationConfig::default(
         NetworkDefinition::simulator().id,
     ))
-    .validate(
-        &transaction,
-        transaction_payload.len(),
-        &TestIntentHashManager::new(),
-    )
+    .check_length_decode_and_validate_from_slice(transaction_payload)
     .unwrap();
 
+    let mut executable = validated.get_executable();
+
     // Execute & commit
-    executable.reset_transaction_hash(hash(nonce.to_le_bytes()));
+    executable.overwrite_transaction_hash(hash(nonce.to_le_bytes()));
     let receipt = test_runner.execute_transaction(executable);
     receipt.expect_commit_success();
 

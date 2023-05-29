@@ -1,5 +1,5 @@
 use super::{BalanceChange, StateUpdateSummary};
-use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
+use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
 use crate::system::system_modules::costing::FeeSummary;
 use crate::system::system_modules::execution_trace::{
@@ -90,7 +90,7 @@ pub struct CommitResult {
 }
 
 impl CommitResult {
-    pub fn next_epoch(&self) -> Option<(BTreeMap<ComponentAddress, Validator>, u64)> {
+    pub fn next_epoch(&self) -> Option<EpochChangeEvent> {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
@@ -99,14 +99,12 @@ impl CommitResult {
                 ..,
             ) = event_type_id
             {
-                if node_id == EPOCH_MANAGER_PACKAGE.as_node_id()
-                    || node_id.entity_type() == Some(EntityType::GlobalEpochManager)
+                if node_id == CONSENSUS_MANAGER_PACKAGE.as_node_id()
+                    || node_id.entity_type() == Some(EntityType::GlobalConsensusManager)
                 {
-                    if let Ok(EpochChangeEvent {
-                        epoch, validators, ..
-                    }) = scrypto_decode(&event_data)
+                    if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data)
                     {
-                        return Some((validators, epoch));
+                        return Some(epoch_change_event);
                     }
                 }
             }
@@ -316,24 +314,26 @@ impl TransactionReceipt {
         }
     }
 
+    pub fn expect_failure(&self) -> &RuntimeError {
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
+                TransactionOutcome::Failure(error) => error,
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
+        }
+    }
+
     pub fn expect_specific_failure<F>(&self, f: F)
     where
         F: Fn(&RuntimeError) -> bool,
     {
-        match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
-                TransactionOutcome::Failure(err) => {
-                    if !f(&err) {
-                        panic!(
-                            "Expected specific failure but was different error:\n{:?}",
-                            self
-                        );
-                    }
-                }
-            },
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
+        if !f(self.expect_failure()) {
+            panic!(
+                "Expected specific failure but was different error:\n{:?}",
+                self
+            );
         }
     }
 }

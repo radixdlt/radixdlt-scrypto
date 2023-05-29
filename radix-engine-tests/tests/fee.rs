@@ -9,12 +9,12 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::*;
+use transaction::builder::*;
 use utils::ContextualDisplay;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt
 where
-    F: FnOnce(ComponentAddress) -> TransactionManifest,
+    F: FnOnce(ComponentAddress) -> TransactionManifestV1,
 {
     let (mut test_runner, component_address) = setup_test_runner();
 
@@ -240,7 +240,7 @@ fn test_fee_accounting_success() {
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -295,7 +295,7 @@ fn test_fee_accounting_failure() {
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .assert_worktop_contains(RADIX_TOKEN, 1.into())

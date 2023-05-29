@@ -1,5 +1,5 @@
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataCreateInput, MetadataCreateWithDataInput, MetadataSetInput, MetadataVal,
+    MetadataCreateInput, MetadataCreateWithDataInput, MetadataSetInput, MetadataVal, MetadataValue,
     METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
@@ -27,7 +27,7 @@ impl Metadata {
     }
 
     pub fn create_with_data<Y, E: Debug + ScryptoDecode>(
-        data: BTreeMap<String, String>,
+        data: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<Own, E>
     where

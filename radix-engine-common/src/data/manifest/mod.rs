@@ -25,17 +25,24 @@ pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use display_context::*;
 
-pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 77; // [M] ASCII code
+pub use radix_engine_constants::MANIFEST_SBOR_V1_PAYLOAD_PREFIX;
 pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 24;
 
 pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
 pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind>;
 pub type ManifestValueKind = ValueKind<ManifestCustomValueKind>;
 pub type ManifestValue = Value<ManifestCustomValueKind, ManifestCustomValue>;
+pub type ManifestEnumVariantValue = EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>;
 pub type ManifestTraverser<'a> = VecTraverser<'a, ManifestCustomTraversal>;
 
 pub trait ManifestCategorize: Categorize<ManifestCustomValueKind> {}
 impl<T: Categorize<ManifestCustomValueKind> + ?Sized> ManifestCategorize for T {}
+
+pub trait ManifestSborEnum: SborEnum<ManifestCustomValueKind> {}
+impl<T: SborEnum<ManifestCustomValueKind> + ?Sized> ManifestSborEnum for T {}
+
+pub trait ManifestSborTuple: SborTuple<ManifestCustomValueKind> {}
+impl<T: SborTuple<ManifestCustomValueKind> + ?Sized> ManifestSborTuple for T {}
 
 pub trait ManifestDecode: for<'a> Decode<ManifestCustomValueKind, ManifestDecoder<'a>> {}
 impl<T: for<'a> Decode<ManifestCustomValueKind, ManifestDecoder<'a>>> ManifestDecode for T {}

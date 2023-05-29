@@ -1,6 +1,6 @@
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
-use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
+use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
@@ -43,12 +43,12 @@ pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
     TransactionEpochNotYetValid {
-        valid_from: u64,
-        current_epoch: u64,
+        valid_from: u32,
+        current_epoch: u32,
     },
     TransactionEpochNoLongerValid {
-        valid_until: u64,
-        current_epoch: u64,
+        valid_until: u32,
+        current_epoch: u32,
     },
 }
 
@@ -378,7 +378,7 @@ pub enum ApplicationError {
 
     PackageError(PackageError),
 
-    EpochManagerError(EpochManagerError),
+    ConsensusManagerError(ConsensusManagerError),
 
     ValidatorError(ValidatorError),
 
@@ -421,9 +421,9 @@ impl From<PackageError> for ApplicationError {
     }
 }
 
-impl From<EpochManagerError> for ApplicationError {
-    fn from(value: EpochManagerError) -> Self {
-        Self::EpochManagerError(value)
+impl From<ConsensusManagerError> for ApplicationError {
+    fn from(value: ConsensusManagerError) -> Self {
+        Self::ConsensusManagerError(value)
     }
 }
 

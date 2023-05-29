@@ -1,10 +1,5 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerSetEpochInput, EPOCH_MANAGER_SET_EPOCH_IDENT,
-};
-use transaction::model::Instruction;
 
 use crate::resim::*;
 
@@ -13,23 +8,12 @@ use crate::resim::*;
 pub struct SetCurrentEpoch {
     /// The new epoch number
     pub epoch: u64,
-
-    /// Turn on tracing
-    #[clap(short, long)]
-    pub trace: bool,
 }
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::CallMethod { 
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetEpochInput { epoch: self.epoch }),
-        }];
-
-        let blobs = vec![];
-        let initial_proofs = btreeset![AuthAddresses::system_role()];
-        handle_system_transaction(instructions, blobs, initial_proofs, self.trace, true, out)
-            .map(|_| ())
+        db_upsert_epoch(self.epoch)?;
+        writeln!(out, "Epoch set successfully").map_err(Error::IOError)?;
+        Ok(())
     }
 }

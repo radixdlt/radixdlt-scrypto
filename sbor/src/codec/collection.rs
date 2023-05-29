@@ -199,8 +199,15 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Ord> D
         value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        let elements: Vec<T> = Vec::<T>::decode_body_with_value_kind(decoder, value_kind)?;
-        Ok(elements.into_iter().collect())
+        let element_value_kind = decoder.read_and_check_value_kind(T::value_kind())?;
+        let len = decoder.read_size()?;
+        let mut result = BTreeSet::new();
+        for _ in 0..len {
+            if !result.insert(decoder.decode_deeper_body_with_value_kind(element_value_kind)?) {
+                return Err(DecodeError::DuplicateKey);
+            }
+        }
+        Ok(result)
     }
 }
 
@@ -213,8 +220,15 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash +
         value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        let elements: Vec<T> = Vec::<T>::decode_body_with_value_kind(decoder, value_kind)?;
-        Ok(elements.into_iter().collect())
+        let element_value_kind = decoder.read_and_check_value_kind(T::value_kind())?;
+        let len = decoder.read_size()?;
+        let mut result = hash_set_with_capacity(if len <= 1024 { len } else { 1024 });
+        for _ in 0..len {
+            if !result.insert(decoder.decode_deeper_body_with_value_kind(element_value_kind)?) {
+                return Err(DecodeError::DuplicateKey);
+            }
+        }
+        Ok(result)
     }
 }
 
@@ -231,7 +245,9 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash +
         let len = decoder.read_size()?;
         let mut result = index_set_with_capacity(if len <= 1024 { len } else { 1024 });
         for _ in 0..len {
-            result.insert(decoder.decode_deeper_body_with_value_kind(element_value_kind)?);
+            if !result.insert(decoder.decode_deeper_body_with_value_kind(element_value_kind)?) {
+                return Err(DecodeError::DuplicateKey);
+            }
         }
         Ok(result)
     }
@@ -252,15 +268,20 @@ impl<
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
         let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
-        let size = decoder.read_size()?;
-        let mut map = BTreeMap::new();
-        for _ in 0..size {
-            map.insert(
-                decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
-                decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
-            );
+        let len = decoder.read_size()?;
+        let mut result = BTreeMap::new();
+        for _ in 0..len {
+            if result
+                .insert(
+                    decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                    decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
+                )
+                .is_some()
+            {
+                return Err(DecodeError::DuplicateKey);
+            }
         }
-        Ok(map)
+        Ok(result)
     }
 }
 
@@ -279,15 +300,20 @@ impl<
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
         let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
-        let size = decoder.read_size()?;
-        let mut map = hash_map_with_capacity(if size <= 1024 { size } else { 1024 });
-        for _ in 0..size {
-            map.insert(
-                decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
-                decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
-            );
+        let len = decoder.read_size()?;
+        let mut result = hash_map_with_capacity(if len <= 1024 { len } else { 1024 });
+        for _ in 0..len {
+            if result
+                .insert(
+                    decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                    decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
+                )
+                .is_some()
+            {
+                return Err(DecodeError::DuplicateKey);
+            }
         }
-        Ok(map)
+        Ok(result)
     }
 }
 
@@ -306,66 +332,65 @@ impl<
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
         let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
-        let size = decoder.read_size()?;
-        let mut map = index_map_with_capacity(if size <= 1024 { size } else { 1024 });
-        for _ in 0..size {
-            map.insert(
-                decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
-                decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
-            );
+        let len = decoder.read_size()?;
+        let mut result = index_map_with_capacity(if len <= 1024 { len } else { 1024 });
+        for _ in 0..len {
+            if result
+                .insert(
+                    decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                    decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
+                )
+                .is_some()
+            {
+                return Err(DecodeError::DuplicateKey);
+            }
         }
-        Ok(map)
+        Ok(result)
     }
 }
 
-pub use schema::*;
+wrapped_generic_describe!(T, Vec<T>, [T]);
 
-mod schema {
-    use super::*;
+impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Set", &[T::TYPE_ID]);
 
-    wrapped_generic_describe!(T, Vec<T>, [T]);
-
-    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Set", &[T::TYPE_ID]);
-
-        fn type_data() -> TypeData<C, GlobalTypeId> {
-            TypeData::new(
-                TypeKind::Array {
-                    element_type: T::TYPE_ID,
-                },
-                TypeMetadata::unnamed(),
-            )
-        }
-
-        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
-            aggregator.add_child_type_and_descendents::<T>();
-        }
+    fn type_data() -> TypeData<C, GlobalTypeId> {
+        TypeData::new(
+            TypeKind::Array {
+                element_type: T::TYPE_ID,
+            },
+            TypeMetadata::unnamed(),
+        )
     }
 
-    wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
-    wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
-
-    impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
-        for BTreeMap<K, V>
-    {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
-
-        fn type_data() -> TypeData<C, GlobalTypeId> {
-            TypeData::new(
-                TypeKind::Map {
-                    key_type: K::TYPE_ID,
-                    value_type: V::TYPE_ID,
-                },
-                TypeMetadata::unnamed(),
-            )
-        }
-
-        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
-            aggregator.add_child_type_and_descendents::<K>();
-            aggregator.add_child_type_and_descendents::<V>();
-        }
+    fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+        aggregator.add_child_type_and_descendents::<T>();
     }
-
-    wrapped_double_generic_describe!(K, V, HashMap<K, V>, BTreeMap<K, V>);
-    wrapped_double_generic_describe!(K, V, IndexMap<K, V>, BTreeMap<K, V>);
 }
+
+wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
+wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
+
+impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
+    for BTreeMap<K, V>
+{
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
+
+    fn type_data() -> TypeData<C, GlobalTypeId> {
+        TypeData::new(
+            TypeKind::Map {
+                key_type: K::TYPE_ID,
+                value_type: V::TYPE_ID,
+            },
+            TypeMetadata::unnamed(),
+        )
+    }
+
+    fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+        aggregator.add_child_type_and_descendents::<K>();
+        aggregator.add_child_type_and_descendents::<V>();
+    }
+}
+
+wrapped_double_generic_describe!(K, V, HashMap<K, V>, BTreeMap<K, V>);
+wrapped_double_generic_describe!(K, V, IndexMap<K, V>, BTreeMap<K, V>);

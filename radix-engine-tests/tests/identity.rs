@@ -2,13 +2,13 @@ use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IdentitySecurifyToSingleBadgeInput, IDENTITY_SECURIFY_IDENT,
 };
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 #[test]
 fn cannot_securify_in_advanced_mode() {
@@ -20,7 +20,7 @@ fn cannot_securify_in_advanced_mode() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .add_instruction(Instruction::CallMethod {
+        .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
@@ -28,7 +28,7 @@ fn cannot_securify_in_advanced_mode() {
         .0
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -54,7 +54,7 @@ fn can_securify_from_virtual_identity() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .add_instruction(Instruction::CallMethod {
+        .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
@@ -62,7 +62,7 @@ fn can_securify_from_virtual_identity() {
         .0
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -81,7 +81,7 @@ fn cannot_securify_twice() {
     let component_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .add_instruction(Instruction::CallMethod {
+        .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
@@ -89,7 +89,7 @@ fn cannot_securify_twice() {
         .0
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -100,7 +100,7 @@ fn cannot_securify_twice() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .add_instruction(Instruction::CallMethod {
+        .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
@@ -108,7 +108,7 @@ fn cannot_securify_twice() {
         .0
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -132,7 +132,7 @@ fn can_set_metadata_after_securify() {
     let identity_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .add_instruction(Instruction::CallMethod {
+        .add_instruction(InstructionV1::CallMethod {
             address: identity_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
@@ -140,7 +140,7 @@ fn can_set_metadata_after_securify() {
         .0
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

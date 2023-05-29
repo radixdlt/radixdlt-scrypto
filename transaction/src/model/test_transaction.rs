@@ -1,5 +1,5 @@
+use crate::internal_prelude::*;
 use crate::model::*;
-use radix_engine_constants::DEFAULT_TIP_PERCENTAGE;
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::manifest::*;
@@ -8,46 +8,66 @@ use std::collections::BTreeSet;
 
 #[derive(ManifestSbor)]
 pub struct TestTransaction {
-    nonce: u64,
-    cost_unit_limit: u32,
-    manifest: TransactionManifest,
+    pub instructions: InstructionsV1,
+    pub blobs: BlobsV1,
+    pub hash: Hash,
+}
+
+#[derive(ManifestSbor)]
+pub struct PreparedTestTransaction {
+    pub encoded_instructions: Vec<u8>,
+    pub references: IndexSet<Reference>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+    pub hash: Hash,
 }
 
 impl TestTransaction {
-    pub fn new(manifest: TransactionManifest, nonce: u64, cost_unit_limit: u32) -> Self {
+    /// The nonce needs to be globally unique amongst test transactions on your ledger
+    pub fn new_from_nonce(manifest: TransactionManifestV1, nonce: u32) -> Self {
+        Self::new(manifest, hash(format!("Test transaction: {}", nonce)))
+    }
+
+    pub fn new(manifest: TransactionManifestV1, hash: Hash) -> Self {
+        let (instructions, blobs) = manifest.for_intent();
         Self {
-            nonce,
-            cost_unit_limit,
-            manifest,
+            instructions,
+            blobs,
+            hash,
         }
     }
 
+    pub fn prepare(self) -> Result<PreparedTestTransaction, ConvertToPreparedError> {
+        let prepared_instructions = self.instructions.prepare_partial()?;
+        Ok(PreparedTestTransaction {
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            references: prepared_instructions.references,
+            blobs: self.blobs.prepare_partial()?.blobs_by_hash,
+            hash: self.hash,
+        })
+    }
+}
+
+impl PreparedTestTransaction {
     pub fn get_executable<'a>(
         &'a self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Executable<'a> {
-        // Fake transaction hash
-        let transaction_hash = hash(self.nonce.to_le_bytes());
-
-        let payload = manifest_encode(self).unwrap();
-        let payload_size = payload.len();
-
         Executable::new(
-            &self.manifest.blobs,
-            &self.manifest.instructions,
+            &self.encoded_instructions,
+            &self.references,
+            &self.blobs,
             ExecutionContext {
-                transaction_hash,
-                payload_size,
+                transaction_hash: self.hash,
+                payload_size: self.encoded_instructions.len(),
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
-                    cost_unit_limit: self.cost_unit_limit,
-                    tip_percentage: DEFAULT_TIP_PERCENTAGE,
+                    tip_percentage: DEFAULT_MAX_TIP_PERCENTAGE,
                 },
                 runtime_validations: vec![],
-                pre_allocated_ids: BTreeSet::new(),
+                pre_allocated_ids: index_set_new(),
             },
         )
     }

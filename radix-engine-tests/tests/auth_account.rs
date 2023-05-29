@@ -20,7 +20,7 @@ fn test_auth_rule(
         .withdraw_from_account(account, RADIX_TOKEN, 1.into())
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -238,7 +238,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         })
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -272,7 +272,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         })
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -306,7 +306,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         })
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

@@ -10,7 +10,6 @@ macro_rules! known_enum {
 }
 
 // TODO: we need a final sanity check before mainnet launch!
-
 lazy_static! {
     pub static ref KNOWN_ENUM_DISCRIMINATORS: NonIterMap<&'static str, u8> = {
         let mut m = NonIterMap::new();
@@ -35,9 +34,40 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccessRuleEntry {
-                AccessRule = 0;
-                Group = 1;
+            enum Metadata {
+                String = 0;
+                Bool = 1;
+                U8 = 2;
+                U32 = 3;
+                U64 = 4;
+                I32 = 5;
+                I64 = 6;
+                Decimal = 7;
+                Address = 8;
+                PublicKey = 9;
+                NonFungibleGlobalId = 10;
+                NonFungibleLocalId = 11;
+                Instant = 12;
+                Url = 13;
+                Origin = 14;
+                PublicKeyHash = 15;
+
+                StringArray = 128;
+                BoolArray = 129;
+                U8Array = 130;
+                U32Array = 131;
+                U64Array = 132;
+                I32Array = 133;
+                I64Array = 134;
+                DecimalArray = 135;
+                AddressArray = 136;
+                PublicKeyArray = 137;
+                NonFungibleGlobalIdArray = 138;
+                NonFungibleLocalIdArray = 139;
+                InstantArray = 140;
+                UrlArray = 141;
+                OriginArray = 142;
+                PublicKeyHashArray = 143;
             }
         );
 
@@ -53,9 +83,10 @@ lazy_static! {
         known_enum!(
             m,
             enum AccessRuleNode {
-                ProofRule = 0;
-                AnyOf = 1;
-                AllOf = 2;
+                Authority = 0;
+                ProofRule = 1;
+                AnyOf = 2;
+                AllOf = 3;
             }
         );
 
@@ -72,21 +103,11 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum SoftResourceOrNonFungible {
-                StaticNonFungible = 0;
-                StaticResource = 1;
-                Dynamic = 2;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum TypedModuleId {
-                TypeInfo = 0;
-                ObjectState = 1;
-                Metadata = 2;
-                Royalty = 3;
-                AccessRules = 4;
+            enum ModuleId {
+                Main = 0;
+                Metadata = 1;
+                Royalty = 2;
+                AccessRules = 3;
             }
         );
 
@@ -115,11 +136,35 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccountDepositsMode {
-                AllowAll = 0;
-                AllowExisting = 1;
-                AllowList = 2;
-                DisallowList = 3;
+            enum AccountDefaultDepositRule {
+                Accept = 0;
+                Reject = 1;
+                AllowExisting = 2;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum ResourceDepositRule {
+                Neither = 0;
+                Allowed = 1;
+                Disallowed = 2;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum PublicKey {
+                Secp256k1 = 0;
+                Ed25519 = 1;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum PublicKeyHash {
+                Secp256k1 = 0;
+                Ed25519 = 1;
             }
         );
 

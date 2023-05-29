@@ -6,7 +6,6 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::WasmInstrumenter;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine::vm::ScryptoVm;
-use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -47,7 +46,9 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
+                &TestTransaction::new_from_nonce(manifest.clone(), 1)
+                    .prepare()
+                    .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
             .expect_commit(true)
@@ -66,7 +67,7 @@ fn bench_transfer(c: &mut Criterion) {
         .call_method(FAUCET, "free", manifest_args!())
         .call_method(
             account1,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -76,7 +77,9 @@ fn bench_transfer(c: &mut Criterion) {
             &mut scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+            &TestTransaction::new_from_nonce(manifest.clone(), nonce)
+                .prepare()
+                .unwrap()
                 .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
         )
         .expect_commit(true);
@@ -88,7 +91,7 @@ fn bench_transfer(c: &mut Criterion) {
         .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -102,7 +105,9 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+                &TestTransaction::new_from_nonce(manifest.clone(), nonce)
+                    .prepare()
+                    .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
             receipt.expect_commit_success();

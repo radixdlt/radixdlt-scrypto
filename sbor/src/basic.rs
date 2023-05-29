@@ -49,6 +49,12 @@ pub const BASIC_SBOR_V1_MAX_DEPTH: usize = 64;
 pub trait BasicCategorize: Categorize<NoCustomValueKind> {}
 impl<T: Categorize<NoCustomValueKind> + ?Sized> BasicCategorize for T {}
 
+pub trait BasicSborEnum: SborEnum<NoCustomValueKind> {}
+impl<T: SborEnum<NoCustomValueKind> + ?Sized> BasicSborEnum for T {}
+
+pub trait BasicSborTuple: SborTuple<NoCustomValueKind> {}
+impl<T: SborTuple<NoCustomValueKind> + ?Sized> BasicSborTuple for T {}
+
 pub trait BasicDecode: for<'a> Decode<NoCustomValueKind, BasicDecoder<'a>> {}
 impl<T: for<'a> Decode<NoCustomValueKind, BasicDecoder<'a>>> BasicDecode for T {}
 

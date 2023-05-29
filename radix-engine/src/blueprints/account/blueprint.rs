@@ -9,7 +9,6 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
@@ -18,18 +17,28 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
-    deposits_mode: AccountDepositsMode,
+    default_deposit_rule: AccountDefaultDepositRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
-    VaultDoesNotExist { resource_address: ResourceAddress },
-    AccountIsNotInAllowListDepositsMode { deposits_mode: AccountDepositsMode },
-    AccountIsNotInDisallowListDepositsMode { deposits_mode: AccountDepositsMode },
+    VaultDoesNotExist {
+        resource_address: ResourceAddress,
+    },
+    AccountIsNotInAllowListDepositsMode {
+        default_deposit_rule: AccountDefaultDepositRule,
+    },
+    AccountIsNotInDisallowListDepositsMode {
+        default_deposit_rule: AccountDefaultDepositRule,
+    },
+    DepositIsDisallowed {
+        resource_address: ResourceAddress,
+    },
+    NotAllBucketsCouldBeDeposited,
 }
 
 impl From<AccountError> for RuntimeError {
@@ -37,8 +46,6 @@ impl From<AccountError> for RuntimeError {
         Self::ApplicationError(ApplicationError::AccountError(value))
     }
 }
-
-const ACCOUNT_DEPOSITS_AUTHORITY: &str = "deposits_authority";
 
 struct SecurifiedAccount;
 
@@ -70,9 +77,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
         ]
         deposit: [
             "deposit",
-            "safe_deposit",
             "deposit_batch",
-            "safe_deposit_batch",
         ]
          */
         let mut authority_rules = AuthorityRules::new();
@@ -127,32 +132,24 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+
+        // Deposit Methods
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_DEPOSIT_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_DEPOSITS_AUTHORITY,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
@@ -165,9 +162,11 @@ impl PresecurifiedAccessRules for SecurifiedAccount {
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
 }
 
-pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
-
+const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
+
+const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
+pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
 
 pub struct AccountBlueprint;
 
@@ -299,7 +298,7 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             None,
             vec![scrypto_encode(&AccountSubstate {
-                deposits_mode: AccountDepositsMode::AllowAll,
+                default_deposit_rule: AccountDefaultDepositRule::Accept,
             })
             .unwrap()],
             btreemap!(),
@@ -350,28 +349,22 @@ impl AccountBlueprint {
         Ok(())
     }
 
+    /// Method requires auth - if call goes through it performs the deposit with no questions asked
     pub fn deposit<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.resource_address(api)?;
-        let deposits_mode = Self::get_current_deposits_mode(api)?;
-
-        let is_deposit_allowed = Self::is_deposit_allowed(&deposits_mode, &resource_address, api)?;
-        if !is_deposit_allowed {
-            Runtime::assert_access_rule(rule!(require(ACCOUNT_DEPOSITS_AUTHORITY)), api)?;
-        }
-
         Self::get_vault(
             resource_address,
             |vault, api| vault.put(bucket, api),
             true,
             api,
         )?;
-
         Ok(())
     }
 
+    /// Method requires auth - if call goes through it performs the deposit with no questions asked
     pub fn deposit_batch<Y>(buckets: Vec<Bucket>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -379,48 +372,86 @@ impl AccountBlueprint {
         for bucket in buckets {
             Self::deposit(bucket, api)?;
         }
-
         Ok(())
     }
 
-    pub fn safe_deposit<Y>(bucket: Bucket, api: &mut Y) -> Result<Option<Bucket>, RuntimeError>
+    /// Method is public to all - if the resource can't be deposited it is returned.
+    pub fn try_deposit_or_refund<Y>(
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<Option<Bucket>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.resource_address(api)?;
-        let deposits_mode = Self::get_current_deposits_mode(api)?;
 
-        let is_deposit_allowed = Self::is_deposit_allowed(&deposits_mode, &resource_address, api)?;
-        if !is_deposit_allowed {
-            return Ok(Some(bucket));
+        let is_deposit_allowed = Self::is_deposit_allowed(&resource_address, api)?;
+        if is_deposit_allowed {
+            Self::get_vault(
+                resource_address,
+                |vault, api| vault.put(bucket, api),
+                true,
+                api,
+            )?;
+            Ok(None)
+        } else {
+            Ok(Some(bucket))
         }
-
-        Self::get_vault(
-            resource_address,
-            |vault, api| vault.put(bucket, api),
-            true,
-            api,
-        )?;
-
-        Ok(None)
     }
 
-    pub fn safe_deposit_batch<Y>(
+    /// Method is public to all - if ANY of the resources can't be deposited then ALL are returned.
+    pub fn try_deposit_batch_or_refund<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<Vec<Bucket>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut undeposited_buckets = vec![];
-        for bucket in buckets {
-            let rtn = Self::safe_deposit(bucket, api)?;
-            if let Some(bucket) = rtn {
-                undeposited_buckets.push(bucket)
-            }
-        }
+        let can_all_be_deposited = buckets
+            .iter()
+            .map(|bucket| {
+                bucket
+                    .resource_address(api)
+                    .and_then(|resource_address| Self::is_deposit_allowed(&resource_address, api))
+            })
+            .all(|item| item == Ok(true));
 
-        Ok(undeposited_buckets)
+        if can_all_be_deposited {
+            Self::deposit_batch(buckets, api)?;
+            Ok(vec![])
+        } else {
+            Ok(buckets)
+        }
+    }
+
+    /// Method is public to all - if the resources can't be deposited then the execution panics.
+    pub fn try_deposit_or_abort<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if let Some(bucket) = Self::try_deposit_or_refund(bucket, api)? {
+            let resource_address = bucket.resource_address(api)?;
+            Err(AccountError::DepositIsDisallowed { resource_address }.into())
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Method is public to all - if ANY of the resources can't be deposited then the execution
+    /// panics.
+    pub fn try_deposit_batch_or_abort<Y>(
+        buckets: Vec<Bucket>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let buckets = Self::try_deposit_batch_or_refund(buckets, api)?;
+        if buckets.len() != 0 {
+            Err(AccountError::NotAllBucketsCouldBeDeposited.into())
+        } else {
+            Ok(())
+        }
     }
 
     pub fn withdraw<Y>(
@@ -554,8 +585,8 @@ impl AccountBlueprint {
         Ok(proof)
     }
 
-    pub fn change_allowed_deposits_mode<Y>(
-        deposits_mode: AccountDepositsMode,
+    pub fn change_account_default_deposit_rule<Y>(
+        default_deposit_rule: AccountDefaultDepositRule,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -565,7 +596,7 @@ impl AccountBlueprint {
         let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
         let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
 
-        account.deposits_mode = deposits_mode;
+        account.default_deposit_rule = default_deposit_rule;
 
         api.field_lock_write_typed(handle, account)?;
         api.field_lock_release(handle)?;
@@ -573,119 +604,46 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn add_resource_to_allowed_deposits_list<Y>(
+    pub fn configure_resource_deposit_rule<Y>(
         resource_address: ResourceAddress,
+        resource_deposit_configuration: ResourceDepositRule,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = AccountField::Account.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
+        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::AllowList(allow_list) => Ok(allow_list.insert(resource_address)),
-            _ => Err(AccountError::AccountIsNotInAllowListDepositsMode {
-                deposits_mode: account.deposits_mode.clone(),
+        match resource_deposit_configuration {
+            ResourceDepositRule::Allowed | ResourceDepositRule::Disallowed => {
+                let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+                    OBJECT_HANDLE_SELF,
+                    ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+                    &encoded_key,
+                    LockFlags::MUTABLE,
+                )?;
+
+                api.key_value_entry_set_typed(
+                    kv_store_entry_lock_handle,
+                    &resource_deposit_configuration,
+                )?;
+
+                api.key_value_entry_release(kv_store_entry_lock_handle)?;
             }
-            .into()),
+            ResourceDepositRule::Neither => {
+                api.actor_remove_key_value_entry(
+                    OBJECT_HANDLE_SELF,
+                    ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+                    &encoded_key,
+                )?;
+            }
         };
-
-        if rtn.is_ok() {
-            api.field_lock_write_typed(handle, account)?;
-            api.field_lock_release(handle)?;
-        }
-
-        rtn
+        Ok(())
     }
 
-    pub fn remove_resource_from_allowed_deposits_list<Y>(
-        resource_address: ResourceAddress,
+    fn get_account_default_deposit_rule<Y>(
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let substate_key = AccountField::Account.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
-
-        let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::AllowList(allow_list) => Ok(allow_list.remove(&resource_address)),
-            _ => Err(AccountError::AccountIsNotInAllowListDepositsMode {
-                deposits_mode: account.deposits_mode.clone(),
-            }
-            .into()),
-        };
-
-        if rtn.is_ok() {
-            api.field_lock_write_typed(handle, account)?;
-            api.field_lock_release(handle)?;
-        }
-
-        rtn
-    }
-
-    pub fn add_resource_to_disallowed_deposits_list<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let substate_key = AccountField::Account.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
-
-        let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::DisallowList(disallow_list) => {
-                Ok(disallow_list.insert(resource_address))
-            }
-            _ => Err(AccountError::AccountIsNotInDisallowListDepositsMode {
-                deposits_mode: account.deposits_mode.clone(),
-            }
-            .into()),
-        };
-
-        if rtn.is_ok() {
-            api.field_lock_write_typed(handle, account)?;
-            api.field_lock_release(handle)?;
-        }
-
-        rtn
-    }
-
-    pub fn remove_resource_from_disallowed_deposits_list<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let substate_key = AccountField::Account.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
-
-        let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::DisallowList(disallow_list) => {
-                Ok(disallow_list.remove(&resource_address))
-            }
-            _ => Err(AccountError::AccountIsNotInDisallowListDepositsMode {
-                deposits_mode: account.deposits_mode.clone(),
-            }
-            .into()),
-        };
-
-        if rtn.is_ok() {
-            api.field_lock_write_typed(handle, account)?;
-            api.field_lock_release(handle)?;
-        }
-
-        rtn
-    }
-
-    fn get_current_deposits_mode<Y>(api: &mut Y) -> Result<AccountDepositsMode, RuntimeError>
+    ) -> Result<AccountDefaultDepositRule, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -693,10 +651,10 @@ impl AccountBlueprint {
         let handle =
             api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
         let account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
-        let deposits_mode = account.deposits_mode;
+        let default_deposit_rule = account.default_deposit_rule;
         api.field_lock_release(handle)?;
 
-        Ok(deposits_mode)
+        Ok(default_deposit_rule)
     }
 
     fn get_vault<F, Y, R>(
@@ -733,12 +691,8 @@ impl AccountBlueprint {
                 Option::None => {
                     if create {
                         let vault = Vault::create(resource_address, api)?;
-                        let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
-                        api.key_value_entry_set_typed(
-                            kv_store_entry_lock_handle,
-                            &encoded_value.to_scrypto_value(),
-                        )?;
+                        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &vault.0)?;
                         Ok(vault)
                     } else {
                         Err(AccountError::VaultDoesNotExist { resource_address })
@@ -762,52 +716,94 @@ impl AccountBlueprint {
     }
 
     fn is_deposit_allowed<Y>(
-        deposits_mode: &AccountDepositsMode,
         resource_address: &ResourceAddress,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Case: XRD - Deposit of XRD is always allowed.
-        if *resource_address == RADIX_TOKEN {
-            Ok(true)
-        } else {
-            match deposits_mode {
-                AccountDepositsMode::AllowAll => Ok(true),
-                AccountDepositsMode::AllowList(ref allow_list)
-                    if allow_list.contains(resource_address) =>
-                {
-                    Ok(true)
-                }
-                AccountDepositsMode::DisallowList(ref disallow_list)
-                    if !disallow_list.contains(resource_address) =>
-                {
-                    Ok(true)
-                }
-                // Case: Only if the resource exists (not just that we have a vault for it). So,
-                // we need to check how much of it we have. If it's more than zero then we allow
-                // it.
-                AccountDepositsMode::AllowExisting => {
-                    let amount_lookup_result = Self::get_vault(
-                        *resource_address,
-                        |vault, api| vault.amount(api),
-                        false,
-                        api,
-                    );
-                    if let Ok(amount_lookup_result) = amount_lookup_result {
-                        Ok(amount_lookup_result > Decimal::zero())
-                    } else if let Err(RuntimeError::ApplicationError(
-                        ApplicationError::AccountError(AccountError::VaultDoesNotExist { .. }),
-                    )) = amount_lookup_result
-                    {
-                        Ok(false)
-                    } else {
-                        Err(amount_lookup_result.unwrap_err())
+        let resource_deposit_rule =
+            Self::get_resource_deposit_configuration(resource_address, api)?;
+
+        let is_deposit_allowed = match resource_deposit_rule {
+            ResourceDepositRule::Allowed => true,
+            ResourceDepositRule::Disallowed => false,
+            ResourceDepositRule::Neither => {
+                let default_deposit_rule = Self::get_account_default_deposit_rule(api)?;
+                match default_deposit_rule {
+                    AccountDefaultDepositRule::Accept => true,
+                    AccountDefaultDepositRule::Reject => false,
+                    AccountDefaultDepositRule::AllowExisting => {
+                        *resource_address == RADIX_TOKEN
+                            || Self::does_vault_exist(resource_address, api)?
                     }
                 }
-                _ => Ok(false),
             }
-        }
+        };
+
+        Ok(is_deposit_allowed)
+    }
+
+    fn does_vault_exist<Y>(
+        resource_address: &ResourceAddress,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
+
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_VAULT_INDEX,
+            &encoded_key,
+            LockFlags::read_only(),
+        )?;
+
+        let does_vault_exist = {
+            let entry: AccountVaultIndexEntry =
+                api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+
+            match entry {
+                Option::Some(_) => true,
+                Option::None => false,
+            }
+        };
+
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+
+        Ok(does_vault_exist)
+    }
+
+    fn get_resource_deposit_configuration<Y>(
+        resource_address: &ResourceAddress,
+        api: &mut Y,
+    ) -> Result<ResourceDepositRule, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            &encoded_key,
+            LockFlags::read_only(),
+        )?;
+
+        let resource_deposit_configuration = {
+            let entry = api.key_value_entry_get_typed::<AccountResourceDepositRuleEntry>(
+                kv_store_entry_lock_handle,
+            )?;
+
+            match entry {
+                Option::Some(resource_deposit_configuration) => resource_deposit_configuration,
+                Option::None => ResourceDepositRule::Neither,
+            }
+        };
+
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+
+        Ok(resource_deposit_configuration)
     }
 }

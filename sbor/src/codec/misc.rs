@@ -13,12 +13,44 @@ impl<'a, X: CustomValueKind, T: ?Sized + Categorize<X>> Categorize<X> for &T {
     }
 }
 
+impl<'a, X: CustomValueKind, T: ?Sized + SborTuple<X>> SborTuple<X> for &'a T {
+    fn get_length(&self) -> usize {
+        T::get_length(self)
+    }
+}
+
+impl<'a, X: CustomValueKind, T: ?Sized + SborEnum<X>> SborEnum<X> for &'a T {
+    fn get_discriminator(&self) -> u8 {
+        T::get_discriminator(self)
+    }
+
+    fn get_length(&self) -> usize {
+        T::get_length(self)
+    }
+}
+
 impl<'a, X: CustomValueKind, B: ?Sized + 'a + ToOwned + Categorize<X>> Categorize<X>
     for Cow<'a, B>
 {
     #[inline]
     fn value_kind() -> ValueKind<X> {
         B::value_kind()
+    }
+}
+
+impl<'a, X: CustomValueKind, B: ?Sized + 'a + ToOwned + SborTuple<X>> SborTuple<X> for Cow<'a, B> {
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
+    }
+}
+
+impl<'a, X: CustomValueKind, B: ?Sized + 'a + ToOwned + SborEnum<X>> SborEnum<X> for Cow<'a, B> {
+    fn get_discriminator(&self) -> u8 {
+        self.as_ref().get_discriminator()
+    }
+
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
     }
 }
 
@@ -29,6 +61,22 @@ impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Box<T> {
     }
 }
 
+impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Box<T> {
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
+    }
+}
+
+impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Box<T> {
+    fn get_discriminator(&self) -> u8 {
+        self.as_ref().get_discriminator()
+    }
+
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
+    }
+}
+
 impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Rc<T> {
     #[inline]
     fn value_kind() -> ValueKind<X> {
@@ -36,10 +84,42 @@ impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Rc<T> {
     }
 }
 
+impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Rc<T> {
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
+    }
+}
+
+impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Rc<T> {
+    fn get_discriminator(&self) -> u8 {
+        self.as_ref().get_discriminator()
+    }
+
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
+    }
+}
+
 impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for RefCell<T> {
     #[inline]
     fn value_kind() -> ValueKind<X> {
         T::value_kind()
+    }
+}
+
+impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for RefCell<T> {
+    fn get_length(&self) -> usize {
+        self.borrow().get_length()
+    }
+}
+
+impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for RefCell<T> {
+    fn get_discriminator(&self) -> u8 {
+        self.borrow().get_discriminator()
+    }
+
+    fn get_length(&self) -> usize {
+        self.borrow().get_length()
     }
 }
 

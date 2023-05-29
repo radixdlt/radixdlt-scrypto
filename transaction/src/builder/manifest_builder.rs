@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerCreateValidatorInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
     VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
     VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
@@ -29,7 +29,8 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 #[cfg(feature = "dump_manifest_to_file")]
@@ -56,9 +57,31 @@ pub struct ManifestBuilder {
     /// ID validator for calculating transaction object id
     id_allocator: ManifestIdAllocator,
     /// Instructions generated.
-    instructions: Vec<Instruction>,
+    instructions: Vec<InstructionV1>,
     /// Blobs
     blobs: BTreeMap<Hash, Vec<u8>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+pub struct TransactionManifestV1 {
+    pub instructions: Vec<InstructionV1>,
+    pub blobs: BTreeMap<Hash, Vec<u8>>,
+}
+
+impl TransactionManifestV1 {
+    pub fn for_intent(self) -> (InstructionsV1, BlobsV1) {
+        (
+            InstructionsV1(self.instructions),
+            BlobsV1 {
+                blobs: self
+                    .blobs
+                    .into_values()
+                    .into_iter()
+                    .map(|blob| BlobV1(blob))
+                    .collect(),
+            },
+        )
+    }
 }
 
 impl ManifestBuilder {
@@ -74,27 +97,27 @@ impl ManifestBuilder {
     /// Adds a raw instruction.
     pub fn add_instruction(
         &mut self,
-        inst: Instruction,
+        inst: InstructionV1,
     ) -> (&mut Self, Option<ManifestBucket>, Option<ManifestProof>) {
         let mut new_bucket_id: Option<ManifestBucket> = None;
         let mut new_proof_id: Option<ManifestProof> = None;
 
         match &inst {
-            Instruction::TakeAllFromWorktop { .. }
-            | Instruction::TakeFromWorktop { .. }
-            | Instruction::TakeNonFungiblesFromWorktop { .. } => {
+            InstructionV1::TakeAllFromWorktop { .. }
+            | InstructionV1::TakeFromWorktop { .. }
+            | InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
                 new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
             }
-            Instruction::PopFromAuthZone { .. }
-            | Instruction::CreateProofFromAuthZone { .. }
-            | Instruction::CreateProofFromAuthZoneOfAmount { .. }
-            | Instruction::CreateProofFromAuthZoneOfNonFungibles { .. }
-            | Instruction::CreateProofFromAuthZoneOfAll { .. }
-            | Instruction::CreateProofFromBucket { .. }
-            | Instruction::CreateProofFromBucketOfAmount { .. }
-            | Instruction::CreateProofFromBucketOfNonFungibles { .. }
-            | Instruction::CreateProofFromBucketOfAll { .. }
-            | Instruction::CloneProof { .. } => {
+            InstructionV1::PopFromAuthZone { .. }
+            | InstructionV1::CreateProofFromAuthZone { .. }
+            | InstructionV1::CreateProofFromAuthZoneOfAmount { .. }
+            | InstructionV1::CreateProofFromAuthZoneOfNonFungibles { .. }
+            | InstructionV1::CreateProofFromAuthZoneOfAll { .. }
+            | InstructionV1::CreateProofFromBucket { .. }
+            | InstructionV1::CreateProofFromBucketOfAmount { .. }
+            | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
+            | InstructionV1::CreateProofFromBucketOfAll { .. }
+            | InstructionV1::CloneProof { .. } => {
                 new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
             }
             _ => {}
@@ -115,7 +138,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
         let (builder, bucket_id, _) =
-            self.add_instruction(Instruction::TakeAllFromWorktop { resource_address });
+            self.add_instruction(InstructionV1::TakeAllFromWorktop { resource_address });
         then(builder, bucket_id.unwrap())
     }
 
@@ -129,7 +152,7 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktop {
+        let (builder, bucket_id, _) = self.add_instruction(InstructionV1::TakeFromWorktop {
             amount,
             resource_address,
         });
@@ -147,7 +170,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
         let (builder, bucket_id, _) =
-            self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
+            self.add_instruction(InstructionV1::TakeNonFungiblesFromWorktop {
                 ids: ids.clone().into_iter().collect(),
                 resource_address,
             });
@@ -156,7 +179,7 @@ impl ManifestBuilder {
 
     /// Adds a bucket of resource to worktop.
     pub fn return_to_worktop(&mut self, bucket_id: ManifestBucket) -> &mut Self {
-        self.add_instruction(Instruction::ReturnToWorktop { bucket_id })
+        self.add_instruction(InstructionV1::ReturnToWorktop { bucket_id })
             .0
     }
 
@@ -166,7 +189,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContains {
+        self.add_instruction(InstructionV1::AssertWorktopContains {
             amount,
             resource_address,
         })
@@ -179,7 +202,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContainsNonFungibles {
+        self.add_instruction(InstructionV1::AssertWorktopContainsNonFungibles {
             ids: ids.clone().into_iter().collect(),
             resource_address,
         })
@@ -191,19 +214,19 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthZone {});
+        let (builder, _, proof_id) = self.add_instruction(InstructionV1::PopFromAuthZone {});
         then(builder, proof_id.unwrap())
     }
 
     /// Pushes a proof onto the auth zone
     pub fn push_to_auth_zone(&mut self, proof_id: ManifestProof) -> &mut Self {
-        self.add_instruction(Instruction::PushToAuthZone { proof_id });
+        self.add_instruction(InstructionV1::PushToAuthZone { proof_id });
         self
     }
 
     /// Clears the auth zone.
     pub fn clear_auth_zone(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::ClearAuthZone).0
+        self.add_instruction(InstructionV1::ClearAuthZone).0
     }
 
     /// Creates proof from the auth zone.
@@ -216,7 +239,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZone { resource_address });
+            self.add_instruction(InstructionV1::CreateProofFromAuthZone { resource_address });
         then(builder, proof_id.unwrap())
     }
 
@@ -231,7 +254,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneOfAmount {
+            self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfAmount {
                 amount,
                 resource_address,
             });
@@ -249,7 +272,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneOfNonFungibles {
+            self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
                 ids: ids.clone().into_iter().collect(),
                 resource_address,
             });
@@ -266,7 +289,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneOfAll { resource_address });
+            self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfAll { resource_address });
         then(builder, proof_id.unwrap())
     }
 
@@ -275,7 +298,7 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::CreateProofFromBucket {
+        let (builder, _, proof_id) = self.add_instruction(InstructionV1::CreateProofFromBucket {
             bucket_id: bucket_id.clone(),
         });
         then(builder, proof_id.unwrap())
@@ -291,7 +314,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromBucketOfAmount {
+            self.add_instruction(InstructionV1::CreateProofFromBucketOfAmount {
                 bucket_id: bucket_id.clone(),
                 amount,
             });
@@ -308,7 +331,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromBucketOfNonFungibles {
+            self.add_instruction(InstructionV1::CreateProofFromBucketOfNonFungibles {
                 bucket_id: bucket_id.clone(),
                 ids: ids.into_iter().collect(),
             });
@@ -324,7 +347,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromBucketOfAll {
+            self.add_instruction(InstructionV1::CreateProofFromBucketOfAll {
                 bucket_id: bucket_id.clone(),
             });
         then(builder, proof_id.unwrap())
@@ -335,7 +358,7 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::CloneProof {
+        let (builder, _, proof_id) = self.add_instruction(InstructionV1::CloneProof {
             proof_id: proof_id.clone(),
         });
         then(builder, proof_id.unwrap())
@@ -343,24 +366,25 @@ impl ManifestBuilder {
 
     /// Drops a proof.
     pub fn drop_proof(&mut self, proof_id: ManifestProof) -> &mut Self {
-        self.add_instruction(Instruction::DropProof { proof_id }).0
+        self.add_instruction(InstructionV1::DropProof { proof_id })
+            .0
     }
 
     /// Drops all proofs.
     pub fn drop_all_proofs(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::DropAllProofs).0
+        self.add_instruction(InstructionV1::DropAllProofs).0
     }
 
     /// Drops all virtual proofs.
     pub fn clear_signature_proofs(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::ClearSignatureProofs).0
+        self.add_instruction(InstructionV1::ClearSignatureProofs).0
     }
 
     /// Creates a fungible resource
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
         divisibility: u8,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
@@ -369,7 +393,7 @@ impl ManifestBuilder {
             .map(|(k, v)| (k, (v.0, v.1.into())))
             .collect();
         if let Some(initial_supply) = initial_supply {
-            self.add_instruction(Instruction::CallFunction {
+            self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -382,7 +406,7 @@ impl ManifestBuilder {
                 }),
             });
         } else {
-            self.add_instruction(Instruction::CallFunction {
+            self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
@@ -401,7 +425,7 @@ impl ManifestBuilder {
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
         id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
@@ -421,7 +445,7 @@ impl ManifestBuilder {
                 .map(|(id, e)| (id, (to_manifest_value(&e),)))
                 .collect();
 
-            self.add_instruction(Instruction::CallFunction {
+            self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -437,7 +461,7 @@ impl ManifestBuilder {
                 ),
             });
         } else {
-            self.add_instruction(Instruction::CallFunction {
+            self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
@@ -454,7 +478,7 @@ impl ManifestBuilder {
     }
 
     pub fn create_identity_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
@@ -464,7 +488,7 @@ impl ManifestBuilder {
     }
 
     pub fn create_identity(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
@@ -474,16 +498,16 @@ impl ManifestBuilder {
     }
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerCreateValidatorInput { key }),
+        self.add_instruction(InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerCreateValidatorInput { key }),
         });
         self
     }
 
     pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: validator_address.into(),
             method_name: VALIDATOR_REGISTER_IDENT.to_string(),
             args: manifest_args!(),
@@ -492,7 +516,7 @@ impl ManifestBuilder {
     }
 
     pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: validator_address.into(),
             method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: manifest_args!(),
@@ -505,7 +529,7 @@ impl ManifestBuilder {
         validator_address: ComponentAddress,
         bucket: ManifestBucket,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: validator_address.into(),
             method_name: VALIDATOR_STAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
@@ -518,7 +542,7 @@ impl ManifestBuilder {
         validator_address: ComponentAddress,
         bucket: ManifestBucket,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: validator_address.into(),
             method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
@@ -531,7 +555,7 @@ impl ManifestBuilder {
         validator_address: ComponentAddress,
         bucket: ManifestBucket,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: validator_address.into(),
             method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             args: manifest_args!(bucket),
@@ -547,7 +571,7 @@ impl ManifestBuilder {
         function_name: &str,
         args: ManifestValue,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address,
             blueprint_name: blueprint_name.to_string(),
             function_name: function_name.to_string(),
@@ -563,7 +587,7 @@ impl ManifestBuilder {
         method_name: &str,
         args: ManifestValue,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: address.into(),
             method_name: method_name.to_owned(),
             args: args,
@@ -576,7 +600,7 @@ impl ManifestBuilder {
         package_address: PackageAddress,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
             method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&PackageSetRoyaltyConfigInput { royalty_config }),
@@ -585,7 +609,7 @@ impl ManifestBuilder {
     }
 
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
             method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&PackageClaimRoyaltyInput {}),
@@ -598,7 +622,7 @@ impl ManifestBuilder {
         component_address: ComponentAddress,
         royalty_config: RoyaltyConfig,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallRoyaltyMethod {
+        self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
@@ -607,7 +631,7 @@ impl ManifestBuilder {
     }
 
     pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallRoyaltyMethod {
+        self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
@@ -622,7 +646,7 @@ impl ManifestBuilder {
         authority_key: AuthorityKey,
         rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
             method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesSetAuthorityRuleInput {
@@ -641,7 +665,7 @@ impl ManifestBuilder {
         authority_key: AuthorityKey,
         mutability: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
             method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesSetAuthorityMutabilityInput {
@@ -659,7 +683,7 @@ impl ManifestBuilder {
         key: String,
         value: MetadataValue,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMetadataMethod {
+        self.add_instruction(InstructionV1::CallMetadataMethod {
             address,
             method_name: METADATA_SET_IDENT.to_string(),
             args: to_manifest_value(&MetadataSetInput { key, value }),
@@ -673,13 +697,13 @@ impl ManifestBuilder {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         authority_rules: AuthorityRules,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
@@ -700,7 +724,7 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
@@ -724,7 +748,7 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
@@ -741,11 +765,10 @@ impl ManifestBuilder {
     }
 
     /// Builds a transaction manifest.
-    /// TODO: consider using self
-    pub fn build(&self) -> TransactionManifest {
-        let m = TransactionManifest {
+    pub fn build(&self) -> TransactionManifestV1 {
+        let m = TransactionManifestV1 {
             instructions: self.instructions.clone(),
-            blobs: self.blobs.values().cloned().collect(),
+            blobs: self.blobs.clone(),
         };
         #[cfg(feature = "dump_manifest_to_file")]
         {
@@ -761,7 +784,7 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -779,7 +802,7 @@ impl ManifestBuilder {
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -794,7 +817,7 @@ impl ManifestBuilder {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -812,7 +835,7 @@ impl ManifestBuilder {
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -831,7 +854,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.take_from_worktop(resource_address, amount, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::BurnResource { bucket_id })
+                .add_instruction(InstructionV1::BurnResource { bucket_id })
                 .0
         })
     }
@@ -839,7 +862,7 @@ impl ManifestBuilder {
     pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
         self.take_all_from_worktop(resource_address, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::BurnResource { bucket_id })
+                .add_instruction(InstructionV1::BurnResource { bucket_id })
                 .0
         })
     }
@@ -849,7 +872,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: resource_address.into(),
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: to_manifest_value(&FungibleResourceManagerMintInput { amount }),
@@ -871,7 +894,7 @@ impl ManifestBuilder {
             .map(|(id, e)| (id, (to_manifest_value(&e),)))
             .collect();
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: resource_address.into(),
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput { entries }),
@@ -893,7 +916,7 @@ impl ManifestBuilder {
             .map(|e| (to_manifest_value(&e),))
             .collect();
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: resource_address.into(),
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput { entries }),
@@ -902,7 +925,7 @@ impl ManifestBuilder {
     }
 
     pub fn recall(&mut self, vault_id: InternalAddress, amount: Decimal) -> &mut Self {
-        self.add_instruction(Instruction::RecallResource { vault_id, amount });
+        self.add_instruction(InstructionV1::RecallResource { vault_id, amount });
         self
     }
 
@@ -914,7 +937,7 @@ impl ManifestBuilder {
             &ids,
             |builder, bucket_id| {
                 builder
-                    .add_instruction(Instruction::BurnResource { bucket_id })
+                    .add_instruction(InstructionV1::BurnResource { bucket_id })
                     .0
             },
         )
@@ -922,7 +945,7 @@ impl ManifestBuilder {
 
     /// Creates an account.
     pub fn new_account_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
@@ -944,7 +967,7 @@ impl ManifestBuilder {
             amount_to_lock,
         });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             args,
@@ -965,7 +988,7 @@ impl ManifestBuilder {
             ids,
         });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
@@ -977,7 +1000,7 @@ impl ManifestBuilder {
     pub fn lock_fee<A: Into<GlobalAddress>>(&mut self, account: A, amount: Decimal) -> &mut Self {
         let args = to_manifest_value(&AccountLockFeeInput { amount });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             args,
@@ -988,7 +1011,7 @@ impl ManifestBuilder {
     pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
         let args = to_manifest_value(&AccountLockContingentFeeInput { amount });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             args,
@@ -1008,7 +1031,7 @@ impl ManifestBuilder {
             amount,
         });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
             args,
@@ -1028,7 +1051,7 @@ impl ManifestBuilder {
             resource_address,
         });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
@@ -1044,7 +1067,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let args = to_manifest_value(&AccountCreateProofInput { resource_address });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
             args,
@@ -1064,7 +1087,7 @@ impl ManifestBuilder {
             amount,
         });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             args,
@@ -1084,7 +1107,7 @@ impl ManifestBuilder {
             ids: ids.clone(),
         });
 
-        self.add_instruction(Instruction::CallMethod {
+        self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             args,
@@ -1100,7 +1123,7 @@ impl ManifestBuilder {
         confirmation_role: AccessRule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
+        self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
@@ -1125,10 +1148,18 @@ impl ManifestBuilder {
         )
     }
 
-    pub fn safe_deposit_batch(&mut self, account_address: ComponentAddress) -> &mut Self {
+    pub fn try_deposit_batch_or_abort(&mut self, account_address: ComponentAddress) -> &mut Self {
         self.call_method(
             account_address,
-            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+    }
+
+    pub fn try_deposit_batch_or_refund(&mut self, account_address: ComponentAddress) -> &mut Self {
+        self.call_method(
+            account_address,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
     }
