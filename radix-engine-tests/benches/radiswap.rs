@@ -149,11 +149,9 @@ fn do_swap(
     nonce: u32,
 ) -> TransactionReceipt {
     // Validate
-    let validated = NotarizedTransactionValidator::new(ValidationConfig::default(
-        NetworkDefinition::simulator().id,
-    ))
-    .check_length_decode_and_validate_from_slice(transaction_payload)
-    .unwrap();
+    let validated = NotarizedTransactionValidator::new(ValidationConfig::simulator())
+        .validate_from_raw(transaction_payload)
+        .unwrap();
 
     let mut executable = validated.get_executable();
 

@@ -4,16 +4,24 @@ use crate::validation::*;
 pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
     type Validated;
 
-    fn check_length_decode_and_validate_from_slice(
+    fn prepare_from_raw(
         &self,
-        payload: &[u8],
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        if payload.len() > MAX_TRANSACTION_SIZE {
+        raw_payload_bytes: &[u8],
+    ) -> Result<Prepared, TransactionValidationError> {
+        if raw_payload_bytes.len() > self.max_payload_length() {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let prepared = Prepared::prepare_from_payload(payload)?;
+        Ok(Prepared::prepare_from_payload(raw_payload_bytes)?)
+    }
 
+    fn max_payload_length(&self) -> usize;
+
+    fn validate_from_raw(
+        &self,
+        raw_payload_bytes: &[u8],
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        let prepared = self.prepare_from_raw(raw_payload_bytes)?;
         self.validate(prepared)
     }
 
@@ -26,6 +34,7 @@ pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
     pub network_id: u8,
+    pub max_notarized_payload_size: usize,
     pub min_cost_unit_limit: u32,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u16,
@@ -37,6 +46,7 @@ impl ValidationConfig {
     pub fn default(network_id: u8) -> Self {
         Self {
             network_id,
+            max_notarized_payload_size: DEFAULT_MAX_TRANSACTION_SIZE,
             min_cost_unit_limit: DEFAULT_MIN_COST_UNIT_LIMIT,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
@@ -57,6 +67,10 @@ pub struct NotarizedTransactionValidator {
 
 impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransactionValidator {
     type Validated = ValidatedNotarizedTransactionV1;
+
+    fn max_payload_length(&self) -> usize {
+        self.config.max_notarized_payload_size
+    }
 
     fn validate(
         &self,

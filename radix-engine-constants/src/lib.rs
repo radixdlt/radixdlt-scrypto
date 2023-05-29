@@ -54,7 +54,7 @@ pub const DEFAULT_MAX_TIP_PERCENTAGE: u16 = u16::MAX;
 pub const DEFAULT_MAX_EPOCH_RANGE: u64 = 100;
 
 /// The max transaction size
-pub const MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
+pub const DEFAULT_MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
 
 //==========================
 // Transaction execution

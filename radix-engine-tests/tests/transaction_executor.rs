@@ -107,7 +107,7 @@ fn test_normal_transaction_flow() {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     let validated = validator
-        .check_length_decode_and_validate_from_slice(&raw_transaction)
+        .validate_from_raw(&raw_transaction)
         .expect("Invalid transaction");
 
     // Act
