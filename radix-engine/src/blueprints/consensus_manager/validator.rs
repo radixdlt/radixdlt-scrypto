@@ -544,7 +544,7 @@ impl ValidatorBlueprint {
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_GET_ROLE_IDENT,
                 scrypto_encode(&AccessRulesGetRoleInput {
-                    role_key: RoleKey::new(SecurifiedValidator::OWNER_ROLE),
+                    role_key: RoleKey::new(OWNER_ROLE),
                 })
                 .unwrap(),
             )?;
@@ -932,13 +932,12 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     u16::MAX - stake_u16
 }
 
-const STAKE_ROLE: &'static str = "stake";
+pub const STAKE_ROLE: &'static str = "stake";
 
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
-    const OWNER_ROLE: &'static str = "owner";
     const SECURIFY_ROLE: Option<&'static str> = None;
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {

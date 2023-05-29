@@ -205,7 +205,6 @@ struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
-    const OWNER_ROLE: &'static str = "owner";
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {

@@ -117,7 +117,6 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
-    const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {

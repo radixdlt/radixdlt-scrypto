@@ -49,12 +49,11 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
-const SECURIFY_ROLE: &'static str = "securify";
+pub const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
-    const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 

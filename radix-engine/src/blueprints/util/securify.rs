@@ -15,7 +15,6 @@ pub enum SecurifiedRoleEntry {
 
 pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
-    const OWNER_ROLE: &'static str;
     const SECURIFY_ROLE: Option<&'static str> = None;
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry>;
@@ -35,7 +34,7 @@ pub trait SecurifiedAccessRules {
             roles.define_role(role, role_entry);
         }
 
-        roles.define_role(RoleKey::new(Self::OWNER_ROLE), owner_rule.clone());
+        roles.define_role(RoleKey::new(OWNER_ROLE), owner_rule.clone());
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             let securify_rule = if presecurify {
                 owner_rule
@@ -53,7 +52,7 @@ pub trait SecurifiedAccessRules {
         owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let owner_role_entry = owner_rule.to_role_entry(Self::OWNER_ROLE);
+        let owner_role_entry = owner_rule.to_role_entry(OWNER_ROLE);
         let roles = Self::create_roles(owner_role_entry, false);
         let access_rules = AccessRules::create(roles, api)?;
         Ok(access_rules)
@@ -103,7 +102,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         let (bucket, owner_entry) = Self::create_securified_badge(api)?;
 
-        access_rules.update_role(RoleKey::new(Self::OWNER_ROLE), owner_entry, api)?;
+        access_rules.update_role(RoleKey::new(OWNER_ROLE), owner_entry, api)?;
 
         Ok(bucket)
     }

@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_auth_template, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
@@ -287,19 +287,21 @@ impl ConsensusManagerNativePackage {
         let schema = generate_full_schema(aggregator);
 
         let method_permissions_instance = method_auth_template! {
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
 
             SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"];
-            SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => ["owner"];
+            SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
+            SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
             SchemaMethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
         };
 
