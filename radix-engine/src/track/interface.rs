@@ -193,7 +193,7 @@ impl StoreAccessInfo {
                     self.0.push(item)
                 }
             }
-            StoreAccess::ReadFromDbNotFound => self.0.push(item)
+            StoreAccess::ReadFromDbNotFound => self.0.push(item),
         }
     }
 

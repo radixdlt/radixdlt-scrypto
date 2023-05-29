@@ -341,8 +341,7 @@ mod tests {
         let mut sort_key_value: usize = data_index_vector.len();
         for _ in 0..COUNT {
             let plain_bytes = sort_key_value.to_be_bytes().to_vec();
-            let mut hashed_prefix: Vec<u8> =
-                Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
+            let mut hashed_prefix: Vec<u8> = Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
             hashed_prefix.extend(plain_bytes);
 
             let sort_key = DbSortKey(hashed_prefix);
@@ -591,12 +590,15 @@ mod tests {
     }
 
     pub fn print_read_not_found_results<S: SubstateDatabase + CommittableSubstateDatabase>(
-        substate_store: &SubstateStoreWithMetrics<S>
+        substate_store: &SubstateStoreWithMetrics<S>,
     ) {
         let v = &substate_store.read_not_found_metrics.borrow();
         let min = v.iter().min().unwrap().as_nanos();
         let max = v.iter().max().unwrap().as_nanos();
         let avg = v.iter().sum::<Duration>().as_nanos() as usize / v.len();
-        println!("Read not found times [ns]: min={} max={} avg={}", min, max, avg);
+        println!(
+            "Read not found times [ns]: min={} max={} avg={}",
+            min, max, avg
+        );
     }
 }
