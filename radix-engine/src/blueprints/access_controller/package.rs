@@ -1339,7 +1339,6 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
         recovery,
     );
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT, recovery);
     authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         recovery,
@@ -1378,6 +1377,10 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
     );
 
     // Other methods
+    authority_rules.set_fixed_main_authority_rule(
+        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
+        rule!(allow_all),
+    );
     authority_rules.set_fixed_main_authority_rule(
         ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
         rule!(require("primary") || require("confirmation") || require("recovery")),
