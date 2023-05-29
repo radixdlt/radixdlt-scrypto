@@ -18,7 +18,8 @@ fn build_access_rules(
             .remove(&Mint)
             .unwrap_or((DenyAll, rule!(deny_all)));
         let (burn_access_rule, burn_mutability) = access_rules_map
-            .remove(&Burn)
+            .get(&Burn)
+            .cloned()
             .unwrap_or((DenyAll, rule!(deny_all)));
         let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
             access_rules_map
@@ -60,9 +61,19 @@ fn build_access_rules(
             burn_mutability,
         );
         resman_authority_rules.set_main_authority_rule(
+            RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
+            rule!(require("this_package")),
+            AccessRule::DenyAll,
+        );
+        resman_authority_rules.set_main_authority_rule(
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
             update_non_fungible_data_access_rule,
             update_non_fungible_data_mutability,
+        );
+
+        resman_authority_rules.set_fixed_main_authority_rule(
+            "this_package",
+            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         );
 
         resman_authority_rules
@@ -77,6 +88,9 @@ fn build_access_rules(
             .unwrap_or((AllowAll, rule!(deny_all)));
         let (recall_access_rule, recall_mutability) = access_rules_map
             .remove(&ResourceMethodAuthKey::Recall)
+            .unwrap_or((DenyAll, rule!(deny_all)));
+        let (burn_access_rule, burn_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Burn)
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut vault_authority_rules = AuthorityRules::new();
@@ -117,6 +131,19 @@ fn build_access_rules(
                 VAULT_PUT_IDENT,
                 deposit_access_rule,
                 deposit_mutability,
+            );
+        }
+
+        // Burn
+        {
+            vault_authority_rules.set_main_authority_rule(
+                VAULT_BURN_IDENT,
+                burn_access_rule,
+                burn_mutability,
+            );
+            vault_authority_rules.set_fixed_main_authority_rule(
+                NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT,
+                rule!(require(VAULT_BURN_IDENT)),
             );
         }
 
