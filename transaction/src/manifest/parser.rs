@@ -549,7 +549,7 @@ impl Parser {
             },
             InstructionIdent::RecallResource => Instruction::RecallResource {
                 vault_id: self.parse_value()?,
-                amount: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
 

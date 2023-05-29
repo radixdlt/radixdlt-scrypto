@@ -27,14 +27,7 @@ use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
     PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-};
+use radix_engine_interface::blueprints::resource::{FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT, FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT, VAULT_RECALL_IDENT};
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
@@ -514,8 +507,33 @@ pub fn decompile_instruction<F: fmt::Write>(
             let parameters = Value::Tuple { fields };
             (name, parameters)
         }
-        InstructionV1::RecallResource { vault_id, amount } => {
-            ("RECALL_RESOURCE", to_manifest_value(&(vault_id, amount)))
+        InstructionV1::CallDirectVaultMethod {
+            vault_id,
+            method_name,
+            args,
+        } => {
+            let mut fields = Vec::new();
+            let name = match method_name.as_str() {
+                VAULT_RECALL_IDENT => {
+                    fields.push(to_manifest_value(vault_id));
+                    "RECALL_RESOURCE"
+                }
+                /* Default */
+                _ => {
+                    fields.push(to_manifest_value(vault_id));
+                    fields.push(to_manifest_value(method_name));
+                    "CALL_DIRECT_VAULT_METHOD"
+                }
+            };
+
+            if let Value::Tuple { fields: arg_fields } = args {
+                fields.extend(arg_fields.clone());
+            } else {
+                return Err(DecompileError::InvalidArguments);
+            }
+
+            let parameters = Value::Tuple { fields };
+            (name, parameters)
         }
 
         InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())),

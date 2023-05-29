@@ -138,7 +138,7 @@ pub enum Instruction {
 
     RecallResource {
         vault_id: Value,
-        amount: Value,
+        args: Vec<Value>,
     },
 
     DropAllProofs,

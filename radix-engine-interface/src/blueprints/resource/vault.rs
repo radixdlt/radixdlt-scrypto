@@ -35,7 +35,7 @@ pub type VaultTakeOutput = Bucket;
 
 pub const VAULT_RECALL_IDENT: &str = "recall";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VaultRecallInput {
     pub amount: Decimal,
 }

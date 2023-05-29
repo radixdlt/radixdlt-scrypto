@@ -509,9 +509,12 @@ pub fn generate_instruction(
                 args,
             }
         }
-        ast::Instruction::RecallResource { vault_id, amount } => InstructionV1::RecallResource {
-            vault_id: generate_local_address(vault_id, bech32_decoder)?,
-            amount: generate_decimal(amount)?,
+        ast::Instruction::RecallResource { vault_id, args } => {
+            InstructionV1::CallDirectVaultMethod {
+                vault_id: generate_local_address(vault_id, bech32_decoder)?,
+                method_name: VAULT_RECALL_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
         },
 
         ast::Instruction::DropAllProofs => {
