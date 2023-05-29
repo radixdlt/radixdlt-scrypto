@@ -17,7 +17,7 @@ pub const CONSENSUS_MANAGER_CREATE_IDENT: &str = "create";
 pub struct ConsensusManagerCreateInput {
     pub validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
     pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
-    pub initial_epoch: u64,
+    pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
 }
@@ -28,6 +28,8 @@ pub struct ConsensusManagerConfig {
     pub epoch_change_condition: EpochChangeCondition,
     pub num_unstake_epochs: u64,
     pub total_emission_xrd_per_epoch: Decimal,
+    /// The proportion of proposals a validator needs to complete in an epoch to get emissions
+    /// Should be between 0 and 1
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
     pub num_fee_increase_delay_epochs: u64,
@@ -94,10 +96,10 @@ pub struct EpochChangeCondition {
 impl EpochChangeCondition {
     /// Determines whether this condition is met by the given actual state.
     /// See the condition's field definitions for exact rules.
-    pub fn is_met(&self, duration_millis: i64, round_count: u64) -> bool {
-        if round_count >= self.max_round_count {
+    pub fn is_met(&self, duration_millis: i64, round: Round) -> bool {
+        if round.number() >= self.max_round_count {
             true
-        } else if round_count < self.min_round_count {
+        } else if round.number() < self.min_round_count {
             false
         } else {
             duration_millis >= 0 && (duration_millis as u64) >= self.target_duration_millis
@@ -112,7 +114,7 @@ pub const CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT: &str = "get_current_epoch";
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ConsensusManagerGetCurrentEpochInput;
 
-pub type ConsensusManagerGetCurrentEpochOutput = u64;
+pub type ConsensusManagerGetCurrentEpochOutput = Epoch;
 
 pub const CONSENSUS_MANAGER_START_IDENT: &str = "start";
 
@@ -154,7 +156,7 @@ pub struct ConsensusManagerNextRoundInput {
     /// Please note that in case of liveness breaks, this number may be different than previous
     /// reported `round + 1`. Such gaps are considered "round leader's fault" and are penalized
     /// on emission, according to leader reliability statistics (see `LeaderProposalHistory`).
-    pub round: u64,
+    pub round: Round,
 
     /// Current millisecond timestamp of the proposer.
     pub proposer_timestamp_ms: i64,
@@ -173,7 +175,7 @@ impl ConsensusManagerNextRoundInput {
     /// Please note that the current round's number passed here should be an immediate successor of
     /// the previously reported round.
     pub fn successful(
-        current_round: u64,
+        current_round: Round,
         current_leader: ValidatorIndex,
         current_timestamp_ms: i64,
     ) -> Self {
@@ -211,14 +213,6 @@ pub struct LeaderProposalHistory {
     /// successfully.
     pub is_fallback: bool,
 }
-
-/// An index of a specific validator within the current validator set.
-/// To be exact: a `ValidatorIndex` equal to `k` references the `k-th` element returned by the
-/// iterator of the `IndexMap<ComponentAddress, Validator>` in this epoch's active validator set.
-/// This uniquely identifies the validator, while being shorter than `ComponentAddress` (we do care
-/// about the constant factor of the space taken by `LeaderProposalHistory` under prolonged liveness
-/// break scenarios).
-pub type ValidatorIndex = u8;
 
 pub type ConsensusManagerNextRoundOutput = ();
 
@@ -333,7 +327,7 @@ pub struct ValidatorApplyEmissionInput {
     /// The validator should subtract the configured fee from this amount.
     pub xrd_bucket: Bucket,
     /// The *concluded* epoch's number. Informational-only.
-    pub epoch: u64,
+    pub epoch: Epoch,
     /// A number of proposals successfully made by this validator during the emission period.
     pub proposals_made: u64,
     /// A number of proposals missed by this validator during the emission period.

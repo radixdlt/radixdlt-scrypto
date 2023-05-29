@@ -4,16 +4,24 @@ use crate::validation::*;
 pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
     type Validated;
 
-    fn check_length_decode_and_validate_from_slice(
+    fn prepare_from_raw(
         &self,
-        payload: &[u8],
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        if payload.len() > MAX_TRANSACTION_SIZE {
+        raw_payload_bytes: &[u8],
+    ) -> Result<Prepared, TransactionValidationError> {
+        if raw_payload_bytes.len() > self.max_payload_length() {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let prepared = Prepared::prepare_from_payload(payload)?;
+        Ok(Prepared::prepare_from_payload(raw_payload_bytes)?)
+    }
 
+    fn max_payload_length(&self) -> usize;
+
+    fn validate_from_raw(
+        &self,
+        raw_payload_bytes: &[u8],
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        let prepared = self.prepare_from_raw(raw_payload_bytes)?;
         self.validate(prepared)
     }
 
@@ -26,17 +34,19 @@ pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
     pub network_id: u8,
+    pub max_notarized_payload_size: usize,
     pub min_cost_unit_limit: u32,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
-    pub max_epoch_range: u32,
+    pub max_epoch_range: u64,
 }
 
 impl ValidationConfig {
     pub fn default(network_id: u8) -> Self {
         Self {
             network_id,
+            max_notarized_payload_size: DEFAULT_MAX_TRANSACTION_SIZE,
             min_cost_unit_limit: DEFAULT_MIN_COST_UNIT_LIMIT,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
@@ -57,6 +67,10 @@ pub struct NotarizedTransactionValidator {
 
 impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransactionValidator {
     type Validated = ValidatedNotarizedTransactionV1;
+
+    fn max_payload_length(&self) -> usize {
+        self.config.max_notarized_payload_size
+    }
 
     fn validate(
         &self,
@@ -244,7 +258,10 @@ impl NotarizedTransactionValidator {
         if header.end_epoch_exclusive <= header.start_epoch_inclusive {
             return Err(HeaderValidationError::InvalidEpochRange);
         }
-        if header.end_epoch_exclusive - header.start_epoch_inclusive > self.config.max_epoch_range {
+        let max_end_epoch = header
+            .start_epoch_inclusive
+            .after(self.config.max_epoch_range);
+        if header.end_epoch_exclusive > max_end_epoch {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
 
@@ -354,13 +371,13 @@ mod tests {
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::InvalidEpochRange
             ),
-            (0, 0, 5, vec![1], 2)
+            (Epoch::zero(), Epoch::zero(), 5, vec![1], 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::EpochRangeTooLarge
             ),
-            (0, 1000, 5, vec![1], 2)
+            (Epoch::zero(), Epoch::of(1000), 5, vec![1], 2)
         );
     }
 
@@ -370,20 +387,20 @@ mod tests {
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::TooManySignatures
             ),
-            (0, 100, 5, (1..20).collect(), 2)
+            (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::DuplicateSigner
             ),
-            (0, 100, 5, vec![1, 1], 2)
+            (Epoch::zero(), Epoch::of(100), 5, vec![1, 1], 2)
         );
     }
 
     #[test]
     fn test_valid_preview() {
         // Build the whole transaction but only really care about the intent
-        let tx = create_transaction(0, 100, 5, vec![1, 2], 2);
+        let tx = create_transaction(Epoch::zero(), Epoch::of(100), 5, vec![1, 2], 2);
 
         let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
@@ -404,8 +421,8 @@ mod tests {
     }
 
     fn create_transaction(
-        start_epoch: u32,
-        end_epoch: u32,
+        start_epoch: Epoch,
+        end_epoch: Epoch,
         nonce: u32,
         signers: Vec<u64>,
         notary: u64,

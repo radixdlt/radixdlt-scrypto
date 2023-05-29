@@ -13,15 +13,9 @@ pub struct SignedIntentV1 {
     pub intent_signatures: IntentSignaturesV1,
 }
 
-impl TransactionPayloadEncode for SignedIntentV1 {
-    type EncodablePayload<'a> =
-        SborFixedEnumVariant<{ TransactionDiscriminator::V1SignedIntent as u8 }, &'a Self>;
-
+impl TransactionPayload for SignedIntentV1 {
+    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1SignedIntent as u8 }, Self>;
     type Prepared = PreparedSignedIntentV1;
-
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
-        SborFixedEnumVariant::new(self)
-    }
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit

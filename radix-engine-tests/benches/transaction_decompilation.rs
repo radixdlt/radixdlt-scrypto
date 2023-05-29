@@ -4,6 +4,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use radix_engine::types::{
     ManifestExpression, NetworkDefinition, NonFungibleIdType, NonFungibleLocalId,
 };
+use radix_engine_common::types::Epoch;
 use radix_engine_common::{manifest_args, ManifestSbor};
 use radix_engine_interface::ScryptoSbor;
 use scrypto::prelude::{AccessRule, ComponentAddress};
@@ -12,7 +13,7 @@ use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::{compile, decompile};
 use transaction::model::{
-    PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayloadEncode,
+    PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     TransactionPayloadPreparable,
 };
 
@@ -92,8 +93,8 @@ fn compiled_notarized_transaction() -> Vec<u8> {
     };
     let header = TransactionHeaderV1 {
         network_id: 0xf2,
-        start_epoch_inclusive: 10,
-        end_epoch_exclusive: 13,
+        start_epoch_inclusive: Epoch::of(10),
+        end_epoch_exclusive: Epoch::of(13),
         nonce: 0x02,
         notary_public_key: public_key.into(),
         notary_is_signatory: true,

@@ -13,15 +13,9 @@ pub struct NotarizedTransactionV1 {
     pub notary_signature: NotarySignatureV1,
 }
 
-impl TransactionPayloadEncode for NotarizedTransactionV1 {
-    type EncodablePayload<'a> =
-        SborFixedEnumVariant<{ TransactionDiscriminator::V1Notarized as u8 }, &'a Self>;
-
+impl TransactionPayload for NotarizedTransactionV1 {
+    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1Notarized as u8 }, Self>;
     type Prepared = PreparedNotarizedTransactionV1;
-
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
-        SborFixedEnumVariant::new(self)
-    }
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit

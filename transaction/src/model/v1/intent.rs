@@ -15,15 +15,9 @@ pub struct IntentV1 {
     pub attachments: AttachmentsV1,
 }
 
-impl TransactionPayloadEncode for IntentV1 {
-    type EncodablePayload<'a> =
-        SborFixedEnumVariant<{ TransactionDiscriminator::V1Intent as u8 }, &'a Self>;
-
+impl TransactionPayload for IntentV1 {
+    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1Intent as u8 }, Self>;
     type Prepared = PreparedIntentV1;
-
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
-        SborFixedEnumVariant::new(self)
-    }
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit

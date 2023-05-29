@@ -12,15 +12,9 @@ pub struct SystemTransactionV1 {
     pub hash_for_execution: Hash,
 }
 
-impl TransactionPayloadEncode for SystemTransactionV1 {
-    type EncodablePayload<'a> =
-        SborFixedEnumVariant<{ TransactionDiscriminator::V1System as u8 }, &'a Self>;
-
+impl TransactionPayload for SystemTransactionV1 {
+    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1System as u8 }, Self>;
     type Prepared = PreparedSystemTransactionV1;
-
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
-        SborFixedEnumVariant::new(self)
-    }
 }
 
 type PreparedPreAllocatedIds = SummarizedRawFullBody<IndexSet<NodeId>>;

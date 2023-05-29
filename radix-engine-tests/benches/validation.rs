@@ -7,7 +7,7 @@ use transaction::builder::TransactionBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::eddsa_ed25519::EddsaEd25519PrivateKey;
 use transaction::model::TransactionHeaderV1;
-use transaction::model::TransactionPayloadEncode;
+use transaction::model::TransactionPayload;
 use transaction::validation::verify_ecdsa_secp256k1;
 use transaction::validation::verify_eddsa_ed25519;
 use transaction::validation::NotarizedTransactionValidator;
@@ -58,8 +58,8 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(100),
             nonce: 1,
             notary_public_key: signer.public_key().into(),
             notary_is_signatory: true,
@@ -83,13 +83,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     c.bench_function("Validation::validate_manifest", |b| {
-        b.iter(|| {
-            black_box(
-                validator
-                    .check_length_decode_and_validate_from_slice(&transaction_bytes)
-                    .unwrap(),
-            )
-        })
+        b.iter(|| black_box(validator.validate_from_raw(&transaction_bytes).unwrap()))
     });
 }
 
