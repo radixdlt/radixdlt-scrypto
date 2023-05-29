@@ -942,12 +942,12 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> &mut Self {
+    pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateAdvancedInput { owner_rule }),
+            args: to_manifest_value(&AccountCreateAdvancedInput { owner_role }),
         })
         .0
     }

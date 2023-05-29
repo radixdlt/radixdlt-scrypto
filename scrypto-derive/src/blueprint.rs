@@ -90,8 +90,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let definition_statements = bp.macro_statements;
     let definition_statements = if !definition_statements.is_empty() {
         quote! {
-                #(#definition_statements)*
-            }
+            #(#definition_statements)*
+        }
     } else {
         // TODO: Use AllPublicMethod Template instead
         quote! {

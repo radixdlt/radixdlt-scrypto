@@ -37,7 +37,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_basic_transfer() {
         // Arrange
         let mut test_runner = TestRunner::builder().build();
@@ -72,7 +71,7 @@ mod tests {
             + 6031 /* DropLock */
             + 1680 /* DropNode */
             + 1140299 /* Invoke */
-            + 650511 /* LockSubstate */
+            + 650168 /* LockSubstate */
             + 8456 /* ReadSubstate */
             + 65000 /* RunNative */
             + 7500 /* RunSystem */
@@ -85,7 +84,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_radiswap() {
         let mut test_runner = TestRunner::builder().build();
 
@@ -210,7 +208,7 @@ mod tests {
             + 14356 /* DropLock */
             + 3675 /* DropNode */
             + 3395011 /* Invoke */
-            + 6318941 /* LockSubstate */
+            + 5933199 /* LockSubstate */
             + 20104 /* ReadSubstate */
             + 137500 /* RunNative */
             + 15000 /* RunSystem */
@@ -224,7 +222,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_flash_loan() {
         let mut test_runner = TestRunner::builder().build();
 
@@ -324,11 +321,11 @@ mod tests {
             + 22755 /* DropLock */
             + 6090 /* DropNode */
             + 4768533 /* Invoke */
-            + 7478326 /* LockSubstate */
+            + 7145713 /* LockSubstate */
             + 32256 /* ReadSubstate */
             + 205000 /* RunNative */
             + 40000 /* RunSystem */
-            + 1304755 /* RunWasm */
+            + 1304700 /* RunWasm */
             + 50000 /* TxBaseCost */
             + 2455 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */

@@ -16,8 +16,10 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
@@ -288,9 +290,12 @@ impl PackageNativePackage {
         );
 
         let method_auth_template = method_auth_template! {
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
-            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => ["owner"];
-            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => ["owner"];
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
         };
 
         let schema = generate_full_schema(aggregator);

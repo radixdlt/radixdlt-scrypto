@@ -702,8 +702,8 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let authority_rules = init_roles_from_rule_set(input.rule_set);
-        let access_rules = AccessRules::create(authority_rules, api)?.0;
+        let roles = init_roles_from_rule_set(input.rule_set);
+        let access_rules = AccessRules::create(roles, api)?.0;
 
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;

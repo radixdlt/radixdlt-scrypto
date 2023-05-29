@@ -461,9 +461,15 @@ macro_rules! external_component_members {
 
 #[macro_export]
 macro_rules! to_role_key {
-    (OWNER) => ({ OWNER_ROLE });
-    (SELF) => ({ SELF_ROLE });
-    ($role:ident) => ({ ROLE_STRINGS.$role });
+    (OWNER) => {{
+        OWNER_ROLE
+    }};
+    (SELF) => {{
+        SELF_ROLE
+    }};
+    ($role:ident) => {{
+        ROLE_STRINGS.$role
+    }};
 }
 
 #[macro_export]

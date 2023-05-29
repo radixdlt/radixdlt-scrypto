@@ -76,11 +76,11 @@ impl IdentityNativePackage {
 
         let method_auth_template = method_auth_template! {
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => ["owner"];
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
 
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => ["owner"];
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => ["owner"];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
 
             SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
         };

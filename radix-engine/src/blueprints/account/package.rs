@@ -2,7 +2,9 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
@@ -398,7 +400,7 @@ impl AccountNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_advanced(input.owner_rule, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.owner_role, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

@@ -45,6 +45,7 @@ impl ObjectKey {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
+    // TODO: Remove `ObjectModuleId::AccessRules`?
     pub module_id: ObjectModuleId,
     pub ident: String,
 }
@@ -244,16 +245,16 @@ impl OwnerRole {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
-    pub rules: BTreeMap<RoleKey, RoleEntry>,
+    pub roles: BTreeMap<RoleKey, RoleEntry>,
 }
 
 impl Roles {
     pub fn new() -> Self {
-        Self { rules: btreemap!() }
+        Self { roles: btreemap!() }
     }
 
     pub fn define_role<K: Into<RoleKey>>(&mut self, authority: K, entry: RoleEntry) {
-        self.rules.insert(authority.into(), entry);
+        self.roles.insert(authority.into(), entry);
     }
 }
 
