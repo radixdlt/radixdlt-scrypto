@@ -13,6 +13,8 @@ pub const DEPOSIT_ROLE: &str = "deposit";
 pub const DEPOSIT_UPDATE_ROLE: &str = "deposit_update";
 pub const RECALL_ROLE: &str = "recall";
 pub const RECALL_UPDATE_ROLE: &str = "recall_update";
+pub const FREEZE_ROLE: &str = "freeze";
+pub const FREEZE_UPDATE_ROLE: &str = "freeze_update";
 pub const UPDATE_NON_FUNGIBLE_DATA_ROLE: &str = "update_non_fungible_data";
 pub const UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE: &str = "update_non_fungible_data_update";
 pub const SET_METADATA_ROLE: &str = "set_metadata";
@@ -29,6 +31,7 @@ pub enum ResourceMethodAuthKey {
     Withdraw,
     Deposit,
     Recall,
+    Freeze,
 }
 
 pub const RESOURCE_MANAGER_BURN_IDENT: &str = "burn";
