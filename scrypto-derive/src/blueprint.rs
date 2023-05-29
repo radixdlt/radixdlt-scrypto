@@ -75,6 +75,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
+    let blueprint_name = bp_ident.to_string();
+    let owned_typed_name = format!("Owned{}", blueprint_name);
+    let global_typed_name = format!("Global{}", blueprint_name);
+
     let output_original_code = quote! {
         #[derive(::scrypto::prelude::ScryptoSbor)]
         pub struct #bp_ident #bp_fields #bp_semi_token
@@ -89,6 +93,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         impl HasStub for #bp_ident {
             type Stub = #stub_ident;
+        }
+
+        impl HasTypeInfo for #bp_ident {
+            const PACKAGE_ADDRESS: Option<PackageAddress> = None;
+            const BLUEPRINT_NAME: &'static str = #blueprint_name;
+            const OWNED_TYPE_NAME: &'static str = #owned_typed_name;
+            const GLOBAL_TYPE_NAME: &'static str = #global_typed_name;
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_original_code });
@@ -671,6 +682,13 @@ mod tests {
 
                     impl HasStub for Test {
                         type Stub = TestObjectStub;
+                    }
+
+                    impl HasTypeInfo for Test {
+                        const PACKAGE_ADDRESS: Option<PackageAddress> = None;
+                        const BLUEPRINT_NAME: &'static str = "Test";
+                        const OWNED_TYPE_NAME: &'static str = "OwnedTest";
+                        const GLOBAL_TYPE_NAME: &'static str = "GlobalTest";
                     }
 
                     #[allow(non_camel_case_types)]

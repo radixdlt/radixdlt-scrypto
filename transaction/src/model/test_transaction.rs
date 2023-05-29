@@ -64,7 +64,7 @@ impl PreparedTestTransaction {
                     virtual_resources: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
-                    tip_percentage: DEFAULT_MAX_TIP_PERCENTAGE,
+                    tip_percentage: DEFAULT_TIP_PERCENTAGE,
                 },
                 runtime_validations: vec![],
                 pre_allocated_ids: index_set_new(),
