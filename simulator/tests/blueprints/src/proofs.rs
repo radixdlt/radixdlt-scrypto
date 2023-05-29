@@ -7,7 +7,7 @@ mod proofs {
             auth
         },
         methods {
-            organization_authenticated_method => auth;
+            organizational_authenticated_method => auth;
         }
     }
 
