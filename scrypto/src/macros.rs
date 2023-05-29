@@ -584,21 +584,22 @@ macro_rules! define_static_auth {
 
 #[macro_export]
 macro_rules! role_definition_entry {
-    ($rule:expr) => {{
-        RoleEntry::immutable($rule)
-    }};
-    ($rule:expr, mut $($mutators:ident),+) => {{
+
+    ($rule:expr, mutable $($mutators:ident),+) => {{
         let mut list = RoleList::none();
         permission_role_list!(list, $($mutators),+);
         RoleEntry::new($rule, list, true)
+    }};
+    ($rule:expr) => {{
+        RoleEntry::immutable($rule)
     }};
 }
 
 #[macro_export]
 macro_rules! roles {
-    ( $($role:ident => $rule:expr $(, mut $($mutators:ident),+)? ;)* ) => ({
+    ( $($role:ident => $rule:expr $(, mutable $($mutators:ident),+)? ;)* ) => ({
         let method_roles = MethodRoles::<RoleEntry> {
-            $($role: role_definition_entry!($rule $(, mut $($mutators),+)?)),*
+            $($role: role_definition_entry!($rule $(, mutable $($mutators),+)?)),*
         };
 
         let mut roles = $crate::blueprints::resource::Roles::new();
