@@ -869,6 +869,171 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     );
 }
 
+#[test]
+fn can_burn_by_amount_from_fungible_account_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
+    let resource_address = {
+        let access_rules = btreemap!(
+            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+        );
+        let manifest = ManifestBuilder::new()
+            .create_fungible_resource(18, Default::default(), access_rules, Some(100.into()))
+            .try_deposit_batch_or_abort(account)
+            .build();
+        test_runner
+            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
+            .expect_commit_success()
+            .new_resource_addresses()
+            .get(0)
+            .unwrap()
+            .clone()
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            "burn",
+            manifest_args!(resource_address, dec!("50")),
+        )
+        .build();
+    let receipt =
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        test_runner
+            .account_balance(account, resource_address)
+            .unwrap(),
+        dec!("50")
+    )
+}
+
+#[test]
+fn can_burn_by_amount_from_non_fungible_account_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
+    let resource_address = {
+        let access_rules = btreemap!(
+            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+        );
+        let manifest = ManifestBuilder::new()
+            .create_non_fungible_resource(
+                NonFungibleIdType::Integer,
+                Default::default(),
+                access_rules,
+                Some(btreemap!(
+                    NonFungibleLocalId::integer(1) => EmptyStruct {},
+                    NonFungibleLocalId::integer(2) => EmptyStruct {},
+                )),
+            )
+            .try_deposit_batch_or_abort(account)
+            .build();
+        test_runner
+            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
+            .expect_commit_success()
+            .new_resource_addresses()
+            .get(0)
+            .unwrap()
+            .clone()
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(account, "burn", manifest_args!(resource_address, dec!("1")))
+        .build();
+    let receipt =
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        test_runner
+            .account_balance(account, resource_address)
+            .unwrap(),
+        dec!("1")
+    )
+}
+
+#[test]
+fn can_burn_by_ids_from_non_fungible_account_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
+    let resource_address = {
+        let access_rules = btreemap!(
+            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+        );
+        let manifest = ManifestBuilder::new()
+            .create_non_fungible_resource(
+                NonFungibleIdType::Integer,
+                Default::default(),
+                access_rules,
+                Some(btreemap!(
+                    NonFungibleLocalId::integer(1) => EmptyStruct {},
+                    NonFungibleLocalId::integer(2) => EmptyStruct {},
+                )),
+            )
+            .try_deposit_batch_or_abort(account)
+            .build();
+        test_runner
+            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
+            .expect_commit_success()
+            .new_resource_addresses()
+            .get(0)
+            .unwrap()
+            .clone()
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            "burn_non_fungibles",
+            manifest_args!(resource_address, btreeset!(NonFungibleLocalId::integer(1))),
+        )
+        .build();
+    let receipt =
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        test_runner
+            .account_balance(account, resource_address)
+            .unwrap(),
+        dec!("1")
+    )
+}
+
 fn get_vault_id(test_runner: &mut TestRunner, component_address: ComponentAddress) -> NodeId {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "vault_id", manifest_args!())
