@@ -52,9 +52,12 @@ pub enum GenesisDataChunk {
 #[blueprint]
 mod genesis_helper {
     define_permissions! {
+        roles {
+            system
+        },
         main {
-            ingest_data_chunk => ["system"];
-            wrap_up => ["system"];
+            ingest_data_chunk => system;
+            wrap_up => system;
         }
     }
 

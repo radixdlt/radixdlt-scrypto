@@ -460,11 +460,23 @@ macro_rules! external_component_members {
 }
 
 #[macro_export]
+macro_rules! method_permission {
+    (PUBLIC) => ({
+        MethodPermission::Public
+    });
+    ($protected:ident) => ({
+        [
+            ROLE_STRINGS.$protected
+        ].into()
+    });
+}
+
+#[macro_export]
 macro_rules! method_permissions {
-    ($module_methods:ident, $($method:ident => $permission:expr;)*) => ({
+    ($module_methods:ident, $($method:ident => $permissions:ident ;)*) => ({
         $module_methods::<MethodPermission> {
             $(
-                $method: $permission.into(),
+                $method: method_permission!($permissions),
             )*
         }
     })
@@ -472,7 +484,7 @@ macro_rules! method_permissions {
 
 #[macro_export]
 macro_rules! main_permissions {
-    ($permissions:expr, $module_methods:ident, $key:ident, $($method:ident => $permission:expr;)*) => ({
+    ($permissions:expr, $module_methods:ident, $key:ident, $($method:ident => $permission:ident;)*) => ({
         let permissions = method_permissions!($module_methods, $($method => $permission;)*);
         for (method, permission) in permissions.to_mapping() {
             let permission = match permission {
@@ -486,20 +498,44 @@ macro_rules! main_permissions {
 
 #[macro_export]
 macro_rules! module_permissions {
-    ($permissions:expr, main { $($method:ident => $permission:expr;)* }) => ({
+    ($permissions:expr, main { $($method:ident => $permission:ident;)* }) => ({
         main_permissions!($permissions, Methods, main, $($method => $permission;)*);
     });
-    ($permissions:expr, metadata { $($method:ident => $permission:expr;)* }) => ({
+    ($permissions:expr, metadata { $($method:ident => $permission:ident;)* }) => ({
         main_permissions!($permissions, MetadataMethods, metadata, $($method => $permission;)*);
     });
-    ($permissions:expr, royalties { $($method:ident => $permission:expr;)* }) => ({
+    ($permissions:expr, royalties { $($method:ident => $permission:ident;)* }) => ({
         main_permissions!($permissions, RoyaltyMethods, royalty, $($method => $permission;)*);
     });
 }
 
 #[macro_export]
 macro_rules! define_permissions {
-    ($($module:ident { $($method:ident => $permission:expr;)* }),*) => (
+    (
+        roles {
+            $($role:ident),*
+        },
+        $($module:ident { $($method:ident => $permission:ident;)* }),*
+    ) => (
+        struct MethodRoles<T> {
+            $($role: T),*
+        }
+
+        const ROLE_STRINGS: MethodRoles<&str> = MethodRoles {
+            $($role: stringify!($role)),*
+        };
+
+        fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+            let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
+            $(
+                module_permissions!(permissions, $module { $($method => $permission;)* });
+            )*
+            permissions
+        }
+    );
+    (
+        $($module:ident { $($method:ident => $permission:expr;)* }),*
+    ) => (
         fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
             let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
             $(
