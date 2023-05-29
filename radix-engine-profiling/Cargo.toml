@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false, optional = true }
 radix-engine-stores = { path = "../radix-engine-stores", default-features = false, optional = true }
+radix-engine-interface = { path = "../radix-engine-interface", default-features = false, optional = true }
 fixedstr = "0.2.9"
 shared_memory = { version = "0.12.4", optional = true }
 plotters = { version = "0.3.4", optional = true }
@@ -19,4 +20,5 @@ bench = false
 [features]
 default = []
 resource_tracker = ["dep:shared_memory"]
-rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-engine-stores/std", "radix-engine-store-interface/std"]
+rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-engine-stores/std", 
+           "radix-engine-store-interface/std", "radix-engine-interface/std"]

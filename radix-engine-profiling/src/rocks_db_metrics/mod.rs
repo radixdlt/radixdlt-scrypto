@@ -1,3 +1,4 @@
+use radix_engine_interface::prelude::*;
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
     PartitionEntry, SubstateDatabase,
@@ -103,9 +104,12 @@ mod tests {
     };
     use linreg::linear_regression_of;
     use plotters::prelude::*;
-    use radix_engine_store_interface::interface::{
-        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-        PartitionUpdates, SubstateDatabase,
+    use radix_engine_store_interface::{
+        db_key_mapper::*,
+        interface::{
+            CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey,
+            DbSortKey, PartitionUpdates, SubstateDatabase,
+        },
     };
     use rand::Rng;
     use std::{io::Write, path::PathBuf};
@@ -115,7 +119,7 @@ mod tests {
     /// Range end of the measuremnts
     const MAX_SIZE: usize = 4 * 1024 * 1024;
     /// Range step
-    const SIZE_STEP: usize = 200 * 1024;
+    const SIZE_STEP: usize = 500 * 1024;
     /// Each step write and read
     const COUNT: usize = 20;
     /// Multiplication of each step read (COUNT * READ_REPEATS)
@@ -246,27 +250,27 @@ mod tests {
             Vec::with_capacity(MAX_SIZE);
 
         println!("Preparing database...");
-        let mut p_key_cnt = 1u32;
-        //let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
-        let mut sort_key_value: usize = 0;
+        let mut rng = rand::thread_rng();
+
         for size in (MIN_SIZE..=MAX_SIZE).step_by(SIZE_STEP) {
             let mut input_data = DatabaseUpdates::new();
             for _ in 0..COUNT {
                 let value = DatabaseUpdate::Set(vec![1; size]);
 
-                let plain_bytes = sort_key_value.to_be_bytes().to_vec();
-                let mut hashed_prefix: Vec<u8> =
-                    Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
-                hashed_prefix.extend(plain_bytes);
+                let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+                rng.fill(&mut node_id_value);
+                let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
+                let partition_key =
+                    SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
-                let sort_key = DbSortKey(hashed_prefix);
-                sort_key_value += 1;
+                let mut substate_key_value = [0u8; NodeId::LENGTH];
+                rng.fill(&mut substate_key_value);
+                let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
+                    substate_key_value.into(),
+                ));
 
                 let mut partition = PartitionUpdates::new();
                 partition.insert(sort_key.clone(), value);
-
-                let partition_key = DbPartitionKey(p_key_cnt.to_be_bytes().to_vec());
-                p_key_cnt += 1;
 
                 data_index_vector.push((partition_key.clone(), sort_key, size));
 
