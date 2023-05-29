@@ -5,7 +5,7 @@ use radix_engine_store_interface::interface::{
 };
 use radix_engine_stores::{
     memory_db::InMemorySubstateDatabase,
-    rocks_db::{BlockBasedOptions, Options, RocksdbSubstateStore},
+    rocks_db_with_merkle_tree::{BlockBasedOptions, Options, RocksDBWithMerkleTreeSubstateStore},
 };
 use std::{cell::RefCell, collections::BTreeMap, path::PathBuf, time::Duration};
 
@@ -19,7 +19,7 @@ where
     pub read_not_found_metrics: RefCell<Vec<Duration>>,
 }
 
-impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
+impl SubstateStoreWithMetrics<RocksDBWithMerkleTreeSubstateStore> {
     pub fn new_rocksdb(path: PathBuf) -> Self {
         let mut factory_opts = BlockBasedOptions::default();
         factory_opts.disable_cache();
@@ -27,10 +27,11 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         let mut opt = Options::default();
         opt.set_disable_auto_compactions(true);
         opt.create_if_missing(true);
+        opt.create_missing_column_families(true);
         opt.set_block_based_table_factory(&factory_opts);
 
         Self {
-            db: RocksdbSubstateStore::with_options(&opt, path),
+            db: RocksDBWithMerkleTreeSubstateStore::with_options(&opt, path),
             read_metrics: RefCell::new(BTreeMap::new()),
             read_not_found_metrics: RefCell::new(Vec::new()),
         }
