@@ -1,8 +1,8 @@
 //use super::compute_state_tree_update;
 use crate::hash_tree::tree_store::{encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode};
+use itertools::Itertools;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_derive::ScryptoSbor;
-use itertools::Itertools;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
@@ -19,7 +19,6 @@ const META_CF: &str = "meta";
 const SUBSTATES_CF: &str = "substates";
 const MERKLE_NODES_CF: &str = "merkle_nodes";
 const STALE_MERKLE_NODE_KEYS_CF: &str = "stale_merkle_node_keys";
-
 
 pub struct RocksDBWithMerkleTreeSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,

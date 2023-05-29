@@ -5,9 +5,6 @@ use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_common::crypto::hash;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 
-
-
-
 pub trait ReadableStateTreeStore:
     ReadableTreeStore<PartitionPayload> + ReadableTreeStore<()>
 {
@@ -107,4 +104,3 @@ pub fn compute_state_tree_update<S: ReadableStateTreeStore>(
     );
     collector.into_diff()
 }
-
