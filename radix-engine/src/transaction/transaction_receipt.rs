@@ -203,11 +203,12 @@ pub enum AbortReason {
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
     pub result: TransactionResult,
-    /// Optional execution trace, controlled by config `ExecutionConfig::execution_trace`.
-    pub execution_trace: TransactionExecutionTrace,
     /// Metrics gathered during transaction execution.
     pub execution_metrics: ExecutionMetrics,
-    /// Optional resource usage trace, controlled by feature flag `resources_usage`.
+    /// Optional, only if `EnabledModule::ExecutionTrace` is ON.
+    /// Mainly for transaction preview.
+    pub execution_trace: TransactionExecutionTrace,
+    /// Optional, only if compile-time feature flag `resources_usage` is ON.
     pub resources_usage: ResourcesUsage,
 }
 
