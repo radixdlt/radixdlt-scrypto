@@ -4,6 +4,14 @@ pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0x10;
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
+pub const COST_UNIT_LIMIT_FUNCTION_ID: usize = 0x12;
+pub const COST_UNIT_LIMIT_FUNCTION_NAME: &str = "cost_unit_limit";
+pub const COST_UNIT_PRICE_FUNCTION_ID: usize = 0x13;
+pub const COST_UNIT_PRICE_FUNCTION_NAME: &str = "cost_unit_price";
+pub const TIP_PERCENTAGE_FUNCTION_ID: usize = 0x14;
+pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
+pub const FEE_BALANCE_FUNCTION_ID: usize = 0x15;
+pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 
 pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_ID: usize = 0x20;
 pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "preallocate_global_address";
