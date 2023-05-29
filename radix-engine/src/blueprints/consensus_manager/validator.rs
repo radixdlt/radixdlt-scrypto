@@ -1015,7 +1015,14 @@ impl ValidatorCreator {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let address = GlobalAddress::new_or_panic(
-            api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
+            api.kernel_allocate_node_id(IDAllocationRequest::Object {
+                blueprint_id: BlueprintId {
+                    package_address: CONSENSUS_MANAGER_PACKAGE,
+                    blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+                },
+                global: true,
+            })?
+            .0,
         );
 
         let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;

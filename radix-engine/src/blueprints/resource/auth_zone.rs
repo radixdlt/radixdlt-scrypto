@@ -89,7 +89,13 @@ impl AuthZoneBlueprint {
             compose_proof_by_amount(&proofs, resource_address, Some(amount), api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        let node_id = api.kernel_allocate_node_id(IDAllocationRequest::Object {
+            blueprint_id: BlueprintId {
+                package_address: RESOURCE_PACKAGE,
+                blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+            },
+            global: false,
+        })?;
         match composed_proof {
             ComposedProof::Fungible(..) => {
                 api.kernel_create_node(
@@ -143,7 +149,13 @@ impl AuthZoneBlueprint {
             compose_proof_by_ids(&proofs, resource_address, Some(ids), api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        let node_id = api.kernel_allocate_node_id(IDAllocationRequest::Object {
+            blueprint_id: BlueprintId {
+                package_address: RESOURCE_PACKAGE,
+                blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+            },
+            global: false,
+        })?;
         api.kernel_create_node(
             node_id,
             btreemap!(
@@ -183,7 +195,13 @@ impl AuthZoneBlueprint {
         };
         api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
 
-        let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        let node_id = api.kernel_allocate_node_id(IDAllocationRequest::Object {
+            blueprint_id: BlueprintId {
+                package_address: RESOURCE_PACKAGE,
+                blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+            },
+            global: false,
+        })?;
         api.kernel_create_node(
             node_id,
             btreemap!(

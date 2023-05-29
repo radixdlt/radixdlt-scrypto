@@ -603,7 +603,13 @@ impl AccessControllerNativePackage {
 
         // Allocating the address of the access controller - this will be needed for the metadata
         // and access rules of the recovery badge
-        let node_id = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
+        let node_id = api.kernel_allocate_node_id(IDAllocationRequest::Object {
+            blueprint_id: BlueprintId {
+                package_address: ACCESS_CONTROLLER_PACKAGE,
+                blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+            },
+            global: true,
+        })?;
         let address = GlobalAddress::new_or_panic(node_id.0);
 
         // Creating a new vault and putting in it the controlled asset

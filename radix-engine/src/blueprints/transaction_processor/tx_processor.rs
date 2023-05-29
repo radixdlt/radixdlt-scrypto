@@ -103,7 +103,13 @@ impl TransactionProcessorBlueprint {
         }
 
         // Create a worktop
-        let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        let worktop_node_id = api.kernel_allocate_node_id(IDAllocationRequest::Object {
+            blueprint_id: BlueprintId {
+                package_address: RESOURCE_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+            },
+            global: false,
+        })?;
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(

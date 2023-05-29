@@ -30,10 +30,6 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -2070,30 +2066,5 @@ pub fn check_address_allowed_for_blueprint(
     address: &GlobalAddress,
     blueprint: &BlueprintId,
 ) -> Result<(), RuntimeError> {
-    let entity_type = address.as_node_id().entity_type();
-
-    let valid_entity_types: IndexSet<EntityType> =
-        match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-            // Note - you can't manually preallocate key-originated addresses - so these must be from assigned from the virtualization process
-            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => indexset!(
-                EntityType::GlobalAccount,
-                EntityType::GlobalVirtualEd25519Account,
-                EntityType::GlobalVirtualSecp256k1Account
-            ),
-            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => indexset!(
-                EntityType::GlobalIdentity,
-                EntityType::GlobalVirtualEd25519Identity,
-                EntityType::GlobalVirtualSecp256k1Identity
-            ),
-            _ => indexset!(get_entity_type_for_blueprint(blueprint)),
-        };
-    if entity_type.is_some() && !valid_entity_types.contains(&entity_type.unwrap()) {
-        return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-            Box::new(CannotGlobalizeError::InvalidAddressEntityType {
-                expected: valid_entity_types.into_iter().collect::<Vec<_>>(),
-                actual: entity_type,
-            }),
-        )));
-    }
-    Ok(())
+    todo!()
 }

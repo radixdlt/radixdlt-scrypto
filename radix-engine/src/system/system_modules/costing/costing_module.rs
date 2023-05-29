@@ -546,7 +546,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_allocate_virtual_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
+        _node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
