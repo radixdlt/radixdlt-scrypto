@@ -141,7 +141,7 @@ mod tests {
         run_read_test(&mut substate_db, data_index_vector);
 
         // prepare data for linear approximation
-        drop_edge_values(&mut substate_db);
+        drop_highest_and_lowest_value(&mut substate_db);
         let rocksdb_output_data = calculate_percent_to_max_points(&mut substate_db, 95f32);
 
         // prepare data for plot
@@ -169,7 +169,7 @@ mod tests {
         run_read_test(&mut substate_db, data_index_vector);
 
         // prepare data for linear approximation
-        drop_edge_values(&mut substate_db);
+        drop_highest_and_lowest_value(&mut substate_db);
         let inmem_output_data = calculate_percent_to_max_points(&mut substate_db, 95f32);
 
         // prepare data for plot
@@ -201,7 +201,7 @@ mod tests {
         .unwrap();
     }
 
-    fn drop_edge_values<S: SubstateDatabase + CommittableSubstateDatabase>(
+    fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDatabase>(
         substate_store: &mut SubstateStoreWithMetrics<S>,
     ) {
         for (_, v) in substate_store.read_metrics.borrow_mut().iter_mut() {
