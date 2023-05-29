@@ -670,7 +670,20 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let outer_method_permissions_instance = method_auth_template! {
+            let method_auth_template = method_auth_template! {
+                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_ACCESS_ROLE];
+                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_ACCESS_ROLE];
+            };
+
+            let outer_method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
@@ -690,8 +703,8 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                method_auth_template,
+                outer_method_auth_template,
             }
         };
 
@@ -854,10 +867,28 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let outer_method_permissions_instance = method_auth_template! {
+            let method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_ACCESS_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_ACCESS_ROLE];
+            };
+
+            let outer_method_auth_template = method_auth_template! {
+                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
@@ -875,8 +906,8 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                method_auth_template,
+                outer_method_auth_template,
             }
         };
 
@@ -1863,7 +1894,7 @@ impl ResourceManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleResourceManagerBlueprint::create_vault(api)?;
+                let rtn = NonFungibleResourceManagerBlueprint::create_empty_vault(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

@@ -3,6 +3,9 @@ use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
+
+pub const VAULT_ACCESS_ROLE: &str = "vault";
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
     ResourceError(ResourceError),

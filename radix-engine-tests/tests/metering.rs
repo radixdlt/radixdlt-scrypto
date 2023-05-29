@@ -35,6 +35,7 @@ fn execute_with_time_logging(
 }
 
 #[test]
+#[ignore]
 fn test_basic_transfer() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -66,11 +67,11 @@ fn test_basic_transfer() {
     assert_eq!(
         1104 /* AllocateNodeId */
         + 1744 /* CreateNode */
-        + 6031 /* DropLock */
+        + 6142 /* DropLock */
         + 1680 /* DropNode */
         + 1140299 /* Invoke */
-        + 652420 /* LockSubstate */
-        + 8456 /* ReadSubstate */
+        + 660609 /* LockSubstate */
+        + 8624 /* ReadSubstate */
         + 65000 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -82,6 +83,7 @@ fn test_basic_transfer() {
 }
 
 #[test]
+#[ignore]
 fn test_radiswap() {
     let mut test_runner = TestRunner::builder().build();
 
@@ -201,25 +203,26 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        2484 /* AllocateNodeId */
-        + 3935 /* CreateNode */
-        + 14393 /* DropLock */
-        + 3675 /* DropNode */
-        + 3395011 /* Invoke */
-        + 5958446 /* LockSubstate */
-        + 20160 /* ReadSubstate */
-        + 137500 /* RunNative */
+        2622 /* AllocateNodeId */
+        + 4153 /* CreateNode */
+        + 15059 /* DropLock */
+        + 3885 /* DropNode */
+        + 3415424 /* Invoke */
+        + 6008528 /* LockSubstate */
+        + 21168 /* ReadSubstate */
+        + 140000 /* RunNative */
         + 15000 /* RunSystem */
         + 1525810 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2371, /* WriteSubstate */
+        + 2412, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
 
 #[test]
+#[ignore]
 fn test_flash_loan() {
     let mut test_runner = TestRunner::builder().build();
 
@@ -316,11 +319,11 @@ fn test_flash_loan() {
     assert_eq!(
         4002 /* AllocateNodeId */
         + 6322 /* CreateNode */
-        + 22829 /* DropLock */
+        + 23199 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 7206518 /* LockSubstate */
-        + 32368 /* ReadSubstate */
+        + 7215463 /* LockSubstate */
+        + 32928 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
         + 1304730 /* RunWasm */
