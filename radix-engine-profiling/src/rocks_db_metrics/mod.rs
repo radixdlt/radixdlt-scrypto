@@ -122,7 +122,7 @@ mod tests {
     /// Outputs are genered in png files: /tmp/scrypto_rocksdb_1.png, /tmp/scrypto_inmem_1.png, /tmp/scrypto_diff_1.png
     /// point list is printed to stdout.
     /// To run test casea use command:
-    /// cargo test -p radix-engine-utils -p radix-engine-stores --features rocksdb test_store_db --release -- --nocapture
+    /// cargo test -p radix-engine-profilings -p radix-engine-stores --features rocksdb test_store_db --release -- --nocapture
     /// from main radixdlt-scrypto folder.
     fn test_store_db() {
         // RocksDB part

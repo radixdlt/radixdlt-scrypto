@@ -160,7 +160,7 @@ jobs:
     - name: Build with resource tracking
       run: cargo build --features resource_tracker
     - name: Build RocksDB metrics test
-      run: cargo test -p radix-engine-utils -p radix-engine-stores --features rocksdb test_store_db --release --no-run -- --nocapture
+      run: cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_store_db --release --no-run -- --nocapture
     - name: Run tests
       run: |
         cargo nextest run \
