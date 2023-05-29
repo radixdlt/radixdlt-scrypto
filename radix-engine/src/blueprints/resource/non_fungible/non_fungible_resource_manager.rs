@@ -698,7 +698,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let mut roles = Roles::new();
-        roles.define_role(VAULT_ACCESS_ROLE, RoleEntry::immutable(AccessRule::AllowAll));
+        roles.define_role(VAULT_WITHDRAW_ROLE, RoleEntry::immutable(AccessRule::AllowAll));
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
 

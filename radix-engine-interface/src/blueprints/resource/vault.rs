@@ -33,15 +33,6 @@ pub struct VaultTakeInput {
 
 pub type VaultTakeOutput = Bucket;
 
-pub const VAULT_RECALL_IDENT: &str = "recall";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct VaultRecallInput {
-    pub amount: Decimal,
-}
-
-pub type VaultRecallOutput = Bucket;
-
 pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -64,6 +55,24 @@ pub struct VaultCreateProofOfAmountInput {
 }
 
 pub type VaultCreateProofOfAmountOutput = Proof;
+
+pub const VAULT_RECALL_IDENT: &str = "recall";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct VaultRecallInput {
+    pub amount: Decimal,
+}
+
+pub type VaultRecallOutput = Bucket;
+
+pub const VAULT_FREEZE_IDENT: &str = "freeze";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct VaultFreezeInput {
+}
+
+pub type VaultFreezeOutput = ();
+
 
 //========
 // Stub
