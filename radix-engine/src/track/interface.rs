@@ -193,6 +193,7 @@ impl StoreAccessInfo {
                     self.0.push(item)
                 }
             }
+            StoreAccess::ReadFromDbNotFound => self.0.push(item)
         }
     }
 
@@ -204,6 +205,7 @@ impl StoreAccessInfo {
 #[derive(Clone, Copy)]
 pub enum StoreAccess {
     ReadFromDb(usize),
+    ReadFromDbNotFound,
     ReadFromTrack(usize),
     WriteToTrack(usize),
     // Updates an entry for the second time

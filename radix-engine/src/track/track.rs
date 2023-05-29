@@ -493,6 +493,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                     };
                     e.insert(tracked);
                 } else {
+                    store_access.push(StoreAccess::ReadFromDbNotFound);
+
                     let value = virtualize();
                     if let Some(value) = value {
                         store_access.push(StoreAccess::WriteToTrack(value.len()));
