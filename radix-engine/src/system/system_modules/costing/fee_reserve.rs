@@ -449,22 +449,24 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeSummary {
         let execution_cost_breakdown = self.execution_cost();
+        let total_execution_cost_xrd = transmute_u128_as_decimal(
+            self.effective_execution_price * self.execution_committed_sum as u128,
+        );
+
         let royalty_cost_breakdown = self.royalty_cost();
         let total_royalty_cost_xrd = royalty_cost_breakdown.values().map(|x| x.1).sum();
+
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_price: transmute_u128_as_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
-            total_execution_cost_xrd: transmute_u128_as_decimal(
-                self.effective_execution_price * self.execution_committed_sum as u128,
-            ),
+            total_execution_cost_xrd,
             total_royalty_cost_xrd,
             total_bad_debt_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
             execution_cost_breakdown,
             execution_cost_sum: self.execution_committed_sum,
             royalty_cost_breakdown,
-            royalty_cost_sum: transmute_u128_as_decimal(self.royalty_committed_sum),
         }
     }
 }

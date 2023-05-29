@@ -217,6 +217,11 @@ fn test_radiswap() {
             + 2371, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
+    assert_eq!(
+        commit_result.fee_summary.total_execution_cost_xrd,
+        dec!("1.1207002"),
+    );
+    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"),);
 }
 
 #[test]

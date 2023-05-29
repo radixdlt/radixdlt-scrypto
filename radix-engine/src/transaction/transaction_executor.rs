@@ -357,15 +357,11 @@ where
                 println!("{:-^80}", "Cost Totals");
                 println!(
                     "{:<30}: {:>10}",
-                    "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Total Royalty Units Consumed", commit.fee_summary.royalty_cost_sum
-                );
-                println!(
-                    "{:<30}: {:>10}",
                     "Cost Unit Limit", commit.fee_summary.cost_unit_limit
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
                 );
                 // NB - we use "to_string" to ensure they align correctly
                 println!(

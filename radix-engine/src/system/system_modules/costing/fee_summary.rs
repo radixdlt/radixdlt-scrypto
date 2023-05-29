@@ -25,8 +25,6 @@ pub struct FeeSummary {
     pub execution_cost_sum: u32,
     /// The royalty cost breakdown
     pub royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, (NodeId, Decimal)>,
-    /// The total number of cost units consumed for royalties.
-    pub royalty_cost_sum: Decimal,
 }
 
 impl FeeSummary {
