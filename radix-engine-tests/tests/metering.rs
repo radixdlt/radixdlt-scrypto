@@ -71,7 +71,7 @@ mod tests {
             + 6031 /* DropLock */
             + 1680 /* DropNode */
             + 1140299 /* Invoke */
-            + 668454 /* LockSubstate */
+            + 692620 /* LockSubstate */
             + 8456 /* ReadSubstate */
             + 65000 /* RunNative */
             + 7500 /* RunSystem */
@@ -206,11 +206,11 @@ mod tests {
             + 14356 /* DropLock */
             + 3675 /* DropNode */
             + 3395011 /* Invoke */
-            + 5935915 /* LockSubstate */
+            + 5963091 /* LockSubstate */
             + 20104 /* ReadSubstate */
             + 137500 /* RunNative */
             + 15000 /* RunSystem */
-            + 1535475 /* RunWasm */
+            + 1524625 /* RunWasm */
             + 50000 /* TxBaseCost */
             + 1675 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */
@@ -317,11 +317,11 @@ mod tests {
             + 22755 /* DropLock */
             + 6090 /* DropNode */
             + 4768533 /* Invoke */
-            + 7212486 /* LockSubstate */
+            + 7151422 /* LockSubstate */
             + 32256 /* ReadSubstate */
             + 205000 /* RunNative */
             + 40000 /* RunSystem */
-            + 1328225 /* RunWasm */
+            + 1302605 /* RunWasm */
             + 50000 /* TxBaseCost */
             + 2455 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */
