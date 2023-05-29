@@ -1,10 +1,9 @@
 use crate::blueprints::consensus_manager::*;
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use crate::{method_permissions, permission_entry};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
@@ -14,9 +13,9 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesUpdateMethod, ACCESS_RULES_UPDATE_METHOD_IDENT,
+    AccessRulesGetRoleInput, AccessRulesUpdateRoleInput, ACCESS_RULES_GET_ROLE_IDENT,
+    ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -224,14 +223,14 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut validator_substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
-            let mut stake_vault = Vault(validator.stake_xrd_vault_id);
-            let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
-            let nft_resman = ResourceManager(validator.unstake_nft);
-            let mut stake_unit_resman = ResourceManager(validator.stake_unit_resource);
+            let mut stake_vault = Vault(validator_substate.stake_xrd_vault_id);
+            let mut unstake_vault = Vault(validator_substate.pending_xrd_withdraw_vault_id);
+            let nft_resman = ResourceManager(validator_substate.unstake_nft);
+            let mut stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
 
             let active_stake_amount = stake_vault.amount(api)?;
             let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
@@ -248,21 +247,21 @@ impl ValidatorBlueprint {
                 ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
-            let consensus_manager: ConsensusManagerSubstate =
+            let manager_substate: ConsensusManagerSubstate =
                 api.field_lock_read_typed(manager_handle)?;
-            let current_epoch = consensus_manager.epoch;
+            let current_epoch = manager_substate.epoch;
+            api.field_lock_release(manager_handle)?;
 
             let config_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
                 ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
-            let config: ConsensusManagerConfigSubstate =
+            let config_substate: ConsensusManagerConfigSubstate =
                 api.field_lock_read_typed(config_handle)?;
-            let epoch_unlocked = current_epoch + config.num_unstake_epochs;
+            api.field_lock_release(config_handle)?;
 
-            api.field_lock_release(manager_handle)?;
-
+            let epoch_unlocked = current_epoch + config_substate.config.num_unstake_epochs;
             let data = UnstakeData {
                 epoch_unlocked,
                 amount: xrd_amount,
@@ -278,11 +277,15 @@ impl ValidatorBlueprint {
         };
 
         // Update ConsensusManager
-        let new_index_key =
-            Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
+        let new_index_key = Self::index_update(
+            &validator_substate,
+            validator_substate.is_registered,
+            new_stake_amount,
+            api,
+        )?;
 
-        validator.sorted_key = new_index_key;
-        api.field_lock_write_typed(handle, &validator)?;
+        validator_substate.sorted_key = new_index_key;
+        api.field_lock_write_typed(handle, &validator_substate)?;
 
         Runtime::emit_event(
             api,
@@ -489,8 +492,8 @@ impl ValidatorBlueprint {
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
-        let num_fee_increase_delay_epochs = config.num_fee_increase_delay_epochs;
+        let config_substate: ConsensusManagerConfigSubstate =
+            api.field_lock_read_typed(config_handle)?;
         api.field_lock_release(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -510,7 +513,7 @@ impl ValidatorBlueprint {
 
         // - calculate the effective epoch of the requested change
         let epoch_effective = if new_fee_factor > substate.validator_fee_factor {
-            current_epoch + num_fee_increase_delay_epochs
+            current_epoch + config_substate.config.num_fee_increase_delay_epochs
         } else {
             current_epoch + 1 // make it effective on the *beginning* of next epoch
         };
@@ -533,20 +536,29 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let permission = if accept_delegated_stake {
-            MethodPermission::Public
+        let rule = if accept_delegated_stake {
+            AccessRule::AllowAll
         } else {
-            ["owner"].into()
+            let rtn = api.actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_GET_ROLE_IDENT,
+                scrypto_encode(&AccessRulesGetRoleInput {
+                    role_key: RoleKey::new(OWNER_ROLE),
+                })
+                .unwrap(),
+            )?;
+            let rule: Option<AccessRule> = scrypto_decode(&rtn).unwrap();
+            rule.unwrap()
         };
 
         api.actor_call_module_method(
             OBJECT_HANDLE_SELF,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_METHOD_IDENT,
-            scrypto_encode(&AccessRulesUpdateMethod {
-                object_key: ObjectKey::SELF,
-                method_key: MethodKey::main(VALIDATOR_STAKE_IDENT),
-                permission: Some(permission),
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(STAKE_ROLE),
+                rule: Some(rule),
                 mutability: None,
             })
             .unwrap(),
@@ -613,8 +625,8 @@ impl ValidatorBlueprint {
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
-        let num_owner_stake_units_unlock_epochs = config.num_owner_stake_units_unlock_epochs;
+        let config_substate: ConsensusManagerConfigSubstate =
+            api.field_lock_read_typed(config_handle)?;
         api.field_lock_release(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -631,7 +643,7 @@ impl ValidatorBlueprint {
         // - insert the requested withdrawal as pending
         substate
             .pending_owner_stake_unit_withdrawals
-            .entry(current_epoch + num_owner_stake_units_unlock_epochs)
+            .entry(current_epoch + config_substate.config.num_owner_stake_units_unlock_epochs)
             .and_modify(|pending_amount| pending_amount.add_assign(requested_stake_unit_amount))
             .or_insert(requested_stake_unit_amount);
 
@@ -920,38 +932,19 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     u16::MAX - stake_u16
 }
 
+pub const STAKE_ROLE: &'static str = "stake";
+
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
-    const OWNER_ROLE: &'static str = "owner";
-    const SECURIFY_METHOD: Option<&'static str> = None;
+    const SECURIFY_ROLE: Option<&'static str> = None;
 
-    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
-        method_permissions!(
-            MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
-
-            MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
-            MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
-
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => [Self::OWNER_ROLE], [SELF_ROLE];
-
-            MethodKey::main(VALIDATOR_REGISTER_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!(
+            RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
+            RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { mutable: [SELF_ROLE].into(), mutable_mutable: false },
         )
-    }
-
-    fn role_definitions() -> Roles {
-        roles! {
-            VALIDATOR_APPLY_EMISSION_AUTHORITY => rule!(require(global_caller(CONSENSUS_MANAGER)));
-        }
     }
 }
 

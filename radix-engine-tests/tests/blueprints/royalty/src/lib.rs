@@ -2,6 +2,18 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod royalty_test {
+    define_static_auth! {
+        methods {
+            paid_method => PUBLIC;
+            paid_method_panic => PUBLIC;
+            free_method => PUBLIC;
+        },
+        royalties {
+            claim_royalty => PUBLIC;
+            set_royalty_config => OWNER;
+        }
+    }
+
     struct RoyaltyTest {}
 
     impl RoyaltyTest {
@@ -22,15 +34,9 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .royalties(royalties! {
-                    init {
-                        free_method => Free;
-                        paid_method => Xrd(1.into());
-                        paid_method_panic => Xrd(1.into());
-                    },
-                    permissions {
-                        claim_royalty => Public;
-                        set_royalty_config => [];
-                    }
+free_method => Free,
+paid_method => Xrd(1.into()),
+paid_method_panic => Xrd(1.into()),
                 })
                 .globalize()
         }

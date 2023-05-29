@@ -8,9 +8,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, MethodEntry, MethodKey, RoleKey, RoleList, Roles,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, RoleKey, RoleList, Roles};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -21,21 +19,13 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(
-        method_permissions: BTreeMap<MethodKey, MethodEntry>,
-        authority_rules: Roles,
-    ) -> Self {
+    pub fn new(roles: Roles) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput {
-                    method_permissions,
-                    roles: authority_rules,
-                    inner_blueprint_rules: btreemap!(),
-                })
-                .unwrap(),
+                scrypto_encode(&AccessRulesCreateInput { roles }).unwrap(),
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
@@ -79,7 +69,7 @@ impl Attachable for AccessRules {
 
 impl Default for AccessRules {
     fn default() -> Self {
-        AccessRules::new(btreemap!(), Roles::new())
+        AccessRules::new(Roles::new())
     }
 }
 

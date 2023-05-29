@@ -1,9 +1,11 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{
+    PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
+};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use crate::{method_permissions, permission_entry};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -16,7 +18,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
@@ -72,6 +74,17 @@ impl IdentityNativePackage {
             }
         );
 
+        let method_auth_template = method_auth_template! {
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
+
+            SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -83,6 +96,8 @@ impl IdentityNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }
@@ -184,23 +199,16 @@ impl IdentityNativePackage {
     }
 }
 
+const SECURIFY_ROLE: &'static str = "securify";
+
 struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
-    const OWNER_ROLE: &'static str = "owner";
-    const SECURIFY_METHOD: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
+    const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 
-    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
-        method_permissions!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [Self::OWNER_ROLE];
-        )
-    }
-
-    fn role_definitions() -> Roles {
-        roles! {}
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!()
     }
 }
 

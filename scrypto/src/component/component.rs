@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
-    MethodEntry, MethodKey, MethodPermission, OwnerRole, RoleList, Roles, OWNER_ROLE,
+    MethodPermission, OwnerRole, Roles, OWNER_ROLE,
 };
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
@@ -139,7 +139,6 @@ impl<C: HasStub + HasMethods> Owned<C> {
             metadata: None,
             royalty: RoyaltyConfig::default(),
             roles,
-            method_permissions: index_map_new(),
             address: None,
         }
     }
@@ -189,7 +188,6 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
 
 pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
     pub method_royalties: R,
-    pub permissions: RoyaltyMethods<MethodPermission>,
 }
 
 pub struct MetadataMethods<T> {
@@ -218,18 +216,12 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
     }
 }
 
-pub struct MetadataInit {
-    pub metadata: Metadata,
-    pub permissions: MetadataMethods<MethodPermission>,
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub roles: Roles,
-    pub method_permissions: IndexMap<ObjectModuleId, IndexMap<String, MethodEntry>>,
     pub address: Option<ComponentAddress>,
 }
 
@@ -242,28 +234,22 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
-    pub fn define_roles(mut self, authority_rules: Roles) -> Self {
-        self.roles = authority_rules;
+    pub fn roles(mut self, roles: Roles) -> Self {
+        self.roles = roles;
         self
     }
 
-    pub fn methods(mut self, permissions: C::Permissions) -> Self {
-        self.set_permissions(permissions);
-        self
-    }
-
-    pub fn metadata(mut self, init: MetadataInit) -> Self {
+    pub fn metadata(mut self, metadata: Metadata) -> Self {
         if self.metadata.is_some() {
             panic!("Metadata already set.");
         }
-        self.metadata = Some(init.metadata);
-        self.set_permissions(init.permissions);
+        self.metadata = Some(metadata);
 
         self
     }
 
-    pub fn royalties(mut self, royalties: RoyaltiesConfig<C::Royalties>) -> Self {
-        for (method, royalty) in royalties.method_royalties.to_mapping() {
+    pub fn royalties(mut self, royalties: C::Royalties) -> Self {
+        for (method, royalty) in royalties.to_mapping() {
             match royalty {
                 MethodRoyalty::Xrd(x) => self.royalty.set_rule(method, RoyaltyAmount::Xrd(x)),
                 MethodRoyalty::Usd(x) => self.royalty.set_rule(method, RoyaltyAmount::Usd(x)),
@@ -271,7 +257,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             }
         }
 
-        self.set_permissions(royalties.permissions);
         self
     }
 
@@ -280,41 +265,11 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    fn set_permissions<T: MethodMapping<MethodPermission>>(&mut self, permissions: T) {
-        if self.method_permissions.contains_key(&T::MODULE_ID) {
-            panic!("Method permissions already set")
-        }
-
-        let mut method_permissions = index_map_new();
-        for (method, permission) in permissions.to_mapping() {
-            method_permissions.insert(method, MethodEntry::new(permission, RoleList::none()));
-        }
-
-        self.method_permissions
-            .insert(T::MODULE_ID, method_permissions);
-    }
-
     pub fn globalize(mut self) -> Global<C> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = Royalty::new(self.royalty);
-        let mut method_permissions = BTreeMap::new();
 
-        if !self.method_permissions.contains_key(&ObjectModuleId::Main) {
-            for method in C::Permissions::methods() {
-                method_permissions.insert(
-                    MethodKey::new(ObjectModuleId::Main, method.to_string()),
-                    MethodEntry::new(MethodPermission::Public, RoleList::none()),
-                );
-            }
-        }
-
-        for (module_id, permisions) in self.method_permissions {
-            for (method, permission) in permisions {
-                method_permissions.insert(MethodKey::new(module_id, method), permission);
-            }
-        }
-
-        let access_rules = AccessRules::new(method_permissions, self.roles);
+        let access_rules = AccessRules::new(self.roles);
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),

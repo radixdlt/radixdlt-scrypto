@@ -10,10 +10,10 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerInitialConfiguration;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use scrypto_unit::CustomGenesis;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 #[test]
@@ -46,7 +46,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -102,7 +102,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -161,7 +161,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -223,7 +223,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -328,7 +328,7 @@ fn test_genesis_stake_allocation() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -380,7 +380,7 @@ fn test_genesis_time() {
         .bootstrap_with_genesis_data(
             vec![],
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
         )
         .unwrap();
@@ -394,16 +394,4 @@ fn test_genesis_time() {
         .unwrap();
 
     assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
-}
-
-fn dummy_consensus_manager_configuration() -> ConsensusManagerInitialConfiguration {
-    ConsensusManagerInitialConfiguration {
-        max_validators: 100,
-        rounds_per_epoch: 1,
-        num_unstake_epochs: 1,
-        total_emission_xrd_per_epoch: Decimal::one(),
-        min_validator_reliability: Decimal::one(),
-        num_owner_stake_units_unlock_epochs: 2,
-        num_fee_increase_delay_epochs: 3,
-    }
 }

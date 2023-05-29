@@ -2,6 +2,22 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata {
+    define_static_auth! {
+        methods {
+            set_string => PUBLIC;
+            set_address => PUBLIC;
+            set_array => PUBLIC;
+            get_string => PUBLIC;
+            get_address => PUBLIC;
+            get_array => PUBLIC;
+        },
+        metadata {
+            set => PUBLIC;
+            remove => PUBLIC;
+            get => PUBLIC;
+        }
+    }
+
     struct MetadataTest {}
 
     impl MetadataTest {
@@ -9,15 +25,6 @@ mod metadata {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .metadata(metadata! {
-                    init {
-                    },
-                    permissions {
-                        set => Public;
-                        remove => Public;
-                        get => Public;
-                    }
-                })
                 .globalize()
         }
 

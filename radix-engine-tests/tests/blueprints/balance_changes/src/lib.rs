@@ -2,6 +2,17 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod balance_changes_test {
+    define_static_auth! {
+        methods {
+            put => PUBLIC;
+            boom => PUBLIC;
+        },
+        royalties {
+            claim_royalty => OWNER;
+            set_royalty_config => NOBODY;
+        }
+    }
+
     struct BalanceChangesTest {
         vault: Vault,
     }
@@ -14,14 +25,8 @@ mod balance_changes_test {
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
             .royalties(royalties! {
-                init {
-                    put => Xrd(1.into());
-                    boom => Xrd(1.into());
-                },
-                permissions {
-                    claim_royalty => [OWNER_ROLE];
-                    set_royalty_config => [];
-                }
+put => Xrd(1.into()),
+boom => Xrd(1.into()),
             })
             .globalize()
         }

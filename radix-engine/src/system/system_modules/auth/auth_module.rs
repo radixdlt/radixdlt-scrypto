@@ -22,6 +22,7 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -113,7 +114,7 @@ impl AuthModule {
         let node_id = callee.node_id;
         let module_id = callee.module_id;
         let ident = callee.ident.as_str();
-        let acting_location = if callee.object_info.global {
+        let acting_location = if callee.module_object_info.global {
             ActingLocation::AtBarrier
         } else {
             ActingLocation::AtLocalBarrier
@@ -175,16 +176,15 @@ impl AuthModule {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
+        // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
-            ObjectKey::SELF => &access_rules.access_rules,
-            ObjectKey::InnerBlueprint(blueprint_name) => {
-                let child_rules = access_rules
-                    .inner_blueprint_access_rules
-                    .get(blueprint_name)
-                    .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                        AuthError::InnerBlueprintDoesNotExist(blueprint_name.clone()),
-                    )))?;
-                child_rules
+            ObjectKey::SELF => {
+                let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
+                schema.method_permissions_instance
+            }
+            ObjectKey::InnerBlueprint(_blueprint_name) => {
+                let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
+                schema.outer_method_permissions_instance
             }
         };
 
@@ -202,8 +202,17 @@ impl AuthModule {
                 )?
             }
             _ => {
-                if let Some(permission) = node_authority_rules.method_permissions.get(&method_key) {
-                    permission.clone()
+                let method_key = SchemaMethodKey {
+                    ident: method_key.ident,
+                    module_id: method_key.module_id.to_u8(),
+                };
+                if let Some(permission) = node_authority_rules.get(&method_key) {
+                    match permission {
+                        SchemaMethodPermission::Public => MethodPermission::Public,
+                        SchemaMethodPermission::Protected(list) => {
+                            MethodPermission::Protected(list.clone().into())
+                        }
+                    }
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
@@ -211,7 +220,7 @@ impl AuthModule {
                                 AuthError::NoMethod(callee.fn_identifier()),
                             )));
                         }
-                        ObjectKey::InnerBlueprint(..) => return Ok(()),
+                        _ => return Ok(()),
                     }
                 }
             }

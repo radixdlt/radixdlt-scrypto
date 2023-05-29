@@ -2,7 +2,13 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata_component {
-    use scrypto::prelude::*;
+    define_static_auth! {
+        metadata {
+            set => PUBLIC;
+            remove => PUBLIC;
+            get => PUBLIC;
+        }
+    }
 
     struct MetadataComponent {}
 
@@ -12,14 +18,7 @@ mod metadata_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
-                    init {
-                        key.clone() => value.clone();
-                    },
-                    permissions {
-                        set => [];
-                        remove => [];
-                        get => Public;
-                    }
+                    key.clone() => value.clone()
                 })
                 .globalize();
 
@@ -32,14 +31,6 @@ mod metadata_component {
             let global = MetadataComponent {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .metadata(metadata! {
-                    init {},
-                    permissions {
-                        set => Public;
-                        remove => Public;
-                        get => Public;
-                    }
-                })
                 .globalize();
 
             let metadata = global.metadata();

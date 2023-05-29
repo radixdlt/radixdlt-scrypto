@@ -1,9 +1,9 @@
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate, NodeAuthorizationRules,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
@@ -17,17 +17,22 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey,
+    SchemaMethodPermission,
+};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
+use crate::method_auth_template;
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
-use crate::{method_permissions, permission_entry};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
@@ -114,19 +119,10 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
-    const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn method_permissions() -> BTreeMap<MethodKey, MethodEntry> {
-        method_permissions!(
-            MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [Self::OWNER_ROLE];
-            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [Self::OWNER_ROLE];
-        )
-    }
-
-    fn role_definitions() -> Roles {
-        roles! {}
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!()
     }
 }
 
@@ -208,8 +204,6 @@ where
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 roles: BTreeMap::new(),
                 role_mutability: BTreeMap::new(),
-                access_rules: NodeAuthorizationRules::new(),
-                inner_blueprint_access_rules: BTreeMap::new(),
             }),
         );
     }
@@ -295,6 +289,15 @@ impl PackageNativePackage {
             },
         );
 
+        let method_auth_template = method_auth_template! {
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -306,6 +309,8 @@ impl PackageNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }

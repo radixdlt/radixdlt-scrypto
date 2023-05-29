@@ -2,6 +2,12 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod factory {
+    define_static_auth! {
+        methods {
+            set_address => OWNER;
+        }
+    }
+
     struct Factory {
         my_component: Option<Global<Factory>>,
     }
@@ -11,9 +17,6 @@ mod factory {
             Self { my_component: None }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::Fixed(rule!(require(Runtime::package_token()))))
-                .methods(methods! {
-                    set_address => [OWNER_ROLE];
-                })
                 .globalize()
         }
 

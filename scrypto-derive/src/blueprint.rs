@@ -87,6 +87,24 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
 
+    let definition_statements = bp.macro_statements;
+    let definition_statements = if !definition_statements.is_empty() {
+        quote! {
+            #(#definition_statements)*
+        }
+    } else {
+        // TODO: Use AllPublicMethod Template instead
+        quote! {
+            fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                btreemap!(
+                    #(
+                        scrypto::schema::SchemaMethodKey::main(#method_names) => scrypto::schema::SchemaMethodPermission::Public,
+                    )*
+                )
+            }
+        }
+    };
+
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
@@ -125,6 +143,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         };
 
         quote! {
+
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
                 use ::scrypto::schema::*;
@@ -152,6 +171,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     event_schema.insert(#event_type_names.to_owned(), local_type_index);
                 })*
 
+                let mut method_auth_template = method_auth_template();
+                if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
+                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
+                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
+                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
+                }
+
                 let return_data = BlueprintSchema {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
@@ -160,6 +186,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
+                    method_auth_template,
+                    outer_method_auth_template: BTreeMap::new(),
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -251,6 +279,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         pub mod #module_ident {
             #(#use_statements)*
+
+            #definition_statements
 
             #output_original_code
 
@@ -730,6 +760,12 @@ mod tests {
                     use scrypto::prelude::MethodPermission::*;
                     use scrypto::prelude::MethodRoyalty::*;
 
+                    fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                        btreemap!(
+                            scrypto::schema::SchemaMethodKey::main("x") => scrypto::schema::SchemaMethodPermission::Public,
+                        )
+                    }
+
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test {
                         a: u32,
@@ -841,6 +877,13 @@ mod tests {
                         );
                         let mut event_schema = BTreeMap::new();
 
+                        let mut method_auth_template = method_auth_template();
+                        if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
+                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
+                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
+                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
+                        }
+
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
                             schema: generate_full_schema(aggregator),
@@ -849,6 +892,8 @@ mod tests {
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
+                            method_auth_template,
+                            outer_method_auth_template: BTreeMap::new(),
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
