@@ -83,8 +83,8 @@ mod genesis_helper {
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
-            .define_roles(roles! {
-                "system" => rule!(require(system_role.clone())), mut ["system"];
+            .define_roles(define_roles! {
+                system => rule!(require(system_role.clone())), mut system;
             })
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
             .globalize()

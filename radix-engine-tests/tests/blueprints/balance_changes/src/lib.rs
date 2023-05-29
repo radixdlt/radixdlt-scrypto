@@ -4,12 +4,12 @@ use scrypto::prelude::*;
 mod balance_changes_test {
     define_permissions! {
         main {
-            put => Public;
-            boom => Public;
+            put => PUBLIC;
+            boom => PUBLIC;
         },
         royalties {
-            claim_royalty => [OWNER_ROLE];
-            set_royalty_config => [];
+            claim_royalty => OWNER;
+            set_royalty_config => OWNER;
         }
     }
 

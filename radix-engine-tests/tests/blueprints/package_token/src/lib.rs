@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 mod factory {
     define_permissions! {
         main {
-            set_address => [OWNER_ROLE];
+            set_address => OWNER;
         }
     }
 

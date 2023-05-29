@@ -4,9 +4,9 @@ use scrypto::prelude::*;
 mod cross_component {
     define_permissions! {
         main {
-            put_auth => Public;
-            cross_component_call => Public;
-            get_component_state => [OWNER_ROLE];
+            put_auth => PUBLIC;
+            cross_component_call => PUBLIC;
+            get_component_state => OWNER;
         }
     }
 

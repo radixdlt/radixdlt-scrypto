@@ -87,17 +87,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
 
-    #[cfg(feature = "no-schema")]
-    let output_schema = quote! {};
-    #[cfg(not(feature = "no-schema"))]
-    let output_schema = {
-        let definition_statements = bp.macro_statements;
-        let definition_statements = if !definition_statements.is_empty() {
-            quote! {
+    let definition_statements = bp.macro_statements;
+    let definition_statements = if !definition_statements.is_empty() {
+        quote! {
                 #(#definition_statements)*
             }
-        } else {
-            quote! {
+    } else {
+        quote! {
                 fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
                     btreemap!(
                         #(
@@ -106,8 +102,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     )
                 }
             }
-        };
+    };
 
+    #[cfg(feature = "no-schema")]
+    let output_schema = quote! {};
+    #[cfg(not(feature = "no-schema"))]
+    let output_schema = {
         let schema_ident = format_ident!("{}_schema", bp_ident);
         let function_names = generated_schema_info.function_names;
         let function_schemas = generated_schema_info.function_schemas;
@@ -142,7 +142,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         };
 
         quote! {
-            #definition_statements
 
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
@@ -272,6 +271,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         pub mod #module_ident {
             #(#use_statements)*
+
+            #definition_statements
 
             #output_original_code
 
@@ -751,6 +752,12 @@ mod tests {
                     use scrypto::prelude::MethodPermission::*;
                     use scrypto::prelude::MethodRoyalty::*;
 
+                    fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                        btreemap!(
+                            scrypto::schema::SchemaMethodKey::main("x") => scrypto::schema::SchemaMethodPermission::Public,
+                        )
+                    }
+
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test {
                         a: u32,
@@ -829,12 +836,6 @@ mod tests {
                         let input: Test_y_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                         let return_data = Test::y(input.i);
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
-                    }
-
-                    fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
-                        btreemap!(
-                            scrypto::schema::SchemaMethodKey::main("x") => scrypto::schema::SchemaMethodPermission::Public,
-                        )
                     }
 
                     #[no_mangle]

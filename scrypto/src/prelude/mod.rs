@@ -11,7 +11,7 @@ pub use crate::{
     blueprint, debug, define_permissions, error, external_blueprint, external_component,
     include_code, include_schema, info, main_permissions, metadata, metadata_init,
     method_permission, method_permissions, method_royalties, module_permissions, resource_list, royalties,
-    this_package, trace, warn, NonFungibleData,
+    this_package, trace, warn, NonFungibleData, define_roles, role_definition_entry
 };
 
 //=========================

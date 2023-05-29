@@ -4,9 +4,9 @@ use scrypto::prelude::*;
 mod metadata_component {
     define_permissions! {
         metadata {
-            set => Public;
-            remove => Public;
-            get => Public;
+            set => PUBLIC;
+            remove => PUBLIC;
+            get => PUBLIC;
         }
     }
 
@@ -33,9 +33,6 @@ mod metadata_component {
             let global = MetadataComponent {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .metadata(metadata! {
-                    init {}
-                })
                 .globalize();
 
             let metadata = global.metadata();

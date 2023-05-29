@@ -4,17 +4,17 @@ use scrypto::prelude::*;
 mod metadata {
     define_permissions! {
         main {
-            set_string => Public;
-            set_address => Public;
-            set_array => Public;
-            get_string => Public;
-            get_address => Public;
-            get_array => Public;
+            set_string => PUBLIC;
+            set_address => PUBLIC;
+            set_array => PUBLIC;
+            get_string => PUBLIC;
+            get_address => PUBLIC;
+            get_array => PUBLIC;
         },
         metadata {
-            set => Public;
-            remove => Public;
-            get => Public;
+            set => PUBLIC;
+            remove => PUBLIC;
+            get => PUBLIC;
         }
     }
 

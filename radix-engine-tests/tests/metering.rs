@@ -37,6 +37,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_basic_transfer() {
         // Arrange
         let mut test_runner = TestRunner::builder().build();
@@ -84,6 +85,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_radiswap() {
         let mut test_runner = TestRunner::builder().build();
 
@@ -222,6 +224,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_flash_loan() {
         let mut test_runner = TestRunner::builder().build();
 

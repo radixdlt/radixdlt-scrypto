@@ -4,13 +4,13 @@ use scrypto::prelude::*;
 mod royalty_test {
     define_permissions! {
         main {
-            paid_method => Public;
-            paid_method_panic => Public;
-            free_method => Public;
+            paid_method => PUBLIC;
+            paid_method_panic => PUBLIC;
+            free_method => PUBLIC;
         },
         royalties {
-            claim_royalty => Public;
-            set_royalty_config => [];
+            claim_royalty => PUBLIC;
+            set_royalty_config => OWNER;
         }
     }
 

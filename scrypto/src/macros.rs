@@ -464,6 +464,11 @@ macro_rules! method_permission {
     (PUBLIC) => ({
         MethodPermission::Public
     });
+    (OWNER) => ({
+        [
+            OWNER_ROLE
+        ].into()
+    });
     ($protected:ident) => ({
         [
             ROLE_STRINGS.$protected
@@ -517,8 +522,16 @@ macro_rules! define_permissions {
         },
         $($module:ident { $($method:ident => $permission:ident;)* }),*
     ) => (
-        struct MethodRoles<T> {
+        pub struct MethodRoles<T> {
             $($role: T),*
+        }
+
+        impl<T> MethodRoles<T> {
+            fn list(self) -> Vec<(&'static str, T)> {
+                vec![
+                    $((stringify!($role), self.$role)),*
+                ]
+            }
         }
 
         const ROLE_STRINGS: MethodRoles<&str> = MethodRoles {
@@ -534,7 +547,7 @@ macro_rules! define_permissions {
         }
     );
     (
-        $($module:ident { $($method:ident => $permission:expr;)* }),*
+        $($module:ident { $($method:ident => $permission:ident;)* }),*
     ) => (
         fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
             let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
@@ -544,6 +557,32 @@ macro_rules! define_permissions {
             permissions
         }
     )
+}
+
+#[macro_export]
+macro_rules! role_definition_entry {
+    ($rule:expr) => {{
+        RoleEntry::immutable($rule)
+    }};
+    ($rule:expr, mut $mutability:ident) => {{
+        RoleEntry::new($rule, [ROLE_STRINGS.$mutability], true)
+    }};
+}
+
+#[macro_export]
+macro_rules! define_roles {
+    ( $($role:ident => $rule:expr $(, mut $mutability:ident)? ;)* ) => ({
+        let method_roles = MethodRoles::<RoleEntry> {
+            $($role: role_definition_entry!($rule $(, mut $mutability)?)),*
+        };
+
+        let mut roles = $crate::blueprints::resource::Roles::new();
+        for (name, entry) in method_roles.list() {
+            roles.define_role(name, entry);
+        }
+
+        roles
+    });
 }
 
 #[macro_export]
