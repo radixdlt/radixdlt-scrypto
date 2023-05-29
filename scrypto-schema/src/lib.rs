@@ -7,25 +7,21 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
-use radix_engine_common::types::PartitionOffset;
+use radix_engine_common::prelude::replace_self_package_address;
+use radix_engine_common::types::{PackageAddress, PartitionOffset};
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
+    pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct KeyValueStoreInfo {
-    pub schema: ScryptoSchema,
-    pub kv_store_schema: KeyValueStoreSchema,
-}
-
-impl KeyValueStoreInfo {
+impl KeyValueStoreSchema {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
@@ -33,12 +29,14 @@ impl KeyValueStoreInfo {
         let schema = generate_full_schema(aggregator);
         Self {
             schema,
-            kv_store_schema: KeyValueStoreSchema {
-                key: key_type_index,
-                value: value_type_index,
-                can_own,
-            },
+            key: key_type_index,
+            value: value_type_index,
+            can_own,
         }
+    }
+
+    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
+        replace_self_package_address(&mut self.schema, package_address);
     }
 }
 
@@ -69,15 +67,15 @@ pub struct BlueprintSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum TypeSchema {
+pub enum TypeRef {
     Blueprint(LocalTypeIndex),
     Instance(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintKeyValueStoreSchema {
-    pub key: TypeSchema,
-    pub value: TypeSchema,
+    pub key: TypeRef,
+    pub value: TypeRef,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
@@ -307,8 +305,8 @@ impl IndexedBlueprintSchema {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
                     match &kv_schema.key {
-                        TypeSchema::Blueprint(..) => {}
-                        TypeSchema::Instance(type_index) => {
+                        TypeRef::Blueprint(..) => {}
+                        TypeRef::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;
@@ -320,8 +318,8 @@ impl IndexedBlueprintSchema {
                     }
 
                     match &kv_schema.value {
-                        TypeSchema::Blueprint(..) => {}
-                        TypeSchema::Instance(type_index) => {
+                        TypeRef::Blueprint(..) => {}
+                        TypeRef::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;
