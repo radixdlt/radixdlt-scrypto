@@ -1,7 +1,4 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::track::db_key_mapper::{
-    MappedSubstateDatabase, SpreadPrefixKeyMapper, SubstateKeyContent,
-};
 use radix_engine::types::{MapKey, ScryptoValue, SubstateKey, TupleKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
@@ -16,7 +13,10 @@ use radix_engine_interface::types::{
     ROYALTY_FIELD_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
-use radix_engine_store_interface::interface::SubstateDatabase;
+use radix_engine_store_interface::{
+    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper, SubstateKeyContent},
+    interface::SubstateDatabase,
+};
 use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {

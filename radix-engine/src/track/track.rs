@@ -1,4 +1,3 @@
-use crate::track::db_key_mapper::DatabaseKeyMapper;
 use crate::track::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
     TakeSubstateError,
@@ -7,8 +6,9 @@ use crate::track::utils::OverlayingIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase,
+use radix_engine_store_interface::{
+    db_key_mapper::DatabaseKeyMapper,
+    interface::{DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase},
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
