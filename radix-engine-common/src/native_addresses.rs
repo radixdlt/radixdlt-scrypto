@@ -143,9 +143,8 @@ pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = PackageAddress::new_or_pan
 
 /// The native package for pools.
 pub const POOL_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
-    // TODO: Replace with actual package address
-    13, 144, 99, 24, 198, 49, 140, 111, 77, 99, 248, 204, 99, 24, 198, 49, 140, 247, 191, 85, 61,
-    60, 165, 22, 134, 49, 140, 99, 24, 198,
+    13, 144, 99, 24, 198, 49, 140, 96, 252, 198, 49, 140, 99, 24, 198, 49, 140, 245, 62, 62, 42,
+    148, 250, 42, 166, 49, 140, 99, 24, 198,
 ]);
 
 /// The native package for the transaction processor.
