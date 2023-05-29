@@ -1,5 +1,4 @@
-use radix_engine::{system::system_modules::costing::u128_to_decimal, types::*};
-use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
+use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -39,10 +38,7 @@ fn test_component_royalty() {
     );
 
     let commit_result = receipt.expect_commit(true);
-    assert_eq!(
-        commit_result.fee_summary.total_royalty_cost_xrd,
-        dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
-    );
+    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("1"));
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let component_royalty = test_runner
         .inspect_component_royalty(component_address)
@@ -150,7 +146,7 @@ fn test_package_royalty() {
     let commit_result = receipt.expect_commit(true);
     assert_eq!(
         commit_result.fee_summary.total_royalty_cost_xrd,
-        (dec!("1") + dec!("2")) * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
+        dec!("1") + dec!("2")
     );
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let package_royalty = test_runner
@@ -164,14 +160,8 @@ fn test_package_royalty() {
         commit_result.fee_summary.total_execution_cost_xrd
             + commit_result.fee_summary.total_royalty_cost_xrd
     );
-    assert_eq!(
-        package_royalty,
-        dec!("2") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
-    );
-    assert_eq!(
-        component_royalty,
-        dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
-    );
+    assert_eq!(package_royalty, dec!("2"));
+    assert_eq!(component_royalty, dec!("1"));
 }
 
 #[test]
@@ -196,11 +186,11 @@ fn test_royalty_accumulation_when_success() {
     receipt.expect_commit(true);
     assert_eq!(
         test_runner.inspect_package_royalty(package_address),
-        Some(dec!("2") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
+        Some(dec!("2"))
     );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
+        Some(dec!("1"))
     );
 }
 
@@ -253,11 +243,11 @@ fn test_claim_royalty() {
     receipt.expect_commit(true);
     assert_eq!(
         test_runner.inspect_package_royalty(package_address),
-        Some(dec!("2") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
+        Some(dec!("2"))
     );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
+        Some(dec!("1"))
     );
 
     // Claim package royalty
