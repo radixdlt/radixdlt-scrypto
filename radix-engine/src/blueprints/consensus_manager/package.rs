@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use crate::{event_schema, method_permissions2, types::*};
+use crate::{event_schema, method_auth_template, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::ClientApi;
@@ -125,7 +125,7 @@ impl ConsensusManagerNativePackage {
             ]
         };
 
-        let method_permissions_instance = method_permissions2!(
+        let method_permissions_instance = method_auth_template!(
             SchemaMethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
             SchemaMethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
 
@@ -144,8 +144,8 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_permissions_instance,
-            outer_method_permissions_instance: btreemap!(),
+            method_auth_template: method_permissions_instance,
+            outer_method_auth_template: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -286,7 +286,7 @@ impl ConsensusManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
-        let method_permissions_instance = method_permissions2! {
+        let method_permissions_instance = method_auth_template! {
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
 
             SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
@@ -311,8 +311,8 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_permissions_instance,
-            outer_method_permissions_instance: btreemap!(),
+            method_auth_template: method_permissions_instance,
+            outer_method_auth_template: btreemap!(),
         };
 
         PackageSchema {

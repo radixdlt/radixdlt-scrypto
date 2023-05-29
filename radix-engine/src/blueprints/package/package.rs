@@ -29,7 +29,7 @@ use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
-use crate::method_permissions2;
+use crate::method_auth_template;
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
@@ -288,7 +288,7 @@ impl PackageNativePackage {
             },
         );
 
-        let method_permissions_instance = method_permissions2! {
+        let method_auth_template = method_auth_template! {
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
             SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => ["owner"];
             SchemaMethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => ["owner"];
@@ -305,8 +305,8 @@ impl PackageNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    method_permissions_instance,
-                    outer_method_permissions_instance: btreemap!(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }

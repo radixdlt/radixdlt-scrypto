@@ -46,8 +46,8 @@ impl TransactionProcessorNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    method_permissions_instance: btreemap!(),
-                    outer_method_permissions_instance: btreemap!(),
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }

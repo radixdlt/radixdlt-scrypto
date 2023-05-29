@@ -12,7 +12,7 @@ use radix_engine_interface::schema::{
 };
 
 use crate::blueprints::account::AccountBlueprint;
-use crate::method_permissions2;
+use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
@@ -297,7 +297,7 @@ impl AccountNativePackage {
             }
         );
 
-        let method_permissions_instance = method_permissions2!(
+        let method_auth_template = method_auth_template!(
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => ["owner"];
@@ -334,8 +334,8 @@ impl AccountNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
-                    method_permissions_instance,
-                    outer_method_permissions_instance: btreemap!(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }

@@ -554,7 +554,7 @@ macro_rules! define_static_auth {
             $($role: stringify!($role)),*
         };
 
-        fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+        fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
             let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
             $(
                 module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
@@ -566,7 +566,7 @@ macro_rules! define_static_auth {
     (
         $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
     ) => (
-        fn method_permissions_instance() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+        fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
             let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
             $(
                 module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });

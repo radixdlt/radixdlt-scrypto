@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use crate::{event_schema, method_permissions2};
+use crate::{event_schema, method_auth_template};
 use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
@@ -404,7 +404,7 @@ impl AccessControllerNativePackage {
             ]
         };
 
-        let method_permissions_instance = method_permissions2!(
+        let method_auth_template = method_auth_template!(
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
@@ -446,8 +446,8 @@ impl AccessControllerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema,
-                    method_permissions_instance,
-                    outer_method_permissions_instance: btreemap!(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }

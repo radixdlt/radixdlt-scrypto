@@ -3,7 +3,7 @@ use crate::blueprints::util::{
 };
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
-use crate::method_permissions2;
+use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -74,7 +74,7 @@ impl IdentityNativePackage {
             }
         );
 
-        let method_permissions_instance = method_permissions2! {
+        let method_auth_template = method_auth_template! {
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => ["owner"];
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => ["owner"];
@@ -96,8 +96,8 @@ impl IdentityNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
-                    method_permissions_instance,
-                    outer_method_permissions_instance: btreemap!(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }

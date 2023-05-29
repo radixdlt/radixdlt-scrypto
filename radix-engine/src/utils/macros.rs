@@ -15,7 +15,7 @@ macro_rules! event_schema {
 }
 
 #[macro_export]
-macro_rules! method_permissions2 {
+macro_rules! method_auth_template {
     ( $($method:expr => $entry:expr );* ) => ({
         let mut methods: BTreeMap<SchemaMethodKey, SchemaMethodPermission>
             = BTreeMap::new();
@@ -25,6 +25,6 @@ macro_rules! method_permissions2 {
         methods
     });
     ( $($key:expr => $entry:expr;)* ) => (
-        method_permissions2!{$($key => $entry);*}
+        method_auth_template!{$($key => $entry);*}
     );
 }

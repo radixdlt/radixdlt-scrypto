@@ -113,8 +113,8 @@ pub struct BlueprintSchema {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 
     // TODO: Move out of schema
-    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -206,8 +206,8 @@ impl Default for BlueprintSchema {
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
-            method_permissions_instance: BTreeMap::default(),
-            outer_method_permissions_instance: BTreeMap::default(),
+            method_auth_template: BTreeMap::default(),
+            outer_method_auth_template: BTreeMap::default(),
         }
     }
 }
@@ -255,8 +255,8 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
-            method_permissions_instance: schema.method_permissions_instance,
-            outer_method_permissions_instance: schema.outer_method_permissions_instance,
+            method_permissions_instance: schema.method_auth_template,
+            outer_method_permissions_instance: schema.outer_method_auth_template,
         }
     }
 }
