@@ -177,11 +177,11 @@ fn checked_multiply(amount: u32, multiplier: usize) -> Result<u32, FeeReserveErr
         .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))
 }
 
-pub fn u128_to_decimal(a: u128) -> Decimal {
+pub fn transmute_u128_as_decimal(a: u128) -> Decimal {
     Decimal(a.into())
 }
 
-pub fn decimal_to_u128(a: Decimal) -> Result<u128, FeeReserveError> {
+pub fn transmute_decimal_as_u128(a: Decimal) -> Result<u128, FeeReserveError> {
     let i256 = a.0;
     i256.try_into().map_err(|_| FeeReserveError::Overflow)
 }
@@ -226,7 +226,7 @@ impl SystemLoanFeeReserve {
         self.xrd_balance += xrd_amount;
         self.locked_fees.push((
             None,
-            LiquidFungibleResource::new(u128_to_decimal(xrd_amount)),
+            LiquidFungibleResource::new(transmute_u128_as_decimal(xrd_amount)),
             false,
         ));
         self
@@ -268,9 +268,9 @@ impl SystemLoanFeeReserve {
         recipient_vault_id: NodeId,
     ) -> Result<(), FeeReserveError> {
         let amount = match royalty_amount {
-            RoyaltyAmount::Xrd(xrd_amount) => decimal_to_u128(xrd_amount)?,
+            RoyaltyAmount::Xrd(xrd_amount) => transmute_decimal_as_u128(xrd_amount)?,
             RoyaltyAmount::Usd(usd_amount) => {
-                decimal_to_u128(usd_amount)?
+                transmute_decimal_as_u128(usd_amount)?
                     .checked_mul(self.usd_price)
                     .ok_or(FeeReserveError::Overflow)?
                     / 1_000_000_000_000_000_000
@@ -328,7 +328,7 @@ impl SystemLoanFeeReserve {
         self.royalty_committed
             .clone()
             .into_iter()
-            .map(|(k, v)| (k, (v.0, u128_to_decimal(v.1))))
+            .map(|(k, v)| (k, (v.0, transmute_u128_as_decimal(v.1))))
             .collect()
     }
 
@@ -435,7 +435,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         // Update balance
         if !contingent {
             // Assumption: no overflow due to limited XRD supply
-            self.xrd_balance += decimal_to_u128(fee.amount())?;
+            self.xrd_balance += transmute_decimal_as_u128(fee.amount())?;
         }
 
         // Move resource
@@ -453,18 +453,18 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         let total_royalty_cost_xrd = royalty_cost_breakdown.values().map(|x| x.1).sum();
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
-            cost_unit_price: u128_to_decimal(self.cost_unit_price),
+            cost_unit_price: transmute_u128_as_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
-            total_execution_cost_xrd: u128_to_decimal(
+            total_execution_cost_xrd: transmute_u128_as_decimal(
                 self.effective_execution_price * self.execution_committed_sum as u128,
             ),
             total_royalty_cost_xrd,
-            total_bad_debt_xrd: u128_to_decimal(self.xrd_owed),
+            total_bad_debt_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
             execution_cost_breakdown,
             execution_cost_sum: self.execution_committed_sum,
             royalty_cost_breakdown,
-            royalty_cost_sum: u128_to_decimal(self.royalty_committed_sum),
+            royalty_cost_sum: transmute_u128_as_decimal(self.royalty_committed_sum),
         }
     }
 }
@@ -500,8 +500,8 @@ mod tests {
     #[test]
     fn test_consume_and_repay() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(1)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
             2,
             100,
             5,
@@ -523,8 +523,8 @@ mod tests {
     #[test]
     fn test_out_of_cost_unit() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(1)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
             2,
             100,
             5,
@@ -546,8 +546,8 @@ mod tests {
     #[test]
     fn test_lock_fee() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(1)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
             2,
             100,
             500,
@@ -568,8 +568,8 @@ mod tests {
     #[test]
     fn test_xrd_cost_unit_conversion() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(5)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(5)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
             0,
             100,
             500,
@@ -594,8 +594,8 @@ mod tests {
     #[test]
     fn test_bad_debt() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(5)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(5)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
             1,
             100,
             50,
@@ -620,8 +620,8 @@ mod tests {
     #[test]
     fn test_royalty_execution_mix() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(5)).unwrap(),
-            decimal_to_u128(dec!(2)).unwrap(),
+            transmute_decimal_as_u128(dec!(5)).unwrap(),
+            transmute_decimal_as_u128(dec!(2)).unwrap(),
             1,
             100,
             50,
@@ -675,8 +675,8 @@ mod tests {
     #[test]
     fn test_royalty_insufficient_balance() {
         let mut fee_reserve = SystemLoanFeeReserve::new(
-            decimal_to_u128(dec!(1)).unwrap(),
-            decimal_to_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
+            transmute_decimal_as_u128(dec!(1)).unwrap(),
             0,
             1000,
             50,

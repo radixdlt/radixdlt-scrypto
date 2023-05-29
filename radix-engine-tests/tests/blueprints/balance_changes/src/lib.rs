@@ -25,8 +25,8 @@ mod balance_changes_test {
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
             .royalties(royalties! {
-put => Xrd(1.into()),
-boom => Xrd(1.into()),
+                put => Xrd(1.into()),
+                boom => Xrd(1.into()),
             })
             .globalize()
         }

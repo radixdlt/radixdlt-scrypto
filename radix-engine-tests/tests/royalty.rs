@@ -1,4 +1,4 @@
-use radix_engine::types::*;
+use radix_engine::{system::system_modules::costing::transmute_u128_as_decimal, types::*};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -39,6 +39,60 @@ fn test_component_royalty() {
 
     let commit_result = receipt.expect_commit(true);
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("1"));
+    let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
+    let component_royalty = test_runner
+        .inspect_component_royalty(component_address)
+        .unwrap();
+    assert_eq!(
+        account_pre_balance - account_post_balance,
+        commit_result.fee_summary.total_execution_cost_xrd
+            + commit_result.fee_summary.total_royalty_cost_xrd
+    );
+    assert_eq!(
+        component_royalty,
+        commit_result.fee_summary.total_royalty_cost_xrd
+    );
+}
+
+#[test]
+fn test_component_royalty_in_usd() {
+    // Basic setup
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Publish package
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/royalty");
+
+    // Instantiate component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .call_function(
+                package_address,
+                "RoyaltyTest",
+                "create_component_with_royalty_enabled",
+                manifest_args!(),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
+
+    // Call the paid method
+    let account_pre_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 100.into())
+            .call_method(component_address, "paid_method_usd", manifest_args!())
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    let commit_result = receipt.expect_commit(true);
+    assert_eq!(
+        commit_result.fee_summary.total_royalty_cost_xrd,
+        dec!("1") * transmute_u128_as_decimal(DEFAULT_USD_PRICE)
+    );
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let component_royalty = test_runner
         .inspect_component_royalty(component_address)
