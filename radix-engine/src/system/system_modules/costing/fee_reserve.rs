@@ -214,8 +214,8 @@ impl SystemLoanFeeReserve {
             effective_royalty_price,
 
             // System loan is used for both execution and royalty
-            xrd_balance: cost_unit_price * system_loan as u128,
-            xrd_owed: cost_unit_price * system_loan as u128,
+            xrd_balance: effective_execution_price * system_loan as u128,
+            xrd_owed: effective_execution_price * system_loan as u128,
 
             execution_committed: [0u32; CostingReason::COUNT],
             execution_committed_sum: 0,
@@ -225,6 +225,22 @@ impl SystemLoanFeeReserve {
 
             payments: Vec::new(),
         }
+    }
+
+    pub fn cost_unit_limit(&self) -> u32 {
+        self.cost_unit_limit
+    }
+
+    pub fn cost_unit_price(&self) -> Decimal {
+        u128_to_decimal(self.cost_unit_price)
+    }
+
+    pub fn tip_percentage(&self) -> u32 {
+        self.tip_percentage.into()
+    }
+
+    pub fn fee_balance(&self) -> Decimal {
+        u128_to_decimal(self.xrd_balance)
     }
 
     fn check_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {

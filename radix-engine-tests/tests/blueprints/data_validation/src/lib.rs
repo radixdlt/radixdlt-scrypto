@@ -18,6 +18,7 @@ mod data_validation {
                 reference: RADIX_TOKEN,
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -51,6 +52,7 @@ mod data_validation {
                 reference: RADIX_TOKEN,
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
         }
 
@@ -80,8 +82,8 @@ impl Describe<ScryptoCustomTypeKind> for CustomReference {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
             metadata: TypeMetadata::no_child_names("CustomReference"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                ReferenceValidation::IsTypedObject(
-                    RESOURCE_PACKAGE,
+                ReferenceValidation::IsGlobalTyped(
+                    Some(RESOURCE_PACKAGE),
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 ),
             )),

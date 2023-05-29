@@ -6,7 +6,7 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
+    ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
@@ -19,7 +19,7 @@ use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{InstanceSchema, KeyValueStoreInfo};
+use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -27,6 +27,43 @@ pub enum ClientApiError {
 }
 
 pub struct ScryptoEnv;
+
+impl ClientCostingApi<ClientApiError> for ScryptoEnv {
+    fn consume_cost_units(
+        &mut self,
+        _units: u32,
+        _reason: types::ClientCostingReason,
+    ) -> Result<(), ClientApiError> {
+        unimplemented!("Not exposed to scrypto")
+    }
+
+    fn credit_cost_units(
+        &mut self,
+        _vault_id: NodeId,
+        _locked_fee: blueprints::resource::LiquidFungibleResource,
+        _contingent: bool,
+    ) -> Result<blueprints::resource::LiquidFungibleResource, ClientApiError> {
+        unimplemented!("Not exposed to scrypto")
+    }
+
+    fn cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
+        Ok(unsafe { cost_unit_limit() })
+    }
+
+    fn cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
+        let bytes = copy_buffer(unsafe { cost_unit_price() });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn tip_percentage(&mut self) -> Result<u32, ClientApiError> {
+        Ok(unsafe { tip_percentage() })
+    }
+
+    fn fee_balance(&mut self) -> Result<math::Decimal, ClientApiError> {
+        let bytes = copy_buffer(unsafe { fee_balance() });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+}
 
 impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_simple_object(
@@ -172,7 +209,10 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
-    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, ClientApiError> {
+    fn key_value_store_new(
+        &mut self,
+        schema: KeyValueStoreSchema,
+    ) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -181,7 +221,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreInfo, ClientApiError> {
+    ) -> Result<KeyValueStoreSchema, ClientApiError> {
         let bytes = copy_buffer(unsafe {
             kv_store_get_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });

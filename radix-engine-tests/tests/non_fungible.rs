@@ -8,6 +8,37 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+fn can_mint_non_fungible_with_global() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package,
+            "NonFungibleWithGlobalTest",
+            "create_non_fungible_with_global",
+            manifest_args!(),
+        )
+        .call_method(
+            account,
+            "try_deposit_batch_or_abort",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn create_non_fungible_mutable() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

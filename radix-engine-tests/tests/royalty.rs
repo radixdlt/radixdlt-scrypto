@@ -89,10 +89,12 @@ fn set_up_package_and_component() -> (
             .set_package_royalty_config(
                 package_address,
                 btreemap!(
-                    "RoyaltyTest".to_string() => RoyaltyConfigBuilder::new()
-                        .add_rule("paid_method", 2)
-                        .add_rule("paid_method_panic", 2)
-                        .default(0)
+                    "RoyaltyTest".to_string() => {
+                        let mut config = RoyaltyConfig::default();
+                        config.set_rule("paid_method", 2);
+                        config.set_rule("paid_method_panic", 2);
+                        config
+                    }
                 ),
             )
             .build(),

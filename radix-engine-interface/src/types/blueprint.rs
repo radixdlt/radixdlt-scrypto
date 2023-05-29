@@ -7,7 +7,7 @@ use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use scrypto_schema::InstanceSchema;
+use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -18,6 +18,11 @@ pub struct ObjectInfo {
     pub instance_schema: Option<InstanceSchema>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct KeyValueStoreInfo {
+    pub schema: KeyValueStoreSchema,
+}
+
 #[derive(Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintId {
     pub package_address: PackageAddress,
@@ -25,7 +30,7 @@ pub struct BlueprintId {
 }
 
 impl BlueprintId {
-    pub fn new(package_address: &PackageAddress, blueprint_name: &str) -> Self {
+    pub fn new<S: ToString>(package_address: &PackageAddress, blueprint_name: S) -> Self {
         BlueprintId {
             package_address: *package_address,
             blueprint_name: blueprint_name.to_string(),

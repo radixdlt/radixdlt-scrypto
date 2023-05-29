@@ -477,12 +477,12 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, owner_rule: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateAdvancedInput { authority_rules }),
+            args: to_manifest_value(&IdentityCreateAdvancedInput { owner_rule }),
         });
         self
     }
@@ -639,39 +639,37 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn set_authority_access_rule(
+    pub fn update_role(
         &mut self,
         address: GlobalAddress,
-        object_key: ObjectKey,
-        authority_key: AuthorityKey,
+        role_key: RoleKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
-            method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesSetAuthorityRuleInput {
-                object_key,
-                authority_key,
-                rule,
+            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesUpdateRoleInput {
+                role_key,
+                rule: Some(rule),
+                mutability: None,
             }),
         })
         .0
     }
 
-    pub fn set_authority_mutability(
+    pub fn update_role_mutability(
         &mut self,
         address: GlobalAddress,
-        object_key: ObjectKey,
-        authority_key: AuthorityKey,
-        mutability: AccessRule,
+        role_key: RoleKey,
+        mutability: (RoleList, bool),
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
-            method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesSetAuthorityMutabilityInput {
-                object_key,
-                authority_key,
-                mutability,
+            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesUpdateRoleInput {
+                role_key,
+                rule: None,
+                mutability: Some(mutability),
             }),
         })
         .0
@@ -698,7 +696,7 @@ impl ManifestBuilder {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        authority_rules: AuthorityRules,
+        owner_rule: OwnerRole,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -713,7 +711,7 @@ impl ManifestBuilder {
                 royalty_config,
                 metadata,
                 package_address: None,
-                authority_rules,
+                owner_rule,
             }),
         });
         self
@@ -758,7 +756,7 @@ impl ManifestBuilder {
                 schema,
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                authority_rules: AuthorityRules::new_with_owner_authority(&owner_badge),
+                owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });
         self
@@ -944,12 +942,12 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
+    pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateAdvancedInput { authority_rules }),
+            args: to_manifest_value(&AccountCreateAdvancedInput { owner_role }),
         })
         .0
     }

@@ -5,6 +5,7 @@ use crate::*;
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
+use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::types::NonFungibleData;
@@ -171,6 +172,10 @@ impl NonFungibleDataSchema {
             non_fungible: non_fungible_type,
             mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
         }
+    }
+
+    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
+        replace_self_package_address(&mut self.schema, package_address);
     }
 }
 
