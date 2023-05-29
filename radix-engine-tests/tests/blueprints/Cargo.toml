@@ -27,6 +27,7 @@ members = [
     "package",
     "package_schema",
     "package_token",
+    "preallocated_address",
     "proof",
     "proof_creation",
     "recall",
