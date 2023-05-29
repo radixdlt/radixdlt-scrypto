@@ -15,6 +15,7 @@ where
 {
     db: S,
     pub read_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
+    pub read_not_found_metrics: RefCell<Vec<Duration>>,
 }
 
 impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
@@ -30,6 +31,7 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         Self {
             db: RocksdbSubstateStore::with_options(&opt, path),
             read_metrics: RefCell::new(BTreeMap::new()),
+            read_not_found_metrics: RefCell::new(Vec::new()),
         }
     }
 }
@@ -39,6 +41,7 @@ impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
         Self {
             db: InMemorySubstateDatabase::standard(),
             read_metrics: RefCell::new(BTreeMap::new()),
+            read_not_found_metrics: RefCell::new(Vec::new()),
         }
     }
 }
@@ -70,6 +73,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase
             }
             Some(value)
         } else {
+            self.read_not_found_metrics.borrow_mut().push(duration);
             None
         }
     }
@@ -111,7 +115,7 @@ mod tests {
     /// Range end of the measuremnts
     const MAX_SIZE: usize = 4 * 1024 * 1024;
     /// Range step
-    const SIZE_STEP: usize = 10 * 1024;
+    const SIZE_STEP: usize = 200 * 1024;
     /// Each step write and read
     const COUNT: usize = 20;
     /// Multiplication of each step read (COUNT * READ_REPEATS)
@@ -138,7 +142,10 @@ mod tests {
 
         // reopen database
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
-        run_read_test(&mut substate_db, data_index_vector);
+        // and run read test
+        run_read_test(&mut substate_db, &data_index_vector);
+        // run read not found test
+        run_read_not_found_test(&mut substate_db, &data_index_vector);
 
         // prepare data for linear approximation
         drop_highest_and_lowest_value(&mut substate_db);
@@ -163,10 +170,14 @@ mod tests {
         )
         .unwrap();
 
+        print_read_not_found_results(&substate_db);
+
         // InMemory DB part
         let mut substate_db = SubstateStoreWithMetrics::new_inmem();
         let data_index_vector = prepare_db(&mut substate_db);
-        run_read_test(&mut substate_db, data_index_vector);
+        run_read_test(&mut substate_db, &data_index_vector);
+        // run read not found test
+        run_read_not_found_test(&mut substate_db, &data_index_vector);
 
         // prepare data for linear approximation
         drop_highest_and_lowest_value(&mut substate_db);
@@ -199,6 +210,8 @@ mod tests {
             "/tmp/scrypto_diff_1.png",
         )
         .unwrap();
+
+        print_read_not_found_results(&substate_db);
     }
 
     fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDatabase>(
@@ -268,7 +281,7 @@ mod tests {
 
     fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
         substate_db: &mut S,
-        data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)>,
+        data_index_vector: &Vec<(DbPartitionKey, DbSortKey, usize)>,
     ) {
         println!("Random read start...");
 
@@ -311,6 +324,41 @@ mod tests {
                 duration,
                 (READ_REPEATS - (i + 1)) * duration as usize
             );
+        }
+
+        println!("Read done");
+    }
+
+    fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
+        substate_db: &mut S,
+        data_index_vector: &Vec<(DbPartitionKey, DbSortKey, usize)>,
+    ) {
+        println!("Read not found test start...");
+
+        let mut data_index_vector_2: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
+
+        let mut p_key_cnt = COUNT;
+        let mut sort_key_value: usize = data_index_vector.len();
+        for _ in 0..COUNT {
+            let plain_bytes = sort_key_value.to_be_bytes().to_vec();
+            let mut hashed_prefix: Vec<u8> =
+                Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
+            hashed_prefix.extend(plain_bytes);
+
+            let sort_key = DbSortKey(hashed_prefix);
+            sort_key_value += 1;
+
+            let partition_key = DbPartitionKey(p_key_cnt.to_be_bytes().to_vec());
+            p_key_cnt += 1;
+
+            data_index_vector_2.push((partition_key.clone(), sort_key));
+        }
+
+        for _ in 0..READ_REPEATS {
+            for (p, s) in data_index_vector_2.iter() {
+                let read_value = substate_db.get_substate(&p, &s);
+                assert!(read_value.is_none());
+            }
         }
 
         println!("Read done");
@@ -409,7 +457,7 @@ mod tests {
                 .collect::<Vec<(usize, usize)>>()
         );
         println!(
-            "{} points list (size, time): {:?}",
+            "{} points list (size, time[µs]): {:?}",
             output_data_name, output_data
         );
         println!(
@@ -529,7 +577,7 @@ mod tests {
         root.present().expect("Unable to write result to file");
 
         // print some informations
-        println!("Points list (size, time): {:?}", v1);
+        println!("Points list (size, time[µs]): {:?}", v1);
         println!(
             "Linear approx.:  f(size) = {} * size + {}\n",
             lin_slope, lin_intercept
@@ -540,5 +588,15 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    pub fn print_read_not_found_results<S: SubstateDatabase + CommittableSubstateDatabase>(
+        substate_store: &SubstateStoreWithMetrics<S>
+    ) {
+        let v = &substate_store.read_not_found_metrics.borrow();
+        let min = v.iter().min().unwrap().as_nanos();
+        let max = v.iter().max().unwrap().as_nanos();
+        let avg = v.iter().sum::<Duration>().as_nanos() as usize / v.len();
+        println!("Read not found times [ns]: min={} max={} avg={}", min, max, avg);
     }
 }
