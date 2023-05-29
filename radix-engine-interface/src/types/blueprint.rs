@@ -30,7 +30,7 @@ pub struct BlueprintId {
 }
 
 impl BlueprintId {
-    pub fn new(package_address: &PackageAddress, blueprint_name: &str) -> Self {
+    pub fn new<S: ToString>(package_address: &PackageAddress, blueprint_name: S) -> Self {
         BlueprintId {
             package_address: *package_address,
             blueprint_name: blueprint_name.to_string(),

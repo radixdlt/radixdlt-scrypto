@@ -1,6 +1,9 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{
+    PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
+};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -8,11 +11,14 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
@@ -68,6 +74,17 @@ impl IdentityNativePackage {
             }
         );
 
+        let method_auth_template = method_auth_template! {
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
+
+            SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -78,7 +95,9 @@ impl IdentityNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions,
-                    event_schema: [].into()
+                    event_schema: [].into(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }
@@ -107,7 +126,7 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_advanced(input.authority_rules, api)?;
+                let rtn = IdentityBlueprint::create_advanced(input.owner_rule, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -180,35 +199,32 @@ impl IdentityNativePackage {
     }
 }
 
+const SECURIFY_ROLE: &'static str = "securify";
+
 struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
+    const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 
-    fn authority_rules() -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
-        authority_rules.set_royalty_authority(rule!(require_owner()), rule!(deny_all));
-        authority_rules
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!()
     }
 }
 
-impl PresecurifiedAccessRules for SecurifiedIdentity {
-    const PACKAGE: PackageAddress = IDENTITY_PACKAGE;
-}
+impl PresecurifiedAccessRules for SecurifiedIdentity {}
 
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create_advanced<Y>(
-        authority_rules: AuthorityRules,
+        owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedIdentity::create_advanced(authority_rules, api)?;
+        let access_rules = SecurifiedIdentity::create_advanced(owner_rule, api)?;
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();

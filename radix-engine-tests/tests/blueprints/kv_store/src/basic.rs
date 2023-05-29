@@ -9,13 +9,19 @@ mod basic {
     impl Basic {
         pub fn new() -> Global<Basic> {
             let map = KeyValueStore::new();
-            Self { map }.instantiate().globalize()
+            Self { map }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn new_with_entry(key: String, value: String) -> Global<Basic> {
             let map = KeyValueStore::new();
             map.insert(key, value);
-            Self { map }.instantiate().globalize()
+            Self { map }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn multiple_reads() -> Global<Basic> {
@@ -28,7 +34,10 @@ mod basic {
                 assert_eq!(*maybe_entry.unwrap(), "hello");
                 assert_eq!(*maybe_entry2.unwrap(), "hello2");
             }
-            Self { map }.instantiate().globalize()
+            Self { map }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn remove_from_local() -> Global<Basic> {
@@ -41,7 +50,10 @@ mod basic {
                 assert!(maybe_entry.is_none());
             }
 
-            Self { map }.instantiate().globalize()
+            Self { map }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn insert(&mut self, key: String, value: String) {
@@ -73,7 +85,10 @@ mod kv_vault {
             let vault = Vault::with_bucket(bucket);
             let map = KeyValueStore::new();
             map.insert("key".to_string(), vault);
-            Self { map }.instantiate().globalize()
+            Self { map }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn remove(&mut self, key: String) -> Option<Vault> {

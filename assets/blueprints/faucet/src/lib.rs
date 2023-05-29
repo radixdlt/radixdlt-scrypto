@@ -15,7 +15,9 @@ mod faucet {
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .prepare_to_globalize(OwnerRole::None)
+            .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .globalize()
         }
 
         /// Gives away tokens.

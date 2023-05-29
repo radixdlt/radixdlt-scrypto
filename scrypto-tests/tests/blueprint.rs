@@ -12,13 +12,18 @@ mod empty {
 
 #[blueprint]
 mod simple {
+    use scrypto::prelude::OwnerRole;
+
     struct Simple {
         state: u32,
     }
 
     impl Simple {
         pub fn new() -> Global<Simple> {
-            Self { state: 0 }.instantiate().globalize()
+            Self { state: 0 }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn get_state(&self) -> u32 {

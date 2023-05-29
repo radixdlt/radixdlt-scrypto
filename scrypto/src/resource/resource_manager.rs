@@ -52,105 +52,72 @@ impl ResourceManager {
 
     pub fn set_mintable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_rule(MINT_AUTHORITY, access_rule);
+        access_rules.update_role_rule(MINT_ROLE, access_rule);
     }
 
     pub fn set_burnable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_rule(RESOURCE_MANAGER_BURN_IDENT, access_rule);
-    }
-
-    fn vault_blueprint_name(&self) -> &str {
-        if self
-            .0
-             .0
-             .0
-            .as_node_id()
-            .is_global_fungible_resource_manager()
-        {
-            FUNGIBLE_VAULT_BLUEPRINT
-        } else {
-            NON_FUNGIBLE_VAULT_BLUEPRINT
-        }
+        access_rules.update_role_rule(RESOURCE_MANAGER_BURN_IDENT, access_rule);
     }
 
     pub fn set_withdrawable(&self, access_rule: AccessRule) {
-        let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_rule_on_inner_blueprint(
-            blueprint_name,
-            VAULT_TAKE_IDENT,
-            access_rule,
-        );
+        access_rules.update_role_rule(WITHDRAW_ROLE, access_rule);
     }
 
     pub fn set_depositable(&self, access_rule: AccessRule) {
-        let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_rule_on_inner_blueprint(
-            blueprint_name,
-            VAULT_PUT_IDENT,
-            access_rule,
-        );
+        access_rules.update_role_rule(DEPOSIT_ROLE, access_rule);
     }
 
     pub fn set_recallable(&self, access_rule: AccessRule) {
-        let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_rule_on_inner_blueprint(
-            blueprint_name,
-            VAULT_RECALL_IDENT,
-            access_rule,
-        );
+        access_rules.update_role_rule(RECALL_ROLE, access_rule);
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_metadata_authority_rule(access_rule);
+        access_rules.update_role_rule(SET_METADATA_ROLE, access_rule);
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules
-            .set_authority_rule(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT, access_rule);
+        access_rules.update_role_rule(UPDATE_NON_FUNGIBLE_DATA_ROLE, access_rule);
     }
 
     pub fn lock_mintable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(MINT_AUTHORITY, AccessRule::DenyAll);
+        access_rules.update_role_mutability(MINT_ROLE, RoleList::none());
     }
 
     pub fn lock_burnable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(RESOURCE_MANAGER_BURN_IDENT, AccessRule::DenyAll);
+        access_rules.update_role_mutability(BURN_ROLE, RoleList::none());
     }
 
     pub fn lock_updateable_metadata(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_metadata_mutability(AccessRule::DenyAll);
+        access_rules.update_role_mutability(SET_METADATA_ROLE, RoleList::none());
     }
 
     pub fn lock_updateable_non_fungible_data(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(
-            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-            AccessRule::DenyAll,
-        );
+        access_rules.update_role_mutability(UPDATE_NON_FUNGIBLE_DATA_ROLE, RoleList::none());
     }
 
     pub fn lock_withdrawable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(VAULT_TAKE_IDENT, AccessRule::DenyAll);
+        access_rules.update_role_mutability(WITHDRAW_ROLE, RoleList::none());
     }
 
     pub fn lock_depositable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(VAULT_PUT_IDENT, AccessRule::DenyAll);
+        access_rules.update_role_mutability(DEPOSIT_ROLE, RoleList::none());
     }
 
     pub fn lock_recallable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(VAULT_RECALL_IDENT, AccessRule::DenyAll);
+        access_rules.update_role_mutability(RECALL_ROLE, RoleList::none());
     }
 }
 

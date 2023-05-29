@@ -9,6 +9,8 @@ use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::prelude::*;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::*;
 use scrypto::modules::Attachable;
 
@@ -67,11 +69,11 @@ impl Metadata {
         self.call_raw(METADATA_SET_IDENT, buffer);
     }
 
-    pub fn get<K: AsRef<str>, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
+    pub fn get<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
         let rtn = self.call_raw(
             METADATA_GET_IDENT,
             scrypto_encode(&MetadataGetInput {
-                key: name.as_ref().to_owned(),
+                key: name.to_string(),
             })
             .unwrap(),
         );
@@ -107,15 +109,15 @@ impl Metadata {
         }
     }
 
-    pub fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
+    pub fn get_string<K: ToString>(&self, name: K) -> Result<String, MetadataError> {
         self.get(name)
     }
 
-    pub fn remove<K: AsRef<str>>(&self, name: K) -> bool {
+    pub fn remove<K: ToString>(&self, name: K) -> bool {
         let rtn = self.call(
             METADATA_REMOVE_IDENT,
             &MetadataRemoveInput {
-                key: name.as_ref().to_owned(),
+                key: name.to_string(),
             },
         );
 

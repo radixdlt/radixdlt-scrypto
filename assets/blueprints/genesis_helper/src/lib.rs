@@ -51,6 +51,16 @@ pub enum GenesisDataChunk {
 
 #[blueprint]
 mod genesis_helper {
+    define_static_auth! {
+        roles {
+            system
+        },
+        methods {
+            ingest_data_chunk => system;
+            wrap_up => system;
+        }
+    }
+
     struct GenesisHelper {
         consensus_manager: ComponentAddress,
         xrd_vault: Vault,
@@ -72,18 +82,12 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .authority_rule(
-                "ingest_data_chunk",
-                rule!(require("system")),
-                rule!(deny_all),
-            )
-            .authority_rule("wrap_up", rule!(require("system")), rule!(deny_all))
-            .authority_rule(
-                "system",
-                rule!(require(system_role.clone())),
-                rule!(require(system_role)),
-            )
-            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .prepare_to_globalize(OwnerRole::None)
+            .roles(roles! {
+                system => rule!(require(system_role.clone())), mutable_by: system;
+            })
+            .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .globalize()
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {

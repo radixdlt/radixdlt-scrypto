@@ -49,6 +49,51 @@ pub struct PackageSchema {
     pub blueprints: BTreeMap<String, BlueprintSchema>,
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct SchemaMethodKey {
+    pub module_id: u8,
+    pub ident: String,
+}
+
+impl SchemaMethodKey {
+    pub fn main<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 0u8,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn metadata<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 1u8,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn royalty<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 2u8,
+            ident: method_ident.to_string(),
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum SchemaMethodPermission {
+    Public,
+    Protected(Vec<String>),
+}
+
+impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
+    fn from(value: [&str; N]) -> Self {
+        SchemaMethodPermission::Protected(
+            value.to_vec().into_iter().map(|s| s.to_string()).collect(),
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
@@ -64,6 +109,10 @@ pub struct BlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    // TODO: Move out of schema
+    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -154,7 +203,9 @@ impl Default for BlueprintSchema {
             collections: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
-            event_schema: Default::default(),
+            event_schema: BTreeMap::default(),
+            method_auth_template: BTreeMap::default(),
+            outer_method_auth_template: BTreeMap::default(),
         }
     }
 }
@@ -173,6 +224,9 @@ pub struct IndexedBlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -199,6 +253,8 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
+            method_permissions_instance: schema.method_auth_template,
+            outer_method_permissions_instance: schema.outer_method_auth_template,
         }
     }
 }

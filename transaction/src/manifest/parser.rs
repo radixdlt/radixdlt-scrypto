@@ -77,8 +77,7 @@ pub enum InstructionIdent {
     RemoveMetadata,
     SetComponentRoyaltyConfig,
     ClaimComponentRoyalty,
-    SetAuthorityAccessRule,
-    SetAuthorityMutability,
+    UpdateRole,
 
     // ==============
     // Call main-method aliases
@@ -165,8 +164,7 @@ impl InstructionIdent {
             "REMOVE_METADATA" => InstructionIdent::RemoveMetadata,
             "SET_COMPONENT_ROYALTY_CONFIG" => InstructionIdent::SetComponentRoyaltyConfig,
             "CLAIM_COMPONENT_ROYALTY" => InstructionIdent::ClaimComponentRoyalty,
-            "SET_AUTHORITY_ACCESS_RULE" => InstructionIdent::SetAuthorityAccessRule,
-            "SET_AUTHORITY_MUTABILITY" => InstructionIdent::SetAuthorityMutability,
+            "UPDATE_ROLE" => InstructionIdent::UpdateRole,
 
             // ==============
             // Call main-method aliases
@@ -611,11 +609,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::SetAuthorityAccessRule => Instruction::SetAuthorityAccessRule {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            InstructionIdent::SetAuthorityMutability => Instruction::SetAuthorityMutability {
+            InstructionIdent::UpdateRole => Instruction::UpdateRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

@@ -2,31 +2,32 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod cross_component {
+    define_static_auth! {
+        methods {
+            put_auth => PUBLIC;
+            cross_component_call => PUBLIC;
+            get_component_state => OWNER;
+        }
+    }
+
     struct CrossComponent {
         secret: String,
         auth_vault: Option<Vault>,
     }
 
     impl CrossComponent {
-        pub fn create_component_with_auth(
-            authority_rules: AuthorityRules,
-        ) -> Global<CrossComponent> {
+        pub fn create_component_with_auth(access_rule: AccessRule) -> Global<CrossComponent> {
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
             .instantiate()
-            .authority_rules(authority_rules)
+            .prepare_to_globalize(OwnerRole::Fixed(access_rule))
             .globalize()
         }
 
         pub fn create_component() -> Global<CrossComponent> {
-            let component = Self {
-                secret: "Secret".to_owned(),
-                auth_vault: None,
-            }
-            .instantiate();
-            component.globalize()
+            Self::create_component_with_auth(rule!(allow_all))
         }
 
         pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {

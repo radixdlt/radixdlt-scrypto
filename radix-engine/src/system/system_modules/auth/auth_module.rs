@@ -7,8 +7,7 @@ use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
-    MethodAccessRulesSubstate, NodeAuthorityRules,
+    AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -23,20 +22,28 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    CycleCheckError(CycleCheckError<AuthorityKey>),
+    NoMethod(FnIdentifier),
+    UsedReservedRole(String),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum FailedAccessRules {
+    AuthorityList(Vec<(RoleKey, Vec<AccessRule>)>),
+    AccessRule(Vec<AccessRule>),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub module_id: ObjectModuleId,
-    pub access_rule_stack: Vec<AccessRule>,
+    pub failed_access_rules: FailedAccessRules,
     pub fn_identifier: FnIdentifier,
 }
 
@@ -52,7 +59,12 @@ pub struct AuthModule {
 
 pub enum AuthorizationCheckResult {
     Authorized,
-    Failed(ObjectModuleId, Vec<AccessRule>),
+    Failed(Vec<AccessRule>),
+}
+
+pub enum AuthorityListAuthorizationResult {
+    Authorized,
+    Failed(Vec<(RoleKey, Vec<AccessRule>)>),
 }
 
 impl AuthModule {
@@ -102,68 +114,39 @@ impl AuthModule {
         let node_id = callee.node_id;
         let module_id = callee.module_id;
         let ident = callee.ident.as_str();
-        let acting_location = if callee.object_info.global {
+        let acting_location = if callee.module_object_info.global {
             ActingLocation::AtBarrier
         } else {
             ActingLocation::AtLocalBarrier
         };
 
-        match (node_id, module_id, ident) {
-            (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
-                let access_rule =
-                    AccessRulesNativePackage::authorization(&node_id, ident, args, api)?;
+        let info = api.get_object_info(&node_id)?;
+        let method_key = MethodKey::new(module_id, ident);
 
-                let auth_result = Authorization::check_authorization_against_access_rule(
-                    acting_location,
-                    *auth_zone_id,
-                    &NodeAuthorityRules::new(),
-                    module_id,
-                    &access_rule,
-                    api,
-                )?;
-                match auth_result {
-                    AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
-                        return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                            AuthError::Unauthorized(Box::new(Unauthorized {
-                                module_id,
-                                access_rule_stack,
-                                fn_identifier: callee.fn_identifier(),
-                            })),
-                        )));
-                    }
-                }
-            }
-            (node_id, module_id, ..) => {
-                let method_key = MethodKey::new(module_id, ident);
+        if let Some(parent) = info.outer_object {
+            Self::check_authorization_against_access_rules(
+                callee,
+                auth_zone_id,
+                acting_location,
+                parent.as_node_id(),
+                ObjectKey::InnerBlueprint(info.blueprint.blueprint_name.clone()),
+                method_key.clone(),
+                args,
+                api,
+            )?;
+        }
 
-                let info = api.get_object_info(&node_id)?;
-
-                if let Some(parent) = info.outer_object {
-                    let method_key = MethodKey::new(module_id, ident);
-                    Self::check_authorization_against_access_rules(
-                        callee.fn_identifier(),
-                        auth_zone_id,
-                        acting_location,
-                        parent.as_node_id(),
-                        ObjectKey::InnerBlueprint(info.blueprint.blueprint_name),
-                        method_key,
-                        api,
-                    )?;
-                }
-
-                if info.global {
-                    Self::check_authorization_against_access_rules(
-                        callee.fn_identifier(),
-                        auth_zone_id,
-                        acting_location,
-                        &node_id,
-                        ObjectKey::SELF,
-                        method_key,
-                        api,
-                    )?;
-                }
-            }
+        if info.global {
+            Self::check_authorization_against_access_rules(
+                callee,
+                auth_zone_id,
+                acting_location,
+                &node_id,
+                ObjectKey::SELF,
+                method_key,
+                args,
+                api,
+            )?;
         }
 
         Ok(())
@@ -173,16 +156,17 @@ impl AuthModule {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        fn_identifier: FnIdentifier, // TODO: Cleanup
+        callee: &MethodActor, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        receiver: &NodeId,
+        access_rules_of: &NodeId,
         object_key: ObjectKey,
-        key: MethodKey,
+        method_key: MethodKey,
+        args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
-            receiver,
+            access_rules_of,
             ACCESS_RULES_FIELD_PARTITION,
             &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
@@ -190,71 +174,102 @@ impl AuthModule {
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
+        api.kernel_drop_lock(handle)?;
 
-        let access_rules_config = match object_key {
-            ObjectKey::SELF => &access_rules.access_rules,
-            ObjectKey::InnerBlueprint(blueprint_name) => {
-                let child_rules = access_rules
-                    .inner_blueprint_access_rules
-                    .get(&blueprint_name)
-                    .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                        AuthError::InnerBlueprintDoesNotExist(blueprint_name),
-                    )))?;
-                child_rules
+        // TODO: Cleanup logic here
+        let node_authority_rules = match &object_key {
+            ObjectKey::SELF => {
+                let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
+                schema.method_permissions_instance
+            }
+            ObjectKey::InnerBlueprint(_blueprint_name) => {
+                let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
+                schema.outer_method_permissions_instance
             }
         };
 
-        Self::check_authorization_against_config(
-            fn_identifier,
+        let permission = match method_key.module_id {
+            ObjectModuleId::AccessRules => {
+                match &object_key {
+                    ObjectKey::SELF => {}
+                    ObjectKey::InnerBlueprint(..) => return Ok(()),
+                }
+                AccessRulesNativePackage::authorization(
+                    access_rules_of,
+                    method_key.ident.as_str(),
+                    args,
+                    api,
+                )?
+            }
+            _ => {
+                let method_key = SchemaMethodKey {
+                    ident: method_key.ident,
+                    module_id: method_key.module_id.to_u8(),
+                };
+                if let Some(permission) = node_authority_rules.get(&method_key) {
+                    match permission {
+                        SchemaMethodPermission::Public => MethodPermission::Public,
+                        SchemaMethodPermission::Protected(list) => {
+                            MethodPermission::Protected(list.clone().into())
+                        }
+                    }
+                } else {
+                    match &object_key {
+                        ObjectKey::SELF => {
+                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                AuthError::NoMethod(callee.fn_identifier()),
+                            )));
+                        }
+                        _ => return Ok(()),
+                    }
+                }
+            }
+        };
+
+        let role_list = match permission {
+            MethodPermission::Public => return Ok(()),
+            MethodPermission::Protected(list) => list,
+        };
+
+        Self::check_authorization_against_role_list(
+            callee.fn_identifier(),
             auth_zone_id,
             acting_location,
-            &access_rules_config,
-            &key,
+            access_rules_of,
+            &access_rules.roles,
+            &role_list,
             api,
         )?;
-
-        api.kernel_drop_lock(handle)?;
 
         Ok(())
     }
 
-    pub fn check_authorization_against_config<
+    pub fn check_authorization_against_role_list<
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
         fn_identifier: FnIdentifier, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        access_rules: &NodeAuthorityRules,
-        key: &MethodKey,
+        access_rules_of: &NodeId,
+        access_rules: &BTreeMap<RoleKey, AccessRule>,
+        role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        /*
-        let authority_key = AuthorityKey::Module(key.module_id.clone(), key.ident.clone());
-        if access_rules.rules.get(authority_key) {
-        }
-
-        let authority = match access_rules.rules.get(authority_key) {
-            Some(entry) => &entry.authority,
-            None => return Ok(()),
-        };
-         */
-
-        let result = Authorization::check_authorization_against_access_rule(
+        let result = Authorization::check_authorization_against_role_list(
             acting_location,
             *auth_zone_id,
+            access_rules_of,
             access_rules,
-            key.module_id,
-            &rule!(require(key.ident.as_str())),
+            role_list,
             api,
         )?;
         match result {
-            AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+            AuthorityListAuthorizationResult::Authorized => Ok(()),
+            AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
                 Err(RuntimeError::ModuleError(ModuleError::AuthError(
                     AuthError::Unauthorized(Box::new(Unauthorized {
-                        module_id,
-                        access_rule_stack,
+                        failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
                         fn_identifier,
                     })),
                 )))
@@ -291,18 +306,17 @@ impl AuthModule {
                     let auth_result = Authorization::check_authorization_against_access_rule(
                         acting_location,
                         auth_zone_id,
-                        &NodeAuthorityRules::new(),
-                        ObjectModuleId::Main, // Mocked, does it make sense to add FunctionAuthorities?
                         &access_rule,
                         &mut system,
                     )?;
                     match auth_result {
                         AuthorizationCheckResult::Authorized => {}
-                        AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                        AuthorizationCheckResult::Failed(access_rule_stack) => {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                 AuthError::Unauthorized(Box::new(Unauthorized {
-                                    module_id,
-                                    access_rule_stack,
+                                    failed_access_rules: FailedAccessRules::AccessRule(
+                                        access_rule_stack,
+                                    ),
                                     fn_identifier: callee.fn_identifier(),
                                 })),
                             )));

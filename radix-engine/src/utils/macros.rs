@@ -13,3 +13,18 @@ macro_rules! event_schema {
         }
     };
 }
+
+#[macro_export]
+macro_rules! method_auth_template {
+    ( $($method:expr => $entry:expr );* ) => ({
+        let mut methods: BTreeMap<SchemaMethodKey, SchemaMethodPermission>
+            = BTreeMap::new();
+        $(
+            methods.insert($method, $entry.into());
+        )*
+        methods
+    });
+    ( $($key:expr => $entry:expr;)* ) => (
+        method_auth_template!{$($key => $entry);*}
+    );
+}

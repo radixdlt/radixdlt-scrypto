@@ -476,14 +476,14 @@ where
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
         match actor_object_type {
             ActorObjectType::OuterObject => {
-                let address = method.object_info.outer_object.unwrap();
+                let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
                 Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
-                let info = method.object_info.clone();
+                let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
                 Ok((node_id, object_module_id.base_partition_num(), info, schema))
@@ -666,9 +666,10 @@ where
             .as_typed()
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
+
         match type_info {
             TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
-                *global = true
+                *global = true;
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -950,7 +951,7 @@ where
                     }
                 };
 
-                (receiver_info, global_address)
+                (receiver_info.clone(), global_address)
             }
             // TODO: Check if type has these object modules
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
@@ -994,6 +995,7 @@ where
             actor: Actor::method(
                 global_address,
                 identifier,
+                receiver_info,
                 object_info,
                 instance_context,
                 direct_access,
@@ -1598,7 +1600,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let object_info = actor
             .try_as_method()
-            .map(|m| m.object_info.clone())
+            .map(|m| m.module_object_info.clone())
             .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
 
         Ok(object_info)
@@ -1762,29 +1764,10 @@ where
             .last_auth_zone()
             .expect("Missing auth zone");
 
-        let config = {
-            let node_id = self.actor_get_global_address()?.into_node_id();
-            let handle = self.kernel_lock_substate(
-                &node_id,
-                ACCESS_RULES_FIELD_PARTITION,
-                &AccessRulesField::AccessRules.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
-            let access_rules = self
-                .kernel_read_substate(handle)?
-                .as_typed::<super::node_modules::access_rules::MethodAccessRulesSubstate>()
-                .unwrap();
-            self.kernel_drop_lock(handle)?;
-            access_rules.access_rules
-        };
-
         // Authorize
         let auth_result = Authorization::check_authorization_against_access_rule(
             ActingLocation::InCallFrame,
             auth_zone_id,
-            &config,
-            ObjectModuleId::Main,
             &rule,
             self,
         )?;
@@ -1850,7 +1833,8 @@ where
             // Getting the package address and blueprint name associated with the actor
             let blueprint_id = match actor {
                 Actor::Method(MethodActor {
-                    ref object_info, ..
+                    module_object_info: ref object_info,
+                    ..
                 }) => Ok(object_info.blueprint.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(

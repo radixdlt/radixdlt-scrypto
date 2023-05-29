@@ -6,11 +6,20 @@ use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, COMPONENT_ADDRESS_ID,
 };
-use radix_engine_interface::api::node_modules::metadata::MetadataVal;
+use radix_engine_common::prelude::{
+    OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
+};
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules};
-use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::blueprints::resource::{
+    MethodPermission, OwnerRole, Roles, OWNER_ROLE,
+};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -37,7 +46,12 @@ pub trait HasStub {
     type Stub: ObjectStub;
 }
 
-pub trait ComponentState: HasStub + ScryptoEncode + ScryptoDecode {
+pub trait HasMethods {
+    type Permissions: MethodMapping<MethodPermission>;
+    type Royalties: MethodMapping<MethodRoyalty>;
+}
+
+pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
     fn instantiate(self) -> Owned<Self> {
@@ -133,87 +147,104 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Owned<T> {
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
-impl<C: HasStub> Owned<C> {
-    pub fn metadata<K: AsRef<str>, V: MetadataVal>(self, name: K, value: V) -> Globalizing<C> {
-        let metadata_stub = Metadata::new();
-        metadata_stub.set(name, value);
-        Globalizing::new_with_metadata(self.0, metadata_stub)
-    }
+impl<C: HasStub + HasMethods> Owned<C> {
+    pub fn prepare_to_globalize(self, owner_entry: OwnerRole) -> Globalizing<C> {
+        let mut roles = Roles::new();
+        roles.define_role(OWNER_ROLE, owner_entry.to_role_entry(OWNER_ROLE));
 
-    pub fn royalty(self, method: &str, amount: u32) -> Globalizing<C> {
-        let mut royalty_config = RoyaltyConfig::default();
-        royalty_config.set_rule(method, amount);
-        Globalizing::new_with_royalty(self.0, royalty_config)
-    }
-
-    pub fn royalty_default(self, amount: u32) -> Globalizing<C> {
-        let mut royalty_config = RoyaltyConfig::default();
-        royalty_config.default_rule = amount;
-        Globalizing::new_with_royalty(self.0, royalty_config)
-    }
-
-    pub fn authority_rules(self, authority_rules: AuthorityRules) -> Globalizing<C> {
-        Globalizing::new_with_authorities(self.0, authority_rules)
-    }
-
-    pub fn authority_rule<A: Into<AccessRule>, B: Into<AccessRule>>(
-        self,
-        name: &str,
-        entry: A,
-        mutability: B,
-    ) -> Globalizing<C> {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(AuthorityKey::main(name), entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, authority_rules)
-    }
-
-    pub fn metadata_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
-        self,
-        entry: A,
-        mutability: B,
-    ) -> Globalizing<C> {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_metadata_authority(entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, authority_rules)
-    }
-
-    pub fn royalty_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
-        self,
-        entry: A,
-        mutability: B,
-    ) -> Globalizing<C> {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_royalty_authority(entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, authority_rules)
-    }
-
-    pub fn owner_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
-        self,
-        entry: A,
-        mutability: B,
-    ) -> Globalizing<C> {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_authority(entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, authority_rules)
-    }
-
-    pub fn globalize(self) -> Global<C> {
-        let globalizing: Globalizing<C> = Globalizing::new_with_metadata(self.0, Metadata::new());
-        globalizing.globalize()
-    }
-
-    pub fn globalize_at_address(self, address: ComponentAddress) -> Global<C> {
-        let globalizing: Globalizing<C> = Globalizing::new_with_metadata(self.0, Metadata::new());
-        globalizing.globalize_at_address(address)
+        Globalizing {
+            stub: self.0,
+            metadata: None,
+            royalty: RoyaltyConfig::default(),
+            roles,
+            address: None,
+        }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum MethodRoyalty {
+    Free,
+    Charge(u32),
+}
+
+impl From<u32> for MethodRoyalty {
+    fn from(value: u32) -> Self {
+        Self::Charge(value)
+    }
+}
+
+pub trait MethodMapping<T> {
+    const MODULE_ID: ObjectModuleId;
+
+    fn to_mapping(self) -> Vec<(String, T)>;
+    fn methods() -> Vec<&'static str>;
+}
+
+pub struct RoyaltyMethods<T> {
+    pub set_royalty_config: T,
+    pub claim_royalty: T,
+}
+
+impl<T> MethodMapping<T> for RoyaltyMethods<T> {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
+
+    fn to_mapping(self) -> Vec<(String, T)> {
+        vec![
+            (
+                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                self.set_royalty_config,
+            ),
+            (
+                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                self.claim_royalty,
+            ),
+        ]
+    }
+
+    fn methods() -> Vec<&'static str> {
+        vec![
+            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+            COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+        ]
+    }
+}
+
+pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
+    pub method_royalties: R,
+}
+
+pub struct MetadataMethods<T> {
+    pub set: T,
+    pub get: T,
+    pub remove: T,
+}
+
+impl<T> MethodMapping<T> for MetadataMethods<T> {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
+
+    fn to_mapping(self) -> Vec<(String, T)> {
+        vec![
+            (METADATA_SET_IDENT.to_string(), self.set),
+            (METADATA_GET_IDENT.to_string(), self.get),
+            (METADATA_REMOVE_IDENT.to_string(), self.remove),
+        ]
+    }
+
+    fn methods() -> Vec<&'static str> {
+        vec![
+            METADATA_SET_IDENT,
+            METADATA_GET_IDENT,
+            METADATA_REMOVE_IDENT,
+        ]
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
-    pub authority_rules: AuthorityRules,
+    pub roles: Roles,
     pub address: Option<ComponentAddress>,
 }
 
@@ -225,108 +256,42 @@ impl<C: HasStub> Deref for Globalizing<C> {
     }
 }
 
-impl<C: HasStub> Globalizing<C> {
-    fn new_with_metadata(stub: C::Stub, metadata: Metadata) -> Self {
-        Self {
-            stub,
-            metadata: Some(metadata),
-            royalty: RoyaltyConfig::default(),
-            authority_rules: AuthorityRules::new(),
-            address: None,
+impl<C: HasStub + HasMethods> Globalizing<C> {
+    pub fn roles(mut self, roles: Roles) -> Self {
+        self.roles = roles;
+        self
+    }
+
+    pub fn metadata(mut self, metadata: Metadata) -> Self {
+        if self.metadata.is_some() {
+            panic!("Metadata already set.");
         }
+        self.metadata = Some(metadata);
+
+        self
     }
 
-    fn new_with_royalty(stub: C::Stub, royalty: RoyaltyConfig) -> Self {
-        Self {
-            stub,
-            metadata: None,
-            royalty,
-            authority_rules: AuthorityRules::new(),
-            address: None,
+    pub fn royalties(mut self, royalties: C::Royalties) -> Self {
+        for (method, royalty) in royalties.to_mapping() {
+            match royalty {
+                MethodRoyalty::Free => {}
+                MethodRoyalty::Charge(amount) => self.royalty.set_rule(method, amount),
+            }
         }
-    }
 
-    fn new_with_authorities(stub: C::Stub, authority_rules: AuthorityRules) -> Self {
-        Self {
-            stub,
-            metadata: None,
-            royalty: RoyaltyConfig::default(),
-            authority_rules,
-            address: None,
-        }
-    }
-
-    pub fn metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
-        let metadata = self.metadata.get_or_insert(Metadata::new());
-        metadata.set(name, value);
         self
     }
 
-    pub fn royalty(mut self, method: &str, amount: u32) -> Self {
-        self.royalty.set_rule(method, amount);
+    pub fn with_address(mut self, address: ComponentAddress) -> Self {
+        self.address = Some(address);
         self
-    }
-
-    pub fn royalty_default(mut self, amount: u32) -> Self {
-        self.royalty.default_rule = amount;
-        self
-    }
-
-    pub fn authority_rules(mut self, authority_rules: AuthorityRules) -> Self {
-        self.authority_rules = authority_rules;
-        self
-    }
-
-    pub fn authority_rule<A: Into<AccessRule>, B: Into<AccessRule>>(
-        mut self,
-        name: &str,
-        entry: A,
-        mutability: B,
-    ) -> Self {
-        self.authority_rules
-            .set_main_authority_rule(name, entry.into(), mutability.into());
-        self
-    }
-
-    pub fn metadata_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
-        mut self,
-        entry: A,
-        mutability: B,
-    ) -> Self {
-        self.authority_rules
-            .set_metadata_authority(entry.into(), mutability.into());
-        self
-    }
-
-    pub fn royalty_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
-        mut self,
-        entry: A,
-        mutability: B,
-    ) -> Self {
-        self.authority_rules
-            .set_royalty_authority(entry.into(), mutability.into());
-        self
-    }
-
-    pub fn owner_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
-        mut self,
-        entry: A,
-        mutability: B,
-    ) -> Self {
-        self.authority_rules
-            .set_owner_authority(entry.into(), mutability.into());
-        self
-    }
-
-    pub fn globalize_at_address(mut self, address: ComponentAddress) -> Global<C> {
-        let _ = self.address.insert(address);
-        self.globalize()
     }
 
     pub fn globalize(mut self) -> Global<C> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = Royalty::new(self.royalty);
-        let access_rules = AccessRules::new(self.authority_rules);
+
+        let access_rules = AccessRules::new(self.roles);
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),

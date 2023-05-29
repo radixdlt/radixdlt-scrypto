@@ -2,13 +2,24 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata_component {
+    define_static_auth! {
+        metadata {
+            set => PUBLIC;
+            remove => PUBLIC;
+            get => PUBLIC;
+        }
+    }
+
     struct MetadataComponent {}
 
     impl MetadataComponent {
         pub fn new(key: String, value: String) {
             let global = Self {}
                 .instantiate()
-                .metadata(key.clone(), value.clone())
+                .prepare_to_globalize(OwnerRole::None)
+                .metadata(metadata! {
+                    key.clone() => value.clone()
+                })
                 .globalize();
 
             let metadata = global.metadata();
@@ -19,7 +30,7 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let global = MetadataComponent {}
                 .instantiate()
-                .metadata_authority(AccessRule::AllowAll, AccessRule::DenyAll)
+                .prepare_to_globalize(OwnerRole::None)
                 .globalize();
 
             let metadata = global.metadata();

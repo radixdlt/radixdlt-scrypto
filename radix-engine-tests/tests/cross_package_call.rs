@@ -29,7 +29,7 @@ fn test_call_package_address_undeclared() {
         schema,
         BTreeMap::new(),
         BTreeMap::new(),
-        AuthorityRules::new(),
+        OwnerRole::None,
     );
 
     let manifest = ManifestBuilder::new()

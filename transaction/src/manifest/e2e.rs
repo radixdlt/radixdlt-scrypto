@@ -28,7 +28,7 @@ PUBLISH_PACKAGE_ADVANCED
     )
     Map<String, Tuple>()
     Map<String, Enum>()
-    Map<Enum, Tuple>()
+    Enum<0u8>()
 ;
 "##,
             ),
@@ -391,8 +391,7 @@ SET_PACKAGE_ROYALTY_CONFIG
         "Blueprint" => Tuple(
             Map<String, U32>(
                 "method" => 1u32
-            ),
-            0u32
+            )
         )
     )
 ;
@@ -401,8 +400,7 @@ SET_COMPONENT_ROYALTY_CONFIG
     Tuple(
         Map<String, U32>(
             "method" => 1u32
-        ),
-        0u32
+        )
     )
 ;
 CLAIM_PACKAGE_ROYALTY
@@ -584,7 +582,7 @@ REMOVE_METADATA
     }
 
     #[test]
-    fn test_access_rule() {
+    fn test_update_role() {
         compile_and_decompile_with_inversion_test(
             "access_rule",
             apply_address_replacements(include_str!("../../examples/access_rule/access_rule.rtm")),
@@ -592,10 +590,13 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-SET_AUTHORITY_ACCESS_RULE
+UPDATE_ROLE
     Address("${resource_address}")
     Enum<0u8>()
-    Enum<0u8>()
+    "auth"
+    Enum<1u8>(
+        Enum<0u8>()
+    )
     Enum<0u8>()
 ;
 "##,
@@ -912,7 +913,7 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Map<Enum, Tuple>()
+    Map<String, Tuple>()
 ;
 CREATE_ACCOUNT;
 "##,
@@ -947,7 +948,7 @@ CREATE_VALIDATOR
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Map<Enum, Tuple>()
+    Map<String, Tuple>()
 ;
 CREATE_IDENTITY;
 "##,

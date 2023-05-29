@@ -69,7 +69,7 @@ fn test_basic_transfer() {
         + 6031 /* DropLock */
         + 1680 /* DropNode */
         + 1140299 /* Invoke */
-        + 670706 /* LockSubstate */
+        + 652420 /* LockSubstate */
         + 8456 /* ReadSubstate */
         + 65000 /* RunNative */
         + 7500 /* RunSystem */
@@ -97,15 +97,17 @@ fn test_radiswap() {
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(
-            "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
-                .add_rule("instantiate_pool", 5)
-                .add_rule("add_liquidity", 1)
-                .add_rule("remove_liquidity", 1)
-                .add_rule("swap", 2)
-                .default(0),
+            "Radiswap".to_owned() => {
+                let mut config = RoyaltyConfig::default();
+                config.set_rule("instantiate_pool", 5);
+                config.set_rule("add_liquidity", 1);
+                config.set_rule("remove_liquidity", 1);
+                config.set_rule("swap", 2);
+                config
+            }
         ),
         btreemap!(),
-        AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
     // Instantiate radiswap
@@ -204,11 +206,11 @@ fn test_radiswap() {
         + 14393 /* DropLock */
         + 3675 /* DropNode */
         + 3395011 /* Invoke */
-        + 5956984 /* LockSubstate */
+        + 5958446 /* LockSubstate */
         + 20160 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
-        + 1524610 /* RunWasm */
+        + 1525810 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -233,13 +235,15 @@ fn test_flash_loan() {
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
         btreemap!(
-            "BasicFlashLoan".to_owned() => RoyaltyConfigBuilder::new()
-                .add_rule("instantiate_default", 5)
-                .add_rule("take_loan", 2)
-                .default(0),
+            "BasicFlashLoan".to_owned() => {
+                let mut config = RoyaltyConfig::default();
+                config.set_rule("instantiate_default", 5);
+                config.set_rule("take_loan", 2);
+                config
+            }
         ),
         btreemap!(),
-        AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
     // Instantiate flash_loan
@@ -315,11 +319,11 @@ fn test_flash_loan() {
         + 22829 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 7239656 /* LockSubstate */
+        + 7206518 /* LockSubstate */
         + 32368 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1307935 /* RunWasm */
+        + 1304730 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -351,7 +355,7 @@ fn test_publish_large_package() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
         .build();
 

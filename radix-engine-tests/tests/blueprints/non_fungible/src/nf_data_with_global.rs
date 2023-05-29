@@ -13,7 +13,10 @@ mod nf_data_with_global {
 
     impl NonFungibleWithGlobalTest {
         pub fn create_non_fungible_with_global() -> (Bucket, Bucket, Bucket) {
-            let global = NonFungibleWithGlobalTest {}.instantiate().globalize();
+            let global = NonFungibleWithGlobalTest {}
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
 
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible()
