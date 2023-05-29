@@ -99,10 +99,6 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
 #[cfg(test)]
 mod tests {
     use super::*;
-    use blake2::{
-        digest::{consts::U32, Digest},
-        Blake2b,
-    };
     use linreg::linear_regression_of;
     use plotters::prelude::*;
     use radix_engine_store_interface::{
@@ -150,7 +146,7 @@ mod tests {
         // and run read test
         run_read_test(&mut substate_db, &data_index_vector);
         // run read not found test
-        run_read_not_found_test(&mut substate_db, &data_index_vector);
+        run_read_not_found_test(&mut substate_db);
 
         // prepare data for linear approximation
         drop_highest_and_lowest_value(&mut substate_db);
@@ -182,7 +178,7 @@ mod tests {
         let data_index_vector = prepare_db(&mut substate_db);
         run_read_test(&mut substate_db, &data_index_vector);
         // run read not found test
-        run_read_not_found_test(&mut substate_db, &data_index_vector);
+        run_read_not_found_test(&mut substate_db);
 
         // prepare data for linear approximation
         drop_highest_and_lowest_value(&mut substate_db);
@@ -336,24 +332,23 @@ mod tests {
 
     fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
         substate_db: &mut S,
-        data_index_vector: &Vec<(DbPartitionKey, DbSortKey, usize)>,
     ) {
         println!("Read not found test start...");
 
         let mut data_index_vector_2: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
+        let mut rng = rand::thread_rng();
 
-        let mut p_key_cnt = COUNT;
-        let mut sort_key_value: usize = data_index_vector.len();
         for _ in 0..COUNT {
-            let plain_bytes = sort_key_value.to_be_bytes().to_vec();
-            let mut hashed_prefix: Vec<u8> = Blake2b::<U32>::digest(plain_bytes.clone()).to_vec();
-            hashed_prefix.extend(plain_bytes);
+            let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+            rng.fill(&mut node_id_value);
+            let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
+            let partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
-            let sort_key = DbSortKey(hashed_prefix);
-            sort_key_value += 1;
-
-            let partition_key = DbPartitionKey(p_key_cnt.to_be_bytes().to_vec());
-            p_key_cnt += 1;
+            let mut substate_key_value = [0u8; NodeId::LENGTH];
+            rng.fill(&mut substate_key_value);
+            let sort_key =
+                SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(substate_key_value.into()));
 
             data_index_vector_2.push((partition_key.clone(), sort_key));
         }
@@ -602,7 +597,7 @@ mod tests {
         let max = v.iter().max().unwrap().as_nanos();
         let avg = v.iter().sum::<Duration>().as_nanos() as usize / v.len();
         println!(
-            "Read not found times [ns]: min={} max={} avg={}",
+            "Read not found times [ns]: min={} max={} avg={}\n",
             min, max, avg
         );
     }
