@@ -6,6 +6,8 @@ use crate::types::*;
 pub struct IdAllocator {
     transaction_hash: Hash,
     next_id: u32,
+    // Mainly for checking if all allocated node ids are consumed at the end of transaction.
+    allocated_node_ids: IndexSet<NodeId>,
 }
 
 impl IdAllocator {
@@ -13,13 +15,36 @@ impl IdAllocator {
         Self {
             transaction_hash,
             next_id: 0u32,
+            allocated_node_ids: indexset!(),
         }
+    }
+
+    /// Called when the transaction is over.
+    /// Ensures all transaction-scoped allocated ids have been used.
+    pub fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+        if !self.allocated_node_ids.is_empty() {
+            return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
+                IdAllocationError::AllocatedIDsNotEmpty(self.allocated_node_ids.clone()),
+            )));
+        }
+        Ok(())
+    }
+
+    pub fn take_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        if !self.allocated_node_ids.remove(&node_id) {
+            return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
+                IdAllocationError::NodeIdWasNotAllocated(node_id),
+            )));
+        }
+        Ok(())
     }
 
     pub fn allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         let node_id = self
             .next_node_id(entity_type)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+
+        self.allocated_node_ids.insert(node_id);
 
         Ok(node_id)
     }
