@@ -1,5 +1,5 @@
 use arbitrary::{Arbitrary, Unstructured};
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::types::blueprints::package::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{

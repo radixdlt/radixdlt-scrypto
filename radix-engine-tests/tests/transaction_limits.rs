@@ -188,10 +188,9 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
-    let mut execution_config = ExecutionConfig::default();
+    let mut execution_config = ExecutionConfig::default().with_kernel_trace(true);
     // Setting maximum substate size to small value to activate transaction limit
     execution_config.max_substate_size = 10;
-    execution_config.kernel_trace = true;
     let receipt = test_runner.execute_transaction_with_config(
         prepared.get_executable(btreeset!()),
         &fee_config,
@@ -231,9 +230,8 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
-    let mut execution_config = ExecutionConfig::default();
+    let mut execution_config = ExecutionConfig::default().with_kernel_trace(true);
     execution_config.max_substate_size = SIZE as usize + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
-    execution_config.kernel_trace = true;
     let receipt = test_runner.execute_transaction_with_config(
         prepared.get_executable(btreeset!()),
         &fee_config,

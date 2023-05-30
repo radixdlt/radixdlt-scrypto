@@ -1,0 +1,24 @@
+[package]
+name = "radix-engine-profiling"
+version = "0.9.0"
+edition = "2021"
+
+[dependencies]
+radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false, optional = true }
+radix-engine-stores = { path = "../radix-engine-stores", default-features = false, optional = true }
+radix-engine-interface = { path = "../radix-engine-interface", default-features = false, optional = true }
+fixedstr = "0.2.9"
+shared_memory = { version = "0.12.4", optional = true }
+plotters = { version = "0.3.4", optional = true }
+linreg = { version = "0.2.0", optional = true }
+blake2 = { version = "0.10.6", default-features = false, optional = true }
+rand = { version = "0.8.5", optional = true }
+
+[lib]
+bench = false
+
+[features]
+default = []
+resource_tracker = ["dep:shared_memory"]
+rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-engine-stores/std", 
+           "radix-engine-store-interface/std", "radix-engine-interface/std"]
