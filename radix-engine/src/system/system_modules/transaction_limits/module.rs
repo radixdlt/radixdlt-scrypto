@@ -106,7 +106,6 @@ impl TransactionLimitsModule {
                 max_wasm_memory_used: self.wasm_max_memory,
                 max_invoke_payload_size: self.invoke_payload_max_size,
                 execution_cost_units_consumed: c.fee_summary.execution_cost_sum as usize,
-                royalties_cost_units_consumed: c.fee_summary.royalty_cost_sum as usize,
             },
             _ => ExecutionMetrics::default(),
         }

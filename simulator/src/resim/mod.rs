@@ -190,7 +190,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &mut substate_db,
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
-        &ExecutionConfig::standard().with_trace(trace),
+        &ExecutionConfig::default().with_kernel_trace(trace),
         &transaction
             .prepare()
             .map_err(Error::ConvertToPreparedError)?
@@ -261,7 +261,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_db,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::standard().with_trace(trace),
+                &ExecutionConfig::default().with_kernel_trace(trace),
                 &transaction
                     .prepare()
                     .map_err(Error::ConvertToPreparedError)?

@@ -143,7 +143,7 @@ impl CostingModule {
 
 fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     api: &mut Y,
-    cost_units: u32,
+    royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
     recipient_vault_id: NodeId,
 ) -> Result<(), RuntimeError> {
@@ -151,7 +151,7 @@ fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         .modules
         .costing
         .fee_reserve
-        .consume_royalty(cost_units, recipient, recipient_vault_id)
+        .consume_royalty(royalty_amount, recipient, recipient_vault_id)
         .map_err(|e| {
             RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
         })
@@ -261,8 +261,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .blueprint_royalty_configs
             .get(blueprint.blueprint_name.as_str())
             .map(|x| x.get_rule(ident).clone())
-            .unwrap_or(0);
-        if royalty_charge > 0 {
+            .unwrap_or(RoyaltyAmount::Free);
+        if royalty_charge.is_non_zero() {
             let vault_id = if let Some(vault) = substate.royalty_vault {
                 vault
             } else {
@@ -297,7 +297,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
-            if royalty_charge > 0 {
+            if royalty_charge.is_non_zero() {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
                     ROYALTY_FIELD_PARTITION,

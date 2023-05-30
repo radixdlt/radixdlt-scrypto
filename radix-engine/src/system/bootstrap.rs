@@ -205,7 +205,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
@@ -231,7 +231,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
@@ -252,7 +252,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")

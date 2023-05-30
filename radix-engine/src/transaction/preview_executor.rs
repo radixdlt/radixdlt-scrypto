@@ -19,6 +19,7 @@ pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
     scrypto_interpreter: &ScryptoVm<W>,
     network: &NetworkDefinition,
     preview_intent: PreviewIntentV1,
+    with_kernel_trace: bool,
 ) -> Result<TransactionReceipt, PreviewError> {
     let validation_config = ValidationConfig::default(network.id);
 
@@ -32,7 +33,7 @@ pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
         substate_db,
         scrypto_interpreter,
         &FeeReserveConfig::default(),
-        &ExecutionConfig::default(),
+        &ExecutionConfig::for_preview().with_kernel_trace(with_kernel_trace),
         &validated.get_executable(),
     ))
 }

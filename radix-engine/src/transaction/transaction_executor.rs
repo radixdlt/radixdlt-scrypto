@@ -4,7 +4,7 @@ use crate::blueprints::transaction_processor::{
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::module_mixer::SystemModuleMixer;
+use crate::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::track::interface::SubstateStore;
@@ -28,6 +28,7 @@ use transaction::model::*;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
+    pub usd_price: u128,
     pub system_loan: u32,
 }
 
@@ -41,15 +42,15 @@ impl FeeReserveConfig {
     pub fn standard() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE,
+            usd_price: DEFAULT_USD_PRICE,
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
 }
 
 pub struct ExecutionConfig {
-    pub genesis: bool,
-    pub kernel_trace: bool,
-    pub execution_trace: Option<usize>,
+    pub enabled_modules: EnabledModules,
+    pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
     pub cost_unit_limit: u32,
     pub abort_when_loan_repaid: bool,
@@ -63,16 +64,9 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
-        ExecutionConfig::standard()
-    }
-}
-
-impl ExecutionConfig {
-    pub fn standard() -> Self {
         Self {
-            genesis: false,
-            kernel_trace: false,
-            execution_trace: Some(1),
+            enabled_modules: EnabledModules::for_notarized_transaction(),
+            max_execution_trace_depth: DEFAULT_MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
@@ -84,16 +78,50 @@ impl ExecutionConfig {
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
         }
     }
+}
 
-    pub fn genesis() -> Self {
+impl ExecutionConfig {
+    pub fn for_genesis_transaction() -> Self {
         Self {
-            genesis: true,
+            enabled_modules: EnabledModules::for_genesis_transaction(),
             ..Self::default()
         }
     }
 
-    pub fn with_trace(mut self, kernel_trace: bool) -> Self {
-        self.kernel_trace = kernel_trace;
+    pub fn for_system_transaction() -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_system_transaction(),
+            ..Self::default()
+        }
+    }
+
+    pub fn for_notarized_transaction() -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_notarized_transaction(),
+            ..Self::default()
+        }
+    }
+
+    pub fn for_test_transaction() -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_test_transaction(),
+            ..Self::default()
+        }
+    }
+
+    pub fn for_preview() -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_preview(),
+            ..Self::default()
+        }
+    }
+
+    pub fn with_kernel_trace(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.enabled_modules.insert(EnabledModules::KERNEL_TRACE);
+        } else {
+            self.enabled_modules.remove(EnabledModules::KERNEL_TRACE);
+        }
         self
     }
 
@@ -102,19 +130,9 @@ impl ExecutionConfig {
         self
     }
 
-    pub fn up_to_loan_repayment() -> Self {
-        Self {
-            abort_when_loan_repaid: true,
-            ..Self::default()
-        }
-    }
-
-    pub fn up_to_loan_repayment_with_debug() -> Self {
-        Self {
-            abort_when_loan_repaid: true,
-            kernel_trace: true,
-            ..Self::default()
-        }
+    pub fn up_to_loan_repayment(mut self, enabled: bool) -> Self {
+        self.abort_when_loan_repaid = enabled;
+        self
     }
 }
 
@@ -148,16 +166,15 @@ where
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let fee_reserve = match transaction.fee_payment() {
-            FeePayment::User { tip_percentage } => SystemLoanFeeReserve::new(
-                fee_reserve_config.cost_unit_price,
-                *tip_percentage,
-                execution_config.cost_unit_limit,
-                fee_reserve_config.system_loan,
-                execution_config.abort_when_loan_repaid,
-            ),
-            FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
-        };
+        let fee_reserve = SystemLoanFeeReserve::new(
+            fee_reserve_config.cost_unit_price,
+            fee_reserve_config.usd_price,
+            transaction.fee_payment().tip_percentage,
+            execution_config.cost_unit_limit,
+            fee_reserve_config.system_loan,
+            execution_config.abort_when_loan_repaid,
+        )
+        .with_free_credit(transaction.fee_payment().free_credit_in_xrd);
 
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve, FeeTable::new())
     }
@@ -170,7 +187,10 @@ where
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
-        if execution_config.kernel_trace {
+        if execution_config
+            .enabled_modules
+            .contains(EnabledModules::KERNEL_TRACE)
+        {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", executable.transaction_hash());
             println!("Payload size: {}", executable.payload_size());
@@ -202,7 +222,8 @@ where
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
-            modules: SystemModuleMixer::standard(
+            modules: SystemModuleMixer::new(
+                execution_config.enabled_modules,
                 executable.transaction_hash().clone(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
@@ -310,7 +331,10 @@ where
         };
 
         #[cfg(not(feature = "alloc"))]
-        if execution_config.kernel_trace {
+        if execution_config
+            .enabled_modules
+            .contains(EnabledModules::KERNEL_TRACE)
+        {
             TransactionExecutor::<S, W>::print_execution_summary(&receipt);
         }
 
@@ -335,15 +359,11 @@ where
                 println!("{:-^80}", "Cost Totals");
                 println!(
                     "{:<30}: {:>10}",
-                    "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Total Royalty Units Consumed", commit.fee_summary.royalty_cost_sum
-                );
-                println!(
-                    "{:<30}: {:>10}",
                     "Cost Unit Limit", commit.fee_summary.cost_unit_limit
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
                 );
                 // NB - we use "to_string" to ensure they align correctly
                 println!(
@@ -562,23 +582,25 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         locked.take_by_amount(amount).unwrap();
         required -= amount;
 
-        // Refund overpayment
-        let (handle, _store_access) = track
-            .acquire_lock(
-                &vault_id,
-                OBJECT_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
-                LockFlags::MUTABLE,
-            )
-            .unwrap();
-        let (substate_value, _store_access) = track.read_substate(handle);
-        let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
-        substate.put(locked).unwrap();
-        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-        track.release_lock(handle);
+        if let Some(vault_id) = vault_id {
+            // Refund overpayment
+            let (handle, _store_access) = track
+                .acquire_lock(
+                    &vault_id,
+                    OBJECT_BASE_PARTITION,
+                    &FungibleVaultField::LiquidFungible.into(),
+                    LockFlags::MUTABLE,
+                )
+                .unwrap();
+            let (substate_value, _store_access) = track.read_substate(handle);
+            let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
+            substate.put(locked).unwrap();
+            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+            track.release_lock(handle);
 
-        // Record final payments
-        *fee_payments.entry(vault_id).or_default() += amount;
+            // Record final payments
+            *fee_payments.entry(vault_id).or_default() += amount;
+        };
     }
 
     // TODO: distribute fees
