@@ -593,6 +593,10 @@ fn system_address_preallocation_smuggling_not_possible() {
     {
         let transaction_allocated_address =
             radix_engine_common::types::component_address(EntityType::GlobalGenericComponent, 53);
+        let pre_allocated_addresses = vec![(
+            BlueprintId::new(&package_address, "PreallocationSmugglerComponent"),
+            GlobalAddress::from(transaction_allocated_address),
+        )];
         let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
@@ -606,7 +610,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                indexset!(transaction_allocated_address.into_node_id()),
+                pre_allocated_addresses,
             )
             .expect_not_success();
     }
@@ -614,6 +618,10 @@ fn system_address_preallocation_smuggling_not_possible() {
     {
         let transaction_allocated_address =
             radix_engine_common::types::component_address(EntityType::GlobalGenericComponent, 53);
+        let pre_allocated_addresses = vec![(
+            BlueprintId::new(&package_address, "PreallocationSmugglerComponent"),
+            GlobalAddress::from(transaction_allocated_address),
+        )];
         let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
@@ -627,7 +635,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                indexset!(transaction_allocated_address.into_node_id()),
+                pre_allocated_addresses,
             )
             .expect_commit_success();
     }
@@ -635,6 +643,10 @@ fn system_address_preallocation_smuggling_not_possible() {
     {
         let transaction_allocated_address =
             radix_engine_common::types::component_address(EntityType::GlobalGenericComponent, 53);
+        let pre_allocated_addresses = vec![(
+            BlueprintId::new(&package_address, "PreallocationSmugglerComponent"),
+            GlobalAddress::from(transaction_allocated_address),
+        )];
         let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
@@ -648,7 +660,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                indexset!(transaction_allocated_address.into_node_id()),
+                pre_allocated_addresses,
             )
             .expect_not_success();
     }
@@ -656,6 +668,10 @@ fn system_address_preallocation_smuggling_not_possible() {
     {
         let transaction_allocated_address =
             radix_engine_common::types::component_address(EntityType::GlobalGenericComponent, 53);
+        let pre_allocated_addresses = vec![(
+            BlueprintId::new(&package_address, "PreallocationSmugglerComponent"),
+            GlobalAddress::from(transaction_allocated_address),
+        )];
         let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
@@ -669,7 +685,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                indexset!(transaction_allocated_address.into_node_id()),
+                pre_allocated_addresses,
             )
             .expect_not_success();
     }
@@ -677,6 +693,10 @@ fn system_address_preallocation_smuggling_not_possible() {
     {
         let transaction_allocated_address =
             radix_engine_common::types::component_address(EntityType::GlobalGenericComponent, 53);
+        let pre_allocated_addresses = vec![(
+            BlueprintId::new(&package_address, "PreallocationSmugglerComponent"),
+            GlobalAddress::from(transaction_allocated_address),
+        )];
         let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
@@ -690,7 +710,7 @@ fn system_address_preallocation_smuggling_not_possible() {
             .execute_system_transaction_with_preallocation(
                 manifest.instructions,
                 btreeset!(),
-                indexset!(transaction_allocated_address.into_node_id()),
+                pre_allocated_addresses,
             )
             .expect_not_success();
     }

@@ -2275,9 +2275,15 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_addresses = index_set_new();
-    pre_allocated_addresses.insert(CONSENSUS_MANAGER.into());
-    pre_allocated_addresses.insert(VALIDATOR_OWNER_BADGE.into());
+    let mut pre_allocated_addresses = vec!();
+    pre_allocated_addresses.push((
+        BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+        GlobalAddress::from(CONSENSUS_MANAGER),
+    ));
+    pre_allocated_addresses.push((
+        BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+        GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+    ));
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,
@@ -2308,9 +2314,15 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_addresses = index_set_new();
-    pre_allocated_addresses.insert(CONSENSUS_MANAGER.into());
-    pre_allocated_addresses.insert(VALIDATOR_OWNER_BADGE.into());
+    let mut pre_allocated_addresses = vec![];
+    pre_allocated_addresses.push((
+        BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+        GlobalAddress::from(CONSENSUS_MANAGER),
+    ));
+    pre_allocated_addresses.push((
+        BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+        GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+    ));
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,

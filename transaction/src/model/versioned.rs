@@ -85,13 +85,15 @@ pub enum VersionedTransactionPayload {
     SystemTransactionV1 {
         instructions: InstructionsV1,
         blobs: BlobsV1,
-        pre_allocated_addresses: IndexSet<NodeId>,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
         hash_for_execution: Hash,
     },
 }
 
 #[cfg(test)]
 mod tests {
+    use radix_engine_interface::blueprints::resource::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
+
     use super::*;
     use crate::model::*;
     use crate::{ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey};
@@ -342,7 +344,10 @@ mod tests {
         .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
-        let pre_allocated_addresses_v1 = indexset![XRD.into_node_id()];
+        let pre_allocated_addresses_v1 = vec![(
+            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            XRD.into(),
+        )];
         let expected_preallocated_ids_hash =
             hash_manifest_encoded_without_prefix_byte(&pre_allocated_addresses_v1);
 

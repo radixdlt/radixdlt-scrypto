@@ -879,9 +879,6 @@ where
     ) -> Result<(), RuntimeError> {
         // FIXME ensure that only the package actor can globalize its own blueprints
 
-        let blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        check_address_allowed_for_blueprint(&address, &blueprint)?;
-
         self.globalize_with_address_internal(modules, address)
     }
 
@@ -894,7 +891,6 @@ where
         inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        check_address_allowed_for_blueprint(&address, &actor_blueprint)?;
 
         self.globalize_with_address_internal(modules, address)?;
 
@@ -2135,11 +2131,4 @@ where
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         self.api.kernel_read_proof(proof_id)
     }
-}
-
-pub fn check_address_allowed_for_blueprint(
-    address: &GlobalAddress,
-    blueprint: &BlueprintId,
-) -> Result<(), RuntimeError> {
-    todo!()
 }
