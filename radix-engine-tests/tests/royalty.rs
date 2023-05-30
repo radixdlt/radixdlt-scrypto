@@ -136,16 +136,17 @@ fn set_up_package_and_component() -> (
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_package_royalty_config(
+            .set_package_royalty(
                 package_address,
-                btreemap!(
-                    "RoyaltyTest".to_string() => {
-                        let mut config = RoyaltyConfig::default();
-                        config.set_rule("paid_method",  RoyaltyAmount::Xrd(2.into()));
-                        config.set_rule("paid_method_panic",  RoyaltyAmount::Xrd(2.into()));
-                        config
-                    }
-                ),
+                "RoyaltyTest",
+                "paid_method",
+                RoyaltyAmount::Xrd(2.into()),
+            )
+            .set_package_royalty(
+                package_address,
+                "RoyaltyTest",
+                "paid_method_panic",
+                RoyaltyAmount::Xrd(2.into()),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

@@ -38,14 +38,17 @@ fn set_up_package_and_component() -> (
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_package_royalty_config(
+            .set_package_royalty(
                 package_address,
-                BTreeMap::from([("RoyaltyTest".to_owned(), {
-                    let mut config = RoyaltyConfig::default();
-                    config.set_rule("paid_method", RoyaltyAmount::Xrd(dec!(2)));
-                    config.set_rule("paid_method_panic", RoyaltyAmount::Xrd(dec!(2)));
-                    config
-                })]),
+                "RoyaltyTest",
+                "paid_method",
+                RoyaltyAmount::Xrd(dec!(2)),
+            )
+            .set_package_royalty(
+                package_address,
+                "RoyaltyTest",
+                "paid_method_panic",
+                RoyaltyAmount::Xrd(dec!(2)),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -106,9 +109,11 @@ fn test_only_package_owner_can_set_royalty_config() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_package_royalty_config(
+            .set_package_royalty(
                 package_address,
-                BTreeMap::from([("RoyaltyTest".to_owned(), RoyaltyConfig::default())]),
+                "RoyaltyTest",
+                "some_method",
+                RoyaltyAmount::Free,
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -119,9 +124,11 @@ fn test_only_package_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .set_package_royalty_config(
+            .set_package_royalty(
                 package_address,
-                BTreeMap::from([("RoyaltyTest".to_owned(), RoyaltyConfig::default())]),
+                "RoyaltyTest",
+                "some_method",
+                RoyaltyAmount::Free,
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -194,7 +201,11 @@ fn test_only_component_owner_can_set_royalty_config() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_component_royalty(component_address, "paid_method".to_string(), RoyaltyAmount::Free)
+            .set_component_royalty(
+                component_address,
+                "paid_method".to_string(),
+                RoyaltyAmount::Free,
+            )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -204,7 +215,11 @@ fn test_only_component_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .set_component_royalty(component_address, "paid_method".to_string(), RoyaltyAmount::Free)
+            .set_component_royalty(
+                component_address,
+                "paid_method".to_string(),
+                RoyaltyAmount::Free,
+            )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

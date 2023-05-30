@@ -34,12 +34,12 @@ mod royalty_test {
 
         pub fn enable_royalty_for_package(package: Package, proof: Proof) {
             proof.authorize(|| {
-                package.set_royalty_config(BTreeMap::from([("RoyaltyTest".to_owned(), {
-                    let mut config = RoyaltyConfig::default();
-                    config.set_rule("paid_method", RoyaltyAmount::Xrd(2.into()));
-                    config.set_rule("paid_method_panic", RoyaltyAmount::Xrd(2.into()));
-                    config
-                })]));
+                package.set_royalty("RoyaltyTest", "paid_method", RoyaltyAmount::Xrd(2.into()));
+                package.set_royalty(
+                    "RoyaltyTest",
+                    "paid_method_panic",
+                    RoyaltyAmount::Xrd(2.into()),
+                );
             })
         }
 
@@ -59,7 +59,8 @@ mod royalty_test {
 
         pub fn disable_package_royalty(package: Package, proof: Proof) {
             proof.authorize(|| {
-                package.set_royalty_config(BTreeMap::from([]));
+                package.set_royalty("RoyaltyTest", "paid_method", RoyaltyAmount::Free);
+                package.set_royalty("RoyaltyTest", "paid_method_panic", RoyaltyAmount::Free);
             })
         }
 

@@ -21,10 +21,10 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
-    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PackageClaimRoyaltiesInput, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
+    PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -595,15 +595,21 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn set_package_royalty_config(
+    pub fn set_package_royalty<S: ToString>(
         &mut self,
         package_address: PackageAddress,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        blueprint: S,
+        fn_name: S,
+        royalty: RoyaltyAmount,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
-            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&PackageSetRoyaltyConfigInput { royalty_config }),
+            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&PackageSetRoyaltyInput {
+                blueprint: blueprint.to_string(),
+                fn_name: fn_name.to_string(),
+                royalty,
+            }),
         })
         .0
     }
@@ -611,8 +617,8 @@ impl ManifestBuilder {
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&PackageClaimRoyaltyInput {}),
+            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
+            args: to_manifest_value(&PackageClaimRoyaltiesInput {}),
         })
         .0
     }
@@ -626,7 +632,10 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&ComponentSetRoyaltyInput { method: method.to_string(), amount }),
+            args: to_manifest_value(&ComponentSetRoyaltyInput {
+                method: method.to_string(),
+                amount,
+            }),
         })
         .0
     }

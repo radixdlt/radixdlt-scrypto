@@ -25,7 +25,7 @@ use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -355,13 +355,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                 // Nb - For Main method call, we also check the address type to avoid name clashing.
 
                 /* Package */
-                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                (address, PACKAGE_SET_ROYALTY_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     fields.push(to_manifest_value(address));
                     "SET_PACKAGE_ROYALTY_CONFIG"
                 }
-                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                (address, PACKAGE_CLAIM_ROYALTIES_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     fields.push(to_manifest_value(address));

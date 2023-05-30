@@ -1,8 +1,8 @@
-use radix_engine_common::types::RoyaltyAmount;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
+use radix_engine_common::types::RoyaltyAmount;
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyInput,
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,

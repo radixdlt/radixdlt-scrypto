@@ -27,7 +27,7 @@ use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{
@@ -643,12 +643,12 @@ pub fn generate_instruction(
         },
         ast::Instruction::SetPackageRoyaltyConfig { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {

@@ -699,6 +699,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-engine-profiling"
+version = "0.9.0"
+dependencies = [
+ "fixedstr",
+]
+
+[[package]]
 name = "radix-engine-queries"
 version = "0.10.0"
 dependencies = [
@@ -721,6 +728,7 @@ dependencies = [
  "itertools",
  "radix-engine-common",
  "radix-engine-derive",
+ "radix-engine-interface",
  "sbor",
  "utils",
 ]
@@ -736,13 +744,6 @@ dependencies = [
  "radix-engine-store-interface",
  "sbor",
  "utils",
-]
-
-[[package]]
-name = "radix-engine-utils"
-version = "0.9.0"
-dependencies = [
- "fixedstr",
 ]
 
 [[package]]
@@ -810,7 +811,7 @@ version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "radix-engine-utils",
+ "radix-engine-profiling",
  "syn",
 ]
 
@@ -896,6 +897,7 @@ name = "scrypto"
 version = "0.10.0"
 dependencies = [
  "bech32",
+ "const-sha1",
  "hex",
  "num-bigint",
  "num-traits",
