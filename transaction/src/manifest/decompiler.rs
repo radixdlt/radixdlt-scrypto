@@ -34,7 +34,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-    VAULT_RECALL_IDENT,
+    VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT, VAULT_UNFREEZE_IDENT,
 };
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
@@ -525,6 +525,14 @@ pub fn decompile_instruction<F: fmt::Write>(
                 VAULT_RECALL_IDENT => {
                     fields.push(to_manifest_value(vault_id));
                     "RECALL_RESOURCE"
+                }
+                VAULT_FREEZE_IDENT => {
+                    fields.push(to_manifest_value(vault_id));
+                    "FREEZE_VAULT"
+                }
+                VAULT_UNFREEZE_IDENT => {
+                    fields.push(to_manifest_value(vault_id));
+                    "UNFREEZE_VAULT"
                 }
                 /* Default */
                 _ => {

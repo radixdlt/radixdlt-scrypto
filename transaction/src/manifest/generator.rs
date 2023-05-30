@@ -509,6 +509,15 @@ pub fn generate_instruction(
                 args,
             }
         }
+
+        ast::Instruction::DropAllProofs => {
+            id_validator
+                .drop_all_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            InstructionV1::DropAllProofs
+        }
+
+        /* direct vault method aliases */
         ast::Instruction::RecallResource { vault_id, args } => {
             InstructionV1::CallDirectVaultMethod {
                 vault_id: generate_local_address(vault_id, bech32_decoder)?,
@@ -516,12 +525,17 @@ pub fn generate_instruction(
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
-
-        ast::Instruction::DropAllProofs => {
-            id_validator
-                .drop_all_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
-            InstructionV1::DropAllProofs
+        ast::Instruction::FreezeVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
+            vault_id: generate_local_address(vault_id, bech32_decoder)?,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::UnfreezeVault { vault_id, args } => {
+            InstructionV1::CallDirectVaultMethod {
+                vault_id: generate_local_address(vault_id, bech32_decoder)?,
+                method_name: VAULT_UNFREEZE_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
         }
 
         /* call function aliases */

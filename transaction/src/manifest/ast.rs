@@ -136,12 +136,21 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
+    DropAllProofs,
+
+    /* Call direct vault method aliases */
     RecallResource {
         vault_id: Value,
         args: Vec<Value>,
     },
-
-    DropAllProofs,
+    FreezeVault {
+        vault_id: Value,
+        args: Vec<Value>,
+    },
+    UnfreezeVault {
+        vault_id: Value,
+        args: Vec<Value>,
+    },
 
     /* Call function aliases */
     PublishPackage {

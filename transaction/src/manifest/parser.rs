@@ -52,8 +52,14 @@ pub enum InstructionIdent {
     CallRoyaltyMethod,
     CallMetadataMethod,
     CallAccessRulesMethod,
-    RecallResource,
     DropAllProofs,
+
+    // ==============
+    // Call direct vault method aliases
+    // ==============
+    RecallResource,
+    FreezeVault,
+    UnfreezeVault,
 
     // ==============
     // Call function aliases
@@ -134,9 +140,15 @@ impl InstructionIdent {
             "CALL_ROYALTY_METHOD" => InstructionIdent::CallRoyaltyMethod,
             "CALL_METADATA_METHOD" => InstructionIdent::CallMetadataMethod,
             "CALL_ACCESS_RULES_METHOD" => InstructionIdent::CallAccessRulesMethod,
-            "RECALL_RESOURCE" => InstructionIdent::RecallResource,
 
             "DROP_ALL_PROOFS" => InstructionIdent::DropAllProofs,
+
+            // ==============
+            // Call direct vault method aliases
+            // ==============
+            "RECALL_RESOURCE" => InstructionIdent::RecallResource,
+            "FREEZE_VAULT" => InstructionIdent::FreezeVault,
+            "UNFREEZE_VAULT" => InstructionIdent::UnfreezeVault,
 
             // ==============
             // Call function aliases
@@ -547,11 +559,21 @@ impl Parser {
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
+            InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
+
+            /* Call direct vault method aliases */
             InstructionIdent::RecallResource => Instruction::RecallResource {
                 vault_id: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
+            InstructionIdent::FreezeVault => Instruction::FreezeVault {
+                vault_id: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::UnfreezeVault => Instruction::UnfreezeVault {
+                vault_id: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
 
             /* Call function aliases */
             InstructionIdent::PublishPackage => Instruction::PublishPackage {

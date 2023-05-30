@@ -697,6 +697,7 @@ impl NonFungibleResourceManagerBlueprint {
             ],
         )?;
 
+        // TODO: Figure out how to use SELF_ROLE rather than package
         let mut roles = Roles::new();
         roles.define_role(
             "this_package",
