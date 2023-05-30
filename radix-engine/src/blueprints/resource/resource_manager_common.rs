@@ -149,7 +149,7 @@ fn build_access_rules(
         {
             roles.define_role(
                 UNFREEZE_ROLE,
-                RoleEntry::new(unfreeze_access_rule, [UNFREEZE_ROLE], true),
+                RoleEntry::new(unfreeze_access_rule, [UNFREEZE_UPDATE_ROLE], true),
             );
             roles.define_role(
                 UNFREEZE_UPDATE_ROLE,

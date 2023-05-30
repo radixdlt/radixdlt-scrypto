@@ -940,6 +940,7 @@ impl TestRunner {
         ResourceAddress,
         ResourceAddress,
         ResourceAddress,
+        ResourceAddress,
     ) {
         let mint_auth = self.create_non_fungible_resource(account);
         let burn_auth = self.create_non_fungible_resource(account);
@@ -947,6 +948,7 @@ impl TestRunner {
         let recall_auth = self.create_non_fungible_resource(account);
         let update_metadata_auth = self.create_non_fungible_resource(account);
         let freeze_auth = self.create_non_fungible_resource(account);
+        let unfreeze_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
 
@@ -994,6 +996,13 @@ impl TestRunner {
             ),
         );
         access_rules.insert(
+            Unfreeze,
+            (
+                rule!(require(unfreeze_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
             Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
@@ -1008,6 +1017,7 @@ impl TestRunner {
             recall_auth,
             update_metadata_auth,
             freeze_auth,
+            unfreeze_auth,
             admin_auth,
         )
     }

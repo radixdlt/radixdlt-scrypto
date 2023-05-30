@@ -14,6 +14,7 @@ enum Action {
     Recall,
     UpdateMetadata,
     Freeze,
+    Unfreeze,
 }
 
 impl Action {
@@ -26,6 +27,7 @@ impl Action {
             Action::Deposit => RoleKey::new(DEPOSIT_ROLE),
             Action::Recall => RoleKey::new(RECALL_ROLE),
             Action::Freeze => RoleKey::new(FREEZE_ROLE),
+            Action::Unfreeze => RoleKey::new(UNFREEZE_ROLE),
         }
     }
 }
@@ -42,6 +44,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         recall_auth,
         update_metadata_auth,
         freeze_auth,
+        unfreeze_auth,
         admin_auth,
     ) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
@@ -72,6 +75,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Recall => recall_auth,
             Action::UpdateMetadata => update_metadata_auth,
             Action::Freeze => freeze_auth,
+            Action::Unfreeze => unfreeze_auth,
         }
     };
 
@@ -136,6 +140,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
             builder.freeze(InternalAddress::new_or_panic(vault_id.into()))
+        }
+        Action::Unfreeze => {
+            let vaults = test_runner.get_component_vaults(account, token_address);
+            let vault_id = vaults[0];
+            builder.unfreeze(InternalAddress::new_or_panic(vault_id.into()))
         }
     };
 
@@ -211,6 +220,18 @@ fn can_freeze_with_auth() {
 fn cannot_freeze_with_wrong_auth() {
     test_resource_auth(Action::Freeze, false, true, true);
     test_resource_auth(Action::Freeze, true, false, true);
+}
+
+#[test]
+fn can_unfreeze_with_auth() {
+    test_resource_auth(Action::Unfreeze, false, false, false);
+    test_resource_auth(Action::Unfreeze, true, true, false);
+}
+
+#[test]
+fn cannot_unfreeze_with_wrong_auth() {
+    test_resource_auth(Action::Unfreeze, false, true, true);
+    test_resource_auth(Action::Unfreeze, true, false, true);
 }
 
 #[test]
