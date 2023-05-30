@@ -91,7 +91,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _fields: Vec<Vec<u8>>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn allocate_global_address(
@@ -118,30 +118,30 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
-    ) -> Result<(), ClientApiError> {
+        address_ownership: NodeId,
+    ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
-        let address = scrypto_encode(&address).unwrap();
+        let address_ownership = scrypto_encode(&address_ownership).unwrap();
 
-        unsafe {
+        let bytes = copy_buffer(unsafe {
             globalize_with_address(
                 modules.as_ptr(),
                 modules.len(),
-                address.as_ptr(),
-                address.len(),
+                address_ownership.as_ptr(),
+                address_ownership.len(),
             )
-        }
-        Ok(())
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         _modules: BTreeMap<ObjectModuleId, NodeId>,
-        _address: GlobalAddress,
+        _address_ownership: NodeId,
         _inner_object_blueprint: &str,
         _inner_object_fields: Vec<Vec<u8>>,
-    ) -> Result<NodeId, ClientApiError> {
-        todo!("Unsupported")
+    ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
+        unimplemented!("Not available for Scrypto")
     }
 
     fn call_method_advanced(

@@ -154,7 +154,7 @@ fn build_access_rules(
 
 pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
-    resource_address: ResourceAddress,
+    resource_address_ownership: Own,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     api: &mut Y,
@@ -175,7 +175,7 @@ where
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
         ),
-        resource_address.into(),
+        resource_address_ownership.0,
     )?;
 
     Ok(())
@@ -183,7 +183,7 @@ where
 
 pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
-    resource_address: ResourceAddress,
+    resource_address_ownership: Own,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     initial_supply: Decimal,
@@ -197,14 +197,14 @@ where
     let metadata = Metadata::create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-    let bucket_id = api.globalize_with_address_and_create_inner_object(
+    let (_, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
         ),
-        resource_address.into(),
+        resource_address_ownership.0,
         FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
             scrypto_encode(&LiquidFungibleResource::new(initial_supply)).unwrap(),
@@ -217,7 +217,7 @@ where
 
 pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
-    resource_address: ResourceAddress,
+    resource_address_ownership: Own,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     ids: BTreeSet<NonFungibleLocalId>,
@@ -233,14 +233,14 @@ where
     let metadata = Metadata::create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-    let bucket_id = api.globalize_with_address_and_create_inner_object(
+    let (_, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
         ),
-        resource_address.into(),
+        resource_address_ownership.0,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
             scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),

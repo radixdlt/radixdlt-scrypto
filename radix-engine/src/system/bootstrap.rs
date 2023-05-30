@@ -445,12 +445,13 @@ pub fn create_system_bootstrap_transaction(
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
             args: to_manifest_value(
-                &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                     divisibility: 18,
                     metadata,
                     access_rules,
                     initial_supply,
-                    resource_address,
+                    // TODO: add instruction for allocating the global address
+                    resource_address: (ManifestExpression::LastOwned, resource_address),
                 },
             ),
         });
@@ -470,12 +471,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
     }
@@ -494,12 +495,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
     }
@@ -525,12 +526,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
     }
@@ -556,12 +557,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
 
@@ -642,12 +643,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
 
@@ -740,12 +741,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
     }
@@ -764,12 +765,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
     }
@@ -788,12 +789,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: (ManifestExpression::LastOwned, resource_address),
             }),
         });
     }

@@ -70,8 +70,9 @@ impl VirtualizationModule {
                 let address = GlobalAddress::new_or_panic(node_id.into());
 
                 let mut system = SystemService::new(api);
-                system.allocate_virtual_global_address(blueprint, address)?;
-                system.globalize_with_address(modules, address)?;
+                let address_ownership =
+                    system.allocate_virtual_global_address(blueprint, address)?;
+                system.globalize_with_address(modules, address_ownership)?;
 
                 Ok(true)
             }

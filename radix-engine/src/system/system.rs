@@ -902,39 +902,45 @@ where
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
-    ) -> Result<(), RuntimeError> {
+        address_ownership: NodeId,
+    ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME ensure that only the package actor can globalize its own blueprints
 
         // TODO check global address ownership
 
-        self.globalize_with_address_internal(modules, address)
+        let global_address = todo!();
+        self.globalize_with_address_internal(modules, global_address)?;
+
+        Ok(global_address)
     }
 
     #[trace_resources]
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
+        address_ownership: NodeId,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
-    ) -> Result<NodeId, RuntimeError> {
+    ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
-        self.globalize_with_address_internal(modules, address)?;
+        let global_address = todo!();
+        self.globalize_with_address_internal(modules, global_address)?;
 
         let blueprint = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
 
-        self.new_object_internal(
+        let inner_object = self.new_object_internal(
             &blueprint,
             Some(InstanceContext {
-                outer_object: address,
+                outer_object: global_address,
                 outer_blueprint: actor_blueprint.blueprint_name,
             }),
             None,
             inner_object_fields,
             btreemap!(),
-        )
+        )?;
+
+        Ok((global_address, inner_object))
     }
 
     #[trace_resources]

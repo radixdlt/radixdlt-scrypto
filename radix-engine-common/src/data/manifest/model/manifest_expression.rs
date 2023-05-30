@@ -14,6 +14,7 @@ use crate::*;
 pub enum ManifestExpression {
     EntireWorktop,
     EntireAuthZone,
+    LastOwned,
 }
 
 //========
@@ -51,6 +52,7 @@ impl TryFrom<&[u8]> for ManifestExpression {
         match slice[0] {
             0 => Ok(Self::EntireWorktop),
             1 => Ok(Self::EntireAuthZone),
+            2 => Ok(Self::LastOwned),
             _ => Err(Self::Error::UnknownExpression),
         }
     }
@@ -65,6 +67,9 @@ impl ManifestExpression {
             }
             ManifestExpression::EntireAuthZone => {
                 bytes.push(1);
+            }
+            ManifestExpression::LastOwned => {
+                bytes.push(2);
             }
         };
         bytes

@@ -80,6 +80,31 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                     }
                 };
             }
+            ManifestCustomValue::Expression(ManifestExpression::LastOwned) => {
+                let type_kind = schema
+                    .resolve_type_kind(type_index)
+                    .ok_or(PayloadValidationError::SchemaInconsistency)?;
+                match type_kind {
+                    TypeKind::Any | TypeKind::Custom(ScryptoCustomTypeKind::Own) => {
+                        let type_validation = schema
+                            .resolve_type_validation(type_index)
+                            .ok_or(PayloadValidationError::SchemaInconsistency)?;
+                        match type_validation {
+                            TypeValidation::None => {}
+                            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(_)) => {}
+                            _ => return Err(PayloadValidationError::SchemaInconsistency),
+                        }
+                    }
+                    _ => {
+                        return Err(PayloadValidationError::ValidationError(
+                            ValidationError::CustomError(format!(
+                                "LAST_OWNED gives an Owned, but {:?} was expected",
+                                type_kind
+                            )),
+                        ))
+                    }
+                };
+            }
             ManifestCustomValue::Blob(_) => {
                 let element_type = match schema
                     .resolve_type_kind(type_index)

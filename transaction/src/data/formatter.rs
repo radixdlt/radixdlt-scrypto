@@ -405,6 +405,7 @@ pub fn format_custom_value<F: fmt::Write>(
                 match value {
                     ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
                     ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
+                    ManifestExpression::LastOwned => "LAST_OWNED",
                 }
             )?;
         }

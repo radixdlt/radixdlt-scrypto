@@ -101,7 +101,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        address: [u8; NodeId::LENGTH], // TODO: Clean this up
+        address: (Own, ResourceAddress),
         api: &mut Y,
     ) -> Result<Self, E>
     where

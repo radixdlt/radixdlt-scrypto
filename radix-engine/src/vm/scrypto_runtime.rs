@@ -195,14 +195,15 @@ where
     fn globalize_object_with_address(
         &mut self,
         modules: Vec<u8>,
-        address: Vec<u8>,
+        address_ownership: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
-        let address =
-            scrypto_decode::<GlobalAddress>(&address).map_err(WasmRuntimeError::InvalidAddress)?;
+        let address_ownership = scrypto_decode::<NodeId>(&address_ownership)
+            .map_err(|_| WasmRuntimeError::InvalidNodeId)?;
 
-        self.api.globalize_with_address(modules, address)?;
+        self.api
+            .globalize_with_address(modules, address_ownership)?;
 
         Ok(())
     }

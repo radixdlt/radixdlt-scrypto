@@ -158,7 +158,7 @@ impl<C: HasStub + HasMethods> Owned<C> {
             metadata: None,
             royalty: RoyaltyConfig::default(),
             roles,
-            address: None,
+            address_ownership: None,
         }
     }
 }
@@ -241,7 +241,7 @@ pub struct Globalizing<C: HasStub> {
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub roles: Roles,
-    pub address: Option<ComponentAddress>,
+    pub address_ownership: Option<Owned<AnyComponent>>,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -279,8 +279,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn with_address(mut self, address: ComponentAddress) -> Self {
-        self.address = Some(address);
+    pub fn with_address(mut self, address_ownership: Owned<AnyComponent>) -> Self {
+        self.address_ownership = Some(address_ownership);
         self
     }
 
@@ -297,10 +297,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
         );
 
-        let address = if let Some(address) = self.address {
-            let address: GlobalAddress = address.into();
-            ScryptoEnv.globalize_with_address(modules, address).unwrap();
-            address
+        let address = if let Some(address_ownership) = self.address_ownership {
+            ScryptoEnv
+                .globalize_with_address(modules, *address_ownership.0 .0.as_node_id())
+                .unwrap()
         } else {
             ScryptoEnv.globalize(modules).unwrap()
         };

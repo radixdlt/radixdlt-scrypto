@@ -119,21 +119,19 @@ pub trait ClientObjectApi<E> {
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all with the provided global address.
-    ///
-    /// TODO: change the interface to accept global address ownership
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
-    ) -> Result<(), E>;
+        address_ownership: NodeId,
+    ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
+        address_ownership: NodeId,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
-    ) -> Result<NodeId, E>;
+    ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object
     fn call_method(
