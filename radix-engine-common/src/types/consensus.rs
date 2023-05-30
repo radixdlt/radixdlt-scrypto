@@ -10,6 +10,11 @@ use sbor::Sbor;
 pub type ValidatorIndex = u8;
 
 /// A type-safe consensus epoch number.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]
 #[sbor(transparent)]
 pub struct Epoch(u64);
