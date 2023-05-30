@@ -178,8 +178,8 @@ pub struct ConsensusManagerBlueprint;
 
 impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
-        validator_token_address: [u8; NodeId::LENGTH], // TODO: Clean this up
-        component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
+        validator_token_address: (Own, ResourceAddress),
+        component_address_ownership: Own,
         initial_epoch: u64,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
@@ -188,8 +188,6 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ComponentAddress::new_or_panic(component_address);
-
         {
             let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
             let mut access_rules = BTreeMap::new();
@@ -265,7 +263,7 @@ impl ConsensusManagerBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address.into(),
+            component_address_ownership.0,
         )?;
 
         Ok(())
