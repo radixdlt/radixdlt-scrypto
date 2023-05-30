@@ -1,4 +1,4 @@
-use super::*;
+use crate::internal_prelude::*;
 use radix_engine_constants::*;
 
 pub enum ConcatenatedDigest {}

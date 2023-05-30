@@ -1,6 +1,3 @@
-use sbor::IsFixedEnumVariant;
-
-use super::v1::*;
 use crate::internal_prelude::*;
 
 //=============================================================================
@@ -30,50 +27,6 @@ const V1_SYSTEM_TRANSACTION: u8 = 4;
 const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
 const V1_PREVIEW_TRANSACTION: u8 = 6;
 const V1_LEDGER_TRANSACTION: u8 = 7;
-
-pub trait TransactionPayload:
-    ManifestEncode + ManifestDecode + ManifestCategorize + ManifestSborTuple
-{
-    // Note - really we just want to define Self::DISCRIMINATOR and use FixedEnumVariant<{ Self::DISCRIMINATOR }, X>,
-    // but that causes an issue because "type parameters may not be used in const expressions"
-    // See: https://github.com/rust-lang/rust/issues/76560
-    // Instead we use this helper-trait IsFixedEnumVariant which hides the DISCRIMINATOR
-    type Versioned: ManifestDecode + IsFixedEnumVariant<ManifestCustomValueKind, Self>;
-    type Prepared: TransactionPayloadPreparable<Raw = Self::Raw>;
-    type Raw: RawTransactionPayload;
-
-    fn to_raw(&self) -> Result<Self::Raw, EncodeError> {
-        Ok(self.to_payload_bytes()?.into())
-    }
-
-    fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&Self::Versioned::for_encoding(self))
-    }
-
-    fn from_raw(raw: &Self::Raw) -> Result<Self, DecodeError> {
-        Self::from_payload_bytes(raw.as_ref())
-    }
-
-    fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        Ok(manifest_decode::<Self::Versioned>(payload_bytes)?.into_fields())
-    }
-
-    fn prepare(&self) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_from_payload(
-            &self.to_payload_bytes()?,
-        )?)
-    }
-}
-
-pub trait TransactionPartialEncode: ManifestEncode {
-    type Prepared: TransactionFullChildPreparable;
-
-    fn prepare_partial(&self) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_as_full_body_child_from_payload(
-            &manifest_encode(self)?,
-        )?)
-    }
-}
 
 // TODO - change this to use #[flatten] when REP-84 is out
 /// An enum of a variety of different transaction payload types

@@ -59,7 +59,6 @@ pub mod prelude {
     // Exports from this crate
     pub use super::address::*;
     pub use super::crypto::*;
-    pub use crate::define_wrapped_hash;
     pub use super::data::manifest::*;
     pub use super::data::scrypto::model::*;
     pub use super::data::scrypto::*;
@@ -67,4 +66,5 @@ pub mod prelude {
     pub use super::network::*;
     pub use super::time::*;
     pub use super::types::*;
+    pub use crate::define_wrapped_hash;
 }

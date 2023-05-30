@@ -1,4 +1,5 @@
-use super::*;
+use crate::internal_prelude::*;
+use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ValueType {

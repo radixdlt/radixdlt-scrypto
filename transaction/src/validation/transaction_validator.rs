@@ -76,13 +76,13 @@ impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransacti
         &self,
         transaction: PreparedNotarizedTransactionV1,
     ) -> Result<Self::Validated, TransactionValidationError> {
-        self.validate_intent(&transaction.signed_intent.intent)?;
+        self.validate_intent_v1(&transaction.signed_intent.intent)?;
 
         let encoded_instructions =
             manifest_encode(&transaction.signed_intent.intent.instructions.inner.0)?;
 
         let signer_keys = self
-            .validate_signatures(&transaction)
+            .validate_signatures_v1(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
         Ok(ValidatedNotarizedTransactionV1 {
@@ -98,13 +98,13 @@ impl NotarizedTransactionValidator {
         Self { config }
     }
 
-    pub fn validate_preview_intent(
+    pub fn validate_preview_intent_v1(
         &self,
         preview_intent: PreviewIntentV1,
     ) -> Result<ValidatedPreviewIntent, TransactionValidationError> {
         let intent = preview_intent.intent.prepare()?;
 
-        self.validate_intent(&intent)?;
+        self.validate_intent_v1(&intent)?;
 
         let encoded_instructions = manifest_encode(&intent.instructions.inner.0)?;
 
@@ -116,19 +116,19 @@ impl NotarizedTransactionValidator {
         })
     }
 
-    pub fn validate_intent(
+    pub fn validate_intent_v1(
         &self,
         intent: &PreparedIntentV1,
     ) -> Result<(), TransactionValidationError> {
-        self.validate_header(&intent.header.inner)
+        self.validate_header_v1(&intent.header.inner)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
-        Self::validate_instructions(&intent.instructions.inner.0)?;
+        Self::validate_instructions_v1(&intent.instructions.inner.0)?;
 
         return Ok(());
     }
 
-    pub fn validate_instructions(
+    pub fn validate_instructions_v1(
         instructions: &[InstructionV1],
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
@@ -245,7 +245,7 @@ impl NotarizedTransactionValidator {
         Ok(())
     }
 
-    pub fn validate_header(
+    pub fn validate_header_v1(
         &self,
         header: &TransactionHeaderV1,
     ) -> Result<(), HeaderValidationError> {
@@ -275,7 +275,7 @@ impl NotarizedTransactionValidator {
         Ok(())
     }
 
-    pub fn validate_signatures(
+    pub fn validate_signatures_v1(
         &self,
         transaction: &PreparedNotarizedTransactionV1,
     ) -> Result<Vec<PublicKey>, SignatureValidationError> {
@@ -415,7 +415,7 @@ mod tests {
             },
         };
 
-        let result = validator.validate_preview_intent(preview_intent);
+        let result = validator.validate_preview_intent_v1(preview_intent);
 
         assert!(result.is_ok());
     }

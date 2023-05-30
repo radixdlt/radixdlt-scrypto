@@ -1,5 +1,5 @@
 use super::*;
-use crate::{define_raw_transaction_payload, internal_prelude::*};
+use crate::internal_prelude::*;
 
 //=================================================================================
 // NOTE:
@@ -18,10 +18,8 @@ pub struct IntentV1 {
 impl TransactionPayload for IntentV1 {
     type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1Intent as u8 }, Self>;
     type Prepared = PreparedIntentV1;
-    type Raw = RawIntentV1;
+    type Raw = RawIntent;
 }
-
-define_raw_transaction_payload!(RawIntentV1);
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -58,7 +56,7 @@ impl TransactionFullChildPreparable for PreparedIntentV1 {
 }
 
 impl TransactionPayloadPreparable for PreparedIntentV1 {
-    type Raw = RawIntentV1;
+    type Raw = RawIntent;
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
