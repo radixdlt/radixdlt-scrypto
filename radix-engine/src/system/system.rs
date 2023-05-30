@@ -1,3 +1,4 @@
+use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
@@ -208,7 +209,7 @@ where
         };
 
         let node_id = self.api.kernel_allocate_node_id(
-            IDAllocationRequest::Object {
+            IDAllocation::Object {
                 blueprint_id: blueprint.clone(),
                 global: false,
                 virtual_node_id: None,
@@ -841,7 +842,7 @@ where
         blueprint_id: BlueprintId,
     ) -> Result<GlobalAddress, RuntimeError> {
         let allocated_node_id = self.api.kernel_allocate_node_id(
-            IDAllocationRequest::Object {
+            IDAllocation::Object {
                 blueprint_id,
                 global: true,
                 virtual_node_id: None,
@@ -860,7 +861,7 @@ where
 
         let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
         let global_node_id = self.api.kernel_allocate_node_id(
-            IDAllocationRequest::Object {
+            IDAllocation::Object {
                 blueprint_id,
                 global: true,
                 virtual_node_id: None,
@@ -1165,7 +1166,7 @@ where
 
         let node_id = self
             .api
-            .kernel_allocate_node_id(IDAllocationRequest::KeyValueStore.entity_type())?;
+            .kernel_allocate_node_id(IDAllocation::KeyValueStore.entity_type())?;
 
         self.api.kernel_create_node(
             node_id,

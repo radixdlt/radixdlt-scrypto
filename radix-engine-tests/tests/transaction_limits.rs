@@ -288,34 +288,3 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
         )
     })
 }
-
-#[test]
-fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
-    // Arrange
-    let data: Vec<u8> = (0..DEFAULT_MAX_INVOKE_INPUT_SIZE).map(|_| 0).collect();
-    let blueprint_name = "test_blueprint";
-    let function_name = "test_fn";
-    let package_address = PACKAGE_PACKAGE;
-
-    // Act
-    let ret =
-        TestRunner::kernel_invoke_function(package_address, blueprint_name, function_name, &data);
-
-    // Assert
-    let err = ret.expect_err("Expected failure but was success");
-
-    let size = scrypto_args!(data).len()
-        + blueprint_name.len()
-        + function_name.len()
-        + package_address.as_ref().len();
-
-    match err {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
-        )) => assert_eq!(x, size),
-        x => panic!(
-            "Expected specific failure but was different error:\n{:?}",
-            x
-        ),
-    }
-}

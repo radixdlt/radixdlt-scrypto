@@ -6,15 +6,8 @@ use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
-use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system_callback::SystemConfig;
-use radix_engine::system::system_modules::costing::FeeTable;
-use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
-use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
     PreviewError, TransactionReceipt, TransactionResult,
@@ -22,7 +15,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine::vm::{ScryptoVm, Vm};
+use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -61,9 +54,9 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
-    AttachmentsV1, AuthZoneParams, BlobV1, BlobsV1, Executable, InstructionV1, InstructionsV1,
-    IntentV1, PreviewFlags, PreviewIntentV1, SystemTransactionV1, TestTransaction,
-    TransactionHeaderV1, TransactionPayloadEncode,
+    AttachmentsV1, BlobV1, BlobsV1, Executable, InstructionV1, InstructionsV1, IntentV1,
+    PreviewFlags, PreviewIntentV1, SystemTransactionV1, TestTransaction, TransactionHeaderV1,
+    TransactionPayloadEncode,
 };
 
 pub struct Compile;
@@ -1370,60 +1363,6 @@ impl TestRunner {
         receipt.expect_commit(true).output(0)
     }
 
-    pub fn kernel_invoke_function(
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: &Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        // Prepare data for creating kernel
-        let substate_db = InMemorySubstateDatabase::standard();
-        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(&substate_db);
-        let transaction_hash = hash(vec![0]);
-        let mut id_allocator = IdAllocator::new(transaction_hash);
-        let execution_config = ExecutionConfig::default();
-        let scrypto_interpreter = ScryptoVm {
-            wasm_metering_config: WasmMeteringConfig::V0,
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-        };
-
-        let mut system = SystemConfig {
-            blueprint_schema_cache: NonIterMap::new(),
-            callback_obj: Vm {
-                scrypto_vm: &scrypto_interpreter,
-            },
-            modules: SystemModuleMixer::new(
-                EnabledModules::for_notarized_transaction(),
-                transaction_hash,
-                AuthZoneParams {
-                    initial_proofs: btreeset![],
-                    virtual_resources: BTreeSet::new(),
-                },
-                SystemLoanFeeReserve::default(),
-                FeeTable::new(),
-                0,
-                0,
-                &execution_config,
-            ),
-        };
-
-        let kernel_boot = KernelBoot {
-            id_allocator: &mut id_allocator,
-            callback: &mut system,
-            store: &mut track,
-        };
-
-        kernel_boot.call_transaction_processor(
-            package_address,
-            blueprint_name,
-            function_name,
-            &indexset!(),
-            scrypto_args!(&args),
-            &vec![],
-        )
-    }
-
     pub fn event_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
@@ -1462,8 +1401,7 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::PhantomObject(..)
-                            | TypeInfoSubstate::KeyValueStore(..) => {
+                            _ => {
                                 panic!("No event schema.")
                             }
                         }

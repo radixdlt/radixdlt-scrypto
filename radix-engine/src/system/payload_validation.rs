@@ -86,7 +86,7 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
             TypeInfoSubstate::GlobalAddressOwnership => {
                 TypeInfoForValidation::GlobalAddressOwnership
             }
-            TypeInfoSubstate::GlobalObjectPhantom(info) => TypeInfoForValidation::Object {
+            TypeInfoSubstate::GlobalAddressPhantom(info) => TypeInfoForValidation::Object {
                 package: info.blueprint_id.package_address,
                 blueprint: info.blueprint_id.blueprint_name,
             },

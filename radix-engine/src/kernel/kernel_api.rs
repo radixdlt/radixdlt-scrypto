@@ -14,10 +14,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 /// API for managing nodes
 pub trait KernelNodeApi {
     /// Allocates a new node id useable for create_node
-    fn kernel_allocate_node_id(
-        &mut self,
-        entity_type: EntityType,
-    ) -> Result<NodeId, RuntimeError>;
+    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError>;
 
     /// Creates a new RENode
     fn kernel_create_node(
