@@ -843,7 +843,11 @@ where
         self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
     }
 
-    fn attach_access_rules(&mut self, node_id: &NodeId, access_rules_node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn attach_access_rules(
+        &mut self,
+        node_id: &NodeId,
+        access_rules_node_id: &NodeId,
+    ) -> Result<(), RuntimeError> {
         self.kernel_move_module(
             access_rules_node_id,
             OBJECT_BASE_PARTITION,

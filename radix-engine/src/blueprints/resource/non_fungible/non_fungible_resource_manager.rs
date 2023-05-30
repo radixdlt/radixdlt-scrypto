@@ -1,9 +1,9 @@
-use native_sdk::modules::access_rules::AccessRules;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -702,7 +702,10 @@ impl NonFungibleResourceManagerBlueprint {
             "this_package",
             RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         );
-        roles.define_role(VAULT_WITHDRAW_ROLE, RoleEntry::new(AccessRule::AllowAll, ["this_package"], true));
+        roles.define_role(
+            VAULT_WITHDRAW_ROLE,
+            RoleEntry::new(AccessRule::AllowAll, ["this_package"], true),
+        );
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
 

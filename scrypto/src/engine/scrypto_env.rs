@@ -94,7 +94,11 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn attach_access_rules(&mut self, _node_id: &NodeId, _access_rules_node_id: &NodeId) -> Result<(), ClientApiError> {
+    fn attach_access_rules(
+        &mut self,
+        _node_id: &NodeId,
+        _access_rules_node_id: &NodeId,
+    ) -> Result<(), ClientApiError> {
         todo!()
     }
 

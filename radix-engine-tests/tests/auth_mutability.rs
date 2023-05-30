@@ -20,7 +20,8 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let (token_address, _, _, _, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
+    let (token_address, _, _, _, _, _, _, _, admin_auth) =
+        test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     let authority_key = match action {

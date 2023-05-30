@@ -926,7 +926,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             vault_id,
             method_name: VAULT_RECALL_IDENT.to_string(),
-            args: to_manifest_value(&VaultRecallInput { amount })
+            args: to_manifest_value(&VaultRecallInput { amount }),
         });
         self
     }
@@ -935,7 +935,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
-            args: to_manifest_value(&VaultFreezeInput { })
+            args: to_manifest_value(&VaultFreezeInput {}),
         });
         self
     }
@@ -944,7 +944,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
-            args: to_manifest_value(&VaultUnfreezeInput { })
+            args: to_manifest_value(&VaultUnfreezeInput {}),
         });
         self
     }

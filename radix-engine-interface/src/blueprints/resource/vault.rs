@@ -68,19 +68,16 @@ pub type VaultRecallOutput = Bucket;
 pub const VAULT_FREEZE_IDENT: &str = "freeze";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct VaultFreezeInput {
-}
+pub struct VaultFreezeInput {}
 
 pub type VaultFreezeOutput = ();
 
 pub const VAULT_UNFREEZE_IDENT: &str = "unfreeze";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct VaultUnfreezeInput {
-}
+pub struct VaultUnfreezeInput {}
 
 pub type VaultUnfreezeOutput = ();
-
 
 //========
 // Stub

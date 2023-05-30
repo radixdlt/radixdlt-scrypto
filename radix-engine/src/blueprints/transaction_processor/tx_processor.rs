@@ -373,7 +373,11 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
-                InstructionV1::CallDirectVaultMethod { vault_id, method_name, args } => {
+                InstructionV1::CallDirectVaultMethod {
+                    vault_id,
+                    method_name,
+                    args,
+                } => {
                     let mut processor_with_api = TransactionProcessorWithApi {
                         worktop,
                         processor,

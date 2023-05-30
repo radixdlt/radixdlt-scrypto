@@ -3,7 +3,6 @@ use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
-
 pub const VAULT_WITHDRAW_ROLE: &str = "vault_withdraw";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

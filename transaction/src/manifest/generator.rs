@@ -515,7 +515,7 @@ pub fn generate_instruction(
                 method_name: VAULT_RECALL_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
-        },
+        }
 
         ast::Instruction::DropAllProofs => {
             id_validator
