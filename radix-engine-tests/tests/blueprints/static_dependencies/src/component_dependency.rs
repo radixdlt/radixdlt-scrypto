@@ -2,7 +2,8 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod faucet_call {
-    const FAUCET_ADDRESS: ComponentAddress = FAUCET;
+    const FAUCET_ADDRESS: ComponentAddress =
+        from_bech32!(component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh);
 
     struct FaucetCall {}
 

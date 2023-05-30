@@ -22,7 +22,9 @@ impl Bech32Decoder {
         }
     }
 
-    pub fn validate_and_decode_ignore_hrp(address: &str) -> Result<(String, EntityType, Vec<u8>), DecodeBech32AddressError> {
+    pub fn validate_and_decode_ignore_hrp(
+        address: &str,
+    ) -> Result<(String, EntityType, Vec<u8>), DecodeBech32AddressError> {
         // Decode the address string
         let (hrp, data, variant) = bech32::decode(address)
             .map_err(|err| DecodeBech32AddressError::Bech32mDecodingError(err))?;

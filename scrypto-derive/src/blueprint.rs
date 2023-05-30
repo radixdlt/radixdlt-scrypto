@@ -1,9 +1,9 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
+use radix_engine_common::address::Bech32Decoder;
 use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::*;
-use radix_engine_common::address::Bech32Decoder;
 
 use crate::ast;
 
@@ -94,13 +94,27 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             if !type_string.contains("ResourceAddress")
                 && !type_string.contains("ComponentAddress")
                 && !type_string.contains("PackageAddress")
-                && !type_string.contains("GlobalAddress") {
+                && !type_string.contains("GlobalAddress")
+            {
                 continue;
             }
 
             match item.expr.as_mut() {
-                Expr::Lit(ExprLit { lit: Lit::Str(lit_str), ..}) => {
-                    let (_hrp, _entity_type, address) = Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str()).unwrap();
+                Expr::Macro(m) => {
+                    if !m
+                        .mac
+                        .path
+                        .get_ident()
+                        .unwrap()
+                        .eq(&Ident::new("from_bech32", Span::call_site()))
+                    {
+                        continue;
+                    }
+
+                    let tokens = &m.mac.tokens;
+                    let value = quote! { #tokens }.to_string();
+                    let (_hrp, _entity_type, address) =
+                        Bech32Decoder::validate_and_decode_ignore_hrp(value.as_str()).unwrap();
 
                     let expr = parse_quote! {
                         #ty :: new_or_panic([ #(#address),* ])
@@ -114,7 +128,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         const_statements
     };
-
 
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
     let method_idents = generated_schema_info.method_idents;
