@@ -2275,7 +2275,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_addresses = vec!();
+    let mut pre_allocated_addresses = vec![];
     pre_allocated_addresses.push((
         BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
         GlobalAddress::from(CONSENSUS_MANAGER),

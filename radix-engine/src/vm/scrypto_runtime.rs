@@ -178,14 +178,14 @@ where
         self.allocate_buffer(object_address_encoded)
     }
 
-    fn preallocate_global_address(
+    fn allocate_global_address(
         &mut self,
         blueprint_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_id = scrypto_decode::<BlueprintId>(&blueprint_id)
             .map_err(WasmRuntimeError::InvalidBlueprintId)?;
 
-        let object_address = self.api.preallocate_global_address(blueprint_id)?;
+        let object_address = self.api.allocate_global_address(blueprint_id)?;
         let object_address_encoded =
             scrypto_encode(&object_address).expect("Failed to encode object address");
 
@@ -522,7 +522,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn preallocate_global_address(
+    fn allocate_global_address(
         &mut self,
         blueprint_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

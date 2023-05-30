@@ -253,7 +253,7 @@ fn new_key_value_store(
         .map(|buffer| buffer.0)
 }
 
-fn preallocate_global_address(
+fn allocate_global_address(
     mut caller: Caller<'_, HostState>,
     blueprint_id_ptr: u32,
     blueprint_id_len: u32,
@@ -261,7 +261,7 @@ fn preallocate_global_address(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .preallocate_global_address(read_memory(
+        .allocate_global_address(read_memory(
             caller.as_context_mut(),
             memory,
             blueprint_id_ptr,
@@ -709,13 +709,13 @@ impl WasmiModule {
             },
         );
 
-        let host_preallocate_global_address = Func::wrap(
+        let host_allocate_global_address = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              blueprint_id_ptr: u32,
              blueprint_id_len: u32|
              -> Result<u64, Trap> {
-                preallocate_global_address(caller, blueprint_id_ptr, blueprint_id_len)
+                allocate_global_address(caller, blueprint_id_ptr, blueprint_id_len)
                     .map_err(|e| e.into())
             },
         );
@@ -988,8 +988,8 @@ impl WasmiModule {
 
         linker_define!(
             linker,
-            PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
-            host_preallocate_global_address
+            ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
+            host_allocate_global_address
         );
         linker_define!(linker, COST_UNIT_LIMIT_FUNCTION_NAME, host_cost_unit_limit);
         linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);

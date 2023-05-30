@@ -94,13 +94,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn preallocate_global_address(
+    fn allocate_global_address(
         &mut self,
         blueprint_id: BlueprintId,
     ) -> Result<GlobalAddress, ClientApiError> {
         let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
         let bytes = copy_buffer(unsafe {
-            preallocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
+            allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }

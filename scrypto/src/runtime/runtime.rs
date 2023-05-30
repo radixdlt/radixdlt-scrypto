@@ -117,7 +117,7 @@ impl Runtime {
 
     pub fn preallocate_global_component_address(blueprint_id: BlueprintId) -> ComponentAddress {
         let mut env = ScryptoEnv;
-        let global_address = env.preallocate_global_address(blueprint_id).unwrap();
+        let global_address = env.allocate_global_address(blueprint_id).unwrap();
         unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
     }
 

@@ -46,7 +46,7 @@ pub trait WasmRuntime {
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn preallocate_global_address(
+    fn allocate_global_address(
         &mut self,
         blueprint_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

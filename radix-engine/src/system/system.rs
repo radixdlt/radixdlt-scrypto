@@ -835,7 +835,7 @@ where
     }
 
     #[trace_resources]
-    fn preallocate_global_address(
+    fn allocate_global_address(
         &mut self,
         blueprint_id: BlueprintId,
     ) -> Result<GlobalAddress, RuntimeError> {

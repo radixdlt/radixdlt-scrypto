@@ -645,7 +645,7 @@ impl WasmModule {
                             }
                         }
 
-                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
+                        ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -657,7 +657,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
+                                        ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
