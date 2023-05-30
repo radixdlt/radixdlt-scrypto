@@ -134,6 +134,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
     let method_idents = generated_schema_info.method_idents;
+    let function_idents = generated_schema_info.function_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
 
     let blueprint_name = bp_ident.to_string();
@@ -171,8 +172,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         };
 
         let schema_ident = format_ident!("{}_schema", bp_ident);
-        let function_names = generated_schema_info.function_names;
-        let function_schemas = generated_schema_info.function_schemas;
+        let fn_names = generated_schema_info.fn_names;
+        let fn_schemas = generated_schema_info.fn_schemas;
 
         // Getting the event types if the event attribute is defined for the type
         let (event_type_names, event_type_paths) = {
@@ -222,7 +223,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 // Aggregate functions
                 let mut functions = BTreeMap::new();
                 #(
-                    functions.insert(#function_names.to_string(), #function_schemas);
+                    functions.insert(#fn_names.to_string(), #fn_schemas);
                 )*
 
                 // Aggregate event schemas
@@ -291,7 +292,55 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
 
-    let output_method_enum = if method_idents.is_empty() {
+    let methods_struct = generate_methods_struct(method_idents);
+    let functions_struct = generate_functions_struct(function_idents);
+
+    trace!("Generated mod: \n{}", quote! { #output_original_code });
+    let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
+
+    let functions = generate_dispatcher(bp_ident, bp_items)?;
+    let output_dispatcher = quote! {
+        #(#method_input_structs)*
+        #(#functions)*
+    };
+
+    trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
+
+    let output_stubs = generate_stubs(&stub_ident, &functions_ident, bp_ident, bp_items)?;
+
+    let output = quote! {
+        pub mod #module_ident {
+            #(#use_statements)*
+
+            #(#const_statements)*
+
+            #definition_statements
+
+            #output_original_code
+
+            #methods_struct
+
+            #functions_struct
+
+            #output_dispatcher
+
+            #output_schema
+
+            #output_stubs
+        }
+    };
+
+    #[cfg(feature = "trace")]
+    crate::utils::print_generated_code("blueprint", &output);
+
+    trace!("handle_blueprint() finishes");
+    Ok(output)
+}
+
+fn generate_methods_struct(method_idents: Vec<Ident>) -> TokenStream {
+    let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
+
+    if method_idents.is_empty() {
         quote! {
             pub struct Methods<T> {
                 t: PhantomData<T>,
@@ -335,46 +384,44 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
             }
         }
-    };
+    }
+}
 
-    trace!("Generated mod: \n{}", quote! { #output_original_code });
-    let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
+fn generate_functions_struct(function_idents: Vec<Ident>) -> TokenStream {
+    let function_names: Vec<String> = function_idents.iter().map(|i| i.to_string()).collect();
 
-    let functions = generate_dispatcher(bp_ident, bp_items)?;
-    let output_dispatcher = quote! {
-        #(#method_input_structs)*
-        #(#functions)*
-    };
+    if function_idents.is_empty() {
+        quote! {
+            pub struct Functions<T> {
+                t: PhantomData<T>,
+            }
 
-    trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
-
-    let output_stubs = generate_stubs(&stub_ident, &functions_ident, bp_ident, bp_items)?;
-
-    let output = quote! {
-        pub mod #module_ident {
-            #(#use_statements)*
-
-            #(#const_statements)*
-
-            #definition_statements
-
-            #output_original_code
-
-            #output_method_enum
-
-            #output_dispatcher
-
-            #output_schema
-
-            #output_stubs
+            impl<T> FnMapping<T> for Functions<T> {
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![]
+                }
+            }
         }
-    };
+    } else {
+        quote! {
+            pub struct Functions<T> {
+                #(
+                    #function_idents: T,
+                )*
+            }
 
-    #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("blueprint", &output);
-
-    trace!("handle_blueprint() finishes");
-    Ok(output)
+            impl<T> FnMapping<T> for Functions<T> {
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![
+                        #(
+                            (#function_names.to_string(), self.#function_idents)
+                        ,
+                        )*
+                    ]
+                }
+            }
+        }
+    }
 }
 
 fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<ItemStruct>> {
@@ -694,16 +741,18 @@ fn generate_stubs(
 
 #[allow(dead_code)]
 struct GeneratedSchemaInfo {
-    function_names: Vec<String>,
-    function_schemas: Vec<Expr>,
+    fn_names: Vec<String>,
+    fn_schemas: Vec<Expr>,
     method_idents: Vec<Ident>,
+    function_idents: Vec<Ident>,
 }
 
 #[allow(dead_code)]
 fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<GeneratedSchemaInfo> {
-    let mut function_names = Vec::<String>::new();
-    let mut function_schemas = Vec::<Expr>::new();
+    let mut fn_names = Vec::<String>::new();
+    let mut fn_schemas = Vec::<Expr>::new();
     let mut method_idents = Vec::<Ident>::new();
+    let mut function_idents = Vec::<Ident>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
@@ -748,8 +797,9 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                     validate_type_name(&export_name, bp_ident.span())?;
 
                     if receiver.is_none() {
-                        function_names.push(function_name);
-                        function_schemas.push(parse_quote! {
+                        function_idents.push(m.sig.ident.clone());
+                        fn_names.push(function_name);
+                        fn_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
@@ -759,8 +809,8 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                         });
                     } else {
                         method_idents.push(m.sig.ident.clone());
-                        function_names.push(function_name);
-                        function_schemas.push(parse_quote! {
+                        fn_names.push(function_name);
+                        fn_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
                                 receiver: Option::Some(#receiver),
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
@@ -781,9 +831,10 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
     }
 
     Ok(GeneratedSchemaInfo {
-        function_names,
-        function_schemas,
+        fn_names,
+        fn_schemas,
         method_idents,
+        function_idents,
     })
 }
 
