@@ -83,7 +83,7 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
                 blueprint: blueprint_id.blueprint_name,
             },
             TypeInfoSubstate::KeyValueStore(_) => TypeInfoForValidation::KeyValueStore,
-            TypeInfoSubstate::GlobalAddressOwnership => {
+            TypeInfoSubstate::GlobalAddressOwnership(_) => {
                 TypeInfoForValidation::GlobalAddressOwnership
             }
             TypeInfoSubstate::GlobalAddressPhantom(info) => TypeInfoForValidation::Object {
