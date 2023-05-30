@@ -6,7 +6,6 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SignedIntentV1 {
     pub intent: IntentV1,
@@ -19,7 +18,6 @@ impl TransactionPayload for SignedIntentV1 {
     type Raw = RawSignedIntent;
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedSignedIntentV1 {
     pub intent: PreparedIntentV1,
