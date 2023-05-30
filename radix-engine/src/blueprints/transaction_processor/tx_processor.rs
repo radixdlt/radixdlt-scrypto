@@ -26,6 +26,7 @@ pub struct TransactionProcessorRunInput {
     pub transaction_hash: Hash,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
     pub manifest_encoded_instructions: Vec<u8>,
+    pub pre_allocated_addresses: Vec<Own>, // Required so that the kernel passes the preallocated address to the processor frame
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
     pub blobs: IndexMap<Hash, Vec<u8>>,
 }
@@ -36,6 +37,7 @@ pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
     pub transaction_hash: &'a Hash,
     pub runtime_validations: &'a [RuntimeValidationRequest],
     pub manifest_encoded_instructions: &'a [u8],
+    pub pre_allocated_addresses: Vec<Own>,
     pub references: &'a IndexSet<Reference>,
     pub blobs: &'a IndexMap<Hash, Vec<u8>>,
 }

@@ -68,7 +68,7 @@ impl PreparedTestTransaction {
                     free_credit_in_xrd: 0,
                 },
                 runtime_validations: vec![],
-                pre_allocated_ids: index_set_new(),
+                pre_allocated_addresses: vec![],
             },
         )
     }

@@ -277,11 +277,14 @@ pub fn create_system_bootstrap_transaction(
 
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
-    let mut pre_allocated_ids = index_set_new();
+    let mut pre_allocated_addresses = vec![];
 
     // Package Package
     {
-        pre_allocated_ids.insert(PACKAGE_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(PACKAGE_PACKAGE),
+        ));
         let package_address = PACKAGE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -305,7 +308,10 @@ pub fn create_system_bootstrap_transaction(
 
     // Metadata Package
     {
-        pre_allocated_ids.insert(METADATA_MODULE_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(METADATA_MODULE_PACKAGE),
+        ));
         let package_address = METADATA_MODULE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -326,7 +332,10 @@ pub fn create_system_bootstrap_transaction(
 
     // Royalty Package
     {
-        pre_allocated_ids.insert(ROYALTY_MODULE_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ROYALTY_MODULE_PACKAGE),
+        ));
         let package_address = ROYALTY_MODULE_PACKAGE.into();
 
         instructions.push(InstructionV1::CallFunction {
@@ -348,7 +357,10 @@ pub fn create_system_bootstrap_transaction(
 
     // Access Rules Package
     {
-        pre_allocated_ids.insert(ACCESS_RULES_MODULE_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ACCESS_RULES_MODULE_PACKAGE),
+        ));
         let package_address = ACCESS_RULES_MODULE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -369,7 +381,10 @@ pub fn create_system_bootstrap_transaction(
 
     // Resource Package
     {
-        pre_allocated_ids.insert(RESOURCE_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(RESOURCE_PACKAGE),
+        ));
         let package_address = RESOURCE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -420,7 +435,10 @@ pub fn create_system_bootstrap_transaction(
         );
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.into();
-        pre_allocated_ids.insert(RADIX_TOKEN.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(RADIX_TOKEN),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -444,7 +462,10 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -465,7 +486,10 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = GLOBAL_CALLER_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(GLOBAL_CALLER_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(GLOBAL_CALLER_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -493,7 +517,10 @@ pub fn create_system_bootstrap_transaction(
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_OWNER_BADGE.into();
-        pre_allocated_ids.insert(PACKAGE_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(PACKAGE_OWNER_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -521,7 +548,10 @@ pub fn create_system_bootstrap_transaction(
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = IDENTITY_OWNER_BADGE.into();
-        pre_allocated_ids.insert(IDENTITY_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(IDENTITY_OWNER_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -535,7 +565,10 @@ pub fn create_system_bootstrap_transaction(
             }),
         });
 
-        pre_allocated_ids.insert(IDENTITY_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(IDENTITY_PACKAGE),
+        ));
         let package_address = IDENTITY_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -561,7 +594,10 @@ pub fn create_system_bootstrap_transaction(
 
     // ConsensusManager Package
     {
-        pre_allocated_ids.insert(CONSENSUS_MANAGER_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER_PACKAGE),
+        ));
         let package_address = CONSENSUS_MANAGER_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -598,7 +634,10 @@ pub fn create_system_bootstrap_transaction(
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ACCOUNT_OWNER_BADGE.into();
-        pre_allocated_ids.insert(ACCOUNT_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(ACCOUNT_OWNER_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -612,7 +651,10 @@ pub fn create_system_bootstrap_transaction(
             }),
         });
 
-        pre_allocated_ids.insert(ACCOUNT_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ACCOUNT_PACKAGE),
+        ));
         let package_address = ACCOUNT_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -638,7 +680,10 @@ pub fn create_system_bootstrap_transaction(
 
     // AccessController Package
     {
-        pre_allocated_ids.insert(ACCESS_CONTROLLER_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ACCESS_CONTROLLER_PACKAGE),
+        ));
         let package_address = ACCESS_CONTROLLER_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -659,7 +704,10 @@ pub fn create_system_bootstrap_transaction(
 
     // TransactionProcessor Package
     {
-        pre_allocated_ids.insert(TRANSACTION_PROCESSOR_PACKAGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(TRANSACTION_PROCESSOR_PACKAGE),
+        ));
         let package_address = TRANSACTION_PROCESSOR_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -684,7 +732,10 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -705,7 +756,10 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -726,7 +780,10 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TRANSACTION_BADGE.into();
-        pre_allocated_ids.insert(SYSTEM_TRANSACTION_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(SYSTEM_TRANSACTION_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -745,8 +802,11 @@ pub fn create_system_bootstrap_transaction(
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(FAUCET_PACKAGE),
+        ));
         let package_address = FAUCET_PACKAGE.into();
-        pre_allocated_ids.insert(FAUCET_PACKAGE.into());
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -768,8 +828,11 @@ pub fn create_system_bootstrap_transaction(
         // TODO: calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(GENESIS_HELPER_PACKAGE),
+        ));
         let package_address = GENESIS_HELPER_PACKAGE.into();
-        pre_allocated_ids.insert(GENESIS_HELPER_PACKAGE.into());
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -790,8 +853,14 @@ pub fn create_system_bootstrap_transaction(
         let consensus_manager_component_address =
             Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER);
         let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE);
-        pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
-        pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER),
+        ));
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
@@ -815,7 +884,10 @@ pub fn create_system_bootstrap_transaction(
             }
             .into(),
         );
-        pre_allocated_ids.insert(GENESIS_HELPER.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&GENESIS_HELPER_PACKAGE, GENESIS_HELPER_BLUEPRINT),
+            GlobalAddress::from(GENESIS_HELPER),
+        ));
         let address_bytes = GENESIS_HELPER.as_node_id().0;
         instructions.push(InstructionV1::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
@@ -832,7 +904,7 @@ pub fn create_system_bootstrap_transaction(
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_ids,
+        pre_allocated_addresses,
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Bootstrap")),
     }
@@ -844,13 +916,20 @@ pub fn create_genesis_data_ingestion_transaction(
     chunk_number: usize,
 ) -> SystemTransactionV1 {
     let mut instructions = Vec::new();
-    let mut pre_allocated_ids = index_set_new();
+    let mut pre_allocated_addresses = vec![];
 
     if let GenesisDataChunk::Resources(resources) = &chunk {
         for resource in resources {
-            pre_allocated_ids.insert(NodeId::new(
-                EntityType::GlobalFungibleResourceManager as u8,
-                &resource.address_bytes_without_entity_id,
+            pre_allocated_addresses.push((
+                BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+                GlobalAddress::try_from(
+                    NodeId::new(
+                        EntityType::GlobalFungibleResourceManager as u8,
+                        &resource.address_bytes_without_entity_id,
+                    )
+                    .0,
+                )
+                .unwrap(),
             ));
         }
     }
@@ -863,7 +942,7 @@ pub fn create_genesis_data_ingestion_transaction(
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_ids,
+        pre_allocated_addresses,
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Data Chunk: {}", chunk_number)),
     }
@@ -898,7 +977,10 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_ids: indexset! { FAUCET.as_node_id().clone() },
+        pre_allocated_addresses: vec![(
+            BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
+            GlobalAddress::from(FAUCET),
+        )],
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
     }

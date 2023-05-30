@@ -6,9 +6,7 @@ use crate::model::{AuthZoneParams, Executable};
 pub struct SystemTransactionV1 {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
-    // This is an IndexSet rather than a BTreeSet to better satisfy the round trip property
-    // when encoding from a value model which may not respect the BTreeSet ordering
-    pub pre_allocated_ids: IndexSet<NodeId>,
+    pub pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
     pub hash_for_execution: Hash,
 }
 
@@ -23,14 +21,14 @@ impl TransactionPayloadEncode for SystemTransactionV1 {
     }
 }
 
-type PreparedPreAllocatedIds = SummarizedRawFullBody<IndexSet<NodeId>>;
+type PreparedPreAllocatedIds = SummarizedRawFullBody<Vec<(BlueprintId, GlobalAddress)>>;
 type PreparedHash = SummarizedHash;
 
 pub struct PreparedSystemTransactionV1 {
     pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
     pub blobs: PreparedBlobsV1,
-    pub pre_allocated_ids: PreparedPreAllocatedIds,
+    pub pre_allocated_addresses: PreparedPreAllocatedIds,
     pub hash_for_execution: PreparedHash,
     pub summary: Summary,
 }
@@ -49,7 +47,7 @@ impl HasSummary for PreparedSystemTransactionV1 {
 
 impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let ((prepared_instructions, blobs, pre_allocated_ids, hash_for_execution), summary) =
+        let ((prepared_instructions, blobs, pre_allocated_addresses, hash_for_execution), summary) =
             ConcatenatedDigest::prepare_from_transaction_payload_enum::<(
                 PreparedInstructionsV1,
                 PreparedBlobsV1,
@@ -60,7 +58,7 @@ impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
             encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs,
-            pre_allocated_ids,
+            pre_allocated_addresses,
             hash_for_execution,
             summary,
         })
@@ -69,7 +67,7 @@ impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
 
 impl TransactionFullChildPreparable for PreparedSystemTransactionV1 {
     fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let ((prepared_instructions, blobs, pre_allocated_ids, hash_for_execution), summary) =
+        let ((prepared_instructions, blobs, pre_allocated_addresses, hash_for_execution), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct::<(
                 PreparedInstructionsV1,
                 PreparedBlobsV1,
@@ -80,7 +78,7 @@ impl TransactionFullChildPreparable for PreparedSystemTransactionV1 {
             encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs,
-            pre_allocated_ids,
+            pre_allocated_addresses,
             hash_for_execution,
             summary,
         })
@@ -94,7 +92,7 @@ impl SystemTransactionV1 {
         Self {
             instructions,
             blobs,
-            pre_allocated_ids: indexset!(),
+            pre_allocated_addresses: vec![],
             hash_for_execution,
         }
     }
@@ -121,7 +119,7 @@ impl PreparedSystemTransactionV1 {
                     free_credit_in_xrd: DEFAULT_FREE_CREDIT_IN_XRD,
                 },
                 runtime_validations: vec![],
-                pre_allocated_ids: self.pre_allocated_ids.inner.clone(),
+                pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
             },
         )
     }

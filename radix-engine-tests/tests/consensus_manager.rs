@@ -2275,9 +2275,9 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_ids = index_set_new();
-    pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
-    pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
+    let mut pre_allocated_addresses = index_set_new();
+    pre_allocated_addresses.insert(CONSENSUS_MANAGER.into());
+    pre_allocated_addresses.insert(VALIDATOR_OWNER_BADGE.into());
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,
@@ -2293,7 +2293,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
         }],
         // No validator proofs
         btreeset![],
-        pre_allocated_ids,
+        pre_allocated_addresses,
     );
 
     // Assert
@@ -2308,9 +2308,9 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_ids = index_set_new();
-    pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
-    pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
+    let mut pre_allocated_addresses = index_set_new();
+    pre_allocated_addresses.insert(CONSENSUS_MANAGER.into());
+    pre_allocated_addresses.insert(VALIDATOR_OWNER_BADGE.into());
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,
@@ -2325,7 +2325,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
             ),
         }],
         btreeset![AuthAddresses::system_role()],
-        pre_allocated_ids,
+        pre_allocated_addresses,
     );
 
     // Assert

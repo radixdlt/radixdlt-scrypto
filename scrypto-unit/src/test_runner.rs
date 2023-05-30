@@ -1268,7 +1268,7 @@ impl TestRunner {
         &mut self,
         instructions: Vec<InstructionV1>,
         proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_ids: IndexSet<NodeId>,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
 
@@ -1277,7 +1277,7 @@ impl TestRunner {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_ids,
+                pre_allocated_addresses,
             }
             .prepare()
             .expect("expected transaction to be preparable")
@@ -1304,7 +1304,7 @@ impl TestRunner {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_ids: index_set_new(),
+                pre_allocated_addresses: vec![],
             }
             .prepare()
             .expect("expected transaction to be preparable")
@@ -1380,7 +1380,7 @@ impl TestRunner {
         let substate_db = InMemorySubstateDatabase::standard();
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
-        let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
+        let mut id_allocator = IdAllocator::new(transaction_hash);
         let execution_config = ExecutionConfig::default();
         let scrypto_interpreter = ScryptoVm {
             wasm_metering_config: WasmMeteringConfig::V0,
@@ -1420,6 +1420,7 @@ impl TestRunner {
             function_name,
             &indexset!(),
             scrypto_args!(&args),
+            &vec![],
         )
     }
 

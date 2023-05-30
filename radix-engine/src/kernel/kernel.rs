@@ -41,6 +41,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         function_name: &str,
         references: &IndexSet<Reference>,
         args: Vec<u8>,
+        preallocation: &Vec<(BlueprintId, GlobalAddress)>,
     ) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
@@ -57,6 +58,16 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         };
 
         SystemConfig::on_init(&mut kernel)?;
+
+        for pre in preallocation {
+            kernel
+                .kernel_allocate_node_id(IDAllocationRequest::Object {
+                    blueprint_id: pre.0.clone(),
+                    global: true,
+                    virtual_node_id: Some(pre.1.clone().into()),
+                })
+                .expect("Failed to preallocate global addresses");
+        }
 
         for reference in references.iter() {
             let node_id = &reference.0;
@@ -125,7 +136,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
-        kernel.id_allocator.on_teardown()?;
         SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)
@@ -200,8 +210,6 @@ where
 
         // Push call frame
         {
-            self.id_allocator.push();
-
             let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
                 .map_err(CallFrameError::CreateFrameError)
                 .map_err(KernelError::CallFrameError)?;
@@ -262,8 +270,6 @@ where
             let parent = self.prev_frame_stack.pop().unwrap();
 
             let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
-
-            self.id_allocator.pop()?;
 
             M::after_pop_frame(self, dropped_frame.actor())?;
         }
@@ -331,7 +337,8 @@ where
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &node_substates, self)?;
 
-        self.id_allocator.take_node_id(node_id)?;
+        // FIXME check phantom object
+
         let store_access = self
             .current_frame
             .create_node(

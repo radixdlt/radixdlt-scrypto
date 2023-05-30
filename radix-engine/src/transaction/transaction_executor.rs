@@ -195,7 +195,10 @@ where
             println!("Transaction hash: {}", executable.transaction_hash());
             println!("Payload size: {}", executable.payload_size());
             println!("Fee payment: {:?}", executable.fee_payment());
-            println!("Pre-allocated IDs: {:?}", executable.pre_allocated_ids());
+            println!(
+                "Pre-allocated IDs: {:?}",
+                executable.pre_allocated_addresses()
+            );
             println!("Blobs: {:?}", executable.blobs().keys());
             println!("References: {:?}", executable.references());
 
@@ -209,14 +212,7 @@ where
 
         // Prepare
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
-        let mut id_allocator = IdAllocator::new(
-            executable.transaction_hash().clone(),
-            executable
-                .pre_allocated_ids()
-                .into_iter()
-                .cloned()
-                .collect(),
-        );
+        let mut id_allocator = IdAllocator::new(executable.transaction_hash().clone());
         let mut system = SystemConfig {
             blueprint_schema_cache: NonIterMap::new(),
             callback_obj: Vm {
@@ -250,10 +246,16 @@ where
                     transaction_hash: executable.transaction_hash(),
                     runtime_validations: executable.runtime_validations(),
                     manifest_encoded_instructions: executable.encoded_instructions(),
+                    pre_allocated_addresses: executable
+                        .pre_allocated_addresses()
+                        .iter()
+                        .map(|x| Own(x.1.as_node_id().clone()))
+                        .collect(),
                     references: executable.references(),
                     blobs: executable.blobs(),
                 })
                 .unwrap(),
+                executable.pre_allocated_addresses(),
             )
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();

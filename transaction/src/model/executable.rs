@@ -10,7 +10,7 @@ pub struct AuthZoneParams {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
-    pub pre_allocated_ids: IndexSet<NodeId>,
+    pub pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
@@ -86,8 +86,8 @@ impl<'a> Executable<'a> {
         &self.context.auth_zone_params
     }
 
-    pub fn pre_allocated_ids(&self) -> &IndexSet<NodeId> {
-        &self.context.pre_allocated_ids
+    pub fn pre_allocated_addresses(&self) -> &Vec<(BlueprintId, GlobalAddress)> {
+        &self.context.pre_allocated_addresses
     }
 
     pub fn payload_size(&self) -> usize {
