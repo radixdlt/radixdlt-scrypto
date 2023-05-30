@@ -18,7 +18,7 @@ pub struct ObjectInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct GlobalAddressPhantomInfo {
+pub struct GlobalAddressPhantom {
     pub blueprint_id: BlueprintId,
 }
 

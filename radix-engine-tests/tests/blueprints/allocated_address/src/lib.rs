@@ -2,11 +2,11 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod apa {
-    struct AlmightyPreallocatedAddress {
+    struct AllocatedAddressTest {
         store: Option<KeyValueStore<u32, ComponentAddress>>,
     }
 
-    impl AlmightyPreallocatedAddress {
+    impl AllocatedAddressTest {
         pub fn create_and_return() -> ComponentAddress {
             Runtime::allocate_component_address(Runtime::blueprint_id())
         }
@@ -25,7 +25,7 @@ mod apa {
             let address = Runtime::allocate_component_address(Runtime::blueprint_id());
             Runtime::call_function(
                 Runtime::package_address(),
-                "AlmightyPreallocatedAddress",
+                "AllocatedAddressTest",
                 "globalize_with_preallocated_address",
                 scrypto_args!(address),
             )

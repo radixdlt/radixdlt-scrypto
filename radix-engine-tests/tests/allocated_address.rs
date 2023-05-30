@@ -6,14 +6,14 @@ use transaction::builder::ManifestBuilder;
 fn test_create_and_return() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/preallocated_address");
+    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_addresses");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package,
-            "AlmightyPreallocatedAddress",
+            "AllocatedAddressTest",
             "create_and_return",
             manifest_args!(),
         )
@@ -28,14 +28,14 @@ fn test_create_and_return() {
 fn test_create_and_call() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/preallocated_address");
+    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_addresses");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package,
-            "AlmightyPreallocatedAddress",
+            "AllocatedAddressTest",
             "create_and_call",
             manifest_args!(),
         )
@@ -50,14 +50,14 @@ fn test_create_and_call() {
 fn test_create_and_consume_within_frame() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/preallocated_address");
+    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_addresses");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package,
-            "AlmightyPreallocatedAddress",
+            "AllocatedAddressTest",
             "create_and_consume_within_frame",
             manifest_args!(),
         )
@@ -72,14 +72,14 @@ fn test_create_and_consume_within_frame() {
 fn test_create_and_consume_in_another_frame() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/preallocated_address");
+    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_addresses");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package,
-            "AlmightyPreallocatedAddress",
+            "AllocatedAddressTest",
             "create_and_consume_in_another_frame",
             manifest_args!(),
         )
@@ -94,14 +94,14 @@ fn test_create_and_consume_in_another_frame() {
 fn test_create_and_store_in_key_value_store() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/preallocated_address");
+    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_addresses");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package,
-            "AlmightyPreallocatedAddress",
+            "AllocatedAddressTest",
             "create_and_store_in_key_value_store",
             manifest_args!(),
         )
@@ -116,14 +116,14 @@ fn test_create_and_store_in_key_value_store() {
 fn test_create_and_store_in_metadata() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/preallocated_address");
+    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_addresses");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package,
-            "AlmightyPreallocatedAddress",
+            "AllocatedAddressTest",
             "create_and_store_in_metadata",
             manifest_args!(),
         )

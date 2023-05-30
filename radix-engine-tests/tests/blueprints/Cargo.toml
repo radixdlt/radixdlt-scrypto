@@ -2,6 +2,7 @@
 members = [
     "access_rules",
     "address",
+    "allocated_address",
     "arguments",
     "balance_changes",
     "bucket",
@@ -28,7 +29,6 @@ members = [
     "package",
     "package_schema",
     "package_token",
-    "preallocated_address",
     "proof",
     "proof_creation",
     "recall",
