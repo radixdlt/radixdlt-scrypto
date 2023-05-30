@@ -134,6 +134,14 @@ pub trait WasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
 
+    fn cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn update_wasm_memory_usage(
         &mut self,
         size: usize,

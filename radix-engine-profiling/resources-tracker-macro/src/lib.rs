@@ -179,7 +179,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
 
                 // new function block
                 item_fn.block = Box::new(parse_quote! {{
-                    use radix_engine_utils::{QEMU_PLUGIN, data_analyzer::{OutputParam, OutputParamValue}};
+                    use radix_engine_profiling::{QEMU_PLUGIN, data_analyzer::{OutputParam, OutputParamValue}};
                     #arg_evaluate;
                     #args_quote_array;
                     QEMU_PLUGIN.with(|v| {

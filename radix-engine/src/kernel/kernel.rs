@@ -42,7 +42,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
-        radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
+        radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 

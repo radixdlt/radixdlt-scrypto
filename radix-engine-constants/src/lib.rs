@@ -24,6 +24,12 @@ pub const ROLA_HASHABLE_PAYLOAD_PREFIX: u8 = 0x52;
 pub const TRANSACTION_HASHABLE_PAYLOAD_PREFIX: u8 = 0x54;
 
 //==========================
+// Transaction construction
+//==========================
+
+pub const DEFAULT_TIP_PERCENTAGE: u16 = 5;
+
+//==========================
 // Transaction validation
 //==========================
 

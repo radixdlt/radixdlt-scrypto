@@ -2,6 +2,8 @@ use scrypto::api::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
+mod nf_data_with_global;
+
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,

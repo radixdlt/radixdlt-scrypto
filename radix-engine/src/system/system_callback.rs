@@ -1,4 +1,5 @@
 use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use super::payload_validation::SchemaOrigin;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
@@ -24,6 +25,7 @@ use radix_engine_interface::schema::{IndexedBlueprintSchema, RefTypes};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
+    blueprint_id: BlueprintId,
     blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     with_receiver: Option<(NodeId, bool)>,
@@ -58,6 +60,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             input.as_slice(),
             &blueprint_schema.schema,
             function_schema.input,
+            SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
@@ -71,6 +74,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
+    blueprint_id: BlueprintId,
     blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     output: &IndexedScryptoValue,
@@ -85,6 +89,7 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             output.as_slice(),
             &blueprint_schema.schema,
             function_schema.output,
+            SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
@@ -113,6 +118,7 @@ impl Default for SystemLockData {
 pub enum KeyValueEntryLockData {
     Read,
     Write {
+        schema_origin: SchemaOrigin,
         schema: ScryptoSchema,
         index: LocalTypeIndex,
         can_own: bool,
@@ -123,6 +129,7 @@ pub enum KeyValueEntryLockData {
 pub enum FieldLockData {
     Read,
     Write {
+        schema_origin: SchemaOrigin,
         schema: ScryptoSchema,
         index: LocalTypeIndex,
     },
@@ -395,8 +402,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             //  Validate input
             let export_name = match &ident {
                 FnIdent::Application(ident) => {
-                    let export_name =
-                        validate_input(&mut system, &schema, &ident, receiver, &args)?;
+                    let export_name = validate_input(
+                        &mut system,
+                        blueprint.clone(),
+                        &schema,
+                        &ident,
+                        receiver,
+                        &args,
+                    )?;
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
@@ -425,7 +438,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Validate output
             match ident {
                 FnIdent::Application(ident) => {
-                    validate_output(&mut system, &schema, &ident, &output)?
+                    validate_output(&mut system, blueprint, &schema, &ident, &output)?
                 }
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema

@@ -36,6 +36,18 @@ extern "C" {
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
 
     //===============
+    // Costing API
+    //===============
+
+    pub fn cost_unit_limit() -> u32;
+
+    pub fn cost_unit_price() -> Buffer;
+
+    pub fn tip_percentage() -> u32;
+
+    pub fn fee_balance() -> Buffer;
+
+    //===============
     // Object API
     //===============
 
@@ -185,6 +197,26 @@ extern "C" {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn cost_unit_limit() -> u32 {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn cost_unit_price() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn tip_percentage() -> u32 {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn fee_balance() -> Buffer {
     unreachable!()
 }
 

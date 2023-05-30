@@ -270,6 +270,30 @@ fn preallocate_global_address(
         .map(|buffer| buffer.0)
 }
 
+fn cost_unit_limit(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.cost_unit_limit()
+}
+
+fn cost_unit_price(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.cost_unit_price().map(|buffer| buffer.0)
+}
+
+fn tip_percentage(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.tip_percentage()
+}
+
+fn fee_balance(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.fee_balance().map(|buffer| buffer.0)
+}
+
 fn globalize_object(
     mut caller: Caller<'_, HostState>,
     modules_ptr: u32,
@@ -696,6 +720,34 @@ impl WasmiModule {
             },
         );
 
+        let host_cost_unit_limit = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
+                cost_unit_limit(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_cost_unit_price = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                cost_unit_price(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_tip_percentage = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
+                tip_percentage(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_fee_balance = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                fee_balance(caller).map_err(|e| e.into())
+            },
+        );
+
         let host_globalize_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -939,6 +991,10 @@ impl WasmiModule {
             PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
             host_preallocate_global_address
         );
+        linker_define!(linker, COST_UNIT_LIMIT_FUNCTION_NAME, host_cost_unit_limit);
+        linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);
+        linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
+        linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
         linker_define!(
             linker,
             GLOBALIZE_OBJECT_FUNCTION_NAME,

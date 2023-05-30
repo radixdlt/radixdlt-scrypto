@@ -4,14 +4,16 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use radix_engine_store_interface::{
+    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
+    interface::DatabaseUpdate,
+};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::CustomGenesis;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
