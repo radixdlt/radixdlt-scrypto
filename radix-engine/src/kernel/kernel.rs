@@ -145,7 +145,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
-        kernel.id_allocator.on_teardown()?;
         SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)
@@ -322,8 +321,6 @@ where
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &node_substates, self)?;
-
-        self.id_allocator.take_node_id(node_id)?;
 
         let store_access = self
             .current_frame

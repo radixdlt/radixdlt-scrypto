@@ -212,7 +212,6 @@ where
             IDAllocation::Object {
                 blueprint_id: blueprint.clone(),
                 global: false,
-                virtual_node_id: None,
             }
             .entity_type(),
         )?;
@@ -845,11 +844,26 @@ where
             IDAllocation::Object {
                 blueprint_id,
                 global: true,
-                virtual_node_id: None,
             }
             .entity_type(),
         )?;
+
+        // TODO: create global address ownership
+        // TODO: create global address phantom
+
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
+    }
+
+    #[trace_resources]
+    fn allocate_virtual_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+        global_address: GlobalAddress,
+    ) -> Result<(), RuntimeError> {
+        // TODO: create global address ownership
+        // TODO: create global address phantom
+
+        Ok(())
     }
 
     #[trace_resources]
@@ -864,7 +878,6 @@ where
             IDAllocation::Object {
                 blueprint_id,
                 global: true,
-                virtual_node_id: None,
             }
             .entity_type(),
         )?;
@@ -882,6 +895,8 @@ where
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
         // FIXME ensure that only the package actor can globalize its own blueprints
+
+        // TODO check global address ownership
 
         self.globalize_with_address_internal(modules, address)
     }

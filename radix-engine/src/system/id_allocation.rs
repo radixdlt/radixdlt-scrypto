@@ -1,5 +1,4 @@
 use radix_engine_common::types::EntityType;
-use radix_engine_common::types::NodeId;
 use radix_engine_common::{native_addresses::*, ScryptoSbor};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -14,7 +13,6 @@ pub enum IDAllocation {
     Object {
         blueprint_id: BlueprintId,
         global: bool,
-        virtual_node_id: Option<NodeId>,
     },
     KeyValueStore,
     GlobalAddressOwnership,
@@ -38,7 +36,6 @@ impl IDAllocation {
             IDAllocation::Object {
                 blueprint_id,
                 global,
-                virtual_node_id: _,
             } => {
                 // FIXME final check before Babylon release!
                 if *global {

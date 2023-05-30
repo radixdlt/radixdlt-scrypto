@@ -104,6 +104,12 @@ pub trait ClientObjectApi<E> {
     /// Pre-allocates a global address, for a future globalization.
     fn allocate_global_address(&mut self, blueprint_id: BlueprintId) -> Result<GlobalAddress, E>;
 
+    fn allocate_virtual_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+        global_address: GlobalAddress,
+    ) -> Result<(), E>;
+
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all. A global address is automatically created and returned.
     fn globalize(&mut self, modules: BTreeMap<ObjectModuleId, NodeId>) -> Result<GlobalAddress, E>;

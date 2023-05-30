@@ -182,6 +182,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         // TODO: remove return
         Ok(Vec::new())
     }
+
+    fn allocate_virtual_global_address(
+        &mut self,
+        _blueprint_id: BlueprintId,
+        _global_address: GlobalAddress,
+    ) -> Result<(), ClientApiError> {
+        unimplemented!()
+    }
 }
 
 impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {

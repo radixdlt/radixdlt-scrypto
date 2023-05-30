@@ -1,7 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::system::id_allocation::IDAllocation;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -68,18 +67,11 @@ impl VirtualizationModule {
 
                 let modules: BTreeMap<ObjectModuleId, Own> = scrypto_decode(&rtn).unwrap();
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-                api.kernel_allocate_node_id(
-                    IDAllocation::Object {
-                        blueprint_id: blueprint,
-                        global: true,
-                        virtual_node_id: Some(node_id),
-                    }
-                    .entity_type(),
-                )?;
+                let address = GlobalAddress::new_or_panic(node_id.into());
 
                 let mut system = SystemService::new(api);
-                system
-                    .globalize_with_address(modules, GlobalAddress::new_or_panic(node_id.into()))?;
+                system.allocate_virtual_global_address(blueprint, address)?;
+                system.globalize_with_address(modules, address)?;
 
                 Ok(true)
             }

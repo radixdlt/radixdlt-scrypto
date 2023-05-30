@@ -4,7 +4,6 @@ use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
-use crate::system::id_allocation::IDAllocation;
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
@@ -378,17 +377,8 @@ impl AuthModule {
         );
 
         // Create node
-        let auth_zone_node_id = api.kernel_allocate_node_id(
-            IDAllocation::Object {
-                blueprint_id: BlueprintId {
-                    package_address: RESOURCE_PACKAGE,
-                    blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
-                },
-                global: false,
-                virtual_node_id: None,
-            }
-            .entity_type(),
-        )?;
+        let auth_zone_node_id =
+            api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
 
         api.kernel_create_node(
             auth_zone_node_id,
