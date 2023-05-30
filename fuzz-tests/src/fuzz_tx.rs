@@ -212,7 +212,7 @@ impl TxFuzzer {
         let mut i = 0;
         let instruction_cnt = unstructured.int_in_range(1..=INSTRUCTION_MAX_CNT).unwrap();
 
-        while i < instruction_cnt && unstructured.len() > 0 {
+        while i < instruction_cnt && !unstructured.is_empty() {
             let next: u8 = unstructured
                 .int_in_range(0..=ast::Instruction::COUNT as u8 - 1)
                 .unwrap();
@@ -239,6 +239,7 @@ impl TxFuzzer {
                 }
                 // CallAccessRulesMethod
                 3 => {
+                    // TODO - fuzz more methods
                     global_addresses.push(
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
@@ -266,7 +267,9 @@ impl TxFuzzer {
                     None
                 }
                 // CallRoyaltyMethod
-                7 => Some(InstructionV1::CallRoyaltyMethod {
+                7 =>
+                    // TODO - fuzz more methods
+                    Some(InstructionV1::CallRoyaltyMethod {
                     address: component_address.into(),
                     method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
                     args: manifest_args!(),
@@ -563,7 +566,7 @@ impl TxFuzzer {
                         let vaults = self
                             .runner
                             .get_component_vaults(component_address, resource_address);
-                        if vaults.len() > 0 {
+                        if !vaults.is_empty() {
                             *unstructured.choose(&vaults[..]).unwrap()
                         } else {
                             InternalAddress::arbitrary(&mut unstructured).unwrap().into()
@@ -579,11 +582,11 @@ impl TxFuzzer {
                 41 => {
                     global_addresses.push(
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
-                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMetadataMethod {
-                        address: entity_address.into(),
+                        address,
                         method_name: METADATA_REMOVE_IDENT.to_string(),
                         args: manifest_args!(key)
                     })
@@ -608,12 +611,12 @@ impl TxFuzzer {
                 44 => {
                     global_addresses.push(
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
-                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
                     let value = MetadataValue::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMetadataMethod {
-                        address: entity_address.into(),
+                        address,
                         method_name: METADATA_SET_IDENT.to_string(),
                         args: manifest_args!(key, value)
                     })
@@ -672,20 +675,15 @@ impl TxFuzzer {
                     ast::Instruction::COUNT, next
                 ),
             };
-            match instruction {
-                Some(instruction) => {
-                    let (_, bucket_id, proof_id) = builder.add_instruction(instruction);
-                    match bucket_id {
-                        Some(bucket_id) => buckets.push(bucket_id),
-                        None => {}
-                    }
-                    match proof_id {
-                        Some(proof_id) => proof_ids.push(proof_id),
-                        None => {}
-                    }
-                    i += 1;
+            if let Some(instruction) = instruction {
+                let (_, bucket_id, proof_id) = builder.add_instruction(instruction);
+                if let Some(bucket_id) = bucket_id {
+                    buckets.push(bucket_id)
                 }
-                None => {}
+                if let Some(proof_id) = proof_id {
+                    proof_ids.push(proof_id)
+                }
+                i += 1;
             }
         }
 
@@ -752,14 +750,11 @@ fn test_generate_fuzz_input_data() {
 
         let _result = catch_unwind(AssertUnwindSafe(|| {
             fuzzer.reset_runner();
-            match fuzzer.fuzz_tx_manifest(&bytes[..]) {
-                TxStatus::CommitSuccess => {
-                    let m_hash = hash(&bytes);
-                    let path = format!("manifest_{:?}.raw", m_hash);
-                    std::fs::write(&path, bytes).unwrap();
-                    println!("manifest dumped to file {}", &path);
-                }
-                _ => {}
+            if let TxStatus::CommitSuccess = fuzzer.fuzz_tx_manifest(&bytes[..]) {
+                let m_hash = hash(&bytes);
+                let path = format!("manifest_{:?}.raw", m_hash);
+                std::fs::write(&path, bytes).unwrap();
+                println!("manifest dumped to file {}", &path);
             }
         }));
     }
