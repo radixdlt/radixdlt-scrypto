@@ -29,7 +29,7 @@ fn test_fee_states() {
     let output: (u32, Decimal, u32, Decimal) = receipt.expect_commit_success().output(1);
     assert_eq!(output.0, DEFAULT_COST_UNIT_LIMIT);
     assert_eq!(output.1, transmute_u128_as_decimal(DEFAULT_COST_UNIT_PRICE));
-    assert_eq!(output.2, u32::from(DEFAULT_TIP_PERCENTAGE));
+    assert_eq!(output.2, 0);
     // At the time checking fee balance, it should be still using system loan. This is because
     // loan is designed to be slightly more than what it takes to `lock_fee` from a component.
     // Therefore, the balance should be between `100` and `100 + loan_in_xrd`.
