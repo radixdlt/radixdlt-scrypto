@@ -17,8 +17,7 @@ use sbor::rust::string::ToString;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
 
-/// Represents an ID allocation request.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IDAllocationRequest {
     Object {
         blueprint_id: BlueprintId,
@@ -28,6 +27,13 @@ pub enum IDAllocationRequest {
 }
 
 impl IDAllocationRequest {
+    pub fn is_global(&self) -> bool {
+        match self {
+            IDAllocationRequest::Object { global, .. } => *global,
+            IDAllocationRequest::KeyValueStore => false,
+        }
+    }
+
     pub fn entity_type(&self) -> EntityType {
         match self {
             IDAllocationRequest::Object {
@@ -87,6 +93,11 @@ pub struct ObjectInfo {
     pub global: bool,
     pub outer_object: Option<GlobalAddress>,
     pub instance_schema: Option<InstanceSchema>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct PhantomObjectInfo {
+    pub request: IDAllocationRequest,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

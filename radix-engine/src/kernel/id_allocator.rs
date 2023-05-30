@@ -79,9 +79,8 @@ impl IdAllocator {
     /// This should only be used when not using a pre-allocated address.
     pub fn allocate_node_id(
         &mut self,
-        request: IDAllocationRequest,
+        entity_type: EntityType,
     ) -> Result<NodeId, RuntimeError> {
-        let entity_type = request.entity_type();
         let node_id = self
             .next_node_id(entity_type)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;

@@ -11,6 +11,7 @@ use crate::errors::*;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
@@ -298,7 +299,26 @@ where
     ) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(&request, self)?;
 
-        let node_id = self.id_allocator.allocate_node_id(request)?;
+        // Create a node ID
+        let node_id = self.id_allocator.allocate_node_id(request.entity_type())?;
+
+        // Create phantom object
+        // TODO: move to system?
+        let push_to_store = request.is_global();
+        self.current_frame
+            .create_node(
+                node_id,
+                btreemap!(
+                    TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                        TypeInfoSubstate::PhantomObject(PhantomObjectInfo { request })
+                    ).to_substates()
+                ),
+                &mut self.heap,
+                self.store,
+                push_to_store,
+            )
+            .map_err(CallFrameError::CreateNodeError)
+            .map_err(KernelError::CallFrameError)?;
 
         Ok(node_id)
     }
@@ -323,7 +343,13 @@ where
         self.id_allocator.take_node_id(node_id)?;
         let store_access = self
             .current_frame
-            .create_node(node_id, node_substates, &mut self.heap, self.store)
+            .create_node(
+                node_id,
+                node_substates,
+                &mut self.heap,
+                self.store,
+                node_id.is_global(),
+            )
             .map_err(CallFrameError::CreateNodeError)
             .map_err(KernelError::CallFrameError)?;
 
