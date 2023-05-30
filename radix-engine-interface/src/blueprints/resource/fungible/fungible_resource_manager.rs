@@ -46,7 +46,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
-    pub resource_address: (Own, ResourceAddress),
+    pub resource_address: Own,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -55,7 +55,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
-    pub resource_address: (ManifestExpression, ResourceAddress),
+    pub resource_address: ManifestExpression,
 }
 
 pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);

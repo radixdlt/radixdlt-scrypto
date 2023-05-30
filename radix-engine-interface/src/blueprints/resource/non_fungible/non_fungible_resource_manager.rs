@@ -66,7 +66,7 @@ pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub resource_address: (Own, ResourceAddress),
+    pub resource_address: Own,
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -76,7 +76,7 @@ pub struct NonFungibleResourceManagerCreateWithAddressManifestInput {
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub resource_address: (ManifestExpression, ResourceAddress),
+    pub resource_address: ManifestExpression,
 }
 
 pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;

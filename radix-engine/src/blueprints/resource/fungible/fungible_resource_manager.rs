@@ -108,18 +108,17 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
-        let resource_address = ResourceAddress::new_or_panic(address.into());
 
         Self::create_with_initial_supply_and_address(
             divisibility,
             metadata,
             access_rules,
             initial_supply,
-            (Own(address_ownership), resource_address),
+            Own(address_ownership),
             api,
         )
     }
@@ -129,7 +128,7 @@ impl FungibleResourceManagerBlueprint {
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
-        resource_address: (Own, ResourceAddress),
+        resource_address_ownership: Own,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
@@ -147,16 +146,16 @@ impl FungibleResourceManagerBlueprint {
 
         check_new_amount(divisibility, initial_supply)?;
 
-        let bucket = globalize_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_fungible_with_initial_supply(
             object_id,
-            resource_address.0,
+            resource_address_ownership,
             access_rules,
             metadata,
             initial_supply,
             api,
         )?;
 
-        Ok((resource_address.1, bucket))
+        Ok((resource_address, bucket))
     }
 
     pub(crate) fn mint<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>

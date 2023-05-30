@@ -16,7 +16,7 @@ pub const CONSENSUS_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ConsensusManagerCreateInput {
-    pub validator_owner_token: (Own, ResourceAddress), // TODO: do we need both? possible attack point?
+    pub validator_owner_token_address: Own,
     pub component_address: Own,
     pub initial_epoch: u64,
     pub initial_config: ConsensusManagerConfig,

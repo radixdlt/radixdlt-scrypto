@@ -102,17 +102,16 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
-        let resource_address = ResourceAddress::new_or_panic(address.into());
         Self::create_with_address(
             id_type,
             non_fungible_schema,
             metadata,
             access_rules,
-            (Own(address_ownership), resource_address),
+            Own(address_ownership),
             api,
         )
     }
@@ -122,7 +121,7 @@ impl NonFungibleResourceManagerBlueprint {
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        resource_address: (Own, ResourceAddress),
+        resource_address_ownership: Own,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -148,9 +147,13 @@ impl NonFungibleResourceManagerBlueprint {
             btreemap!(),
         )?;
 
-        globalize_resource_manager(object_id, resource_address.0, access_rules, metadata, api)?;
-
-        Ok(resource_address.1)
+        globalize_resource_manager(
+            object_id,
+            resource_address_ownership,
+            access_rules,
+            metadata,
+            api,
+        )
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
@@ -177,11 +180,10 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
-        let resource_address = ResourceAddress::new_or_panic(address.into());
 
         let supply: Decimal = Decimal::from(entries.len());
 
@@ -221,7 +223,7 @@ impl NonFungibleResourceManagerBlueprint {
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
             Own(address_ownership),
             access_rules,
@@ -260,11 +262,10 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
-        let resource_address = ResourceAddress::new_or_panic(address.into());
 
         let instance_schema = InstanceSchema {
             schema: non_fungible_schema.schema,
@@ -281,7 +282,7 @@ impl NonFungibleResourceManagerBlueprint {
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
             Own(address_ownership),
             access_rules,

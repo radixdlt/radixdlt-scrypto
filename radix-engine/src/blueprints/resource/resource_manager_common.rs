@@ -158,7 +158,7 @@ pub fn globalize_resource_manager<Y>(
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     api: &mut Y,
-) -> Result<(), RuntimeError>
+) -> Result<ResourceAddress, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
@@ -168,7 +168,7 @@ where
     let metadata = Metadata::create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-    api.globalize_with_address(
+    let address = api.globalize_with_address(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
@@ -178,7 +178,7 @@ where
         resource_address_ownership.0,
     )?;
 
-    Ok(())
+    Ok(ResourceAddress::new_or_panic(address.into()))
 }
 
 pub fn globalize_fungible_with_initial_supply<Y>(
@@ -188,7 +188,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     metadata: BTreeMap<String, MetadataValue>,
     initial_supply: Decimal,
     api: &mut Y,
-) -> Result<Bucket, RuntimeError>
+) -> Result<(ResourceAddress, Bucket), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
@@ -197,7 +197,7 @@ where
     let metadata = Metadata::create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-    let (_, bucket_id) = api.globalize_with_address_and_create_inner_object(
+    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
@@ -212,7 +212,10 @@ where
         ],
     )?;
 
-    Ok(Bucket(Own(bucket_id)))
+    Ok((
+        ResourceAddress::new_or_panic(address.into()),
+        Bucket(Own(bucket_id)),
+    ))
 }
 
 pub fn globalize_non_fungible_with_initial_supply<Y>(
@@ -222,7 +225,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     metadata: BTreeMap<String, MetadataValue>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
-) -> Result<Bucket, RuntimeError>
+) -> Result<(ResourceAddress, Bucket), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
@@ -233,7 +236,7 @@ where
     let metadata = Metadata::create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-    let (_, bucket_id) = api.globalize_with_address_and_create_inner_object(
+    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
@@ -248,5 +251,8 @@ where
         ],
     )?;
 
-    Ok(Bucket(Own(bucket_id)))
+    Ok((
+        ResourceAddress::new_or_panic(address.into()),
+        Bucket(Own(bucket_id)),
+    ))
 }

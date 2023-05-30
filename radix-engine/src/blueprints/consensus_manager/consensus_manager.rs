@@ -178,7 +178,7 @@ pub struct ConsensusManagerBlueprint;
 
 impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
-        validator_token_address: (Own, ResourceAddress),
+        validator_token_address_ownership: Own,
         component_address_ownership: Own,
         initial_epoch: u64,
         initial_config: ConsensusManagerConfig,
@@ -205,7 +205,7 @@ impl ConsensusManagerBlueprint {
                 NonFungibleIdType::UUID,
                 metadata,
                 access_rules,
-                validator_token_address,
+                validator_token_address_ownership,
                 api,
             )?;
         };
