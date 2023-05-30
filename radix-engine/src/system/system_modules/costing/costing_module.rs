@@ -130,6 +130,11 @@ impl CostingModule {
                     },
                     1,
                 )?,
+                StoreAccess::ReadFromDbNotFound => self.apply_execution_cost(
+                    costing_reason.clone(),
+                    |fee_table| fee_table.kernel_api_cost(CostingEntry::SubstateReadFromDbNotFound),
+                    1,
+                )?,
             }
         }
         Ok(())

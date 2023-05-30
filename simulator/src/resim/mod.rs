@@ -58,9 +58,6 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::track::db_key_mapper::{
-    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-};
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -79,7 +76,12 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema, PackageSchema};
-use radix_engine_store_interface::interface::SubstateDatabase;
+use radix_engine_store_interface::{
+    db_key_mapper::{
+        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+    },
+    interface::SubstateDatabase,
+};
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use sbor::rust::prelude::*;
 use std::env;

@@ -7,7 +7,6 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
@@ -21,7 +20,10 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_engine_store_interface::interface::*;
+use radix_engine_store_interface::{
+    db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
+    interface::*,
+};
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
