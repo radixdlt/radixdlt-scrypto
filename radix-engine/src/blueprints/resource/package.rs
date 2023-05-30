@@ -15,7 +15,7 @@ use radix_engine_interface::schema::{
     BlueprintCollectionSchema, PackageSchema, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
-use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeRef};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 use resources_tracker_macro::trace_resources;
 
@@ -315,10 +315,10 @@ impl ResourceManagerNativePackage {
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
                 BlueprintKeyValueStoreSchema {
-                    key: TypeSchema::Blueprint(
+                    key: TypeRef::Blueprint(
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
-                    value: TypeSchema::Instance(0u8),
+                    value: TypeRef::Instance(0u8),
                     can_own: false,
                 },
             ));

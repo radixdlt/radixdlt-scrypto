@@ -36,8 +36,8 @@ mod royalty_test {
             proof.authorize(|| {
                 package.set_royalty_config(BTreeMap::from([("RoyaltyTest".to_owned(), {
                     let mut config = RoyaltyConfig::default();
-                    config.set_rule("paid_method", 2);
-                    config.set_rule("paid_method_panic", 2);
+                    config.set_rule("paid_method", RoyaltyAmount::Xrd(2.into()));
+                    config.set_rule("paid_method_panic", RoyaltyAmount::Xrd(2.into()));
                     config
                 })]));
             })
@@ -50,8 +50,8 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge))))
                 .royalties(royalties! {
-                    paid_method => 1u32,
-                    paid_method_panic => 1u32,
+                    paid_method => Xrd(1.into()),
+                    paid_method_panic => Xrd(1.into()),
                     free_method => Free,
                 })
                 .globalize()

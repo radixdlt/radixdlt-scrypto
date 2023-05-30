@@ -47,6 +47,7 @@ pub enum CostingEntry<'a> {
     SubstateReadFromDb {
         size: u32,
     },
+    SubstateReadFromDbNotFound,
     SubstateReadFromTrack {
         size: u32,
     },
@@ -319,6 +320,7 @@ impl FeeTable {
 
             // following variants are used in storage usage part only
             CostingEntry::SubstateReadFromDb { size: _ } => 0,
+            CostingEntry::SubstateReadFromDbNotFound => 0,
             CostingEntry::SubstateReadFromTrack { size: _ } => 0,
             CostingEntry::SubstateWriteToTrack { size: _ } => 0,
             CostingEntry::SubstateRewriteToTrack {
@@ -337,7 +339,14 @@ impl FeeTable {
                 input_size,
                 actor: _,
             } => 10 * input_size,
-            CostingEntry::SubstateReadFromDb { size } => 100 * size, // todo: determine correct value
+            CostingEntry::SubstateReadFromDb { size } => {
+                // f(size) = 0.0008698330531784841 * size + 24.999130166946998
+                let mut value: u64 = *size as u64;
+                value *= 57; // ~0.0008698330531784841 << 16
+                value += (value >> 16) + 25; // ~24.999130166946998
+                value as u32
+            }
+            CostingEntry::SubstateReadFromDbNotFound => 1, // todo: determine correct value
             CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {

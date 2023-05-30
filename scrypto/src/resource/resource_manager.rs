@@ -2,6 +2,9 @@ use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_ID;
+use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
@@ -10,11 +13,22 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::ops::Deref;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto::component::HasStub;
 
-#[derive(Debug, Clone, Copy, ScryptoSbor)]
+#[derive(Debug, Clone, Copy, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct ResourceManager(Global<ResourceManagerStub>);
+
+impl Describe<ScryptoCustomTypeKind> for ResourceManager {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([RESOURCE_ADDRESS_ID]);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        resource_address_type_data()
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}
 
 impl From<ResourceAddress> for ResourceManager {
     fn from(value: ResourceAddress) -> Self {

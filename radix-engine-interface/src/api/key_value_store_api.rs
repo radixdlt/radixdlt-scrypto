@@ -2,14 +2,14 @@ use radix_engine_common::types::*;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;
-use scrypto_schema::KeyValueStoreInfo;
+use scrypto_schema::KeyValueStoreSchema;
 
 pub trait ClientKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
-    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, E>;
+    fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, E>;
 
     /// Get info regarding a visible key value store
-    fn key_value_store_get_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreInfo, E>;
+    fn key_value_store_get_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
 
     /// Lock a key value store entry for reading/writing
     fn key_value_store_lock_entry(

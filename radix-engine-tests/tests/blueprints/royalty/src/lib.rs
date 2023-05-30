@@ -5,6 +5,7 @@ mod royalty_test {
     define_static_auth! {
         methods {
             paid_method => PUBLIC;
+            paid_method_usd => PUBLIC;
             paid_method_panic => PUBLIC;
             free_method => PUBLIC;
         },
@@ -18,6 +19,10 @@ mod royalty_test {
 
     impl RoyaltyTest {
         pub fn paid_method(&self) -> u32 {
+            0
+        }
+
+        pub fn paid_method_usd(&self) -> u32 {
             0
         }
 
@@ -35,8 +40,9 @@ mod royalty_test {
                 .prepare_to_globalize(OwnerRole::None)
                 .royalties(royalties! {
                     free_method => Free,
-                    paid_method => 1u32,
-                    paid_method_panic => 1u32,
+                    paid_method => Xrd(1.into()),
+                    paid_method_usd => Usd(1.into()),
+                    paid_method_panic => Xrd(1.into()),
                 })
                 .globalize()
         }

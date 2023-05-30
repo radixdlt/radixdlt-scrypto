@@ -44,8 +44,6 @@ impl TransactionExecutionTrace {
 pub struct ExecutionMetrics {
     /// Consumed cost units (excluding royalties)
     pub execution_cost_units_consumed: usize,
-    /// Consumed royalties cost units
-    pub royalties_cost_units_consumed: usize,
     /// Total substate read size in bytes.
     pub substate_read_size: usize,
     /// Substate read count.
@@ -205,11 +203,12 @@ pub enum AbortReason {
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
     pub result: TransactionResult,
-    /// Optional execution trace, controlled by config `ExecutionConfig::execution_trace`.
-    pub execution_trace: TransactionExecutionTrace,
     /// Metrics gathered during transaction execution.
     pub execution_metrics: ExecutionMetrics,
-    /// Optional resource usage trace, controlled by feature flag `resources_usage`.
+    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
+    /// Mainly for transaction preview.
+    pub execution_trace: TransactionExecutionTrace,
+    /// Optional, only when compile-time feature flag `resources_usage` is ON.
     pub resources_usage: ResourcesUsage,
 }
 

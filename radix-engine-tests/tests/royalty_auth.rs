@@ -42,8 +42,8 @@ fn set_up_package_and_component() -> (
                 package_address,
                 BTreeMap::from([("RoyaltyTest".to_owned(), {
                     let mut config = RoyaltyConfig::default();
-                    config.set_rule("paid_method", 2);
-                    config.set_rule("paid_method_panic", 2);
+                    config.set_rule("paid_method", RoyaltyAmount::Xrd(dec!(2)));
+                    config.set_rule("paid_method_panic", RoyaltyAmount::Xrd(dec!(2)));
                     config
                 })]),
             )

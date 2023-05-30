@@ -9,7 +9,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeSchema,
+    PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
     VirtualLazyLoadSchema,
 };
 
@@ -36,19 +36,19 @@ impl AccountNativePackage {
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeSchema::Blueprint(
+                key: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
-                value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
+                value: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
                 can_own: true,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeSchema::Blueprint(
+                key: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
-                value: TypeSchema::Blueprint(
+                value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
                 ),
                 can_own: false,

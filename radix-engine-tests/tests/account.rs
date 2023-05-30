@@ -1,6 +1,6 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::system::system_modules::execution_trace::ResourceChange;
+use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::{
@@ -112,17 +112,16 @@ where
         .unwrap();
     let transfer_amount = other_account_balance - 10000 /* initial balance */;
 
-    assert_resource_changes_for_transfer(
-        &receipt
-            .execution_trace
-            .resource_changes
-            .iter()
-            .flat_map(|(_, rc)| rc)
-            .cloned()
-            .collect(),
-        RADIX_TOKEN,
-        other_account,
-        transfer_amount,
+    assert_eq!(
+        receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(other_account))
+            .unwrap()
+            .get(&RADIX_TOKEN)
+            .unwrap(),
+        &BalanceChange::Fungible(transfer_amount)
     );
 }
 
@@ -240,27 +239,16 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Assert
     let result = receipt.expect_commit_success();
 
-    let vault_id = test_runner
-        .get_component_vaults(account, RADIX_TOKEN)
-        .first()
-        .cloned()
-        .unwrap();
     assert_eq!(
-        receipt.execution_trace.resource_changes,
-        indexmap!(
-            0 => vec![ResourceChange {
-                node_id: account.into(),
-                vault_id,
-                resource_address: RADIX_TOKEN,
-                amount: - result.fee_summary.total_execution_cost_xrd - dec!("1")
-            }],
-            2 => vec![ResourceChange {
-                node_id: account.into(),
-                vault_id,
-                resource_address: RADIX_TOKEN,
-                amount: dec!("1")
-            }],
-        )
+        receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(account))
+            .unwrap()
+            .get(&RADIX_TOKEN)
+            .unwrap(),
+        &BalanceChange::Fungible(-result.fee_summary.total_execution_cost_xrd)
     );
 }
 
@@ -272,20 +260,4 @@ fn account_to_bucket_to_allocated_account() {
 #[test]
 fn account_to_bucket_to_virtual_account() {
     account_to_bucket_to_account_internal(true);
-}
-
-fn assert_resource_changes_for_transfer(
-    resource_changes: &Vec<ResourceChange>,
-    resource_address: ResourceAddress,
-    target_account: ComponentAddress,
-    transfer_amount: Decimal,
-) {
-    println!("transfer: {:?}", transfer_amount);
-    println!("{:?}", resource_changes);
-    assert_eq!(2, resource_changes.len()); // Two transfers (withdraw + fee, deposit)
-    assert!(resource_changes
-        .iter()
-        .any(|r| r.resource_address == resource_address
-            && r.node_id == target_account.into()
-            && r.amount == Decimal::from(transfer_amount)));
 }
