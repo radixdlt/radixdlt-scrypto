@@ -73,6 +73,14 @@ pub struct VaultFreezeInput {
 
 pub type VaultFreezeOutput = ();
 
+pub const VAULT_UNFREEZE_IDENT: &str = "unfreeze";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct VaultUnfreezeInput {
+}
+
+pub type VaultUnfreezeOutput = ();
+
 
 //========
 // Stub

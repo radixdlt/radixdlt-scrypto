@@ -167,6 +167,23 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
+    pub fn unfreeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        api.actor_call_module_method(
+            OBJECT_HANDLE_SELF,
+            ObjectModuleId::AccessRules,
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
+                rule: Some(rule!(allow_all)),
+                mutability: None,
+            }).unwrap(),
+        )?;
+
+        Ok(())
+    }
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
