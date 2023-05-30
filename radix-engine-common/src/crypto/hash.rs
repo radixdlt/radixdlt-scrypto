@@ -137,9 +137,10 @@ impl fmt::Debug for Hash {
 
 #[macro_export]
 macro_rules! define_wrapped_hash {
-    ($name: ident) => {
+    ($(#[$docs:meta])* $name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
         #[sbor(transparent)]
+        $(#[$docs])*
         pub struct $name(pub Hash);
 
         impl AsRef<[u8]> for $name {

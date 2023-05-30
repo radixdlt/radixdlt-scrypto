@@ -6,6 +6,13 @@ pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
 
     fn prepare_from_raw(
         &self,
+        raw: &Prepared::Raw,
+    ) -> Result<Prepared, TransactionValidationError> {
+        self.prepare_from_payload_bytes(raw.as_slice())
+    }
+
+    fn prepare_from_payload_bytes(
+        &self,
         raw_payload_bytes: &[u8],
     ) -> Result<Prepared, TransactionValidationError> {
         if raw_payload_bytes.len() > self.max_payload_length() {
@@ -15,15 +22,22 @@ pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
         Ok(Prepared::prepare_from_payload(raw_payload_bytes)?)
     }
 
-    fn max_payload_length(&self) -> usize;
-
     fn validate_from_raw(
         &self,
-        raw_payload_bytes: &[u8],
+        raw: &Prepared::Raw,
     ) -> Result<Self::Validated, TransactionValidationError> {
-        let prepared = self.prepare_from_raw(raw_payload_bytes)?;
+        self.validate_from_payload_bytes(raw.as_slice())
+    }
+
+    fn validate_from_payload_bytes(
+        &self,
+        payload_bytes: &[u8],
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        let prepared = self.prepare_from_payload_bytes(payload_bytes)?;
         self.validate(prepared)
     }
+
+    fn max_payload_length(&self) -> usize;
 
     fn validate(
         &self,

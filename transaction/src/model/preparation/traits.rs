@@ -89,13 +89,18 @@ pub trait TransactionPayloadPreparable: HasSummary + Sized {
     }
 }
 
-pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {}
+pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {
+    fn as_slice(&self) -> &[u8] {
+        self.as_ref()
+    }
+}
 
 #[macro_export]
 macro_rules! define_raw_transaction_payload {
-    ($name: ident) => {
+    ($(#[$docs:meta])* $name: ident) => {
         #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Sbor)]
         #[sbor(transparent)]
+        $(#[$docs])*
         pub struct $name(pub Vec<u8>);
 
         impl AsRef<[u8]> for $name {

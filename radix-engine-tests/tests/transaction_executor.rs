@@ -101,7 +101,7 @@ fn test_normal_transaction_flow() {
         start_epoch_inclusive: Epoch::zero(),
         end_epoch_exclusive: Epoch::of(100),
     })
-    .to_payload_bytes()
+    .to_raw()
     .unwrap();
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
