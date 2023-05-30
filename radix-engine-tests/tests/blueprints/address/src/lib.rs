@@ -161,7 +161,8 @@ mod preallocation_component {
 
     impl PreallocationComponent {
         pub fn create_with_preallocated_address() -> Global<PreallocationComponent> {
-            let component_address = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, component_address) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -170,7 +171,8 @@ mod preallocation_component {
         }
 
         pub fn create_with_unused_preallocated_address_1() -> Global<PreallocationComponent> {
-            let component_address = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, component_address) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
             Runtime::allocate_component_address(Runtime::blueprint_id());
             Self {}
                 .instantiate()
@@ -191,7 +193,8 @@ mod preallocation_component {
             Global<PreallocationComponent>,
             Global<PreallocationComponent>,
         ) {
-            let component_address = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, component_address) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
             let one = Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -250,10 +253,10 @@ mod preallocation_smuggler_component {
         }
 
         pub fn create_with_smuggled_address() -> Global<PreallocationSmugglerComponent> {
+            let (own, component_address) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
             Self {
-                preallocated_address: Some(
-                    Runtime::allocate_component_address(Runtime::blueprint_id()).into(),
-                ),
+                preallocated_address: Some(component_address.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -288,8 +291,9 @@ mod preallocation_smuggler_component {
         }
 
         pub fn allocate_and_smuggle_address(&mut self) {
-            self.preallocated_address =
-                Some(Runtime::allocate_component_address(Runtime::blueprint_id()).into());
+            let (own, component_address) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
+            self.preallocated_address = Some(component_address.into());
         }
 
         pub fn instantiate_with_smuggled_address(&self) -> Global<PreallocationSmugglerComponent> {

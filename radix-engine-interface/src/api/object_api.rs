@@ -102,13 +102,13 @@ pub trait ClientObjectApi<E> {
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
     /// Pre-allocates a global address, for a future globalization.
-    fn allocate_global_address(&mut self, blueprint_id: BlueprintId) -> Result<GlobalAddress, E>;
+    fn allocate_global_address(&mut self, blueprint_id: BlueprintId) -> Result<(NodeId, GlobalAddress), E>;
 
     fn allocate_virtual_global_address(
         &mut self,
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
-    ) -> Result<(), E>;
+    ) -> Result<NodeId, E>;
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all. A global address is automatically created and returned.

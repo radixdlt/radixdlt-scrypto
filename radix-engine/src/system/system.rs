@@ -839,19 +839,25 @@ where
     fn allocate_global_address(
         &mut self,
         blueprint_id: BlueprintId,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        let allocated_node_id = self.api.kernel_allocate_node_id(
+    ) -> Result<(NodeId, GlobalAddress), RuntimeError> {
+        let global_address = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
                 blueprint_id,
                 global: true,
             }
             .entity_type(),
         )?;
+        let global_address_ownership = self
+            .api
+            .kernel_allocate_node_id(IDAllocation::GlobalAddressOwnership.entity_type())?;
 
         // TODO: create global address ownership
         // TODO: create global address phantom
 
-        Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
+        Ok((
+            global_address_ownership,
+            GlobalAddress::new_or_panic(global_address.0),
+        ))
     }
 
     #[trace_resources]
@@ -859,11 +865,15 @@ where
         &mut self,
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<NodeId, RuntimeError> {
+        let global_address_ownership = self
+            .api
+            .kernel_allocate_node_id(IDAllocation::GlobalAddressOwnership.entity_type())?;
+
         // TODO: create global address ownership
         // TODO: create global address phantom
 
-        Ok(())
+        Ok(global_address_ownership)
     }
 
     #[trace_resources]

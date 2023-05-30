@@ -97,7 +97,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn allocate_global_address(
         &mut self,
         blueprint_id: BlueprintId,
-    ) -> Result<GlobalAddress, ClientApiError> {
+    ) -> Result<(NodeId, GlobalAddress), ClientApiError> {
         let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
         let bytes = copy_buffer(unsafe {
             allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
@@ -187,7 +187,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _blueprint_id: BlueprintId,
         _global_address: GlobalAddress,
-    ) -> Result<(), ClientApiError> {
+    ) -> Result<NodeId, ClientApiError> {
         unimplemented!()
     }
 }

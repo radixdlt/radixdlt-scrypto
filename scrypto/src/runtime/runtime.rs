@@ -1,6 +1,7 @@
 use crate::modules::{AccessRules, Attachable};
-use crate::prelude::Attached;
+use crate::prelude::{AnyComponent, Attached, Owned};
 use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::Own;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -115,10 +116,17 @@ impl Runtime {
         env.assert_access_rule(access_rule).unwrap();
     }
 
-    pub fn allocate_component_address(blueprint_id: BlueprintId) -> ComponentAddress {
+    pub fn allocate_component_address(
+        blueprint_id: BlueprintId,
+    ) -> (Owned<AnyComponent>, ComponentAddress) {
         let mut env = ScryptoEnv;
-        let global_address = env.allocate_global_address(blueprint_id).unwrap();
-        unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
+        let (ownership, global_address) = env.allocate_global_address(blueprint_id).unwrap();
+        (
+            Owned(AnyComponent(crate::prelude::ObjectStubHandle::Own(Own(
+                ownership,
+            )))),
+            unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) },
+        )
     }
 
     pub fn cost_unit_limit() -> u32 {

@@ -66,7 +66,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct AnyComponent(ObjectStubHandle);
+pub struct AnyComponent(pub (crate) ObjectStubHandle);
 
 impl HasStub for AnyComponent {
     type Stub = Self;
