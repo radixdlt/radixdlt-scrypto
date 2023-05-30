@@ -194,7 +194,7 @@ fn test_only_component_owner_can_set_royalty_config() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_component_royalty(component_address, "paid_method".to_string(), 0u32)
+            .set_component_royalty(component_address, "paid_method".to_string(), RoyaltyAmount::Free)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -204,7 +204,7 @@ fn test_only_component_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .set_component_royalty(component_address, "paid_method".to_string(), 0u32)
+            .set_component_royalty(component_address, "paid_method".to_string(), RoyaltyAmount::Free)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

@@ -1,3 +1,4 @@
+use radix_engine_common::types::RoyaltyAmount;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
@@ -51,7 +52,7 @@ impl Royalty {
         Self(ModuleHandle::Own(royalty))
     }
 
-    pub fn set_royalty(&self, method: String, amount: u32) {
+    pub fn set_royalty(&self, method: String, amount: RoyaltyAmount) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
             &ComponentSetRoyaltyInput { method, amount },

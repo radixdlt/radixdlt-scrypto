@@ -63,14 +63,6 @@ mod royalty_test {
             })
         }
 
-        pub fn disable_component_royalty(address: ComponentAddress, proof: Proof) {
-            proof.authorize(|| {
-                let component: Global<AnyComponent> = address.into();
-                let royalty = component.royalty();
-                royalty.set_config(RoyaltyConfig::default());
-            })
-        }
-
         pub fn claim_package_royalty(package: Package, proof: Proof) -> Bucket {
             proof.authorize(|| package.claim_royalty())
         }
@@ -79,7 +71,7 @@ mod royalty_test {
             proof.authorize(|| {
                 let component: Global<AnyComponent> = address.into();
                 let royalty = component.royalty();
-                royalty.claim_royalty()
+                royalty.claim_royalties()
             })
         }
     }

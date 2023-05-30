@@ -621,7 +621,7 @@ impl ManifestBuilder {
         &mut self,
         component_address: ComponentAddress,
         method: S,
-        amount: u32,
+        amount: RoyaltyAmount,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
