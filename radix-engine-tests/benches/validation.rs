@@ -83,7 +83,13 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     c.bench_function("Validation::validate_manifest", |b| {
-        b.iter(|| black_box(validator.validate_from_raw(&transaction_bytes).unwrap()))
+        b.iter(|| {
+            black_box(
+                validator
+                    .validate_from_payload_bytes(&transaction_bytes)
+                    .unwrap(),
+            )
+        })
     });
 }
 

@@ -150,7 +150,7 @@ fn do_swap(
 ) -> TransactionReceipt {
     // Validate
     let validated = NotarizedTransactionValidator::new(ValidationConfig::simulator())
-        .validate_from_raw(transaction_payload)
+        .validate_from_payload_bytes(transaction_payload)
         .unwrap();
 
     let mut executable = validated.get_executable();
