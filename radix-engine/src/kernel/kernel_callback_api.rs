@@ -161,8 +161,4 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
-
-    fn on_allocate_virtual_node_id<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
 }
