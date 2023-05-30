@@ -88,6 +88,7 @@ impl FungibleResourceManagerBlueprint {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             },
             global: true,
+            virtual_node_id: None,
         })?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
@@ -111,6 +112,7 @@ impl FungibleResourceManagerBlueprint {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             },
             global: true,
+            virtual_node_id: None,
         })?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 

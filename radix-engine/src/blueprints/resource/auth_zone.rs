@@ -95,6 +95,7 @@ impl AuthZoneBlueprint {
                 blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
             },
             global: false,
+            virtual_node_id: None,
         })?;
         match composed_proof {
             ComposedProof::Fungible(..) => {
@@ -155,6 +156,7 @@ impl AuthZoneBlueprint {
                 blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
             },
             global: false,
+            virtual_node_id: None,
         })?;
         api.kernel_create_node(
             node_id,
@@ -201,6 +203,7 @@ impl AuthZoneBlueprint {
                 blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
             },
             global: false,
+            virtual_node_id: None,
         })?;
         api.kernel_create_node(
             node_id,

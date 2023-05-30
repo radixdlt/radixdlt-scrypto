@@ -109,6 +109,7 @@ impl NonFungibleResourceManagerBlueprint {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             },
             global: true,
+            virtual_node_id: None,
         })?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         Self::create_with_address(
@@ -188,6 +189,7 @@ impl NonFungibleResourceManagerBlueprint {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             },
             global: true,
+            virtual_node_id: None,
         })?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
@@ -274,6 +276,7 @@ impl NonFungibleResourceManagerBlueprint {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             },
             global: true,
+            virtual_node_id: None,
         })?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 

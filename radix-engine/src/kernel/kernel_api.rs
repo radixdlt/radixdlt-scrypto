@@ -13,9 +13,6 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 
 /// API for managing nodes
 pub trait KernelNodeApi {
-    /// TODO: Remove
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
-
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(
         &mut self,

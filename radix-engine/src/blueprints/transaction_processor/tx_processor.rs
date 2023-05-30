@@ -109,6 +109,7 @@ impl TransactionProcessorBlueprint {
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
             },
             global: false,
+            virtual_node_id: None,
         })?;
         api.kernel_create_node(
             worktop_node_id,

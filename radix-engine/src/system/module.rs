@@ -93,14 +93,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_allocate_virtual_node_id<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
     fn before_create_node<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,

@@ -383,6 +383,7 @@ impl AuthModule {
                 blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
             },
             global: false,
+            virtual_node_id: None,
         })?;
 
         api.kernel_create_node(

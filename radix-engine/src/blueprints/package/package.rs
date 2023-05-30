@@ -217,6 +217,7 @@ where
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             },
             global: true,
+            virtual_node_id: None,
         })?
     };
 

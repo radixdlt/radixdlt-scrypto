@@ -3,8 +3,8 @@ use core::fmt;
 use core::fmt::Formatter;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::native_addresses::*;
-use radix_engine_common::types::PackageAddress;
 use radix_engine_common::types::{EntityType, GlobalAddress};
+use radix_engine_common::types::{NodeId, PackageAddress};
 use radix_engine_derive::ManifestSbor;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -22,6 +22,7 @@ pub enum IDAllocationRequest {
     Object {
         blueprint_id: BlueprintId,
         global: bool,
+        virtual_node_id: Option<NodeId>,
     },
     KeyValueStore,
 }
@@ -39,6 +40,7 @@ impl IDAllocationRequest {
             IDAllocationRequest::Object {
                 blueprint_id,
                 global,
+                virtual_node_id: _,
             } => {
                 // FIXME final check before Babylon release!
                 if *global {

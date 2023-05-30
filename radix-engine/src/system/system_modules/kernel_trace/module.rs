@@ -76,14 +76,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelDebugModul
         Ok(())
     }
 
-    fn on_allocate_virtual_node_id<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        request: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        log!(api, "Allocating virtual node id: request = {:?}", request);
-        Ok(())
-    }
-
     fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,

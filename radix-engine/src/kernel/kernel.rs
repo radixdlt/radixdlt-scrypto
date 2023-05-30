@@ -324,15 +324,6 @@ where
     }
 
     #[trace_resources(log=node_id.entity_type())]
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        M::on_allocate_virtual_node_id(&node_id, self)?;
-
-        self.id_allocator.allocate_virtual_node_id(node_id);
-
-        Ok(())
-    }
-
-    #[trace_resources(log=node_id.entity_type())]
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,

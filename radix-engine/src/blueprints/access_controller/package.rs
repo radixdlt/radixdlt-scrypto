@@ -609,6 +609,7 @@ impl AccessControllerNativePackage {
                 blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             },
             global: true,
+            virtual_node_id: None,
         })?;
         let address = GlobalAddress::new_or_panic(node_id.0);
 

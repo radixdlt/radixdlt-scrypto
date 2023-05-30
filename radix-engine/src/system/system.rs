@@ -212,6 +212,7 @@ where
             .kernel_allocate_node_id(IDAllocationRequest::Object {
                 blueprint_id: blueprint.clone(),
                 global: false,
+                virtual_node_id: None,
             })?;
 
         let mut node_substates = btreemap!(
@@ -843,6 +844,7 @@ where
             .kernel_allocate_node_id(IDAllocationRequest::Object {
                 blueprint_id,
                 global: true,
+                virtual_node_id: None,
             })?;
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
     }
@@ -860,6 +862,7 @@ where
             .kernel_allocate_node_id(IDAllocationRequest::Object {
                 blueprint_id,
                 global: true,
+                virtual_node_id: None,
             })?;
         let global_address = GlobalAddress::new_or_panic(global_node_id.into());
 
@@ -1966,10 +1969,6 @@ where
 {
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         self.api.kernel_drop_node(node_id)
-    }
-
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        self.api.kernel_allocate_virtual_node_id(node_id)
     }
 
     fn kernel_allocate_node_id(

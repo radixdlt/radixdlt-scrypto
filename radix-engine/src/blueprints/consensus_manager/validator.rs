@@ -1021,6 +1021,7 @@ impl ValidatorCreator {
                     blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
                 },
                 global: true,
+                virtual_node_id: None,
             })?
             .0,
         );

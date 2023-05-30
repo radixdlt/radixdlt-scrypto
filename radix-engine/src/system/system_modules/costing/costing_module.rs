@@ -548,20 +548,4 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 1,
             )
     }
-
-    fn on_allocate_virtual_node_id<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
-            .apply_execution_cost(
-                CostingReason::AllocateNodeId,
-                |fee_table| {
-                    fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { virtual_node: true })
-                },
-                1,
-            )
-    }
 }
