@@ -1,10 +1,15 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::{AccessRules, Attachable, Royalty};
-use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFERENCE_ID};
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::well_known_scrypto_custom_types::{
+    component_address_type_data, COMPONENT_ADDRESS_ID,
+};
+use radix_engine_common::prelude::{
+    OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
+};
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
@@ -16,19 +21,25 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
     MethodPermission, OwnerRole, Roles, OWNER_ROLE,
 };
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
 use sbor::rust::prelude::*;
+use sbor::*;
 use sbor::{
     Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
     ValueKind,
 };
 use scrypto::modules::{Attached, Metadata};
-use scrypto::prelude::well_known_scrypto_custom_types::OWN_ID;
+
+pub trait HasTypeInfo {
+    const PACKAGE_ADDRESS: Option<PackageAddress>;
+    const BLUEPRINT_NAME: &'static str;
+    const OWNED_TYPE_NAME: &'static str;
+    const GLOBAL_TYPE_NAME: &'static str;
+}
 
 pub struct Blueprint<C>(PhantomData<C>);
 
@@ -120,13 +131,21 @@ impl<C: HasStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKi
     }
 }
 
-// TODO: generics support for Scrypto components?
-impl<C: HasStub> Describe<ScryptoCustomTypeKind> for Owned<C> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(OWN_ID);
+impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Owned<T> {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::Novel(const_sha1::sha1(T::OWNED_TYPE_NAME.as_bytes()).as_bytes());
 
-    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
-        own_type_data()
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        TypeData {
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
+            metadata: TypeMetadata::no_child_names(T::OWNED_TYPE_NAME),
+            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(T::PACKAGE_ADDRESS, T::BLUEPRINT_NAME.to_string()),
+            )),
+        }
     }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
 impl<C: HasStub + HasMethods> Owned<C> {
@@ -386,11 +405,32 @@ impl<O: HasStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKi
     }
 }
 
-// TODO: generics support for Scrypto components?
-impl<O: HasStub> Describe<ScryptoCustomTypeKind> for Global<O> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(REFERENCE_ID);
+impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Global<T> {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::Novel(const_sha1::sha1(T::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
 
-    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
-        reference_type_data()
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        TypeData {
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
+            metadata: TypeMetadata::no_child_names(T::GLOBAL_TYPE_NAME),
+            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                ReferenceValidation::IsGlobalTyped(
+                    T::PACKAGE_ADDRESS,
+                    T::BLUEPRINT_NAME.to_string(),
+                ),
+            )),
+        }
     }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}
+
+impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([COMPONENT_ADDRESS_ID]);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        component_address_type_data()
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }

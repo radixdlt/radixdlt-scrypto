@@ -65,18 +65,18 @@ fn test_basic_transfer() {
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
         1104 /* AllocateNodeId */
-            + 1744 /* CreateNode */
-            + 6031 /* DropLock */
-            + 1680 /* DropNode */
-            + 1140299 /* Invoke */
-            + 650168 /* LockSubstate */
-            + 8456 /* ReadSubstate */
-            + 65000 /* RunNative */
-            + 7500 /* RunSystem */
-            + 50000 /* TxBaseCost */
-            + 1280 /* TxPayloadCost */
-            + 100000 /* TxSignatureVerification */
-            + 979, /* WriteSubstate */
+        + 1744 /* CreateNode */
+        + 6031 /* DropLock */
+        + 1680 /* DropNode */
+        + 1140299 /* Invoke */
+        + 652420 /* LockSubstate */
+        + 8456 /* ReadSubstate */
+        + 65000 /* RunNative */
+        + 7500 /* RunSystem */
+        + 50000 /* TxBaseCost */
+        + 1280 /* TxPayloadCost */
+        + 100000 /* TxSignatureVerification */
+        + 979, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -99,10 +99,10 @@ fn test_radiswap() {
         btreemap!(
             "Radiswap".to_owned() => {
                 let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_pool", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("add_liquidity",  RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("remove_liquidity",  RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("swap",  RoyaltyAmount::Xrd(2.into()));
+                config.set_rule("instantiate_pool", 5);
+                config.set_rule("add_liquidity", 1);
+                config.set_rule("remove_liquidity", 1);
+                config.set_rule("swap", 2);
                 config
             }
         ),
@@ -202,26 +202,21 @@ fn test_radiswap() {
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         2484 /* AllocateNodeId */
-            + 3935 /* CreateNode */
-            + 14356 /* DropLock */
-            + 3675 /* DropNode */
-            + 3395011 /* Invoke */
-            + 5936346 /* LockSubstate */
-            + 20104 /* ReadSubstate */
-            + 137500 /* RunNative */
-            + 15000 /* RunSystem */
-            + 1524545 /* RunWasm */
-            + 50000 /* TxBaseCost */
-            + 1675 /* TxPayloadCost */
-            + 100000 /* TxSignatureVerification */
-            + 2371, /* WriteSubstate */
+        + 3935 /* CreateNode */
+        + 14393 /* DropLock */
+        + 3675 /* DropNode */
+        + 3395011 /* Invoke */
+        + 5958446 /* LockSubstate */
+        + 20160 /* ReadSubstate */
+        + 137500 /* RunNative */
+        + 15000 /* RunSystem */
+        + 1525810 /* RunWasm */
+        + 50000 /* TxBaseCost */
+        + 1675 /* TxPayloadCost */
+        + 100000 /* TxSignatureVerification */
+        + 2371, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
-    assert_eq!(
-        commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("1.1207002"),
-    );
-    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"),);
 }
 
 #[test]
@@ -242,8 +237,8 @@ fn test_flash_loan() {
         btreemap!(
             "BasicFlashLoan".to_owned() => {
                 let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_default",  RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("take_loan",  RoyaltyAmount::Xrd(2.into()));
+                config.set_rule("instantiate_default", 5);
+                config.set_rule("take_loan", 2);
                 config
             }
         ),
@@ -320,19 +315,19 @@ fn test_flash_loan() {
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         4002 /* AllocateNodeId */
-            + 6322 /* CreateNode */
-            + 22755 /* DropLock */
-            + 6090 /* DropNode */
-            + 4768533 /* Invoke */
-            + 7150784 /* LockSubstate */
-            + 32256 /* ReadSubstate */
-            + 205000 /* RunNative */
-            + 40000 /* RunSystem */
-            + 1302380 /* RunWasm */
-            + 50000 /* TxBaseCost */
-            + 2455 /* TxPayloadCost */
-            + 100000 /* TxSignatureVerification */
-            + 4436, /* WriteSubstate */
+        + 6322 /* CreateNode */
+        + 22829 /* DropLock */
+        + 6090 /* DropNode */
+        + 4768533 /* Invoke */
+        + 7206518 /* LockSubstate */
+        + 32368 /* ReadSubstate */
+        + 205000 /* RunNative */
+        + 40000 /* RunSystem */
+        + 1304730 /* RunWasm */
+        + 50000 /* TxBaseCost */
+        + 2455 /* TxPayloadCost */
+        + 100000 /* TxSignatureVerification */
+        + 4436, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }

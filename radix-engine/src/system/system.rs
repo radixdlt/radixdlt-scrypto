@@ -38,7 +38,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
-    InstanceSchema, KeyValueStoreInfo, TypeSchema,
+    InstanceSchema, KeyValueStoreSchema, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -83,9 +83,10 @@ where
         payload: &[u8],
         schema: &'s ScryptoSchema,
         type_index: LocalTypeIndex,
+        schema_origin: SchemaOrigin,
     ) -> Result<(), LocatedValidationError<'s, ScryptoCustomExtension>> {
         let validation_context: Box<dyn TypeInfoLookup> =
-            Box::new(SystemServiceTypeInfoLookup::new(self));
+            Box::new(SystemServiceTypeInfoLookup::new(self, schema_origin));
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
             schema,
@@ -97,15 +98,21 @@ where
     fn validate_payload_against_blueprint_or_instance_schema<'s>(
         &'s mut self,
         payload: &Vec<u8>,
-        type_schema: &TypeSchema,
+        type_ref: &TypeRef,
         blueprint_schema: &'s ScryptoSchema,
+        blueprint_id: BlueprintId,
         instance_schema: &'s Option<InstanceSchema>,
     ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
-        match type_schema {
-            TypeSchema::Blueprint(index) => {
-                self.validate_payload(payload, blueprint_schema, *index)?;
+        match type_ref {
+            TypeRef::Blueprint(index) => {
+                self.validate_payload(
+                    payload,
+                    blueprint_schema,
+                    *index,
+                    SchemaOrigin::Blueprint(blueprint_id),
+                )?;
             }
-            TypeSchema::Instance(instance_index) => {
+            TypeRef::Instance(instance_index) => {
                 let instance_schema = instance_schema.as_ref().unwrap();
                 let index = instance_schema
                     .type_index
@@ -113,7 +120,12 @@ where
                     .unwrap()
                     .clone();
 
-                self.validate_payload(payload, &instance_schema.schema, index)?;
+                self.validate_payload(
+                    payload,
+                    &instance_schema.schema,
+                    index,
+                    SchemaOrigin::Instance,
+                )?;
             }
         }
 
@@ -330,14 +342,19 @@ where
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
-                    self.validate_payload(&field, &blueprint_schema.schema, field_type_index[i])
-                        .map_err(|err| {
-                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidSubstateWrite(
-                                    err.error_message(&blueprint_schema.schema),
-                                ),
-                            )))
-                        })?;
+                    self.validate_payload(
+                        &field,
+                        &blueprint_schema.schema,
+                        field_type_index[i],
+                        SchemaOrigin::Blueprint(blueprint.clone()),
+                    )
+                    .map_err(|err| {
+                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                            CreateObjectError::InvalidSubstateWrite(
+                                err.error_message(&blueprint_schema.schema),
+                            ),
+                        )))
+                    })?;
 
                     partition.insert(
                         SubstateKey::Tuple(i as u8),
@@ -366,6 +383,7 @@ where
                                     &key,
                                     &blueprint_kv_schema.key,
                                     &blueprint_schema.schema,
+                                    blueprint.clone(),
                                     instance_schema,
                                 )
                                 .map_err(|err| {
@@ -380,6 +398,7 @@ where
                                     &value,
                                     &blueprint_kv_schema.value,
                                     &blueprint_schema.schema,
+                                    blueprint.clone(),
                                     instance_schema,
                                 )
                                 .map_err(|err| {
@@ -765,8 +784,12 @@ where
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
 
         match data {
-            SystemLockData::Field(FieldLockData::Write { index, schema }) => {
-                self.validate_payload(&buffer, &schema, index)
+            SystemLockData::Field(FieldLockData::Write {
+                index,
+                schema,
+                schema_origin,
+            }) => {
+                self.validate_payload(&buffer, &schema, index, schema_origin)
                     .map_err(|e| {
                         RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
                             e.error_message(&schema),
@@ -1077,11 +1100,12 @@ where
 
         let substate = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
+                schema_origin,
                 schema,
                 index,
                 can_own,
             }) => {
-                self.validate_payload(&buffer, &schema, index)
+                self.validate_payload(&buffer, &schema, index, schema_origin)
                     .map_err(|e| {
                         RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
                             e.error_message(&schema),
@@ -1134,7 +1158,7 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, RuntimeError> {
+    fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
             .schema
             .validate()
@@ -1148,7 +1172,9 @@ where
             btreemap!(
                 OBJECT_BASE_PARTITION => btreemap!(),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::KeyValueStore(schema)
+                    TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
+                        schema,
+                    })
                 ).to_substates(),
             ),
         )?;
@@ -1160,16 +1186,16 @@ where
     fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreInfo, RuntimeError> {
+    ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
-        let schema = match type_info {
+        let info = match type_info {
             TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
-            TypeInfoSubstate::KeyValueStore(schema) => schema,
+            TypeInfoSubstate::KeyValueStore(info) => info,
         };
 
-        Ok(schema)
+        Ok(info.schema)
     }
 
     #[trace_resources]
@@ -1191,18 +1217,24 @@ where
             }
         };
 
-        self.validate_payload(key, &info.schema, info.kv_store_schema.key)
-            .map_err(|e| {
-                RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
-                    e.error_message(&info.schema),
-                ))
-            })?;
+        self.validate_payload(
+            key,
+            &info.schema.schema,
+            info.schema.key,
+            SchemaOrigin::KeyValueStore {},
+        )
+        .map_err(|e| {
+            RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
+                e.error_message(&info.schema.schema),
+            ))
+        })?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema: info.schema,
-                index: info.kv_store_schema.value,
-                can_own: info.kv_store_schema.can_own,
+                schema_origin: SchemaOrigin::KeyValueStore {},
+                schema: info.schema.schema,
+                index: info.schema.value,
+                can_own: info.schema.can_own,
             })
         } else {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
@@ -1473,6 +1505,46 @@ where
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
     }
+
+    fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .cost_unit_limit())
+    }
+
+    fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .cost_unit_price())
+    }
+
+    fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .tip_percentage())
+    }
+
+    fn fee_balance(&mut self) -> Result<Decimal, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .fee_balance())
+    }
 }
 
 impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1506,6 +1578,7 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
+                schema_origin: SchemaOrigin::Blueprint(object_info.blueprint),
                 schema,
                 index: type_index,
             }
@@ -1612,15 +1685,17 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
             match kv_schema.value {
-                TypeSchema::Instance(index) => {
+                TypeRef::Instance(index) => {
                     let mut instance_schema = object_info.instance_schema.unwrap();
                     KeyValueEntryLockData::Write {
+                        schema_origin: SchemaOrigin::Instance {},
                         schema: instance_schema.schema,
                         index: instance_schema.type_index.remove(index as usize),
                         can_own,
                     }
                 }
-                TypeSchema::Blueprint(index) => KeyValueEntryLockData::Write {
+                TypeRef::Blueprint(index) => KeyValueEntryLockData::Write {
+                    schema_origin: SchemaOrigin::Blueprint(object_info.blueprint),
                     schema,
                     index,
                     can_own,
@@ -1754,9 +1829,9 @@ where
         let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
-        let (blueprint_schema, local_type_index) = {
+        let (blueprint_id, blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
-            let blueprint = match actor {
+            let blueprint_id = match actor {
                 Actor::Method(MethodActor {
                     module_object_info: ref object_info,
                     ..
@@ -1767,7 +1842,7 @@ where
                 )),
             }?;
 
-            let blueprint_schema = self.get_blueprint_schema(&blueprint)?;
+            let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
@@ -1777,13 +1852,13 @@ where
                 } else {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
-                            blueprint: blueprint.clone(),
+                            blueprint: blueprint_id.clone(),
                             event_name,
                         })),
                     ));
                 };
 
-            (blueprint_schema, local_type_index)
+            (blueprint_id, blueprint_schema, local_type_index)
         };
 
         // Construct the event type identifier based on the current actor
@@ -1811,6 +1886,7 @@ where
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,
+            SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
