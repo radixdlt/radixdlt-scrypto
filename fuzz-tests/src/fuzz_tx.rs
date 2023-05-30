@@ -23,6 +23,8 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::ast;
 use transaction::model::InstructionV1;
 
+use crate::common::*;
+
 #[allow(unused)]
 const INSTRUCTION_MAX_CNT: u8 = 10;
 
@@ -67,35 +69,6 @@ pub struct TxFuzzer {
 impl TxFuzzer {
     pub fn new() -> Self {
         let mut runner = TestRunner::builder().without_trace().build();
-        let mut component_addresses = vec![CONSENSUS_MANAGER, GENESIS_HELPER, FAUCET];
-        let mut all_resource_addresses = vec![
-            RADIX_TOKEN,
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-            SYSTEM_TRANSACTION_BADGE,
-            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
-            GLOBAL_CALLER_VIRTUAL_BADGE,
-            PACKAGE_OWNER_BADGE,
-            VALIDATOR_OWNER_BADGE,
-            IDENTITY_OWNER_BADGE,
-            ACCOUNT_OWNER_BADGE,
-        ];
-        let mut non_fungible_resource_addresses = vec![];
-        let mut fungible_resource_addresses = vec![];
-        let package_addresses = vec![
-            PACKAGE_PACKAGE,
-            RESOURCE_PACKAGE,
-            IDENTITY_PACKAGE,
-            CONSENSUS_MANAGER_PACKAGE,
-            ACCOUNT_PACKAGE,
-            ACCESS_CONTROLLER_PACKAGE,
-            TRANSACTION_PROCESSOR_PACKAGE,
-            METADATA_MODULE_PACKAGE,
-            ROYALTY_MODULE_PACKAGE,
-            ACCESS_CONTROLLER_PACKAGE,
-            GENESIS_HELPER_PACKAGE,
-            FAUCET_PACKAGE,
-        ];
         let mut public_keys = vec![];
         let accounts: Vec<Account> = (0..2)
             .map(|_| {
@@ -106,10 +79,6 @@ impl TxFuzzer {
                     runner.create_non_fungible_resource(acc.2),
                     runner.create_non_fungible_resource(acc.2),
                 ];
-                all_resource_addresses.append(&mut resources.clone());
-                fungible_resource_addresses.append(&mut resources.clone()[0..2].to_vec());
-                non_fungible_resource_addresses.append(&mut resources.clone()[2..4].to_vec());
-                component_addresses.push(acc.2);
                 public_keys.push(acc.0);
 
                 Account {
@@ -120,6 +89,17 @@ impl TxFuzzer {
                 }
             })
             .collect();
+
+        let (
+            package_addresses,
+            component_addresses,
+            fungible_resource_addresses,
+            non_fungible_resource_addresses,
+        ) = get_ledger_entries(runner.substate_db());
+
+        let mut all_resource_addresses = fungible_resource_addresses.clone();
+        all_resource_addresses.extend(non_fungible_resource_addresses.clone());
+
         let snapshot = runner.create_snapshot();
 
         Self {
