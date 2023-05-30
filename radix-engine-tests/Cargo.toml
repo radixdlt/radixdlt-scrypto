@@ -14,8 +14,8 @@ radix-engine-stores = { path = "../radix-engine-stores", default-features = fals
 radix-engine-queries = { path = "../radix-engine-queries", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
-radix-engine-utils = { path = "../radix-engine-utils", optional = true, features = ["resource_tracker"]}
-resources-tracker-macro = { path = "../radix-engine-utils/resources-tracker-macro" }
+radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"]}
+resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }
@@ -29,6 +29,7 @@ rayon = "1.5.3"
 serde = { version = "1.0.144", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
 crossbeam = { version = "0.8.2" }
+
 
 [[bench]]
 name = "validation"
@@ -67,5 +68,5 @@ alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
-resource_tracker = ["dep:radix-engine-utils", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker"]
 dump_manifest_to_file = ["transaction/dump_manifest_to_file"]

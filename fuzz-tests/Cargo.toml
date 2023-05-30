@@ -22,6 +22,7 @@ radix-engine = { path = "../radix-engine", default-features = false, features = 
 radix-engine-common = { path = "../radix-engine-common", default-features = false, features = ["radix_engine_fuzzing"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false, features = ["radix_engine_fuzzing"]}
+radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
 radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
 transaction = { path = "../transaction", default-features = false, features = ["radix_engine_fuzzing"] }
 utils = { path = "../utils", default-features = false, features = ["radix_engine_fuzzing"] }
@@ -57,8 +58,8 @@ doc = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "fuzzer" ]
-std = ["sbor/std", "transaction/std", "radix-engine/std", "radix-engine-interface/std", "utils/std", "scrypto-unit/std"]
-alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-interface/alloc", "utils/alloc", "scrypto-unit/alloc"]
+std = ["sbor/std", "transaction/std", "radix-engine/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "scrypto-unit/std"]
+alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "scrypto-unit/alloc"]
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
@@ -77,3 +78,5 @@ verbose = []
 #fuzzer = [ "libfuzzer-sys" ]
 #fuzzer = [ "afl" ]
 fuzzer = [ "simple-fuzzer" ]
+
+rocksdb = []

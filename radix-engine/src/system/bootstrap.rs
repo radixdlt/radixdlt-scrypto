@@ -9,7 +9,6 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
@@ -27,7 +26,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
+use radix_engine_store_interface::{
+    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
+    interface::{CommittableSubstateDatabase, SubstateDatabase},
+};
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayloadEncode,
 };
