@@ -537,7 +537,7 @@ macro_rules! module_permissions {
 }
 
 #[macro_export]
-macro_rules! define_static_auth {
+macro_rules! enable_method_auth {
     (
         roles {
             $($role:ident),*
