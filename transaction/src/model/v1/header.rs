@@ -3,7 +3,6 @@ use radix_engine_common::{crypto::PublicKey, ManifestSbor};
 
 use crate::model::SummarizedRawFullBody;
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct TransactionHeaderV1 {
     pub network_id: u8,
