@@ -575,6 +575,76 @@ impl WasmModule {
                                 ));
                             }
                         }
+
+                        COST_UNIT_LIMIT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I32],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        COST_UNIT_PRICE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        TIP_PERCENTAGE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I32],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        TIP_PERCENTAGE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        FEE_BALANCE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        FEE_BALANCE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+
                         PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
@@ -1182,6 +1252,8 @@ mod tests {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
             },
         );
 

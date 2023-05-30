@@ -93,3 +93,30 @@ macro_rules! rule {
         $crate::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }
+
+#[macro_export]
+macro_rules! role_entry {
+    ($roles: expr, $role: expr, $rule:expr) => {{
+        $roles.define_role($role, RoleEntry::immutable($rule));
+    }};
+    ($roles: expr, $role: expr, $rule:expr, mut $mutability:expr) => {{
+        $roles.define_role($role, RoleEntry::new($rule, $mutability, true));
+    }};
+}
+
+#[macro_export]
+macro_rules! roles2 {
+    ( ) => ({
+        $crate::blueprints::resource::Roles::new()
+    });
+    ( $($role:expr => $rule:expr $(, mut $mutability:expr)? );* ) => ({
+        let mut roles = $crate::blueprints::resource::Roles::new();
+        $(
+            role_entry!(roles, $role, $rule $(, mut $mutability)? );
+        )*
+        roles
+    });
+    ( $($role:expr => $rule:expr $(, mut $mutability:expr)?;)* ) => ({
+        roles2!($($role => $rule $(, mut $mutability)?);*)
+    })
+}

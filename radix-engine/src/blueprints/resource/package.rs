@@ -1,16 +1,21 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
-use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
+use crate::{event_schema, method_auth_template};
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, PackageSchema, SchemaMethodKey, SchemaMethodPermission,
+};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
-use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeRef};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 use resources_tracker_macro::trace_resources;
 
@@ -262,6 +267,20 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
+            let method_permissions_instance = method_auth_template! {
+                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+
+                SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
+            };
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -272,6 +291,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                method_auth_template: method_permissions_instance,
+                outer_method_auth_template: btreemap!(),
             }
         };
 
@@ -295,10 +316,10 @@ impl ResourceManagerNativePackage {
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
                 BlueprintKeyValueStoreSchema {
-                    key: TypeSchema::Blueprint(
+                    key: TypeRef::Blueprint(
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
-                    value: TypeSchema::Instance(0u8),
+                    value: TypeRef::Instance(0u8),
                     can_own: false,
                 },
             ));
@@ -502,6 +523,25 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
+            let method_permissions_instance = method_auth_template! {
+                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+
+                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
+                SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
+                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => SchemaMethodPermission::Public;
+            };
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -512,6 +552,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                method_auth_template: method_permissions_instance,
+                outer_method_auth_template: btreemap!(),
             }
         };
 
@@ -630,6 +672,18 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
+            let outer_method_permissions_instance = method_auth_template! {
+                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
+                SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+                SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+            };
+
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -639,6 +693,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: outer_method_permissions_instance,
             }
         };
 
@@ -801,6 +857,19 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
+            let outer_method_permissions_instance = method_auth_template! {
+                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
+                SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
+                SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+            };
+
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -810,6 +879,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: outer_method_permissions_instance,
             }
         };
 
@@ -914,6 +985,20 @@ impl ResourceManagerNativePackage {
                     export_name: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
+
+            let outer_method_permissions_instance = method_auth_template! {
+                SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"];
+                SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"];
+            };
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -924,6 +1009,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: outer_method_permissions_instance,
             }
         };
 
@@ -1062,6 +1149,22 @@ impl ResourceManagerNativePackage {
                     export_name: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
+
+            let outer_method_permissions_instance = method_auth_template! {
+                SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+            };
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -1072,6 +1175,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: outer_method_permissions_instance,
             }
         };
 
@@ -1122,6 +1227,13 @@ impl ResourceManagerNativePackage {
                 },
             );
 
+            let outer_method_permissions_instance = method_auth_template!(
+                SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+            );
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -1132,6 +1244,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: outer_method_permissions_instance,
             }
         };
 
@@ -1194,6 +1308,14 @@ impl ResourceManagerNativePackage {
                 },
             );
 
+            let outer_method_permissions_instance = method_auth_template!(
+                SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+            );
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -1204,6 +1326,8 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: outer_method_permissions_instance,
             }
         };
 
@@ -1309,6 +1433,8 @@ impl ResourceManagerNativePackage {
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
             dependencies: btreeset!(),
+            method_auth_template: btreemap!(),
+            outer_method_auth_template: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -1425,6 +1551,8 @@ impl ResourceManagerNativePackage {
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
             dependencies: btreeset!(),
+            method_auth_template: btreemap!(),
+            outer_method_auth_template: btreemap!(),
         };
 
         PackageSchema {

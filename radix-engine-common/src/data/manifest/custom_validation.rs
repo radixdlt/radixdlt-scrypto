@@ -124,8 +124,9 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                             ReferenceValidation::IsGlobalResourceManager => {
                                 node_id.is_global_resource_manager()
                             }
+                            ReferenceValidation::IsGlobalTyped(_, _) => node_id.is_global(), // Assume yes
                             ReferenceValidation::IsInternal => node_id.is_internal(),
-                            ReferenceValidation::IsTypedObject(_, _) => true, // Assume yes
+                            ReferenceValidation::IsInternalTyped(_, _) => node_id.is_internal(), // Assume yes
                         };
                         if !is_valid {
                             return Err(PayloadValidationError::ValidationError(

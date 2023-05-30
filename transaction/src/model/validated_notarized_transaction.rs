@@ -29,8 +29,9 @@ impl ValidatedNotarizedTransactionV1 {
                     initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment::User {
+                fee_payment: FeePayment {
                     tip_percentage: intent.header.inner.tip_percentage,
+                    free_credit_in_xrd: 0,
                 },
                 runtime_validations: vec![
                     RuntimeValidation::IntentHashUniqueness {

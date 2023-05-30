@@ -9,14 +9,11 @@ use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::module_mixer::SystemModuleMixer;
+use radix_engine::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
-use radix_engine::track::db_key_mapper::{
-    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
@@ -48,8 +45,11 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates,
+use radix_engine_store_interface::{
+    db_key_mapper::{
+        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+    },
+    interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates},
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -61,8 +61,9 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
-    AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
-    SystemTransactionV1, TestTransaction, TransactionPayloadEncode,
+    AttachmentsV1, AuthZoneParams, BlobV1, BlobsV1, Executable, InstructionV1, InstructionsV1,
+    IntentV1, PreviewFlags, PreviewIntentV1, SystemTransactionV1, TestTransaction,
+    TransactionHeaderV1, TransactionPayloadEncode,
 };
 
 pub struct Compile;
@@ -542,16 +543,9 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_advanced(
-        &mut self,
-        withdraw_auth: AccessRule,
-        mutability: AccessRule,
-    ) -> ComponentAddress {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_authority(withdraw_auth, mutability);
-
+    pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(authority_rules)
+            .new_account_advanced(owner_rule)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -632,7 +626,7 @@ impl TestRunner {
     ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
-        let account = self.new_account_advanced(withdraw_auth.clone(), withdraw_auth);
+        let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
     }
 
@@ -660,12 +654,9 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules
-                .set_owner_authority(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
-                .create_identity_advanced(authority_rules)
+                .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
@@ -717,11 +708,11 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        authority_rules: AuthorityRules,
+        owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, schema, royalty_config, metadata, authority_rules)
+            .publish_package_advanced(code, schema, royalty_config, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -750,7 +741,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
     }
 
@@ -769,7 +760,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
     }
 
@@ -835,14 +826,14 @@ impl TestRunner {
                 .get_executable(initial_proofs.into_iter().collect()),
             &FeeReserveConfig::default(),
             &ExecutionConfig::default()
-                .with_trace(self.trace)
+                .with_kernel_trace(self.trace)
                 .with_cost_unit_limit(cost_unit_limit),
         )
     }
 
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
         let fee_config = FeeReserveConfig::default();
-        let execution_config = ExecutionConfig::default().with_trace(self.trace);
+        let execution_config = ExecutionConfig::default().with_kernel_trace(self.trace);
 
         self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }
@@ -880,7 +871,47 @@ impl TestRunner {
             &mut self.scrypto_interpreter,
             network,
             preview_intent,
+            self.trace,
         )
+    }
+
+    pub fn preview_manifest(
+        &mut self,
+        manifest: TransactionManifestV1,
+        signer_public_keys: Vec<PublicKey>,
+        tip_percentage: u16,
+        flags: PreviewFlags,
+    ) -> TransactionReceipt {
+        let epoch = self.get_current_epoch();
+        execute_preview(
+            &mut self.substate_db,
+            &self.scrypto_interpreter,
+            &NetworkDefinition::simulator(),
+            PreviewIntentV1 {
+                intent: IntentV1 {
+                    header: TransactionHeaderV1 {
+                        network_id: NetworkDefinition::simulator().id,
+                        start_epoch_inclusive: epoch,
+                        end_epoch_exclusive: epoch + 10,
+                        nonce: 0,
+                        notary_public_key: PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
+                            [0u8; 33],
+                        )),
+                        notary_is_signatory: false,
+                        tip_percentage,
+                    },
+                    instructions: InstructionsV1(manifest.instructions),
+                    blobs: BlobsV1 {
+                        blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
+                    },
+                    attachments: AttachmentsV1 {},
+                },
+                signer_public_keys,
+                flags,
+            },
+            self.trace,
+        )
+        .unwrap()
     }
 
     /// Calls a package blueprint function with the given arguments, paying the fee from the faucet.
@@ -1390,7 +1421,7 @@ impl TestRunner {
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
-        let execution_config = ExecutionConfig::standard();
+        let execution_config = ExecutionConfig::default();
         let scrypto_interpreter = ScryptoVm {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
@@ -1402,13 +1433,14 @@ impl TestRunner {
             callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },
-            modules: SystemModuleMixer::standard(
+            modules: SystemModuleMixer::new(
+                EnabledModules::for_notarized_transaction(),
                 transaction_hash,
                 AuthZoneParams {
                     initial_proofs: btreeset![],
                     virtual_resources: BTreeSet::new(),
                 },
-                SystemLoanFeeReserve::no_fee(),
+                SystemLoanFeeReserve::default(),
                 FeeTable::new(),
                 0,
                 0,
@@ -1657,6 +1689,8 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
             dependencies: btreeset!(),
+            method_auth_template: btreemap!(),
+            outer_method_auth_template: btreemap!(),
         },
     );
     package_schema

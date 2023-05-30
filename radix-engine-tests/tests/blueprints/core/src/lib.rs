@@ -24,13 +24,19 @@ mod move_test {
 
         pub fn move_bucket() {
             let bucket = Self::create_test_token(1000);
-            let component = MoveTest { vaults: Vec::new() }.instantiate().globalize();
+            let component = MoveTest { vaults: Vec::new() }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
             component.receive_bucket(bucket);
         }
 
         pub fn move_proof() -> Bucket {
             let bucket = Self::create_test_token(1000);
-            let component = MoveTest { vaults: Vec::new() }.instantiate().globalize();
+            let component = MoveTest { vaults: Vec::new() }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
             component.receive_proof(bucket.create_proof());
 
             bucket

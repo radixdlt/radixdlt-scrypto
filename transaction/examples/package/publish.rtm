@@ -20,5 +20,5 @@ PUBLISH_PACKAGE_ADVANCED
         Map<String, Tuple>()
     )
     Map<String, Tuple>()       # Royalty Configuration
-    Map<String, Enum>()        # Metadata 
-    Map<Enum, Tuple>();        # Authority Rules
+    Map<String, Enum>()        # Metadata
+    Enum<0u8>();               # Owner AccessRule

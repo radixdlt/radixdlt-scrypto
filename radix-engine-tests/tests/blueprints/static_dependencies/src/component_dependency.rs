@@ -24,7 +24,9 @@ mod preallocated {
         pub fn new(preallocated_address_bytes: [u8; 30], secret: String) -> Global<Preallocated> {
             Self { secret }
                 .instantiate()
-                .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+                .prepare_to_globalize(OwnerRole::None)
+                .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+                .globalize()
         }
 
         pub fn get_secret(&self) -> String {

@@ -1,9 +1,9 @@
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate, NodeAuthorityRules,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
@@ -17,18 +17,27 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey,
+    SchemaMethodPermission,
+};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
+use crate::method_auth_template;
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
+
+pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -112,13 +121,8 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn authority_rules() -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
-        authority_rules.redirect_to_fixed(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
-        authority_rules.redirect_to_fixed(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
-        authority_rules.set_fixed_main_authority_rule("package_royalty", rule!(require_owner()));
-        authority_rules
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!()
     }
 }
 
@@ -198,8 +202,8 @@ where
         node_modules.insert(
             ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
-                access_rules: NodeAuthorityRules::new(),
-                inner_blueprint_access_rules: BTreeMap::new(),
+                roles: BTreeMap::new(),
+                role_mutability: BTreeMap::new(),
             }),
         );
     }
@@ -285,6 +289,15 @@ impl PackageNativePackage {
             },
         );
 
+        let method_auth_template = method_auth_template! {
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -300,6 +313,8 @@ impl PackageNativePackage {
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                         PACKAGE_OWNER_BADGE.into(),
                     ),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }
@@ -400,7 +415,7 @@ impl PackageNativePackage {
                     input.schema,
                     input.royalty_config,
                     input.metadata,
-                    input.authority_rules,
+                    input.owner_rule,
                     api,
                 )?;
 
@@ -501,13 +516,13 @@ impl PackageNativePackage {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        authority_rules: AuthorityRules,
+        owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedPackage::create_advanced(authority_rules, api)?;
+        let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
         let address = Self::publish_wasm_internal(
             package_address,
             code,

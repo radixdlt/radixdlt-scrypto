@@ -38,6 +38,15 @@ pub enum ObjectModuleId {
 }
 
 impl ObjectModuleId {
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            ObjectModuleId::Main => 0u8,
+            ObjectModuleId::Metadata => 1u8,
+            ObjectModuleId::Royalty => 2u8,
+            ObjectModuleId::AccessRules => 3u8,
+        }
+    }
+
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
             ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,

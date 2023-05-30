@@ -3,7 +3,20 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
-pub const MINT_AUTHORITY: &str = "mint_auth";
+pub const MINT_ROLE: &str = "mint";
+pub const MINT_UPDATE_ROLE: &str = "mint_update";
+pub const BURN_ROLE: &str = "burn";
+pub const BURN_UPDATE_ROLE: &str = "burn_update";
+pub const WITHDRAW_ROLE: &str = "withdraw";
+pub const WITHDRAW_UPDATE_ROLE: &str = "withdraw_update";
+pub const DEPOSIT_ROLE: &str = "deposit";
+pub const DEPOSIT_UPDATE_ROLE: &str = "deposit_update";
+pub const RECALL_ROLE: &str = "recall";
+pub const RECALL_UPDATE_ROLE: &str = "recall_update";
+pub const UPDATE_NON_FUNGIBLE_DATA_ROLE: &str = "update_non_fungible_data";
+pub const UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE: &str = "update_non_fungible_data_update";
+pub const SET_METADATA_ROLE: &str = "set_metadata";
+pub const SET_METADATA_UPDATE_ROLE: &str = "set_metadata_update";
 
 // TODO: Remove?
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]

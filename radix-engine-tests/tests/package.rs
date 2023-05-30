@@ -29,7 +29,7 @@ fn missing_memory_should_cause_error() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -125,7 +125,7 @@ fn test_basic_package() {
             single_function_package_schema("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -161,6 +161,8 @@ fn test_basic_package_missing_export() {
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
             dependencies: btreeset!(),
+            method_auth_template: btreemap!(),
+            outer_method_auth_template: btreemap!(),
         },
     );
     // Act
@@ -172,7 +174,7 @@ fn test_basic_package_missing_export() {
             package_schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

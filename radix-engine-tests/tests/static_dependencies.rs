@@ -40,7 +40,7 @@ fn test_static_package_address() {
         schema,
         BTreeMap::new(),
         BTreeMap::new(),
-        AuthorityRules::new(),
+        OwnerRole::None,
     );
 
     let manifest = ManifestBuilder::new()

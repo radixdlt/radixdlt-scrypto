@@ -4,14 +4,11 @@ use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetAuthorityMutabilityInput,
-    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+    AccessRulesCreateInput, AccessRulesUpdateRoleInput, ACCESS_RULES_BLUEPRINT,
+    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityKey, AuthorityRules, ObjectKey, METADATA_AUTHORITY,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, RoleKey, RoleList, Roles};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -22,79 +19,37 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(authority_rules: AuthorityRules) -> Self {
+    pub fn new(roles: Roles) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput {
-                    authority_rules,
-                    inner_blueprint_rules: btreemap!(),
-                })
-                .unwrap(),
+                scrypto_encode(&AccessRulesCreateInput { roles }).unwrap(),
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(access_rules))
     }
 
-    pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+    pub fn update_role_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            &AccessRulesSetAuthorityRuleInput {
-                object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::main(name),
-                rule: entry.into(),
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(name),
+                rule: Some(entry.into()),
+                mutability: None,
             },
         );
     }
 
-    pub fn set_metadata_authority_rule<A: Into<AccessRule>>(&self, entry: A) {
+    pub fn update_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            &AccessRulesSetAuthorityRuleInput {
-                object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
-                rule: entry.into(),
-            },
-        );
-    }
-
-    pub fn set_authority_rule_on_inner_blueprint<A: Into<AccessRule>>(
-        &self,
-        inner_blueprint: &str,
-        name: &str,
-        entry: A,
-    ) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            &AccessRulesSetAuthorityRuleInput {
-                object_key: ObjectKey::inner_blueprint(inner_blueprint),
-                authority_key: AuthorityKey::main(name),
-                rule: entry.into(),
-            },
-        );
-    }
-
-    pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
-            &AccessRulesSetAuthorityMutabilityInput {
-                object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::main(name),
-                mutability,
-            },
-        );
-    }
-
-    pub fn set_metadata_mutability(&self, mutability: AccessRule) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
-            &AccessRulesSetAuthorityMutabilityInput {
-                object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
-                mutability,
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(name),
+                rule: None,
+                mutability: Some((mutability.into(), true)),
             },
         );
     }
@@ -114,7 +69,7 @@ impl Attachable for AccessRules {
 
 impl Default for AccessRules {
     fn default() -> Self {
-        AccessRules::new(AuthorityRules::new())
+        AccessRules::new(Roles::new())
     }
 }
 

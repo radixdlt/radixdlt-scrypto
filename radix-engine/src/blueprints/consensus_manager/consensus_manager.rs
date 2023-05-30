@@ -1,4 +1,5 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
+use crate::blueprints::consensus_manager::{START_ROLE, VALIDATOR_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -248,25 +249,12 @@ impl ConsensusManagerBlueprint {
             )?
         };
 
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_authority_rule(
-            CONSENSUS_MANAGER_START_IDENT,
-            rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
-            rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            rule!(require(AuthAddresses::validator_role())),
-        );
+        let role_definitions = roles2! {
+            VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
+            START_ROLE => rule!(require(AuthAddresses::system_role()));
+        };
 
-        let access_rules = AccessRules::create(
-            authority_rules,
-            btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => AuthorityRules::new()
-            ),
-            api,
-        )?
-        .0;
+        let access_rules = AccessRules::create(role_definitions, api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
@@ -323,12 +311,7 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::main("start"),
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
-            api,
-        )?;
+        access_rules.update_role(RoleKey::new(START_ROLE), RoleEntry::disabled(), api)?;
 
         Ok(())
     }

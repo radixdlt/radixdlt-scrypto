@@ -9,7 +9,6 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
@@ -27,7 +26,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
+use radix_engine_store_interface::{
+    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
+    interface::{CommittableSubstateDatabase, SubstateDatabase},
+};
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayloadEncode,
 };
@@ -203,7 +205,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
@@ -229,7 +231,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
@@ -250,7 +252,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")
@@ -717,7 +719,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                authority_rules: AuthorityRules::new(),
+                owner_rule: OwnerRole::None,
             }),
         });
     }
@@ -740,7 +742,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                authority_rules: AuthorityRules::new(),
+                owner_rule: OwnerRole::None,
             }),
         });
     }

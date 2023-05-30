@@ -18,14 +18,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     // parse blueprint struct and impl
     let blueprint = parse2::<ast::Blueprint>(input)?;
-    let bp = blueprint.module;
+    let mut bp = blueprint.module;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;
-    let bp_impl = &bp.implementation;
+    let bp_impl = &mut bp.implementation;
     let bp_ident = &bp_strut.ident;
     validate_type_ident(&bp_ident)?;
-    let bp_items = &bp_impl.items;
+    let bp_items = &mut bp_impl.items;
     let bp_name = bp_ident.to_string();
 
     trace!("Blueprint name: {}", bp_name);
@@ -50,6 +50,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     validate_type_ident(&stub_ident)?;
     let functions_ident = format_ident!("{}Functions", bp_ident);
     validate_type_ident(&functions_ident)?;
+
     let use_statements = {
         let mut use_statements = bp.use_statements;
 
@@ -72,37 +73,42 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use_statements.push(item);
         }
 
+        {
+            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodPermission::*; };
+            use_statements.push(item);
+            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodRoyalty::*; };
+            use_statements.push(item);
+        }
+
         use_statements
     };
 
     let const_statements = bp.const_statements.clone();
+    let generated_schema_info = generate_schema(bp_ident, bp_items)?;
+    let method_idents = generated_schema_info.method_idents;
+    let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
 
-    let output_original_code = quote! {
-        #[derive(::scrypto::prelude::ScryptoSbor)]
-        pub struct #bp_ident #bp_fields #bp_semi_token
+    let blueprint_name = bp_ident.to_string();
+    let owned_typed_name = format!("Owned{}", blueprint_name);
+    let global_typed_name = format!("Global{}", blueprint_name);
 
-        impl #bp_ident {
-            #(#bp_items)*
+    let definition_statements = bp.macro_statements;
+    let definition_statements = if !definition_statements.is_empty() {
+        quote! {
+            #(#definition_statements)*
         }
-
-        impl ::scrypto::component::ComponentState for #bp_ident {
-            const BLUEPRINT_NAME: &'static str = #bp_name;
-        }
-
-        impl HasStub for #bp_ident {
-            type Stub = #stub_ident;
+    } else {
+        // TODO: Use AllPublicMethod Template instead
+        quote! {
+            fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                btreemap!(
+                    #(
+                        scrypto::schema::SchemaMethodKey::main(#method_names) => scrypto::schema::SchemaMethodPermission::Public,
+                    )*
+                )
+            }
         }
     };
-    trace!("Generated mod: \n{}", quote! { #output_original_code });
-    let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
-
-    let functions = generate_dispatcher(bp_ident, bp_items)?;
-    let output_dispatcher = quote! {
-        #(#method_input_structs)*
-        #(#functions)*
-    };
-
-    trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
@@ -117,7 +123,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         };
 
         let schema_ident = format_ident!("{}_schema", bp_ident);
-        let (function_names, function_schemas) = generate_schema(bp_ident, bp_items)?;
+        let function_names = generated_schema_info.function_names;
+        let function_schemas = generated_schema_info.function_schemas;
 
         // Getting the event types if the event attribute is defined for the type
         let (event_type_names, event_type_paths) = {
@@ -149,6 +156,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         };
 
         quote! {
+
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
                 use ::scrypto::schema::*;
@@ -181,6 +189,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     dependencies.insert(#raw_package_dependencies.into());
                 })*
 
+                let mut method_auth_template = method_auth_template();
+                if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
+                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
+                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
+                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
+                }
+
                 let return_data = BlueprintSchema {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
@@ -190,16 +205,100 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
                     dependencies,
+                    method_auth_template,
+                    outer_method_auth_template: BTreeMap::new(),
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
         }
     };
-    trace!(
-        "Generated SCHEMA exporter: \n{}",
-        quote! { #output_dispatcher }
-    );
+
+    let output_original_code = quote! {
+        #[derive(::scrypto::prelude::ScryptoSbor)]
+        pub struct #bp_ident #bp_fields #bp_semi_token
+
+        impl #bp_ident {
+            #(#bp_items)*
+        }
+
+        impl ::scrypto::component::ComponentState for #bp_ident {
+            const BLUEPRINT_NAME: &'static str = #bp_name;
+        }
+
+        impl HasStub for #bp_ident {
+            type Stub = #stub_ident;
+        }
+
+        impl HasMethods for #bp_ident {
+            type Permissions = Methods<MethodPermission>;
+            type Royalties = Methods<MethodRoyalty>;
+        }
+
+        impl HasTypeInfo for #bp_ident {
+            const PACKAGE_ADDRESS: Option<PackageAddress> = None;
+            const BLUEPRINT_NAME: &'static str = #blueprint_name;
+            const OWNED_TYPE_NAME: &'static str = #owned_typed_name;
+            const GLOBAL_TYPE_NAME: &'static str = #global_typed_name;
+        }
+    };
+
+    let output_method_enum = if method_idents.is_empty() {
+        quote! {
+            pub struct Methods<T> {
+                t: PhantomData<T>,
+            }
+
+            impl<T> MethodMapping<T> for Methods<T> {
+                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![]
+                }
+
+
+                fn methods() -> Vec<&'static str> {
+                    vec![]
+                }
+            }
+        }
+    } else {
+        quote! {
+            pub struct Methods<T> {
+                #(
+                    #method_idents: T,
+                )*
+            }
+
+            impl<T> MethodMapping<T> for Methods<T> {
+                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![
+                        #(
+                            (#method_names.to_string(), self.#method_idents)
+                        ,
+                        )*
+                    ]
+                }
+
+                fn methods() -> Vec<&'static str> {
+                    vec![ #(#method_names,)* ]
+                }
+            }
+        }
+    };
+
+    trace!("Generated mod: \n{}", quote! { #output_original_code });
+    let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
+
+    let functions = generate_dispatcher(bp_ident, bp_items)?;
+    let output_dispatcher = quote! {
+        #(#method_input_structs)*
+        #(#functions)*
+    };
+
+    trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
     let output_stubs = generate_stubs(&stub_ident, &functions_ident, bp_ident, bp_items)?;
 
@@ -209,7 +308,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             #(#const_statements)*
 
+            #definition_statements
+
             #output_original_code
+
+            #output_method_enum
 
             #output_dispatcher
 
@@ -542,16 +645,26 @@ fn generate_stubs(
 }
 
 #[allow(dead_code)]
-fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>, Vec<Expr>)> {
+struct GeneratedSchemaInfo {
+    function_names: Vec<String>,
+    function_schemas: Vec<Expr>,
+    method_idents: Vec<Ident>,
+}
+
+#[allow(dead_code)]
+fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<GeneratedSchemaInfo> {
     let mut function_names = Vec::<String>::new();
     let mut function_schemas = Vec::<Expr>::new();
+    let mut method_idents = Vec::<Ident>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
+
         match item {
-            ImplItem::Method(ref m) => {
+            ImplItem::Method(ref mut m) => {
                 if let Visibility::Public(_) = &m.vis {
                     let function_name = m.sig.ident.to_string();
+
                     let mut receiver = None;
                     for input in &m.sig.inputs {
                         match input {
@@ -597,6 +710,7 @@ fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>,
                             }
                         });
                     } else {
+                        method_idents.push(m.sig.ident.clone());
                         function_names.push(function_name);
                         function_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
@@ -618,7 +732,11 @@ fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>,
         };
     }
 
-    Ok((function_names, function_schemas))
+    Ok(GeneratedSchemaInfo {
+        function_names,
+        function_schemas,
+        method_idents,
+    })
 }
 
 fn replace_self_with(t: &Type, name: &Ident) -> Type {
@@ -667,6 +785,14 @@ mod tests {
                 pub mod test {
                     use scrypto::prelude::*;
                     use super::*;
+                    use scrypto::prelude::MethodPermission::*;
+                    use scrypto::prelude::MethodRoyalty::*;
+
+                    fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                        btreemap!(
+                            scrypto::schema::SchemaMethodKey::main("x") => scrypto::schema::SchemaMethodPermission::Public,
+                        )
+                    }
 
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test {
@@ -689,6 +815,36 @@ mod tests {
 
                     impl HasStub for Test {
                         type Stub = TestObjectStub;
+                    }
+
+                    impl HasMethods for Test {
+                        type Permissions = Methods<MethodPermission>;
+                        type Royalties = Methods<MethodRoyalty>;
+                    }
+
+                    impl HasTypeInfo for Test {
+                        const PACKAGE_ADDRESS: Option<PackageAddress> = None;
+                        const BLUEPRINT_NAME: &'static str = "Test";
+                        const OWNED_TYPE_NAME: &'static str = "OwnedTest";
+                        const GLOBAL_TYPE_NAME: &'static str = "GlobalTest";
+                    }
+
+                    pub struct Methods<T> {
+                        x: T,
+                    }
+
+                    impl<T> MethodMapping<T> for Methods<T> {
+                        const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                        fn to_mapping(self) -> Vec<(String, T)> {
+                            vec![
+                                ("x".to_string(), self.x),
+                            ]
+                        }
+
+                        fn methods() -> Vec<&'static str> {
+                            vec![ "x", ]
+                        }
                     }
 
                     #[allow(non_camel_case_types)]
@@ -757,6 +913,12 @@ mod tests {
                         let mut event_schema = BTreeMap::new();
 
                         let mut dependencies = BTreeSet::new();
+                        let mut method_auth_template = method_auth_template();
+                        if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
+                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
+                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
+                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
+                        }
 
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
@@ -767,6 +929,8 @@ mod tests {
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
                             dependencies,
+                            method_auth_template,
+                            outer_method_auth_template: BTreeMap::new(),
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

@@ -2,6 +2,15 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod proofs {
+    define_static_auth! {
+        roles {
+            auth
+        },
+        methods {
+            organizational_authenticated_method => auth;
+        }
+    }
+
     struct Proofs {}
 
     impl Proofs {
@@ -24,11 +33,10 @@ mod proofs {
 
             let component = Self {}
                 .instantiate()
-                .authority_rule(
-                    "organizational_authenticated_method",
-                    organizational_access_rule,
-                    AccessRule::DenyAll,
-                )
+                .prepare_to_globalize(OwnerRole::None)
+                .roles(roles! {
+                    auth => organizational_access_rule;
+                })
                 .globalize();
             (
                 component,
