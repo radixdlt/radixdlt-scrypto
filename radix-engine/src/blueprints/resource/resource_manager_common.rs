@@ -137,7 +137,7 @@ fn build_access_rules(
         {
             roles.define_role(
                 FREEZE_ROLE,
-                RoleEntry::new(freeze_access_rule, [FREEZE_ROLE], true),
+                RoleEntry::new(freeze_access_rule, [FREEZE_UPDATE_ROLE], true),
             );
             roles.define_role(
                 FREEZE_UPDATE_ROLE,
