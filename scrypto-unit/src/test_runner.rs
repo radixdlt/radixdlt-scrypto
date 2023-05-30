@@ -1414,7 +1414,7 @@ impl TestRunner {
             store: &mut track,
         };
 
-        kernel_boot.call_boot_function(
+        kernel_boot.call_transaction_processor(
             package_address,
             blueprint_name,
             function_name,

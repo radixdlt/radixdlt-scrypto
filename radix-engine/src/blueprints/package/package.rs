@@ -211,14 +211,7 @@ where
     let node_id = if let Some(address) = package_address {
         NodeId(address)
     } else {
-        api.kernel_allocate_node_id(IDAllocationRequest::Object {
-            blueprint_id: BlueprintId {
-                package_address: PACKAGE_PACKAGE,
-                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            },
-            global: true,
-            virtual_node_id: None,
-        })?
+        api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
     let mut modules: NodeSubstates = node_modules

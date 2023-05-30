@@ -70,9 +70,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelDebugModul
 
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        request: &IDAllocationRequest,
+        entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Allocating node id: request = {:?}", request);
+        log!(api, "Allocating node id: entity_type = {:?}", entity_type);
         Ok(())
     }
 

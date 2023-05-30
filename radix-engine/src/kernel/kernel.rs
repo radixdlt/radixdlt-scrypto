@@ -6,12 +6,12 @@ use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
 };
 use crate::blueprints::resource::*;
+use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
@@ -22,6 +22,9 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::{
+    RuntimeValidationRequest, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -34,14 +37,14 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     /// Executes a transaction
-    pub fn call_boot_function(
+    pub fn call_transaction_processor<'a>(
         self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        references: &IndexSet<Reference>,
-        args: Vec<u8>,
-        preallocation: &Vec<(BlueprintId, GlobalAddress)>,
+        transaction_hash: &'a Hash,
+        runtime_validations: &'a [RuntimeValidationRequest],
+        manifest_encoded_instructions: &'a [u8],
+        _pre_allocated_addresses: &'a Vec<(BlueprintId, GlobalAddress)>,
+        references: &'a IndexSet<Reference>,
+        blobs: &'a IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
@@ -59,16 +62,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         SystemConfig::on_init(&mut kernel)?;
 
-        for pre in preallocation {
-            kernel
-                .kernel_allocate_node_id(IDAllocationRequest::Object {
-                    blueprint_id: pre.0.clone(),
-                    global: true,
-                    virtual_node_id: Some(pre.1.clone().into()),
-                })
-                .expect("Failed to preallocate global addresses");
-        }
+        // TODO global address preallocation!
 
+        // Reference management
         for reference in references.iter() {
             let node_id = &reference.0;
             if node_id.is_global_virtual() {
@@ -123,7 +119,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::PhantomObject(..) | TypeInfoSubstate::KeyValueStore(..) => {
+                _ => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -131,7 +127,20 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         let mut system = SystemService::new(&mut kernel);
 
-        let rtn = system.call_function(package_address, blueprint_name, function_name, args)?;
+        let rtn = system.call_function(
+            TRANSACTION_PROCESSOR_PACKAGE,
+            TRANSACTION_PROCESSOR_BLUEPRINT,
+            TRANSACTION_PROCESSOR_RUN_IDENT,
+            scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                transaction_hash,
+                runtime_validations,
+                manifest_encoded_instructions,
+                global_address_ownerships: vec![], // TODO
+                references,
+                blobs,
+            })
+            .unwrap(),
+        )?;
 
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
@@ -300,34 +309,10 @@ where
     }
 
     #[trace_resources(log=entity_type)]
-    fn kernel_allocate_node_id(
-        &mut self,
-        request: IDAllocationRequest,
-    ) -> Result<NodeId, RuntimeError> {
-        M::on_allocate_node_id(&request, self)?;
+    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
+        M::on_allocate_node_id(entity_type, self)?;
 
-        // Create a node ID
-        let node_id = self.id_allocator.allocate_node_id(request.entity_type())?;
-
-        // Create phantom object
-        // TODO: move to system?
-        let push_to_store = request.is_global();
-        self.current_frame
-            .create_node(
-                node_id,
-                btreemap!(
-                    TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
-                        TypeInfoSubstate::PhantomObject(PhantomObjectInfo { request })
-                    ).to_substates()
-                ),
-                &mut self.heap,
-                self.store,
-                push_to_store,
-            )
-            .map_err(CallFrameError::CreateNodeError)
-            .map_err(KernelError::CallFrameError)?;
-
-        Ok(node_id)
+        self.id_allocator.allocate_node_id(entity_type)
     }
 
     #[trace_resources(log=node_id.entity_type())]
@@ -339,8 +324,6 @@ where
         M::before_create_node(&node_id, &node_substates, self)?;
 
         self.id_allocator.take_node_id(node_id)?;
-
-        // FIXME check phantom object
 
         let store_access = self
             .current_frame

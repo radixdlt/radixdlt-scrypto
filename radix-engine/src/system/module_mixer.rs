@@ -296,9 +296,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources(log=entity_type)]
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        request: &IDAllocationRequest,
+        entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_allocate_node_id(api, request))
+        internal_call_dispatch!(api, on_allocate_node_id(api, entity_type))
     }
 
     #[trace_resources]

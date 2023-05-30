@@ -1,6 +1,4 @@
-use crate::blueprints::transaction_processor::{
-    TransactionProcessorError, TransactionProcessorRunInputEfficientEncodable,
-};
+use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
@@ -17,9 +15,6 @@ use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::blueprints::transaction_processor::{
-    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
-};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::*,
@@ -237,25 +232,13 @@ where
         };
 
         let invoke_result = kernel_boot
-            .call_boot_function(
-                TRANSACTION_PROCESSOR_PACKAGE,
-                TRANSACTION_PROCESSOR_BLUEPRINT,
-                TRANSACTION_PROCESSOR_RUN_IDENT,
-                executable.references(),
-                scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                    transaction_hash: executable.transaction_hash(),
-                    runtime_validations: executable.runtime_validations(),
-                    manifest_encoded_instructions: executable.encoded_instructions(),
-                    pre_allocated_addresses: executable
-                        .pre_allocated_addresses()
-                        .iter()
-                        .map(|x| Own(x.1.as_node_id().clone()))
-                        .collect(),
-                    references: executable.references(),
-                    blobs: executable.blobs(),
-                })
-                .unwrap(),
+            .call_transaction_processor(
+                executable.transaction_hash(),
+                executable.runtime_validations(),
+                executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
+                executable.references(),
+                executable.blobs(),
             )
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();

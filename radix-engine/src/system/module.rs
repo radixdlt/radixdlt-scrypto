@@ -87,7 +87,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_allocate_node_id<Y: KernelApi<M>>(
         _api: &mut Y,
-        _request: &IDAllocationRequest,
+        _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

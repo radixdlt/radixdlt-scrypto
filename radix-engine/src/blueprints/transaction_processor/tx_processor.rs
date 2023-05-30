@@ -26,7 +26,7 @@ pub struct TransactionProcessorRunInput {
     pub transaction_hash: Hash,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
     pub manifest_encoded_instructions: Vec<u8>,
-    pub pre_allocated_addresses: Vec<Own>, // Required so that the kernel passes the preallocated address to the processor frame
+    pub global_address_ownerships: Vec<Own>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
     pub blobs: IndexMap<Hash, Vec<u8>>,
 }
@@ -37,7 +37,7 @@ pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
     pub transaction_hash: &'a Hash,
     pub runtime_validations: &'a [RuntimeValidationRequest],
     pub manifest_encoded_instructions: &'a [u8],
-    pub pre_allocated_addresses: Vec<Own>,
+    pub global_address_ownerships: Vec<Own>,
     pub references: &'a IndexSet<Reference>,
     pub blobs: &'a IndexMap<Hash, Vec<u8>>,
 }
@@ -105,14 +105,7 @@ impl TransactionProcessorBlueprint {
         }
 
         // Create a worktop
-        let worktop_node_id = api.kernel_allocate_node_id(IDAllocationRequest::Object {
-            blueprint_id: BlueprintId {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
-            },
-            global: false,
-            virtual_node_id: None,
-        })?;
+        let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(

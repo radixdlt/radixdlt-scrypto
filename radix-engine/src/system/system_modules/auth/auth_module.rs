@@ -384,7 +384,7 @@ impl AuthModule {
             },
             global: false,
             virtual_node_id: None,
-        })?;
+        }.entity_type())?;
 
         api.kernel_create_node(
             auth_zone_node_id,

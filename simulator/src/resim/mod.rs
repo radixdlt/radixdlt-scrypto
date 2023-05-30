@@ -415,8 +415,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::PhantomObject(..)
-                        | TypeInfoSubstate::KeyValueStore(..) => return None,
+                        _ => return None,
                     }
                 }
             }

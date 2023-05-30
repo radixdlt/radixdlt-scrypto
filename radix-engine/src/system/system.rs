@@ -207,13 +207,14 @@ where
             None
         };
 
-        let node_id = self
-            .api
-            .kernel_allocate_node_id(IDAllocationRequest::Object {
+        let node_id = self.api.kernel_allocate_node_id(
+            IDAllocationRequest::Object {
                 blueprint_id: blueprint.clone(),
                 global: false,
                 virtual_node_id: None,
-            })?;
+            }
+            .entity_type(),
+        )?;
 
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
@@ -839,13 +840,14 @@ where
         &mut self,
         blueprint_id: BlueprintId,
     ) -> Result<GlobalAddress, RuntimeError> {
-        let allocated_node_id = self
-            .api
-            .kernel_allocate_node_id(IDAllocationRequest::Object {
+        let allocated_node_id = self.api.kernel_allocate_node_id(
+            IDAllocationRequest::Object {
                 blueprint_id,
                 global: true,
                 virtual_node_id: None,
-            })?;
+            }
+            .entity_type(),
+        )?;
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
     }
 
@@ -857,13 +859,14 @@ where
         // FIXME ensure that only the package actor can globalize its own blueprints
 
         let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
-        let global_node_id = self
-            .api
-            .kernel_allocate_node_id(IDAllocationRequest::Object {
+        let global_node_id = self.api.kernel_allocate_node_id(
+            IDAllocationRequest::Object {
                 blueprint_id,
                 global: true,
                 virtual_node_id: None,
-            })?;
+            }
+            .entity_type(),
+        )?;
         let global_address = GlobalAddress::new_or_panic(global_node_id.into());
 
         self.globalize_with_address_internal(modules, global_address)?;
@@ -1013,9 +1016,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::PhantomObject(..) | TypeInfoSubstate::KeyValueStore(..) => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
-            }
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
         };
 
         Ok(object_info)
@@ -1164,7 +1165,7 @@ where
 
         let node_id = self
             .api
-            .kernel_allocate_node_id(IDAllocationRequest::KeyValueStore)?;
+            .kernel_allocate_node_id(IDAllocationRequest::KeyValueStore.entity_type())?;
 
         self.api.kernel_create_node(
             node_id,
@@ -1188,10 +1189,8 @@ where
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let info = match type_info {
-            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::PhantomObject { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-            }
             TypeInfoSubstate::KeyValueStore(info) => info,
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
         };
 
         Ok(info.schema)
@@ -1211,9 +1210,7 @@ where
 
         let info = match type_info {
             TypeInfoSubstate::KeyValueStore(info) => info,
-            TypeInfoSubstate::Object(..) | TypeInfoSubstate::PhantomObject(..) => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-            }
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
         };
 
         self.validate_payload(
@@ -1967,11 +1964,8 @@ where
         self.api.kernel_drop_node(node_id)
     }
 
-    fn kernel_allocate_node_id(
-        &mut self,
-        request: IDAllocationRequest,
-    ) -> Result<NodeId, RuntimeError> {
-        self.api.kernel_allocate_node_id(request)
+    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
+        self.api.kernel_allocate_node_id(entity_type)
     }
 
     fn kernel_create_node(

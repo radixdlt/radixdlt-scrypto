@@ -25,6 +25,10 @@ pub enum IDAllocationRequest {
         virtual_node_id: Option<NodeId>,
     },
     KeyValueStore,
+    GlobalAddressOwnership,
+    GlobalObjectPhantom {
+        blueprint_id: BlueprintId,
+    },
 }
 
 impl IDAllocationRequest {
@@ -32,6 +36,8 @@ impl IDAllocationRequest {
         match self {
             IDAllocationRequest::Object { global, .. } => *global,
             IDAllocationRequest::KeyValueStore => false,
+            IDAllocationRequest::GlobalAddressOwnership => false,
+            IDAllocationRequest::GlobalObjectPhantom { .. } => true,
         }
     }
 
@@ -85,6 +91,29 @@ impl IDAllocationRequest {
                 }
             }
             IDAllocationRequest::KeyValueStore => EntityType::InternalKeyValueStore,
+            IDAllocationRequest::GlobalAddressOwnership => EntityType::InternalGenericComponent,
+            IDAllocationRequest::GlobalObjectPhantom { blueprint_id } => match (
+                blueprint_id.package_address,
+                blueprint_id.blueprint_name.as_str(),
+            ) {
+                (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
+                (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+                    EntityType::GlobalFungibleResourceManager
+                }
+                (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+                    EntityType::GlobalNonFungibleResourceManager
+                }
+                (CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT) => {
+                    EntityType::GlobalConsensusManager
+                }
+                (CONSENSUS_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
+                (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+                    EntityType::GlobalAccessController
+                }
+                (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
+                (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
+                _ => EntityType::GlobalGenericComponent,
+            },
         }
     }
 }
@@ -98,8 +127,8 @@ pub struct ObjectInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct PhantomObjectInfo {
-    pub request: IDAllocationRequest,
+pub struct GlobalObjectPhantomInfo {
+    pub blueprint_id: BlueprintId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

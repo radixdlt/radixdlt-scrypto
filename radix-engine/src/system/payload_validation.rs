@@ -78,17 +78,18 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint: blueprint_id,
                 ..
-            })
-            | TypeInfoSubstate::PhantomObject(PhantomObjectInfo {
-                request: IDAllocationRequest::Object { blueprint_id, .. },
             }) => TypeInfoForValidation::Object {
                 package: blueprint_id.package_address,
                 blueprint: blueprint_id.blueprint_name,
             },
-            TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::PhantomObject(PhantomObjectInfo {
-                request: IDAllocationRequest::KeyValueStore,
-            }) => TypeInfoForValidation::KeyValueStore,
+            TypeInfoSubstate::KeyValueStore(_) => TypeInfoForValidation::KeyValueStore,
+            TypeInfoSubstate::GlobalAddressOwnership => {
+                TypeInfoForValidation::GlobalAddressOwnership
+            }
+            TypeInfoSubstate::GlobalObjectPhantom(info) => TypeInfoForValidation::Object {
+                package: info.blueprint_id.package_address,
+                blueprint: info.blueprint_id.blueprint_name,
+            },
         };
         Some(mapped)
     }
@@ -105,6 +106,7 @@ pub enum TypeInfoForValidation {
         blueprint: String,
     },
     KeyValueStore,
+    GlobalAddressOwnership,
 }
 
 impl TypeInfoForValidation {
