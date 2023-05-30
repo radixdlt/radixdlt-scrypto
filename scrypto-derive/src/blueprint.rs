@@ -106,15 +106,18 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         .path
                         .get_ident()
                         .unwrap()
-                        .eq(&Ident::new("from_bech32", Span::call_site()))
+                        .eq(&Ident::new("Address", Span::call_site()))
                     {
                         continue;
                     }
 
                     let tokens = &m.mac.tokens;
-                    let value = quote! { #tokens }.to_string();
+                    let lit_str: LitStr = parse_quote!( #tokens );
+
+                    //let value:  = quote! { #tokens }.to_string();
                     let (_hrp, _entity_type, address) =
-                        Bech32Decoder::validate_and_decode_ignore_hrp(value.as_str()).unwrap();
+                        Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                            .unwrap();
 
                     let expr = parse_quote! {
                         #ty :: new_or_panic([ #(#address),* ])
