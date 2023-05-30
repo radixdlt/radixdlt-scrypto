@@ -22,13 +22,9 @@ impl Bech32Decoder {
         }
     }
 
-    /// Low level method which performs the Bech32 validation and decoding of the data.
-    pub fn validate_and_decode(
-        &self,
-        address: &str,
-    ) -> Result<(EntityType, Vec<u8>), DecodeBech32AddressError> {
+    pub fn validate_and_decode_ignore_hrp(address: &str) -> Result<(String, EntityType, Vec<u8>), DecodeBech32AddressError> {
         // Decode the address string
-        let (actual_hrp, data, variant) = bech32::decode(address)
+        let (hrp, data, variant) = bech32::decode(address)
             .map_err(|err| DecodeBech32AddressError::Bech32mDecodingError(err))?;
 
         // Validate the Bech32 variant to ensure that is is Bech32m
@@ -42,16 +38,25 @@ impl Bech32Decoder {
             .map_err(|err| DecodeBech32AddressError::Bech32mDecodingError(err))?;
 
         // Obtain the HRP based on the entity byte in the data
-        let (entity_type, expected_hrp) = if let Some(entity_type_id) = data.get(0) {
-            let entity_type = EntityType::from_repr(*entity_type_id).ok_or(
+        let entity_type = if let Some(entity_type_id) = data.get(0) {
+            EntityType::from_repr(*entity_type_id).ok_or(
                 DecodeBech32AddressError::InvalidEntityTypeId(*entity_type_id),
-            )?;
-
-            // Obtain the HRP corresponding to this entity type
-            (entity_type, self.hrp_set.get_entity_hrp(&entity_type))
+            )?
         } else {
             return Err(DecodeBech32AddressError::MissingEntityTypeByte);
         };
+
+        // Validation complete, return data bytes
+        Ok((hrp, entity_type, data))
+    }
+
+    /// Low level method which performs the Bech32 validation and decoding of the data.
+    pub fn validate_and_decode(
+        &self,
+        address: &str,
+    ) -> Result<(EntityType, Vec<u8>), DecodeBech32AddressError> {
+        let (actual_hrp, entity_type, data) = Self::validate_and_decode_ignore_hrp(address)?;
+        let expected_hrp = self.hrp_set.get_entity_hrp(&entity_type);
 
         // Validate that the decoded HRP matches that corresponding to the entity byte
         if actual_hrp != expected_hrp {

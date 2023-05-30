@@ -3,6 +3,7 @@ use quote::{format_ident, quote};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::*;
+use radix_engine_common::address::Bech32Decoder;
 
 use crate::ast;
 
@@ -83,7 +84,38 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
-    let const_statements = bp.const_statements.clone();
+    let const_statements = {
+        let mut const_statements = bp.const_statements.clone();
+
+        // Bech32 decode constant dependencies
+        for item in &mut const_statements {
+            let ty = item.ty.as_ref();
+            let type_string = quote! { #ty }.to_string();
+            if !type_string.contains("ResourceAddress")
+                && !type_string.contains("ComponentAddress")
+                && !type_string.contains("PackageAddress")
+                && !type_string.contains("GlobalAddress") {
+                continue;
+            }
+
+            match item.expr.as_mut() {
+                Expr::Lit(ExprLit { lit: Lit::Str(lit_str), ..}) => {
+                    let (_hrp, _entity_type, address) = Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str()).unwrap();
+
+                    let expr = parse_quote! {
+                        #ty :: new_or_panic([ #(#address),* ])
+                    };
+
+                    item.expr = Box::new(expr);
+                }
+                _ => {}
+            }
+        }
+
+        const_statements
+    };
+
+
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
