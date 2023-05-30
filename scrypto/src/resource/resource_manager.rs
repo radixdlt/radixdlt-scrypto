@@ -75,6 +75,16 @@ impl ResourceManager {
         access_rules.update_role_rule(RECALL_ROLE, access_rule);
     }
 
+    pub fn set_freezeable(&self, access_rule: AccessRule) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_rule(FREEZE_ROLE, access_rule);
+    }
+
+    pub fn set_unfreezeable(&self, access_rule: AccessRule) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_rule(UNFREEZE_ROLE, access_rule);
+    }
+
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
         access_rules.update_role_rule(SET_METADATA_ROLE, access_rule);
@@ -118,6 +128,16 @@ impl ResourceManager {
     pub fn lock_recallable(&self) {
         let access_rules = self.0.access_rules();
         access_rules.update_role_mutability(RECALL_ROLE, RoleList::none());
+    }
+
+    pub fn lock_freezeable(&self) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_mutability(FREEZE_ROLE, RoleList::none());
+    }
+
+    pub fn lock_unfreezeable(&self) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_mutability(UNFREEZE_ROLE, RoleList::none());
     }
 }
 
