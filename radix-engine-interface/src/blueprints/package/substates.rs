@@ -1,12 +1,12 @@
-use radix_engine_common::prelude::ScryptoSchema;
-use sbor::LocalTypeIndex;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;
+use radix_engine_common::prelude::ScryptoSchema;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
+use sbor::LocalTypeIndex;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -122,8 +122,6 @@ pub struct IndexedBlueprintSchema {
     pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
     pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
-
-
 
 impl IndexedBlueprintSchema {
     pub fn num_fields(&self) -> usize {

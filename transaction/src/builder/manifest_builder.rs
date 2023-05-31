@@ -20,7 +20,12 @@ use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::package::{PackageClaimRoyaltyInput, PackagePublishWasmAdvancedManifestInput, PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT, PackageDefinition};
+use radix_engine_interface::blueprints::package::{
+    PackageClaimRoyaltyInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
+    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{

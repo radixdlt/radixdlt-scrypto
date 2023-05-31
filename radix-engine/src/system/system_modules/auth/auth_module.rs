@@ -97,9 +97,7 @@ impl AuthModule {
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             let function_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
 
-            let access_rule = package_access_rules
-                .access_rules
-                .get(&function_key);
+            let access_rule = package_access_rules.access_rules.get(&function_key);
             if let Some(access_rule) = access_rule {
                 access_rule.clone()
             } else {

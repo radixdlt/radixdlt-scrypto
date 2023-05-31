@@ -18,6 +18,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
@@ -26,7 +27,6 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
-use radix_engine_interface::blueprints::package::PackageDefinition;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::prelude::*;
 

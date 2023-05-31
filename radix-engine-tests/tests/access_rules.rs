@@ -43,7 +43,12 @@ fn cannot_call_protected_function_without_auth() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+        )
+    });
 }
 
 #[test]
@@ -63,12 +68,12 @@ fn can_call_protected_function_with_auth() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
+    let receipt = test_runner
+        .execute_manifest_ignoring_fee(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
 }
-
 
 #[test]
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {

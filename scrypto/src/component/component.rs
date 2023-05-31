@@ -169,7 +169,6 @@ pub enum MethodRoyalty {
     Usd(Decimal),
 }
 
-
 pub trait FnMapping<T> {
     fn to_mapping(self) -> Vec<(String, T)>;
 }

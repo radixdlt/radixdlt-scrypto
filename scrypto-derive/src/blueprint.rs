@@ -144,11 +144,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let mut macro_statements = bp.macro_statements;
 
     let method_auth_statements = {
-        let method_auth_index = macro_statements.iter()
-            .position(|item| {
-                item.mac.path.get_ident().unwrap()
-                    .eq(&Ident::new("enable_method_auth", Span::call_site()))
-            });
+        let method_auth_index = macro_statements.iter().position(|item| {
+            item.mac
+                .path
+                .get_ident()
+                .unwrap()
+                .eq(&Ident::new("enable_method_auth", Span::call_site()))
+        });
         if let Some(method_auth_index) = method_auth_index {
             let auth_macro = macro_statements.remove(method_auth_index);
             quote! {
@@ -168,23 +170,24 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
 
-
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
         let function_names: Vec<String> = function_idents.iter().map(|i| i.to_string()).collect();
         let function_auth_statements = {
-            let function_auth_index = macro_statements.iter()
-                .position(|item| {
-                    item.mac.path.get_ident().unwrap()
-                        .eq(&Ident::new("enable_function_auth", Span::call_site()))
-                });
+            let function_auth_index = macro_statements.iter().position(|item| {
+                item.mac
+                    .path
+                    .get_ident()
+                    .unwrap()
+                    .eq(&Ident::new("enable_function_auth", Span::call_site()))
+            });
             if let Some(function_auth_index) = function_auth_index {
                 let auth_macro = macro_statements.remove(function_auth_index);
                 quote! {
-                #auth_macro
-            }
+                    #auth_macro
+                }
             } else {
                 // TODO: Use AllPublicFunctions Template instead
                 quote! {

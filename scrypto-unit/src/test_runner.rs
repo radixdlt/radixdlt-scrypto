@@ -35,7 +35,9 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{PackageDefinition, PackageInfoSubstate, PackageRoyaltySubstate};
+use radix_engine_interface::blueprints::package::{
+    PackageDefinition, PackageInfoSubstate, PackageRoyaltySubstate,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -1665,7 +1667,10 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn single_function_package_definition(blueprint_name: &str, function_name: &str) -> PackageDefinition {
+pub fn single_function_package_definition(
+    blueprint_name: &str,
+    function_name: &str,
+) -> PackageDefinition {
     let mut package_schema = PackageSchema::default();
     package_schema.blueprints.insert(
         blueprint_name.to_string(),

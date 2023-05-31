@@ -1,4 +1,4 @@
-use radix_engine_interface::blueprints::package::{PackageDefinition};
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 
@@ -65,9 +65,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     }
 
     Ok(PackageDefinition {
-        schema: PackageSchema {
-            blueprints
-        },
+        schema: PackageSchema { blueprints },
         function_access_rules: blueprints_function_auth,
     })
 }

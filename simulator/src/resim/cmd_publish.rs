@@ -2,8 +2,8 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
+use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -57,7 +57,8 @@ impl Publish {
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
         let package_definition: PackageDefinition = manifest_decode(
-            &fs::read(&definition_path).map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
+            &fs::read(&definition_path)
+                .map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
         )
         .map_err(Error::SborDecodeError)?;
 
@@ -102,7 +103,11 @@ impl Publish {
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET, 100u32.into())
-                .publish_package_with_owner(code, package_definition, owner_badge_non_fungible_global_id)
+                .publish_package_with_owner(
+                    code,
+                    package_definition,
+                    owner_badge_non_fungible_global_id,
+                )
                 .build();
 
             let receipt = handle_manifest(

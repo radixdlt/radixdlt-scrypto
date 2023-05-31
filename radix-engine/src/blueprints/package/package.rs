@@ -329,7 +329,7 @@ impl PackageNativePackage {
 
         PackageDefinition {
             schema,
-            function_access_rules
+            function_access_rules,
         }
     }
 
