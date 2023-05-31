@@ -134,41 +134,69 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
     let method_idents = generated_schema_info.method_idents;
-    let function_idents = generated_schema_info.function_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
+    let function_idents = generated_schema_info.function_idents;
 
     let blueprint_name = bp_ident.to_string();
     let owned_typed_name = format!("Owned{}", blueprint_name);
     let global_typed_name = format!("Global{}", blueprint_name);
 
-    let method_auth_index = bp.macro_statements.iter()
-        .position(|item| {
-            item.mac.path.get_ident().unwrap()
-                .eq(&Ident::new("enable_method_auth", Span::call_site()))
-        });
-
-    let method_auth_statements = if let Some(method_auth_index) = method_auth_index {
-        let auth_macro = bp.macro_statements.remove(method_auth_index);
-        quote! {
-            #auth_macro
-        }
-    } else {
-        // TODO: Use AllPublicMethod Template instead
-        quote! {
-            fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
-                btreemap!(
-                    #(
-                        scrypto::schema::SchemaMethodKey::main(#method_names) => scrypto::schema::SchemaMethodPermission::Public,
-                    )*
-                )
+    let method_auth_statements = {
+        let method_auth_index = bp.macro_statements.iter()
+            .position(|item| {
+                item.mac.path.get_ident().unwrap()
+                    .eq(&Ident::new("enable_method_auth", Span::call_site()))
+            });
+        if let Some(method_auth_index) = method_auth_index {
+            let auth_macro = bp.macro_statements.remove(method_auth_index);
+            quote! {
+                #auth_macro
+            }
+        } else {
+            // TODO: Use AllPublicMethod Template instead
+            quote! {
+                fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                    btreemap!(
+                        #(
+                            scrypto::schema::SchemaMethodKey::main(#method_names) => scrypto::schema::SchemaMethodPermission::Public,
+                        )*
+                    )
+                }
             }
         }
     };
+
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
+        let function_names: Vec<String> = function_idents.iter().map(|i| i.to_string()).collect();
+        let function_auth_statements = {
+            let function_auth_index = bp.macro_statements.iter()
+                .position(|item| {
+                    item.mac.path.get_ident().unwrap()
+                        .eq(&Ident::new("enable_function_auth", Span::call_site()))
+                });
+            if let Some(function_auth_index) = function_auth_index {
+                let auth_macro = bp.macro_statements.remove(function_auth_index);
+                quote! {
+                #auth_macro
+            }
+            } else {
+                // TODO: Use AllPublicFunctions Template instead
+                quote! {
+                fn function_auth() -> BTreeMap<String, AccessRule> {
+                    btreemap!(
+                        #(
+                            #function_names.to_string() => AccessRule::AllowAll,
+                        )*
+                    )
+                }
+            }
+            }
+        };
+
         let raw_package_dependencies: Vec<Ident> = {
             let const_statements = bp.const_statements;
             const_statements
@@ -211,6 +239,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         };
 
         quote! {
+            #function_auth_statements
 
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
