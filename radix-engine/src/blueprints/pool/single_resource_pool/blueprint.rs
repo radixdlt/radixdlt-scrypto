@@ -34,12 +34,12 @@ impl SingleResourcePoolBlueprint {
             Err(SingleResourcePoolError::NonFungibleResourcesAreNotAccepted { resource_address })?
         }
 
-        // Allowing the component address of the pool - this will be used later for the component
+        // Allocating the component address of the pool - this will be used later for the component
         // caller badge.
         let node_id = api.kernel_allocate_node_id(EntityType::GlobalSingleResourcePool)?;
         let address = GlobalAddress::new_or_panic(node_id.0);
 
-        let pool_unit_resource = {
+        let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
             let access_rules = btreemap!(
@@ -56,20 +56,9 @@ impl SingleResourcePoolBlueprint {
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(18, Default::default(), access_rules, api)?.0
+            ResourceManager::new_fungible(18, Default::default(), access_rules, api)?
         };
 
-        let object_id = {
-            let vault = Vault::create(resource_address, api)?;
-            let substate = SingleResourcePoolSubstate {
-                vault: vault.0,
-                pool_unit_resource,
-            };
-            api.new_simple_object(
-                SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
-            )?
-        };
         let access_rules =
             AccessRules::create(authority_rules(pool_manager_rule), btreemap!(), api)?.0;
         // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
@@ -78,11 +67,22 @@ impl SingleResourcePoolBlueprint {
             btreemap!(
                 "pool_vault_number".into() => MetadataValue::U8(1),
                 "pool_resources".into() => MetadataValue::GlobalAddress(resource_address.into()),
-                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource.into()),
+                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
             ),
             api,
         )?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let object_id = {
+            let vault = Vault::create(resource_address, api)?;
+            let substate = SingleResourcePoolSubstate {
+                vault,
+                pool_unit_resource_manager,
+            };
+            api.new_simple_object(
+                SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
+                vec![scrypto_encode(&substate).unwrap()],
+            )?
+        };
 
         api.globalize_with_address(
             btreemap!(
@@ -108,8 +108,8 @@ impl SingleResourcePoolBlueprint {
         // by the vault itself on deposit.
 
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let mut pool_unit_resource_manager = substate.pool_unit_resource_manager();
-        let mut vault = substate.vault();
+        let mut pool_unit_resource_manager = substate.pool_unit_resource_manager;
+        let mut vault = substate.vault;
 
         if bucket.is_empty(api)? {
             return Err(SingleResourcePoolError::ContributionOfEmptyBucketError.into());
@@ -145,7 +145,7 @@ impl SingleResourcePoolBlueprint {
             (false, false) => Ok(amount_of_contributed_resources),
             (false, true) => Ok(amount_of_contributed_resources + reserves),
             (true, false) => Err(SingleResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
-            (true, true) => Ok(amount_of_contributed_resources / reserves * pool_unit_total_supply),
+            (true, true) => Ok(amount_of_contributed_resources * pool_unit_total_supply / reserves),
         }?;
 
         vault.put(bucket, api)?;
@@ -175,8 +175,8 @@ impl SingleResourcePoolBlueprint {
             let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
             (
-                substate.pool_unit_resource_manager(),
-                substate.vault(),
+                substate.pool_unit_resource_manager,
+                substate.vault,
                 lock_handle,
             )
         };
@@ -237,13 +237,13 @@ impl SingleResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let event = DepositEvent {
             amount: bucket.amount(api)?,
         };
 
-        substate.vault().put(bucket, api)?;
+        substate.vault.put(bucket, api)?;
         api.field_lock_release(handle)?;
 
         Runtime::emit_event(api, event)?;
@@ -258,9 +258,9 @@ impl SingleResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
-        let bucket = substate.vault().take(amount, api)?;
+        let bucket = substate.vault.take(amount, api)?;
         api.field_lock_release(handle)?;
 
         Runtime::emit_event(api, WithdrawEvent { amount })?;
@@ -279,8 +279,8 @@ impl SingleResourcePoolBlueprint {
             let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
             (
-                substate.pool_unit_resource_manager(),
-                substate.vault(),
+                substate.pool_unit_resource_manager,
+                substate.vault,
                 lock_handle,
             )
         };
@@ -318,7 +318,7 @@ impl SingleResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let amount = substate.vault().amount(api)?;
+        let amount = substate.vault.amount(api)?;
         api.field_lock_release(handle)?;
         Ok(amount)
     }
@@ -333,7 +333,7 @@ impl SingleResourcePoolBlueprint {
         pool_resource_reserves: Decimal,
         pool_resource_divisibility: u8,
     ) -> Decimal {
-        let amount_owed = (pool_units_to_redeem / pool_units_total_supply) * pool_resource_reserves;
+        let amount_owed = pool_units_to_redeem * pool_resource_reserves / pool_units_total_supply;
 
         if pool_resource_divisibility == 18 {
             amount_owed

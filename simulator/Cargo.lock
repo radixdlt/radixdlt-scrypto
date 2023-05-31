@@ -668,6 +668,7 @@ dependencies = [
 name = "native-sdk"
 version = "0.10.0"
 dependencies = [
+ "radix-engine-common",
  "radix-engine-derive",
  "radix-engine-interface",
  "sbor",

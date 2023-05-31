@@ -13,9 +13,6 @@ mod radiswap {
         // TODO: We need a stub for native blueprints so that we're not using `AnyComponent`.
         /// The liquidity pool used by Radiswap and that manages all of the pool unit tokens.
         pool_component: Global<AnyComponent>,
-
-        /// The address of the resource that this Radiswap pool is for.
-        pool_resources: [ResourceAddress; 2],
     }
 
     impl Radiswap {
@@ -41,12 +38,9 @@ mod radiswap {
                 .unwrap(),
             );
 
-            Self {
-                pool_component,
-                pool_resources: [resource_address1, resource_address2],
-            }
-            .instantiate()
-            .globalize_at_address(component_address)
+            Self { pool_component }
+                .instantiate()
+                .globalize_at_address(component_address)
         }
 
         pub fn add_liquidity(

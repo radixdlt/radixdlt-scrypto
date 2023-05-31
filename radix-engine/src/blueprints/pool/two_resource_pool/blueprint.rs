@@ -52,7 +52,7 @@ impl TwoResourcePoolBlueprint {
         };
 
         // Creating the pool unit resource
-        let pool_unit_resource = {
+        let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
             let access_rules = btreemap!(
@@ -69,23 +69,10 @@ impl TwoResourcePoolBlueprint {
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(18, Default::default(), access_rules, api)?.0
+            ResourceManager::new_fungible(18, Default::default(), access_rules, api)?
         };
 
         // Creating the pool nodes
-        let object_id = {
-            let substate = TwoResourcePoolSubstate {
-                vaults: [
-                    (resource_address1, Vault::create(resource_address1, api)?.0),
-                    (resource_address2, Vault::create(resource_address2, api)?.0),
-                ],
-                pool_unit_resource,
-            };
-            api.new_simple_object(
-                TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
-            )?
-        };
         let access_rules =
             AccessRules::create(authority_rules(pool_manager_rule), btreemap!(), api)?.0;
         // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
@@ -97,11 +84,24 @@ impl TwoResourcePoolBlueprint {
                     resource_address1.into(),
                     resource_address2.into()
                 ]),
-                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource.into()),
+                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
             ),
             api,
         )?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let object_id = {
+            let substate = TwoResourcePoolSubstate {
+                vaults: [
+                    (resource_address1, Vault::create(resource_address1, api)?),
+                    (resource_address2, Vault::create(resource_address2, api)?),
+                ],
+                pool_unit_resource_manager,
+            };
+            api.new_simple_object(
+                TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
+                vec![scrypto_encode(&substate).unwrap()],
+            )?
+        };
 
         api.globalize_with_address(
             btreemap!(
@@ -123,18 +123,18 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
+        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
 
         let (resource_address1, resource_address2, mut vault1, mut vault2, bucket1, bucket2) = {
             // Getting the vaults of the two resource pool - before getting them we sort them according
             // to a deterministic and predictable order. This helps make the code less generalized and
             // simple.
             let ((vault1, vault1_resource_address), (vault2, vault2_resource_address)) = {
-                let vault1 = Vault(substate.vaults[0].1);
-                let vault2 = Vault(substate.vaults[1].1);
+                let vault1 = Vault((&substate.vaults[0].1 .0).clone());
+                let vault2 = Vault((&substate.vaults[1].1 .0).clone());
 
-                let resource_address1 = vault1.resource_address(api)?;
-                let resource_address2 = vault2.resource_address(api)?;
+                let resource_address1 = substate.vaults[0].0;
+                let resource_address2 = substate.vaults[1].0;
 
                 if resource_address1 > resource_address2 {
                     ((vault1, resource_address1), (vault2, resource_address2))
@@ -183,7 +183,7 @@ impl TwoResourcePoolBlueprint {
 
         // Determine the amount of pool units to mint based on the the current state of the pool.
         let (pool_units_to_mint, amount1, amount2) = {
-            let pool_unit_total_supply = substate.pool_unit_resource_manager().total_supply(api)?;
+            let pool_unit_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
             let reserves1 = vault1.amount(api)?;
             let reserves2 = vault2.amount(api)?;
             let contribution1 = bucket1.amount(api)?;
@@ -273,7 +273,7 @@ impl TwoResourcePoolBlueprint {
 
         // Minting the pool unit tokens
         let pool_units = substate
-            .pool_unit_resource_manager()
+            .pool_unit_resource_manager
             .mint_fungible(pool_units_to_mint, api)?;
 
         // Deposit the calculated amount of each of the buckets into appropriate vault.
@@ -312,26 +312,22 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (pool_unit_resource_manager, substate, handle) = {
-            let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-
-            (substate.pool_unit_resource_manager(), substate, lock_handle)
-        };
+        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         // Ensure that the passed pool resources are indeed pool resources
         let bucket_resource_address = bucket.resource_address(api)?;
-        if bucket_resource_address != pool_unit_resource_manager.0 {
+        if bucket_resource_address != substate.pool_unit_resource_manager.0 {
             return Err(TwoResourcePoolError::InvalidPoolUnitResource {
-                expected: pool_unit_resource_manager.0,
+                expected: substate.pool_unit_resource_manager.0,
                 actual: bucket_resource_address,
             }
             .into());
         }
 
         let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
         let mut reserves = BTreeMap::new();
-        for (resource_address, vault) in substate.vaults().iter() {
+        for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(*resource_address).resource_type(api)
                 .map(|resource_type| {
@@ -442,9 +438,9 @@ impl TwoResourcePoolBlueprint {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = substate.pool_unit_resource_manager().total_supply(api)?;
+        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
         let mut reserves = BTreeMap::new();
-        for (resource_address, vault) in substate.vaults().into_iter() {
+        for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(resource_address).resource_type(api)
                 .map(|resource_type| {
@@ -481,7 +477,7 @@ impl TwoResourcePoolBlueprint {
         let (two_resource_pool_substate, handle) =
             Self::lock_and_read(api, LockFlags::read_only())?;
         let amounts = two_resource_pool_substate
-            .vaults()
+            .vaults
             .into_iter()
             .map(|(resource_address, vault)| {
                 vault.amount(api).map(|amount| (resource_address, amount))

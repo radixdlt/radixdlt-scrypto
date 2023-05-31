@@ -1,3 +1,6 @@
+// TODO: In the future, we would like to converge this macro (or something that provides its
+// functionality) with the Scrypto blueprint macro such that they provide similar functionalities
+// such as schema generation, generation of stubs, etc...
 macro_rules! define_invocation {
     (
         blueprint_name: $blueprint_name: ident,
