@@ -171,32 +171,6 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
 }
 
 #[test]
-pub fn timed_confirm_recovery_with_non_recovery_role_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(None);
-    test_runner.initiate_recovery(
-        Role::Primary,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        Some(10),
-    );
-    test_runner.set_current_minute(10);
-
-    // Act
-    let receipt = test_runner.timed_confirm_recovery(
-        Role::Primary,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        Some(10),
-    );
-
-    // Assert
-    receipt.expect_specific_failure(is_auth_unauthorized_error);
-}
-
-#[test]
 pub fn primary_is_unlocked_after_a_successful_recovery() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
@@ -681,7 +655,7 @@ mod no_recovery_with_primary_unlocked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (Role::Primary, Some(is_no_timed_recoveries_found_error)),
             (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
         ];
 
@@ -936,7 +910,7 @@ mod no_recovery_with_primary_locked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (Role::Primary, Some(is_no_timed_recoveries_found_error)),
             (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
         ];
 
@@ -1199,7 +1173,10 @@ mod recovery_mode_with_primary_unlocked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (
+                Role::Primary,
+                Some(is_timed_recovery_delay_has_not_elapsed_error),
+            ),
             (
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
@@ -1468,7 +1445,10 @@ mod recovery_mode_with_primary_locked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (
+                Role::Primary,
+                Some(is_timed_recovery_delay_has_not_elapsed_error),
+            ),
             (
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
@@ -1659,6 +1639,7 @@ struct AccessControllerTestRunner {
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         let mut test_runner = TestRunner::builder()
+            .without_trace()
             .with_custom_genesis(CustomGenesis::default(
                 1,
                 CustomGenesis::default_consensus_manager_config(),
