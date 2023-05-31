@@ -39,7 +39,6 @@ fn test_static_package_address() {
         code,
         definition,
         BTreeMap::new(),
-        BTreeMap::new(),
         OwnerRole::None,
     );
 

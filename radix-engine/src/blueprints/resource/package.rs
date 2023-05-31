@@ -1597,6 +1597,7 @@ impl ResourceManagerNativePackage {
         PackageDefinition {
             schema,
             function_access_rules,
+            royalty_config: btreemap!(),
         }
     }
 

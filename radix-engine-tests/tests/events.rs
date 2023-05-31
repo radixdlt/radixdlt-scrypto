@@ -124,7 +124,6 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
             code,
             definition,
             BTreeMap::new(),
-            BTreeMap::new(),
             OwnerRole::None,
         )
         .build();
@@ -168,7 +167,6 @@ fn local_type_index_with_misleading_name_fails() {
         .publish_package_advanced(
             code,
             definition,
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )

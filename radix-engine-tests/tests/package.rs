@@ -29,7 +29,6 @@ fn missing_memory_should_cause_error() {
             code,
             PackageDefinition::default(),
             BTreeMap::new(),
-            BTreeMap::new(),
             OwnerRole::None,
         )
         .build();
@@ -125,7 +124,6 @@ fn test_basic_package() {
             code,
             single_function_package_definition("Test", "f"),
             BTreeMap::new(),
-            BTreeMap::new(),
             OwnerRole::None,
         )
         .build();
@@ -175,8 +173,8 @@ fn test_basic_package_missing_export() {
             PackageDefinition {
                 schema: package_schema,
                 function_access_rules: btreemap!(),
+                royalty_config: btreemap!(),
             },
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )

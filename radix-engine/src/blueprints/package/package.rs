@@ -329,6 +329,7 @@ impl PackageNativePackage {
         PackageDefinition {
             schema,
             function_access_rules,
+            royalty_config: btreemap!(),
         }
     }
 
@@ -381,7 +382,6 @@ impl PackageNativePackage {
                 let rtn = Self::publish_wasm(
                     input.code,
                     input.definition,
-                    input.royalty_config,
                     input.metadata,
                     api,
                 )?;
@@ -404,7 +404,6 @@ impl PackageNativePackage {
                     input.package_address,
                     input.code,
                     input.definition,
-                    input.royalty_config,
                     input.metadata,
                     input.owner_rule,
                     api,
@@ -482,7 +481,6 @@ impl PackageNativePackage {
     pub(crate) fn publish_wasm<Y>(
         code: Vec<u8>,
         definition: PackageDefinition,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
@@ -494,7 +492,6 @@ impl PackageNativePackage {
             None,
             code,
             definition,
-            royalty_config,
             metadata,
             access_rules,
             api,
@@ -507,7 +504,6 @@ impl PackageNativePackage {
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
         definition: PackageDefinition,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
         api: &mut Y,
@@ -520,7 +516,6 @@ impl PackageNativePackage {
             package_address,
             code,
             definition,
-            royalty_config,
             metadata,
             access_rules,
             api,
@@ -533,7 +528,6 @@ impl PackageNativePackage {
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
         definition: PackageDefinition,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
         api: &mut Y,
@@ -607,7 +601,7 @@ impl PackageNativePackage {
         let code = PackageCodeSubstate { code };
         let royalty = PackageRoyaltySubstate {
             royalty_vault: None,
-            blueprint_royalty_configs: royalty_config,
+            blueprint_royalty_configs: definition.royalty_config,
         };
 
         let function_access_rules = definition.function_access_rules.into();

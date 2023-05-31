@@ -50,7 +50,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
-    let mut blueprints_function_auth = BTreeMap::new();
+    let mut function_access_rules = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance
             .invoke_export(&function_export, vec![], &mut runtime)
@@ -61,11 +61,12 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
             scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
 
         blueprints.insert(name.clone(), schema);
-        blueprints_function_auth.insert(name.clone(), function_auth);
+        function_access_rules.insert(name.clone(), function_auth);
     }
 
     Ok(PackageDefinition {
         schema: PackageSchema { blueprints },
-        function_access_rules: blueprints_function_auth,
+        function_access_rules,
+        royalty_config: btreemap!(),
     })
 }

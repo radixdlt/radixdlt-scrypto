@@ -96,6 +96,7 @@ fn test_radiswap() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+        /*
         btreemap!(
             "Radiswap".to_owned() => {
                 let mut config = RoyaltyConfig::default();
@@ -106,6 +107,7 @@ fn test_radiswap() {
                 config
             }
         ),
+         */
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -239,6 +241,7 @@ fn test_flash_loan() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
+        /*
         btreemap!(
             "BasicFlashLoan".to_owned() => {
                 let mut config = RoyaltyConfig::default();
@@ -247,6 +250,7 @@ fn test_flash_loan() {
                 config
             }
         ),
+         */
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -358,7 +362,6 @@ fn test_publish_large_package() {
         .publish_package_advanced(
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )

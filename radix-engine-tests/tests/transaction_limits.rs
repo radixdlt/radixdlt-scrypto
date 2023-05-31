@@ -23,7 +23,6 @@ fn transaction_limit_call_frame_memory_exceeded() {
         code,
         single_function_package_definition("Test", "f"),
         BTreeMap::new(),
-        BTreeMap::new(),
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
@@ -268,7 +267,6 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
         .publish_package_advanced(
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )

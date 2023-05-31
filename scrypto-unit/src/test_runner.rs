@@ -708,13 +708,12 @@ impl TestRunner {
         &mut self,
         code: Vec<u8>,
         definition: PackageDefinition,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, definition, royalty_config, metadata, owner_rule)
+            .publish_package_advanced(code, definition, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -742,7 +741,6 @@ impl TestRunner {
             code,
             definition,
             BTreeMap::new(),
-            BTreeMap::new(),
             OwnerRole::None,
         )
     }
@@ -760,7 +758,6 @@ impl TestRunner {
         self.publish_package(
             code,
             definition,
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )
@@ -1703,6 +1700,7 @@ pub fn single_function_package_definition(
         function_access_rules: btreemap!(
             blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))
         ),
+        royalty_config: btreemap!(),
     }
 }
 
