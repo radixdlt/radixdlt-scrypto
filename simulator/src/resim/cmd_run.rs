@@ -2,6 +2,7 @@ use clap::Parser;
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
+use transaction::manifest::DefaultBlobProvider;
 
 use crate::resim::*;
 
@@ -50,9 +51,12 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest =
-            transaction::manifest::compile(&pre_processed_manifest, &network, blobs)
-                .map_err(Error::CompileError)?;
+        let compiled_manifest = transaction::manifest::compile(
+            &pre_processed_manifest,
+            &network,
+            DefaultBlobProvider::new_with_blobs(blobs),
+        )
+        .map_err(Error::CompileError)?;
         handle_manifest(
             compiled_manifest,
             &self.signing_keys,
