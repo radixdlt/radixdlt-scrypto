@@ -292,8 +292,6 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: PACKAGE_CODE_ID,
                 definition: PackageNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: PackageNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -311,8 +309,6 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: METADATA_CODE_ID,
                 definition: MetadataNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: MetadataNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -331,8 +327,6 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: ROYALTY_CODE_ID,
                 definition: RoyaltyNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: RoyaltyNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -350,8 +344,6 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 definition: AccessRulesNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: AccessRulesNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -369,8 +361,6 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 definition: ResourceManagerNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -533,8 +523,6 @@ pub fn create_system_bootstrap_transaction(
                 definition: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -552,8 +540,6 @@ pub fn create_system_bootstrap_transaction(
                 definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
-                package_access_rules: ConsensusManagerNativePackage::package_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -596,8 +582,6 @@ pub fn create_system_bootstrap_transaction(
                 definition: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -615,8 +599,6 @@ pub fn create_system_bootstrap_transaction(
                 definition: AccessControllerNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -634,8 +616,6 @@ pub fn create_system_bootstrap_transaction(
                 definition: TransactionProcessorNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }

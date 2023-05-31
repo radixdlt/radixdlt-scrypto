@@ -1,5 +1,4 @@
 use radix_engine_common::prelude::ScryptoSchema;
-use radix_engine_interface::blueprints::resource::AccessRule;
 use sbor::LocalTypeIndex;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
@@ -8,7 +7,6 @@ use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
-use crate::blueprints::package::PackageDefinition;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -41,7 +39,7 @@ impl Debug for PackageCodeSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
-    pub schema: IndexedPackageDefinition,
+    pub schema: IndexedPackageSchema,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -58,21 +56,18 @@ pub struct PackageRoyaltySubstate {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedPackageDefinition {
+pub struct IndexedPackageSchema {
     pub blueprints: BTreeMap<String, IndexedBlueprintDefinition>,
-    pub function_access_rules: BTreeMap<String, BTreeMap<String, AccessRule>>,
 }
 
-impl From<PackageDefinition> for IndexedPackageDefinition {
-    fn from(value: PackageDefinition) -> Self {
-        IndexedPackageDefinition {
+impl From<PackageSchema> for IndexedPackageSchema {
+    fn from(value: PackageSchema) -> Self {
+        IndexedPackageSchema {
             blueprints: value
-                .schema
                 .blueprints
                 .into_iter()
                 .map(|(name, b)| (name, b.into()))
                 .collect(),
-            function_access_rules: value.function_access_rules,
         }
     }
 }

@@ -22,7 +22,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
+use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
     BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey,
     SchemaMethodPermission,
@@ -321,6 +321,7 @@ impl PackageNativePackage {
 
         let function_access_rules = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => btreemap!(
+                PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
                 PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
                 PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
             )
@@ -330,25 +331,6 @@ impl PackageNativePackage {
             schema,
             function_access_rules
         }
-    }
-
-    pub fn function_access_rules() -> BTreeMap<FnKey, AccessRule> {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            FnKey::new(
-                PACKAGE_BLUEPRINT.to_string(),
-                PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            ),
-            rule!(allow_all),
-        );
-        access_rules.insert(
-            FnKey::new(
-                PACKAGE_BLUEPRINT.to_string(),
-                PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            ),
-            rule!(require(SYSTEM_TRANSACTION_BADGE)),
-        );
-        access_rules
     }
 
     #[trace_resources(log=export_name)]
@@ -380,8 +362,6 @@ impl PackageNativePackage {
                     input.native_package_code_id,
                     input.definition,
                     input.metadata,
-                    input.package_access_rules,
-                    input.default_package_access_rule,
                     api,
                 )?;
 
@@ -455,8 +435,6 @@ impl PackageNativePackage {
         native_package_code_id: u8,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
-        package_access_rules: BTreeMap<FnKey, AccessRule>,
-        default_package_access_rule: AccessRule,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
@@ -470,7 +448,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: definition.into(),
+            schema: definition.schema.into(),
         };
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
@@ -480,10 +458,7 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
-        let function_access_rules = FunctionAccessRulesSubstate {
-            access_rules: package_access_rules,
-            default_auth: default_package_access_rule,
-        };
+        let function_access_rules = definition.function_access_rules.into();
 
         globalize_package(
             package_address,
@@ -619,7 +594,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: definition.into(),
+            schema: definition.schema.into(),
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;
@@ -628,10 +603,8 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: royalty_config,
         };
-        let function_access_rules = FunctionAccessRulesSubstate {
-            access_rules: BTreeMap::new(),
-            default_auth: AccessRule::AllowAll,
-        };
+
+        let function_access_rules = definition.function_access_rules.into();
 
         globalize_package(
             package_address,

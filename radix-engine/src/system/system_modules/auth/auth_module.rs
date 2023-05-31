@@ -28,6 +28,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
+    NoFunction(FnIdentifier),
     NoMethod(FnIdentifier),
     UsedReservedRole(String),
     VisibilityError(NodeId),
@@ -95,11 +96,20 @@ impl AuthModule {
             let package_access_rules: FunctionAccessRulesSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             let function_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
+
             let access_rule = package_access_rules
                 .access_rules
-                .get(&function_key)
-                .unwrap_or(&package_access_rules.default_auth);
-            access_rule.clone()
+                .get(&function_key);
+            if let Some(access_rule) = access_rule {
+                access_rule.clone()
+            } else {
+                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::NoFunction(FnIdentifier {
+                        blueprint: blueprint.clone(),
+                        ident: FnIdent::Application(ident.to_string()),
+                    }),
+                )));
+            }
         };
 
         Ok(auth)

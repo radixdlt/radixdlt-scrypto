@@ -1575,7 +1575,23 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-            )
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+            ),
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+            ),
+            WORKTOP_BLUEPRINT.to_string() => btreemap!(
+                WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
+            ),
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => btreemap!(
+                PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+            ),
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => btreemap!(
+                PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+            ),
         );
 
         PackageDefinition {

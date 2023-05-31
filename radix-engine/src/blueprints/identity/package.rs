@@ -112,6 +112,7 @@ impl IdentityNativePackage {
         let function_access_rules = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => btreemap!(
                 IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
+                IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
             )
         );
 
