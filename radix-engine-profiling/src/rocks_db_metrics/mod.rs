@@ -1,10 +1,11 @@
 use radix_engine_interface::prelude::*;
 use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
-    PartitionEntry, SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
+    DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::{
     memory_db::InMemorySubstateDatabase,
+    rocks_db::RocksdbSubstateStore,
     rocks_db_with_merkle_tree::{BlockBasedOptions, Options, RocksDBWithMerkleTreeSubstateStore},
 };
 use std::{cell::RefCell, collections::BTreeMap, path::PathBuf, time::Duration};
@@ -15,11 +16,12 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
 {
     db: S,
+    pub commit_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
     pub read_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
     pub read_not_found_metrics: RefCell<Vec<Duration>>,
 }
 
-impl SubstateStoreWithMetrics<RocksDBWithMerkleTreeSubstateStore> {
+impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
     pub fn new_rocksdb(path: PathBuf) -> Self {
         let mut factory_opts = BlockBasedOptions::default();
         factory_opts.disable_cache();
@@ -31,7 +33,28 @@ impl SubstateStoreWithMetrics<RocksDBWithMerkleTreeSubstateStore> {
         opt.set_block_based_table_factory(&factory_opts);
 
         Self {
+            db: RocksdbSubstateStore::with_options(&opt, path),
+            commit_metrics: RefCell::new(BTreeMap::new()),
+            read_metrics: RefCell::new(BTreeMap::new()),
+            read_not_found_metrics: RefCell::new(Vec::new()),
+        }
+    }
+}
+
+impl SubstateStoreWithMetrics<RocksDBWithMerkleTreeSubstateStore> {
+    pub fn new_rocksdb_with_merkle_tree(path: PathBuf) -> Self {
+        let mut factory_opts = BlockBasedOptions::default();
+        factory_opts.disable_cache();
+
+        let mut opt = Options::default();
+        opt.set_disable_auto_compactions(true);
+        opt.create_if_missing(true);
+        opt.create_missing_column_families(true);
+        opt.set_block_based_table_factory(&factory_opts);
+
+        Self {
             db: RocksDBWithMerkleTreeSubstateStore::with_options(&opt, path),
+            commit_metrics: RefCell::new(BTreeMap::new()),
             read_metrics: RefCell::new(BTreeMap::new()),
             read_not_found_metrics: RefCell::new(Vec::new()),
         }
@@ -42,6 +65,7 @@ impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
     pub fn new_inmem() -> Self {
         Self {
             db: InMemorySubstateDatabase::standard(),
+            commit_metrics: RefCell::new(BTreeMap::new()),
             read_metrics: RefCell::new(BTreeMap::new()),
             read_not_found_metrics: RefCell::new(Vec::new()),
         }
@@ -92,7 +116,31 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
     for SubstateStoreWithMetrics<S>
 {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
-        self.db.commit(database_updates)
+        let start = std::time::Instant::now();
+        self.db.commit(database_updates);
+        let duration = start.elapsed();
+
+        assert!(!database_updates.is_empty());
+        let partition_update = &database_updates[0];
+        assert!(!partition_update.is_empty());
+        let db_update = &partition_update[0];
+        match db_update {
+            DatabaseUpdate::Set(value) => {
+                let exists = self.commit_metrics.borrow().get(&value.len()).is_some();
+                if exists {
+                    self.commit_metrics
+                        .borrow_mut()
+                        .get_mut(&value.len())
+                        .unwrap()
+                        .push(duration);
+                } else {
+                    self.commit_metrics
+                        .borrow_mut()
+                        .insert(value.len(), vec![duration]);
+                }
+            }
+            DatabaseUpdate::Delete => (), // todo
+        }
     }
 }
 
@@ -123,6 +171,52 @@ mod tests {
     const READ_REPEATS: usize = 200;
 
     #[test]
+    fn test_commit() {
+        // RocksDB part
+        let path = PathBuf::from(r"/tmp/radix-scrypto-db");
+        // clean database
+        std::fs::remove_dir_all(path.clone()).ok();
+
+        // prepare database
+        {
+            let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
+            prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT);
+        }
+
+        // reopen database and measure commit times
+        let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
+        // repeat commits of 1 substate writes
+        let commit_repeats = 50;
+        for i in 0..commit_repeats {
+            print!("Round {}/{}   ", i, commit_repeats);
+            prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, 1);
+        }
+
+        drop_highest_and_lowest_value(&mut substate_db, 3);
+        let rocksdb_output_data =
+            calculate_percent_to_max_points(&substate_db.commit_metrics, 95f32);
+
+        // prepare data for plot
+        let mut rocksdb_data = Vec::with_capacity(100000);
+        for (k, v) in substate_db.commit_metrics.borrow().iter() {
+            for i in v {
+                rocksdb_data.push((*k as f32, i.as_micros() as f32));
+            }
+        }
+
+        // export results
+        export_graph_and_print_summary(
+            &mut substate_db,
+            "RocksDB random commits",
+            &rocksdb_data,
+            &rocksdb_output_data,
+            "/tmp/scrypto_rocksdb_commit_1.png",
+            "95th percentile of commits",
+        )
+        .unwrap();
+    }
+
+    #[test]
     /// Database is created in /tmp/radix-scrypto-db folder.
     /// Outputs are genered in png files: /tmp/scrypto_rocksdb_1.png, /tmp/scrypto_inmem_1.png, /tmp/scrypto_diff_1.png
     /// point list is printed to stdout.
@@ -138,7 +232,7 @@ mod tests {
         // prepare database
         let data_index_vector = {
             let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
-            prepare_db(&mut substate_db)
+            prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT)
         };
 
         // reopen database
@@ -149,8 +243,8 @@ mod tests {
         run_read_not_found_test(&mut substate_db);
 
         // prepare data for linear approximation
-        drop_highest_and_lowest_value(&mut substate_db);
-        let rocksdb_output_data = calculate_percent_to_max_points(&mut substate_db, 95f32);
+        drop_highest_and_lowest_value(&mut substate_db, 3);
+        let rocksdb_output_data = calculate_percent_to_max_points(&substate_db.read_metrics, 95f32);
 
         // prepare data for plot
         let mut rocksdb_data = Vec::with_capacity(100000);
@@ -175,14 +269,14 @@ mod tests {
 
         // InMemory DB part
         let mut substate_db = SubstateStoreWithMetrics::new_inmem();
-        let data_index_vector = prepare_db(&mut substate_db);
+        let data_index_vector = prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT);
         run_read_test(&mut substate_db, &data_index_vector);
         // run read not found test
         run_read_not_found_test(&mut substate_db);
 
         // prepare data for linear approximation
-        drop_highest_and_lowest_value(&mut substate_db);
-        let inmem_output_data = calculate_percent_to_max_points(&mut substate_db, 95f32);
+        drop_highest_and_lowest_value(&mut substate_db, 3);
+        let inmem_output_data = calculate_percent_to_max_points(&substate_db.read_metrics, 95f32);
 
         // prepare data for plot
         let mut inmem_data = Vec::with_capacity(100000);
@@ -217,21 +311,35 @@ mod tests {
 
     fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDatabase>(
         substate_store: &mut SubstateStoreWithMetrics<S>,
+        count: usize,
     ) {
-        for (_, v) in substate_store.read_metrics.borrow_mut().iter_mut() {
-            v.sort();
-            v.pop();
-            v.remove(0);
+        if substate_store.read_metrics.borrow().len() > 2 * count {
+            for (_, v) in substate_store.read_metrics.borrow_mut().iter_mut() {
+                v.sort();
+                for _ in 0..count {
+                    v.pop();
+                    v.remove(0);
+                }
+            }
+        }
+        if substate_store.commit_metrics.borrow().len() > 2 * count {
+            for (_, v) in substate_store.commit_metrics.borrow_mut().iter_mut() {
+                v.sort();
+                for _ in 0..count {
+                    v.pop();
+                    v.remove(0);
+                }
+            }
         }
     }
 
-    pub fn calculate_percent_to_max_points<S: SubstateDatabase + CommittableSubstateDatabase>(
-        substate_store: &mut SubstateStoreWithMetrics<S>,
+    pub fn calculate_percent_to_max_points(
+        data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
         percent: f32,
     ) -> Vec<(f32, f32)> {
         assert!(percent <= 100f32);
         let mut output_values = Vec::new();
-        let mut binding = substate_store.read_metrics.borrow_mut();
+        let mut binding = data.borrow_mut();
         for (k, v) in binding.iter_mut() {
             v.sort();
             let idx = (((v.len() - 1) as f32 * percent) / 100f32).round() as usize;
@@ -242,16 +350,24 @@ mod tests {
 
     fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
         substate_db: &mut S,
+        min_size: usize,
+        max_size: usize,
+        step: usize,
+        writes_count: usize,
     ) -> Vec<(DbPartitionKey, DbSortKey, usize)> {
         let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> =
-            Vec::with_capacity(MAX_SIZE);
+            Vec::with_capacity(max_size);
 
-        println!("Preparing database...");
+        print!(
+            "Preparing database ({}, {}, {}, {})...",
+            min_size, max_size, step, writes_count
+        );
+        std::io::stdout().flush().ok();
         let mut rng = rand::thread_rng();
 
-        for size in (MIN_SIZE..=MAX_SIZE).step_by(SIZE_STEP) {
+        for size in (min_size..=max_size).step_by(step) {
             let mut input_data = DatabaseUpdates::new();
-            for _ in 0..COUNT {
+            for _ in 0..writes_count {
                 let value = DatabaseUpdate::Set(vec![1; size]);
 
                 let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
@@ -275,7 +391,7 @@ mod tests {
             }
             substate_db.commit(&input_data);
         }
-        println!("  done\n");
+        println!("  done");
 
         data_index_vector
     }
