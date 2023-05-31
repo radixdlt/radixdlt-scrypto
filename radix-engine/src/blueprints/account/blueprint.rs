@@ -162,10 +162,10 @@ impl PresecurifiedAccessRules for SecurifiedAccount {
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
 }
 
-const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
+pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
 
-const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
+pub const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
 pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
 
 pub struct AccountBlueprint;
