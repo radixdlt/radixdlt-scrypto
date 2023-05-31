@@ -2,7 +2,7 @@ use clap::Parser;
 use radix_engine::types::*;
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::manifest::{compile, DefaultBlobProvider};
+use transaction::manifest::{compile, BlobProvider};
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -47,12 +47,8 @@ pub fn run() -> Result<(), Error> {
             blobs.push(std::fs::read(path).map_err(Error::IoError)?);
         }
     }
-    let transaction = compile(
-        &content,
-        &network,
-        DefaultBlobProvider::new_with_blobs(blobs),
-    )
-    .map_err(Error::CompileError)?;
+    let transaction = compile(&content, &network, BlobProvider::new_with_blobs(blobs))
+        .map_err(Error::CompileError)?;
     std::fs::write(
         args.output,
         manifest_encode(&transaction).map_err(Error::EncodeError)?,

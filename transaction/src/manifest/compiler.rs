@@ -16,7 +16,7 @@ pub fn compile<B>(
     blobs: B,
 ) -> Result<TransactionManifestV1, CompileError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     let bech32_decoder = Bech32Decoder::new(network);
 

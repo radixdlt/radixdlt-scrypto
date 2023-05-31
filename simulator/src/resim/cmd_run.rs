@@ -2,7 +2,7 @@ use clap::Parser;
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
-use transaction::manifest::DefaultBlobProvider;
+use transaction::manifest::BlobProvider;
 
 use crate::resim::*;
 
@@ -54,7 +54,7 @@ impl Run {
         let compiled_manifest = transaction::manifest::compile(
             &pre_processed_manifest,
             &network,
-            DefaultBlobProvider::new_with_blobs(blobs),
+            BlobProvider::new_with_blobs(blobs),
         )
         .map_err(Error::CompileError)?;
         handle_manifest(

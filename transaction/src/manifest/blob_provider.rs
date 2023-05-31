@@ -8,7 +8,7 @@ type BlobReference = Hash;
 // Traits
 //========
 
-pub trait BlobProvider {
+pub trait IsBlobProvider {
     fn add_blob(&mut self, blob: Blob);
 
     fn get_blob(&self, blob_reference: &BlobReference) -> Option<Blob>;
@@ -21,9 +21,9 @@ pub trait BlobProvider {
 //=======================
 
 #[derive(Default, Debug, Clone)]
-pub struct DefaultBlobProvider(BTreeMap<BlobReference, Blob>);
+pub struct BlobProvider(BTreeMap<BlobReference, Blob>);
 
-impl DefaultBlobProvider {
+impl BlobProvider {
     pub fn new() -> Self {
         Default::default()
     }
@@ -33,7 +33,7 @@ impl DefaultBlobProvider {
     }
 }
 
-impl BlobProvider for DefaultBlobProvider {
+impl IsBlobProvider for BlobProvider {
     fn add_blob(&mut self, blob: Blob) {
         let hash = hash(&blob);
         self.0.insert(hash, blob);
@@ -61,7 +61,7 @@ impl MockBlobProvider {
     }
 }
 
-impl BlobProvider for MockBlobProvider {
+impl IsBlobProvider for MockBlobProvider {
     fn add_blob(&mut self, _: Blob) {
         /* No OP */
     }

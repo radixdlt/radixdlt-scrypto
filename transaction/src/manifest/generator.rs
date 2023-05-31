@@ -176,7 +176,7 @@ pub fn generate_manifest<B>(
     blobs: B,
 ) -> Result<TransactionManifestV1, GeneratorError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     let mut id_validator = ManifestValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -206,7 +206,7 @@ pub fn generate_instruction<B>(
     blobs: &B,
 ) -> Result<InstructionV1, GeneratorError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -683,7 +683,7 @@ fn generate_args<B>(
     blobs: &B,
 ) -> Result<ManifestValue, GeneratorError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     let mut fields = Vec::new();
     for v in values {
@@ -909,7 +909,7 @@ fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, Generat
 
 fn generate_blob<B>(value: &ast::Value, blobs: &B) -> Result<ManifestBlobRef, GeneratorError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     match value {
         ast::Value::Blob(inner) => match &**inner {
@@ -965,7 +965,7 @@ pub fn generate_value<B>(
     blobs: &B,
 ) -> Result<ManifestValue, GeneratorError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     if let Some(ty) = expected_type {
         if ty != value.value_kind() {
@@ -1139,7 +1139,7 @@ fn generate_singletons<B>(
     blobs: &B,
 ) -> Result<Vec<ManifestValue>, GeneratorError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     let mut result = vec![];
     for element in elements {
@@ -1163,7 +1163,7 @@ fn generate_kv_entries<B>(
     blobs: &B,
 ) -> Result<Vec<(ManifestValue, ManifestValue)>, GeneratorError>
 where
-    B: BlobProvider,
+    B: IsBlobProvider,
 {
     let mut result = vec![];
     for entry in entries {
@@ -1218,7 +1218,7 @@ mod tests {
                     None,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &DefaultBlobProvider::default()
+                    &BlobProvider::default()
                 ),
                 Ok($expected)
             );
@@ -1257,7 +1257,7 @@ mod tests {
                 None,
                 &mut NameResolver::new(),
                 &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                &DefaultBlobProvider::default(),
+                &BlobProvider::default(),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);

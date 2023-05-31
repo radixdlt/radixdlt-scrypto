@@ -990,7 +990,7 @@ CREATE_ACCESS_CONTROLLER
         blobs: Vec<Vec<u8>>,
         expected_canonical: impl AsRef<str>,
     ) {
-        let blob_provider = DefaultBlobProvider::new_with_blobs(blobs);
+        let blob_provider = BlobProvider::new_with_blobs(blobs);
 
         let original_string = manifest.as_ref();
         let original_compiled = compile(original_string, network, blob_provider.clone())
@@ -1052,7 +1052,7 @@ CREATE_ACCESS_CONTROLLER
     }
 
     fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> Result<IntentV1, CompileError> {
-        let blob_provider = DefaultBlobProvider::new_with_blobs(blobs);
+        let blob_provider = BlobProvider::new_with_blobs(blobs);
 
         let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
@@ -1209,7 +1209,7 @@ CREATE_ACCESS_CONTROLLER
         let inverted_manifest = {
             let network = NetworkDefinition::simulator();
             let decompiled = decompile(&manifest.instructions, &network).unwrap();
-            compile(&decompiled, &network, DefaultBlobProvider::new()).unwrap()
+            compile(&decompiled, &network, BlobProvider::new()).unwrap()
         };
 
         // Assert

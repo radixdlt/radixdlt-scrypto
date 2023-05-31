@@ -10,7 +10,7 @@ use scrypto::prelude::{AccessRule, ComponentAddress};
 use scrypto::NonFungibleData;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::manifest::{compile, decompile, DefaultBlobProvider};
+use transaction::manifest::{compile, decompile, BlobProvider};
 use transaction::model::{
     PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayloadEncode,
     TransactionPayloadPreparable,
@@ -58,7 +58,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
                     compile(
                         &manifest,
                         &NetworkDefinition::simulator(),
-                        DefaultBlobProvider::new(),
+                        BlobProvider::new(),
                     )
                 })
             })

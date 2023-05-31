@@ -3,7 +3,7 @@ use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::manifest::{compile, DefaultBlobProvider};
+use transaction::manifest::{compile, BlobProvider};
 use utils::ContextualDisplay;
 
 macro_rules! replace_variables {
@@ -218,7 +218,7 @@ where
     let manifest = compile(
         &manifest_string,
         &network,
-        DefaultBlobProvider::new_with_blobs(blobs),
+        BlobProvider::new_with_blobs(blobs),
     )
     .expect("Failed to compile manifest from manifest string");
 
@@ -288,7 +288,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     let manifest = compile(
         &manifest_string,
         &network,
-        DefaultBlobProvider::new_with_blobs(blobs),
+        BlobProvider::new_with_blobs(blobs),
     )
     .expect("Failed to compile manifest from manifest string");
 
@@ -323,7 +323,7 @@ where
     let manifest = compile(
         &manifest_string,
         &network,
-        DefaultBlobProvider::new_with_blobs(blobs),
+        BlobProvider::new_with_blobs(blobs),
     )
     .expect("Failed to compile manifest from manifest string");
 
