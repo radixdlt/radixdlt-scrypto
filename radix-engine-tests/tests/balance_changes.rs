@@ -23,16 +23,17 @@ fn test_balance_changes_when_success() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .set_package_royalty_config(
+            .set_package_royalty(
                 package_address,
-                btreemap!(
-                    "BalanceChangesTest".to_owned() => {
-                        let mut config = RoyaltyConfig::default();
-                        config.set_rule("put",  RoyaltyAmount::Xrd(2.into()));
-                        config.set_rule("boom",  RoyaltyAmount::Xrd(2.into()));
-                        config
-                    }
-                ),
+                "BalanceChangesTest",
+                "put",
+                RoyaltyAmount::Xrd(2.into()),
+            )
+            .set_package_royalty(
+                package_address,
+                "BalanceChangesTest",
+                "boom",
+                RoyaltyAmount::Xrd(2.into()),
             )
             .call_function(
                 package_address,
@@ -100,16 +101,17 @@ fn test_balance_changes_when_failure() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .set_package_royalty_config(
+            .set_package_royalty(
                 package_address,
-                btreemap!(
-                    "BalanceChangesTest".to_owned() => {
-                        let mut config = RoyaltyConfig::default();
-                        config.set_rule("put",  RoyaltyAmount::Xrd(2.into()));
-                        config.set_rule("boom",  RoyaltyAmount::Xrd(2.into()));
-                        config
-                    }
-                ),
+                "BalanceChangesTest",
+                "put",
+                RoyaltyAmount::Xrd(2.into()),
+            )
+            .set_package_royalty(
+                package_address,
+                "BalanceChangesTest",
+                "boom",
+                RoyaltyAmount::Xrd(2.into()),
             )
             .call_function(
                 package_address,

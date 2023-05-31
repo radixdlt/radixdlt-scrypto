@@ -34,12 +34,12 @@ mod royalty_test {
 
         pub fn enable_royalty_for_package(package: Package, proof: Proof) {
             proof.authorize(|| {
-                package.set_royalty_config(BTreeMap::from([("RoyaltyTest".to_owned(), {
-                    let mut config = RoyaltyConfig::default();
-                    config.set_rule("paid_method", RoyaltyAmount::Xrd(2.into()));
-                    config.set_rule("paid_method_panic", RoyaltyAmount::Xrd(2.into()));
-                    config
-                })]));
+                package.set_royalty("RoyaltyTest", "paid_method", RoyaltyAmount::Xrd(2.into()));
+                package.set_royalty(
+                    "RoyaltyTest",
+                    "paid_method_panic",
+                    RoyaltyAmount::Xrd(2.into()),
+                );
             })
         }
 
@@ -59,15 +59,8 @@ mod royalty_test {
 
         pub fn disable_package_royalty(package: Package, proof: Proof) {
             proof.authorize(|| {
-                package.set_royalty_config(BTreeMap::from([]));
-            })
-        }
-
-        pub fn disable_component_royalty(address: ComponentAddress, proof: Proof) {
-            proof.authorize(|| {
-                let component: Global<AnyComponent> = address.into();
-                let royalty = component.royalty();
-                royalty.set_config(RoyaltyConfig::default());
+                package.set_royalty("RoyaltyTest", "paid_method", RoyaltyAmount::Free);
+                package.set_royalty("RoyaltyTest", "paid_method_panic", RoyaltyAmount::Free);
             })
         }
 
@@ -79,7 +72,7 @@ mod royalty_test {
             proof.authorize(|| {
                 let component: Global<AnyComponent> = address.into();
                 let royalty = component.royalty();
-                royalty.claim_royalty()
+                royalty.claim_royalties()
             })
         }
     }

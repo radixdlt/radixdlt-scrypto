@@ -9,7 +9,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_ID
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -25,7 +25,7 @@ use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -355,13 +355,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                 // Nb - For Main method call, we also check the address type to avoid name clashing.
 
                 /* Package */
-                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                (address, PACKAGE_SET_ROYALTY_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     fields.push(to_manifest_value(address));
                     "SET_PACKAGE_ROYALTY_CONFIG"
                 }
-                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                (address, PACKAGE_CLAIM_ROYALTIES_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     fields.push(to_manifest_value(address));
@@ -424,11 +424,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Component royalty */
-                (address, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => {
+                (address, COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => {
                     fields.push(to_manifest_value(address));
                     "SET_COMPONENT_ROYALTY_CONFIG"
                 }
-                (address, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => {
+                (address, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => {
                     fields.push(to_manifest_value(address));
                     "CLAIM_COMPONENT_ROYALTY"
                 }
