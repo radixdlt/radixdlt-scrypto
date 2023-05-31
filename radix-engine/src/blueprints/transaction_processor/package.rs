@@ -5,6 +5,7 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
@@ -17,7 +18,7 @@ use super::TransactionProcessorRunInput;
 pub struct TransactionProcessorNativePackage;
 
 impl TransactionProcessorNativePackage {
-    pub fn schema() -> PackageSchema {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -36,7 +37,7 @@ impl TransactionProcessorNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        PackageSchema {
+        let schema = PackageSchema {
             blueprints: btreemap!(
                 TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
@@ -51,6 +52,17 @@ impl TransactionProcessorNativePackage {
                     outer_method_auth_template: btreemap!(),
                 }
             ),
+        };
+
+        let function_access_rules = btreemap!(
+            TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => btreemap!(
+                TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?
+            )
+        );
+
+        PackageDefinition {
+            schema,
+            function_access_rules,
         }
     }
 

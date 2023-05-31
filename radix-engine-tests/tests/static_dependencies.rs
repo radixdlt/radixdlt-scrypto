@@ -37,7 +37,7 @@ fn test_static_package_address() {
         .copy_from_slice(package_address1.as_ref());
     let package_address2 = test_runner.publish_package(
         code,
-        definition.schema,
+        definition,
         BTreeMap::new(),
         BTreeMap::new(),
         OwnerRole::None,

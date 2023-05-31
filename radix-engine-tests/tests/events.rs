@@ -122,7 +122,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .publish_package_advanced(
             code,
-            definition.schema,
+            definition,
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -163,7 +163,7 @@ fn local_type_index_with_misleading_name_fails() {
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .publish_package_advanced(
             code,
-            definition.schema,
+            definition,
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,

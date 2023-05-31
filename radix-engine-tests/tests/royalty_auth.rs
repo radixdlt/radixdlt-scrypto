@@ -23,7 +23,7 @@ fn set_up_package_and_component() -> (
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .publish_package_with_owner(code, definition.schema, owner_badge_addr.clone())
+            .publish_package_with_owner(code, definition, owner_badge_addr.clone())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

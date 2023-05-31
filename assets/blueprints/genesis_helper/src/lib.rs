@@ -51,6 +51,10 @@ pub enum GenesisDataChunk {
 
 #[blueprint]
 mod genesis_helper {
+    enable_function_auth! {
+        new => rule!(deny_all); // Genesis overrides this
+    }
+
     enable_method_auth! {
         roles {
             system

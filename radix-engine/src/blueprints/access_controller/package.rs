@@ -26,6 +26,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::prelude::*;
 
@@ -161,7 +162,7 @@ impl From<AccessControllerError> for RuntimeError {
 pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
-    pub fn schema() -> PackageSchema {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -436,7 +437,7 @@ impl AccessControllerNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        PackageSchema {
+        let schema = PackageSchema {
             blueprints: btreemap!(
                 ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
@@ -453,6 +454,17 @@ impl AccessControllerNativePackage {
                     outer_method_auth_template: btreemap!(),
                 }
             ),
+        };
+
+        let function_access_rules = btreemap!(
+            ACCESS_CONTROLLER_BLUEPRINT.to_string() => btreemap!(
+                ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
+            )
+        );
+
+        PackageDefinition {
+            schema,
+            function_access_rules,
         }
     }
 

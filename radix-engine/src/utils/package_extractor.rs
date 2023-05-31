@@ -1,4 +1,4 @@
-use radix_engine_interface::blueprints::package::FunctionAccessRules;
+use radix_engine_interface::blueprints::package::{PackageDefinition};
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 
@@ -14,12 +14,6 @@ pub enum ExtractSchemaError {
     InvalidWasm(PrepareError),
     RunSchemaGenError(InvokeError<WasmRuntimeError>),
     SchemaDecodeError(DecodeError),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct PackageDefinition {
-    pub schema: PackageSchema,
-    pub function_access_rules: FunctionAccessRules,
 }
 
 impl From<PrepareError> for ExtractSchemaError {
@@ -74,8 +68,6 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         schema: PackageSchema {
             blueprints
         },
-        function_access_rules: FunctionAccessRules {
-            rules: blueprints_function_auth,
-        },
+        function_access_rules: blueprints_function_auth,
     })
 }

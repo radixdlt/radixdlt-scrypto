@@ -75,7 +75,7 @@ use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema, PackageSchema};
+use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema};
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,

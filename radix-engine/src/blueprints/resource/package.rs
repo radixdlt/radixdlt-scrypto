@@ -10,6 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, PackageSchema, SchemaMethodKey, SchemaMethodPermission,
@@ -123,7 +124,7 @@ const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
-    pub fn schema() -> PackageSchema {
+    pub fn definition() -> PackageDefinition {
         //====================================================================================
 
         let fungible_resource_manager_schema = {
@@ -1555,7 +1556,7 @@ impl ResourceManagerNativePackage {
             outer_method_auth_template: btreemap!(),
         };
 
-        PackageSchema {
+        let schema = PackageSchema {
             blueprints: btreemap!(
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
@@ -1568,6 +1569,18 @@ impl ResourceManagerNativePackage {
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,
                 AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
             ),
+        };
+
+        let function_access_rules = btreemap!(
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
+            )
+        );
+
+        PackageDefinition {
+            schema,
+            function_access_rules,
         }
     }
 
