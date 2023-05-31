@@ -2,6 +2,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use scrypto::prelude::MethodRoyalty;
 use scrypto_unit::*;
 use transaction::builder::*;
 use utils::ContextualDisplay;
@@ -241,16 +242,6 @@ fn test_flash_loan() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
-        /*
-        btreemap!(
-            "BasicFlashLoan".to_owned() => {
-                let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_default", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("take_loan", RoyaltyAmount::Xrd(2.into()));
-                config
-            }
-        ),
-         */
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
