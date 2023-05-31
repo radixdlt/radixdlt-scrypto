@@ -340,13 +340,13 @@ impl FeeTable {
                 actor: _,
             } => 10 * input_size,
             CostingEntry::SubstateReadFromDb { size } => {
-                // f(size) = 0.0008698330531784841 * size + 24.999130166946998
+                // f(size) = 0.00032494246163410686 * size + 4752.641725974398
                 let mut value: u64 = *size as u64;
-                value *= 57; // ~0.0008698330531784841 << 16
-                value += (value >> 16) + 25; // ~24.999130166946998
+                value *= 21; // ~0.00032494246163410686 << 16
+                value += (value >> 16) + 4753; // ~4752.641725974398
                 value as u32
             }
-            CostingEntry::SubstateReadFromDbNotFound => 1, // todo: determine correct value
+            CostingEntry::SubstateReadFromDbNotFound => 3000, // average value from benchmark
             CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {
