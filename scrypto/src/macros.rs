@@ -583,6 +583,21 @@ macro_rules! enable_method_auth {
 }
 
 #[macro_export]
+macro_rules! enable_function_auth {
+    (
+        $($function:ident => $rule:expr;)*
+    ) => (
+        fn function_auth() -> BTreeMap<String, AccessRule> {
+            let rules = Functions::<AccessRule> {
+                $( $function: $rule, )*
+            };
+
+            rules.to_mapping().into_iter().collect()
+        }
+    );
+}
+
+#[macro_export]
 macro_rules! role_definition_entry {
 
     ($rule:expr, mutable_by: $($mutators:ident),+) => {{

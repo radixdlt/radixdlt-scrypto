@@ -141,14 +141,16 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let owned_typed_name = format!("Owned{}", blueprint_name);
     let global_typed_name = format!("Global{}", blueprint_name);
 
+    let mut macro_statements = bp.macro_statements;
+
     let method_auth_statements = {
-        let method_auth_index = bp.macro_statements.iter()
+        let method_auth_index = macro_statements.iter()
             .position(|item| {
                 item.mac.path.get_ident().unwrap()
                     .eq(&Ident::new("enable_method_auth", Span::call_site()))
             });
         if let Some(method_auth_index) = method_auth_index {
-            let auth_macro = bp.macro_statements.remove(method_auth_index);
+            let auth_macro = macro_statements.remove(method_auth_index);
             quote! {
                 #auth_macro
             }
@@ -173,27 +175,27 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_schema = {
         let function_names: Vec<String> = function_idents.iter().map(|i| i.to_string()).collect();
         let function_auth_statements = {
-            let function_auth_index = bp.macro_statements.iter()
+            let function_auth_index = macro_statements.iter()
                 .position(|item| {
                     item.mac.path.get_ident().unwrap()
                         .eq(&Ident::new("enable_function_auth", Span::call_site()))
                 });
             if let Some(function_auth_index) = function_auth_index {
-                let auth_macro = bp.macro_statements.remove(function_auth_index);
+                let auth_macro = macro_statements.remove(function_auth_index);
                 quote! {
                 #auth_macro
             }
             } else {
                 // TODO: Use AllPublicFunctions Template instead
                 quote! {
-                fn function_auth() -> BTreeMap<String, AccessRule> {
-                    btreemap!(
-                        #(
-                            #function_names.to_string() => AccessRule::AllowAll,
-                        )*
-                    )
+                    fn function_auth() -> BTreeMap<String, AccessRule> {
+                        btreemap!(
+                            #(
+                                #function_names.to_string() => AccessRule::AllowAll,
+                            )*
+                        )
+                    }
                 }
-            }
             }
         };
 
@@ -280,7 +282,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
                 }
 
-                let return_data = BlueprintSchema {
+                let schema = BlueprintSchema {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
                     fields,
@@ -292,6 +294,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     method_auth_template,
                     outer_method_auth_template: BTreeMap::new(),
                 };
+
+
+                let function_auth = function_auth();
+
+                let return_data = (schema, function_auth);
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
@@ -348,6 +355,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#use_statements)*
 
             #(#const_statements)*
+
+            #(#macro_statements)*
 
             #method_auth_statements
 
@@ -981,6 +990,18 @@ mod tests {
                         }
                     }
 
+                    pub struct Functions<T> {
+                        y: T,
+                    }
+
+                    impl<T> FnMapping<T> for Functions<T> {
+                        fn to_mapping(self) -> Vec<(String, T)> {
+                            vec![
+                                ("y".to_string(), self.y),
+                            ]
+                        }
+                    }
+
                     #[allow(non_camel_case_types)]
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test_x_Input { i : u32 }
@@ -1013,6 +1034,12 @@ mod tests {
                         let input: Test_y_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                         let return_data = Test::y(input.i);
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
+                    }
+
+                    fn function_auth() -> BTreeMap<String, AccessRule> {
+                        btreemap!(
+                            "y".to_string() => AccessRule::AllowAll,
+                        )
                     }
 
                     #[no_mangle]
@@ -1054,7 +1081,7 @@ mod tests {
                             method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
                         }
 
-                        let return_data = BlueprintSchema {
+                        let schema = BlueprintSchema {
                             outer_blueprint: None,
                             schema: generate_full_schema(aggregator),
                             fields,
@@ -1066,6 +1093,11 @@ mod tests {
                             method_auth_template,
                             outer_method_auth_template: BTreeMap::new(),
                         };
+
+                        let function_auth = function_auth();
+
+                        let return_data = (schema, function_auth);
+
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
 

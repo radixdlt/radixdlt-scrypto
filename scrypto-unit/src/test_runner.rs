@@ -69,7 +69,7 @@ use transaction::model::{
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSchema) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -112,9 +112,9 @@ impl Compile {
                 &path, err
             )
         });
-        let schema = extract_schema(&code).unwrap();
+        let definition = extract_definition(&code).unwrap();
 
-        (code, schema)
+        (code, definition)
     }
 
     // Naive pattern matching to find the crate name.
@@ -735,10 +735,10 @@ impl TestRunner {
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        let (code, schema) = Compile::compile(package_dir);
+        let (code, definition) = Compile::compile(package_dir);
         self.publish_package(
             code,
-            schema,
+            definition.schema,
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -753,11 +753,11 @@ impl TestRunner {
         package_dir: P,
         retain: F,
     ) -> PackageAddress {
-        let (code, mut schema) = Compile::compile(package_dir);
-        schema.blueprints.retain(retain);
+        let (code, mut definition) = Compile::compile(package_dir);
+        definition.schema.blueprints.retain(retain);
         self.publish_package(
             code,
-            schema,
+            definition.schema,
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -769,8 +769,8 @@ impl TestRunner {
         package_dir: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let (code, schema) = Compile::compile(package_dir);
-        self.publish_package_with_owner(code, schema, owner_badge)
+        let (code, definition) = Compile::compile(package_dir);
+        self.publish_package_with_owner(code, definition.schema, owner_badge)
     }
 
     pub fn execute_manifest_ignoring_fee<T>(

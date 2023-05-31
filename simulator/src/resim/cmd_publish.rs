@@ -11,6 +11,7 @@ use radix_engine_store_interface::{
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
+use radix_engine::utils::PackageDefinition;
 use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;
 
@@ -47,7 +48,7 @@ pub struct Publish {
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
-        let (code_path, schema_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
+        let (code_path, definition_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false, false).map_err(Error::BuildError)?
         } else {
             let code_path = self.path.clone();
@@ -56,8 +57,8 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let schema: PackageSchema = manifest_decode(
-            &fs::read(&schema_path).map_err(|err| Error::IOErrorAtPath(err, schema_path))?,
+        let package_definition: PackageDefinition = manifest_decode(
+            &fs::read(&definition_path).map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
         )
         .map_err(Error::SborDecodeError)?;
 
@@ -77,7 +78,7 @@ impl Publish {
             let info_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Info.into());
             let package_info = PackageInfoSubstate {
-                schema: schema.into(),
+                schema: package_definition.schema.into(),
             };
             let database_updates = indexmap!(
                 db_partition_key => indexmap!(
@@ -102,7 +103,7 @@ impl Publish {
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET, 100u32.into())
-                .publish_package_with_owner(code, schema, owner_badge_non_fungible_global_id)
+                .publish_package_with_owner(code, package_definition.schema, owner_badge_non_fungible_global_id)
                 .build();
 
             let receipt = handle_manifest(

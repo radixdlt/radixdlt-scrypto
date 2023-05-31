@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod balance_changes_test {
-    define_static_auth! {
+    enable_method_auth! {
         methods {
             put => PUBLIC;
             boom => PUBLIC;

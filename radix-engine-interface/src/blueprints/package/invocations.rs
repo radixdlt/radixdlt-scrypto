@@ -87,3 +87,8 @@ pub const PACKAGE_CLAIM_ROYALTY_IDENT: &str = "PackageRoyalty_claim_royalty";
 pub struct PackageClaimRoyaltyInput {}
 
 pub type PackageClaimRoyaltyOutput = Bucket;
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct FunctionAccessRules {
+    pub rules: BTreeMap<String, BTreeMap<String, AccessRule>>,
+}

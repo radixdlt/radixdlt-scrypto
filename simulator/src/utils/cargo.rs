@@ -169,10 +169,10 @@ pub fn build_package<P: AsRef<Path>>(
     // Extract SCHEMA
     let wasm =
         fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
-    let schema = extract_schema(&wasm).map_err(BuildError::SchemaExtractionError)?;
+    let definition = extract_definition(&wasm).map_err(BuildError::SchemaExtractionError)?;
     fs::write(
         &schema_path,
-        manifest_encode(&schema).map_err(BuildError::SchemaEncodeError)?,
+        manifest_encode(&definition).map_err(BuildError::SchemaEncodeError)?,
     )
     .map_err(|err| BuildError::IOErrorAtPath(err, schema_path.clone()))?;
 
