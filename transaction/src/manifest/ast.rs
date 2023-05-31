@@ -195,11 +195,7 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-    SetAuthorityAccessRule {
-        address: Value,
-        args: Vec<Value>,
-    },
-    SetAuthorityMutability {
+    UpdateRole {
         address: Value,
         args: Vec<Value>,
     },

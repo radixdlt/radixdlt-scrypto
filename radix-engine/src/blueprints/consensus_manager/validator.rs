@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::*;
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -13,7 +13,8 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+    AccessRulesGetRoleInput, AccessRulesUpdateRoleInput, ACCESS_RULES_GET_ROLE_IDENT,
+    ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
@@ -529,7 +530,6 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_accept_delegated_stake<Y>(
-        receiver: &NodeId,
         accept_delegated_stake: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -539,18 +539,27 @@ impl ValidatorBlueprint {
         let rule = if accept_delegated_stake {
             AccessRule::AllowAll
         } else {
-            rule!(require_owner())
+            let rtn = api.actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_GET_ROLE_IDENT,
+                scrypto_encode(&AccessRulesGetRoleInput {
+                    role_key: RoleKey::new(OWNER_ROLE),
+                })
+                .unwrap(),
+            )?;
+            let rule: Option<AccessRule> = scrypto_decode(&rtn).unwrap();
+            rule.unwrap()
         };
 
-        api.call_method_advanced(
-            receiver,
-            false,
+        api.actor_call_module_method(
+            OBJECT_HANDLE_SELF,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
-                object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::main("stake"),
-                rule,
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(STAKE_ROLE),
+                rule: Some(rule),
+                mutability: None,
             })
             .unwrap(),
         )?;
@@ -923,51 +932,19 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     u16::MAX - stake_u16
 }
 
+pub const STAKE_ROLE: &'static str = "stake";
+
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = None;
+    const SECURIFY_ROLE: Option<&'static str> = None;
 
-    fn authority_rules() -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
-        authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
-
-        authority_rules
-            .set_fixed_main_authority_rule(VALIDATOR_REGISTER_IDENT, rule!(require_owner()));
-        authority_rules
-            .set_fixed_main_authority_rule(VALIDATOR_UNREGISTER_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(
-            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
-            rule!(require_owner()),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
-            rule!(require_owner()),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
-            rule!(require_owner()),
-        );
-        authority_rules
-            .set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
-        authority_rules
-            .set_fixed_main_authority_rule(VALIDATOR_UPDATE_FEE_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(
-            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-            rule!(require_owner()),
-        );
-        authority_rules.set_main_authority_rule(
-            VALIDATOR_STAKE_IDENT,
-            rule!(require_owner()),
-            rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            VALIDATOR_APPLY_EMISSION_IDENT,
-            rule!(require(global_caller(CONSENSUS_MANAGER))),
-        );
-        authority_rules
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!(
+            RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
+            RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { mutable: [SELF_ROLE].into(), mutable_mutable: false },
+        )
     }
 }
 

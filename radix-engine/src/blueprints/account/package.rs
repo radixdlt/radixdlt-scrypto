@@ -2,14 +2,19 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema,
+    PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
+    VirtualLazyLoadSchema,
 };
 
-use crate::blueprints::account::AccountBlueprint;
+use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
+use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
@@ -31,19 +36,19 @@ impl AccountNativePackage {
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeSchema::Blueprint(
+                key: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
-                value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
+                value: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
                 can_own: true,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeSchema::Blueprint(
+                key: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
-                value: TypeSchema::Blueprint(
+                value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
                 ),
                 can_own: false,
@@ -294,6 +299,32 @@ impl AccountNativePackage {
             }
         );
 
+        let method_auth_template = method_auth_template!(
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+
+            SchemaMethodKey::main(ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_WITHDRAW_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_SECURIFY_IDENT) => [SECURIFY_ROLE];
+            SchemaMethodKey::main(ACCOUNT_DEPOSIT_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => [OWNER_ROLE];
+
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT) => SchemaMethodPermission::Public;
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -304,7 +335,9 @@ impl AccountNativePackage {
                     collections,
                     functions,
                     virtual_lazy_load_functions,
-                    event_schema: [].into()
+                    event_schema: [].into(),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }
@@ -367,7 +400,7 @@ impl AccountNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_advanced(input.authority_rules, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.owner_role, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

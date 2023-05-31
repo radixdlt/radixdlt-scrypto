@@ -7,8 +7,7 @@ use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_RULE_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -621,20 +620,11 @@ pub fn generate_instruction(
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::SetAuthorityAccessRule { address, args } => {
-            InstructionV1::CallAccessRulesMethod {
-                address: generate_global_address(address, bech32_decoder)?,
-                method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
-            }
-        }
-        ast::Instruction::SetAuthorityMutability { address, args } => {
-            InstructionV1::CallAccessRulesMethod {
-                address: generate_global_address(address, bech32_decoder)?,
-                method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
-            }
-        }
+        ast::Instruction::UpdateRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
@@ -1190,9 +1180,8 @@ mod tests {
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, AuthorityRules, NonFungibleDataSchema,
-        NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
+        AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
+        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::PackageSchema;
@@ -1418,7 +1407,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, Enum>() Map<Enum, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
             InstructionV1::CallFunction {
                 package_address: PACKAGE_PACKAGE,
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -1437,7 +1426,7 @@ mod tests {
                     },
                     BTreeMap::<String, RoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
-                    AuthorityRules::new()
+                    Roles::new()
                 ),
             },
             "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",

@@ -2,6 +2,12 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod factory {
+    define_static_auth! {
+        methods {
+            set_address => OWNER;
+        }
+    }
+
     struct Factory {
         my_component: Option<Global<Factory>>,
     }
@@ -10,33 +16,18 @@ mod factory {
         pub fn create_raw() -> Global<Factory> {
             Self { my_component: None }
                 .instantiate()
-                .authority_rule(
-                    "set_address",
-                    rule!(require(Runtime::package_token())),
-                    AccessRule::DenyAll,
-                )
+                .prepare_to_globalize(OwnerRole::Fixed(rule!(require(Runtime::package_token()))))
                 .globalize()
         }
 
         pub fn create() -> Global<Factory> {
-            let component = Self {
-                my_component: Option::None,
-            }
-            .instantiate()
-            .authority_rule(
-                "set_address",
-                rule!(require(Runtime::package_token())),
-                AccessRule::DenyAll,
-            )
-            .globalize();
-
+            let component = Self::create_raw();
             component.set_address(component.clone());
-
             component
         }
 
         pub fn set_address(&mut self, my_component: Global<Factory>) {
-            self.my_component = Option::Some(my_component);
+            self.my_component = Some(my_component);
         }
     }
 }

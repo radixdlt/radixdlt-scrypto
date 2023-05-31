@@ -19,8 +19,8 @@ lru = { version = "0.8.1", default-features = false, optional = true}
 moka = { version = "0.9.4", features = ["sync"], default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 perfcnt = { version = "0.8.0", optional = true }
-radix-engine-utils = { path = "../radix-engine-utils", optional = true, features = ["resource_tracker"] }
-resources-tracker-macro = { path = "../radix-engine-utils/resources-tracker-macro" }
+radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"] }
+resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 paste = "1.0.12"
 
 # WASM de-/serialization
@@ -62,7 +62,7 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 # Use moka for caching
 moka = ["dep:moka"]
 
-resource_tracker = ["dep:radix-engine-utils", "resources-tracker-macro/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker"]
 
 # This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
 # to prevent non-determinism when fuzzing

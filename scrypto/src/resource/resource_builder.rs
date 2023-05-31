@@ -1,5 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
+use crate::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
@@ -537,6 +538,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
+        let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
         ScryptoEnv
             .call_function(
                 RESOURCE_PACKAGE,
@@ -544,7 +548,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
+                    non_fungible_schema,
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -586,6 +590,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
+        let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
         ScryptoEnv
             .call_function(
                 RESOURCE_PACKAGE,
@@ -593,7 +600,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
+                    non_fungible_schema,
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -635,6 +642,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
+        let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
         ScryptoEnv
             .call_function(
                 RESOURCE_PACKAGE,
@@ -642,7 +652,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: BytesNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
+                    non_fungible_schema,
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -687,6 +697,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     where
         T: IntoIterator<Item = D>,
     {
+        let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
         ScryptoEnv
             .call_function(
                 RESOURCE_PACKAGE,
@@ -694,7 +707,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
+                        non_fungible_schema,
                         metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
@@ -805,9 +818,12 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
     for InProgressResourceBuilder<NonFungibleResourceType<Y, D>, A>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
+        let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
         private::CreateWithNoSupply::NonFungible {
             id_type: Y::id_type(),
-            non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
+            non_fungible_schema,
             metadata: self.metadata,
             access_rules: self.auth.into_access_rules(),
         }

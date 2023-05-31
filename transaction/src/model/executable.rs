@@ -17,10 +17,12 @@ pub struct ExecutionContext {
     pub runtime_validations: Vec<RuntimeValidationRequest>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum FeePayment {
-    User { tip_percentage: u16 },
-    NoFee,
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct FeePayment {
+    pub tip_percentage: u16,
+    /// Free credit for execution, for preview only!
+    /// It's the `u128` representation of Decimal, see `transmute_decimal_as_u128`.
+    pub free_credit_in_xrd: u128,
 }
 
 /// Executable form of transaction, post stateless validation.

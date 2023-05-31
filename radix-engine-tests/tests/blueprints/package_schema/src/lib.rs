@@ -9,7 +9,7 @@ mod schema_component {
     impl SchemaComponent {
         pub fn create_component() -> Global<SchemaComponent> {
             let component = Self {}.instantiate();
-            component.globalize()
+            component.prepare_to_globalize(OwnerRole::None).globalize()
         }
     }
 }
@@ -185,6 +185,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
+        method_auth_template: btreemap!(),
+        outer_method_auth_template: btreemap!(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(
@@ -200,7 +202,10 @@ mod simple {
 
     impl Simple {
         pub fn new() -> Global<Simple> {
-            Self { state: 0 }.instantiate().globalize()
+            Self { state: 0 }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn get_state(&self) -> u32 {

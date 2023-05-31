@@ -7,25 +7,21 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
-use radix_engine_common::types::PartitionOffset;
+use radix_engine_common::prelude::replace_self_package_address;
+use radix_engine_common::types::{PackageAddress, PartitionOffset};
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
+    pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct KeyValueStoreInfo {
-    pub schema: ScryptoSchema,
-    pub kv_store_schema: KeyValueStoreSchema,
-}
-
-impl KeyValueStoreInfo {
+impl KeyValueStoreSchema {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
@@ -33,12 +29,14 @@ impl KeyValueStoreInfo {
         let schema = generate_full_schema(aggregator);
         Self {
             schema,
-            kv_store_schema: KeyValueStoreSchema {
-                key: key_type_index,
-                value: value_type_index,
-                can_own,
-            },
+            key: key_type_index,
+            value: value_type_index,
+            can_own,
         }
+    }
+
+    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
+        replace_self_package_address(&mut self.schema, package_address);
     }
 }
 
@@ -49,6 +47,51 @@ impl KeyValueStoreInfo {
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct PackageSchema {
     pub blueprints: BTreeMap<String, BlueprintSchema>,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct SchemaMethodKey {
+    pub module_id: u8,
+    pub ident: String,
+}
+
+impl SchemaMethodKey {
+    pub fn main<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 0u8,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn metadata<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 1u8,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn royalty<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 2u8,
+            ident: method_ident.to_string(),
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum SchemaMethodPermission {
+    Public,
+    Protected(Vec<String>),
+}
+
+impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
+    fn from(value: [&str; N]) -> Self {
+        SchemaMethodPermission::Protected(
+            value.to_vec().into_iter().map(|s| s.to_string()).collect(),
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -66,18 +109,22 @@ pub struct BlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    // TODO: Move out of schema
+    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum TypeSchema {
+pub enum TypeRef {
     Blueprint(LocalTypeIndex),
     Instance(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintKeyValueStoreSchema {
-    pub key: TypeSchema,
-    pub value: TypeSchema,
+    pub key: TypeRef,
+    pub value: TypeRef,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
@@ -156,7 +203,9 @@ impl Default for BlueprintSchema {
             collections: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
-            event_schema: Default::default(),
+            event_schema: BTreeMap::default(),
+            method_auth_template: BTreeMap::default(),
+            outer_method_auth_template: BTreeMap::default(),
         }
     }
 }
@@ -175,6 +224,9 @@ pub struct IndexedBlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -201,6 +253,8 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
+            method_permissions_instance: schema.method_auth_template,
+            outer_method_permissions_instance: schema.outer_method_auth_template,
         }
     }
 }
@@ -307,8 +361,8 @@ impl IndexedBlueprintSchema {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
                     match &kv_schema.key {
-                        TypeSchema::Blueprint(..) => {}
-                        TypeSchema::Instance(type_index) => {
+                        TypeRef::Blueprint(..) => {}
+                        TypeRef::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;
@@ -320,8 +374,8 @@ impl IndexedBlueprintSchema {
                     }
 
                     match &kv_schema.value {
-                        TypeSchema::Blueprint(..) => {}
-                        TypeSchema::Instance(type_index) => {
+                        TypeRef::Blueprint(..) => {}
+                        TypeRef::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;

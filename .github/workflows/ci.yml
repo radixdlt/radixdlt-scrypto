@@ -153,10 +153,14 @@ jobs:
         toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
+    - name: Install RocksDB metrics dependency
+      run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Build with resource tracking
       run: cargo build --features resource_tracker
+    - name: Build RocksDB metrics test
+      run: cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_store_db --release --no-run -- --nocapture
     - name: Run tests
       run: |
         cargo nextest run \

@@ -2,6 +2,18 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod royalty_test {
+    define_static_auth! {
+        methods {
+            paid_method => PUBLIC;
+            paid_method_panic => PUBLIC;
+            free_method => PUBLIC;
+        },
+        royalties {
+            claim_royalty => OWNER;
+            set_royalty_config => OWNER;
+        }
+    }
+
     struct RoyaltyTest {}
 
     impl RoyaltyTest {
@@ -22,26 +34,26 @@ mod royalty_test {
 
         pub fn enable_royalty_for_package(package: Package, proof: Proof) {
             proof.authorize(|| {
-                package.set_royalty_config(BTreeMap::from([(
-                    "RoyaltyTest".to_owned(),
-                    RoyaltyConfigBuilder::new()
-                        .add_rule("paid_method", 2)
-                        .add_rule("paid_method_panic", 2)
-                        .default(0),
-                )]));
+                package.set_royalty_config(BTreeMap::from([("RoyaltyTest".to_owned(), {
+                    let mut config = RoyaltyConfig::default();
+                    config.set_rule("paid_method", RoyaltyAmount::Xrd(2.into()));
+                    config.set_rule("paid_method_panic", RoyaltyAmount::Xrd(2.into()));
+                    config
+                })]));
             })
         }
 
         pub fn create_component_with_royalty_enabled(
             badge: NonFungibleGlobalId,
         ) -> Global<RoyaltyTest> {
-            let local_component = Self {}.instantiate();
-
-            local_component
-                .royalty("paid_method", 1)
-                .royalty("paid_method_panic", 1)
-                .royalty_default(0)
-                .owner_authority(rule!(require(badge.clone())), rule!(require(badge.clone())))
+            Self {}
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge))))
+                .royalties(royalties! {
+                    paid_method => Xrd(1.into()),
+                    paid_method_panic => Xrd(1.into()),
+                    free_method => Free,
+                })
                 .globalize()
         }
 

@@ -45,7 +45,7 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> 
 
     // Execute with empty state (with default cost unit limit)
     let wasm_engine = DefaultWasmEngine::default();
-    let fee_reserve = SystemLoanFeeReserve::no_fee();
+    let fee_reserve = SystemLoanFeeReserve::default().with_free_credit(DEFAULT_FREE_CREDIT_IN_XRD);
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();

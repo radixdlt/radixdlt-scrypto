@@ -1,12 +1,14 @@
+use super::HasTypeInfo;
 use crate::prelude::{Global, HasStub, ObjectStub, ObjectStubHandle};
+use radix_engine_common::prelude::PACKAGE_PACKAGE;
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
-    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
+use radix_engine_interface::*;
+use sbor::rust::prelude::*;
 
 pub type Package = Global<PackageStub>;
 
@@ -15,6 +17,16 @@ pub struct PackageStub(ObjectStubHandle);
 
 impl HasStub for PackageStub {
     type Stub = Self;
+}
+
+impl HasTypeInfo for PackageStub {
+    const PACKAGE_ADDRESS: Option<PackageAddress> = Some(PACKAGE_PACKAGE);
+
+    const BLUEPRINT_NAME: &'static str = PACKAGE_BLUEPRINT;
+
+    const OWNED_TYPE_NAME: &'static str = "OwnedPackage";
+
+    const GLOBAL_TYPE_NAME: &'static str = "GlobalPackage";
 }
 
 impl ObjectStub for PackageStub {

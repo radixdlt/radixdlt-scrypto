@@ -14,7 +14,7 @@ mod invalid_init_stored_bucket {
                 .mint_initial_supply(Decimal::from(5));
 
             let component = InvalidInitStoredBucket { bucket }.instantiate();
-            component.globalize()
+            component.prepare_to_globalize(OwnerRole::None).globalize()
         }
     }
 }
@@ -41,7 +41,7 @@ mod invalid_stored_bucket_in_owned_component {
             }
             .instantiate();
             component.put_bucket(bucket);
-            component.globalize()
+            component.prepare_to_globalize(OwnerRole::None).globalize()
         }
     }
 }

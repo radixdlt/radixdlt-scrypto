@@ -2,9 +2,7 @@ extern crate core;
 
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, ObjectKey, FUNGIBLE_VAULT_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -33,36 +31,19 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
-        let (object_key, authority_key) = match action {
-            Action::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
-            Action::Burn => (
-                ObjectKey::SELF,
-                AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT),
-            ),
-            Action::UpdateMetadata => (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY)),
-            Action::Withdraw => (
-                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                AuthorityKey::main(VAULT_TAKE_IDENT),
-            ),
-            Action::Deposit => (
-                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                AuthorityKey::main(VAULT_PUT_IDENT),
-            ),
-            Action::Recall => (
-                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                AuthorityKey::main(VAULT_RECALL_IDENT),
-            ),
+        let role_key = match action {
+            Action::Mint => RoleKey::new(MINT_ROLE),
+            Action::Burn => RoleKey::new(BURN_ROLE),
+            Action::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
+            Action::Withdraw => RoleKey::new(WITHDRAW_ROLE),
+            Action::Deposit => RoleKey::new(DEPOSIT_ROLE),
+            Action::Recall => RoleKey::new(RECALL_ROLE),
         };
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_authority_access_rule(
-                token_address.into(),
-                object_key,
-                authority_key,
-                rule!(require(updated_auth)),
-            )
+            .update_role(token_address.into(), role_key, rule!(require(updated_auth)))
             .build();
         test_runner
             .execute_manifest(

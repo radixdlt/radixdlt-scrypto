@@ -5,7 +5,7 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::SetRuleEvent;
+use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
@@ -125,7 +125,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
         .build();
 
@@ -166,7 +166,7 @@ fn local_type_index_with_misleading_name_fails() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
         .build();
 
@@ -1365,7 +1365,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<SetRuleEvent>(event_identifier) => true,
+            )) if test_runner.is_event_name_equal::<UpdateRoleEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
@@ -1448,7 +1448,7 @@ fn create_account_events_can_be_looked_up() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .new_account_advanced(AuthorityRules::new())
+        .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 

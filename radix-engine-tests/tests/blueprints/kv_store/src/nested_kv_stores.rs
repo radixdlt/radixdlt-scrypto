@@ -21,7 +21,10 @@ mod nested_kv_stores {
                 *value += 1;
             }
 
-            Self { counters }.instantiate().globalize()
+            Self { counters }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
     }
 }

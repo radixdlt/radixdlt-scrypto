@@ -18,6 +18,7 @@ utils = { path = "../utils", default-features = false }
 paste = { version = "1.0.7"}
 serde = { version = "1.0.144", default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 
 [features]
 # You should enable either `std` or `alloc`
