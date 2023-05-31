@@ -51,9 +51,9 @@ dependencies = [
 
 [[package]]
 name = "bnum"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a66412baacf51dfc30a1e220bc7cc947001e8c47e3716468a3857f98887a7f3"
+checksum = "845141a4fade3f790628b7daaaa298a25b204fb28907eb54febe5142db6ce653"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -351,6 +351,7 @@ name = "scrypto"
 version = "0.10.0"
 dependencies = [
  "bech32",
+ "const-sha1",
  "hex",
  "num-bigint",
  "num-traits",
