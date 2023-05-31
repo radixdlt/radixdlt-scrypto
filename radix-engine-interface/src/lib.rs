@@ -44,7 +44,6 @@ pub mod prelude {
 
     // Exports from this crate
     pub use crate::blueprints::resource::NonFungibleGlobalId;
-    pub use crate::crypto::hash;
     pub use crate::data::manifest::model::*;
     pub use crate::data::manifest::*;
     pub use crate::data::scrypto::model::*;
