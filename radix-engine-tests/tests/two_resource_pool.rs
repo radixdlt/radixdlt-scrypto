@@ -671,6 +671,49 @@ pub fn test_complete_interactions() {
     }
 }
 
+#[test]
+pub fn protected_deposit_fails_without_proper_authority_present() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((18, 18));
+
+    // Act
+    let receipt = test_runner.protected_deposit(test_runner.pool_resource1, 10, false);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_error)
+}
+
+#[test]
+pub fn protected_withdraw_fails_without_proper_authority_present() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((18, 18));
+
+    // Act
+    test_runner
+        .protected_deposit(test_runner.pool_resource1, 10, true)
+        .expect_commit_success();
+    let receipt = test_runner.protected_withdraw(test_runner.pool_resource1, 10, false);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_error)
+}
+
+#[test]
+pub fn contribute_fails_without_proper_authority_present() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((18, 18));
+
+    // Act
+    let receipt = test_runner.contribute(
+        (test_runner.pool_resource1, 10),
+        (test_runner.pool_resource2, 10),
+        false,
+    );
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_error)
+}
+
 struct TestEnvironment {
     test_runner: TestRunner,
 

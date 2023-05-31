@@ -14,6 +14,7 @@ mod reference_test {
                 reference: Reference(bucket.0.as_node_id().clone()),
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
             bucket.drop_empty();
@@ -24,6 +25,7 @@ mod reference_test {
                 reference: Reference(RADIX_TOKEN.as_node_id().clone()),
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 

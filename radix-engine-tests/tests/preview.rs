@@ -19,7 +19,7 @@ fn test_transaction_preview_cost_estimate() {
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {
-        unlimited_loan: true,
+        use_free_credit: true,
         assume_all_signature_proofs: false,
         permit_invalid_header_epoch: false,
         permit_duplicate_intent_hash: false,
@@ -55,11 +55,11 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
     let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-    let account = test_runner.new_account_advanced(withdraw_auth.clone(), AccessRule::DenyAll);
+    let account = test_runner.new_account_advanced(OwnerRole::Fixed(withdraw_auth.clone()));
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     let preview_flags = PreviewFlags {
-        unlimited_loan: true,
+        use_free_credit: true,
         assume_all_signature_proofs: true,
         permit_invalid_header_epoch: false,
         permit_duplicate_intent_hash: false,

@@ -25,6 +25,7 @@ mod external_blueprint_target {
                 },
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 

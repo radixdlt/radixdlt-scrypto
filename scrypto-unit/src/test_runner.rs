@@ -9,12 +9,11 @@ use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::module_mixer::SystemModuleMixer;
+use radix_engine::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
@@ -31,12 +30,10 @@ use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerGetCurrentEpochInput, ConsensusManagerGetCurrentTimeInput,
-    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput,
-    ConsensusManagerSetCurrentTimeInput, ConsensusManagerSetEpochInput, LeaderProposalHistory,
-    TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
+    ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
+    LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-    CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -48,8 +45,11 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates,
+use radix_engine_store_interface::{
+    db_key_mapper::{
+        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+    },
+    interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates},
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -61,8 +61,9 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
-    AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
-    SystemTransactionV1, TestTransaction, TransactionPayloadEncode,
+    AttachmentsV1, AuthZoneParams, BlobV1, BlobsV1, Executable, InstructionV1, InstructionsV1,
+    IntentV1, PreviewFlags, PreviewIntentV1, SystemTransactionV1, TestTransaction,
+    TransactionHeaderV1, TransactionPayloadEncode,
 };
 
 pub struct Compile;
@@ -132,15 +133,12 @@ impl Compile {
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
-    pub initial_configuration: ConsensusManagerInitialConfiguration,
+    pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
-    pub fn default(
-        initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
-    ) -> CustomGenesis {
+    pub fn default(initial_epoch: u64, initial_config: ConsensusManagerConfig) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
             .public_key();
@@ -149,8 +147,24 @@ impl CustomGenesis {
             Decimal::one(),
             ComponentAddress::virtual_account_from_public_key(&pub_key),
             initial_epoch,
-            initial_configuration,
+            initial_config,
         )
+    }
+
+    pub fn default_consensus_manager_config() -> ConsensusManagerConfig {
+        ConsensusManagerConfig {
+            max_validators: 10,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1,
+                target_duration_millis: 0,
+            },
+            num_unstake_epochs: 1,
+            total_emission_xrd_per_epoch: Decimal::one(),
+            min_validator_reliability: Decimal::one(),
+            num_owner_stake_units_unlock_epochs: 2,
+            num_fee_increase_delay_epochs: 4,
+        }
     }
 
     pub fn single_validator_and_staker(
@@ -158,7 +172,7 @@ impl CustomGenesis {
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
@@ -177,8 +191,8 @@ impl CustomGenesis {
         CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
-            initial_configuration,
-            initial_time_ms: 1,
+            initial_config,
+            initial_time_ms: 0,
         }
     }
 }
@@ -221,7 +235,7 @@ impl TestRunnerBuilder {
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
                     custom_genesis.initial_epoch,
-                    custom_genesis.initial_configuration,
+                    custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
                 )
                 .unwrap(),
@@ -529,16 +543,9 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_advanced(
-        &mut self,
-        withdraw_auth: AccessRule,
-        mutability: AccessRule,
-    ) -> ComponentAddress {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_authority(withdraw_auth, mutability);
-
+    pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(authority_rules)
+            .new_account_advanced(owner_rule)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -619,7 +626,7 @@ impl TestRunner {
     ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
-        let account = self.new_account_advanced(withdraw_auth.clone(), withdraw_auth);
+        let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
     }
 
@@ -647,12 +654,9 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules
-                .set_owner_authority(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
-                .create_identity_advanced(authority_rules)
+                .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
@@ -704,11 +708,11 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        authority_rules: AuthorityRules,
+        owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, schema, royalty_config, metadata, authority_rules)
+            .publish_package_advanced(code, schema, royalty_config, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -737,7 +741,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            OwnerRole::None,
         )
     }
 
@@ -803,14 +807,14 @@ impl TestRunner {
                 .get_executable(initial_proofs.into_iter().collect()),
             &FeeReserveConfig::default(),
             &ExecutionConfig::default()
-                .with_trace(self.trace)
+                .with_kernel_trace(self.trace)
                 .with_cost_unit_limit(cost_unit_limit),
         )
     }
 
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
         let fee_config = FeeReserveConfig::default();
-        let execution_config = ExecutionConfig::default().with_trace(self.trace);
+        let execution_config = ExecutionConfig::default().with_kernel_trace(self.trace);
 
         self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }
@@ -848,7 +852,47 @@ impl TestRunner {
             &mut self.scrypto_interpreter,
             network,
             preview_intent,
+            self.trace,
         )
+    }
+
+    pub fn preview_manifest(
+        &mut self,
+        manifest: TransactionManifestV1,
+        signer_public_keys: Vec<PublicKey>,
+        tip_percentage: u16,
+        flags: PreviewFlags,
+    ) -> TransactionReceipt {
+        let epoch = self.get_current_epoch();
+        execute_preview(
+            &mut self.substate_db,
+            &self.scrypto_interpreter,
+            &NetworkDefinition::simulator(),
+            PreviewIntentV1 {
+                intent: IntentV1 {
+                    header: TransactionHeaderV1 {
+                        network_id: NetworkDefinition::simulator().id,
+                        start_epoch_inclusive: epoch,
+                        end_epoch_exclusive: epoch + 10,
+                        nonce: 0,
+                        notary_public_key: PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
+                            [0u8; 33],
+                        )),
+                        notary_is_signatory: false,
+                        tip_percentage,
+                    },
+                    instructions: InstructionsV1(manifest.instructions),
+                    blobs: BlobsV1 {
+                        blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
+                    },
+                    attachments: AttachmentsV1 {},
+                },
+                signer_public_keys,
+                flags,
+            },
+            self.trace,
+        )
+        .unwrap()
     }
 
     /// Calls a package blueprint function with the given arguments, paying the fee from the faucet.
@@ -1184,17 +1228,21 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u32) {
-        let receipt = self.execute_system_transaction(
-            vec![InstructionV1::CallMethod {
-                address: CONSENSUS_MANAGER.into(),
-                method_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerSetEpochInput {
-                    epoch: epoch as u64,
-                }),
-            }],
-            btreeset![AuthAddresses::system_role()],
+        let mut substate = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+                &CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+            )
+            .unwrap();
+        substate.epoch = epoch as u64;
+        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+            &CONSENSUS_MANAGER.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &ConsensusManagerField::ConsensusManager.into(),
+            &substate,
         );
-        receipt.expect_commit_success();
     }
 
     pub fn get_current_epoch(&mut self) -> u32 {
@@ -1264,15 +1312,22 @@ impl TestRunner {
         )
     }
 
-    /// Executes a "start round number `round`" system transaction, as if it was proposed by the
-    /// first validator from the validator set, after `round - 1` missed rounds by that validator.
-    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+    /// Executes a "start round number `round` at timestamp `timestamp_ms`" system transaction, as
+    /// if it was proposed by the first validator from the validator set, after `round - 1` missed
+    /// rounds by that validator.
+    /// Please note that this assumes that state is right at the beginning of an epoch.
+    pub fn advance_to_round_at_timestamp(
+        &mut self,
+        round: u64,
+        proposer_timestamp_ms: i64,
+    ) -> TransactionReceipt {
         self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
                 args: to_manifest_value(&ConsensusManagerNextRoundInput {
                     round,
+                    proposer_timestamp_ms,
                     leader_proposal_history: LeaderProposalHistory {
                         gap_round_leaders: (1..round).map(|_| 0).collect(),
                         current_leader: 0,
@@ -1284,16 +1339,23 @@ impl TestRunner {
         )
     }
 
-    pub fn set_current_time(&mut self, current_time_ms: i64) {
-        let receipt = self.execute_system_transaction(
-            vec![InstructionV1::CallMethod {
-                address: CONSENSUS_MANAGER.into(),
-                method_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerSetCurrentTimeInput { current_time_ms }),
-            }],
-            btreeset![AuthAddresses::validator_role()],
-        );
-        receipt.expect_commit(true).output(0)
+    /// Performs an [`advance_to_round_at_timestamp()`] with an unchanged timestamp.
+    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+        let current_timestamp_ms = self.get_current_proposer_timestamp_ms();
+        self.advance_to_round_at_timestamp(round, current_timestamp_ms)
+    }
+
+    /// Reads out the substate holding the "epoch milli" timestamp reported by the proposer on the
+    /// most recent round change.
+    pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
+        self.substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, ProposerMilliTimestampSubstate>(
+                CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::CurrentTime.into(),
+            )
+            .unwrap()
+            .epoch_milli
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
@@ -1319,7 +1381,7 @@ impl TestRunner {
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
-        let execution_config = ExecutionConfig::standard();
+        let execution_config = ExecutionConfig::default();
         let scrypto_interpreter = ScryptoVm {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
@@ -1331,13 +1393,14 @@ impl TestRunner {
             callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },
-            modules: SystemModuleMixer::standard(
+            modules: SystemModuleMixer::new(
+                EnabledModules::for_notarized_transaction(),
                 transaction_hash,
                 AuthZoneParams {
                     initial_proofs: btreeset![],
                     virtual_resources: BTreeSet::new(),
                 },
-                SystemLoanFeeReserve::no_fee(),
+                SystemLoanFeeReserve::default(),
                 FeeTable::new(),
                 0,
                 0,
@@ -1585,6 +1648,8 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
             ),
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
+            method_auth_template: btreemap!(),
+            outer_method_auth_template: btreemap!(),
         },
     );
     package_schema

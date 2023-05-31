@@ -4,16 +4,18 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerInitialConfiguration;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use radix_engine_store_interface::{
+    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
+    interface::DatabaseUpdate,
+};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use scrypto_unit::CustomGenesis;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 #[test]
@@ -46,7 +48,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -102,7 +104,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -161,19 +163,23 @@ fn test_genesis_xrd_allocation_to_accounts() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
 
-    assert!(data_ingestion_receipts[0]
-        .execution_trace
-        .resource_changes
-        .iter()
-        .flat_map(|(_, rc)| rc)
-        .any(|rc| rc.amount == allocation_amount
-            && rc.node_id.eq(account_component_address.as_node_id())
-            && rc.resource_address == RADIX_TOKEN));
+    let receipt = &data_ingestion_receipts[0];
+    assert_eq!(
+        receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(account_component_address))
+            .unwrap()
+            .get(&RADIX_TOKEN)
+            .unwrap(),
+        &BalanceChange::Fungible(allocation_amount)
+    );
 }
 
 #[test]
@@ -192,7 +198,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .0,
     );
 
-    let owner = ComponentAddress::virtual_account_from_public_key(
+    let resource_owner = ComponentAddress::virtual_account_from_public_key(
         &EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key(),
     );
     let allocation_amount = dec!("105");
@@ -200,7 +206,7 @@ fn test_genesis_resource_with_initial_allocation() {
         address_bytes_without_entity_id,
         initial_supply: allocation_amount,
         metadata: vec![("symbol".to_string(), "TST".to_string())],
-        owner: Some(owner),
+        owner: Some(resource_owner),
     };
     let resource_allocation = GenesisResourceAllocation {
         account_index: 0,
@@ -223,7 +229,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -255,24 +261,34 @@ fn test_genesis_resource_with_initial_allocation() {
     let allocation_receipt = data_ingestion_receipts.pop().unwrap();
     let resource_creation_receipt = data_ingestion_receipts.pop().unwrap();
 
-    assert!(resource_creation_receipt
-        .execution_trace
-        .resource_changes
-        .iter()
-        .flat_map(|(_, rc)| rc)
-        .any(|rc|
-            // Not an ideal condition, but assuming this is the owner badge
-            rc.amount == dec!("1")
-                && rc.node_id.eq(owner.as_node_id())));
-
-    assert!(allocation_receipt
-        .execution_trace
-        .resource_changes
-        .iter()
-        .flat_map(|(_, rc)| rc)
-        .any(|rc| rc.amount == allocation_amount
-            && rc.node_id.eq(token_holder.as_node_id())
-            && rc.resource_address.eq(&resource_address)));
+    let created_owner_badge = resource_creation_receipt
+        .expect_commit_success()
+        .new_resource_addresses()[0];
+    let created_resource = resource_creation_receipt
+        .expect_commit_success()
+        .new_resource_addresses()[1];
+    assert_eq!(
+        resource_creation_receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(resource_owner))
+            .unwrap()
+            .get(&created_owner_badge)
+            .unwrap(),
+        &BalanceChange::Fungible(1.into())
+    );
+    assert_eq!(
+        allocation_receipt
+            .expect_commit_success()
+            .state_update_summary
+            .balance_changes
+            .get(&GlobalAddress::from(token_holder))
+            .unwrap()
+            .get(&created_resource)
+            .unwrap(),
+        &BalanceChange::Fungible(allocation_amount)
+    );
 }
 
 #[test]
@@ -328,7 +344,7 @@ fn test_genesis_stake_allocation() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             1,
         )
         .unwrap();
@@ -380,7 +396,7 @@ fn test_genesis_time() {
         .bootstrap_with_genesis_data(
             vec![],
             1u64,
-            dummy_consensus_manager_configuration(),
+            CustomGenesis::default_consensus_manager_config(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
         )
         .unwrap();
@@ -394,16 +410,4 @@ fn test_genesis_time() {
         .unwrap();
 
     assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
-}
-
-fn dummy_consensus_manager_configuration() -> ConsensusManagerInitialConfiguration {
-    ConsensusManagerInitialConfiguration {
-        max_validators: 100,
-        rounds_per_epoch: 1,
-        num_unstake_epochs: 1,
-        total_emission_xrd_per_epoch: Decimal::one(),
-        min_validator_reliability: Decimal::one(),
-        num_owner_stake_units_unlock_epochs: 2,
-        num_fee_increase_delay_epochs: 3,
-    }
 }

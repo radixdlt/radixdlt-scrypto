@@ -1,8 +1,12 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use crate::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DbPartitionKey, DbSortKey, SubstateDatabase,
+};
+use radix_engine_common::data::scrypto::{
+    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
+};
 use radix_engine_common::types::{MapKey, PartitionNumber, SortedU16Key, TupleKey};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::types::{NodeId, SubstateKey};
-use radix_engine_store_interface::interface::{DbPartitionKey, DbSortKey, SubstateDatabase};
 use sbor::rust::prelude::*;
 use utils::copy_u8_array;
 
@@ -187,6 +191,36 @@ impl<S: SubstateDatabase> MappedSubstateDatabase for S {
                 )
             });
         Box::new(mapped_value_iter)
+    }
+}
+
+/// Convenience methods for direct `SubstateDatabase` writers.
+pub trait MappedCommittableSubstateDatabase {
+    /// Puts a scrypto-encoded value by the given business key.
+    fn put_mapped<M: DatabaseKeyMapper, E: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+        value: &E,
+    );
+}
+
+impl<S: CommittableSubstateDatabase> MappedCommittableSubstateDatabase for S {
+    fn put_mapped<M: DatabaseKeyMapper, E: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+        value: &E,
+    ) {
+        self.commit(&indexmap!(
+            M::to_db_partition_key(node_id, partition_num) => indexmap!(
+                M::to_db_sort_key(substate_key) => DatabaseUpdate::Set(
+                    scrypto_encode(value).unwrap()
+                )
+            )
+        ))
     }
 }
 

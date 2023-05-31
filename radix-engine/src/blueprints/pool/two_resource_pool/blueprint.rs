@@ -1,4 +1,5 @@
 use crate::blueprints::pool::two_resource_pool::*;
+use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
 use native_sdk::modules::access_rules::*;
@@ -73,8 +74,7 @@ impl TwoResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let access_rules =
-            AccessRules::create(authority_rules(pool_manager_rule), btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
         // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on.
         let metadata = Metadata::create_with_data(
@@ -543,49 +543,8 @@ struct ReserveResourceInformation {
     divisibility: u8,
 }
 
-fn authority_rules(pool_manager_rule: AccessRule) -> AuthorityRules {
-    let mut authority_rules = AuthorityRules::new();
-    /*
-    FIXME: When we have a way to map methods to authorities I would like to:
-
-    pool_manager_authority => [
-        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-        TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-    ]
-    public => all else
-     */
-    authority_rules.set_main_authority_rule(
-        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-        pool_manager_rule.clone(),
-        pool_manager_rule.clone(),
-    );
-    authority_rules.set_main_authority_rule(
-        TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-        pool_manager_rule.clone(),
-        pool_manager_rule.clone(),
-    );
-    authority_rules.set_main_authority_rule(
-        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-        pool_manager_rule.clone(),
-        pool_manager_rule.clone(),
-    );
-
-    authority_rules.set_main_authority_rule(
-        TWO_RESOURCE_POOL_REDEEM_IDENT,
-        rule!(allow_all),
-        rule!(allow_all),
-    );
-    authority_rules.set_main_authority_rule(
-        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
-        rule!(allow_all),
-        rule!(allow_all),
-    );
-    authority_rules.set_main_authority_rule(
-        TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
-        rule!(allow_all),
-        rule!(allow_all),
-    );
-
-    authority_rules
+fn roles(pool_manager_rule: AccessRule) -> Roles {
+    roles2! {
+        POOL_MANAGER_ROLE => pool_manager_rule, mut [POOL_MANAGER_ROLE]
+    }
 }

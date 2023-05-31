@@ -30,8 +30,9 @@ pub enum ReferenceValidation {
     IsGlobalPackage,
     IsGlobalComponent,
     IsGlobalResourceManager,
+    IsGlobalTyped(Option<PackageAddress>, String),
     IsInternal,
-    IsTypedObject(PackageAddress, String),
+    IsInternalTyped(Option<PackageAddress>, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
@@ -40,7 +41,7 @@ pub enum OwnValidation {
     IsProof,
     IsVault,
     IsKeyValueStore,
-    IsTypedObject(PackageAddress, String),
+    IsTypedObject(Option<PackageAddress>, String),
 }
 
 impl OwnValidation {
@@ -224,5 +225,26 @@ impl CustomExtension for ScryptoCustomExtension {
     ) -> bool {
         // It's not possible for a custom type kind to match a non-custom value kind
         false
+    }
+}
+
+pub fn replace_self_package_address(schema: &mut ScryptoSchema, package_address: PackageAddress) {
+    for type_validation in &mut schema.type_validations {
+        match type_validation {
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(package, _),
+            ))
+            | TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                ReferenceValidation::IsGlobalTyped(package, _),
+            ))
+            | TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                ReferenceValidation::IsInternalTyped(package, _),
+            )) => {
+                if package.is_none() {
+                    *package = Some(package_address)
+                }
+            }
+            _ => {}
+        }
     }
 }

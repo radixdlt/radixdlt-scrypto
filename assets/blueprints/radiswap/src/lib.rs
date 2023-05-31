@@ -40,7 +40,9 @@ mod radiswap {
 
             Self { pool_component }
                 .instantiate()
-                .globalize_at_address(component_address)
+                .prepare_to_globalize(OwnerRole::None)
+                .with_address(component_address)
+                .globalize()
         }
 
         pub fn add_liquidity(

@@ -12,12 +12,14 @@ mod external_component {
                 external_component: Option::None,
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
             Self {
                 external_component: Option::Some(external_component),
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize()
         }
 
@@ -26,6 +28,7 @@ mod external_component {
                 external_component: Option::None,
             }
             .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
             let component = Self {
@@ -34,7 +37,7 @@ mod external_component {
             .instantiate();
             component.func();
 
-            component.globalize()
+            component.prepare_to_globalize(OwnerRole::None).globalize()
         }
 
         pub fn func(&mut self) {

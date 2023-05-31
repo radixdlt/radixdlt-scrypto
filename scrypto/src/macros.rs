@@ -458,3 +458,186 @@ macro_rules! external_component_members {
     };
     () => {}
 }
+
+#[macro_export]
+macro_rules! to_role_key {
+    (OWNER) => {{
+        OWNER_ROLE
+    }};
+    (SELF) => {{
+        SELF_ROLE
+    }};
+    ($role:ident) => {{
+        ROLE_STRINGS.$role
+    }};
+}
+
+#[macro_export]
+macro_rules! permission_role_list {
+    ($list:ident, $role:ident) => ({
+        $list.insert(to_role_key!($role));
+    });
+    ($list:ident, $role:ident, $($roles:ident),*) => ({
+        $list.insert(to_role_key!($role));
+        permission_role_list!($list, $($roles),*);
+    });
+}
+
+#[macro_export]
+macro_rules! method_permission {
+    (PUBLIC) => ({
+        MethodPermission::Public
+    });
+    (NOBODY) => ({
+        [].into()
+    });
+    ($($roles:ident),+) => ({
+        let mut list = RoleList::none();
+        permission_role_list!(list, $($roles),+);
+        MethodPermission::Protected(list)
+    });
+}
+
+#[macro_export]
+macro_rules! method_permissions {
+    ($module_methods:ident, $($method:ident => $($permission:ident),+ ;)*) => ({
+        $module_methods::<MethodPermission> {
+            $(
+                $method: method_permission!($($permission),+),
+            )*
+        }
+    })
+}
+
+#[macro_export]
+macro_rules! main_permissions {
+    ($permissions:expr, $module_methods:ident, $key:ident, $($method:ident => $($permission:ident),+ ;)*) => ({
+        let permissions = method_permissions!($module_methods, $($method => $($permission),+ ;)*);
+        for (method, permission) in permissions.to_mapping() {
+            let permission = match permission {
+                MethodPermission::Public => scrypto::schema::SchemaMethodPermission::Public,
+                MethodPermission::Protected(role_list) => scrypto::schema::SchemaMethodPermission::Protected(role_list.to_list()),
+            };
+            $permissions.insert(scrypto::schema::SchemaMethodKey::$key(method), permission);
+        }
+    })
+}
+
+#[macro_export]
+macro_rules! module_permissions {
+    ($permissions:expr, methods { $($method:ident => $($permission:ident),+ ;)* }) => ({
+        main_permissions!($permissions, Methods, main, $($method => $($permission),+ ;)*);
+    });
+    ($permissions:expr, metadata { $($method:ident => $($permission:ident),+ ;)* }) => ({
+        main_permissions!($permissions, MetadataMethods, metadata, $($method => $($permission),+ ;)*);
+    });
+    ($permissions:expr, royalties { $($method:ident => $($permission:ident),+ ;)* }) => ({
+        main_permissions!($permissions, RoyaltyMethods, royalty, $($method => $($permission),+ ;)*);
+    });
+}
+
+#[macro_export]
+macro_rules! define_static_auth {
+    (
+        roles {
+            $($role:ident),*
+        },
+        $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
+    ) => (
+        pub struct MethodRoles<T> {
+            $($role: T),*
+        }
+
+        impl<T> MethodRoles<T> {
+            fn list(self) -> Vec<(&'static str, T)> {
+                vec![
+                    $((stringify!($role), self.$role)),*
+                ]
+            }
+        }
+
+        const ROLE_STRINGS: MethodRoles<&str> = MethodRoles {
+            $($role: stringify!($role)),*
+        };
+
+        fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+            let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
+            $(
+                module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
+            )*
+            permissions
+        }
+    );
+
+    (
+        $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
+    ) => (
+        fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+            let mut permissions: BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> = BTreeMap::new();
+            $(
+                module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
+            )*
+            permissions
+        }
+    );
+}
+
+#[macro_export]
+macro_rules! role_definition_entry {
+
+    ($rule:expr, mutable_by: $($mutators:ident),+) => {{
+        let mut list = RoleList::none();
+        permission_role_list!(list, $($mutators),+);
+        RoleEntry::new($rule, list, true)
+    }};
+    ($rule:expr) => {{
+        RoleEntry::immutable($rule)
+    }};
+}
+
+#[macro_export]
+macro_rules! roles {
+    ( $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)* ) => ({
+        let method_roles = MethodRoles::<RoleEntry> {
+            $($role: role_definition_entry!($rule $(, mutable_by: $($mutators),+)?)),*
+        };
+
+        let mut roles = $crate::blueprints::resource::Roles::new();
+        for (name, entry) in method_roles.list() {
+            roles.define_role(name, entry);
+        }
+
+        roles
+    });
+}
+
+#[macro_export]
+macro_rules! royalties {
+    ($($method:ident => $royalty:expr),*) => ({
+        Methods::<MethodRoyalty> {
+            $(
+                $method: $royalty.into(),
+            )*
+        }
+    });
+    ($($method:ident => $royalty:expr,)*) => ({
+        royalties!($($method => $royalty),*)
+    });
+}
+
+#[macro_export]
+macro_rules! metadata {
+    ( ) => ({
+        ::scrypto::prelude::Metadata::new()
+    });
+    ( $($key:expr => $value:expr),* ) => ({
+        let mut metadata = ::scrypto::prelude::Metadata::new();
+        $(
+            metadata.set($key, $value);
+        )*
+        metadata
+    });
+    ( $($key:expr => $value:expr,)* ) => ({
+        metadata!{$($key => $value),*}
+    });
+}

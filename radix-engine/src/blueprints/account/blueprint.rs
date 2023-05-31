@@ -1,4 +1,6 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{
+    PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
+};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
@@ -47,120 +49,20 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
+pub const SECURIFY_ROLE: &'static str = "securify";
+
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
+    const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 
-    fn authority_rules() -> AuthorityRules {
-        /*
-        FIXME: The following is temporary until we implement the ability to map methods to roles or
-        authorities. Once that's done, we would like the methods to be grouped as follows:
-
-        lock_fee: [
-            "lock_fee",
-            "lock_contingent_fee"
-        ]
-        withdraw: [
-            "withdraw",
-            "withdraw_non_fungibles"
-        ]
-        withdraw & lock fee: [
-            "lock_fee_and_withdraw",
-            "lock_fee_and_withdraw_non_fungibles"
-        ]
-        create_proof: [
-            "create_proof",
-            "create_proof_of_amount",
-            "create_proof_of_ids",
-        ]
-        deposit: [
-            "deposit",
-            "deposit_batch",
-        ]
-         */
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_SECURIFY_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_LOCK_FEE_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_WITHDRAW_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_CREATE_PROOF_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-
-        // Deposit Methods
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_DEPOSIT_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-
-        authority_rules
+    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
+        btreemap!()
     }
 }
 
-impl PresecurifiedAccessRules for SecurifiedAccount {
-    const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
-}
+impl PresecurifiedAccessRules for SecurifiedAccount {}
 
 const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
@@ -258,14 +160,14 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        authority_rules: AuthorityRules,
+        owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(authority_rules, api)?;
+        let access_rules = SecurifiedAccount::create_advanced(owner_rule, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
@@ -290,6 +192,7 @@ impl AccountBlueprint {
         Ok((address, bucket))
     }
 
+    // TODO: Remove
     pub fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,

@@ -1,9 +1,9 @@
 use arbitrary::{Arbitrary, Unstructured};
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::types::blueprints::package::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+    ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -611,14 +611,13 @@ impl TxFuzzer {
                     global_addresses.push(
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
-                    let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
+                    let role_key = RoleKey::arbitrary(&mut unstructured).unwrap();
                     let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallAccessRulesMethod { 
                         address: entity_address.into(),
-                        method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
-                        args: manifest_args!(object_key, authority_key, rule)
+                        method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+                        args: manifest_args!(role_key, Some(rule), Option::<(RoleList, bool)>::None)
                     })
                 }
                 // SetAuthorityMutability
@@ -630,14 +629,13 @@ impl TxFuzzer {
                     global_addresses.push(
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
-                    let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
-                    let mutability = AccessRule::arbitrary(&mut unstructured).unwrap();
+                    let role_key = RoleKey::arbitrary(&mut unstructured).unwrap();
+                    let mutability = RoleList::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallAccessRulesMethod { 
                         address: entity_address.into(),
-                        method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
-                        args: manifest_args!(object_key, authority_key, mutability)
+                        method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+                        args: manifest_args!(role_key, Option::<AccessRule>::None, Some((mutability, true)))
                     })
                 }
                 // SetMetadata

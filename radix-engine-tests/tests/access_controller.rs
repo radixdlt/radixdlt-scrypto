@@ -7,8 +7,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
-use scrypto_unit::TestRunner;
+use scrypto_unit::{CustomGenesis, TestRunner};
 use transaction::builder::*;
 
 #[test]
@@ -104,7 +103,7 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
         rule!(require(RADIX_TOKEN)),
         Some(10),
     );
-    test_runner.push_time_forward(9);
+    test_runner.set_current_minute(9);
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
@@ -130,7 +129,7 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
         rule!(require(RADIX_TOKEN)),
         Some(10),
     );
-    test_runner.push_time_forward(10);
+    test_runner.set_current_minute(10);
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
@@ -156,7 +155,7 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
         rule!(require(RADIX_TOKEN)),
         Some(10),
     );
-    test_runner.push_time_forward(10);
+    test_runner.set_current_minute(10);
 
     // Act
     let receipt = test_runner.timed_confirm_recovery(
@@ -169,32 +168,6 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
 
     // Assert
     receipt.expect_specific_failure(is_no_timed_recoveries_found_error);
-}
-
-#[test]
-pub fn timed_confirm_recovery_with_non_recovery_role_fails() {
-    // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(None);
-    test_runner.initiate_recovery(
-        Role::Primary,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        Some(10),
-    );
-    test_runner.push_time_forward(10);
-
-    // Act
-    let receipt = test_runner.timed_confirm_recovery(
-        Role::Primary,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        Some(10),
-    );
-
-    // Assert
-    receipt.expect_specific_failure(is_auth_unauthorized_error);
 }
 
 #[test]
@@ -212,7 +185,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
         .lock_primary_role(Role::Recovery)
         .expect_commit_success();
 
-    test_runner.push_time_forward(10);
+    test_runner.set_current_minute(10);
 
     test_runner
         .timed_confirm_recovery(
@@ -682,7 +655,7 @@ mod no_recovery_with_primary_unlocked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (Role::Primary, Some(is_no_timed_recoveries_found_error)),
             (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
         ];
 
@@ -937,7 +910,7 @@ mod no_recovery_with_primary_locked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (Role::Primary, Some(is_no_timed_recoveries_found_error)),
             (Role::Recovery, Some(is_no_timed_recoveries_found_error)),
         ];
 
@@ -1200,7 +1173,10 @@ mod recovery_mode_with_primary_unlocked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (
+                Role::Primary,
+                Some(is_timed_recovery_delay_has_not_elapsed_error),
+            ),
             (
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
@@ -1469,7 +1445,10 @@ mod recovery_mode_with_primary_locked {
     pub fn timed_confirm_recovery() {
         // Arrange
         let test_vectors: [(Role, Option<ErrorCheckFunction>); 2] = [
-            (Role::Primary, Some(is_auth_unauthorized_error)),
+            (
+                Role::Primary,
+                Some(is_timed_recovery_delay_has_not_elapsed_error),
+            ),
             (
                 Role::Recovery,
                 Some(is_timed_recovery_delay_has_not_elapsed_error),
@@ -1659,7 +1638,13 @@ struct AccessControllerTestRunner {
 #[allow(dead_code)]
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
-        let mut test_runner = TestRunner::builder().build();
+        let mut test_runner = TestRunner::builder()
+            .without_trace()
+            .with_custom_genesis(CustomGenesis::default(
+                1,
+                CustomGenesis::default_consensus_manager_config(),
+            ))
+            .build();
 
         // Creating a new account - this is where the badges will be held
         let (public_key, _, account) = test_runner.new_account(false);
@@ -2021,10 +2006,10 @@ impl AccessControllerTestRunner {
         manifest_builder
     }
 
-    fn push_time_forward(&mut self, minutes: i64) {
-        let current_time = self.test_runner.get_current_time(TimePrecision::Minute);
-        let new_time = current_time.add_minutes(minutes).unwrap();
+    fn set_current_minute(&mut self, minutes: i64) {
+        // we use a single-round epochs, so the only possible round advance is to round 1
         self.test_runner
-            .set_current_time(new_time.seconds_since_unix_epoch * 1000);
+            .advance_to_round_at_timestamp(1, minutes * 60 * 1000)
+            .expect_commit_success();
     }
 }

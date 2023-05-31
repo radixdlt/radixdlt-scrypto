@@ -1,5 +1,6 @@
-SET_AUTHORITY_ACCESS_RULE
+UPDATE_ROLE
     Address("${resource_address}")
     Enum<0u8>()
-    Enum<0u8>()
-    Enum<"AccessRule::AllowAll">();
+    "auth"
+    Enum<1u8>(Enum<AccessRule::AllowAll>())
+    Enum<0u8>();

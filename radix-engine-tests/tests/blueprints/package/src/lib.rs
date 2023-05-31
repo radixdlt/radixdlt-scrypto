@@ -48,6 +48,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
+        method_auth_template: btreemap!(),
+        outer_method_auth_template: btreemap!(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(
@@ -80,6 +82,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
+        method_auth_template: btreemap!(),
+        outer_method_auth_template: btreemap!(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(
@@ -113,6 +117,8 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
+        method_auth_template: btreemap!(),
+        outer_method_auth_template: btreemap!(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(

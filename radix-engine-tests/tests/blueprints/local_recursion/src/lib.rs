@@ -26,7 +26,9 @@ mod local_recursion_bomb {
             .instantiate();
 
             let rtn_bucket = local_component.recurse();
-            local_component.globalize();
+            local_component
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
             rtn_bucket
         }
     }
@@ -58,7 +60,9 @@ mod local_recursion_bomb2 {
             let local_component = Self { vaults }.instantiate();
 
             let rtn_bucket = local_component.recurse();
-            local_component.globalize();
+            local_component
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
             rtn_bucket
         }
     }

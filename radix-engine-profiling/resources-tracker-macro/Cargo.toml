@@ -11,7 +11,7 @@ bench = false
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["full"] }
 quote = "1.0"
-radix-engine-utils = { path = "../../radix-engine-utils" }
+radix-engine-profiling = { path = "../../radix-engine-profiling" }
 
 [features]
 default = []

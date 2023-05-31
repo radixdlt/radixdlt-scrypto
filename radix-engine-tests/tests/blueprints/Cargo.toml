@@ -15,6 +15,7 @@ members = [
     "execution_trace",
     "external_blueprint_caller",
     "fee",
+    "fee_reserve_states",
     "kernel",
     "kv_store",
     "leaks",

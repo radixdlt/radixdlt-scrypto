@@ -10,7 +10,6 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
@@ -22,13 +21,16 @@ use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerInitialConfiguration, CONSENSUS_MANAGER_BLUEPRINT,
+    ConsensusManagerConfig, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
     CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
+use radix_engine_store_interface::{
+    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
+    interface::{CommittableSubstateDatabase, SubstateDatabase},
+};
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayloadEncode,
 };
@@ -137,9 +139,13 @@ where
         self.bootstrap_with_genesis_data(
             vec![],
             1u64,
-            ConsensusManagerInitialConfiguration {
+            ConsensusManagerConfig {
                 max_validators: 10,
-                rounds_per_epoch: 1,
+                epoch_change_condition: EpochChangeCondition {
+                    min_round_count: 1,
+                    max_round_count: 1,
+                    target_duration_millis: 0,
+                },
                 num_unstake_epochs: 1,
                 total_emission_xrd_per_epoch: Decimal::one(),
                 min_validator_reliability: Decimal::one(),
@@ -154,7 +160,7 @@ where
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
@@ -166,11 +172,8 @@ where
             );
 
         if xrd_info.is_none() {
-            let system_bootstrap_receipt = self.execute_system_bootstrap(
-                initial_epoch,
-                initial_configuration,
-                initial_time_ms,
-            );
+            let system_bootstrap_receipt =
+                self.execute_system_bootstrap(initial_epoch, initial_config, initial_time_ms);
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -193,20 +196,17 @@ where
     fn execute_system_bootstrap(
         &mut self,
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
+        initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> TransactionReceipt {
-        let transaction = create_system_bootstrap_transaction(
-            initial_epoch,
-            initial_configuration,
-            initial_time_ms,
-        );
+        let transaction =
+            create_system_bootstrap_transaction(initial_epoch, initial_config, initial_time_ms);
 
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
@@ -232,7 +232,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
@@ -253,7 +253,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")
@@ -270,7 +270,7 @@ where
 
 pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
-    initial_configuration: ConsensusManagerInitialConfiguration,
+    initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
 ) -> SystemTransactionV1 {
     // NOTES
@@ -779,7 +779,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                authority_rules: AuthorityRules::new(),
+                owner_rule: OwnerRole::None,
             }),
         });
     }
@@ -802,7 +802,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                authority_rules: AuthorityRules::new(),
+                owner_rule: OwnerRole::None,
             }),
         });
     }
@@ -822,7 +822,7 @@ pub fn create_system_bootstrap_transaction(
                 validator_owner_token,
                 consensus_manager_component_address,
                 initial_epoch,
-                initial_configuration,
+                initial_config,
                 initial_time_ms
             ),
         });

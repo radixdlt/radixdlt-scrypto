@@ -1,10 +1,10 @@
 use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
-use crate::event_schema;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
+use crate::{event_schema, method_auth_template};
 use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
@@ -13,13 +13,15 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::Url;
+use radix_engine_interface::api::node_modules::metadata::{
+    Url, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
+use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
@@ -402,6 +404,37 @@ impl AccessControllerNativePackage {
             ]
         };
 
+        let method_auth_template = method_auth_template!(
+            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
+            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
+            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+            SchemaMethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => SchemaMethodPermission::Public;
+            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
+
+            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"];
+
+            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"];
+
+            SchemaMethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"];
+
+            SchemaMethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"];
+
+            SchemaMethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"];
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -412,7 +445,9 @@ impl AccessControllerNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
-                    event_schema
+                    event_schema,
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
                 }
             ),
         }
@@ -667,8 +702,9 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let authority_rules = init_access_rules_from_rule_set(address, input.rule_set);
-        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?.0;
+        let roles = init_roles_from_rule_set(input.rule_set);
+        let access_rules = AccessRules::create(roles, api)?.0;
+
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
@@ -1290,106 +1326,13 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AuthorityRules {
-    let mut authority_rules = AuthorityRules::new();
-
-    let primary = "primary";
-    authority_rules.set_main_authority_rule(
-        primary,
-        rule_set.primary_role.clone(),
-        rule!(require(global_caller(address))),
-    );
-    let recovery = "recovery";
-    authority_rules.set_main_authority_rule(
-        recovery,
-        rule_set.recovery_role.clone(),
-        rule!(require(global_caller(address))),
-    );
-    let confirmation = "confirmation";
-    authority_rules.set_main_authority_rule(
-        confirmation,
-        rule_set.confirmation_role.clone(),
-        rule!(require(global_caller(address))),
-    );
-
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_CREATE_PROOF_IDENT, primary);
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
-        primary,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        primary,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
-        primary,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        primary,
-    );
-
-    // Recovery Role Rules
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT, recovery);
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT, recovery);
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT, recovery);
-
-    // Recovery || Confirmation Role Rules
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        rule!(require("recovery") || require("confirmation")),
-    );
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        rule!(require("recovery") || require("confirmation")),
-    );
-
-    // Primary || Confirmation Role Rules
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        rule!(require("primary") || require("confirmation")),
-    );
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        rule!(require("primary") || require("confirmation")),
-    );
-
-    // Primary || Recovery Role Rules
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT,
-        rule!(require("primary") || require("recovery")),
-    );
-
-    // Other methods
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
-        rule!(require("primary") || require("confirmation") || require("recovery")),
-    );
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
-        rule!(require(
-            NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)
-        )),
-    );
-
-    authority_rules
+fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
+    roles2! {
+        "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
+        "primary" => rule_set.primary_role, mut [SELF_ROLE];
+        "recovery" => rule_set.recovery_role, mut [SELF_ROLE];
+        "confirmation" => rule_set.confirmation_role, mut [SELF_ROLE];
+    }
 }
 
 fn transition<Y, I>(
@@ -1451,18 +1394,14 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.set_authority_rule(
-        AuthorityKey::main("primary"),
-        rule_set.primary_role.clone(),
-        api,
-    )?;
-    attached.set_authority_rule(
-        AuthorityKey::main("recovery"),
+    attached.update_role_rules(RoleKey::new("primary"), rule_set.primary_role.clone(), api)?;
+    attached.update_role_rules(
+        RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
-    attached.set_authority_rule(
-        AuthorityKey::main("confirmation"),
+    attached.update_role_rules(
+        RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,
     )?;

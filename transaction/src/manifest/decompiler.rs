@@ -5,8 +5,7 @@ use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::Bech32Encoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_RULE_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -493,13 +492,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
-                (address, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT) => {
+                (address, ACCESS_RULES_UPDATE_ROLE_IDENT) => {
                     fields.push(to_manifest_value(address));
-                    "SET_AUTHORITY_ACCESS_RULE"
-                }
-                (address, ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT) => {
-                    fields.push(to_manifest_value(address));
-                    "SET_AUTHORITY_MUTABILITY"
+                    "UPDATE_ROLE"
                 }
 
                 /* Default */
@@ -528,11 +523,16 @@ pub fn decompile_instruction<F: fmt::Write>(
 
     write!(f, "{}", display_name)?;
     if let Value::Tuple { fields } = display_parameters {
+        let field_count = fields.len();
         for field in fields {
             write!(f, "\n")?;
-            format_manifest_value(f, &field, &context.for_value_display(), 0)?;
+            format_manifest_value(f, &field, &context.for_value_display(), true, 0)?;
         }
-        write!(f, ";\n")?;
+        if field_count > 0 {
+            write!(f, "\n;\n")?;
+        } else {
+            write!(f, ";\n")?;
+        }
     } else {
         panic!(
             "Parameters are not a tuple: name = {:?}, parameters = {:?}",

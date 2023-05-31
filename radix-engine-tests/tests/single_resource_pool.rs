@@ -394,6 +394,45 @@ fn withdraw_emits_expected_event() {
     assert_eq!(amount, dec!("2.22"));
 }
 
+#[test]
+pub fn protected_deposit_fails_without_proper_authority_present() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(18);
+
+    // Act
+    let receipt = test_runner.protected_deposit(10, false);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_error)
+}
+
+#[test]
+pub fn protected_withdraw_fails_without_proper_authority_present() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(18);
+
+    // Act
+    test_runner
+        .protected_deposit(10, true)
+        .expect_commit_success();
+    let receipt = test_runner.protected_withdraw(10, false);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_error)
+}
+
+#[test]
+pub fn contribute_fails_without_proper_authority_present() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(18);
+
+    // Act
+    let receipt = test_runner.contribute(10, false);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_error)
+}
+
 //===================================
 // Test Runner and Utility Functions
 //===================================

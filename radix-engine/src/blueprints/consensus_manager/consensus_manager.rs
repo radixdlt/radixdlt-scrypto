@@ -1,4 +1,5 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
+use crate::blueprints::consensus_manager::{START_ROLE, VALIDATOR_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -23,18 +24,13 @@ const MILLIS_IN_MINUTE: i64 = MILLIS_IN_SECOND * SECONDS_IN_MINUTE;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerConfigSubstate {
-    pub max_validators: u32,
-    pub rounds_per_epoch: u64,
-    pub num_unstake_epochs: u64,
-    pub total_emission_xrd_per_epoch: Decimal,
-    pub min_validator_reliability: Decimal,
-    pub num_owner_stake_units_unlock_epochs: u64,
-    pub num_fee_increase_delay_epochs: u64,
+    pub config: ConsensusManagerConfig,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerSubstate {
     pub epoch: u64,
+    pub epoch_start_milli: i64,
     pub round: u64,
 }
 
@@ -185,8 +181,8 @@ impl ConsensusManagerBlueprint {
         validator_token_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
         initial_epoch: u64,
-        initial_configuration: ConsensusManagerInitialConfiguration,
-        initial_time_ms: i64,
+        initial_config: ConsensusManagerConfig,
+        initial_time_milli: i64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -218,17 +214,11 @@ impl ConsensusManagerBlueprint {
 
         let consensus_manager_id = {
             let config = ConsensusManagerConfigSubstate {
-                max_validators: initial_configuration.max_validators,
-                rounds_per_epoch: initial_configuration.rounds_per_epoch,
-                num_unstake_epochs: initial_configuration.num_unstake_epochs,
-                total_emission_xrd_per_epoch: initial_configuration.total_emission_xrd_per_epoch,
-                min_validator_reliability: initial_configuration.min_validator_reliability,
-                num_owner_stake_units_unlock_epochs: initial_configuration
-                    .num_owner_stake_units_unlock_epochs,
-                num_fee_increase_delay_epochs: initial_configuration.num_fee_increase_delay_epochs,
+                config: initial_config,
             };
             let consensus_manager = ConsensusManagerSubstate {
                 epoch: initial_epoch,
+                epoch_start_milli: initial_time_milli,
                 round: 0,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
@@ -240,10 +230,10 @@ impl ConsensusManagerBlueprint {
                 validator_statistics: Vec::new(),
             };
             let minute_timestamp = ProposerMinuteTimestampSubstate {
-                epoch_minute: Self::milli_to_minute(initial_time_ms),
+                epoch_minute: Self::milli_to_minute(initial_time_milli),
             };
             let milli_timestamp = ProposerMilliTimestampSubstate {
-                epoch_milli: initial_time_ms,
+                epoch_milli: initial_time_milli,
             };
 
             api.new_simple_object(
@@ -259,33 +249,12 @@ impl ConsensusManagerBlueprint {
             )?
         };
 
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_authority_rule(
-            CONSENSUS_MANAGER_START_IDENT,
-            rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
-            rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
-            rule!(require(AuthAddresses::validator_role())),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            rule!(require(AuthAddresses::validator_role())),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            CONSENSUS_MANAGER_SET_EPOCH_IDENT,
-            rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
-        );
+        let role_definitions = roles2! {
+            VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
+            START_ROLE => rule!(require(AuthAddresses::system_role()));
+        };
 
-        let access_rules = AccessRules::create(
-            authority_rules,
-            btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => AuthorityRules::new()
-            ),
-            api,
-        )?
-        .0;
+        let access_rules = AccessRules::create(role_definitions, api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
@@ -326,53 +295,23 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let config_substate: ConsensusManagerConfigSubstate =
+            api.field_lock_read_typed(config_handle)?;
+        api.field_lock_release(config_handle)?;
 
-        let mgr_handle = api.actor_lock_field(
+        let manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
-        let mgr: ConsensusManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
+        let manager_substate: ConsensusManagerSubstate =
+            api.field_lock_read_typed(manager_handle)?;
+        api.field_lock_release(manager_handle)?;
 
-        Self::epoch_change(mgr.epoch, &config, api)?;
+        Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::main("start"),
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
-            api,
-        )?;
-
-        Ok(())
-    }
-
-    pub(crate) fn set_current_time<Y>(current_time_ms: i64, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let proposer_milli_timestamp = ProposerMilliTimestampSubstate {
-            epoch_milli: current_time_ms,
-        };
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentTime.into(),
-            LockFlags::MUTABLE,
-        )?;
-        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
-        api.field_lock_release(handle)?;
-
-        let proposer_minute_timestamp = ProposerMinuteTimestampSubstate {
-            epoch_minute: Self::milli_to_minute(current_time_ms),
-        };
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-            LockFlags::MUTABLE,
-        )?;
-        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
-        api.field_lock_release(handle)?;
+        access_rules.update_role(RoleKey::new(START_ROLE), RoleEntry::disabled(), api)?;
 
         Ok(())
     }
@@ -446,6 +385,7 @@ impl ConsensusManagerBlueprint {
 
     pub(crate) fn next_round<Y>(
         round: u64,
+        proposer_timestamp_milli: i64,
         proposal_history: LeaderProposalHistory,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -457,21 +397,24 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
-        let mgr_handle = api.actor_lock_field(
+        let config_substate: ConsensusManagerConfigSubstate =
+            api.field_lock_read_typed(config_handle)?;
+        api.field_lock_release(config_handle)?;
+
+        let manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut consensus_manager: ConsensusManagerSubstate =
-            api.field_lock_read_typed(mgr_handle)?;
+        let mut manager_substate: ConsensusManagerSubstate =
+            api.field_lock_read_typed(manager_handle)?;
 
-        let progressed_rounds = round as i128 - consensus_manager.round as i128;
+        let progressed_rounds = round as i128 - manager_substate.round as i128;
         if progressed_rounds <= 0 {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
                     ConsensusManagerError::InvalidRoundUpdate {
-                        from: consensus_manager.round,
+                        from: manager_substate.round,
                         to: round,
                     },
                 ),
@@ -480,35 +423,26 @@ impl ConsensusManagerBlueprint {
 
         Self::update_proposal_statistics(progressed_rounds as u64, proposal_history, api)?;
 
-        if round >= config.rounds_per_epoch {
-            let next_epoch = consensus_manager.epoch + 1;
-            Self::epoch_change(next_epoch, &config, api)?;
-            consensus_manager.epoch = next_epoch;
-            consensus_manager.round = 0;
+        let config = &config_substate.config;
+        let epoch_duration_millis = proposer_timestamp_milli - manager_substate.epoch_start_milli;
+        if config
+            .epoch_change_condition
+            .is_met(epoch_duration_millis, round)
+        {
+            let next_epoch = manager_substate.epoch + 1;
+            Self::epoch_change(next_epoch, config, api)?;
+            manager_substate.epoch = next_epoch;
+            manager_substate.epoch_start_milli = proposer_timestamp_milli;
+            manager_substate.round = 0;
         } else {
             Runtime::emit_event(api, RoundChangeEvent { round })?;
-            consensus_manager.round = round;
+            manager_substate.round = round;
         }
 
-        api.field_lock_write_typed(mgr_handle, &consensus_manager)?;
-        api.field_lock_release(mgr_handle)?;
+        api.field_lock_write_typed(manager_handle, &manager_substate)?;
+        api.field_lock_release(manager_handle)?;
 
-        Ok(())
-    }
-
-    pub(crate) fn set_epoch<Y>(epoch: u64, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
-            LockFlags::MUTABLE,
-        )?;
-
-        let mut consensus_manager: ConsensusManagerSubstate = api.field_lock_read_typed(handle)?;
-        consensus_manager.epoch = epoch;
-        api.field_lock_write_typed(handle, &consensus_manager)?;
+        Self::update_timestamps(proposer_timestamp_milli, api)?;
 
         Ok(())
     }
@@ -523,6 +457,35 @@ impl ConsensusManagerBlueprint {
         let (validator_address, owner_token_bucket) = ValidatorCreator::create(key, false, api)?;
 
         Ok((validator_address, owner_token_bucket))
+    }
+
+    fn update_timestamps<Y>(current_time_ms: i64, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let proposer_milli_timestamp = ProposerMilliTimestampSubstate {
+            epoch_milli: current_time_ms,
+        };
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::CurrentTime.into(),
+            LockFlags::MUTABLE,
+        )?;
+        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
+        api.field_lock_release(handle)?;
+
+        let proposer_minute_timestamp = ProposerMinuteTimestampSubstate {
+            epoch_minute: Self::milli_to_minute(current_time_ms),
+        };
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+            LockFlags::MUTABLE,
+        )?;
+        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
+        api.field_lock_release(handle)?;
+
+        Ok(())
     }
 
     fn update_proposal_statistics<Y>(
@@ -570,7 +533,7 @@ impl ConsensusManagerBlueprint {
 
     fn epoch_change<Y>(
         next_epoch: u64,
-        config: &ConsensusManagerConfigSubstate,
+        config: &ConsensusManagerConfig,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -671,7 +634,7 @@ impl ConsensusManagerBlueprint {
     fn apply_validator_emissions<Y>(
         validator_set: ActiveValidatorSet,
         validator_statistics: Vec<ProposalStatistic>,
-        config: &ConsensusManagerConfigSubstate,
+        config: &ConsensusManagerConfig,
         epoch: u64, // the concluded epoch, for event creation
         api: &mut Y,
     ) -> Result<(), RuntimeError>
