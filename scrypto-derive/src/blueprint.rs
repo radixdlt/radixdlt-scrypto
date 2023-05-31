@@ -141,10 +141,16 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let owned_typed_name = format!("Owned{}", blueprint_name);
     let global_typed_name = format!("Global{}", blueprint_name);
 
-    let definition_statements = bp.macro_statements;
-    let definition_statements = if !definition_statements.is_empty() {
+    let method_auth_index = bp.macro_statements.iter()
+        .position(|item| {
+            item.mac.path.get_ident().unwrap()
+                .eq(&Ident::new("enable_method_auth", Span::call_site()))
+        });
+
+    let method_auth_statements = if let Some(method_auth_index) = method_auth_index {
+        let auth_macro = bp.macro_statements.remove(method_auth_index);
         quote! {
-            #(#definition_statements)*
+            #auth_macro
         }
     } else {
         // TODO: Use AllPublicMethod Template instead
@@ -314,7 +320,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             #(#const_statements)*
 
-            #definition_statements
+            #method_auth_statements
 
             #output_original_code
 
