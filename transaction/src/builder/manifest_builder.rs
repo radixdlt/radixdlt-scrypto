@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageDefinition, PackageClaimRoyaltiesInput, PackagePublishWasmAdvancedManifestInput,
+    PackageClaimRoyaltiesInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
     PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PACKAGE_BLUEPRINT,
     PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
     PACKAGE_SET_ROYALTY_IDENT,

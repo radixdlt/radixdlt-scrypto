@@ -27,9 +27,9 @@ PUBLISH_PACKAGE_ADVANCED
         Tuple(
             Map<String, Tuple>()
         ),
-        Map<String, Map>()
+        Map<String, Map>(),
+        Map<String, Tuple>()
     )
-    Map<String, Tuple>()
     Map<String, Enum>()
     Enum<0u8>()
 ;

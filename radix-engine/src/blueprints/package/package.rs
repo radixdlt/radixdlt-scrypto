@@ -379,12 +379,7 @@ impl PackageNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = Self::publish_wasm(
-                    input.code,
-                    input.definition,
-                    input.metadata,
-                    api,
-                )?;
+                let rtn = Self::publish_wasm(input.code, input.definition, input.metadata, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -488,14 +483,8 @@ impl PackageNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
-        let address = Self::publish_wasm_internal(
-            None,
-            code,
-            definition,
-            metadata,
-            access_rules,
-            api,
-        )?;
+        let address =
+            Self::publish_wasm_internal(None, code, definition, metadata, access_rules, api)?;
 
         Ok((address, bucket))
     }

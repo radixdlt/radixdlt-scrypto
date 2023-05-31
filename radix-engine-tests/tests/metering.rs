@@ -2,7 +2,6 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto::prelude::MethodRoyalty;
 use scrypto_unit::*;
 use transaction::builder::*;
 use utils::ContextualDisplay;
@@ -97,18 +96,6 @@ fn test_radiswap() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
-        /*
-        btreemap!(
-            "Radiswap".to_owned() => {
-                let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_pool", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("add_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("remove_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("swap", RoyaltyAmount::Xrd(2.into()));
-                config
-            }
-        ),
-         */
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -210,11 +197,11 @@ fn test_radiswap() {
         + 14393 /* DropLock */
         + 3675 /* DropNode */
         + 3395011 /* Invoke */
-        + 3639671 /* LockSubstate */
+        + 3641022 /* LockSubstate */
         + 20160 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
-        + 1525810 /* RunWasm */
+        + 1525745 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -222,7 +209,7 @@ fn test_radiswap() {
     );
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.8911685"),
+        dec!("0.8912971"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -320,11 +307,11 @@ fn test_flash_loan() {
         + 22829 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 4403257 /* LockSubstate */
+        + 4405822 /* LockSubstate */
         + 32368 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1304730 /* RunWasm */
+        + 1304630 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

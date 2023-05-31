@@ -51,22 +51,27 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
     let mut function_access_rules = BTreeMap::new();
+    let mut royalties = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance
             .invoke_export(&function_export, vec![], &mut runtime)
             .map_err(ExtractSchemaError::RunSchemaGenError)?;
 
         let name = function_export.replace("_schema", "").to_string();
-        let (schema, function_auth): (BlueprintSchema, BTreeMap<String, AccessRule>) =
-            scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
+        let (schema, function_auth, royalty_config): (
+            BlueprintSchema,
+            BTreeMap<String, AccessRule>,
+            RoyaltyConfig,
+        ) = scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
 
         blueprints.insert(name.clone(), schema);
         function_access_rules.insert(name.clone(), function_auth);
+        royalties.insert(name.clone(), royalty_config);
     }
 
     Ok(PackageDefinition {
         schema: PackageSchema { blueprints },
         function_access_rules,
-        royalty_config: btreemap!(),
+        royalty_config: royalties,
     })
 }

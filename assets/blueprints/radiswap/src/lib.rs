@@ -2,6 +2,14 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod radiswap {
+    enable_package_royalties! {
+        instantiate_pool => Xrd(5.into()),
+        add_liquidity => Xrd(1.into()),
+        remove_liquidity => Xrd(1.into()),
+        swap => Xrd(2.into()),
+        get_pair => Free,
+    }
+
     struct Radiswap {
         /// The resource address of LP token.
         lp_resource_manager: ResourceManager,

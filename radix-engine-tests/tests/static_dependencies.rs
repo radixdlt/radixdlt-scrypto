@@ -35,12 +35,8 @@ fn test_static_package_address() {
     let start = find_subsequence(&code, &PACKAGE_ADDRESS_PLACE_HOLDER).unwrap();
     code[start..start + PACKAGE_ADDRESS_PLACE_HOLDER.len()]
         .copy_from_slice(package_address1.as_ref());
-    let package_address2 = test_runner.publish_package(
-        code,
-        definition,
-        BTreeMap::new(),
-        OwnerRole::None,
-    );
+    let package_address2 =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())

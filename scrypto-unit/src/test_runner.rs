@@ -737,12 +737,7 @@ impl TestRunner {
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
         let (code, definition) = Compile::compile(package_dir);
-        self.publish_package(
-            code,
-            definition,
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
     pub fn compile_and_publish_retain_blueprints<
@@ -755,12 +750,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let (code, mut definition) = Compile::compile(package_dir);
         definition.schema.blueprints.retain(retain);
-        self.publish_package(
-            code,
-            definition,
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(

@@ -203,6 +203,37 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         };
 
+        let fn_names: Vec<String> = fn_idents.iter().map(|i| i.to_string()).collect();
+        let package_royalties_statements = {
+            let package_royalties_index = macro_statements.iter().position(|item| {
+                item.mac
+                    .path
+                    .get_ident()
+                    .unwrap()
+                    .eq(&Ident::new("enable_package_royalties", Span::call_site()))
+            });
+            if let Some(package_royalties_index) = package_royalties_index {
+                let royalties_macro = macro_statements.remove(package_royalties_index);
+                quote! {
+                    #royalties_macro
+                }
+            } else {
+                // TODO: Use AllPublicFunctions Template instead
+                quote! {
+                    fn package_royalty_config() -> RoyaltyConfig {
+                        let royalties = btreemap!(
+                            #(
+                                #fn_names.to_string() => Free,
+                            )*
+                        );
+                        RoyaltyConfig {
+                            rules: royalties,
+                        }
+                    }
+                }
+            }
+        };
+
         let raw_package_dependencies: Vec<Ident> = {
             let const_statements = bp.const_statements;
             const_statements
@@ -246,6 +277,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         quote! {
             #function_auth_statements
+
+            #package_royalties_statements
 
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
@@ -301,8 +334,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
 
                 let function_auth = function_auth();
+                let royalty_config = package_royalty_config();
 
-                let return_data = (schema, function_auth);
+                let return_data = (schema, function_auth, royalty_config);
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
@@ -1104,6 +1138,16 @@ mod tests {
                         )
                     }
 
+                    fn package_royalty_config() -> RoyaltyConfig {
+                        let royalties = btreemap!(
+                            "x".to_string() => Free,
+                            "y".to_string() => Free,
+                        );
+                        RoyaltyConfig {
+                            rules: royalties,
+                        }
+                    }
+
                     #[no_mangle]
                     pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
                         use ::scrypto::schema::*;
@@ -1157,8 +1201,9 @@ mod tests {
                         };
 
                         let function_auth = function_auth();
+                        let royalty_config = package_royalty_config();
 
-                        let return_data = (schema, function_auth);
+                        let return_data = (schema, function_auth, royalty_config);
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

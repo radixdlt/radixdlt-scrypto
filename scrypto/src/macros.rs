@@ -612,7 +612,6 @@ macro_rules! enable_package_royalties {
     );
 }
 
-
 #[macro_export]
 macro_rules! role_definition_entry {
     ($rule:expr, mutable_by: $($mutators:ident),+) => {{
