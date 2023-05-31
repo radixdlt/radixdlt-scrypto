@@ -333,6 +333,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Setup AFL
@@ -340,4 +342,7 @@ jobs:
       working-directory: fuzz-tests
     - name: Build AFL fuzzer
       run: bash ./fuzz.sh afl build
+      working-directory: fuzz-tests
+    - name: Check fuzzed instructions coverage
+      run: cargo nextest run test_check_fuzzed_instruction_coverage
       working-directory: fuzz-tests
