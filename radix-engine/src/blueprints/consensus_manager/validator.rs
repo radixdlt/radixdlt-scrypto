@@ -114,10 +114,10 @@ pub struct ValidatorSubstate {
 pub struct UnstakeData {
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
     /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
-    epoch_unlocked: Epoch,
+    pub epoch_unlocked: Epoch,
 
     /// An XRD amount to be claimed.
-    amount: Decimal,
+    pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -129,10 +129,10 @@ pub struct ValidatorFeeChangeRequest {
     /// Note: when requesting a fee decrease, this will be "next epoch"; and when requesting an
     /// increase, this will be set to [`ConsensusManagerConfigSubstate.num_fee_increase_delay_epochs`]
     /// epochs away.
-    epoch_effective: Epoch,
+    pub epoch_effective: Epoch,
 
     /// A requested new value of [`ConsensusManagerSubstate.validator_fee_factor`].
-    new_fee_factor: Decimal,
+    pub new_fee_factor: Decimal,
 }
 
 impl NonFungibleData for UnstakeData {

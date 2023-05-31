@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
-    default_deposit_rule: AccountDefaultDepositRule,
+    pub default_deposit_rule: AccountDefaultDepositRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
