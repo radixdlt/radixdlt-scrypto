@@ -250,7 +250,7 @@ where
     pub fn get_blueprint_schema(
         &mut self,
         blueprint: &BlueprintId,
-    ) -> Result<IndexedBlueprintSchema, RuntimeError> {
+    ) -> Result<IndexedBlueprintDefinition, RuntimeError> {
         let schema = self
             .api
             .kernel_get_system_state()
@@ -469,7 +469,7 @@ where
     fn get_actor_schema(
         &mut self,
         actor_object_type: ActorObjectType,
-    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, IndexedBlueprintSchema), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, IndexedBlueprintDefinition), RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let method = actor
             .try_as_method()

@@ -1,4 +1,5 @@
 use radix_engine_common::prelude::ScryptoSchema;
+use radix_engine_interface::blueprints::resource::AccessRule;
 use sbor::LocalTypeIndex;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
@@ -7,6 +8,7 @@ use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
+use crate::blueprints::package::PackageDefinition;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -39,7 +41,7 @@ impl Debug for PackageCodeSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
-    pub schema: IndexedPackageSchema,
+    pub schema: IndexedPackageDefinition,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -55,28 +57,27 @@ pub struct PackageRoyaltySubstate {
     pub blueprint_royalty_configs: BTreeMap<String, RoyaltyConfig>,
 }
 
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedBlueprintSchema {
-    pub outer_blueprint: Option<String>,
-
-    pub schema: ScryptoSchema,
-    pub fields: Option<(PartitionOffset, Vec<LocalTypeIndex>)>,
-    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
-
-    /// For each function, there is a [`FunctionSchema`]
-    pub functions: BTreeMap<String, FunctionSchema>,
-    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
-    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
-    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
-    pub dependencies: BTreeSet<GlobalAddress>,
-
-    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct IndexedPackageDefinition {
+    pub blueprints: BTreeMap<String, IndexedBlueprintDefinition>,
+    pub function_access_rules: BTreeMap<String, BTreeMap<String, AccessRule>>,
 }
 
-impl From<BlueprintSchema> for IndexedBlueprintSchema {
+impl From<PackageDefinition> for IndexedPackageDefinition {
+    fn from(value: PackageDefinition) -> Self {
+        IndexedPackageDefinition {
+            blueprints: value
+                .schema
+                .blueprints
+                .into_iter()
+                .map(|(name, b)| (name, b.into()))
+                .collect(),
+            function_access_rules: value.function_access_rules,
+        }
+    }
+}
+
+impl From<BlueprintSchema> for IndexedBlueprintDefinition {
     fn from(schema: BlueprintSchema) -> Self {
         let mut partition_offset = 0u8;
 
@@ -107,24 +108,29 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedPackageSchema {
-    pub blueprints: BTreeMap<String, IndexedBlueprintSchema>,
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct IndexedBlueprintDefinition {
+    pub outer_blueprint: Option<String>,
+
+    pub schema: ScryptoSchema,
+    pub fields: Option<(PartitionOffset, Vec<LocalTypeIndex>)>,
+    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
+
+    /// For each function, there is a [`FunctionSchema`]
+    pub functions: BTreeMap<String, FunctionSchema>,
+    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
+    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
+    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    pub dependencies: BTreeSet<GlobalAddress>,
+
+    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
-impl From<PackageSchema> for IndexedPackageSchema {
-    fn from(value: PackageSchema) -> Self {
-        IndexedPackageSchema {
-            blueprints: value
-                .blueprints
-                .into_iter()
-                .map(|(name, b)| (name, b.into()))
-                .collect(),
-        }
-    }
-}
 
-impl IndexedBlueprintSchema {
+
+impl IndexedBlueprintDefinition {
     pub fn num_fields(&self) -> usize {
         match &self.fields {
             Some((_, indices)) => indices.len(),

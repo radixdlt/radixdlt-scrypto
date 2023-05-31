@@ -470,7 +470,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: definition.schema.into(),
+            schema: definition.into(),
         };
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
@@ -619,7 +619,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: definition.schema.into(),
+            schema: definition.into(),
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;
