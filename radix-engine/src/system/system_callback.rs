@@ -26,7 +26,7 @@ use radix_engine_interface::schema::{RefTypes};
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
-    blueprint_schema: &IndexedBlueprintDefinition,
+    blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
@@ -75,7 +75,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
-    blueprint_schema: &IndexedBlueprintDefinition,
+    blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     output: &IndexedScryptoValue,
 ) -> Result<(), RuntimeError> {
@@ -145,7 +145,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     // TODO: We should be able to make this a more generic cache for
     // TODO: immutable substates
-    pub blueprint_schema_cache: NonIterMap<BlueprintId, IndexedBlueprintDefinition>,
+    pub blueprint_schema_cache: NonIterMap<BlueprintId, IndexedBlueprintSchema>,
     pub modules: SystemModuleMixer,
 }
 

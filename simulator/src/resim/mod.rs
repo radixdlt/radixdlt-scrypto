@@ -71,11 +71,10 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::PackageInfoSubstate;
+use radix_engine_interface::blueprints::package::{IndexedBlueprintSchema, IndexedPackageSchema, PackageInfoSubstate};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema};
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,

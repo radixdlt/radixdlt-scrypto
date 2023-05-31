@@ -57,7 +57,7 @@ pub struct PackageRoyaltySubstate {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedPackageSchema {
-    pub blueprints: BTreeMap<String, IndexedBlueprintDefinition>,
+    pub blueprints: BTreeMap<String, IndexedBlueprintSchema>,
 }
 
 impl From<PackageSchema> for IndexedPackageSchema {
@@ -72,7 +72,7 @@ impl From<PackageSchema> for IndexedPackageSchema {
     }
 }
 
-impl From<BlueprintSchema> for IndexedBlueprintDefinition {
+impl From<BlueprintSchema> for IndexedBlueprintSchema {
     fn from(schema: BlueprintSchema) -> Self {
         let mut partition_offset = 0u8;
 
@@ -104,7 +104,7 @@ impl From<BlueprintSchema> for IndexedBlueprintDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedBlueprintDefinition {
+pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
 
     pub schema: ScryptoSchema,
@@ -125,7 +125,7 @@ pub struct IndexedBlueprintDefinition {
 
 
 
-impl IndexedBlueprintDefinition {
+impl IndexedBlueprintSchema {
     pub fn num_fields(&self) -> usize {
         match &self.fields {
             Some((_, indices)) => indices.len(),
