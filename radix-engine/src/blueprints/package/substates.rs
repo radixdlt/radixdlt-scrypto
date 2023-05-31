@@ -6,3 +6,4 @@ pub enum PackageCodeTypeSubstate {
     Wasm,
     Native,
 }
+

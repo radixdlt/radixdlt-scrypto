@@ -37,7 +37,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema,
     InstanceSchema, KeyValueStoreSchema, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
