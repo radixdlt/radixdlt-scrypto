@@ -252,7 +252,7 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(&bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::RecallResource { .. } => {}
+                InstructionV1::CallDirectVaultMethod { .. } => {}
             }
         }
 

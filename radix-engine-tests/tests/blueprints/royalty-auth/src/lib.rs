@@ -68,9 +68,8 @@ mod royalty_test {
             proof.authorize(|| package.claim_royalty())
         }
 
-        pub fn claim_component_royalty(address: ComponentAddress, proof: Proof) -> Bucket {
+        pub fn claim_component_royalty(component: Global<AnyComponent>, proof: Proof) -> Bucket {
             proof.authorize(|| {
-                let component: Global<AnyComponent> = address.into();
                 let royalty = component.royalty();
                 royalty.claim_royalties()
             })
