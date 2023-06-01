@@ -1,3 +1,18 @@
+# The below just gives some example syntax
+# You shouldn't configure your account to have an "AllowAll" access! (apart from maybe for testing)
 CREATE_ACCOUNT_ADVANCED
-    Map<Enum, Tuple>();                  # Authority Rules
+    Map<Enum, Tuple>(                         # Authority Rules
+        Enum<AuthorityKey::Owner>() => Tuple(
+            Enum<AccessRule::AllowAll>(),     # Access
+            Enum<AccessRule::DenyAll>(),      # Mutability
+        ),
+        Enum<AuthorityKey::Module>(
+            Enum<ModuleId::Metadata>(),
+            "metadata"
+        ) => Tuple(
+            Enum<AccessRule::AllowAll>(),     # Access
+            Enum<AccessRule::DenyAll>(),      # Mutability
+        ),
+    )
+;
 CREATE_ACCOUNT;

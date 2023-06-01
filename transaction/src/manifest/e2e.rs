@@ -912,7 +912,19 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Map<Enum, Tuple>()
+    Map<Enum, Tuple>(
+        Enum<0u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<1u8>(
+            Enum<1u8>(),
+            "metadata"
+        ) => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    )
 ;
 CREATE_ACCOUNT;
 "##,
