@@ -172,6 +172,13 @@ impl ObjectStub for ResourceManagerStub {
 }
 
 impl ResourceManagerStub {
+    pub fn create_empty_vault(&self) -> Vault {
+        self.call(
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+            &ResourceManagerCreateEmptyVaultInput {}
+        )
+    }
+
     pub fn resource_type(&self) -> ResourceType {
         self.call(
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,

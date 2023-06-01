@@ -9,6 +9,7 @@ pub struct Sandwich {
 mod mint_and_burn {
     struct MintAndBurn {
         vault: Vault,
+        other_vault: Vault,
     }
 
     impl MintAndBurn {
@@ -18,31 +19,24 @@ mod mint_and_burn {
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .create_with_no_initial_supply();
 
-            let bucket = resource_manager.mint_non_fungible(
-                &NonFungibleLocalId::integer(0),
-                Sandwich {
-                    name: "Test".to_owned(),
-                },
-            );
+            let vault = resource_manager.create_empty_vault();
+            let other_vault = resource_manager.create_empty_vault();
 
-            let vault = Vault::with_bucket(bucket);
-
-            Self { vault }.instantiate().globalize();
+            Self { vault, other_vault }.instantiate().globalize();
         }
 
-        pub fn mint_and_burn(&mut self) {
-            self.vault.take_all().burn();
-
+        pub fn mint_and_burn(&mut self, i: u64) {
             let resource_manager = self.vault.resource_manager();
 
             let bucket = resource_manager.mint_non_fungible(
-                &NonFungibleLocalId::integer(0),
+                &NonFungibleLocalId::integer(i),
                 Sandwich {
                     name: "Test".to_owned(),
                 },
             );
             self.vault.put(bucket);
-            self.vault.take_all().burn();
+            let bucket = self.vault.take_all();
+            self.other_vault.put(bucket);
         }
     }
 }
