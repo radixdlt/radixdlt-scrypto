@@ -1474,6 +1474,27 @@ fn create_account_events_can_be_looked_up() {
     }
 }
 
+#[test]
+fn x() {
+    let mut map = BTreeMap::<ResourceAddress, Vault>::new();
+    for i in 0..20 {
+        let resource_address = {
+            let mut resource_address = RADIX_TOKEN.as_node_id().0;
+            *resource_address.last_mut().unwrap() = i;
+            unsafe { ResourceAddress::new_unchecked(resource_address) }
+        };
+        let vault = {
+            let mut vault_id = resource_address.as_node_id().0;
+            *vault_id.first_mut().unwrap() = EntityType::InternalFungibleVault as u8;
+            Vault(Own(NodeId(vault_id)))
+        };
+        map.insert(resource_address, vault);
+    }
+    let encoded = scrypto_encode(&map).unwrap();
+    let size = encoded.len();
+    println!("{size}");
+}
+
 //=========
 // Helpers
 //=========
