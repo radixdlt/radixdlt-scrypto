@@ -7,7 +7,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -272,7 +272,7 @@ impl TxFuzzer {
                 // ClaimComponentRoyalty
                 5 => Some(InstructionV1::CallRoyaltyMethod { 
                     address: component_address.into(),
-                    method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                    method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                     args: manifest_args!()
                 }),
                 // ClaimPackageRoyalty
@@ -280,10 +280,9 @@ impl TxFuzzer {
                     package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-
-                    Some(InstructionV1::CallMethod { 
+                    Some(InstructionV1::CallMethod {
                         address: package_address.into(),
-                        method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+                        method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
                         args: manifest_args!()
                     })
                 }
@@ -593,14 +592,15 @@ impl TxFuzzer {
 
                     Some(InstructionV1::ReturnToWorktop { bucket_id })
                 }
-                // SetComponentRoyaltyConfig
+                // SetComponentRoyalty
                 40 => {
-                    let royalty_config = RoyaltyConfig::arbitrary(&mut unstructured).unwrap();
+                    let method = String::arbitrary(&mut unstructured).unwrap();
+                    let amount = RoyaltyAmount::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallRoyaltyMethod { 
                         address: component_address.into(),
-                        method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
-                        args: manifest_args!(royalty_config)
+                        method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
+                        args: manifest_args!(method, amount)
                     })
                 }
                 // SetAuthorityAccessRule
@@ -658,12 +658,13 @@ impl TxFuzzer {
                     package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-                    let royalty_config = BTreeMap::<String, RoyaltyConfig>::arbitrary(&mut unstructured).unwrap();
+                    let function = String::arbitrary(&mut unstructured).unwrap();
+                    let amount = RoyaltyAmount::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMethod { 
                         address: package_address.into(),
-                        method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
-                        args: manifest_args!(royalty_config),
+                        method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
+                        args: manifest_args!(function, amount),
                     })
                 }
                 // TakeFromWorktop
