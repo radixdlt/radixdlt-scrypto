@@ -5,7 +5,7 @@ use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
-    model::{TransactionHeaderV1, TransactionPayloadEncode},
+    model::{TransactionHeaderV1, TransactionPayload},
     validation::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
 };
 
@@ -103,8 +103,8 @@ fn bench_radiswap(c: &mut Criterion) {
     let transaction_payload = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(100),
             nonce: 0,
             notary_public_key: pk3.clone().into(),
             notary_is_signatory: true,
@@ -141,11 +141,9 @@ fn do_swap(
     nonce: u32,
 ) -> TransactionReceipt {
     // Validate
-    let validated = NotarizedTransactionValidator::new(ValidationConfig::default(
-        NetworkDefinition::simulator().id,
-    ))
-    .check_length_decode_and_validate_from_slice(transaction_payload)
-    .unwrap();
+    let validated = NotarizedTransactionValidator::new(ValidationConfig::simulator())
+        .validate_from_payload_bytes(transaction_payload)
+        .unwrap();
 
     let mut executable = validated.get_executable();
 

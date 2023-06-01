@@ -568,9 +568,10 @@ impl TxFuzzer {
                         }
                     };
 
-                    Some(InstructionV1::RecallResource {
+                    Some(InstructionV1::CallDirectVaultMethod {
                         vault_id: InternalAddress::new_or_panic(vault_id.into()),
-                        amount,
+                        method_name: VAULT_RECALL_IDENT.to_string(),
+                        args: manifest_args!(amount),
                     })
                 }
                 // RemoveMetadata

@@ -93,7 +93,7 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
-use transaction::model::{SystemTransactionV1, TransactionPayloadEncode};
+use transaction::model::{SystemTransactionV1, TransactionPayload};
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -194,7 +194,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &ExecutionConfig::default().with_kernel_trace(trace),
         &transaction
             .prepare()
-            .map_err(Error::ConvertToPreparedError)?
+            .map_err(Error::TransactionPrepareError)?
             .get_executable(initial_proofs),
     );
 
@@ -265,7 +265,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &ExecutionConfig::default().with_kernel_trace(trace),
                 &transaction
                     .prepare()
-                    .map_err(Error::ConvertToPreparedError)?
+                    .map_err(Error::TransactionPrepareError)?
                     .get_executable(initial_proofs),
             );
 
@@ -473,7 +473,7 @@ pub fn db_upsert_timestamps(
     Ok(())
 }
 
-pub fn db_upsert_epoch(epoch: u64) -> Result<(), Error> {
+pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
@@ -485,9 +485,9 @@ pub fn db_upsert_epoch(epoch: u64) -> Result<(), Error> {
             &ConsensusManagerField::ConsensusManager.into(),
         )
         .unwrap_or_else(|| ConsensusManagerSubstate {
-            epoch: 0,
+            epoch: Epoch::zero(),
             epoch_start_milli: 0,
-            round: 0,
+            round: Round::zero(),
         });
 
     consensus_manager_substate.epoch = epoch;

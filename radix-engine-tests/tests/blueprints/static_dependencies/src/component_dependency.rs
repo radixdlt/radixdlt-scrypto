@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 #[blueprint]
 mod faucet_call {
     const FAUCET_ADDRESS: ComponentAddress =
-        Address!("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
+        address!("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
 
     struct FaucetCall {}
 

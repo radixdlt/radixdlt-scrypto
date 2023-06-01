@@ -106,7 +106,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         .path
                         .get_ident()
                         .unwrap()
-                        .eq(&Ident::new("Address", Span::call_site()))
+                        .eq(&Ident::new("address", Span::call_site()))
                     {
                         continue;
                     }
