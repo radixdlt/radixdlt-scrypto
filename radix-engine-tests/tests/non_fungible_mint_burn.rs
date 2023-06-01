@@ -8,11 +8,10 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn mint_and_burn_of_existing_non_fungible_should_succeed() {
+fn mint_and_burn_of_non_fungible_should_succeed() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
@@ -32,20 +31,7 @@ fn mint_and_burn_of_existing_non_fungible_should_succeed() {
         .call_method(
             component_address,
             "mint_and_burn",
-            manifest_args!(),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_commit_success();
-
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_method(
-            component_address,
-            "mint_and_burn",
-            manifest_args!(),
+            manifest_args!(1u64),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
