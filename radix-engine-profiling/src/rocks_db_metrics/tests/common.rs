@@ -15,7 +15,7 @@ use std::{io::Write, path::PathBuf};
 
 
 pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDatabase>(
-    substate_store: &mut SubstateStoreWithMetrics<S>,
+    substate_store: &SubstateStoreWithMetrics<S>,
     count: usize,
 ) {
     if substate_store.read_metrics.borrow().len() > 2 * count {
