@@ -1,5 +1,5 @@
 use super::Authorization;
-use crate::blueprints::resource::AuthZone;
+use crate::blueprints::resource::{AuthZone, VaultUtil};
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
@@ -144,7 +144,7 @@ impl AuthModule {
             )?;
         }
 
-        if info.global {
+        if info.global || VaultUtil::is_vault_blueprint(&info.blueprint) {
             Self::check_authorization_against_access_rules(
                 callee,
                 auth_zone_id,

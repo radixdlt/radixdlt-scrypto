@@ -36,7 +36,7 @@ impl TestTransaction {
         }
     }
 
-    pub fn prepare(self) -> Result<PreparedTestTransaction, ConvertToPreparedError> {
+    pub fn prepare(self) -> Result<PreparedTestTransaction, PrepareError> {
         let prepared_instructions = self.instructions.prepare_partial()?;
         Ok(PreparedTestTransaction {
             encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,

@@ -5,7 +5,12 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesUpdateRoleInput, ACCESS_RULES_UPDATE_ROLE_IDENT,
+};
+use radix_engine_interface::api::{
+    ClientApi, ObjectModuleId, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -146,6 +151,44 @@ impl FungibleVaultBlueprint {
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
 
         Ok(bucket)
+    }
+
+    pub fn freeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        api.actor_call_module_method(
+            OBJECT_HANDLE_SELF,
+            ObjectModuleId::AccessRules,
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
+                rule: Some(rule!(deny_all)),
+                mutability: None,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(())
+    }
+
+    pub fn unfreeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        api.actor_call_module_method(
+            OBJECT_HANDLE_SELF,
+            ObjectModuleId::AccessRules,
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesUpdateRoleInput {
+                role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
+                rule: Some(rule!(allow_all)),
+                mutability: None,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(())
     }
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>

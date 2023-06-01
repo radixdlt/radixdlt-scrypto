@@ -26,7 +26,7 @@ pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
     let validator = NotarizedTransactionValidator::new(validation_config);
 
     let validated = validator
-        .validate_preview_intent(preview_intent)
+        .validate_preview_intent_v1(preview_intent)
         .map_err(PreviewError::TransactionValidationError)?;
 
     Ok(execute_transaction(

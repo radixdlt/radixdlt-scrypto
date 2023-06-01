@@ -102,8 +102,8 @@ fn prepare_matching_test_tx_and_preview_intent(
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: network.id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 99,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(99),
             nonce: test_runner.next_transaction_nonce(),
             notary_public_key: notary_priv_key.public_key().into(),
             notary_is_signatory: false,

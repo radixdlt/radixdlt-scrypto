@@ -67,12 +67,3 @@ impl From<EncodeError> for TransactionValidationError {
         Self::EncodeError(value)
     }
 }
-
-impl From<ConvertToPreparedError> for TransactionValidationError {
-    fn from(value: ConvertToPreparedError) -> Self {
-        match value {
-            ConvertToPreparedError::EncodeError(value) => Self::EncodeError(value),
-            ConvertToPreparedError::PrepareError(value) => Self::PrepareError(value),
-        }
-    }
-}

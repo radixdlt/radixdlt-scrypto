@@ -23,7 +23,7 @@ use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
-    default_deposit_rule: AccountDefaultDepositRule,
+    pub default_deposit_rule: AccountDefaultDepositRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -64,10 +64,10 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
 impl PresecurifiedAccessRules for SecurifiedAccount {}
 
-const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
+pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
 
-const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
+pub const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
 pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
 
 pub struct AccountBlueprint;
