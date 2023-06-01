@@ -69,12 +69,12 @@ fn test_commit() {
 
     // export results
     export_graph_and_print_summary(
-        &mut substate_db,
         "RocksDB random commits",
         &rocksdb_data,
         &rocksdb_output_data,
         "/tmp/scrypto_rocksdb_commit_1.png",
         "95th percentile of commits",
+        &substate_db.commit_metrics
     )
     .unwrap();
 }

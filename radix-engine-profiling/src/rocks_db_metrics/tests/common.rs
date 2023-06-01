@@ -107,25 +107,28 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     data_index_vector
 }
 
-pub fn export_graph_and_print_summary<S: SubstateDatabase + CommittableSubstateDatabase>(
-    substate_db: &mut SubstateStoreWithMetrics<S>,
+pub fn export_graph_and_print_summary(
     caption: &str,
     data: &Vec<(f32, f32)>,
     output_data: &Vec<(f32, f32)>,
     output_png_file: &str,
     output_data_name: &str,
+    original_data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
     let y_ofs = 10f32;
     let x_ofs = 5000f32;
     let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32 - x_ofs;
     let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32 + x_ofs;
-    let y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
+    let mut y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
     let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
 
     // 4. calculate linear approximation
     let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&output_data).unwrap();
     let lin_x_axis = (x_min as f32..x_max as f32).step(10f32);
+    if lin_intercept < y_min.into() {
+        y_min = lin_intercept as f32 - y_ofs;
+    }
 
     // draw scatter plot
     let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
@@ -141,7 +144,7 @@ pub fn export_graph_and_print_summary<S: SubstateDatabase + CommittableSubstateD
     scatter_ctx
         .configure_mesh()
         .x_desc("Size [bytes]")
-        .y_desc("DB read duration [microseconds]")
+        .y_desc("Duration [microseconds]")
         .axis_desc_style(("sans-serif", 16))
         .draw()?;
     // 1. draw all read points
@@ -150,7 +153,7 @@ pub fn export_graph_and_print_summary<S: SubstateDatabase + CommittableSubstateD
             data.iter()
                 .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
         )?
-        .label(format!("Reads (count: {})", data.len()))
+        .label(format!("Points (count: {})", data.len()))
         .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
     // 2. draw median for each read series (basaed on same size)
     scatter_ctx
@@ -185,15 +188,14 @@ pub fn export_graph_and_print_summary<S: SubstateDatabase + CommittableSubstateD
     root.present().expect("Unable to write result to file");
 
     // print some informations
-    println!("Read count: {}", data.len());
+    println!("Points count: {}", data.len());
     println!(
-        "Distinct size read count: {}",
-        substate_db.read_metrics.borrow().len()
+        "Distinct size point count: {}",
+        original_data.borrow().len()
     );
     println!(
-        "Read counts list (size, count): {:?}",
-        substate_db
-            .read_metrics
+        "Points counts list (size, count): {:?}",
+        original_data
             .borrow()
             .iter()
             .map(|(k, v)| (*k, v.len()))

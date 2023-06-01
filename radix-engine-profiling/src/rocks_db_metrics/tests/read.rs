@@ -52,12 +52,12 @@ fn test_read() {
 
     // export results
     export_graph_and_print_summary(
-        &mut substate_db,
         "RocksDB random reads",
         &rocksdb_data,
         &rocksdb_output_data,
         "/tmp/scrypto_rocksdb_1.png",
         "95th percentile of reads",
+        &substate_db.read_metrics
     )
     .unwrap();
 
@@ -84,12 +84,12 @@ fn test_read() {
 
     // export results
     export_graph_and_print_summary(
-        &mut substate_db,
         "InMemoryDB random reads",
         &inmem_data,
         &inmem_output_data,
         "/tmp/scrypto_inmem_1.png",
         "95th percentile of reads",
+        &substate_db.read_metrics
     )
     .unwrap();
 
@@ -98,7 +98,7 @@ fn test_read() {
         "RocksDB - InMemoryDB random reads",
         &rocksdb_output_data,
         &inmem_output_data,
-        "/tmp/scrypto_diff_1.png",
+        "/tmp/scrypto_diff_1.png"
     )
     .unwrap();
 
