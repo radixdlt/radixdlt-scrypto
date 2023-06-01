@@ -1,3 +1,4 @@
+use super::many_resource_pool::*;
 use super::single_resource_pool::*;
 use super::two_resource_pool::*;
 use crate::errors::*;
@@ -304,10 +305,155 @@ impl PoolNativePackage {
             }
         };
 
+        // Many Resource Pool
+        let many_resource_pool_blueprint_schema = {
+            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+            let mut fields = Vec::new();
+            fields.push(aggregator.add_child_type_and_descendents::<ManyResourcePoolSubstate>());
+
+            let collections = Vec::new();
+
+            let mut functions = BTreeMap::new();
+
+            functions.insert(
+                MANY_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: None,
+                    input: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolInstantiateInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolInstantiateOutput>(),
+                    export_name: MANY_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
+                },
+            );
+
+            functions.insert(
+                MANY_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolContributeInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolContributeOutput>(),
+                    export_name: MANY_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
+                },
+            );
+
+            functions.insert(
+                MANY_RESOURCE_POOL_REDEEM_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolRedeemInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolRedeemOutput>(),
+                    export_name: MANY_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
+                },
+            );
+
+            functions.insert(
+                MANY_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolProtectedDepositInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolProtectedDepositOutput>(),
+                    export_name: MANY_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
+                },
+            );
+
+            functions.insert(
+                MANY_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolProtectedWithdrawInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolProtectedWithdrawOutput>(
+                        ),
+                    export_name: MANY_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
+                },
+            );
+
+            functions.insert(
+                MANY_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolGetRedemptionValueInput>(
+                        ),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolGetRedemptionValueOutput>(
+                        ),
+                    export_name: MANY_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
+                },
+            );
+
+            functions.insert(
+                MANY_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolGetVaultAmountsInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ManyResourcePoolGetVaultAmountsOutput>(),
+                    export_name: MANY_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
+                },
+            );
+
+            let virtual_lazy_load_functions = BTreeMap::new();
+
+            let event_schema = event_schema! {
+                aggregator,
+                [
+                    super::many_resource_pool::ContributionEvent,
+                    super::many_resource_pool::RedemptionEvent,
+                    super::many_resource_pool::WithdrawEvent,
+                    super::many_resource_pool::DepositEvent
+                ]
+            };
+
+            let method_auth_template = method_auth_template! {
+                // Metadata Module rules
+                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
+                SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
+                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+                // Royalty Module rules
+                SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [];
+                SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [];
+
+                // Main Module rules
+                SchemaMethodKey::main(MANY_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(MANY_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(MANY_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(MANY_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
+                SchemaMethodKey::main(MANY_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
+                SchemaMethodKey::main(MANY_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+            };
+
+            let schema = generate_full_schema(aggregator);
+            BlueprintSchema {
+                outer_blueprint: None,
+                schema,
+                fields,
+                collections,
+                functions,
+                virtual_lazy_load_functions,
+                event_schema,
+                method_auth_template,
+                outer_method_auth_template: btreemap!(),
+                dependencies: btreeset!(),
+            }
+        };
+
         PackageSchema {
             blueprints: btreemap!(
                 SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => single_resource_pool_blueprint_schema,
-                TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => two_resource_pool_blueprint_schema
+                TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => two_resource_pool_blueprint_schema,
+                MANY_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => many_resource_pool_blueprint_schema
             ),
         }
     }
@@ -502,6 +648,99 @@ impl PoolNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::get_vault_amounts(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MANY_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                let ManyResourcePoolInstantiateInput {
+                    resource_addresses,
+                    pool_manager_rule,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ManyResourcePoolBlueprint::instantiate(
+                    resource_addresses,
+                    pool_manager_rule,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MANY_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let ManyResourcePoolContributeInput { buckets } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = ManyResourcePoolBlueprint::contribute(buckets, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MANY_RESOURCE_POOL_REDEEM_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let ManyResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ManyResourcePoolBlueprint::redeem(bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MANY_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let ManyResourcePoolProtectedDepositInput { bucket } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = ManyResourcePoolBlueprint::protected_deposit(bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MANY_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let ManyResourcePoolProtectedWithdrawInput {
+                    amount,
+                    resource_address,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    ManyResourcePoolBlueprint::protected_withdraw(resource_address, amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MANY_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let ManyResourcePoolGetRedemptionValueInput {
+                    amount_of_pool_units,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    ManyResourcePoolBlueprint::get_redemption_value(amount_of_pool_units, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MANY_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let ManyResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ManyResourcePoolBlueprint::get_vault_amounts(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
