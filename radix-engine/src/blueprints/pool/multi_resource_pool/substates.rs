@@ -4,7 +4,7 @@ use radix_engine_common::*;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct ManyResourcePoolSubstate {
+pub struct MultiResourcePoolSubstate {
     /// The vaults being stored as a `BTreeMap` and not as a `KeyValueStore` is intentional here!
     ///
     /// All of the operations on the many pool blueprint require loading all of the vaults and doing
@@ -32,7 +32,7 @@ pub struct ManyResourcePoolSubstate {
     pub pool_unit_resource_manager: ResourceManager,
 }
 
-impl Clone for ManyResourcePoolSubstate {
+impl Clone for MultiResourcePoolSubstate {
     fn clone(&self) -> Self {
         let vaults = self
             .vaults

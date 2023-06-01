@@ -1,4 +1,4 @@
-use crate::blueprints::pool::many_resource_pool::*;
+use crate::blueprints::pool::multi_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
@@ -16,15 +16,15 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
-pub const MANY_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "ManyResourcePool";
+pub const MULTI_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "MultiResourcePool";
 
-pub struct ManyResourcePoolBlueprint;
-impl ManyResourcePoolBlueprint {
+pub struct MultiResourcePoolBlueprint;
+impl MultiResourcePoolBlueprint {
     pub fn instantiate<Y>(
         resource_addresses: BTreeSet<ResourceAddress>,
         pool_manager_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<ManyResourcePoolInstantiateOutput, RuntimeError>
+    ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi,
     {
@@ -33,7 +33,7 @@ impl ManyResourcePoolBlueprint {
         for resource_address in resource_addresses.iter() {
             let resource_manager = ResourceManager(*resource_address);
             if let ResourceType::NonFungible { .. } = resource_manager.resource_type(api)? {
-                return Err(ManyResourcePoolError::NonFungibleResourcesAreNotAccepted {
+                return Err(MultiResourcePoolError::NonFungibleResourcesAreNotAccepted {
                     resource_address: *resource_address,
                 }
                 .into());
@@ -43,7 +43,7 @@ impl ManyResourcePoolBlueprint {
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
         let address = {
-            let node_id = api.kernel_allocate_node_id(EntityType::GlobalManyResourcePool)?;
+            let node_id = api.kernel_allocate_node_id(EntityType::GlobalMultiResourcePool)?;
             GlobalAddress::new_or_panic(node_id.0)
         };
 
@@ -82,7 +82,7 @@ impl ManyResourcePoolBlueprint {
         )?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
         let object_id = {
-            let substate = ManyResourcePoolSubstate {
+            let substate = MultiResourcePoolSubstate {
                 vaults: resource_addresses
                     .into_iter()
                     .map(|resource_address| {
@@ -92,7 +92,7 @@ impl ManyResourcePoolBlueprint {
                 pool_unit_resource_manager,
             };
             api.new_simple_object(
-                MANY_RESOURCE_POOL_BLUEPRINT_IDENT,
+                MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                 vec![scrypto_encode(&substate).unwrap()],
             )?
         };
@@ -111,19 +111,23 @@ impl ManyResourcePoolBlueprint {
     }
 
     pub fn contribute<Y>(
-        _buckets: Vec<Bucket>,
-        _api: &mut Y,
-    ) -> Result<ManyResourcePoolContributeOutput, RuntimeError>
+        buckets: Vec<Bucket>,
+        api: &mut Y,
+    ) -> Result<MultiResourcePoolContributeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        // TODO: All of the checks that need to happen before the math.
+
+        let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+
         todo!()
     }
 
     pub fn redeem<Y>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<ManyResourcePoolRedeemOutput, RuntimeError>
+    ) -> Result<MultiResourcePoolRedeemOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -132,7 +136,7 @@ impl ManyResourcePoolBlueprint {
         // Ensure that the passed pool resources are indeed pool resources
         let bucket_resource_address = bucket.resource_address(api)?;
         if bucket_resource_address != substate.pool_unit_resource_manager.0 {
-            return Err(ManyResourcePoolError::InvalidPoolUnitResource {
+            return Err(MultiResourcePoolError::InvalidPoolUnitResource {
                 expected: substate.pool_unit_resource_manager.0,
                 actual: bucket_resource_address,
             }
@@ -193,7 +197,7 @@ impl ManyResourcePoolBlueprint {
     pub fn protected_deposit<Y>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<ManyResourcePoolProtectedDepositOutput, RuntimeError>
+    ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -210,7 +214,7 @@ impl ManyResourcePoolBlueprint {
             Runtime::emit_event(api, event)?;
             Ok(())
         } else {
-            Err(ManyResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
+            Err(MultiResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
         }
     }
 
@@ -218,7 +222,7 @@ impl ManyResourcePoolBlueprint {
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<ManyResourcePoolProtectedWithdrawOutput, RuntimeError>
+    ) -> Result<MultiResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -240,14 +244,14 @@ impl ManyResourcePoolBlueprint {
 
             Ok(bucket)
         } else {
-            Err(ManyResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
+            Err(MultiResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
         }
     }
 
     pub fn get_redemption_value<Y>(
         amount_of_pool_units: Decimal,
         api: &mut Y,
-    ) -> Result<ManyResourcePoolGetRedemptionValueOutput, RuntimeError>
+    ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -286,13 +290,13 @@ impl ManyResourcePoolBlueprint {
 
     pub fn get_vault_amounts<Y>(
         api: &mut Y,
-    ) -> Result<ManyResourcePoolGetVaultAmountsOutput, RuntimeError>
+    ) -> Result<MultiResourcePoolGetVaultAmountsOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (many_resource_pool_substate, handle) =
+        let (multi_resource_pool_substate, handle) =
             Self::lock_and_read(api, LockFlags::read_only())?;
-        let amounts = many_resource_pool_substate
+        let amounts = multi_resource_pool_substate
             .vaults
             .into_iter()
             .map(|(resource_address, vault)| {
@@ -311,15 +315,15 @@ impl ManyResourcePoolBlueprint {
     fn lock_and_read<Y>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(ManyResourcePoolSubstate, LockHandle), RuntimeError>
+    ) -> Result<(MultiResourcePoolSubstate, LockHandle), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = ManyResourcePoolField::ManyResourcePool.into();
+        let substate_key = MultiResourcePoolField::MultiResourcePool.into();
         let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let many_resource_pool = api.field_lock_read_typed(handle)?;
+        let multi_resource_pool = api.field_lock_read_typed(handle)?;
 
-        Ok((many_resource_pool, handle))
+        Ok((multi_resource_pool, handle))
     }
 
     fn calculate_amount_owed(

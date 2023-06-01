@@ -2,7 +2,7 @@ use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
-use crate::blueprints::pool::many_resource_pool::ManyResourcePoolError;
+use crate::blueprints::pool::multi_resource_pool::MultiResourcePoolError;
 use crate::blueprints::pool::single_resource_pool::SingleResourcePoolError;
 use crate::blueprints::pool::two_resource_pool::TwoResourcePoolError;
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
@@ -417,7 +417,7 @@ pub enum ApplicationError {
 
     TwoResourcePoolError(TwoResourcePoolError),
 
-    ManyResourcePoolError(ManyResourcePoolError),
+    MultiResourcePoolError(MultiResourcePoolError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

@@ -48,7 +48,7 @@ pub enum EntityType {
     GlobalTwoResourcePool = 0b11000101, //---------- 11000 => c, 101xx => 54kh (101 = pool)
 
     /// A global native pool entity (197 in decimal). Gives Bech32 prefix: `c` followed by one of `c`, `e`, `6` or `m`.
-    GlobalManyResourcePool = 0b11000110, //---------- 11000 => c, 110xx => ce6m (101 = pool)
+    GlobalMultiResourcePool = 0b11000110, //---------- 11000 => c, 110xx => ce6m (101 = pool)
 
     //=========================================================================
     // Secp256k1 Virtual Global Components (start with char 6 for Secp256k1)
@@ -122,7 +122,7 @@ impl EntityType {
             | EntityType::GlobalVirtualEd25519Identity
             | EntityType::GlobalSingleResourcePool
             | EntityType::GlobalTwoResourcePool
-            | EntityType::GlobalManyResourcePool => true,
+            | EntityType::GlobalMultiResourcePool => true,
             EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalAccount
@@ -149,7 +149,7 @@ impl EntityType {
             | EntityType::GlobalVirtualEd25519Identity
             | EntityType::GlobalSingleResourcePool
             | EntityType::GlobalTwoResourcePool
-            | EntityType::GlobalManyResourcePool => true,
+            | EntityType::GlobalMultiResourcePool => true,
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResourceManager
             | EntityType::GlobalNonFungibleResourceManager

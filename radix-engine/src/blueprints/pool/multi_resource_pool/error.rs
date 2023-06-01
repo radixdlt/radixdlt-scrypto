@@ -4,7 +4,7 @@ use radix_engine_common::types::*;
 use radix_engine_common::ScryptoSbor;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ManyResourcePoolError {
+pub enum MultiResourcePoolError {
     NonFungibleResourcesAreNotAccepted {
         resource_address: ResourceAddress,
     },
@@ -20,8 +20,8 @@ pub enum ManyResourcePoolError {
     ContributionOfEmptyBucketError,
 }
 
-impl From<ManyResourcePoolError> for RuntimeError {
-    fn from(error: ManyResourcePoolError) -> Self {
-        Self::ApplicationError(ApplicationError::ManyResourcePoolError(error))
+impl From<MultiResourcePoolError> for RuntimeError {
+    fn from(error: MultiResourcePoolError) -> Self {
+        Self::ApplicationError(ApplicationError::MultiResourcePoolError(error))
     }
 }
