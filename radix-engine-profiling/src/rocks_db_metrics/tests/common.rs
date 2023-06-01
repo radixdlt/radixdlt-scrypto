@@ -8,7 +8,7 @@ use radix_engine_store_interface::{
         DbSortKey, PartitionUpdates, SubstateDatabase,
     },
 };
-use rand::Rng;
+use rand::{Rng, rngs::ThreadRng};
 #[allow(unused_imports)]
 use std::{io::Write, path::PathBuf};
 
@@ -53,6 +53,27 @@ pub fn calculate_percent_to_max_points(
     output_values
 }
 
+pub fn generate_commit_data(rng: &mut ThreadRng, value_size: usize) -> (DbPartitionKey, DbSortKey, IndexMap<DbSortKey, DatabaseUpdate>) {
+    let value = DatabaseUpdate::Set(vec![1; value_size]);
+
+    let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+    rng.fill(&mut node_id_value);
+    let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
+    let partition_key =
+        SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
+
+    let mut substate_key_value = [0u8; NodeId::LENGTH];
+    rng.fill(&mut substate_key_value);
+    let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
+        substate_key_value.into(),
+    ));
+
+    let mut partition = PartitionUpdates::new();
+    partition.insert(sort_key.clone(), value);
+
+    (partition_key, sort_key, partition)
+}
+
 pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_db: &mut S,
     min_size: usize,
@@ -73,22 +94,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     for size in (min_size..=max_size).step_by(step) {
         let mut input_data = DatabaseUpdates::new();
         for _ in 0..writes_count {
-            let value = DatabaseUpdate::Set(vec![1; size]);
-
-            let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
-            rng.fill(&mut node_id_value);
-            let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
-            let partition_key =
-                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
-
-            let mut substate_key_value = [0u8; NodeId::LENGTH];
-            rng.fill(&mut substate_key_value);
-            let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
-                substate_key_value.into(),
-            ));
-
-            let mut partition = PartitionUpdates::new();
-            partition.insert(sort_key.clone(), value);
+            let (partition_key, sort_key, partition) = generate_commit_data(&mut rng, size);
 
             data_index_vector.push((partition_key.clone(), sort_key, size));
 

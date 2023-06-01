@@ -1,9 +1,11 @@
 use super::common::*;
 use super::super::*;
 use super::*;
-#[allow(unused_imports)]
 use std::{io::Write, path::PathBuf};
+use rand::Rng;
 
+
+const COMMIT_REPEATS: usize = 50;
 
 
 #[test]
@@ -21,11 +23,36 @@ fn test_commit() {
 
     // reopen database and measure commit times
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
-    // repeat commits of 1 substate writes
-    let commit_repeats = 50;
-    for i in 0..commit_repeats {
-        print!("Round {}/{}   ", i, commit_repeats);
-        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, 1);
+    let mut rng = rand::thread_rng();
+
+    // prepare vector with substate sizes
+    let mut size_vector: Vec<usize> = Vec::new();
+    for size in (MIN_SIZE..=MAX_SIZE).step_by(SIZE_STEP) {
+        size_vector.push(size);
+    }
+
+    // repeat 1 substate commit n-times
+    for i in 0..COMMIT_REPEATS {
+        print!("Round {}/{}\r", i, COMMIT_REPEATS);
+        std::io::stdout().flush().ok();
+
+        let mut idx_vector = size_vector.clone();
+
+        for _ in 0..size_vector.len() {
+            assert!(!idx_vector.is_empty());
+            // randomize substate size
+            let idx = rng.gen_range(0..idx_vector.len());
+
+            let mut input_data = DatabaseUpdates::new();
+
+            let (partition_key, _sort_key, partition) = generate_commit_data(&mut rng, idx_vector[idx]);
+
+            input_data.insert(partition_key, partition);
+
+            substate_db.commit(&input_data);
+
+            idx_vector.remove(idx);
+        }
     }
 
     drop_highest_and_lowest_value(&mut substate_db, 3);
