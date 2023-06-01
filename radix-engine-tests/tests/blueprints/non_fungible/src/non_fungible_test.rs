@@ -425,7 +425,7 @@ mod non_fungible_test {
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
                     })
-                        .unwrap(),
+                    .unwrap(),
                 )
                 .unwrap();
             let (_resource_address, bucket): (ResourceAddress, Bucket) =

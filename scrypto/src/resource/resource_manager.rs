@@ -161,7 +161,7 @@ impl ResourceManagerStub {
     pub fn create_empty_vault(&self) -> Vault {
         self.call(
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
-            &ResourceManagerCreateEmptyVaultInput {}
+            &ResourceManagerCreateEmptyVaultInput {},
         )
     }
 
