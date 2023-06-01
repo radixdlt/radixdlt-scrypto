@@ -294,6 +294,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
+                dependencies: btreeset!(),
                 method_auth_template: method_permissions_instance,
                 outer_method_auth_template: btreemap!(),
             }
@@ -554,6 +555,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
+                dependencies: btreeset!(),
                 method_auth_template: method_permissions_instance,
                 outer_method_auth_template: btreemap!(),
             }
@@ -737,6 +739,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
+                dependencies: btreeset!(),
                 method_auth_template,
                 outer_method_auth_template,
             }
@@ -970,6 +973,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
+                dependencies: btreeset!(),
                 method_auth_template,
                 outer_method_auth_template,
             }
@@ -1099,6 +1103,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1264,6 +1269,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1332,6 +1338,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1413,6 +1420,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1519,6 +1527,7 @@ impl ResourceManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
+            dependencies: btreeset!(),
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         };
@@ -1636,6 +1645,7 @@ impl ResourceManagerNativePackage {
             functions,
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
+            dependencies: btreeset!(),
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         };

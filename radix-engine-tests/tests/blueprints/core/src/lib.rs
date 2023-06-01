@@ -49,7 +49,7 @@ mod core_test {
     struct CoreTest;
 
     impl CoreTest {
-        pub fn query() -> (PackageAddress, Hash, u64, u128) {
+        pub fn query() -> (PackageAddress, Hash, Epoch, u128) {
             (
                 Runtime::package_address(),
                 Runtime::transaction_hash(),

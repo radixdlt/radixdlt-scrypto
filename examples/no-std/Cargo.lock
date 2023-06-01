@@ -372,6 +372,7 @@ version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
+ "radix-engine-common",
  "sbor",
  "scrypto-schema",
  "serde",

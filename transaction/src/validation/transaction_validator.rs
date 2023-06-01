@@ -4,18 +4,40 @@ use crate::validation::*;
 pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
     type Validated;
 
-    fn check_length_decode_and_validate_from_slice(
+    fn prepare_from_raw(
         &self,
-        payload: &[u8],
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        if payload.len() > MAX_TRANSACTION_SIZE {
+        raw: &Prepared::Raw,
+    ) -> Result<Prepared, TransactionValidationError> {
+        self.prepare_from_payload_bytes(raw.as_slice())
+    }
+
+    fn prepare_from_payload_bytes(
+        &self,
+        raw_payload_bytes: &[u8],
+    ) -> Result<Prepared, TransactionValidationError> {
+        if raw_payload_bytes.len() > self.max_payload_length() {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let prepared = Prepared::prepare_from_payload(payload)?;
+        Ok(Prepared::prepare_from_payload(raw_payload_bytes)?)
+    }
 
+    fn validate_from_raw(
+        &self,
+        raw: &Prepared::Raw,
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        self.validate_from_payload_bytes(raw.as_slice())
+    }
+
+    fn validate_from_payload_bytes(
+        &self,
+        payload_bytes: &[u8],
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        let prepared = self.prepare_from_payload_bytes(payload_bytes)?;
         self.validate(prepared)
     }
+
+    fn max_payload_length(&self) -> usize;
 
     fn validate(
         &self,
@@ -26,17 +48,19 @@ pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
     pub network_id: u8,
+    pub max_notarized_payload_size: usize,
     pub min_cost_unit_limit: u32,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
-    pub max_epoch_range: u32,
+    pub max_epoch_range: u64,
 }
 
 impl ValidationConfig {
     pub fn default(network_id: u8) -> Self {
         Self {
             network_id,
+            max_notarized_payload_size: DEFAULT_MAX_TRANSACTION_SIZE,
             min_cost_unit_limit: DEFAULT_MIN_COST_UNIT_LIMIT,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
@@ -58,17 +82,21 @@ pub struct NotarizedTransactionValidator {
 impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransactionValidator {
     type Validated = ValidatedNotarizedTransactionV1;
 
+    fn max_payload_length(&self) -> usize {
+        self.config.max_notarized_payload_size
+    }
+
     fn validate(
         &self,
         transaction: PreparedNotarizedTransactionV1,
     ) -> Result<Self::Validated, TransactionValidationError> {
-        self.validate_intent(&transaction.signed_intent.intent)?;
+        self.validate_intent_v1(&transaction.signed_intent.intent)?;
 
         let encoded_instructions =
             manifest_encode(&transaction.signed_intent.intent.instructions.inner.0)?;
 
         let signer_keys = self
-            .validate_signatures(&transaction)
+            .validate_signatures_v1(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
         Ok(ValidatedNotarizedTransactionV1 {
@@ -84,13 +112,13 @@ impl NotarizedTransactionValidator {
         Self { config }
     }
 
-    pub fn validate_preview_intent(
+    pub fn validate_preview_intent_v1(
         &self,
         preview_intent: PreviewIntentV1,
     ) -> Result<ValidatedPreviewIntent, TransactionValidationError> {
         let intent = preview_intent.intent.prepare()?;
 
-        self.validate_intent(&intent)?;
+        self.validate_intent_v1(&intent)?;
 
         let encoded_instructions = manifest_encode(&intent.instructions.inner.0)?;
 
@@ -102,19 +130,19 @@ impl NotarizedTransactionValidator {
         })
     }
 
-    pub fn validate_intent(
+    pub fn validate_intent_v1(
         &self,
         intent: &PreparedIntentV1,
     ) -> Result<(), TransactionValidationError> {
-        self.validate_header(&intent.header.inner)
+        self.validate_header_v1(&intent.header.inner)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
-        Self::validate_instructions(&intent.instructions.inner.0)?;
+        Self::validate_instructions_v1(&intent.instructions.inner.0)?;
 
         return Ok(());
     }
 
-    pub fn validate_instructions(
+    pub fn validate_instructions_v1(
         instructions: &[InstructionV1],
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
@@ -231,7 +259,7 @@ impl NotarizedTransactionValidator {
         Ok(())
     }
 
-    pub fn validate_header(
+    pub fn validate_header_v1(
         &self,
         header: &TransactionHeaderV1,
     ) -> Result<(), HeaderValidationError> {
@@ -244,7 +272,10 @@ impl NotarizedTransactionValidator {
         if header.end_epoch_exclusive <= header.start_epoch_inclusive {
             return Err(HeaderValidationError::InvalidEpochRange);
         }
-        if header.end_epoch_exclusive - header.start_epoch_inclusive > self.config.max_epoch_range {
+        let max_end_epoch = header
+            .start_epoch_inclusive
+            .after(self.config.max_epoch_range);
+        if header.end_epoch_exclusive > max_end_epoch {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
 
@@ -258,7 +289,7 @@ impl NotarizedTransactionValidator {
         Ok(())
     }
 
-    pub fn validate_signatures(
+    pub fn validate_signatures_v1(
         &self,
         transaction: &PreparedNotarizedTransactionV1,
     ) -> Result<Vec<PublicKey>, SignatureValidationError> {
@@ -354,13 +385,13 @@ mod tests {
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::InvalidEpochRange
             ),
-            (0, 0, 5, vec![1], 2)
+            (Epoch::zero(), Epoch::zero(), 5, vec![1], 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::EpochRangeTooLarge
             ),
-            (0, 1000, 5, vec![1], 2)
+            (Epoch::zero(), Epoch::of(1000), 5, vec![1], 2)
         );
     }
 
@@ -370,20 +401,20 @@ mod tests {
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::TooManySignatures
             ),
-            (0, 100, 5, (1..20).collect(), 2)
+            (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::DuplicateSigner
             ),
-            (0, 100, 5, vec![1, 1], 2)
+            (Epoch::zero(), Epoch::of(100), 5, vec![1, 1], 2)
         );
     }
 
     #[test]
     fn test_valid_preview() {
         // Build the whole transaction but only really care about the intent
-        let tx = create_transaction(0, 100, 5, vec![1, 2], 2);
+        let tx = create_transaction(Epoch::zero(), Epoch::of(100), 5, vec![1, 2], 2);
 
         let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
@@ -398,14 +429,14 @@ mod tests {
             },
         };
 
-        let result = validator.validate_preview_intent(preview_intent);
+        let result = validator.validate_preview_intent_v1(preview_intent);
 
         assert!(result.is_ok());
     }
 
     fn create_transaction(
-        start_epoch: u32,
-        end_epoch: u32,
+        start_epoch: Epoch,
+        end_epoch: Epoch,
         nonce: u32,
         signers: Vec<u64>,
         notary: u64,
