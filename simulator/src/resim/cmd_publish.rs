@@ -8,7 +8,6 @@ use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
 };
-use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -79,8 +78,6 @@ impl Publish {
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Info.into());
             let package_info = PackageInfoSubstate {
                 schema: schema.into(),
-                dependent_resources: BTreeSet::new(),
-                dependent_components: BTreeSet::new(),
             };
             let database_updates = indexmap!(
                 db_partition_key => indexmap!(

@@ -745,6 +745,25 @@ impl TestRunner {
         )
     }
 
+    pub fn compile_and_publish_retain_blueprints<
+        P: AsRef<Path>,
+        F: FnMut(&String, &mut BlueprintSchema) -> bool,
+    >(
+        &mut self,
+        package_dir: P,
+        retain: F,
+    ) -> PackageAddress {
+        let (code, mut schema) = Compile::compile(package_dir);
+        schema.blueprints.retain(retain);
+        self.publish_package(
+            code,
+            schema,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            OwnerRole::None,
+        )
+    }
+
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
@@ -1292,6 +1311,27 @@ impl TestRunner {
         self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
     }
 
+    pub fn execute_system_transaction_with_preallocated_ids(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+        pre_allocated_ids: IndexSet<NodeId>,
+        mut proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> TransactionReceipt {
+        let nonce = self.next_transaction_nonce();
+        proofs.insert(AuthAddresses::system_role());
+        self.execute_transaction(
+            SystemTransactionV1 {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_ids,
+            }
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
+        )
+    }
+
     pub fn execute_system_transaction(
         &mut self,
         instructions: Vec<InstructionV1>,
@@ -1648,6 +1688,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
             ),
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
+            dependencies: btreeset!(),
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         },

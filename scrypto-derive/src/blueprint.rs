@@ -1,5 +1,6 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
+use radix_engine_common::address::Bech32Decoder;
 use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::*;
@@ -83,6 +84,54 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
+    let const_statements = {
+        let mut const_statements = bp.const_statements.clone();
+
+        // Bech32 decode constant dependencies
+        for item in &mut const_statements {
+            let ty = item.ty.as_ref();
+            let type_string = quote! { #ty }.to_string();
+            if !type_string.contains("ResourceAddress")
+                && !type_string.contains("ComponentAddress")
+                && !type_string.contains("PackageAddress")
+                && !type_string.contains("GlobalAddress")
+            {
+                continue;
+            }
+
+            match item.expr.as_mut() {
+                Expr::Macro(m) => {
+                    if !m
+                        .mac
+                        .path
+                        .get_ident()
+                        .unwrap()
+                        .eq(&Ident::new("address", Span::call_site()))
+                    {
+                        continue;
+                    }
+
+                    let tokens = &m.mac.tokens;
+                    let lit_str: LitStr = parse_quote!( #tokens );
+
+                    //let value:  = quote! { #tokens }.to_string();
+                    let (_hrp, _entity_type, address) =
+                        Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                            .unwrap();
+
+                    let expr = parse_quote! {
+                        #ty :: new_or_panic([ #(#address),* ])
+                    };
+
+                    item.expr = Box::new(expr);
+                }
+                _ => {}
+            }
+        }
+
+        const_statements
+    };
+
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
@@ -113,6 +162,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
+        let raw_package_dependencies: Vec<Ident> = {
+            let const_statements = bp.const_statements;
+            const_statements
+                .iter()
+                .map(|stmt| stmt.ident.clone())
+                .collect()
+        };
+
         let schema_ident = format_ident!("{}_schema", bp_ident);
         let function_names = generated_schema_info.function_names;
         let function_schemas = generated_schema_info.function_schemas;
@@ -175,6 +232,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     event_schema.insert(#event_type_names.to_owned(), local_type_index);
                 })*
 
+                let mut dependencies = BTreeSet::new();
+                #({
+                    dependencies.insert(#raw_package_dependencies.into());
+                })*
+
                 let mut method_auth_template = method_auth_template();
                 if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
                     method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
@@ -190,6 +252,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
+                    dependencies,
                     method_auth_template,
                     outer_method_auth_template: BTreeMap::new(),
                 };
@@ -290,6 +353,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         pub mod #module_ident {
             #(#use_statements)*
+
+            #(#const_statements)*
 
             #definition_statements
 
@@ -895,6 +960,7 @@ mod tests {
                         );
                         let mut event_schema = BTreeMap::new();
 
+                        let mut dependencies = BTreeSet::new();
                         let mut method_auth_template = method_auth_template();
                         if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
                             method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
@@ -910,6 +976,7 @@ mod tests {
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
+                            dependencies,
                             method_auth_template,
                             outer_method_auth_template: BTreeMap::new(),
                         };
