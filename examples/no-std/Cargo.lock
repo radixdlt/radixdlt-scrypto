@@ -351,6 +351,7 @@ name = "scrypto"
 version = "0.10.0"
 dependencies = [
  "bech32",
+ "const-sha1",
  "hex",
  "num-bigint",
  "num-traits",
@@ -371,6 +372,7 @@ version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
+ "radix-engine-common",
  "sbor",
  "scrypto-schema",
  "serde",

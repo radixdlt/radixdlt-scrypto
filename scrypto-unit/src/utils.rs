@@ -39,7 +39,7 @@ where
     }
 
     // Validate the manifest
-    NotarizedTransactionValidator::validate_instructions(&manifest.instructions)?;
+    NotarizedTransactionValidator::validate_instructions_v1(&manifest.instructions)?;
 
     Ok(())
 }

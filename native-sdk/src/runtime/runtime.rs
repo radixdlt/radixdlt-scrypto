@@ -5,6 +5,7 @@ use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use radix_engine_interface::traits::ScryptoEvent;
+use radix_engine_interface::types::Epoch;
 use sbor::rust::prelude::*;
 
 #[derive(Debug)]
@@ -23,7 +24,7 @@ impl Runtime {
         api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
     }
 
-    pub fn current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
+    pub fn current_epoch<Y, E>(api: &mut Y) -> Result<Epoch, E>
     where
         Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,

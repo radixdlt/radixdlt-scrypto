@@ -626,7 +626,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 #[test]
 fn consensus_manager_round_update_emits_correct_event() {
     let genesis = CustomGenesis::default(
-        1u64,
+        Epoch::of(1),
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: 100, // we do not want the "epoch change" event here
@@ -641,7 +641,11 @@ fn consensus_manager_round_update_emits_correct_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(1, 0, 180000i64)),
+        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(
+            Round::of(1),
+            0,
+            180000i64,
+        )),
     }]);
 
     // Assert
@@ -654,7 +658,12 @@ fn consensus_manager_round_update_emits_correct_event() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<RoundChangeEvent>(event_identifier)
-                && is_decoded_equal(&RoundChangeEvent { round: 1 }, event_data) =>
+                && is_decoded_equal(
+                    &RoundChangeEvent {
+                        round: Round::of(1)
+                    },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -663,8 +672,8 @@ fn consensus_manager_round_update_emits_correct_event() {
 
 #[test]
 fn consensus_manager_epoch_update_emits_epoch_change_event() {
-    let initial_epoch = 3;
-    let rounds_per_epoch = 5u64;
+    let initial_epoch = Epoch::of(3);
+    let rounds_per_epoch = 5;
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
@@ -678,14 +687,14 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Prepare: skip a few rounds, right to the one just before epoch change
-    test_runner.advance_to_round(rounds_per_epoch - 1);
+    test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
 
     // Act: perform the most usual successful next round
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(
-            rounds_per_epoch,
+            Round::of(rounds_per_epoch),
             0,
             180000i64,
         )),
@@ -701,7 +710,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             .collect::<Vec<_>>();
         assert_eq!(epoch_change_events.len(), 1);
         let event = epoch_change_events.first().unwrap();
-        assert_eq!(event.epoch, initial_epoch + 1);
+        assert_eq!(event.epoch, initial_epoch.next());
     }
 }
 
@@ -716,7 +725,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
         validator_key,
         Decimal::one(),
         ComponentAddress::virtual_account_from_public_key(&validator_key),
-        4,
+        Epoch::of(4),
         CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
@@ -731,7 +740,11 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(1, 0, 180000i64)),
+        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(
+            Round::of(1),
+            0,
+            180000i64,
+        )),
     }]);
 
     // Assert
@@ -756,7 +769,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
 #[test]
 fn validator_registration_emits_correct_event() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -808,7 +821,7 @@ fn validator_registration_emits_correct_event() {
 #[test]
 fn validator_unregistration_emits_correct_event() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -871,7 +884,7 @@ fn validator_unregistration_emits_correct_event() {
 #[test]
 fn validator_staking_emits_correct_event() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
@@ -996,8 +1009,8 @@ fn validator_staking_emits_correct_event() {
 #[test]
 fn validator_unstake_emits_correct_events() {
     // Arrange
-    let initial_epoch = 5u64;
-    let num_unstake_epochs = 1u64;
+    let initial_epoch = Epoch::of(5);
+    let num_unstake_epochs = 1;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1039,7 +1052,7 @@ fn validator_unstake_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch((initial_epoch + 1 + num_unstake_epochs) as u32);
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs));
 
     // Assert
     {
@@ -1153,8 +1166,8 @@ fn validator_unstake_emits_correct_events() {
 #[test]
 fn validator_claim_xrd_emits_correct_events() {
     // Arrange
-    let initial_epoch = 5u64;
-    let num_unstake_epochs = 1u64;
+    let initial_epoch = Epoch::of(5);
+    let num_unstake_epochs = 1;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1194,7 +1207,7 @@ fn validator_claim_xrd_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch((initial_epoch + 1 + num_unstake_epochs) as u32);
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1299,7 +1312,7 @@ fn validator_claim_xrd_emits_correct_events() {
 #[test]
 fn validator_update_stake_delegation_status_emits_correct_event() {
     // Arrange
-    let initial_epoch = 5u64;
+    let initial_epoch = Epoch::of(5);
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),

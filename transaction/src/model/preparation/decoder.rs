@@ -1,4 +1,5 @@
-use super::*;
+use crate::internal_prelude::*;
+use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ValueType {
@@ -35,24 +36,6 @@ impl From<EncodeError> for PrepareError {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ConvertToPreparedError {
-    EncodeError(EncodeError),
-    PrepareError(PrepareError),
-}
-
-impl From<EncodeError> for ConvertToPreparedError {
-    fn from(value: EncodeError) -> Self {
-        Self::EncodeError(value)
-    }
-}
-
-impl From<PrepareError> for ConvertToPreparedError {
-    fn from(value: PrepareError) -> Self {
-        Self::PrepareError(value)
-    }
-}
-
 pub struct TransactionDecoder<'a>(ManifestDecoder<'a>);
 
 impl<'a> TransactionDecoder<'a> {
@@ -71,7 +54,14 @@ impl<'a> TransactionDecoder<'a> {
         Ok(())
     }
 
-    pub fn read_enum_header(
+    pub fn read_enum_header(&mut self) -> Result<(u8, usize), PrepareError> {
+        self.0.read_and_check_value_kind(ValueKind::Enum)?;
+        let discriminator = self.0.read_discriminator()?;
+        let length = self.0.read_size()?;
+        Ok((discriminator, length))
+    }
+
+    pub fn read_expected_enum_variant_header(
         &mut self,
         expected_discriminator: u8,
         length: usize,
