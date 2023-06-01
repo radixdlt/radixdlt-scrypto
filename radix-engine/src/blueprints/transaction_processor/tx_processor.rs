@@ -373,13 +373,25 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
-                InstructionV1::RecallResource { vault_id, amount } => {
+                InstructionV1::CallDirectVaultMethod {
+                    vault_id,
+                    method_name,
+                    args,
+                } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
+
                     let rtn = api.call_method_advanced(
                         vault_id.as_node_id(),
                         true,
                         ObjectModuleId::Main,
-                        VAULT_RECALL_IDENT,
-                        scrypto_encode(&VaultRecallInput { amount }).unwrap(),
+                        method_name.as_str(),
+                        scrypto_encode(&scrypto_value).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();

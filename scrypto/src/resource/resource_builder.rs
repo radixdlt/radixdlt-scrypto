@@ -269,6 +269,62 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
         self.add_auth(Recall, method_auth, mutability.into())
     }
 
+    /// Sets the resource to have freezeable.
+    ///
+    /// * The first parameter is the access rule which allows freezing of the vault.
+    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    ///
+    /// ### Examples
+    ///
+    /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
+    /// # let resource_address = RADIX_TOKEN;
+    /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
+    /// ResourceBuilder::new_fungible()
+    ///    .freezeable(rule!(require(resource_address)), LOCKED);
+    ///
+    /// # let resource_address = RADIX_TOKEN;
+    /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
+    /// ResourceBuilder::new_fungible()
+    ///    .freezeable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    /// ```
+    fn freezeable<R: Into<AccessRule>>(
+        self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self::OutputBuilder {
+        self.add_auth(Freeze, method_auth, mutability.into())
+    }
+
+    /// Sets the resource to have unfreezeable vaults.
+    ///
+    /// * The first parameter is the access rule which allows unfreezing of the vault.
+    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    ///
+    /// ### Examples
+    ///
+    /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
+    /// # let resource_address = RADIX_TOKEN;
+    /// // Sets the resource to be unfreezeable with a proof of a specific resource, and this is locked forever.
+    /// ResourceBuilder::new_fungible()
+    ///    .unfreezeable(rule!(require(resource_address)), LOCKED);
+    ///
+    /// # let resource_address = RADIX_TOKEN;
+    /// // Sets the resource to not be unfreezeable, but this is can be changed in future by the second rule
+    /// ResourceBuilder::new_fungible()
+    ///    .unfreezeable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    /// ```
+    fn unfreezeable<R: Into<AccessRule>>(
+        self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self::OutputBuilder {
+        self.add_auth(Unfreeze, method_auth, mutability.into())
+    }
+
     /// Sets the resource to not be freely withdrawable from a vault.
     ///
     /// * The first parameter is the access rule which allows withdrawing from a vault.

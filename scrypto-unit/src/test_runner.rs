@@ -999,12 +999,16 @@ impl TestRunner {
         ResourceAddress,
         ResourceAddress,
         ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
     ) {
         let mint_auth = self.create_non_fungible_resource(account);
         let burn_auth = self.create_non_fungible_resource(account);
         let withdraw_auth = self.create_non_fungible_resource(account);
         let recall_auth = self.create_non_fungible_resource(account);
         let update_metadata_auth = self.create_non_fungible_resource(account);
+        let freeze_auth = self.create_non_fungible_resource(account);
+        let unfreeze_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
         let mut access_rules = BTreeMap::new();
@@ -1044,6 +1048,20 @@ impl TestRunner {
             ),
         );
         access_rules.insert(
+            Freeze,
+            (
+                rule!(require(freeze_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            Unfreeze,
+            (
+                rule!(require(unfreeze_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
             Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
@@ -1057,8 +1075,21 @@ impl TestRunner {
             withdraw_auth,
             recall_auth,
             update_metadata_auth,
+            freeze_auth,
+            unfreeze_auth,
             admin_auth,
         )
+    }
+
+    pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
+        access_rules.insert(Unfreeze, (rule!(allow_all), LOCKED));
+
+        self.create_fungible_resource_and_deposit(access_rules, account)
     }
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {

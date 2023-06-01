@@ -1,4 +1,4 @@
-use crate::modules::{AccessRules, Attachable};
+use crate::modules::{AccessRules, Attachable, Metadata};
 use crate::prelude::Attached;
 use radix_engine_common::math::Decimal;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
@@ -17,6 +17,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::prelude::Royalty;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -38,6 +39,14 @@ impl Runtime {
 
     pub fn access_rules() -> Attached<'static, AccessRules> {
         Attached::new(AccessRules::self_attached())
+    }
+
+    pub fn metadata() -> Attached<'static, Metadata> {
+        Attached::new(Metadata::self_attached())
+    }
+
+    pub fn royalty() -> Attached<'static, Royalty> {
+        Attached::new(Royalty::self_attached())
     }
 
     /// Returns the running entity.
