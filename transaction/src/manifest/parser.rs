@@ -57,7 +57,7 @@ pub enum InstructionIdent {
     // ==============
     // Call direct vault method aliases
     // ==============
-    RecallResource,
+    RecallVault,
     FreezeVault,
     UnfreezeVault,
 
@@ -146,7 +146,7 @@ impl InstructionIdent {
             // ==============
             // Call direct vault method aliases
             // ==============
-            "RECALL_RESOURCE" => InstructionIdent::RecallResource,
+            "RECALL_VAULT" => InstructionIdent::RecallVault,
             "FREEZE_VAULT" => InstructionIdent::FreezeVault,
             "UNFREEZE_VAULT" => InstructionIdent::UnfreezeVault,
 
@@ -562,7 +562,7 @@ impl Parser {
             InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
 
             /* Call direct vault method aliases */
-            InstructionIdent::RecallResource => Instruction::RecallResource {
+            InstructionIdent::RecallVault => Instruction::RecallVault {
                 vault_id: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

@@ -525,13 +525,11 @@ where
         }
 
         /* direct vault method aliases */
-        ast::Instruction::RecallResource { vault_id, args } => {
-            InstructionV1::CallDirectVaultMethod {
-                vault_id: generate_local_address(vault_id, bech32_decoder)?,
-                method_name: VAULT_RECALL_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
-            }
-        }
+        ast::Instruction::RecallVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
+            vault_id: generate_local_address(vault_id, bech32_decoder)?,
+            method_name: VAULT_RECALL_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
         ast::Instruction::FreezeVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
             vault_id: generate_local_address(vault_id, bech32_decoder)?,
             method_name: VAULT_FREEZE_IDENT.to_string(),

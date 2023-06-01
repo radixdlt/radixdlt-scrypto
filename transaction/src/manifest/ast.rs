@@ -139,7 +139,7 @@ pub enum Instruction {
     DropAllProofs,
 
     /* Call direct vault method aliases */
-    RecallResource {
+    RecallVault {
         vault_id: Value,
         args: Vec<Value>,
     },
