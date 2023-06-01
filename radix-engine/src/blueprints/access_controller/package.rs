@@ -416,7 +416,7 @@ impl AccessControllerNativePackage {
             SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
             SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
             SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => ["recovery"];
+            SchemaMethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
             SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
             SchemaMethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
@@ -446,6 +446,9 @@ impl AccessControllerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema,
+                    dependencies: btreeset!(
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    ),
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 }

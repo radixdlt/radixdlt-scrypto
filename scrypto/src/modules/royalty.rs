@@ -15,6 +15,7 @@ use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::RoyaltyConfig;
 use scrypto::modules::Attachable;
+use sbor::rust::string::String;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Royalty(pub ModuleHandle);

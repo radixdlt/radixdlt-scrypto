@@ -1,3 +1,4 @@
+use radix_engine_common::types::{Epoch, Round};
 use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 use radix_engine_interface::time::UtcDateTime;
 use scrypto_unit::*;
@@ -7,7 +8,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
     // Arrange
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
-            1,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
@@ -22,7 +23,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
 
     // Act
     test_runner
-        .advance_to_round_at_timestamp(1, epoch_milli)
+        .advance_to_round_at_timestamp(Round::of(1), epoch_milli)
         .expect_commit_success();
 
     // Assert
@@ -39,14 +40,14 @@ fn advancing_round_changes_internal_milli_timestamp() {
     // Arrange
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
-            1,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
     let epoch_milli = 123456789;
 
     // Act
-    test_runner.advance_to_round_at_timestamp(1, epoch_milli);
+    test_runner.advance_to_round_at_timestamp(Round::of(1), epoch_milli);
 
     // Assert
     assert_eq!(test_runner.get_current_proposer_timestamp_ms(), epoch_milli);

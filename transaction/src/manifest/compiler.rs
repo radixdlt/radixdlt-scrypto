@@ -1,11 +1,7 @@
-use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::network::NetworkDefinition;
-
-use sbor::rust::collections::BTreeMap;
-
 use crate::builder::TransactionManifestV1;
 use crate::manifest::*;
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::network::NetworkDefinition;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompileError {
@@ -14,21 +10,20 @@ pub enum CompileError {
     GeneratorError(generator::GeneratorError),
 }
 
-pub fn compile(
+pub fn compile<B>(
     s: &str,
     network: &NetworkDefinition,
-    blobs: Vec<Vec<u8>>,
-) -> Result<TransactionManifestV1, CompileError> {
+    blobs: B,
+) -> Result<TransactionManifestV1, CompileError>
+where
+    B: IsBlobProvider,
+{
     let bech32_decoder = Bech32Decoder::new(network);
 
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
     let instructions = parser::Parser::new(tokens)
         .parse_manifest()
         .map_err(CompileError::ParserError)?;
-    let mut blobs_by_hash = BTreeMap::new();
-    for blob in blobs {
-        blobs_by_hash.insert(hash(&blob), blob);
-    }
-    generator::generate_manifest(&instructions, &bech32_decoder, blobs_by_hash)
+    generator::generate_manifest(&instructions, &bech32_decoder, blobs)
         .map_err(CompileError::GeneratorError)
 }

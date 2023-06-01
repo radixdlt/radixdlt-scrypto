@@ -21,17 +21,33 @@ impl Hash {
     }
 }
 
-pub trait IsHash: AsRef<[u8]> + Sized {
-    fn into_bytes(self) -> [u8; Hash::LENGTH];
+pub trait IsHash: AsRef<[u8]> + Sized + From<Hash> + Into<Hash> + AsRef<Hash> {
+    fn into_bytes(self) -> [u8; Hash::LENGTH] {
+        self.into_hash().0
+    }
+
+    fn as_bytes(&self) -> &[u8; Hash::LENGTH] {
+        &<Self as AsRef<Hash>>::as_ref(self).0
+    }
+
+    fn as_slice(&self) -> &[u8] {
+        &<Self as AsRef<Hash>>::as_ref(self).0
+    }
 
     fn into_hash(self) -> Hash {
-        Hash(self.into_bytes())
+        self.into()
+    }
+
+    fn from_hash(hash: Hash) -> Self {
+        hash.into()
     }
 }
 
-impl IsHash for Hash {
-    fn into_bytes(self) -> [u8; Hash::LENGTH] {
-        self.0
+impl IsHash for Hash {}
+
+impl AsRef<Hash> for Hash {
+    fn as_ref(&self) -> &Hash {
+        self
     }
 }
 
@@ -117,6 +133,48 @@ impl fmt::Debug for Hash {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }
+}
+
+#[macro_export]
+macro_rules! define_wrapped_hash {
+    ($(#[$docs:meta])* $name:ident) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+        #[sbor(transparent)]
+        $(#[$docs])*
+        pub struct $name(pub Hash);
+
+        impl AsRef<[u8]> for $name {
+            fn as_ref(&self) -> &[u8] {
+                self.0.as_ref()
+            }
+        }
+
+        impl AsRef<Hash> for $name {
+            fn as_ref(&self) -> &Hash {
+                &self.0
+            }
+        }
+
+        impl From<Hash> for $name {
+            fn from(value: Hash) -> Self {
+                Self(value)
+            }
+        }
+
+        impl From<$name> for Hash {
+            fn from(value: $name) -> Self {
+                value.0
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "{}", &self.0)
+            }
+        }
+
+        impl IsHash for $name {}
+    };
 }
 
 #[cfg(test)]

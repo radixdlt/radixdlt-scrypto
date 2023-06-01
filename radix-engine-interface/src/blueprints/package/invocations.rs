@@ -61,8 +61,6 @@ pub struct PackagePublishNativeInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub schema: PackageSchema,
-    pub dependent_resources: Vec<ResourceAddress>,
-    pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub package_access_rules: BTreeMap<FnKey, AccessRule>,
     pub default_package_access_rule: AccessRule,

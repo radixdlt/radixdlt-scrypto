@@ -37,6 +37,12 @@ impl From<ResourceAddress> for ResourceManager {
     }
 }
 
+impl Into<GlobalAddress> for ResourceManager {
+    fn into(self) -> GlobalAddress {
+        GlobalAddress::new_or_panic(self.0 .0 .0.as_node_id().0)
+    }
+}
+
 impl Deref for ResourceManager {
     type Target = Global<ResourceManagerStub>;
 
@@ -46,6 +52,13 @@ impl Deref for ResourceManager {
 }
 
 impl ResourceManager {
+    pub const fn from_address(address: ResourceAddress) -> Self {
+        let stub = ResourceManagerStub(ObjectStubHandle::Global(GlobalAddress::new_or_panic(
+            address.into_node_id().0,
+        )));
+        Self(Global(stub))
+    }
+
     pub fn resource_address(&self) -> ResourceAddress {
         ResourceAddress::new_or_panic(self.0 .0 .0.as_node_id().0.clone())
     }

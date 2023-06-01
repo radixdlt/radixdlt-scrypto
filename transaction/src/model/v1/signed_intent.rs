@@ -6,25 +6,18 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SignedIntentV1 {
     pub intent: IntentV1,
     pub intent_signatures: IntentSignaturesV1,
 }
 
-impl TransactionPayloadEncode for SignedIntentV1 {
-    type EncodablePayload<'a> =
-        SborFixedEnumVariant<{ TransactionDiscriminator::V1SignedIntent as u8 }, &'a Self>;
-
+impl TransactionPayload for SignedIntentV1 {
+    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1SignedIntent as u8 }, Self>;
     type Prepared = PreparedSignedIntentV1;
-
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
-        SborFixedEnumVariant::new(self)
-    }
+    type Raw = RawSignedIntent;
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedSignedIntentV1 {
     pub intent: PreparedIntentV1,
@@ -55,6 +48,8 @@ impl TransactionFullChildPreparable for PreparedSignedIntentV1 {
 }
 
 impl TransactionPayloadPreparable for PreparedSignedIntentV1 {
+    type Raw = RawSignedIntent;
+
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
         let ((intent, intent_signatures), summary) =

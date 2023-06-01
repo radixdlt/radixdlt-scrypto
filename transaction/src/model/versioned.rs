@@ -1,4 +1,3 @@
-use super::v1::*;
 use crate::internal_prelude::*;
 
 //=============================================================================
@@ -16,7 +15,7 @@ pub enum TransactionDiscriminator {
     V1SignedIntent = V1_SIGNED_INTENT,
     V1Notarized = V1_NOTARIZED_TRANSACTION,
     V1System = V1_SYSTEM_TRANSACTION,
-    V1Consensus = V1_CONSENSUS_TRANSACTION,
+    V1RoundUpdate = V1_ROUND_UPDATE_TRANSACTION,
     V1Preview = V1_PREVIEW_TRANSACTION,
     V1Ledger = V1_LEDGER_TRANSACTION,
 }
@@ -25,38 +24,9 @@ const V1_INTENT: u8 = 1;
 const V1_SIGNED_INTENT: u8 = 2;
 const V1_NOTARIZED_TRANSACTION: u8 = 3;
 const V1_SYSTEM_TRANSACTION: u8 = 4;
-const V1_CONSENSUS_TRANSACTION: u8 = 5;
+const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
 const V1_PREVIEW_TRANSACTION: u8 = 6;
 const V1_LEDGER_TRANSACTION: u8 = 7;
-
-pub trait TransactionPayloadEncode {
-    type EncodablePayload<'a>: ManifestEncode + ManifestCategorize
-    where
-        Self: 'a;
-    type Prepared: TransactionPayloadPreparable;
-
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a>;
-
-    fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&self.as_payload())
-    }
-
-    fn prepare(&self) -> Result<Self::Prepared, ConvertToPreparedError> {
-        Ok(Self::Prepared::prepare_from_payload(
-            &self.to_payload_bytes()?,
-        )?)
-    }
-}
-
-pub trait TransactionPartialEncode: ManifestEncode {
-    type Prepared: TransactionFullChildPreparable;
-
-    fn prepare_partial(&self) -> Result<Self::Prepared, ConvertToPreparedError> {
-        Ok(Self::Prepared::prepare_as_full_body_child_from_payload(
-            &manifest_encode(self)?,
-        )?)
-    }
-}
 
 // TODO - change this to use #[flatten] when REP-84 is out
 /// An enum of a variety of different transaction payload types
@@ -116,8 +86,8 @@ mod tests {
         //===================
         let header_v1 = TransactionHeaderV1 {
             network_id: network.id,
-            start_epoch_inclusive: 1,
-            end_epoch_exclusive: 5,
+            start_epoch_inclusive: Epoch::of(1),
+            end_epoch_exclusive: Epoch::of(5),
             nonce: 0,
             notary_public_key: notary_private_key.public_key().into(),
             notary_is_signatory: false,
@@ -169,6 +139,7 @@ mod tests {
         ));
 
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
+        IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
         let intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
         assert_eq!(
@@ -189,11 +160,11 @@ mod tests {
 
         assert_eq!(
             intent_hash.to_string(),
-            "6ec1aad83ad0796bf7ae2d01ca6981c166983e89dc5e7a4158abac892a191cc3"
+            "97bd5220ec8c665171321518732ed6885ac7c0e57ac2c4d1def39fa343264cb6"
         );
         assert_eq!(
             hex::encode(intent_payload_bytes),
-            "4d220104210707f2090100000009050000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000800002022011200202002070400010203070205062100"
+            "4d220104210707f20a01000000000000000a05000000000000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000800002022011200202002070400010203070205062100"
         );
 
         //===================
@@ -226,6 +197,8 @@ mod tests {
         ));
 
         let signed_intent_payload_bytes = signed_intent_v1.to_payload_bytes().unwrap();
+        SignedIntentV1::from_payload_bytes(&signed_intent_payload_bytes)
+            .expect("SignedIntent can be decoded");
         let signed_intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&signed_intent_payload_bytes).unwrap();
         assert_eq!(
@@ -248,11 +221,11 @@ mod tests {
 
         assert_eq!(
             signed_intent_hash.to_string(),
-            "05840aa1b54235bf9fae522578497f554d202ab7019813ea97009d5f96f51291"
+            "be2f0822a6a7e810374b2a7e0ebae39fb106a0374e8f9d2e4c6660c183236e2b"
         );
         assert_eq!(
             hex::encode(signed_intent_payload_bytes),
-            "4d2202022104210707f2090100000009050000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b010008000020220112002020020704000102030702050621002022020001210120074100821f54ad0e11d08e46debae1167d4181f6343ba5a431a45dd3b66a9e9c873ffa22870316f53cd1aed1b6ea4d29f8424d185b5d2d6202e73fdd8b183eec5ef9db01022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe267421012007402506c9295fa7210554d16bfdb4b0f22ab979c0148c505431d634a4aa9acc7758e25bcd8914773599cb70ffbc59d40a567b54715f63656f2d017ea8bf371bf500"
+            "4d2202022104210707f20a01000000000000000a05000000000000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000800002022011200202002070400010203070205062100202202000121012007410150a8c70f4ef6e6523f80cbe0279f99cd1e6ad3bb8211438e196316918e01edec607451510a182367dc10b3c37eb76666d62f089459e9bae0f24e6f3bc36865aa01022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674210120074082b465bf468ab9b279eede62db22eab2b2d0fc204514c94986a68d1727d16de0d10a019f50384d4f36b0bb57daeb1c713e0d099e1d977142b139bd85e6f7f90f"
         );
 
         //======================
@@ -283,6 +256,8 @@ mod tests {
 
         let notarized_transaction_payload_bytes =
             notarized_transaction_v1.to_payload_bytes().unwrap();
+        NotarizedTransactionV1::from_payload_bytes(&notarized_transaction_payload_bytes)
+            .expect("NotarizedTransaction can be decoded");
         let notarized_transaction_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&notarized_transaction_payload_bytes)
                 .unwrap();
@@ -311,11 +286,11 @@ mod tests {
 
         assert_eq!(
             notarized_transaction_hash.to_string(),
-            "2a384e0817104e4dd3e566339cccd445c400459e0779dba60a3dd9a9f8564082"
+            "9dd0f5558739fa0d5d7b08691930117d3108eba62ec2941453f1b41cb06ec5c6"
         );
         assert_eq!(
             hex::encode(notarized_transaction_payload_bytes),
-            "4d22030221022104210707f2090100000009050000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b010008000020220112002020020704000102030702050621002022020001210120074100821f54ad0e11d08e46debae1167d4181f6343ba5a431a45dd3b66a9e9c873ffa22870316f53cd1aed1b6ea4d29f8424d185b5d2d6202e73fdd8b183eec5ef9db01022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe267421012007402506c9295fa7210554d16bfdb4b0f22ab979c0148c505431d634a4aa9acc7758e25bcd8914773599cb70ffbc59d40a567b54715f63656f2d017ea8bf371bf5002201012101200740eb907630079ab07da8598742cc3ed1c3831f02a3e8b5985473a441bdea17ac7e983584410f4c67ffe30ea840cc88f7948fa053346fe6cf0cf1af70373a848608"
+            "4d22030221022104210707f20a01000000000000000a05000000000000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000800002022011200202002070400010203070205062100202202000121012007410150a8c70f4ef6e6523f80cbe0279f99cd1e6ad3bb8211438e196316918e01edec607451510a182367dc10b3c37eb76666d62f089459e9bae0f24e6f3bc36865aa01022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674210120074082b465bf468ab9b279eede62db22eab2b2d0fc204514c94986a68d1727d16de0d10a019f50384d4f36b0bb57daeb1c713e0d099e1d977142b139bd85e6f7f90f2201012101200740d186afecd1e608de3a54c0fda881c43d00d2368c5862c740478872547947f9679bf2a1b85fe2729786078ae2053c2e756ee5a46a7e58aff9a7b589facbbec209"
         );
     }
 
@@ -370,6 +345,8 @@ mod tests {
         ));
 
         let system_transaction_payload_bytes = system_transaction_v1.to_payload_bytes().unwrap();
+        SystemTransactionV1::from_payload_bytes(&system_transaction_payload_bytes)
+            .expect("SystemTransaction can be decoded");
         let system_transaction_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&system_transaction_payload_bytes)
                 .unwrap();

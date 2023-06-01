@@ -11,7 +11,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     // Arrange
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
-            1,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
@@ -27,7 +27,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
             to_manifest_value(&ConsensusManagerNextRoundInput::successful(
-                1,
+                Round::of(1),
                 0,
                 time_to_set_ms,
             )),
@@ -77,7 +77,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
     // Arrange
     let mut test_runner = TestRunner::builder()
         .with_custom_genesis(CustomGenesis::default(
-            1,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
@@ -90,7 +90,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
             to_manifest_value(&ConsensusManagerNextRoundInput::successful(
-                1,
+                Round::of(1),
                 0,
                 1669663688996,
             )),
