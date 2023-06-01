@@ -48,7 +48,7 @@ mod external_blueprint_caller {
             );
 
             let component_address = external_blueprint.create();
-            let mut target = ExternalComponentTarget::at(component_address);
+            let mut target: Global<ExternalComponentTarget> = component_address.into();
 
             assert!(
                 target.get_value_via_ref()
@@ -65,7 +65,7 @@ mod external_blueprint_caller {
 
         pub fn run_tests_with_external_component(&self, component_address: ComponentAddress) {
             // NB - These values should match those defined in ../../component/src/external_blueprint_target.rs
-            let mut target = ExternalComponentTarget::from(component_address);
+            let mut target: Global<ExternalComponentTarget> = component_address.into();
 
             assert!(
                 target.get_value_via_ref()

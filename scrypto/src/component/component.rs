@@ -26,6 +26,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
+use sbor::rust::ops::DerefMut;
 use sbor::rust::prelude::*;
 use sbor::*;
 use sbor::{
@@ -90,6 +91,12 @@ impl<C: HasStub> Deref for Owned<C> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<C: HasStub> DerefMut for Owned<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -325,6 +332,12 @@ impl<O: HasStub> Deref for Global<O> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<O: HasStub> DerefMut for Global<O> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

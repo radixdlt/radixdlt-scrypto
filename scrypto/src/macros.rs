@@ -320,7 +320,7 @@ macro_rules! external_blueprint_members {
 /// }
 ///
 /// external_component! {
-///     AccountInterface {
+///     Account {
 ///         fn deposit(&mut self, b: Bucket) -> DepositResult;
 ///         fn deposit_no_return(&mut self, b: Bucket);
 ///         fn read_balance(&self) -> Decimal;
@@ -328,7 +328,7 @@ macro_rules! external_blueprint_members {
 /// }
 ///
 /// fn bridge_to_existing_account(component_address: ComponentAddress) {
-///     let existing_account = AccountInterface::at(component_address);
+///     let existing_account: Global<Account> = component_address.into();
 ///     let balance = existing_account.read_balance();
 ///     // ...
 /// }
@@ -344,35 +344,30 @@ macro_rules! external_component {
             $($component_methods:tt)*
         }
     ) => {
-        #[derive(ScryptoSbor)]
+        #[derive(Copy, Clone)]
         struct $component_ident {
-            component_address: $crate::types::ComponentAddress,
+            pub handle: ::scrypto::component::ObjectStubHandle,
+        }
+
+        impl ::scrypto::component::ObjectStub for $component_ident {
+            fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
+                Self {
+                    handle
+                }
+            }
+            fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
+                &self.handle
+            }
+        }
+
+        impl HasStub for $component_ident {
+            type Stub = $component_ident;
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            fn at(component_address: $crate::types::ComponentAddress) -> Self {
-                Self {
-                    component_address,
-                }
-            }
-
             $crate::external_component_members!($($component_methods)*);
-        }
-
-        impl From<$crate::types::ComponentAddress> for $component_ident {
-            fn from(component_address: $crate::types::ComponentAddress) -> Self {
-                Self {
-                    component_address
-                }
-            }
-        }
-
-        impl From<$component_ident> for $crate::types::ComponentAddress {
-            fn from(a: $component_ident) -> $crate::types::ComponentAddress {
-                a.component_address
-            }
         }
     };
 }
@@ -385,11 +380,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) -> $method_output {
-            $crate::runtime::Runtime::call_method(
-                self.component_address,
-                stringify!($method_name),
-                scrypto_args!($($method_args),*)
-            )
+            self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_component_members!($($rest)*);
     };
@@ -398,11 +389,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) {
-            $crate::runtime::Runtime::call_method(
-                self.component_address,
-                stringify!($method_name),
-                scrypto_args!($($method_args),*)
-            )
+            self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_component_members!($($rest)*);
     };
@@ -411,11 +398,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) -> $method_output {
-            $crate::runtime::Runtime::call_method(
-                self.component_address,
-                stringify!($method_name),
-                scrypto_args!($($method_args),*)
-            )
+            self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_component_members!($($rest)*);
     };
@@ -424,11 +407,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) {
-            $crate::runtime::Runtime::call_method(
-                self.component_address,
-                stringify!($method_name),
-                scrypto_args!($($method_args),*)
-            )
+            self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_component_members!($($rest)*);
     };

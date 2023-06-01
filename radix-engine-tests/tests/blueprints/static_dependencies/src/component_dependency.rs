@@ -1,5 +1,12 @@
 use scrypto::prelude::*;
 
+external_component! {
+    Faucet {
+        fn lock_fee(&self, amount: Decimal);
+    }
+}
+
+/*
 impl HasStub for Faucet {
     type Stub = Faucet;
 }
@@ -25,6 +32,7 @@ impl Faucet {
         self.call_raw("lock_fee", scrypto_args!(amount))
     }
 }
+ */
 
 /*
 impl HasTypeInfo for Faucet {
@@ -47,7 +55,6 @@ mod faucet_call {
             let amount: Decimal = 10.into();
             let faucet: Global<Faucet> = FAUCET_ADDRESS.into();
             faucet.lock_fee(amount);
-            //Runtime::call_method(FAUCET_ADDRESS, "lock_fee", scrypto_args!(amount))
         }
     }
 }
