@@ -1,4 +1,4 @@
-use super::*;
+use crate::internal_prelude::*;
 use radix_engine_constants::*;
 
 pub enum ConcatenatedDigest {}
@@ -165,7 +165,7 @@ macro_rules! prepare_tuple {
             #[allow(unused_mut)]
             fn prepare_into_concatenated_digest(decoder: &mut TransactionDecoder, mut accumulator: HashAccumulator, expected_discriminator: u8) -> Result<(Self, Summary), PrepareError> {
                 decoder.track_stack_depth_increase()?;
-                decoder.read_enum_header(expected_discriminator, $n)?;
+                decoder.read_expected_enum_variant_header(expected_discriminator, $n)?;
 
                 // NOTE: We purposefully don't take the effective_length from the size of the SBOR type header
                 // This is because the SBOR value header isn't included in the hash...

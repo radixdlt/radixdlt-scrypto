@@ -158,6 +158,7 @@ impl PoolNativePackage {
                 event_schema,
                 method_auth_template,
                 outer_method_auth_template: btreemap!(),
+                dependencies: btreeset!(),
             }
         };
 
@@ -299,6 +300,7 @@ impl PoolNativePackage {
                 event_schema,
                 method_auth_template,
                 outer_method_auth_template: btreemap!(),
+                dependencies: btreeset!(),
             }
         };
 

@@ -1,4 +1,5 @@
-use super::*;
+use crate::internal_prelude::*;
+use sbor::*;
 
 /// For use where the value is:
 /// * Serialized as a full SBOR body (with its value kind prefix)

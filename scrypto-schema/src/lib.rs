@@ -8,7 +8,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use radix_engine_common::prelude::replace_self_package_address;
-use radix_engine_common::types::{PackageAddress, PartitionOffset};
+use radix_engine_common::types::{GlobalAddress, PackageAddress, PartitionOffset};
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -110,6 +110,7 @@ pub struct BlueprintSchema {
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 
+    pub dependencies: BTreeSet<GlobalAddress>,
     // TODO: Move out of schema
     pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
     pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
@@ -204,6 +205,7 @@ impl Default for BlueprintSchema {
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
+            dependencies: BTreeSet::default(),
             method_auth_template: BTreeMap::default(),
             outer_method_auth_template: BTreeMap::default(),
         }
@@ -224,6 +226,7 @@ pub struct IndexedBlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    pub dependencies: BTreeSet<GlobalAddress>,
 
     pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
     pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
@@ -253,6 +256,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
+            dependencies: schema.dependencies,
             method_permissions_instance: schema.method_auth_template,
             outer_method_permissions_instance: schema.outer_method_auth_template,
         }

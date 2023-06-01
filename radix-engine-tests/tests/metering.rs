@@ -70,7 +70,7 @@ fn test_basic_transfer() {
         + 6031 /* DropLock */
         + 1680 /* DropNode */
         + 1140299 /* Invoke */
-        + 399527 /* LockSubstate */
+        + 399746 /* LockSubstate */
         + 8456 /* ReadSubstate */
         + 65000 /* RunNative */
         + 7500 /* RunSystem */
@@ -96,7 +96,16 @@ fn test_radiswap() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
-        btreemap!(),
+        btreemap!(
+            "Radiswap".to_owned() => {
+                let mut config = RoyaltyConfig::default();
+                config.set_rule("instantiate_pool", RoyaltyAmount::Xrd(5.into()));
+                config.set_rule("add_liquidity", RoyaltyAmount::Xrd(1.into()));
+                config.set_rule("remove_liquidity", RoyaltyAmount::Xrd(1.into()));
+                config.set_rule("swap", RoyaltyAmount::Xrd(2.into()));
+                config
+            }
+        ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -193,12 +202,13 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
+        commit_result.fee_summary.execution_cost_sum,
         2415 /* AllocateNodeId */
         + 3826 /* CreateNode */
         + 14171 /* DropLock */
         + 3570 /* DropNode */
         + 3783136 /* Invoke */
-        + 2586037 /* LockSubstate */
+        + 2588968 /* LockSubstate */
         + 19824 /* ReadSubstate */
         + 135000 /* RunNative */
         + 20000 /* RunSystem */
@@ -206,9 +216,13 @@ fn test_radiswap() {
         + 50000 /* TxBaseCost */
         + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2082, /* WriteSubstate */
-        commit_result.fee_summary.execution_cost_sum
+        + 2082 /* WriteSubstate */
     );
+    assert_eq!(
+        commit_result.fee_summary.total_execution_cost_xrd,
+        dec!("0.7362532"),
+    );
+    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
 
 #[test]
@@ -312,11 +326,11 @@ fn test_flash_loan() {
         + 22829 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 4394148 /* LockSubstate */
+        + 4395141 /* LockSubstate */
         + 32368 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1302320 /* RunWasm */
+        + 1302330 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
