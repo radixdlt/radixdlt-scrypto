@@ -117,11 +117,158 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // TODO: All of the checks that need to happen before the math.
+        let (mut substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
-        let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        // Checks
+        let amounts_of_resources_provided = {
+            // Checking that all of the buckets passed belong to this pool
+            let mut resource_bucket_amount_mapping = substate
+                .vaults
+                .keys()
+                .map(|resource_address| (*resource_address, Decimal::ZERO))
+                .collect::<BTreeMap<ResourceAddress, Decimal>>();
+            for bucket in buckets.iter() {
+                let bucket_resource_address = bucket.resource_address(api)?;
+                let bucket_amount = bucket.amount(api)?;
+                if let Some(value) =
+                    resource_bucket_amount_mapping.get_mut(&bucket_resource_address)
+                {
+                    *value += bucket_amount;
+                    Ok(())
+                } else {
+                    Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
+                        resource_address: bucket_resource_address,
+                    })
+                }?;
+            }
 
-        todo!()
+            // Checking that there are no buckets missing.
+            let resources_with_missing_buckets = resource_bucket_amount_mapping
+                .iter()
+                .filter_map(|(resource_address, amount_provided)| {
+                    if amount_provided.is_zero() {
+                        Some(*resource_address)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<BTreeSet<ResourceAddress>>();
+
+            if resources_with_missing_buckets.len() != 0 {
+                Err(MultiResourcePoolError::MissingOrEmptyBuckets {
+                    resource_addresses: resources_with_missing_buckets,
+                })
+            } else {
+                Ok(())
+            }?;
+
+            resource_bucket_amount_mapping
+        };
+
+        let pool_unit_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
+        // Case: New Pool
+        let (pool_units, change) = if pool_unit_total_supply.is_zero() {
+            let pool_units_to_mint = amounts_of_resources_provided
+                .values()
+                .copied()
+                .reduce(|acc, item| acc * item)
+                .and_then(|value| value.sqrt())
+                .unwrap();
+
+            for bucket in buckets {
+                let bucket_resource_address = bucket.resource_address(api)?;
+                substate
+                    .vaults
+                    .get_mut(&bucket_resource_address)
+                    .unwrap()
+                    .put(bucket, api)?;
+            }
+
+            (
+                substate
+                    .pool_unit_resource_manager
+                    .mint_fungible(pool_units_to_mint, api)?,
+                Vec::<Bucket>::new(),
+            )
+        } else {
+            // Check if any of the vaults are empty. If any of them are, then the pool is in an
+            // illegal state and it can not be contributed to.
+            for vault in substate.vaults.values() {
+                let amount = vault.amount(api)?;
+                if amount.is_zero() {
+                    return Err(MultiResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves.into());
+                }
+            }
+
+            let mut vaults_and_buckets = BTreeMap::<ResourceAddress, (Vault, Bucket)>::new();
+            for bucket in buckets.into_iter() {
+                let bucket_resource_address = bucket.resource_address(api)?;
+                let vault = substate.vaults.get(&bucket_resource_address).map_or(
+                    Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
+                        resource_address: bucket_resource_address,
+                    }),
+                    |vault| Ok(Vault(vault.0.clone())),
+                )?;
+
+                if let Some((_, store_bucket)) =
+                    vaults_and_buckets.get_mut(&bucket_resource_address)
+                {
+                    store_bucket.put(bucket, api)?;
+                } else {
+                    vaults_and_buckets.insert(bucket_resource_address, (vault, bucket));
+                };
+            }
+
+            let minimum_ratio = *vaults_and_buckets
+                .values()
+                .map(|(vault, bucket)| {
+                    vault.amount(api).and_then(|vault_amount| {
+                        bucket
+                            .amount(api)
+                            .map(|bucket_amount| bucket_amount / vault_amount)
+                    })
+                })
+                .collect::<Result<Vec<Decimal>, _>>()?
+                .iter()
+                .min()
+                .expect("Can't be empty");
+
+            let mut change = vec![];
+            for (resource_address, (mut vault, bucket)) in vaults_and_buckets.into_iter() {
+                let divisibility = ResourceManager(resource_address).resource_type(api)
+                    .map(|resource_type| {
+                        if let ResourceType::Fungible { divisibility } = resource_type {
+                            divisibility
+                        } else {
+                            panic!("Impossible case, we check for this in the constructor and have a test for this.")
+                        }
+                    })?;
+
+                let amount_to_contribute = {
+                    let amount_to_contribute = vault.amount(api)? * minimum_ratio;
+                    if divisibility == 18 {
+                        amount_to_contribute
+                    } else {
+                        amount_to_contribute
+                            .round(divisibility as u32, RoundingMode::TowardsNegativeInfinity)
+                    }
+                };
+
+                vault.put(bucket.take(amount_to_contribute, api)?, api)?;
+                change.push(bucket)
+            }
+
+            let pool_units_to_mint = pool_unit_total_supply * minimum_ratio;
+            (
+                substate
+                    .pool_unit_resource_manager
+                    .mint_fungible(pool_units_to_mint, api)?,
+                change,
+            )
+        };
+
+        api.field_lock_release(lock_handle)?;
+        Ok((pool_units, change))
     }
 
     pub fn redeem<Y>(

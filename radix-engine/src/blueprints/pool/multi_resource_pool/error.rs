@@ -2,6 +2,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use radix_engine_common::types::*;
 use radix_engine_common::ScryptoSbor;
+use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MultiResourcePoolError {
@@ -15,6 +16,9 @@ pub enum MultiResourcePoolError {
     },
     ResourceDoesNotBelongToPool {
         resource_address: ResourceAddress,
+    },
+    MissingOrEmptyBuckets {
+        resource_addresses: BTreeSet<ResourceAddress>,
     },
     PoolCreationWithSameResource,
     ContributionOfEmptyBucketError,
