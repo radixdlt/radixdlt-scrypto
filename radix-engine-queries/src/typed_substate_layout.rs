@@ -107,6 +107,7 @@ pub enum TypedMainModuleSubstateKey {
     AccountResourceDepositRuleIndexKey(ResourceAddress),
     SingleResourcePoolField(SingleResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
+    ManyResourcePoolField(ManyResourcePoolField),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -297,6 +298,9 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePoolField(
             TwoResourcePoolField::try_from(substate_key)?,
         ),
+        EntityType::GlobalManyResourcePool => TypedMainModuleSubstateKey::ManyResourcePoolField(
+            ManyResourcePoolField::try_from(substate_key)?,
+        ),
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
             let key = substate_key.for_map().ok_or(())?;
@@ -351,6 +355,7 @@ pub enum TypedMainModuleSubstateValue {
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
     SingleResourcePool(TypedSingleResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
+    ManyResourcePool(TypedManyResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
@@ -624,6 +629,13 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::TwoResourcePool(match offset {
                 TwoResourcePoolField::TwoResourcePool => {
                     TypedTwoResourcePoolFieldValue::TwoResourcePool(scrypto_decode(data)?)
+                }
+            })
+        }
+        TypedMainModuleSubstateKey::ManyResourcePoolField(offset) => {
+            TypedMainModuleSubstateValue::ManyResourcePool(match offset {
+                ManyResourcePoolField::ManyResourcePool => {
+                    TypedManyResourcePoolFieldValue::ManyResourcePool(scrypto_decode(data)?)
                 }
             })
         }
