@@ -42,7 +42,29 @@ pub trait HasTypeInfo {
     const GLOBAL_TYPE_NAME: &'static str;
 }
 
-pub struct Blueprint<C>(PhantomData<C>);
+pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
+
+impl<C: HasTypeInfo> Blueprint<C> {
+    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(
+            package_address,
+            C::BLUEPRINT_NAME,
+            function_name,
+            scrypto_encode(args).unwrap(),
+        )
+    }
+
+    pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(
+            package_address,
+            C::BLUEPRINT_NAME,
+            function_name,
+            args,
+        )
+    }
+}
 
 pub trait HasStub {
     type Stub: ObjectStub;

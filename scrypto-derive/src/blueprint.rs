@@ -577,8 +577,8 @@ fn generate_stubs(
     bp_ident: &Ident,
     items: &[ImplItem],
 ) -> Result<TokenStream> {
-    let bp_name = bp_ident.to_string();
     let mut functions = Vec::<ImplItem>::new();
+    let mut function_traits = Vec::<ImplItem>::new();
     let mut methods = Vec::<ImplItem>::new();
 
     for item in items {
@@ -627,24 +627,18 @@ fn generate_stubs(
                     };
 
                     if mutable.is_none() {
+                        function_traits.push(parse_quote! {
+                            fn #ident(#(#input_args: #input_types),*) -> #output;
+                        });
                         functions.push(parse_quote! {
                             fn #ident(#(#input_args: #input_types),*) -> #output {
-                                ::scrypto::runtime::Runtime::call_function(
-                                    ::scrypto::runtime::Runtime::package_address(),
-                                    #bp_name,
-                                    #name,
-                                    scrypto_args!(#(#input_args),*)
-                                )
+                                Self::call_function_raw(#name, scrypto_args!(#(#input_args),*))
                             }
                         });
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.call_raw(#name, scrypto_args!(
-                                    #(
-                                       #input_args
-                                    ),*
-                                ))
+                                self.call_raw(#name, scrypto_args!(#(#input_args),*))
                             }
                         });
                     }
@@ -682,10 +676,11 @@ fn generate_stubs(
         }
 
         pub trait #functions_ident {
-            #(#functions)*
+            #(#function_traits)*
         }
 
         impl #functions_ident for ::scrypto::component::Blueprint<#bp_ident> {
+            #(#functions)*
         }
     };
 
@@ -1007,12 +1002,14 @@ mod tests {
                     }
 
                     pub trait TestFunctions {
-                        fn y(i: u32) -> u32 {
-                            ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(i))
-                        }
+                        fn y(i: u32) -> u32;
                     }
 
-                    impl TestFunctions for ::scrypto::component::Blueprint<Test> {}
+                    impl TestFunctions for ::scrypto::component::Blueprint<Test> {
+                        fn y(i: u32) -> u32 {
+                            Self::call_function_raw("y", scrypto_args!(i))
+                        }
+                    }
                 }
             },
         );
