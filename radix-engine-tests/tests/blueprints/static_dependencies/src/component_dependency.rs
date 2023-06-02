@@ -19,6 +19,13 @@ mod faucet_call {
         }
     );
 
+    import_blueprint2!(
+        "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
+        Faucet {
+            fn lock_fee(&self, amount: Decimal);
+        }
+    );
+
     struct FaucetCall {}
 
     impl FaucetCall {

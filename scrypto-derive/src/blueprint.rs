@@ -1,9 +1,10 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use radix_engine_common::address::Bech32Decoder;
-use syn::parse::Parser;
+use syn::parse::{Parse, Parser, ParseStream};
 use syn::spanned::Spanned;
 use syn::*;
+use syn::token::{Brace, Comma};
 
 use crate::ast;
 
@@ -12,6 +13,56 @@ macro_rules! trace {
         #[cfg(feature = "trace")]
         println!($($arg),*);
     }};
+}
+
+pub struct ImportBlueprintFn {
+    pub sig: Signature,
+    pub semi_token: Token![;],
+}
+
+impl Parse for ImportBlueprintFn {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let sig = input.parse()?;
+        let semi_token = input.parse()?;
+        Ok(Self {
+            sig,
+            semi_token,
+        })
+    }
+}
+
+pub struct ImportBlueprint {
+    pub package: Expr,
+    pub comma0: Comma,
+    pub blueprint: Ident,
+    pub brace: Brace,
+    pub functions: Vec<ImportBlueprintFn>,
+}
+
+impl Parse for ImportBlueprint {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        let package = input.parse()?;
+        let comma0 = input.parse()?;
+        let blueprint = input.parse()?;
+        let brace = braced!(content in input);
+
+        let functions = {
+            let mut functions = Vec::new();
+            while content.peek(Token![fn]) {
+                functions.push(content.call(ImportBlueprintFn::parse)?)
+            }
+            functions
+        };
+
+        Ok(Self {
+            package,
+            comma0,
+            blueprint,
+            brace,
+            functions,
+        })
+    }
 }
 
 pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
@@ -169,6 +220,20 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         }
     };
+
+    {
+        let import_blueprint_index = macro_statements.iter().position(|item| {
+            item.mac
+                .path
+                .get_ident()
+                .unwrap()
+                .eq(&Ident::new("import_blueprint2", Span::call_site()))
+        });
+        if let Some(import_blueprint_index) = import_blueprint_index {
+            let import_macro = macro_statements.remove(import_blueprint_index);
+            let _import_blueprint: ImportBlueprint = import_macro.mac.parse_body()?;
+        }
+    }
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
