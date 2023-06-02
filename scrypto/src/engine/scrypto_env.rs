@@ -94,6 +94,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
+    fn attach_access_rules(
+        &mut self,
+        _node_id: &NodeId,
+        _access_rules_node_id: &NodeId,
+    ) -> Result<(), ClientApiError> {
+        todo!()
+    }
+
     fn preallocate_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let bytes = copy_buffer(unsafe { preallocate_global_address() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)

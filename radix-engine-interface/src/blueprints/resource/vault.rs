@@ -3,6 +3,8 @@ use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::data::scrypto::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -33,15 +35,6 @@ pub struct VaultTakeInput {
 
 pub type VaultTakeOutput = Bucket;
 
-pub const VAULT_RECALL_IDENT: &str = "recall";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultRecallInput {
-    pub amount: Decimal,
-}
-
-pub type VaultRecallOutput = Bucket;
-
 pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -64,6 +57,31 @@ pub struct VaultCreateProofOfAmountInput {
 }
 
 pub type VaultCreateProofOfAmountOutput = Proof;
+
+pub const VAULT_RECALL_IDENT: &str = "recall";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct VaultRecallInput {
+    pub amount: Decimal,
+}
+
+pub type VaultRecallOutput = Bucket;
+
+pub const VAULT_FREEZE_IDENT: &str = "freeze";
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct VaultFreezeInput {}
+
+pub type VaultFreezeOutput = ();
+
+pub const VAULT_UNFREEZE_IDENT: &str = "unfreeze";
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct VaultUnfreezeInput {}
+
+pub type VaultUnfreezeOutput = ();
 
 //========
 // Stub

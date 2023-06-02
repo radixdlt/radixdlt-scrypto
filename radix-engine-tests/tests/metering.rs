@@ -67,11 +67,11 @@ fn test_basic_transfer() {
         commit_result.fee_summary.execution_cost_sum,
         1104 /* AllocateNodeId */
         + 1744 /* CreateNode */
-        + 6031 /* DropLock */
+        + 6142 /* DropLock */
         + 1680 /* DropNode */
         + 1140299 /* Invoke */
-        + 399746 /* LockSubstate */
-        + 8456 /* ReadSubstate */
+        + 418345 /* LockSubstate */
+        + 8624 /* ReadSubstate */
         + 65000 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -203,24 +203,24 @@ fn test_radiswap() {
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
-        2415 /* AllocateNodeId */
-        + 3826 /* CreateNode */
-        + 14171 /* DropLock */
-        + 3570 /* DropNode */
-        + 3783136 /* Invoke */
-        + 2588968 /* LockSubstate */
-        + 19824 /* ReadSubstate */
-        + 135000 /* RunNative */
+        2553 /* AllocateNodeId */
+        + 4044 /* CreateNode */
+        + 14689 /* DropLock */
+        + 3780 /* DropNode */
+        + 3803738 /* Invoke */
+        + 2639105 /* LockSubstate */
+        + 20608 /* ReadSubstate */
+        + 137500 /* RunNative */
         + 20000 /* RunSystem */
         + 637865 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2082 /* WriteSubstate */
+        + 2123 /* WriteSubstate */
     );
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7362532"),
+        dec!("0.743768"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -323,14 +323,14 @@ fn test_flash_loan() {
         commit_result.fee_summary.execution_cost_sum,
         4002 /* AllocateNodeId */
         + 6322 /* CreateNode */
-        + 22829 /* DropLock */
+        + 23199 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 4395141 /* LockSubstate */
-        + 32368 /* ReadSubstate */
+        + 4421243 /* LockSubstate */
+        + 32928 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1302330 /* RunWasm */
+        + 1302270 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

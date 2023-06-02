@@ -84,6 +84,7 @@ impl ExecutionConfig {
     pub fn for_genesis_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
+            max_substate_reads_per_transaction: 50_000,
             ..Self::default()
         }
     }
