@@ -42,6 +42,15 @@ test_benchmark  \
     "sbor-tests \
     radix-engine-tests"
 
+echo "Checking fuzzer..."
+(
+    cd fuzz-tests;
+    # specifying empty package list, as fuzz-tests workspace has no packages
+    test_crates_features \
+        "" \
+        test_check_fuzzed_instruction_coverage
+)
+
 ./check_stack_usage.sh
 
 echo "Congrats! All tests passed."

@@ -13,6 +13,7 @@ pub struct HrpSet {
     consensus_manager: String,
     validator: String,
     access_controller: String,
+    pool: String,
     internal_vault: String,
     internal_account: String,
     internal_component: String,
@@ -40,6 +41,7 @@ impl HrpSet {
             EntityType::InternalAccount => &self.internal_account,
             EntityType::InternalGenericComponent => &self.internal_component,
             EntityType::InternalKeyValueStore => &self.internal_key_value_store,
+            EntityType::GlobalSingleResourcePool | EntityType::GlobalTwoResourcePool => &self.pool,
         }
     }
 }
@@ -56,6 +58,7 @@ impl From<&NetworkDefinition> for HrpSet {
             consensus_manager: format!("consensusmanager_{}", suffix),
             validator: format!("validator_{}", suffix),
             access_controller: format!("accesscontroller_{}", suffix),
+            pool: format!("pool_{}", suffix),
             internal_vault: format!("internal_vault_{}", suffix),
             internal_account: format!("internal_account_{}", suffix),
             internal_component: format!("internal_component_{}", suffix),

@@ -32,9 +32,9 @@ impl NonFungibleGlobalId {
         NonFungibleGlobalId::new(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE, local_id)
     }
 
-    pub fn global_caller_badge(global_caller: GlobalCaller) -> Self {
+    pub fn global_caller_badge<T: Into<GlobalCaller>>(global_caller: T) -> Self {
         // TODO: Is there a better way of ensuring that number of bytes is less than 64 over hashing?
-        let hashed = hash(scrypto_encode(&global_caller).unwrap()).to_vec();
+        let hashed = hash(scrypto_encode(&global_caller.into()).unwrap()).to_vec();
         let local_id = NonFungibleLocalId::bytes(hashed).unwrap();
         NonFungibleGlobalId::new(GLOBAL_CALLER_VIRTUAL_BADGE, local_id)
     }
