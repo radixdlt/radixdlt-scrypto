@@ -28,7 +28,7 @@ fn test_read() {
     // prepare database
     let data_index_vector = {
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
-        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT)
+        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT, false)
     };
 
     // reopen database
@@ -65,7 +65,7 @@ fn test_read() {
 
     // InMemory DB part
     let mut substate_db = SubstateStoreWithMetrics::new_inmem();
-    let data_index_vector = prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT);
+    let data_index_vector = prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT, false);
     run_read_test(&mut substate_db, &data_index_vector);
     // run read not found test
     run_read_not_found_test(&mut substate_db);

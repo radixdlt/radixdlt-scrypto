@@ -54,7 +54,9 @@ pub fn calculate_percent_to_max_points(
 }
 
 pub fn generate_commit_data(rng: &mut ThreadRng, value_size: usize) -> (DbPartitionKey, DbSortKey, IndexMap<DbSortKey, DatabaseUpdate>) {
-    let value = DatabaseUpdate::Set(vec![1; value_size]);
+    let mut value_data: DbSubstateValue = vec![0u8; value_size];
+    rng.fill(value_data.as_mut_slice());
+    let value = DatabaseUpdate::Set(value_data);
 
     let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
     rng.fill(&mut node_id_value);
@@ -80,6 +82,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     max_size: usize,
     step: usize,
     writes_count: usize,
+    random_size: bool,
 ) -> Vec<(DbPartitionKey, DbSortKey, usize)> {
     let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> =
         Vec::with_capacity(max_size);
@@ -91,20 +94,110 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     std::io::stdout().flush().ok();
     let mut rng = rand::thread_rng();
 
-    for size in (min_size..=max_size).step_by(step) {
-        let mut input_data = DatabaseUpdates::new();
-        for _ in 0..writes_count {
-            let (partition_key, sort_key, partition) = generate_commit_data(&mut rng, size);
+    if random_size {
+        println!("");
+        let batch_size = 1000;
+        for i in 0..writes_count / batch_size {
+            let mut input_data = DatabaseUpdates::with_capacity(batch_size);
+            for _ in 0..batch_size {
+                print!("\rRound {}/{}", i + 1, writes_count / batch_size );
+                std::io::stdout().flush().ok();
 
-            data_index_vector.push((partition_key.clone(), sort_key, size));
+                let size = rng.gen_range(min_size..=max_size);
 
-            input_data.insert(partition_key, partition);
+                let (partition_key, sort_key, partition) = generate_commit_data(&mut rng, size);
+
+                data_index_vector.push((partition_key.clone(), sort_key, size));
+
+                input_data.insert(partition_key, partition);
+            }
+            substate_db.commit(&input_data);
         }
-        substate_db.commit(&input_data);
+    } else {
+        for size in (min_size..=max_size).step_by(step) {
+            let mut input_data = DatabaseUpdates::new();
+            for _ in 0..writes_count {
+                let (partition_key, sort_key, partition) = generate_commit_data(&mut rng, size);
+
+                data_index_vector.push((partition_key.clone(), sort_key, size));
+
+                input_data.insert(partition_key, partition);
+            }
+            substate_db.commit(&input_data);
+        }
     }
     println!("  done");
 
     data_index_vector
+}
+
+pub fn export_one_graph(
+    caption: &str,
+    data: &Vec<(f32, f32)>,
+    output_png_file: &str,
+    original_data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // calculate axis max/min values
+    let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32;
+    let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32;
+    let y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32;
+    let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32;
+
+    // draw scatter plot
+    let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
+    root.fill(&WHITE)?;
+    root.margin(20, 20, 20, 20);
+
+    let mut scatter_ctx = ChartBuilder::on(&root)
+        .caption(caption, ("sans-serif", 20).into_font())
+        .x_label_area_size(40)
+        .y_label_area_size(80)
+        .margin(20)
+        .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+    scatter_ctx
+        .configure_mesh()
+        .x_desc("Size [bytes]")
+        .y_desc("Duration [microseconds]")
+        .axis_desc_style(("sans-serif", 16))
+        .draw()?;
+    // 1. draw all points
+    scatter_ctx
+        .draw_series(
+            data.iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?
+        .label(format!("Points (count: {})", data.len()))
+        .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+    scatter_ctx
+        .configure_series_labels()
+        .background_style(&WHITE)
+        .border_style(&BLACK)
+        .label_font(("sans-serif", 16))
+        .position(SeriesLabelPosition::UpperMiddle)
+        .draw()?;
+
+    root.present().expect("Unable to write result to file");
+
+    // print some informations
+    println!("Points count: {}", data.len());
+    println!(
+        "Distinct size point count: {}",
+        original_data.borrow().len()
+    );
+    println!(
+        "Points counts list (size, count): {:?}",
+        original_data
+            .borrow()
+            .iter()
+            .map(|(k, v)| (*k, v.len()))
+            .collect::<Vec<(usize, usize)>>()
+    );
+    println!(
+        "Points list (size, time[µs]): {:?}",
+        data
+    );
+
+    Ok(())
 }
 
 pub fn export_graph_and_print_summary(

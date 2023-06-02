@@ -4,6 +4,13 @@
 use super::common::*;
 use super::super::*;
 use super::*;
+use radix_engine_store_interface::{
+    db_key_mapper::*,
+    interface::{
+        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey,
+        DbSortKey, PartitionUpdates, SubstateDatabase,
+    },
+};
 use std::{io::Write, path::PathBuf};
 use rand::Rng;
 
@@ -21,7 +28,7 @@ fn test_commit() {
     // prepare database
     {
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
-        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT);
+        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT, false);
     }
 
     // reopen database and measure commit times
@@ -52,21 +59,66 @@ fn test_commit_merkle() {
     // prepare database
     {
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path.clone());
-        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT);
+        // 10000 substates of random size from 1B to 4MB under random partitions
+        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, 0, 10000, true); 
     }
 
     // reopen database and measure commit times
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path.clone());
 
-    let (rocksdb_data, rocksdb_output_data) = commit_test_internal(&mut substate_db);
+    println!("Commit test execution");
+    let mut rng = rand::thread_rng();
 
+    let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+    rng.fill(&mut node_id_value);
+    let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
+
+    let mut substate_key_value = [0u8; NodeId::LENGTH];
+    rng.fill(&mut substate_key_value);
+    let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
+        substate_key_value.into(),
+    ));
+
+    let value_size_max = 100;
+
+    for value_size in 1..=value_size_max {
+        print!("\rRound {}/{}", value_size, value_size_max );
+        std::io::stdout().flush().ok();
+
+        let mut input_data = DatabaseUpdates::new();
+
+        let mut value_data: DbSubstateValue = vec![0u8; value_size];
+        rng.fill(value_data.as_mut_slice());
+        let value = DatabaseUpdate::Set(value_data);
+
+        let mut partition = PartitionUpdates::new();
+        partition.insert(sort_key.clone(), value);
+
+        let partition_key =
+            SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(value_size as u8));
+
+        input_data.insert(partition_key, partition);
+
+        substate_db.commit(&input_data);
+    }
+    println!("");
+    // prepare output data
+    // drop_highest_and_lowest_value(&substate_db, 3);
+    // let rocksdb_output_data =
+    //     calculate_percent_to_max_points(&substate_db.commit_metrics, 95f32);
+
+    // prepare data for plot
+    let mut rocksdb_data = Vec::with_capacity(100000);
+    for (k, v) in substate_db.commit_metrics.borrow().iter() {
+        for i in v {
+            rocksdb_data.push((*k as f32, i.as_micros() as f32));
+        }
+    }
     // export results
-    export_graph_and_print_summary(
+    export_one_graph(
         "RocksDB (with Merkle tree) random commits",
         &rocksdb_data,
-        &rocksdb_output_data,
         "/tmp/scrypto_rocksdb_merkle_commit_1.png",
-        "95th percentile of commits",
         &substate_db.commit_metrics
     )
     .unwrap();
