@@ -783,6 +783,15 @@ impl TestRunner {
         )
     }
 
+    pub fn compile_and_publish_at_address<P: AsRef<Path>>(&mut self, package_dir: P, address: [u8; NodeId::LENGTH]) {
+        let (code, definition) = Compile::compile(package_dir);
+        self.publish_package_at_address(
+            code,
+            definition,
+            address
+        );
+    }
+
     pub fn compile_and_publish_retain_blueprints<
         P: AsRef<Path>,
         F: FnMut(&String, &mut BlueprintSchema) -> bool,

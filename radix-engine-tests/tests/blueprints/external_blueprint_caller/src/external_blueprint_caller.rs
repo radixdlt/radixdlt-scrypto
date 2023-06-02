@@ -27,6 +27,10 @@ external_component! {
 
 #[blueprint]
 mod external_blueprint_caller {
+    const TARGET_PACKAGE_ADDRESS: PackageAddress = PackageAddress::new_or_panic([
+        13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+    ]);
+
     struct ExternalBlueprintCaller {}
 
     impl ExternalBlueprintCaller {
@@ -37,9 +41,9 @@ mod external_blueprint_caller {
                 .globalize()
         }
 
-        pub fn run_tests_with_external_blueprint(&self, package_address: PackageAddress) {
+        pub fn run_tests_with_external_blueprint(&self) {
             let external_blueprint =
-                ExternalBlueprintTarget::at(package_address, "ExternalBlueprintTarget");
+                ExternalBlueprintTarget::at(TARGET_PACKAGE_ADDRESS, "ExternalBlueprintTarget");
 
             // NB - These values should match those defined in ../../component/src/external_blueprint_target.rs
             assert!(

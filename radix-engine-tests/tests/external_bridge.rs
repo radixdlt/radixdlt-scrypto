@@ -2,6 +2,10 @@ use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+const TARGET_PACKAGE_ADDRESS: [u8; NodeId::LENGTH] = [
+    13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+];
+
 /// This tests the external_blueprint! and external_component! macros
 #[test]
 fn test_external_bridges() {
@@ -10,7 +14,9 @@ fn test_external_bridges() {
 
     // Part 1 - Upload the target and caller packages
     // Note - we put them in separate packages so that we test that the package call is to an external package
-    let target_package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+    test_runner.compile_and_publish_at_address("./tests/blueprints/component", TARGET_PACKAGE_ADDRESS);
+    let target_package_address = PackageAddress::new_or_panic(TARGET_PACKAGE_ADDRESS);
+
     let caller_package_address =
         test_runner.compile_and_publish("./tests/blueprints/external_blueprint_caller");
 
@@ -50,7 +56,7 @@ fn test_external_bridges() {
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
-            manifest_args!(target_package_address),
+            manifest_args!(),
         )
         .build();
     let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
