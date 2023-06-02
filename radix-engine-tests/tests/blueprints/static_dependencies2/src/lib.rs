@@ -32,3 +32,16 @@ mod some_resource {
         }
     }
 }
+
+#[blueprint]
+mod some_package {
+    const SOME_PACKAGE: Package = package!("package_sim1p5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpwgs6ac");
+
+    struct SomePackage {}
+
+    impl SomePackage {
+        pub fn set_package_metadata() {
+            SOME_PACKAGE.metadata().set("key", "value".to_string());
+        }
+    }
+}

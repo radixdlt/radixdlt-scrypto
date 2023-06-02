@@ -13,7 +13,7 @@ use sbor::rust::prelude::*;
 pub type Package = Global<PackageStub>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct PackageStub(ObjectStubHandle);
+pub struct PackageStub(pub ObjectStubHandle);
 
 impl HasStub for PackageStub {
     type Stub = Self;

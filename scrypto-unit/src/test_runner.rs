@@ -726,7 +726,7 @@ impl TestRunner {
                         royalty_config: btreemap!(),
                         metadata: btreemap!(),
                         package_address: Some(address),
-                        owner_rule: OwnerRole::None,
+                        owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
                 }]),
                 blobs: BlobsV1 {

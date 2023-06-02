@@ -170,6 +170,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         // Bech32 decode constant dependencies
         for item in &mut const_statements {
             let ty = item.ty.as_ref();
+            let ident = item.ident.clone();
             let type_string = quote! { #ty }.to_string();
             if type_string.contains("ResourceAddress")
                 || type_string.contains("ComponentAddress")
@@ -191,7 +192,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         let tokens = &m.mac.tokens;
                         let lit_str: LitStr = parse_quote!( #tokens );
 
-                        //let value:  = quote! { #tokens }.to_string();
                         let (_hrp, _entity_type, address) =
                             Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
                                 .unwrap();
@@ -199,12 +199,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         let expr: Expr = parse_quote! {
                             #ty :: new_or_panic([ #(#address),* ])
                         };
-                        dependency_exprs.push(expr.clone());
-
                         item.expr = Box::new(expr);
                     }
-                    _ => {}
+                    _ => { }
                 }
+
+                let expr: Expr = parse_quote! { #ident };
+                dependency_exprs.push(expr);
             } else {
                 match item.expr.as_mut() {
                     Expr::Macro(m) => {
@@ -216,7 +217,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             let address = &global_component.address;
                             let lit_str: LitStr = parse_quote!( #address );
 
-                            //let value:  = quote! { #tokens }.to_string();
                             let (_hrp, _entity_type, address) =
                                 Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
                                     .unwrap();
@@ -236,7 +236,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             let address: Expr = m.mac.clone().parse_body()?;
                             let lit_str: LitStr = parse_quote!( #address );
 
-                            //let value:  = quote! { #tokens }.to_string();
                             let (_hrp, _entity_type, address) =
                                 Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
                                     .unwrap();
@@ -247,6 +246,23 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                             let expr = parse_quote! {
                                 ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                            };
+
+                            item.expr = Box::new(expr);
+                        } else if macro_ident.eq(&Ident::new("package", Span::call_site())) {
+                            let address: Expr = m.mac.clone().parse_body()?;
+                            let lit_str: LitStr = parse_quote!( #address );
+
+                            let (_hrp, _entity_type, address) =
+                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                    .unwrap();
+
+                            dependency_exprs.push(parse_quote! {
+                                PackageAddress :: new_or_panic([ #(#address),* ])
+                            });
+
+                            let expr = parse_quote! {
+                                Global(PackageStub(ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))))
                             };
 
                             item.expr = Box::new(expr);

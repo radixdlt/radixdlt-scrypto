@@ -191,3 +191,32 @@ fn static_resource_should_be_callable() {
     let output = result.outcome.expect_success();
     output[1].expect_return_value(&Decimal::from(10));
 }
+
+#[test]
+fn static_package_should_be_callable() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    test_runner.compile_and_publish_at_address(
+        "./tests/blueprints/static_dependencies",
+        PRE_ALLOCATED_PACKAGE,
+    );
+
+    // Act
+    let package_address2 = test_runner.compile_and_publish_retain_blueprints(
+        "./tests/blueprints/static_dependencies2",
+        |blueprint, _| blueprint.eq("SomePackage"),
+    );
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address2,
+            "SomePackage",
+            "set_package_metadata",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
