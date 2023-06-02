@@ -16,6 +16,8 @@ mod simple_fuzzer;
 mod fuzz_tx;
 use fuzz_tx::*;
 
+mod common;
+
 // Fuzzer entry points
 #[cfg(feature = "libfuzzer-sys")]
 fuzz_target!(|data: &[u8]| {

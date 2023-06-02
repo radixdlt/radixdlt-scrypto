@@ -110,13 +110,29 @@ fn test_radiswap() {
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
-    // Instantiate radiswap
+    // Instantiate Radiswap
     let btc = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
     let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
+    let component_address: ComponentAddress = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(account2, 10u32.into())
+                .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
+                .call_method(
+                    account2,
+                    "try_deposit_batch_or_abort",
+                    manifest_args!(ManifestExpression::EntireWorktop),
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+        )
+        .expect_commit(true)
+        .output(1);
+
+    // Contributing an initial amount to radiswap
     let btc_init_amount = Decimal::from(500_000);
     let eth_init_amount = Decimal::from(300_000);
-    let fee_amount = dec!("0.01");
-    let (component_address, _) = test_runner
+    test_runner
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(account2, 10u32.into())
@@ -124,19 +140,10 @@ fn test_radiswap() {
                 .withdraw_from_account(account2, eth, eth_init_amount)
                 .take_all_from_worktop(btc, |builder, bucket1| {
                     builder.take_all_from_worktop(eth, |builder, bucket2| {
-                        builder.call_function(
-                            package_address,
-                            "Radiswap",
-                            "instantiate_pool",
-                            manifest_args!(
-                                bucket1,
-                                bucket2,
-                                dec!("1000"),
-                                "LP_BTC_ETH",
-                                "LP token for BTC/ETH swap",
-                                "https://www.radiswap.com",
-                                fee_amount
-                            ),
+                        builder.call_method(
+                            component_address,
+                            "add_liquidity",
+                            manifest_args!(bucket1, bucket2),
                         )
                     })
                 })
@@ -148,8 +155,7 @@ fn test_radiswap() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit(true)
-        .output::<(ComponentAddress, Own)>(5);
+        .expect_commit(true);
 
     // Transfer `10,000 BTC` from `account2` to `account3`
     let btc_amount = Decimal::from(10_000);
@@ -189,12 +195,7 @@ fn test_radiswap() {
     let remaining_btc = test_runner.account_balance(account3, btc).unwrap();
     let eth_received = test_runner.account_balance(account3, eth).unwrap();
     assert_eq!(remaining_btc, btc_amount - btc_to_swap);
-    assert_eq!(
-        eth_received,
-        eth_init_amount
-            - (btc_init_amount * eth_init_amount)
-                / (btc_init_amount + (btc_to_swap - btc_to_swap * fee_amount))
-    );
+    assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
@@ -202,24 +203,24 @@ fn test_radiswap() {
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
-        2622 /* AllocateNodeId */
-        + 4153 /* CreateNode */
-        + 15059 /* DropLock */
-        + 3885 /* DropNode */
-        + 3415613 /* Invoke */
-        + 3691737 /* LockSubstate */
-        + 21168 /* ReadSubstate */
-        + 140000 /* RunNative */
-        + 15000 /* RunSystem */
-        + 1525745 /* RunWasm */
+        2553 /* AllocateNodeId */
+        + 4044 /* CreateNode */
+        + 14689 /* DropLock */
+        + 3780 /* DropNode */
+        + 3803738 /* Invoke */
+        + 2643042 /* LockSubstate */
+        + 20608 /* ReadSubstate */
+        + 137500 /* RunNative */
+        + 20000 /* RunSystem */
+        + 638390 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2412 /* WriteSubstate */
+        + 2123 /* WriteSubstate */
     );
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.8989069"),
+        dec!("0.7442142"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -325,11 +326,11 @@ fn test_flash_loan() {
         + 23199 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 4427546 /* LockSubstate */
+        + 4425619 /* LockSubstate */
         + 32928 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1304630 /* RunWasm */
+        + 1304420 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
