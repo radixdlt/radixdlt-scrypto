@@ -2,9 +2,9 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod preallocated_call {
-    const PREALLOCATED: Global<Preallocated> = at_address!("component_sim1cqqqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgp55w6zv");
+    const PREALLOCATED: Global<Preallocated> = global_component!(Preallocated, "component_sim1cqqqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgp55w6zv");
 
-    import_blueprint2!(
+    extern_blueprint!(
         "package_sim1p5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpwgs6ac",
         Preallocated {
             fn get_secret(&self) -> String;
@@ -22,11 +22,7 @@ mod preallocated_call {
 
 #[blueprint]
 mod some_resource {
-    const SOME_RESOURCE: ResourceManager =
-        ResourceManager::from_address(ResourceAddress::new_or_panic([
-            93, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-            1,
-        ]));
+    const SOME_RESOURCE: ResourceManager = resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6");
 
     struct SomeResource {}
 

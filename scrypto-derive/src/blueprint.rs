@@ -15,6 +15,25 @@ macro_rules! trace {
     }};
 }
 
+pub struct GlobalComponent {
+    pub ident: Ident,
+    pub comma: Comma,
+    pub address: Expr,
+}
+
+impl Parse for GlobalComponent {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let ident = input.parse()?;
+        let comma = input.parse()?;
+        let address = input.parse()?;
+        Ok(Self {
+            ident,
+            comma,
+            address,
+        })
+    }
+}
+
 pub struct ImportBlueprintFn {
     pub sig: Signature,
     pub semi_token: Token![;],
@@ -186,50 +205,54 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     }
                     _ => {}
                 }
-            } else if type_string.contains("Global") {
-                let blueprint = match ty {
-                    Type::Path(type_path) => {
-                        match type_path.path.segments.last().cloned().unwrap().arguments {
-                            PathArguments::AngleBracketed(args) => match args.args.last().unwrap() {
-                                GenericArgument::Type(Type::Path(path)) => path.path.segments.last().cloned().unwrap().ident,
-                                _ => panic!("oops"),
-                            }
-                            _ => panic!("oops"),
-                        }
-                    },
-                    _ => panic!("oops: {:?}", ty)
-                };
+            } else {
                 match item.expr.as_mut() {
                     Expr::Macro(m) => {
-                        if !m
-                            .mac
-                            .path
-                            .get_ident()
-                            .unwrap()
-                            .eq(&Ident::new("at_address", Span::call_site()))
-                        {
-                            continue;
+                        let macro_ident = m.mac.path.get_ident().unwrap();
+                        if macro_ident.eq(&Ident::new("global_component", Span::call_site())) {
+                            let global_component: GlobalComponent = m.mac.clone().parse_body()?;
+
+                            let blueprint = global_component.ident;
+                            let address = &global_component.address;
+                            let lit_str: LitStr = parse_quote!( #address );
+
+                            //let value:  = quote! { #tokens }.to_string();
+                            let (_hrp, _entity_type, address) =
+                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                    .unwrap();
+
+                                dependency_exprs.push(parse_quote! {
+                                GlobalAddress :: new_or_panic([ #(#address),* ])
+                            });
+
+                                let expr = parse_quote! {
+                                Global(#blueprint {
+                                    handle: ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))
+                                })
+                            };
+
+                            item.expr = Box::new(expr);
+                        } else if macro_ident.eq(&Ident::new("resource_manager", Span::call_site())) {
+                            let address: Expr = m.mac.clone().parse_body()?;
+                            let lit_str: LitStr = parse_quote!( #address );
+
+                            //let value:  = quote! { #tokens }.to_string();
+                            let (_hrp, _entity_type, address) =
+                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                    .unwrap();
+
+                            dependency_exprs.push(parse_quote! {
+                                GlobalAddress :: new_or_panic([ #(#address),* ])
+                            });
+
+                            let expr = parse_quote! {
+                                ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                            };
+
+                            item.expr = Box::new(expr);
                         }
 
-                        let tokens = &m.mac.tokens;
-                        let lit_str: LitStr = parse_quote!( #tokens );
 
-                        //let value:  = quote! { #tokens }.to_string();
-                        let (_hrp, _entity_type, address) =
-                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                .unwrap();
-
-                        dependency_exprs.push(parse_quote! {
-                            GlobalAddress :: new_or_panic([ #(#address),* ])
-                        });
-
-                        let expr = parse_quote! {
-                            Global(#blueprint {
-                                handle: ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))
-                            })
-                        };
-
-                        item.expr = Box::new(expr);
                     }
                     _ => {}
                 }
@@ -285,7 +308,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 .path
                 .get_ident()
                 .unwrap()
-                .eq(&Ident::new("import_blueprint2", Span::call_site()))
+                .eq(&Ident::new("extern_blueprint", Span::call_site()))
         });
         if let Some(import_blueprint_index) = import_blueprint_index {
             let import_macro = macro_statements.remove(import_blueprint_index);

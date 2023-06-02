@@ -2,9 +2,9 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod faucet_call {
-    const FAUCET: Global<FiFi> = at_address!("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
+    const FAUCET: Global<FiFi> = global_component!(FiFi, "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
 
-    import_blueprint2!(
+    extern_blueprint!(
         "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
         Faucet as FiFi {
             fn lock_fee(&self, amount: Decimal);
