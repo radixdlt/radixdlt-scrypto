@@ -48,6 +48,13 @@ pub trait NativeVault {
     ) -> Result<Proof, E>
     where
         Y: ClientApi<E>;
+
+    fn resource_address<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, E>
+    where
+        Y: ClientApi<E>;
 }
 
 pub trait NativeFungibleVault {
@@ -190,6 +197,17 @@ impl NativeVault for Vault {
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn resource_address<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let info = api.get_object_info(self.0.as_node_id()).unwrap();
+        Ok(ResourceAddress::try_from(info.outer_object.unwrap().as_ref()).unwrap())
     }
 }
 

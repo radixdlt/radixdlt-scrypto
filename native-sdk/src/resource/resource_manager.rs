@@ -1,3 +1,4 @@
+use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
@@ -12,7 +13,7 @@ use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 
 /// Represents a resource manager.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
