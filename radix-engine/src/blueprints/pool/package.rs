@@ -359,7 +359,8 @@ impl PoolNativePackage {
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(),
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(
+                        ),
                     export_name: MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
@@ -369,7 +370,8 @@ impl PoolNativePackage {
                 FunctionSchema {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawInput>(),
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawInput>(
+                        ),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawOutput>(
                         ),
