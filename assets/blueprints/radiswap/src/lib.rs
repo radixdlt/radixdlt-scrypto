@@ -1,196 +1,120 @@
+use scrypto::blueprints::pool::*;
 use scrypto::prelude::*;
+
+// =================================================================================================
+// TODO: The interface of this can be made better once we have a way to generate stubs for native
+//       blueprints such that we're storing `Global<Radiswap>` instead of `Global<AnyComponent>`
+//       and this also applies to function and method calls on the package and component.
+// =================================================================================================
 
 #[blueprint]
 mod radiswap {
     struct Radiswap {
-        /// The resource address of LP token.
-        lp_resource_manager: ResourceManager,
-        /// LP tokens mint badge.
-        lp_mint_badge: Vault,
-        /// The reserve for token A.
-        a_pool: Vault,
-        /// The reserve for token B.
-        b_pool: Vault,
-        /// The fee to apply for every swap
-        fee: Decimal,
-        /// The standard (Uniswap-like) DEX follows the X*Y=K rule. Since we enable a user defined 'lp_initial_supply', we need to store this value to recover incase all liquidity is removed from the system.
-        /// Adding and removing liquidity does not change this ratio, this ratio is only changed upon swaps.
-        lp_per_asset_ratio: Decimal,
+        // TODO: We need a stub for native blueprints so that we're not using `AnyComponent`.
+        /// The liquidity pool used by Radiswap and that manages all of the pool unit tokens.
+        pool_component: Global<AnyComponent>,
     }
 
     impl Radiswap {
-        /// Creates a Radiswap component for token pair A/B and returns the component address
-        /// along with the initial LP tokens.
-        pub fn instantiate_pool(
-            a_tokens: Bucket,
-            b_tokens: Bucket,
-            lp_initial_supply: Decimal,
-            lp_symbol: String,
-            lp_name: String,
-            lp_url: String,
-            fee: Decimal,
-        ) -> (Global<Radiswap>, Bucket) {
-            // Check arguments
-            assert!(
-                !a_tokens.is_empty() && !b_tokens.is_empty(),
-                "You must pass in an initial supply of each token"
+        pub fn new(
+            resource_address1: ResourceAddress,
+            resource_address2: ResourceAddress,
+        ) -> Global<Radiswap> {
+            let component_address = Runtime::preallocate_global_component_address();
+            let global_component_caller_badge =
+                NonFungibleGlobalId::global_caller_badge(component_address);
+
+            // Creating a new pool will check the following for us:
+            // 1. That both resources are not the same.
+            // 2. That none of the resources are non-fungible
+            let pool_component = Runtime::call_function::<_, _, Global<AnyComponent>>(
+                POOL_PACKAGE,
+                "TwoResourcePool",
+                TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
+                scrypto_encode(&TwoResourcePoolInstantiateInput {
+                    pool_manager_rule: rule!(require(global_component_caller_badge)),
+                    resource_addresses: (resource_address1, resource_address2),
+                })
+                .unwrap(),
             );
-            assert!(
-                fee >= dec!("0") && fee <= dec!("1"),
-                "Invalid fee in thousandths"
-            );
 
-            // Instantiate our LP token and mint an initial supply of them
-            let lp_mint_badge = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .metadata("name", "LP Token Mint Auth")
-                .mint_initial_supply(1);
-            let lp_resource_manager = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("symbol", lp_symbol)
-                .metadata("name", lp_name)
-                .metadata("url", lp_url)
-                .mintable(rule!(require(lp_mint_badge.resource_address())), LOCKED)
-                .burnable(rule!(require(lp_mint_badge.resource_address())), LOCKED)
-                .create_with_no_initial_supply();
-
-            let lp_tokens = lp_mint_badge.authorize(|| lp_resource_manager.mint(lp_initial_supply));
-
-            // ratio = initial supply / (x * y) = initial supply / k
-            let lp_per_asset_ratio = lp_initial_supply / (a_tokens.amount() * b_tokens.amount());
-
-            // Instantiate our Radiswap component
-            let radiswap = Self {
-                lp_resource_manager,
-                lp_mint_badge: Vault::with_bucket(lp_mint_badge),
-                a_pool: Vault::with_bucket(a_tokens),
-                b_pool: Vault::with_bucket(b_tokens),
-                fee,
-                lp_per_asset_ratio,
-            }
-            .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
-            .globalize();
-
-            // Return the new Radiswap component, as well as the initial supply of LP tokens
-            (radiswap, lp_tokens)
+            Self { pool_component }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .with_address(component_address)
+                .globalize()
         }
 
-        /// Adds liquidity to this pool and return the LP tokens representing pool shares
-        /// along with any remainder.
         pub fn add_liquidity(
             &mut self,
-            mut a_tokens: Bucket,
-            mut b_tokens: Bucket,
-        ) -> (Bucket, Bucket) {
-            // Differentiate LP calculation based on whether pool is empty or not.
-            let (supply_to_mint, remainder) = if self.lp_resource_manager.total_supply() == 0.into()
-            {
-                // Set initial LP tokens based on previous LP per K ratio.
-                let supply_to_mint =
-                    self.lp_per_asset_ratio * a_tokens.amount() * b_tokens.amount();
-                self.a_pool.put(a_tokens.take(a_tokens.amount()));
-                self.b_pool.put(b_tokens);
-                (supply_to_mint, a_tokens)
-            } else {
-                // The ratio of added liquidity in existing liquidty.
-                let a_ratio = a_tokens.amount() / self.a_pool.amount();
-                let b_ratio = b_tokens.amount() / self.b_pool.amount();
-
-                let (actual_ratio, remainder) = if a_ratio <= b_ratio {
-                    // We will claim all input token A's, and only the correct amount of token B
-                    self.a_pool.put(a_tokens);
-                    self.b_pool
-                        .put(b_tokens.take(self.b_pool.amount() * a_ratio));
-                    (a_ratio, b_tokens)
-                } else {
-                    // We will claim all input token B's, and only the correct amount of token A
-                    self.b_pool.put(b_tokens);
-                    self.a_pool
-                        .put(a_tokens.take(self.a_pool.amount() * b_ratio));
-                    (b_ratio, a_tokens)
-                };
-                (
-                    self.lp_resource_manager.total_supply() * actual_ratio,
-                    remainder,
+            resource1: Bucket,
+            resource2: Bucket,
+        ) -> (Bucket, Option<Bucket>) {
+            // All the checks for correctness of buckets and everything else is handled by the pool
+            // component! Just pass it the resources and it will either return the pool units back
+            // if it succeeds or abort on failure.
+            self.pool_component
+                .call::<TwoResourcePoolContributeInput, TwoResourcePoolContributeOutput>(
+                    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                    &TwoResourcePoolContributeInput {
+                        buckets: (resource1, resource2),
+                    },
                 )
-            };
-
-            // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self
-                .lp_mint_badge
-                .authorize(|| self.lp_resource_manager.mint(supply_to_mint));
-
-            // Return the LP tokens along with any remainder
-            (lp_tokens, remainder)
         }
 
-        /// Removes liquidity from this pool.
-        pub fn remove_liquidity(&mut self, lp_tokens: Bucket) -> (Bucket, Bucket) {
-            assert!(
-                self.lp_resource_manager.resource_address() == lp_tokens.resource_address(),
-                "Wrong token type passed in"
-            );
-
-            // Calculate the share based on the input LP tokens.
-            let share = lp_tokens.amount() / self.lp_resource_manager.total_supply();
-
-            // Withdraw the correct amounts of tokens A and B from reserves
-            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share);
-            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share);
-
-            // Burn the LP tokens received
-            self.lp_mint_badge.authorize(|| {
-                lp_tokens.burn();
-            });
-
-            // Return the withdrawn tokens
-            (a_withdrawn, b_withdrawn)
+        /// This method does not need to be here - the pool units are redeemable without it by the
+        /// holders of the pool units directly from the pool. In this case this is just a nice proxy
+        /// so that users are only interacting with one component and do not need to know about the
+        /// address of Radiswap and the address of the Radiswap pool.
+        pub fn remove_liquidity(&mut self, pool_units: Bucket) -> (Bucket, Bucket) {
+            self.pool_component
+                .call::<TwoResourcePoolRedeemInput, TwoResourcePoolRedeemOutput>(
+                    TWO_RESOURCE_POOL_REDEEM_IDENT,
+                    &TwoResourcePoolRedeemInput { bucket: pool_units },
+                )
         }
 
-        /// Swaps token A for B, or vice versa.
-        pub fn swap(&mut self, input_tokens: Bucket) -> Bucket {
-            // Calculate the swap fee
-            let fee_amount = input_tokens.amount() * self.fee;
+        pub fn swap(&mut self, input_bucket: Bucket) -> Bucket {
+            let mut reserves = self.vault_reserves();
 
-            let output_tokens = if input_tokens.resource_address() == self.a_pool.resource_address()
-            {
-                // Calculate how much of token B we will return
-                let b_amount = self.b_pool.amount()
-                    - self.a_pool.amount() * self.b_pool.amount()
-                        / (input_tokens.amount() - fee_amount + self.a_pool.amount());
+            let input_amount = input_bucket.amount();
 
-                // Put the input tokens into our pool
-                self.a_pool.put(input_tokens);
+            let input_reserves = reserves
+                .remove(&input_bucket.resource_address())
+                .expect("Resource does not belong to the pool");
+            let (output_resource_address, output_reserves) = reserves.into_iter().next().unwrap();
 
-                // Return the tokens owed
-                self.b_pool.take(b_amount)
-            } else {
-                // Calculate how much of token A we will return
-                let a_amount = self.a_pool.amount()
-                    - self.a_pool.amount() * self.b_pool.amount()
-                        / (input_tokens.amount() - fee_amount + self.b_pool.amount());
+            let output_amount = (input_amount * output_reserves) / (input_reserves + input_amount);
 
-                // Put the input tokens into our pool
-                self.b_pool.put(input_tokens);
-
-                // Return the tokens owed
-                self.a_pool.take(a_amount)
-            };
-
-            // Accrued fees change the ratio
-            self.lp_per_asset_ratio = self.lp_resource_manager.total_supply()
-                / (self.a_pool.amount() * self.b_pool.amount());
-
-            output_tokens
+            self.deposit(input_bucket);
+            self.withdraw(output_resource_address, output_amount)
         }
 
-        /// Returns the resource addresses of the pair.
-        pub fn get_pair(&self) -> (ResourceAddress, ResourceAddress) {
-            (
-                self.a_pool.resource_address(),
-                self.b_pool.resource_address(),
-            )
+        fn vault_reserves(&self) -> BTreeMap<ResourceAddress, Decimal> {
+            self.pool_component
+                .call::<TwoResourcePoolGetVaultAmountsInput, TwoResourcePoolGetVaultAmountsOutput>(
+                    TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
+                    &TwoResourcePoolGetVaultAmountsInput,
+                )
+        }
+
+        fn deposit(&mut self, bucket: Bucket) {
+            self.pool_component
+                .call::<TwoResourcePoolProtectedDepositInput, TwoResourcePoolProtectedDepositOutput>(
+                    TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
+                    &TwoResourcePoolProtectedDepositInput { bucket },
+                )
+        }
+
+        fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket {
+            self.pool_component
+                .call::<TwoResourcePoolProtectedWithdrawInput, TwoResourcePoolProtectedWithdrawOutput>(
+                    TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                    &TwoResourcePoolProtectedWithdrawInput {
+                        resource_address,
+                        amount,
+                    }
+                )
         }
     }
 }
