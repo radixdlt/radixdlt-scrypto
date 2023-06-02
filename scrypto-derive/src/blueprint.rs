@@ -91,6 +91,131 @@ impl Parse for ImportBlueprint {
     }
 }
 
+
+pub fn replace_macros_in_body(block: &mut Block, dependency_exprs: &mut Vec<Expr>) -> Result<()> {
+    for stmt in &mut block.stmts {
+        match stmt {
+            Stmt::Expr(expr) => {
+                replace_macros(expr, dependency_exprs)?;
+            }
+            Stmt::Semi(expr, ..) => {
+                replace_macros(expr, dependency_exprs)?;
+            }
+            Stmt::Item(..) => {
+            }
+            Stmt::Local(local) => {
+                if let Some((_, expr)) = &mut local.init {
+                    replace_macros(expr, dependency_exprs)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Result<()> {
+    match expr {
+        Expr::Macro(m) => {
+            let macro_ident = m.mac.path.get_ident().unwrap();
+            if macro_ident.eq(&Ident::new("global_component", Span::call_site())) {
+                let global_component: GlobalComponent = m.mac.clone().parse_body()?;
+
+                let blueprint = global_component.ident;
+                let address = &global_component.address;
+                let lit_str: LitStr = parse_quote!( #address );
+
+                let (_hrp, _entity_type, address) =
+                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                        .unwrap();
+
+                dependency_exprs.push(parse_quote! {
+                    GlobalAddress :: new_or_panic([ #(#address),* ])
+                });
+
+                *expr = parse_quote! {
+                    Global::<#blueprint>(#blueprint {
+                        handle: ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))
+                    })
+                };
+            } else if macro_ident.eq(&Ident::new("resource_manager", Span::call_site())) {
+                let address: Expr = m.mac.clone().parse_body()?;
+                let lit_str: LitStr = parse_quote!( #address );
+
+                let (_hrp, _entity_type, address) =
+                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                        .unwrap();
+
+                dependency_exprs.push(parse_quote! {
+                    GlobalAddress :: new_or_panic([ #(#address),* ])
+                });
+
+                *expr = parse_quote! {
+                    ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                };
+            } else if macro_ident.eq(&Ident::new("package", Span::call_site())) {
+                let address: Expr = m.mac.clone().parse_body()?;
+                let lit_str: LitStr = parse_quote!( #address );
+
+                let (_hrp, _entity_type, address) =
+                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                        .unwrap();
+
+                dependency_exprs.push(parse_quote! {
+                    PackageAddress :: new_or_panic([ #(#address),* ])
+                });
+
+                *expr = parse_quote! {
+                    Global::<PackageStub>(PackageStub(ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))))
+                };
+            }
+        }
+        Expr::Tuple(tuple) => {
+            for expr in &mut tuple.elems {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        Expr::Assign(assign) => {
+            replace_macros(assign.left.as_mut(), dependency_exprs)?;
+            replace_macros(assign.right.as_mut(), dependency_exprs)?;
+        }
+        Expr::AssignOp(assign_op) => {
+            replace_macros(assign_op.left.as_mut(), dependency_exprs)?;
+            replace_macros(assign_op.right.as_mut(), dependency_exprs)?;
+        }
+        Expr::Type(ty) => {
+            replace_macros(&mut ty.expr, dependency_exprs)?;
+        }
+        Expr::MethodCall(method_call) => {
+            replace_macros(method_call.receiver.as_mut(), dependency_exprs)?;
+            for expr in &mut method_call.args {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        Expr::ForLoop(for_loop) => {
+            replace_macros_in_body(&mut for_loop.body, dependency_exprs)?
+        }
+        Expr::Call(call) => {
+            replace_macros(call.func.as_mut(), dependency_exprs)?;
+            for expr in &mut call.args {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        Expr::Reference(reference) => {
+            replace_macros(reference.expr.as_mut(), dependency_exprs)?;
+        }
+        Expr::Array(array) => {
+            for expr in &mut array.elems {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        _ => {
+        }
+    }
+
+    Ok(())
+}
+
 pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_blueprint() starts");
 
@@ -207,78 +332,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let expr: Expr = parse_quote! { #ident };
                 dependency_exprs.push(expr);
             } else {
-                match item.expr.as_mut() {
-                    Expr::Macro(m) => {
-                        let macro_ident = m.mac.path.get_ident().unwrap();
-                        if macro_ident.eq(&Ident::new("global_component", Span::call_site())) {
-                            let global_component: GlobalComponent = m.mac.clone().parse_body()?;
-
-                            let blueprint = global_component.ident;
-                            let address = &global_component.address;
-                            let lit_str: LitStr = parse_quote!( #address );
-
-                            let (_hrp, _entity_type, address) =
-                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                    .unwrap();
-
-                                dependency_exprs.push(parse_quote! {
-                                GlobalAddress :: new_or_panic([ #(#address),* ])
-                            });
-
-                                let expr = parse_quote! {
-                                Global(#blueprint {
-                                    handle: ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))
-                                })
-                            };
-
-                            item.expr = Box::new(expr);
-                        } else if macro_ident.eq(&Ident::new("resource_manager", Span::call_site())) {
-                            let address: Expr = m.mac.clone().parse_body()?;
-                            let lit_str: LitStr = parse_quote!( #address );
-
-                            let (_hrp, _entity_type, address) =
-                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                    .unwrap();
-
-                            dependency_exprs.push(parse_quote! {
-                                GlobalAddress :: new_or_panic([ #(#address),* ])
-                            });
-
-                            let expr = parse_quote! {
-                                ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
-                            };
-
-                            item.expr = Box::new(expr);
-                        } else if macro_ident.eq(&Ident::new("package", Span::call_site())) {
-                            let address: Expr = m.mac.clone().parse_body()?;
-                            let lit_str: LitStr = parse_quote!( #address );
-
-                            let (_hrp, _entity_type, address) =
-                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                    .unwrap();
-
-                            dependency_exprs.push(parse_quote! {
-                                PackageAddress :: new_or_panic([ #(#address),* ])
-                            });
-
-                            let expr = parse_quote! {
-                                Global(PackageStub(ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))))
-                            };
-
-                            item.expr = Box::new(expr);
-                        }
-
-
-                    }
-                    _ => {}
-                }
+                replace_macros(item.expr.as_mut(), &mut dependency_exprs)?;
             }
         }
 
         const_statements
     };
 
-    let generated_schema_info = generate_schema(bp_ident, bp_items)?;
+    let generated_schema_info = generate_schema(bp_ident, bp_items, &mut dependency_exprs)?;
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
     let function_idents = generated_schema_info.function_idents;
@@ -1005,7 +1066,7 @@ struct GeneratedSchemaInfo {
 }
 
 #[allow(dead_code)]
-fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<GeneratedSchemaInfo> {
+fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem], dependency_exprs: &mut Vec<Expr>) -> Result<GeneratedSchemaInfo> {
     let mut fn_names = Vec::<String>::new();
     let mut fn_schemas = Vec::<Expr>::new();
     let mut method_idents = Vec::<Ident>::new();
@@ -1052,6 +1113,8 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                     };
                     let export_name = format!("{}_{}", bp_ident, m.sig.ident);
                     validate_type_name(&export_name, bp_ident.span())?;
+
+                    replace_macros_in_body(&mut m.block, dependency_exprs)?;
 
                     if receiver.is_none() {
                         function_idents.push(m.sig.ident.clone());

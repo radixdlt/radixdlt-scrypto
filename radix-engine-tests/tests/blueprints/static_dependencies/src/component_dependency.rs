@@ -2,8 +2,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod faucet_call {
-    const FAUCET: Global<FiFi> = global_component!(FiFi, "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
-
     extern_blueprint!(
         "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
         Faucet as FiFi {
@@ -16,7 +14,8 @@ mod faucet_call {
     impl FaucetCall {
         pub fn call_faucet_lock_fee() {
             let amount: Decimal = 10.into();
-            FAUCET.lock_fee(amount);
+            let component = global_component!(FiFi, "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
+            component.lock_fee(amount);
         }
 
         pub fn call_faucet_lock_fee2(faucet: Global<FiFi>) {
