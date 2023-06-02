@@ -499,8 +499,30 @@ impl TxFuzzer {
 
                     Some(InstructionV1::DropProof { proof_id })
                 }
-                // MintFungible
+                // FreezeVault
                 33 => {
+                    let vault_id = {
+                        let vaults = self
+                            .runner
+                            .get_component_vaults(component_address, resource_address);
+                        if !vaults.is_empty() {
+                            *unstructured.choose(&vaults[..]).unwrap()
+                        } else {
+                            InternalAddress::arbitrary(&mut unstructured)
+                                .unwrap()
+                                .into()
+                        }
+                    };
+                    let input = VaultFreezeInput::arbitrary(&mut unstructured).unwrap();
+
+                    Some(InstructionV1::CallDirectVaultMethod {
+                        vault_id: InternalAddress::new_or_panic(vault_id.into()),
+                        method_name: VAULT_FREEZE_IDENT.to_string(),
+                        args: to_manifest_value(&input),
+                    })
+                }
+                // MintFungible
+                34 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMethod {
@@ -510,7 +532,7 @@ impl TxFuzzer {
                     })
                 }
                 // MintNonFungible
-                34 => {
+                35 => {
                     let input =
                         NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
                             .unwrap();
@@ -522,7 +544,7 @@ impl TxFuzzer {
                     })
                 }
                 // MintUuidNonFungible
-                35 => {
+                36 => {
                     let input = NonFungibleResourceManagerMintUuidManifestInput::arbitrary(
                         &mut unstructured,
                     )
@@ -535,9 +557,9 @@ impl TxFuzzer {
                     })
                 }
                 // PopFromAuthZone
-                36 => Some(InstructionV1::PopFromAuthZone {}),
+                37 => Some(InstructionV1::PopFromAuthZone {}),
                 // PublishPackage | PublishPackageAdvanced
-                37 | 38 => {
+                38 | 39 => {
                     // Publishing package involves a compilation by scrypto compiler.
                     // In case of AFL invoking external tool breaks fuzzing.
                     // For now we skip this step
@@ -546,13 +568,13 @@ impl TxFuzzer {
                     None
                 }
                 // PushToAuthZone
-                39 => {
+                40 => {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
 
                     Some(InstructionV1::PushToAuthZone { proof_id })
                 }
-                // RecallResource
-                40 => {
+                // RecallVault
+                41 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
                     let vault_id = {
                         let vaults = self
@@ -574,7 +596,7 @@ impl TxFuzzer {
                     })
                 }
                 // RemoveMetadata
-                41 => {
+                42 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
@@ -586,13 +608,13 @@ impl TxFuzzer {
                     })
                 }
                 // ReturnToWorktop
-                42 => {
+                43 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
 
                     Some(InstructionV1::ReturnToWorktop { bucket_id })
                 }
                 // SetComponentRoyaltyConfig
-                43 => {
+                44 => {
                     let royalty_config = RoyaltyConfig::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallRoyaltyMethod {
@@ -602,7 +624,7 @@ impl TxFuzzer {
                     })
                 }
                 // SetMetadata
-                44 => {
+                45 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
@@ -615,7 +637,7 @@ impl TxFuzzer {
                     })
                 }
                 // SetPackageRoyaltyConfig
-                45 => {
+                46 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let royalty_config =
@@ -628,9 +650,9 @@ impl TxFuzzer {
                     })
                 }
                 // TakeAllFromWorktop
-                46 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
+                47 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
                 // TakeFromWorktop
-                47 => {
+                48 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::TakeFromWorktop {
@@ -639,12 +661,34 @@ impl TxFuzzer {
                     })
                 }
                 // TakeNonFungiblesFromWorktop
-                48 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
+                49 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
+                // UnfreezeVault
+                50 => {
+                    let vault_id = {
+                        let vaults = self
+                            .runner
+                            .get_component_vaults(component_address, resource_address);
+                        if !vaults.is_empty() {
+                            *unstructured.choose(&vaults[..]).unwrap()
+                        } else {
+                            InternalAddress::arbitrary(&mut unstructured)
+                                .unwrap()
+                                .into()
+                        }
+                    };
+                    let input = VaultUnfreezeInput::arbitrary(&mut unstructured).unwrap();
+
+                    Some(InstructionV1::CallDirectVaultMethod {
+                        vault_id: InternalAddress::new_or_panic(vault_id.into()),
+                        method_name: VAULT_UNFREEZE_IDENT.to_string(),
+                        args: to_manifest_value(&input),
+                    })
+                }
                 // UpdateRole
-                49 => {
+                51 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();
