@@ -24,13 +24,13 @@ resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-
 paste = "1.0.12"
 
 # WASM de-/serialization
-parity-wasm = { version = "0.42.2" }
+parity-wasm = { version = "0.42.2", features = ["sign_ext"] }
 
 # WASM validation
 wasmi-validation =  { version = "0.4.1" }
 
 # WASM instrumentation
-wasm-instrument = { version = "0.1.0" }
+wasm-instrument = { version = "0.1.0", features = ["sign_ext"] }
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
