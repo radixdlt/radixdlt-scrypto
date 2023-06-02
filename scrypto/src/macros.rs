@@ -279,32 +279,24 @@ macro_rules! external_blueprint_members {
         fn $func_name:ident($($func_args:ident: $func_types:ty),*) -> $func_output:ty;
         $($rest:tt)*
     ) => {
-        pub fn $func_name(&self, $($func_args: $func_types),*) -> $func_output {
-            $crate::runtime::Runtime::call_function(
-                self.package_address,
-                &self.blueprint_name,
-                stringify!($func_name),
-                scrypto_args!($($func_args),*)
-            )
+        fn $func_name($($func_args: $func_types),*) -> $func_output {
+            Self::call_function_raw(stringify!($func_name), scrypto_args!($($func_args),*))
         }
+
         $crate::external_blueprint_members!($($rest)*);
     };
     (
         fn $func_name:ident($($func_args:ident: $func_types:ty),*);
         $($rest:tt)*
     ) => {
-        pub fn $func_name(&self, $($func_args: $func_types),*) {
-            use $crate::rust::str::FromStr;
-            $crate::runtime::Runtime::call_function(
-                self.package_address,
-                &self.blueprint_name,
-                stringify!($func_name),
-                scrypto_args!($($func_args),*)
-            )
+        fn $func_name($($func_args: $func_types),*) {
+            Self::call_function_raw(stringify!($func_name), scrypto_args!($($func_args),*))
         }
+
         $crate::external_blueprint_members!($($rest)*);
     };
-    () => {}
+    () => {
+    };
 }
 
 /// Generates a bridge/stub to make cross-component calls.
@@ -436,6 +428,32 @@ macro_rules! external_component_members {
         compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
     };
     () => {}
+}
+
+#[macro_export]
+macro_rules! import_blueprint {
+    (
+        $package_address:expr, $blueprint:ident, $blueprint_name:expr, $owned_type_name:expr, $global_type_name: expr, $functions:ident {
+            $($blueprint_contents:tt)*
+        }
+    ) => {
+        pub struct $blueprint;
+
+        impl HasTypeInfo for $blueprint {
+            const PACKAGE_ADDRESS: Option<PackageAddress> = Some($package_address);
+            const BLUEPRINT_NAME: &'static str = $blueprint_name;
+            const OWNED_TYPE_NAME: &'static str = $owned_type_name;
+            const GLOBAL_TYPE_NAME: &'static str = $global_type_name;
+        }
+
+        pub trait $functions {
+            $($blueprint_contents)*
+        }
+
+        impl $functions for ::scrypto::component::Blueprint<$blueprint> {
+            $crate::external_blueprint_members!($($blueprint_contents)*);
+        }
+    };
 }
 
 #[macro_export]
