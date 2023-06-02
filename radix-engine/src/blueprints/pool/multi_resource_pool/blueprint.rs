@@ -40,6 +40,12 @@ impl MultiResourcePoolBlueprint {
             }
         }
 
+        // A multi-resource pool can not be created with no resources - at minimum there should be
+        // one resource.
+        if resource_addresses.len() < 1 {
+            return Err(MultiResourcePoolError::CantCreatePoolWithLessThanOneResource.into());
+        }
+
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
         let address = {
@@ -71,7 +77,7 @@ impl MultiResourcePoolBlueprint {
         // Creating the pool nodes
         let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
         // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
-        // able to update them later on.
+        // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
             btreemap!(
                 "pool_vault_number".into() => MetadataValue::U8(2),
@@ -110,6 +116,67 @@ impl MultiResourcePoolBlueprint {
         Ok(ComponentAddress::new_or_panic(address.as_node_id().0))
     }
 
+    /**
+    This function calculates the amount of resources that should be contributed to the pool and then
+    contributes them to the pool returning back a pool unit resource in exchange for the contributed
+    resources.
+
+    Note that this function checks to ensure that:
+    - Some amount of resources were provided for each of the resources in the pool, otherwise the
+    operation errors out.
+    - No buckets are provided which do not belong to the liquidity pool. If this happens then the
+    contribution logic will fail and abort the transaction.
+
+    Note: it is acceptable for two buckets to contain the same resource, as long as the above checks
+    pass then this is acceptable and the pool can account for it accordingly.
+
+    In the case where the pool is new and there are currently no pool units all of the resources are
+    accepted and the pool mints as many pool units as the geometric average of the contributed
+    resources.
+
+    There are three operation modes that a pool can be in:
+
+    - **Pool units total supply is zero:** regardless of whether there are some reserves or not,
+    the pool is considered to be back to its initial state. The first contributor is able to
+    determine the amount that they wish to contribute and they get minted an amount of pool units
+    that is equal to the geometric average of their contribution.
+    - **Pool units total supply is not zero, but some reserves are empty:** In this case, the pool is
+    said to be in an illegal state. Some people out there are holding pool units that equate to some
+    percentage of zero, which is an illegal state for the pool to be in.
+    - **Pool units total supply is not zero, none of the reserves are empty:** The pool is operating
+    normally and is governed by the antilogarithm discussed below.
+
+    In the case when the pool is operating normally an antilogarithm is needed to determine the
+    following:
+    - Given some resources, how much of these resources can the pool accept.
+    - Given some resources, how much pool units should the pool mint.
+
+    Let r<sub>1</sub>, r<sub>2</sub>, ..., r<sub>n</sub> be the reserves of the resources in the
+    pool and c<sub>1</sub>, c<sub>2</sub>, ..., c<sub>n</sub> the amounts being contributed to each
+    of the resources in the pool.
+
+    We calculate the ratios of contribution to reserves which is denoted as k<sub>n</sub> where
+    k<sub>n</sub> = c<sub>n</sub> / r<sub>n</sub> such that we find k<sub>1</sub>, k<sub>2</sub>,
+    ..., k<sub>n</sub>. We then find the minimum value of k denoted as k<sub>min</sub> which gives
+    us the ratio which can be satisfied by all of the resources provided for contribution.
+
+    To determine the amount of resources that should be contributed k<sub>min</sub> is multiplied by
+    the reserves of each of the resources. This amount is put in the pool's vaults and whatever
+    amount remains is returned as change.
+
+    To determine the amount of pool units to mint k<sub>min</sub> is multiplied by the pool units
+    total supply.
+
+    The following is a minimal example
+
+    | n               |1     |2     |3     | Note                             |
+    |---------------- |:----:|:----:|:----:| -------------------------------- |
+    | r               | 1000 | 2000 | 3000 |                                  |
+    | c               | 2000 | 3000 | 4000 |                                  |
+    | k               | 2    | 1.5  | 1.33 |                                  |
+    | k<sub>min</sub> |      |      | 1.33 |                                  |
+    | ca              | 1333 | 2666 | 4000 | Amount of contribution to accept |
+    */
     pub fn contribute<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
@@ -168,6 +235,11 @@ impl MultiResourcePoolBlueprint {
         let pool_unit_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
         // Case: New Pool
         let (pool_units, change) = if pool_unit_total_supply.is_zero() {
+            // Regarding the unwrap here, there are two cases here where this unwrap could panic:
+            // 1- If the value.sqrt is done on a negative decimal - this is impossible, how can the
+            //    amount of buckets in a vault be negative?
+            // 2- If reduce is called over an empty iterator - this is also impossible, we ensure
+            //    that the pool has at least one resource.
             let pool_units_to_mint = amounts_of_resources_provided
                 .values()
                 .copied()
@@ -175,6 +247,8 @@ impl MultiResourcePoolBlueprint {
                 .and_then(|value| value.sqrt())
                 .unwrap();
 
+            // The following unwrap is safe to do. We've already checked that all of the buckets
+            // provided belong to the pool and have a corresponding vault.
             for bucket in buckets {
                 let bucket_resource_address = bucket.resource_address(api)?;
                 substate
@@ -184,11 +258,19 @@ impl MultiResourcePoolBlueprint {
                     .put(bucket, api)?;
             }
 
+            Runtime::emit_event(
+                api,
+                ContributionEvent {
+                    contributed_resources: amounts_of_resources_provided,
+                    pool_unit_tokens_minted: pool_units_to_mint,
+                },
+            )?;
+
             (
                 substate
                     .pool_unit_resource_manager
                     .mint_fungible(pool_units_to_mint, api)?,
-                Vec::<Bucket>::new(),
+                vec![],
             )
         } else {
             // Check if any of the vaults are empty. If any of them are, then the pool is in an
@@ -203,22 +285,25 @@ impl MultiResourcePoolBlueprint {
             let mut vaults_and_buckets = BTreeMap::<ResourceAddress, (Vault, Bucket)>::new();
             for bucket in buckets.into_iter() {
                 let bucket_resource_address = bucket.resource_address(api)?;
-                let vault = substate.vaults.get(&bucket_resource_address).map_or(
-                    Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
-                        resource_address: bucket_resource_address,
-                    }),
-                    |vault| Ok(Vault(vault.0.clone())),
-                )?;
 
                 if let Some((_, store_bucket)) =
                     vaults_and_buckets.get_mut(&bucket_resource_address)
                 {
                     store_bucket.put(bucket, api)?;
                 } else {
+                    let vault = substate.vaults.get(&bucket_resource_address).map_or(
+                        Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
+                            resource_address: bucket_resource_address,
+                        }),
+                        |vault| Ok(Vault(vault.0.clone())),
+                    )?;
+
                     vaults_and_buckets.insert(bucket_resource_address, (vault, bucket));
                 };
             }
 
+            // Safe to unwrap here as well. Min returns `None` if called on an empty iterator. The
+            // pool has a minimum of one resource at all times thus min is never none.
             let minimum_ratio = *vaults_and_buckets
                 .values()
                 .map(|(vault, bucket)| {
@@ -231,9 +316,10 @@ impl MultiResourcePoolBlueprint {
                 .collect::<Result<Vec<Decimal>, _>>()?
                 .iter()
                 .min()
-                .expect("Can't be empty");
+                .unwrap();
 
             let mut change = vec![];
+            let mut contributed_resources = BTreeMap::new();
             for (resource_address, (mut vault, bucket)) in vaults_and_buckets.into_iter() {
                 let divisibility = ResourceManager(resource_address).resource_type(api)
                     .map(|resource_type| {
@@ -254,11 +340,22 @@ impl MultiResourcePoolBlueprint {
                     }
                 };
 
+                contributed_resources.insert(resource_address, amount_to_contribute);
+
                 vault.put(bucket.take(amount_to_contribute, api)?, api)?;
                 change.push(bucket)
             }
 
             let pool_units_to_mint = pool_unit_total_supply * minimum_ratio;
+
+            Runtime::emit_event(
+                api,
+                ContributionEvent {
+                    contributed_resources,
+                    pool_unit_tokens_minted,
+                },
+            )?;
+
             (
                 substate
                     .pool_unit_resource_manager
