@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod factory {
-    define_static_auth! {
+    enable_method_auth! {
         methods {
             set_address => OWNER;
         }

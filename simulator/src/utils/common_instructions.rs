@@ -4,7 +4,7 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use radix_engine_interface::schema::IndexedBlueprintSchema;
+use radix_engine_interface::blueprints::package::IndexedBlueprintSchema;
 use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::model::InstructionV1;

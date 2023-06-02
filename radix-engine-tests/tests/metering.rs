@@ -1,7 +1,7 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::*;
 use utils::ContextualDisplay;
@@ -70,7 +70,7 @@ fn test_basic_transfer() {
         + 6142 /* DropLock */
         + 1680 /* DropNode */
         + 1140299 /* Invoke */
-        + 418345 /* LockSubstate */
+        + 423434 /* LockSubstate */
         + 8624 /* ReadSubstate */
         + 65000 /* RunNative */
         + 7500 /* RunSystem */
@@ -207,7 +207,7 @@ fn test_radiswap() {
         + 15059 /* DropLock */
         + 3885 /* DropNode */
         + 3415613 /* Invoke */
-        + 3691737 /* LockSubstate */
+        + 3696397 /* LockSubstate */
         + 21168 /* ReadSubstate */
         + 140000 /* RunNative */
         + 15000 /* RunSystem */
@@ -219,7 +219,7 @@ fn test_radiswap() {
     );
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.8989069"),
+        dec!("0.8993729"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -321,19 +321,19 @@ fn test_flash_loan() {
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
         4002 /* AllocateNodeId */
-            + 6322 /* CreateNode */
-            + 23199 /* DropLock */
-            + 6090 /* DropNode */
-            + 4768533 /* Invoke */
-            + 4427546 /* LockSubstate */
-            + 32928 /* ReadSubstate */
-            + 205000 /* RunNative */
-            + 40000 /* RunSystem */
-            + 1304630 /* RunWasm */
-            + 50000 /* TxBaseCost */
-            + 2455 /* TxPayloadCost */
-            + 100000 /* TxSignatureVerification */
-            + 4436 /* WriteSubstate */
+        + 6322 /* CreateNode */
+        + 23199 /* DropLock */
+        + 6090 /* DropNode */
+        + 4768533 /* Invoke */
+        + 4432237 /* LockSubstate */
+        + 32928 /* ReadSubstate */
+        + 205000 /* RunNative */
+        + 40000 /* RunSystem */
+        + 1304630 /* RunWasm */
+        + 50000 /* TxBaseCost */
+        + 2455 /* TxPayloadCost */
+        + 100000 /* TxSignatureVerification */
+        + 4436 /* WriteSubstate */
     );
 }
 
@@ -357,7 +357,7 @@ fn test_publish_large_package() {
         .lock_fee(test_runner.faucet_component(), 100.into())
         .publish_package_advanced(
             code,
-            PackageSchema::default(),
+            PackageDefinition::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,

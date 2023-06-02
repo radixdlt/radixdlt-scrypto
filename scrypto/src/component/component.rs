@@ -198,6 +198,10 @@ pub enum MethodRoyalty {
     Usd(Decimal),
 }
 
+pub trait FnMapping<T> {
+    fn to_mapping(self) -> Vec<(String, T)>;
+}
+
 pub trait MethodMapping<T> {
     const MODULE_ID: ObjectModuleId;
 

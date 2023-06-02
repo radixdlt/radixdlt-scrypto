@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata {
-    define_static_auth! {
+    enable_method_auth! {
         methods {
             set_string => PUBLIC;
             set_address => PUBLIC;

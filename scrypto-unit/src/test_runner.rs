@@ -35,7 +35,9 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
+use radix_engine_interface::blueprints::package::{
+    PackageDefinition, PackageInfoSubstate, PackageRoyaltySubstate,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -69,7 +71,7 @@ use transaction::prelude::{AttachmentsV1, BlobV1, IntentV1, PreviewFlags, Transa
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSchema) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -112,9 +114,9 @@ impl Compile {
                 &path, err
             )
         });
-        let schema = extract_schema(&code).unwrap();
+        let definition = extract_definition(&code).unwrap();
 
-        (code, schema)
+        (code, definition)
     }
 
     // Naive pattern matching to find the crate name.
@@ -705,14 +707,14 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        schema: PackageSchema,
+        definition: PackageDefinition,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, schema, royalty_config, metadata, owner_rule)
+            .publish_package_advanced(code, definition, royalty_config, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -722,12 +724,12 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        schema: PackageSchema,
+        definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_with_owner(code, schema, owner_badge)
+            .publish_package_with_owner(code, definition, owner_badge)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -735,10 +737,10 @@ impl TestRunner {
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        let (code, schema) = Compile::compile(package_dir);
+        let (code, definition) = Compile::compile(package_dir);
         self.publish_package(
             code,
-            schema,
+            definition,
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -753,11 +755,11 @@ impl TestRunner {
         package_dir: P,
         retain: F,
     ) -> PackageAddress {
-        let (code, mut schema) = Compile::compile(package_dir);
-        schema.blueprints.retain(retain);
+        let (code, mut definition) = Compile::compile(package_dir);
+        definition.schema.blueprints.retain(retain);
         self.publish_package(
             code,
-            schema,
+            definition,
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -769,8 +771,8 @@ impl TestRunner {
         package_dir: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let (code, schema) = Compile::compile(package_dir);
-        self.publish_package_with_owner(code, schema, owner_badge)
+        let (code, definition) = Compile::compile(package_dir);
+        self.publish_package_with_owner(code, definition, owner_badge)
     }
 
     pub fn execute_manifest_ignoring_fee<T>(
@@ -1696,7 +1698,10 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn single_function_package_schema(blueprint_name: &str, function_name: &str) -> PackageSchema {
+pub fn single_function_package_definition(
+    blueprint_name: &str,
+    function_name: &str,
+) -> PackageDefinition {
     let mut package_schema = PackageSchema::default();
     package_schema.blueprints.insert(
         blueprint_name.to_string(),
@@ -1724,7 +1729,12 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
             outer_method_auth_template: btreemap!(),
         },
     );
-    package_schema
+    PackageDefinition {
+        schema: package_schema,
+        function_access_rules: btreemap!(
+            blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))
+        ),
+    }
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

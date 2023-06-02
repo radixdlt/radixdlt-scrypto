@@ -19,11 +19,11 @@ fn set_up_package_and_component() -> (
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
 
     // Publish package
-    let (code, schema) = Compile::compile("./tests/blueprints/royalty-auth");
+    let (code, definition) = Compile::compile("./tests/blueprints/royalty-auth");
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .publish_package_with_owner(code, schema, owner_badge_addr.clone())
+            .publish_package_with_owner(code, definition, owner_badge_addr.clone())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
