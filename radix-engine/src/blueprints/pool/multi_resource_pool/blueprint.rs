@@ -262,7 +262,7 @@ impl MultiResourcePoolBlueprint {
                 api,
                 ContributionEvent {
                     contributed_resources: amounts_of_resources_provided,
-                    pool_unit_tokens_minted: pool_units_to_mint,
+                    pool_units_minted: pool_units_to_mint,
                 },
             )?;
 
@@ -352,7 +352,7 @@ impl MultiResourcePoolBlueprint {
                 api,
                 ContributionEvent {
                     contributed_resources,
-                    pool_unit_tokens_minted,
+                    pool_units_minted: pool_units_to_mint,
                 },
             )?;
 

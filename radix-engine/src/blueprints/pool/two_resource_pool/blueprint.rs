@@ -268,7 +268,7 @@ impl TwoResourcePoolBlueprint {
                 bucket1.resource_address(api)? => bucket1.amount(api)?,
                 bucket2.resource_address(api)? => bucket2.amount(api)?,
             },
-            pool_unit_tokens_minted: pool_units_to_mint,
+            pool_units_minted: pool_units_to_mint,
         };
 
         // Minting the pool unit tokens

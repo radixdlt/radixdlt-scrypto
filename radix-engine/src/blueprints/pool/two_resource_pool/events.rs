@@ -6,7 +6,7 @@ use sbor::rust::prelude::*;
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct ContributionEvent {
     pub contributed_resources: BTreeMap<ResourceAddress, Decimal>,
-    pub pool_unit_tokens_minted: Decimal,
+    pub pool_units_minted: Decimal,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
