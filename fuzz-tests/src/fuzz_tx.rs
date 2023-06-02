@@ -272,7 +272,7 @@ impl TxFuzzer {
                 {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
-                        method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                        method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                         args: manifest_args!(),
                     })
                 }
