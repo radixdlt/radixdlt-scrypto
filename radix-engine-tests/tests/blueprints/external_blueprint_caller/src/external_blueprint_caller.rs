@@ -11,13 +11,6 @@ enum ExtraEnum {
     EntryTwo,
 }
 
-external_blueprint! {
-    ExternalBlueprintTarget {
-        fn create() -> ComponentAddress;
-        fn get_value_via_package_call() -> String;
-    }
-}
-
 external_component! {
     ExternalComponentTarget {
         fn get_value_via_ref(&self) -> ExtraStruct;
@@ -31,6 +24,18 @@ mod external_blueprint_caller {
         13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
     ]);
 
+    import_blueprint!(
+        TARGET_PACKAGE_ADDRESS,
+        ExternalBlueprintTarget,
+        "ExternalBlueprintTarget",
+        "OwnedExternalBlueprintTarget",
+        "GlobalExternalBlueprintTarget",
+        ExternalBlueprintTargetFunctions {
+            fn create() -> ComponentAddress;
+            fn get_value_via_package_call() -> String;
+        }
+    );
+
     struct ExternalBlueprintCaller {}
 
     impl ExternalBlueprintCaller {
@@ -42,16 +47,13 @@ mod external_blueprint_caller {
         }
 
         pub fn run_tests_with_external_blueprint(&self) {
-            let external_blueprint =
-                ExternalBlueprintTarget::at(TARGET_PACKAGE_ADDRESS, "ExternalBlueprintTarget");
-
             // NB - These values should match those defined in ../../component/src/external_blueprint_target.rs
             assert!(
-                external_blueprint.get_value_via_package_call() == "SUCCESS",
+                Blueprint::<ExternalBlueprintTarget>::get_value_via_package_call() == "SUCCESS",
                 "Package call failed"
             );
 
-            let component_address = external_blueprint.create();
+            let component_address = Blueprint::<ExternalBlueprintTarget>::create();
             let mut target: Global<ExternalComponentTarget> = component_address.into();
 
             assert!(
