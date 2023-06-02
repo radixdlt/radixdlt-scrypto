@@ -2,8 +2,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod faucet_call {
-    const FAUCET_PACKAGE: PackageAddress =
-        address!("package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet");
     const FAUCET_ADDRESS: ComponentAddress =
         address!("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
 

@@ -221,6 +221,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
 
+    let mut imported_packages = Vec::new();
+
     let import_statements = {
         let mut import_statements = Vec::new();
         let import_blueprint_index = macro_statements.iter().position(|item| {
@@ -233,26 +235,51 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         if let Some(import_blueprint_index) = import_blueprint_index {
             let import_macro = macro_statements.remove(import_blueprint_index);
             let import_blueprint: ImportBlueprint = import_macro.mac.parse_body()?;
+
+            let package_expr = {
+                let package = import_blueprint.package;
+                let lit_str: LitStr = parse_quote!( #package );
+                let (_hrp, _entity_type, address) =
+                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                        .unwrap();
+                let package_expr: Expr = parse_quote! {
+                    PackageAddress :: new_or_panic([ #(#address),* ])
+                };
+                package_expr
+            };
+
+            imported_packages.push(package_expr.clone());
+
+            let blueprint = import_blueprint.blueprint;
+            let blueprint_name = blueprint.to_string();
+            let owned_typed_name = format!("Owned{}", blueprint_name);
+            let global_typed_name = format!("Global{}", blueprint_name);
+
+            let blueprint_functions_ident = format_ident!("{}Functions", blueprint);
+
             let mut methods = Vec::new();
             let mut functions = Vec::new();
             for function in import_blueprint.functions {
                 let is_method = function.sig.inputs.iter().find(|arg| matches!(arg, FnArg::Receiver(..))).is_some();
                 if is_method {
-                    methods.push(function);
+                    methods.push(function.sig);
                 } else {
-                    functions.push(function);
+                    functions.push(function.sig);
                 }
             }
+
             let import_statement = quote! {
                 import_blueprint! {
-                    FAUCET_PACKAGE,
-                    Faucet,
-                    "Faucet",
-                    "OwnedFaucet",
-                    "GlobalFaucet",
-                    FaucetFunctions {},
+                    #package_expr,
+                    #blueprint,
+                    #blueprint_name,
+                    #owned_typed_name,
+                    #global_typed_name,
+                    #blueprint_functions_ident {
+                        #(#functions;)*
+                    },
                     {
-                        fn lock_fee(&self, amount: Decimal);
+                        #(#methods;)*
                     }
                 }
             };
@@ -367,6 +394,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let mut dependencies = BTreeSet::new();
                 #({
                     dependencies.insert(#raw_package_dependencies.into());
+                })*
+                #({
+                    dependencies.insert(#imported_packages.into());
                 })*
 
                 let mut method_auth_template = method_auth_template();
