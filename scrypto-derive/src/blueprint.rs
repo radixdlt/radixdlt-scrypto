@@ -221,7 +221,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
 
-    {
+    let import_statements = {
+        let mut import_statements = Vec::new();
         let import_blueprint_index = macro_statements.iter().position(|item| {
             item.mac
                 .path
@@ -231,9 +232,34 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         });
         if let Some(import_blueprint_index) = import_blueprint_index {
             let import_macro = macro_statements.remove(import_blueprint_index);
-            let _import_blueprint: ImportBlueprint = import_macro.mac.parse_body()?;
+            let import_blueprint: ImportBlueprint = import_macro.mac.parse_body()?;
+            let mut methods = Vec::new();
+            let mut functions = Vec::new();
+            for function in import_blueprint.functions {
+                let is_method = function.sig.inputs.iter().find(|arg| matches!(arg, FnArg::Receiver(..))).is_some();
+                if is_method {
+                    methods.push(function);
+                } else {
+                    functions.push(function);
+                }
+            }
+            let import_statement = quote! {
+                import_blueprint! {
+                    FAUCET_PACKAGE,
+                    Faucet,
+                    "Faucet",
+                    "OwnedFaucet",
+                    "GlobalFaucet",
+                    FaucetFunctions {},
+                    {
+                        fn lock_fee(&self, amount: Decimal);
+                    }
+                }
+            };
+            import_statements.push(import_statement);
         }
-    }
+        import_statements
+    };
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
@@ -423,6 +449,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#use_statements)*
 
             #(#const_statements)*
+
+            #(#import_statements)*
 
             #(#macro_statements)*
 

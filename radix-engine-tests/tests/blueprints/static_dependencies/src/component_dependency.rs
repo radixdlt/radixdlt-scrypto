@@ -7,18 +7,6 @@ mod faucet_call {
     const FAUCET_ADDRESS: ComponentAddress =
         address!("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
 
-    import_blueprint!(
-        FAUCET_PACKAGE,
-        Faucet,
-        "Faucet",
-        "OwnedFaucet",
-        "GlobalFaucet",
-        FaucetFunctions {},
-        {
-            fn lock_fee(&self, amount: Decimal);
-        }
-    );
-
     import_blueprint2!(
         "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
         Faucet {
