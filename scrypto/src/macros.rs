@@ -154,7 +154,7 @@ macro_rules! include_schema {
 
 // This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/
 #[macro_export]
-macro_rules! external_blueprint_members {
+macro_rules! external_functions {
     (
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
@@ -199,7 +199,7 @@ macro_rules! external_blueprint_members {
             Self::call_function_raw(stringify!($func_name), scrypto_args!($($func_args),*))
         }
 
-        $crate::external_blueprint_members!($($rest)*);
+        $crate::external_functions!($($rest)*);
     };
     (
         fn $func_name:ident($($func_args:ident: $func_types:ty),*);
@@ -209,80 +209,15 @@ macro_rules! external_blueprint_members {
             Self::call_function_raw(stringify!($func_name), scrypto_args!($($func_args),*))
         }
 
-        $crate::external_blueprint_members!($($rest)*);
+        $crate::external_functions!($($rest)*);
     };
     () => {
     };
 }
 
-/// Generates a bridge/stub to make cross-component calls.
-///
-/// # Examples
-/// ```no_run
-/// use scrypto::prelude::*;
-///
-/// #[derive(Sbor)]
-/// enum DepositResult {
-///     Success,
-///     Failure
-/// }
-///
-/// external_component! {
-///     Account {
-///         fn deposit(&mut self, b: Bucket) -> DepositResult;
-///         fn deposit_no_return(&mut self, b: Bucket);
-///         fn read_balance(&self) -> Decimal;
-///     }
-/// }
-///
-/// fn bridge_to_existing_account(component_address: ComponentAddress) {
-///     let existing_account: Global<Account> = component_address.into();
-///     let balance = existing_account.read_balance();
-///     // ...
-/// }
-/// ```
-///
-/// # Related
-///
-/// - Similar to the [external_blueprint] macro, but the external_component can be used without knowing the package and blueprint addresses.
-#[macro_export]
-macro_rules! external_component {
-    (
-        $component_ident:ident {
-            $($component_methods:tt)*
-        }
-    ) => {
-        #[derive(Copy, Clone)]
-        struct $component_ident {
-            pub handle: ::scrypto::component::ObjectStubHandle,
-        }
-
-        impl ::scrypto::component::ObjectStub for $component_ident {
-            fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
-                Self {
-                    handle
-                }
-            }
-            fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
-                &self.handle
-            }
-        }
-
-        impl HasStub for $component_ident {
-            type Stub = $component_ident;
-        }
-
-        // We allow dead code because it's used for importing interfaces, and not all the interface might be used
-        #[allow(dead_code, unused_imports)]
-        impl $component_ident {
-            $crate::external_component_members!($($component_methods)*);
-        }
-    };
-}
-
 // This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/
 #[macro_export]
-macro_rules! external_component_members {
+macro_rules! external_methods {
     (
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
@@ -290,7 +225,7 @@ macro_rules! external_component_members {
         pub fn $method_name(&self $(, $method_args: $method_types)*) -> $method_output {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
-        $crate::external_component_members!($($rest)*);
+        $crate::external_methods!($($rest)*);
     };
     (
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*);
@@ -299,7 +234,7 @@ macro_rules! external_component_members {
         pub fn $method_name(&self $(, $method_args: $method_types)*) {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
-        $crate::external_component_members!($($rest)*);
+        $crate::external_methods!($($rest)*);
     };
     (
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
@@ -308,7 +243,7 @@ macro_rules! external_component_members {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) -> $method_output {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
-        $crate::external_component_members!($($rest)*);
+        $crate::external_methods!($($rest)*);
     };
     (
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*);
@@ -317,7 +252,7 @@ macro_rules! external_component_members {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
-        $crate::external_component_members!($($rest)*);
+        $crate::external_methods!($($rest)*);
     };
     (
         fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
@@ -372,7 +307,7 @@ macro_rules! import_blueprint {
         }
 
         impl $functions for ::scrypto::component::Blueprint<$blueprint> {
-            $crate::external_blueprint_members!($($function_contents)*);
+            $crate::external_functions!($($function_contents)*);
         }
 
         impl ::scrypto::component::ObjectStub for $blueprint {
@@ -393,7 +328,7 @@ macro_rules! import_blueprint {
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint {
-            $crate::external_component_members!($($method_contents)*);
+            $crate::external_methods!($($method_contents)*);
         }
     };
 }

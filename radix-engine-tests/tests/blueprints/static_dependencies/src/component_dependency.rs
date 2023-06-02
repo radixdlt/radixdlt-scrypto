@@ -9,17 +9,30 @@ mod faucet_call {
         }
     );
 
+    const FAUCET: Global<FiFi> = global_component!(
+        FiFi,
+        "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh"
+    );
+
     struct FaucetCall {}
 
     impl FaucetCall {
         pub fn call_faucet_lock_fee() {
             let amount: Decimal = 10.into();
-            let component = global_component!(FiFi, "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
-            component.lock_fee(amount);
+            FAUCET.lock_fee(amount);
         }
 
         pub fn call_faucet_lock_fee2(faucet: Global<FiFi>) {
             let amount: Decimal = 10.into();
+            faucet.lock_fee(amount);
+        }
+
+        pub fn call_faucet_lock_fee3() {
+            let amount: Decimal = 10.into();
+            let faucet = global_component!(
+                FiFi,
+                "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh"
+            );
             faucet.lock_fee(amount);
         }
     }

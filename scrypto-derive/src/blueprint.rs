@@ -1,10 +1,10 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use radix_engine_common::address::Bech32Decoder;
-use syn::parse::{Parse, Parser, ParseStream};
+use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
-use syn::*;
 use syn::token::{Brace, Comma};
+use syn::*;
 
 use crate::ast;
 
@@ -43,10 +43,7 @@ impl Parse for ImportBlueprintFn {
     fn parse(input: ParseStream) -> Result<Self> {
         let sig = input.parse()?;
         let semi_token = input.parse()?;
-        Ok(Self {
-            sig,
-            semi_token,
-        })
+        Ok(Self { sig, semi_token })
     }
 }
 
@@ -91,7 +88,6 @@ impl Parse for ImportBlueprint {
     }
 }
 
-
 pub fn replace_macros_in_body(block: &mut Block, dependency_exprs: &mut Vec<Expr>) -> Result<()> {
     for stmt in &mut block.stmts {
         match stmt {
@@ -101,8 +97,7 @@ pub fn replace_macros_in_body(block: &mut Block, dependency_exprs: &mut Vec<Expr
             Stmt::Semi(expr, ..) => {
                 replace_macros(expr, dependency_exprs)?;
             }
-            Stmt::Item(..) => {
-            }
+            Stmt::Item(..) => {}
             Stmt::Local(local) => {
                 if let Some((_, expr)) = &mut local.init {
                     replace_macros(expr, dependency_exprs)?;
@@ -192,9 +187,7 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                 replace_macros(expr, dependency_exprs)?;
             }
         }
-        Expr::ForLoop(for_loop) => {
-            replace_macros_in_body(&mut for_loop.body, dependency_exprs)?
-        }
+        Expr::ForLoop(for_loop) => replace_macros_in_body(&mut for_loop.body, dependency_exprs)?,
         Expr::Call(call) => {
             replace_macros(call.func.as_mut(), dependency_exprs)?;
             for expr in &mut call.args {
@@ -209,8 +202,7 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                 replace_macros(expr, dependency_exprs)?;
             }
         }
-        _ => {
-        }
+        _ => {}
     }
 
     Ok(())
@@ -286,7 +278,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
-
     let mut dependency_exprs = Vec::new();
 
     let const_statements = {
@@ -326,7 +317,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         };
                         item.expr = Box::new(expr);
                     }
-                    _ => { }
+                    _ => {}
                 }
 
                 let expr: Expr = parse_quote! { #ident };
@@ -377,7 +368,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
 
-
     let import_statements = {
         let mut import_statements = Vec::new();
         let import_blueprint_index = macro_statements.iter().position(|item| {
@@ -403,7 +393,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             PackageAddress :: new_or_panic([ #(#address),* ])
                         };
                         package_expr
-                    },
+                    }
                     _ => package,
                 }
             };
@@ -424,7 +414,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             let mut methods = Vec::new();
             let mut functions = Vec::new();
             for function in import_blueprint.functions {
-                let is_method = function.sig.inputs.iter().find(|arg| matches!(arg, FnArg::Receiver(..))).is_some();
+                let is_method = function
+                    .sig
+                    .inputs
+                    .iter()
+                    .find(|arg| matches!(arg, FnArg::Receiver(..)))
+                    .is_some();
                 if is_method {
                     methods.push(function.sig);
                 } else {
@@ -1066,7 +1061,11 @@ struct GeneratedSchemaInfo {
 }
 
 #[allow(dead_code)]
-fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem], dependency_exprs: &mut Vec<Expr>) -> Result<GeneratedSchemaInfo> {
+fn generate_schema(
+    bp_ident: &Ident,
+    items: &mut [ImplItem],
+    dependency_exprs: &mut Vec<Expr>,
+) -> Result<GeneratedSchemaInfo> {
     let mut fn_names = Vec::<String>::new();
     let mut fn_schemas = Vec::<Expr>::new();
     let mut method_idents = Vec::<Ident>::new();

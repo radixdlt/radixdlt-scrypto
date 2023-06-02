@@ -13,7 +13,10 @@ mod preallocated_call {
 
     impl PreallocatedCall {
         pub fn call_preallocated() -> String {
-            let component = global_component!(Preallocated, "component_sim1cqqqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgp55w6zv");
+            let component = global_component!(
+                Preallocated,
+                "component_sim1cqqqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgp55w6zv"
+            );
             component.get_secret()
         }
     }
@@ -25,7 +28,8 @@ mod some_resource {
 
     impl SomeResource {
         pub fn call_some_resource_total_supply() -> Decimal {
-            resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6").total_supply()
+            resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6")
+                .total_supply()
         }
 
         pub fn resource() -> ResourceManager {
