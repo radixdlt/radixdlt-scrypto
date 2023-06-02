@@ -7,7 +7,7 @@ mod faucet_call {
 
     import_blueprint2!(
         "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
-        Faucet {
+        Faucet as FiFi {
             fn lock_fee(&self, amount: Decimal);
         }
     );
@@ -17,11 +17,11 @@ mod faucet_call {
     impl FaucetCall {
         pub fn call_faucet_lock_fee() {
             let amount: Decimal = 10.into();
-            let faucet: Global<Faucet> = FAUCET_ADDRESS.into();
+            let faucet: Global<FiFi> = FAUCET_ADDRESS.into();
             faucet.lock_fee(amount);
         }
 
-        pub fn call_faucet_lock_fee2(faucet: Global<Faucet>) {
+        pub fn call_faucet_lock_fee2(faucet: Global<FiFi>) {
             let amount: Decimal = 10.into();
             faucet.lock_fee(amount);
         }

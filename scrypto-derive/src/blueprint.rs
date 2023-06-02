@@ -35,6 +35,7 @@ pub struct ImportBlueprint {
     pub package: Expr,
     pub comma0: Comma,
     pub blueprint: Ident,
+    pub rename: Option<(Token![as], Ident)>,
     pub brace: Brace,
     pub functions: Vec<ImportBlueprintFn>,
 }
@@ -45,6 +46,11 @@ impl Parse for ImportBlueprint {
         let package = input.parse()?;
         let comma0 = input.parse()?;
         let blueprint = input.parse()?;
+        let rename = if input.peek(Token![as]) {
+            Some((input.parse()?, input.parse()?))
+        } else {
+            None
+        };
         let brace = braced!(content in input);
 
         let functions = {
@@ -59,6 +65,7 @@ impl Parse for ImportBlueprint {
             package,
             comma0,
             blueprint,
+            rename,
             brace,
             functions,
         })
@@ -238,23 +245,32 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             let package_expr = {
                 let package = import_blueprint.package;
-                let lit_str: LitStr = parse_quote!( #package );
-                let (_hrp, _entity_type, address) =
-                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                        .unwrap();
-                let package_expr: Expr = parse_quote! {
-                    PackageAddress :: new_or_panic([ #(#address),* ])
-                };
-                package_expr
+                match package {
+                    Expr::Lit(..) => {
+                        let lit_str: LitStr = parse_quote!( #package );
+                        let (_hrp, _entity_type, address) =
+                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                .unwrap();
+                        let package_expr: Expr = parse_quote! {
+                            PackageAddress :: new_or_panic([ #(#address),* ])
+                        };
+                        package_expr
+                    },
+                    _ => package,
+                }
             };
 
             imported_packages.push(package_expr.clone());
 
-            let blueprint = import_blueprint.blueprint;
-            let blueprint_name = blueprint.to_string();
-            let owned_typed_name = format!("Owned{}", blueprint_name);
-            let global_typed_name = format!("Global{}", blueprint_name);
+            let blueprint_name = import_blueprint.blueprint.to_string();
+            let blueprint = if let Some((_, rename)) = import_blueprint.rename {
+                rename
+            } else {
+                import_blueprint.blueprint
+            };
 
+            let owned_typed_name = format!("Owned{}", blueprint.to_string());
+            let global_typed_name = format!("Global{}", blueprint.to_string());
             let blueprint_functions_ident = format_ident!("{}Functions", blueprint);
 
             let mut methods = Vec::new();
