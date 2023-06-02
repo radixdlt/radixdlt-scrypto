@@ -18,6 +18,7 @@ pub const TRANSACTION_PROCESSOR_CODE_ID: u8 = 7u8;
 pub const METADATA_CODE_ID: u8 = 10u8;
 pub const ROYALTY_CODE_ID: u8 = 11u8;
 pub const ACCESS_RULES_CODE_ID: u8 = 12u8;
+pub const POOL_ID: u8 = 13u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
