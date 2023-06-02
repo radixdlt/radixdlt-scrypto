@@ -9,8 +9,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod radiswap {
-    const POOL_PACKAGE: PackageAddress = scrypto::prelude::POOL_PACKAGE;
-
     struct Radiswap {
         // TODO: We need a stub for native blueprints so that we're not using `AnyComponent`.
         /// The liquidity pool used by Radiswap and that manages all of the pool unit tokens.

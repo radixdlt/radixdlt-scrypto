@@ -13,6 +13,23 @@ enum Action {
     Deposit,
     Recall,
     UpdateMetadata,
+    Freeze,
+    Unfreeze,
+}
+
+impl Action {
+    fn get_role(&self) -> RoleKey {
+        match self {
+            Action::Mint => RoleKey::new(MINT_ROLE),
+            Action::Burn => RoleKey::new(BURN_ROLE),
+            Action::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
+            Action::Withdraw => RoleKey::new(WITHDRAW_ROLE),
+            Action::Deposit => RoleKey::new(DEPOSIT_ROLE),
+            Action::Recall => RoleKey::new(RECALL_ROLE),
+            Action::Freeze => RoleKey::new(FREEZE_ROLE),
+            Action::Unfreeze => RoleKey::new(UNFREEZE_ROLE),
+        }
+    }
 }
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
@@ -26,20 +43,14 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         withdraw_auth,
         recall_auth,
         update_metadata_auth,
+        freeze_auth,
+        unfreeze_auth,
         admin_auth,
     ) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
-        let role_key = match action {
-            Action::Mint => RoleKey::new(MINT_ROLE),
-            Action::Burn => RoleKey::new(BURN_ROLE),
-            Action::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
-            Action::Withdraw => RoleKey::new(WITHDRAW_ROLE),
-            Action::Deposit => RoleKey::new(DEPOSIT_ROLE),
-            Action::Recall => RoleKey::new(RECALL_ROLE),
-        };
-
+        let role_key = action.get_role();
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
@@ -63,6 +74,8 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Deposit => mint_auth, // Any bad auth
             Action::Recall => recall_auth,
             Action::UpdateMetadata => update_metadata_auth,
+            Action::Freeze => freeze_auth,
+            Action::Unfreeze => unfreeze_auth,
         }
     };
 
@@ -106,6 +119,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
+        Action::UpdateMetadata => builder.set_metadata(
+            token_address.into(),
+            "key".to_string(),
+            MetadataValue::String("value".to_string()),
+        ),
         Action::Recall => {
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
@@ -118,11 +136,16 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
         }
-        Action::UpdateMetadata => builder.set_metadata(
-            token_address.into(),
-            "key".to_string(),
-            MetadataValue::String("value".to_string()),
-        ),
+        Action::Freeze => {
+            let vaults = test_runner.get_component_vaults(account, token_address);
+            let vault_id = vaults[0];
+            builder.freeze(InternalAddress::new_or_panic(vault_id.into()))
+        }
+        Action::Unfreeze => {
+            let vaults = test_runner.get_component_vaults(account, token_address);
+            let vault_id = vaults[0];
+            builder.unfreeze(InternalAddress::new_or_panic(vault_id.into()))
+        }
     };
 
     let manifest = builder.build();
@@ -176,15 +199,39 @@ fn cannot_withdraw_with_wrong_auth() {
 }
 
 #[test]
-fn can_reprocess_call_data_auth() {
+fn can_recall_with_auth() {
     test_resource_auth(Action::Recall, false, false, false);
     test_resource_auth(Action::Recall, true, true, false);
 }
 
 #[test]
-fn cannot_reprocess_call_data_wrong_auth() {
+fn cannot_recall_with_wrong_auth() {
     test_resource_auth(Action::Recall, false, true, true);
     test_resource_auth(Action::Recall, true, false, true);
+}
+
+#[test]
+fn can_freeze_with_auth() {
+    test_resource_auth(Action::Freeze, false, false, false);
+    test_resource_auth(Action::Freeze, true, true, false);
+}
+
+#[test]
+fn cannot_freeze_with_wrong_auth() {
+    test_resource_auth(Action::Freeze, false, true, true);
+    test_resource_auth(Action::Freeze, true, false, true);
+}
+
+#[test]
+fn can_unfreeze_with_auth() {
+    test_resource_auth(Action::Unfreeze, false, false, false);
+    test_resource_auth(Action::Unfreeze, true, true, false);
+}
+
+#[test]
+fn cannot_unfreeze_with_wrong_auth() {
+    test_resource_auth(Action::Unfreeze, false, true, true);
+    test_resource_auth(Action::Unfreeze, true, false, true);
 }
 
 #[test]

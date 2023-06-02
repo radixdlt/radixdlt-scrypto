@@ -42,6 +42,7 @@ lazy_static! {
             ACCESS_RULES_MODULE_PACKAGE.into(),
             GENESIS_HELPER_PACKAGE.into(),
             FAUCET_PACKAGE.into(),
+            POOL_PACKAGE.into(),
             // components
             CONSENSUS_MANAGER.into(),
         ]
