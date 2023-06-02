@@ -96,7 +96,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
 
     if random_size {
         println!("");
-        let batch_size = 1000;
+        let batch_size = writes_count / 100;
         for i in 0..writes_count / batch_size {
             let mut input_data = DatabaseUpdates::with_capacity(batch_size);
             for _ in 0..batch_size {

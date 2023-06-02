@@ -59,8 +59,8 @@ fn test_commit_merkle() {
     // prepare database
     {
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path.clone());
-        // 10000 substates of random size from 1B to 4MB under random partitions
-        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, 0, 10000, true); 
+        // 1_000_000 substates of size 100 bytes under random partitions
+        prepare_db(&mut substate_db, 100, 100, 1, 1000000, false); 
     }
 
     // reopen database and measure commit times
@@ -73,34 +73,35 @@ fn test_commit_merkle() {
     rng.fill(&mut node_id_value);
     let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
 
-    let mut substate_key_value = [0u8; NodeId::LENGTH];
-    rng.fill(&mut substate_key_value);
-    let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
-        substate_key_value.into(),
-    ));
-
-    let value_size_max = 100;
-
-    for value_size in 1..=value_size_max {
-        print!("\rRound {}/{}", value_size, value_size_max );
+    let value_size = 100;
+    for i in 1..=100 {
+        print!("\rRound {}/{}", i, value_size );
         std::io::stdout().flush().ok();
 
         let mut input_data = DatabaseUpdates::new();
 
-        let mut value_data: DbSubstateValue = vec![0u8; value_size];
-        rng.fill(value_data.as_mut_slice());
-        let value = DatabaseUpdate::Set(value_data);
+        for j in 0..i {
+            let mut value_data: DbSubstateValue = vec![0u8; value_size];
+            rng.fill(value_data.as_mut_slice());
+            let value = DatabaseUpdate::Set(value_data);
 
-        let mut partition = PartitionUpdates::new();
-        partition.insert(sort_key.clone(), value);
+            let substate_key_value: Vec<u8> = vec![j]; //[0u8; NodeId::LENGTH];
+            let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
+                substate_key_value.into(),
+            ));
 
-        let partition_key =
-            SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(value_size as u8));
+            let mut partition = PartitionUpdates::new();
+            partition.insert(sort_key.clone(), value);
 
-        input_data.insert(partition_key, partition);
+            let partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(i as u8));
+
+            input_data.insert(partition_key, partition);
+        }
 
         substate_db.commit(&input_data);
     }
+
     println!("");
     // prepare output data
     // drop_highest_and_lowest_value(&substate_db, 3);
@@ -110,8 +111,8 @@ fn test_commit_merkle() {
     // prepare data for plot
     let mut rocksdb_data = Vec::with_capacity(100000);
     for (k, v) in substate_db.commit_metrics.borrow().iter() {
-        for i in v {
-            rocksdb_data.push((*k as f32, i.as_micros() as f32));
+        for (i, val) in v.iter().enumerate() {
+            rocksdb_data.push(((i+1) as f32, val.as_micros() as f32));
         }
     }
     // export results
