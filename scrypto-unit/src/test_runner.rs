@@ -35,9 +35,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    PackageDefinition, PackageInfoSubstate, PackageRoyaltySubstate,
-};
+use radix_engine_interface::blueprints::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PackageDefinition, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -702,6 +700,44 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
+    }
+
+    pub fn publish_package_at_address(
+        &mut self,
+        code: Vec<u8>,
+        definition: PackageDefinition,
+        address: [u8; NodeId::LENGTH],
+    ) {
+        let code_hash = hash(&code);
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransactionV1 {
+                instructions: InstructionsV1(vec![
+                    InstructionV1::CallFunction {
+                        package_address: PACKAGE_PACKAGE,
+                        blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                        function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+                        args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                            code: ManifestBlobRef(code_hash.0),
+                            definition,
+                            royalty_config: btreemap!(),
+                            metadata: btreemap!(),
+                            package_address: Some(address),
+                            owner_rule: OwnerRole::None,
+                        }),
+                    }
+                ]),
+                blobs: BlobsV1 { blobs: vec![BlobV1(code)] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_ids: indexset!(NodeId::from(address)),
+            }
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(btreeset!(AuthAddresses::system_role())),
+        );
+
+        receipt.expect_commit_success();
     }
 
     pub fn publish_package(
