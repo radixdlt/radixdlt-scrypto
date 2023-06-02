@@ -350,10 +350,15 @@ macro_rules! external_component_members {
 macro_rules! import_blueprint {
     (
         $package_address:expr, $blueprint:ident, $blueprint_name:expr, $owned_type_name:expr, $global_type_name: expr, $functions:ident {
-            $($blueprint_contents:tt)*
+            $($function_contents:tt)*
+        }, {
+            $($method_contents:tt)*
         }
     ) => {
-        pub struct $blueprint;
+        #[derive(Copy, Clone)]
+        pub struct $blueprint {
+            pub handle: ::scrypto::component::ObjectStubHandle,
+        }
 
         impl HasTypeInfo for $blueprint {
             const PACKAGE_ADDRESS: Option<PackageAddress> = Some($package_address);
@@ -363,11 +368,32 @@ macro_rules! import_blueprint {
         }
 
         pub trait $functions {
-            $($blueprint_contents)*
+            $($function_contents)*
         }
 
         impl $functions for ::scrypto::component::Blueprint<$blueprint> {
-            $crate::external_blueprint_members!($($blueprint_contents)*);
+            $crate::external_blueprint_members!($($function_contents)*);
+        }
+
+        impl ::scrypto::component::ObjectStub for $blueprint {
+            fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
+                Self {
+                    handle
+                }
+            }
+            fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
+                &self.handle
+            }
+        }
+
+        impl HasStub for $blueprint {
+            type Stub = $blueprint;
+        }
+
+        // We allow dead code because it's used for importing interfaces, and not all the interface might be used
+        #[allow(dead_code, unused_imports)]
+        impl $blueprint {
+            $crate::external_component_members!($($method_contents)*);
         }
     };
 }

@@ -14,7 +14,8 @@ fn test_external_bridges() {
 
     // Part 1 - Upload the target and caller packages
     // Note - we put them in separate packages so that we test that the package call is to an external package
-    test_runner.compile_and_publish_at_address("./tests/blueprints/component", TARGET_PACKAGE_ADDRESS);
+    test_runner
+        .compile_and_publish_at_address("./tests/blueprints/component", TARGET_PACKAGE_ADDRESS);
     let target_package_address = PackageAddress::new_or_panic(TARGET_PACKAGE_ADDRESS);
 
     let caller_package_address =

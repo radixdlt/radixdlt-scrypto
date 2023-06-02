@@ -9,6 +9,7 @@ mod cross_package {
 
     import_blueprint!(PACKAGE_ADDRESS_PLACE_HOLDER, Sample2, "Sample", "OwnedSample", "GlobalSample", Sample2Functions {
         fn callee();
+    }, {
     });
 
     struct Sample {}

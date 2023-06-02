@@ -1,21 +1,14 @@
 use scrypto::prelude::*;
 
 #[derive(Sbor, PartialEq)]
-struct ExtraStruct {
+pub struct ExtraStruct {
     field_one: String,
 }
 
 #[derive(Sbor, PartialEq)]
-enum ExtraEnum {
+pub enum ExtraEnum {
     EntryOne,
     EntryTwo,
-}
-
-external_component! {
-    ExternalComponentTarget {
-        fn get_value_via_ref(&self) -> ExtraStruct;
-        fn get_value_via_mut_ref(&mut self) -> ExtraEnum;
-    }
 }
 
 #[blueprint]
@@ -31,8 +24,11 @@ mod external_blueprint_caller {
         "OwnedExternalBlueprintTarget",
         "GlobalExternalBlueprintTarget",
         ExternalBlueprintTargetFunctions {
-            fn create() -> ComponentAddress;
+            fn create() -> Global<ExternalBlueprintTarget>;
             fn get_value_via_package_call() -> String;
+        }, {
+            fn get_value_via_ref(&self) -> ExtraStruct;
+            fn get_value_via_mut_ref(&mut self) -> ExtraEnum;
         }
     );
 
@@ -53,8 +49,8 @@ mod external_blueprint_caller {
                 "Package call failed"
             );
 
-            let component_address = Blueprint::<ExternalBlueprintTarget>::create();
-            let mut target: Global<ExternalComponentTarget> = component_address.into();
+            let mut target: Global<ExternalBlueprintTarget> =
+                Blueprint::<ExternalBlueprintTarget>::create();
 
             assert!(
                 target.get_value_via_ref()
@@ -69,10 +65,10 @@ mod external_blueprint_caller {
             );
         }
 
-        pub fn run_tests_with_external_component(&self, component_address: ComponentAddress) {
-            // NB - These values should match those defined in ../../component/src/external_blueprint_target.rs
-            let mut target: Global<ExternalComponentTarget> = component_address.into();
-
+        pub fn run_tests_with_external_component(
+            &self,
+            mut target: Global<ExternalBlueprintTarget>,
+        ) {
             assert!(
                 target.get_value_via_ref()
                     == ExtraStruct {

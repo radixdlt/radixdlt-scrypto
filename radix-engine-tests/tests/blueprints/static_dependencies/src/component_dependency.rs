@@ -1,52 +1,23 @@
 use scrypto::prelude::*;
 
-external_component! {
-    Faucet {
-        fn lock_fee(&self, amount: Decimal);
-    }
-}
-
-/*
-impl HasStub for Faucet {
-    type Stub = Faucet;
-}
-
-#[derive(Copy, Clone)]
-pub struct Faucet {
-    pub handle: ::scrypto::component::ObjectStubHandle,
-}
-
-impl ::scrypto::component::ObjectStub for Faucet {
-    fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
-        Self {
-            handle
-        }
-    }
-    fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
-        &self.handle
-    }
-}
-
-impl Faucet {
-    pub fn lock_fee(&self, amount: Decimal) {
-        self.call_raw("lock_fee", scrypto_args!(amount))
-    }
-}
- */
-
-/*
-impl HasTypeInfo for Faucet {
-    const PACKAGE_ADDRESS: Option<PackageAddress> = None;
-    const BLUEPRINT_NAME: &'static str = "Faucet";
-    const OWNED_TYPE_NAME: &'static str = "OwnedFaucet";
-    const GLOBAL_TYPE_NAME: &'static str = "GlobalFaucet";
-}
- */
-
 #[blueprint]
 mod faucet_call {
+    const FAUCET_PACKAGE: PackageAddress =
+        address!("package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet");
     const FAUCET_ADDRESS: ComponentAddress =
         address!("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
+
+    import_blueprint!(
+        FAUCET_PACKAGE,
+        Faucet,
+        "Faucet",
+        "OwnedFaucet",
+        "GlobalFaucet",
+        FaucetFunctions {},
+        {
+            fn lock_fee(&self, amount: Decimal);
+        }
+    );
 
     struct FaucetCall {}
 
@@ -54,6 +25,11 @@ mod faucet_call {
         pub fn call_faucet_lock_fee() {
             let amount: Decimal = 10.into();
             let faucet: Global<Faucet> = FAUCET_ADDRESS.into();
+            faucet.lock_fee(amount);
+        }
+
+        pub fn call_faucet_lock_fee2(faucet: Global<Faucet>) {
+            let amount: Decimal = 10.into();
             faucet.lock_fee(amount);
         }
     }
