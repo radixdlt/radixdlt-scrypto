@@ -86,11 +86,16 @@ const PRE_ALLOCATED: [u8; NodeId::LENGTH] = [
     192, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
 ];
 
+const PRE_ALLOCATED_PACKAGE: [u8; NodeId::LENGTH] = [
+    13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+];
+
 #[test]
 fn static_component_should_be_callable() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+    test_runner.compile_and_publish_at_address("./tests/blueprints/static_dependencies", PRE_ALLOCATED_PACKAGE);
+    let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
     let receipt = test_runner.execute_system_transaction_with_preallocated_ids(
         vec![InstructionV1::CallFunction {
             package_address,

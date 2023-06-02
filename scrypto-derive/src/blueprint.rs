@@ -142,6 +142,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
+
+    let mut dependency_exprs = Vec::new();
+
     let const_statements = {
         let mut const_statements = bp.const_statements.clone();
 
@@ -149,41 +152,87 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         for item in &mut const_statements {
             let ty = item.ty.as_ref();
             let type_string = quote! { #ty }.to_string();
-            if !type_string.contains("ResourceAddress")
-                && !type_string.contains("ComponentAddress")
-                && !type_string.contains("PackageAddress")
-                && !type_string.contains("GlobalAddress")
+            if type_string.contains("ResourceAddress")
+                || type_string.contains("ComponentAddress")
+                || type_string.contains("PackageAddress")
+                || type_string.contains("GlobalAddress")
             {
-                continue;
-            }
+                match item.expr.as_mut() {
+                    Expr::Macro(m) => {
+                        if !m
+                            .mac
+                            .path
+                            .get_ident()
+                            .unwrap()
+                            .eq(&Ident::new("address", Span::call_site()))
+                        {
+                            continue;
+                        }
 
-            match item.expr.as_mut() {
-                Expr::Macro(m) => {
-                    if !m
-                        .mac
-                        .path
-                        .get_ident()
-                        .unwrap()
-                        .eq(&Ident::new("address", Span::call_site()))
-                    {
-                        continue;
+                        let tokens = &m.mac.tokens;
+                        let lit_str: LitStr = parse_quote!( #tokens );
+
+                        //let value:  = quote! { #tokens }.to_string();
+                        let (_hrp, _entity_type, address) =
+                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                .unwrap();
+
+                        let expr: Expr = parse_quote! {
+                            #ty :: new_or_panic([ #(#address),* ])
+                        };
+                        dependency_exprs.push(expr.clone());
+
+                        item.expr = Box::new(expr);
                     }
-
-                    let tokens = &m.mac.tokens;
-                    let lit_str: LitStr = parse_quote!( #tokens );
-
-                    //let value:  = quote! { #tokens }.to_string();
-                    let (_hrp, _entity_type, address) =
-                        Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                            .unwrap();
-
-                    let expr = parse_quote! {
-                        #ty :: new_or_panic([ #(#address),* ])
-                    };
-
-                    item.expr = Box::new(expr);
+                    _ => {}
                 }
-                _ => {}
+            } else if type_string.contains("Global") {
+                let blueprint = match ty {
+                    Type::Path(type_path) => {
+                        match type_path.path.segments.last().cloned().unwrap().arguments {
+                            PathArguments::AngleBracketed(args) => match args.args.last().unwrap() {
+                                GenericArgument::Type(Type::Path(path)) => path.path.segments.last().cloned().unwrap().ident,
+                                _ => panic!("oops"),
+                            }
+                            _ => panic!("oops"),
+                        }
+                    },
+                    _ => panic!("oops: {:?}", ty)
+                };
+                match item.expr.as_mut() {
+                    Expr::Macro(m) => {
+                        if !m
+                            .mac
+                            .path
+                            .get_ident()
+                            .unwrap()
+                            .eq(&Ident::new("at_address", Span::call_site()))
+                        {
+                            continue;
+                        }
+
+                        let tokens = &m.mac.tokens;
+                        let lit_str: LitStr = parse_quote!( #tokens );
+
+                        //let value:  = quote! { #tokens }.to_string();
+                        let (_hrp, _entity_type, address) =
+                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                .unwrap();
+
+                        dependency_exprs.push(parse_quote! {
+                            GlobalAddress :: new_or_panic([ #(#address),* ])
+                        });
+
+                        let expr = parse_quote! {
+                            Global(#blueprint {
+                                handle: ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))
+                            })
+                        };
+
+                        item.expr = Box::new(expr);
+                    }
+                    _ => {}
+                }
             }
         }
 
@@ -228,7 +277,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
 
-    let mut imported_packages = Vec::new();
 
     let import_statements = {
         let mut import_statements = Vec::new();
@@ -260,7 +308,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
             };
 
-            imported_packages.push(package_expr.clone());
+            dependency_exprs.push(package_expr.clone());
 
             let blueprint_name = import_blueprint.blueprint.to_string();
             let blueprint = if let Some((_, rename)) = import_blueprint.rename {
@@ -336,14 +384,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         };
 
-        let raw_package_dependencies: Vec<Ident> = {
-            let const_statements = bp.const_statements;
-            const_statements
-                .iter()
-                .map(|stmt| stmt.ident.clone())
-                .collect()
-        };
-
         let schema_ident = format_ident!("{}_schema", bp_ident);
         let fn_names = generated_schema_info.fn_names;
         let fn_schemas = generated_schema_info.fn_schemas;
@@ -409,10 +449,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let mut dependencies = BTreeSet::new();
                 #({
-                    dependencies.insert(#raw_package_dependencies.into());
-                })*
-                #({
-                    dependencies.insert(#imported_packages.into());
+                    dependencies.insert(#dependency_exprs.into());
                 })*
 
                 let mut method_auth_template = method_auth_template();

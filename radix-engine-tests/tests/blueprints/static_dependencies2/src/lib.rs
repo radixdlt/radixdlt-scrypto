@@ -1,23 +1,21 @@
 use scrypto::prelude::*;
 
-external_component! {
-    Preallocated {
-        fn get_secret(&self) -> String;
-    }
-}
-
 #[blueprint]
 mod preallocated_call {
-    const PREALLOCATED: ComponentAddress = ComponentAddress::new_or_panic([
-        192, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-    ]);
+    const PREALLOCATED: Global<Preallocated> = at_address!("component_sim1cqqqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgp55w6zv");
+
+    import_blueprint2!(
+        "package_sim1p5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpwgs6ac",
+        Preallocated {
+            fn get_secret(&self) -> String;
+        }
+    );
 
     struct PreallocatedCall {}
 
     impl PreallocatedCall {
         pub fn call_preallocated() -> String {
-            let preallocated: Global<Preallocated> = PREALLOCATED.into();
-            preallocated.get_secret()
+            PREALLOCATED.get_secret()
         }
     }
 }
