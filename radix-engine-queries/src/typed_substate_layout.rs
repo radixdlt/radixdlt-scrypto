@@ -7,7 +7,7 @@ pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 use radix_engine::blueprints::pool::multi_resource_pool::*;
-pub use radix_engine::blueprints::pool::single_resource_pool::*;
+pub use radix_engine::blueprints::pool::one_resource_pool::*;
 pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::system::node_modules::access_rules::*;
@@ -106,7 +106,7 @@ pub enum TypedMainModuleSubstateKey {
     AccountField(AccountField),
     AccountVaultIndexKey(ResourceAddress),
     AccountResourceDepositRuleIndexKey(ResourceAddress),
-    SingleResourcePoolField(SingleResourcePoolField),
+    OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
     // Generic Scrypto Components
@@ -291,8 +291,8 @@ fn to_typed_object_substate_key_internal(
                 }
             }
         }
-        EntityType::GlobalSingleResourcePool => {
-            TypedMainModuleSubstateKey::SingleResourcePoolField(SingleResourcePoolField::try_from(
+        EntityType::GlobalOneResourcePool => {
+            TypedMainModuleSubstateKey::OneResourcePoolField(OneResourcePoolField::try_from(
                 substate_key,
             )?)
         }
@@ -354,7 +354,7 @@ pub enum TypedMainModuleSubstateValue {
     Account(TypedAccountFieldValue),
     AccountVaultIndex(AccountVaultIndexEntry),
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
-    SingleResourcePool(TypedSingleResourcePoolFieldValue),
+    OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
@@ -425,8 +425,8 @@ pub enum TypedAccountFieldValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedSingleResourcePoolFieldValue {
-    SingleResourcePool(SingleResourcePoolSubstate),
+pub enum TypedOneResourcePoolFieldValue {
+    OneResourcePool(OneResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -624,10 +624,10 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
             TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::SingleResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::SingleResourcePool(match offset {
-                SingleResourcePoolField::SingleResourcePool => {
-                    TypedSingleResourcePoolFieldValue::SingleResourcePool(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
+            TypedMainModuleSubstateValue::OneResourcePool(match offset {
+                OneResourcePoolField::OneResourcePool => {
+                    TypedOneResourcePoolFieldValue::OneResourcePool(scrypto_decode(data)?)
                 }
             })
         }

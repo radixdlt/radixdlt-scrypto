@@ -214,8 +214,8 @@ pub enum AccountField {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum SingleResourcePoolField {
-    SingleResourcePool,
+pub enum OneResourcePoolField {
+    OneResourcePool,
 }
 
 #[repr(u8)]
@@ -274,7 +274,7 @@ substate_key!(ConsensusManagerField);
 substate_key!(ValidatorField);
 substate_key!(AccessControllerField);
 substate_key!(AccountField);
-substate_key!(SingleResourcePoolField);
+substate_key!(OneResourcePoolField);
 substate_key!(TwoResourcePoolField);
 substate_key!(MultiResourcePoolField);
 

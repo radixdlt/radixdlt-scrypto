@@ -3,7 +3,7 @@ use crate::blueprints::account::AccountError;
 use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
 use crate::blueprints::pool::multi_resource_pool::MultiResourcePoolError;
-use crate::blueprints::pool::single_resource_pool::SingleResourcePoolError;
+use crate::blueprints::pool::one_resource_pool::OneResourcePoolError;
 use crate::blueprints::pool::two_resource_pool::TwoResourcePoolError;
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
@@ -413,7 +413,7 @@ pub enum ApplicationError {
 
     MetadataError(MetadataPanicError),
 
-    SingleResourcePoolError(SingleResourcePoolError),
+    OneResourcePoolError(OneResourcePoolError),
 
     TwoResourcePoolError(TwoResourcePoolError),
 
