@@ -55,11 +55,10 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaErro
             .map_err(ExtractSchemaError::RunSchemaGenError)?;
 
         let name = function_export.replace("_schema", "").to_string();
-        let blueprint_setup: BlueprintSetup = scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
+        let blueprint_setup: BlueprintSetup =
+            scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
         blueprints.insert(name.clone(), blueprint_setup);
     }
 
-    Ok(PackageSetup {
-        blueprints,
-    })
+    Ok(PackageSetup { blueprints })
 }

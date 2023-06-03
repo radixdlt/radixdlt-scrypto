@@ -249,17 +249,17 @@ where
         Ok(node_id.into())
     }
 
-    pub fn get_blueprint_schema(
+    pub fn get_blueprint_definition(
         &mut self,
         blueprint: &BlueprintId,
-    ) -> Result<IndexedBlueprintSchema, RuntimeError> {
-        let schema = self
+    ) -> Result<BlueprintDefinition, RuntimeError> {
+        let def = self
             .api
             .kernel_get_system_state()
             .system
-            .blueprint_schema_cache
+            .blueprint_cache
             .get(blueprint);
-        if let Some(schema) = schema {
+        if let Some(schema) = def {
             return Ok(schema.clone());
         } else {
             let handle = self.api.kernel_lock_substate(
@@ -283,14 +283,14 @@ where
             self.api
                 .kernel_get_system_state()
                 .system
-                .blueprint_schema_cache
+                .blueprint_cache
                 .insert(blueprint.clone(), schema);
             self.api.kernel_drop_lock(handle)?;
             let schema = self
                 .api
                 .kernel_get_system_state()
                 .system
-                .blueprint_schema_cache
+                .blueprint_cache
                 .get(blueprint)
                 .unwrap();
             Ok(schema.clone())
@@ -310,7 +310,7 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_schema = self.get_blueprint_schema(blueprint)?;
+        let blueprint_schema = self.get_blueprint_definition(blueprint)?.schema;
 
         // Validate instance schema
         {
@@ -480,14 +480,14 @@ where
             ActorObjectType::OuterObject => {
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
-                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
                 Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
-                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
                 Ok((node_id, object_module_id.base_partition_num(), info, schema))
             }
         }
@@ -1860,7 +1860,7 @@ where
                 )),
             }?;
 
-            let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
+            let blueprint_schema = self.get_blueprint_definition(&blueprint_id)?.schema;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema

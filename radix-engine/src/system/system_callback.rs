@@ -145,7 +145,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     // TODO: We should be able to make this a more generic cache for
     // TODO: immutable substates
-    pub blueprint_schema_cache: NonIterMap<BlueprintId, IndexedBlueprintSchema>,
+    pub blueprint_cache: NonIterMap<BlueprintId, BlueprintDefinition>,
     pub modules: SystemModuleMixer,
 }
 
@@ -386,7 +386,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             output
         } else {
-            let schema = system.get_blueprint_schema(&blueprint)?;
+            let schema = system.get_blueprint_definition(&blueprint)?.schema;
 
             // Make dependent resources/components visible
 

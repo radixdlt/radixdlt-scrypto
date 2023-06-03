@@ -18,7 +18,9 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
 use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
@@ -449,19 +451,20 @@ impl AccessControllerNativePackage {
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
+
                 },
                 function_auth: btreemap!(
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
+                },
             }
         );
 
-        PackageSetup {
-            blueprints,
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]

@@ -102,9 +102,6 @@ pub struct BlueprintSchema {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 
     pub dependencies: BTreeSet<GlobalAddress>,
-    // TODO: Move out of schema
-    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -197,8 +194,6 @@ impl Default for BlueprintSchema {
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
             dependencies: BTreeSet::default(),
-            method_auth_template: BTreeMap::default(),
-            outer_method_auth_template: BTreeMap::default(),
         }
     }
 }

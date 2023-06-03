@@ -2,7 +2,9 @@ use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
@@ -161,11 +163,13 @@ fn test_basic_package_missing_export() {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: btreemap!(),
             },
             function_auth: btreemap!(),
             royalty_config: RoyaltyConfig::default(),
+            template: BlueprintTemplate {
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
+            },
         },
     );
     // Act
@@ -174,9 +178,7 @@ fn test_basic_package_missing_export() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageSetup {
-                blueprints,
-            },
+            PackageSetup { blueprints },
             BTreeMap::new(),
             OwnerRole::None,
         )

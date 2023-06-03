@@ -186,11 +186,9 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
         dependencies: btreeset!(),
-        method_auth_template: btreemap!(),
-        outer_method_auth_template: btreemap!(),
     };
 
-    let function_access_rules: BTreeMap<String, AccessRule> = btreemap!(
+    let function_auth: BTreeMap<String, AccessRule> = btreemap!(
         "invalid_output".to_string() => AccessRule::AllowAll,
         "unit".to_string() => AccessRule::AllowAll,
         "bool".to_string() => AccessRule::AllowAll,
@@ -209,13 +207,18 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "hash_set".to_string() => AccessRule::AllowAll,
     );
 
+    let return_data = scrypto::blueprints::package::BlueprintSetup {
+        schema,
+        function_auth,
+        royalty_config: RoyaltyConfig::default(),
+        template: scrypto::blueprints::package::BlueprintTemplate {
+            method_auth_template: btreemap!(),
+            outer_method_auth_template: btreemap!(),
+        },
+    };
+
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&(
-            schema,
-            function_access_rules,
-            RoyaltyConfig::default(),
-        ))
-        .unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap(),
     )
 }
 

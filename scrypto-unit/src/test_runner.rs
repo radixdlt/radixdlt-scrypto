@@ -36,8 +36,9 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltySubstate, PackageSetup, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    BlueprintSetup, BlueprintTemplate, PackageInfoSubstate,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate, PackageSetup,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
@@ -1496,7 +1497,7 @@ impl TestRunner {
         };
 
         let mut system = SystemConfig {
-            blueprint_schema_cache: NonIterMap::new(),
+            blueprint_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },
@@ -1598,6 +1599,7 @@ impl TestRunner {
                 .blueprints
                 .remove(&blueprint_name)
                 .unwrap()
+                .schema
                 .schema,
         )
     }
@@ -1760,18 +1762,18 @@ pub fn single_function_package_definition(
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: btreemap!(),
             },
             function_auth: btreemap!(
                 function_name.to_string() => rule!(allow_all),
             ),
             royalty_config: RoyaltyConfig::default(),
+            template: BlueprintTemplate {
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
+            },
         },
     );
-    PackageSetup {
-        blueprints,
-    }
+    PackageSetup { blueprints }
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::PackageInfoSubstate;
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, PackageInfoSubstate};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -82,7 +82,13 @@ impl Publish {
                     blueprints: package_definition
                         .blueprints
                         .into_iter()
-                        .map(|(b, s)| (b, s.schema.into()))
+                        .map(|(b, s)| {
+                            let def = BlueprintDefinition {
+                                schema: s.schema.into(),
+                                template: s.template,
+                            };
+                            (b, def)
+                        })
                         .collect(),
                 },
             };

@@ -7,7 +7,9 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
     ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef, VirtualLazyLoadSchema,
@@ -342,8 +344,6 @@ impl AccountNativePackage {
                         ACCOUNT_OWNER_BADGE.into(),
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
                 },
                 function_auth: btreemap!(
                     ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
@@ -351,12 +351,14 @@ impl AccountNativePackage {
                     ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
+                }
             }
         );
 
-        PackageSetup {
-            blueprints,
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]

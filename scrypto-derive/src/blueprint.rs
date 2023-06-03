@@ -597,10 +597,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
                     dependencies,
+                };
+
+                let template = scrypto::blueprints::package::BlueprintTemplate {
                     method_auth_template,
                     outer_method_auth_template: BTreeMap::new(),
                 };
-
 
                 let function_auth = function_auth();
                 let royalty_config = package_royalty_config();
@@ -609,6 +611,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     schema,
                     function_auth,
                     royalty_config,
+                    template,
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -1472,6 +1475,9 @@ mod tests {
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
                             dependencies,
+                        };
+
+                        let template = scrypto::blueprints::package::BlueprintTemplate {
                             method_auth_template,
                             outer_method_auth_template: BTreeMap::new(),
                         };
@@ -1483,6 +1489,7 @@ mod tests {
                             schema,
                             function_auth,
                             royalty_config,
+                            template,
                         };
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

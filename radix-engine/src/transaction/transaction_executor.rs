@@ -219,7 +219,7 @@ where
                 .collect(),
         );
         let mut system = SystemConfig {
-            blueprint_schema_cache: NonIterMap::new(),
+            blueprint_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },

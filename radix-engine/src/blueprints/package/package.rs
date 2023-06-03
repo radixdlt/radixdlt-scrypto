@@ -291,15 +291,6 @@ impl PackageNativePackage {
             },
         );
 
-        let method_auth_template = method_auth_template! {
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_IDENT) => [OWNER_ROLE];
-        };
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintSetup {
@@ -315,8 +306,6 @@ impl PackageNativePackage {
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                         PACKAGE_OWNER_BADGE.into(),
                     ),
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
                 },
                 function_auth: btreemap!(
                     PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
@@ -324,12 +313,21 @@ impl PackageNativePackage {
                     PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                 ),
                 royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template:  method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(PACKAGE_SET_ROYALTY_IDENT) => [OWNER_ROLE];
+                    },
+                    outer_method_auth_template: btreemap!(),
+                }
             }
         );
 
-        PackageSetup {
-            blueprints,
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]
@@ -455,8 +453,11 @@ impl PackageNativePackage {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
                 }
 
-                let indexed: IndexedBlueprintSchema = setup.schema.into();
-                blueprints.insert(blueprint, indexed);
+                let definition = BlueprintDefinition {
+                    schema: setup.schema.into(),
+                    template: setup.template,
+                };
+                blueprints.insert(blueprint.clone(), definition);
             }
 
             (
@@ -608,8 +609,11 @@ impl PackageNativePackage {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
                 }
 
-                let indexed: IndexedBlueprintSchema = setup.schema.into();
-                blueprints.insert(blueprint.clone(), indexed);
+                let definition = BlueprintDefinition {
+                    schema: setup.schema.into(),
+                    template: setup.template,
+                };
+                blueprints.insert(blueprint.clone(), definition);
                 royalties.insert(blueprint.clone(), setup.royalty_config);
             }
 
@@ -621,13 +625,12 @@ impl PackageNativePackage {
                 PackageRoyaltySubstate {
                     royalty_vault: None,
                     blueprint_royalty_configs: royalties,
-                }
+                },
             )
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code };
-
 
         globalize_package(
             package_address,
