@@ -333,16 +333,17 @@ impl ConsensusManagerNativePackage {
                 function_access_rules: btreemap!(
                     CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: validator_schema,
                 function_access_rules: btreemap!(),
+                package_royalty_config: RoyaltyConfig::default(),
             }
         );
 
         PackageSetup {
             blueprints,
-            royalty_config: btreemap!(),
         }
     }
 

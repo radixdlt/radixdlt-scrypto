@@ -312,18 +312,19 @@ impl PoolNativePackage {
                 function_access_rules: btreemap!(
                     SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
                 schema: two_resource_pool_blueprint_schema,
                 function_access_rules: btreemap!(
                     TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             }
         );
 
         PackageSetup {
             blueprints,
-            royalty_config: btreemap!(),
         }
     }
 

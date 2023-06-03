@@ -87,11 +87,11 @@ pub type PackageClaimRoyaltiesOutput = Bucket;
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageSetup {
     pub blueprints: BTreeMap<String, BlueprintSetup>,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSetup {
     pub schema: BlueprintSchema,
     pub function_access_rules: BTreeMap<String, AccessRule>,
+    pub package_royalty_config: RoyaltyConfig,
 }

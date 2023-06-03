@@ -50,7 +50,6 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaErro
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
-    let mut royalties = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance
             .invoke_export(&function_export, vec![], &mut runtime)
@@ -66,14 +65,13 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaErro
         let blueprint_setup = BlueprintSetup {
             schema,
             function_access_rules,
+            package_royalty_config: royalty_config,
         };
 
-        royalties.insert(name.clone(), royalty_config);
         blueprints.insert(name.clone(), blueprint_setup);
     }
 
     Ok(PackageSetup {
         blueprints,
-        royalty_config: royalties,
     })
 }

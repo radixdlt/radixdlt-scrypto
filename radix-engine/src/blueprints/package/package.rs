@@ -323,12 +323,12 @@ impl PackageNativePackage {
                     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             }
         );
 
         PackageSetup {
             blueprints,
-            royalty_config: btreemap!(),
         }
     }
 
@@ -598,10 +598,10 @@ impl PackageNativePackage {
             })?;
 
         // Build node init
-        // Build node init
-        let (function_access_rules, info) = {
+        let (function_access_rules, info, royalty) = {
             let mut access_rules = BTreeMap::new();
             let mut blueprints = BTreeMap::new();
+            let mut royalties = BTreeMap::new();
 
             for (blueprint, setup) in setup.blueprints {
                 for (ident, rule) in setup.function_access_rules {
@@ -609,7 +609,8 @@ impl PackageNativePackage {
                 }
 
                 let indexed: IndexedBlueprintSchema = setup.schema.into();
-                blueprints.insert(blueprint, indexed);
+                blueprints.insert(blueprint.clone(), indexed);
+                royalties.insert(blueprint.clone(), setup.package_royalty_config);
             }
 
             (
@@ -617,15 +618,16 @@ impl PackageNativePackage {
                 PackageInfoSubstate {
                     schema: IndexedPackageSchema { blueprints },
                 },
+                PackageRoyaltySubstate {
+                    royalty_vault: None,
+                    blueprint_royalty_configs: royalties,
+                }
             )
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code };
-        let royalty = PackageRoyaltySubstate {
-            royalty_vault: None,
-            blueprint_royalty_configs: setup.royalty_config,
-        };
+
 
         globalize_package(
             package_address,

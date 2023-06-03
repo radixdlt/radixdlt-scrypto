@@ -110,12 +110,12 @@ impl IdentityNativePackage {
                     IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                     IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             }
         );
 
         PackageSetup {
             blueprints,
-            royalty_config: btreemap!(),
         }
     }
 

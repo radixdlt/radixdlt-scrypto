@@ -1766,11 +1766,11 @@ pub fn single_function_package_definition(
             function_access_rules: btreemap!(
                 function_name.to_string() => rule!(allow_all),
             ),
+            package_royalty_config: RoyaltyConfig::default(),
         },
     );
     PackageSetup {
         blueprints,
-        royalty_config: btreemap!(),
     }
 }
 

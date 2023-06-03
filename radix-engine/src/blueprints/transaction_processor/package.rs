@@ -53,12 +53,12 @@ impl TransactionProcessorNativePackage {
                 function_access_rules: btreemap!(
                     TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             }
         );
 
         PackageSetup {
             blueprints,
-            royalty_config: btreemap!(),
         }
     }
 

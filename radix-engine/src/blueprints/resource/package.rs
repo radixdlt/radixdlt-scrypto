@@ -1659,6 +1659,7 @@ impl ResourceManagerNativePackage {
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_resource_manager_schema,
@@ -1668,50 +1669,58 @@ impl ResourceManagerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_vault_schema,
                 function_access_rules: btreemap!(),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_vault_schema,
                 function_access_rules: btreemap!(),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_bucket_schema,
                 function_access_rules: btreemap!(),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_bucket_schema,
                 function_access_rules: btreemap!(),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_proof_schema,
                 function_access_rules: btreemap!(
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_proof_schema,
                 function_access_rules: btreemap!(
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             WORKTOP_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: worktop_schema,
                 function_access_rules: btreemap!(
                     WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
+                package_royalty_config: RoyaltyConfig::default(),
             },
             AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: auth_zone_schema,
                 function_access_rules: btreemap!(),
+                package_royalty_config: RoyaltyConfig::default(),
             }
         );
 
         PackageSetup {
             blueprints,
-            royalty_config: btreemap!(),
         }
     }
 

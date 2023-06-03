@@ -165,6 +165,7 @@ fn test_basic_package_missing_export() {
                 outer_method_auth_template: btreemap!(),
             },
             function_access_rules: btreemap!(),
+            package_royalty_config: RoyaltyConfig::default(),
         },
     );
     // Act
@@ -175,7 +176,6 @@ fn test_basic_package_missing_export() {
             code,
             PackageSetup {
                 blueprints,
-                royalty_config: btreemap!(),
             },
             BTreeMap::new(),
             OwnerRole::None,
