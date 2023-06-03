@@ -18,7 +18,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
 use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
@@ -161,7 +161,7 @@ impl From<AccessControllerError> for RuntimeError {
 pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -437,19 +437,21 @@ impl AccessControllerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-            ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
-                outer_blueprint: None,
-                schema,
-                fields,
-                collections: vec![],
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema,
-                dependencies: btreeset!(
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                ),
-                method_auth_template,
-                outer_method_auth_template: btreemap!(),
+            ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: BlueprintSchema {
+                    outer_blueprint: None,
+                    schema,
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema,
+                    dependencies: btreeset!(
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    ),
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
+                }
             }
         );
 
@@ -459,7 +461,7 @@ impl AccessControllerNativePackage {
             )
         );
 
-        PackageDefinition {
+        PackageSetup {
             blueprints,
             function_access_rules,
         }

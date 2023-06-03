@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
+    PackageClaimRoyaltyInput, PackageSetup, PackagePublishWasmAdvancedManifestInput,
     PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
     PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
     PACKAGE_SET_ROYALTY_CONFIG_IDENT,
@@ -692,7 +692,7 @@ impl ManifestBuilder {
     pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
@@ -717,7 +717,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package with an owner badge.
-    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageDefinition) -> &mut Self {
+    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageSetup) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
@@ -739,7 +739,7 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);

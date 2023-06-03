@@ -5,7 +5,7 @@ use radix_engine::{
     types::*,
     vm::wasm::WASM_MEMORY_PAGE_SIZE,
 };
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::PackageSetup;
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TestTransaction};
 
@@ -267,7 +267,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     let manifest = ManifestBuilder::new()
         .publish_package_advanced(
             code,
-            PackageDefinition::default(),
+            PackageSetup::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,

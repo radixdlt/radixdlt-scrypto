@@ -61,8 +61,8 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 }
 
-fn validate_package_schema(blueprints: &BTreeMap<String, BlueprintSchema>) -> Result<(), PackageError> {
-    for blueprint in blueprints.values() {
+fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchema>>(blueprints: I) -> Result<(), PackageError> {
+    for blueprint in blueprints {
         validate_schema(&blueprint.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
         if blueprint.fields.len() > 0xff {
@@ -72,12 +72,12 @@ fn validate_package_schema(blueprints: &BTreeMap<String, BlueprintSchema>) -> Re
     Ok(())
 }
 
-fn validate_package_event_schema(blueprints: &BTreeMap<String, BlueprintSchema>) -> Result<(), PackageError> {
+fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintSchema>>(blueprints: I) -> Result<(), PackageError> {
     for BlueprintSchema {
         schema,
         event_schema,
         ..
-    } in blueprints.values()
+    } in blueprints
     {
         // Package schema validation happens when the package is published. No need to redo
         // it here again.
@@ -229,7 +229,7 @@ where
 pub struct PackageNativePackage;
 
 impl PackageNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -300,20 +300,22 @@ impl PackageNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-                PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
-                    outer_blueprint: None,
-                    schema,
-                    fields,
-                    collections: vec![],
-                    functions,
-                    virtual_lazy_load_functions: btreemap!(),
-                    event_schema: [].into(),
-                    dependencies: btreeset!(
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                        PACKAGE_OWNER_BADGE.into(),
-                    ),
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
+                PACKAGE_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: BlueprintSchema {
+                        outer_blueprint: None,
+                        schema,
+                        fields,
+                        collections: vec![],
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                        event_schema: [].into(),
+                        dependencies: btreeset!(
+                            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                            PACKAGE_OWNER_BADGE.into(),
+                        ),
+                        method_auth_template,
+                        outer_method_auth_template: btreemap!(),
+                    }
                 }
             );
 
@@ -325,7 +327,7 @@ impl PackageNativePackage {
             )
         );
 
-        PackageDefinition {
+        PackageSetup {
             blueprints,
             function_access_rules,
         }
@@ -379,7 +381,7 @@ impl PackageNativePackage {
 
                 let rtn = Self::publish_wasm(
                     input.code,
-                    input.definition,
+                    input.setup,
                     input.royalty_config,
                     input.metadata,
                     api,
@@ -431,7 +433,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_native<Y>(
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         native_package_code_id: u8,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -439,15 +441,15 @@ impl PackageNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(&definition.blueprints)
+        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&definition.blueprints)
+        validate_package_event_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
         let info = PackageInfoSubstate {
             schema: IndexedPackageSchema {
-                blueprints: definition.blueprints.into_iter().map(|(b, s)| (b, s.into())).collect()
+                blueprints: definition.blueprints.into_iter().map(|(b, s)| (b, s.schema.into())).collect()
             }
         };
         let code_type = PackageCodeTypeSubstate::Native;
@@ -475,7 +477,7 @@ impl PackageNativePackage {
 
     pub(crate) fn publish_wasm<Y>(
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
@@ -500,7 +502,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_wasm_advanced<Y>(
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
@@ -526,7 +528,7 @@ impl PackageNativePackage {
     fn publish_wasm_internal<Y>(
         package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
-        definition: PackageDefinition,
+        setup: PackageSetup,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
@@ -536,9 +538,9 @@ impl PackageNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(&definition.blueprints)
+        validate_package_schema(setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&definition.blueprints)
+        validate_package_event_schema(setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
             collections,
@@ -546,7 +548,7 @@ impl PackageNativePackage {
             virtual_lazy_load_functions,
             functions,
             ..
-        } in definition.blueprints.values()
+        } in setup.blueprints.values().map(|s| &s.schema)
         {
             if parent.is_some() {
                 return Err(RuntimeError::ApplicationError(
@@ -585,7 +587,7 @@ impl PackageNativePackage {
 
         // Validate WASM
         WasmValidator::default()
-            .validate(&code, &definition.blueprints)
+            .validate(&code, setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -595,7 +597,7 @@ impl PackageNativePackage {
         // Build node init
         let info = PackageInfoSubstate {
             schema: IndexedPackageSchema {
-                blueprints: definition.blueprints.into_iter().map(|(b, s)| (b, s.into())).collect()
+                blueprints: setup.blueprints.into_iter().map(|(b, s)| (b, s.schema.into())).collect()
             },
         };
 
@@ -606,7 +608,7 @@ impl PackageNativePackage {
             blueprint_royalty_configs: royalty_config,
         };
 
-        let function_access_rules = definition.function_access_rules.into();
+        let function_access_rules = setup.function_access_rules.into();
 
         globalize_package(
             package_address,

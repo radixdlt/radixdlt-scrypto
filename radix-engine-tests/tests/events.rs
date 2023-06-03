@@ -153,9 +153,10 @@ fn local_type_index_with_misleading_name_fails() {
         .blueprints
         .get_mut("ScryptoEvents")
         .unwrap();
-    blueprint_schema.event_schema.insert(
+    blueprint_schema.schema.event_schema.insert(
         "HelloHelloEvent".to_string(),
         blueprint_schema
+            .schema
             .event_schema
             .get("RegisteredEvent")
             .unwrap()

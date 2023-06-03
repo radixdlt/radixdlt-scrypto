@@ -1,4 +1,5 @@
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use std::iter;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::schema::BlueprintSchema;
 
 use crate::errors::InvokeError;
@@ -21,7 +22,7 @@ impl From<PrepareError> for ExtractSchemaError {
     }
 }
 
-pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchemaError> {
+pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaError> {
     let function_exports = WasmModule::init(code)
         .and_then(WasmModule::to_bytes)?
         .1
@@ -37,7 +38,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         ),
         code: Arc::new(
             validator
-                .validate(&code, &BTreeMap::default())
+                .validate(&code, iter::empty())
                 .map_err(|e| ExtractSchemaError::InvalidWasm(e))?
                 .0,
         ),
@@ -59,11 +60,15 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         let (schema, function_auth): (BlueprintSchema, BTreeMap<String, AccessRule>) =
             scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
 
-        blueprints.insert(name.clone(), schema);
+        let blueprint_setup = BlueprintSetup {
+            schema
+        };
+
+        blueprints.insert(name.clone(), blueprint_setup);
         blueprints_function_auth.insert(name.clone(), function_auth);
     }
 
-    Ok(PackageDefinition {
+    Ok(PackageSetup {
         blueprints,
         function_access_rules: blueprints_function_auth,
     })

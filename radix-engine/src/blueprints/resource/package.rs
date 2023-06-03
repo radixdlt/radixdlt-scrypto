@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, SchemaMethodKey, SchemaMethodPermission,
@@ -128,7 +128,7 @@ const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         //====================================================================================
 
         let fungible_resource_manager_schema = {
@@ -1652,16 +1652,36 @@ impl ResourceManagerNativePackage {
         };
 
         let blueprints = btreemap!(
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
-                FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_schema,
-                NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => non_fungible_vault_schema,
-                FUNGIBLE_BUCKET_BLUEPRINT.to_string() => fungible_bucket_schema,
-                NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => non_fungible_bucket_schema,
-                FUNGIBLE_PROOF_BLUEPRINT.to_string() => fungible_proof_schema,
-                NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => non_fungible_proof_schema,
-                WORKTOP_BLUEPRINT.to_string() => worktop_schema,
-                AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: fungible_resource_manager_schema
+                },
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: non_fungible_resource_manager_schema
+                },
+                FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: fungible_vault_schema
+                },
+                NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: non_fungible_vault_schema
+                },
+                FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: fungible_bucket_schema
+                },
+                NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: non_fungible_bucket_schema
+                },
+                FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: fungible_proof_schema
+                },
+                NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: non_fungible_proof_schema
+                },
+                WORKTOP_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: worktop_schema
+                },
+                AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: auth_zone_schema
+                }
             )
         ;
 
@@ -1688,7 +1708,7 @@ impl ResourceManagerNativePackage {
             ),
         );
 
-        PackageDefinition {
+        PackageSetup {
             blueprints,
             function_access_rules,
         }

@@ -25,10 +25,10 @@ impl Default for WasmValidator {
 }
 
 impl WasmValidator {
-    pub fn validate(
+    pub fn validate<'a, I: Iterator<Item = &'a BlueprintSchema>>(
         &self,
         code: &[u8],
-        blueprints: &BTreeMap<String, BlueprintSchema>,
+        blueprints: I,
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
             .enforce_no_floating_point()?

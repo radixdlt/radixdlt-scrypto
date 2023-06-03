@@ -7,7 +7,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
     ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
@@ -28,7 +28,7 @@ const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_e
 pub struct AccountNativePackage;
 
 impl AccountNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -328,22 +328,24 @@ impl AccountNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-                ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
-                    outer_blueprint: None,
-                    schema,
-                    fields,
-                    collections,
-                    functions,
-                    virtual_lazy_load_functions,
-                    event_schema: [].into(),
-                    dependencies: btreeset!(
-                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-                        ACCOUNT_OWNER_BADGE.into(),
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                    ),
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
+                ACCOUNT_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: BlueprintSchema {
+                        outer_blueprint: None,
+                        schema,
+                        fields,
+                        collections,
+                        functions,
+                        virtual_lazy_load_functions,
+                        event_schema: [].into(),
+                        dependencies: btreeset!(
+                            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                            ACCOUNT_OWNER_BADGE.into(),
+                            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                        ),
+                        method_auth_template,
+                        outer_method_auth_template: btreemap!(),
+                    }
                 }
             );
 
@@ -355,7 +357,7 @@ impl AccountNativePackage {
             )
         );
 
-        PackageDefinition {
+        PackageSetup {
             blueprints,
             function_access_rules,
         }

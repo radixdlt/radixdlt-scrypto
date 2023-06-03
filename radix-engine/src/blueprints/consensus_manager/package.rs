@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
@@ -28,7 +28,7 @@ pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
 pub struct ConsensusManagerNativePackage;
 
 impl ConsensusManagerNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -328,8 +328,12 @@ impl ConsensusManagerNativePackage {
         };
 
         let blueprints = btreemap!(
-                CONSENSUS_MANAGER_BLUEPRINT.to_string() => consensus_manager_schema,
-                VALIDATOR_BLUEPRINT.to_string() => validator_schema
+                CONSENSUS_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: consensus_manager_schema
+                },
+                VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: validator_schema
+                }
             );
 
         let function_access_rules = btreemap!(
@@ -338,7 +342,7 @@ impl ConsensusManagerNativePackage {
             )
         );
 
-        PackageDefinition {
+        PackageSetup {
             blueprints,
             function_access_rules,
         }

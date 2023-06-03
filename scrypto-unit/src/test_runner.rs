@@ -35,10 +35,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    PackageDefinition, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltySubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-};
+use radix_engine_interface::blueprints::package::{PackageSetup, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, BlueprintSetup};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -72,7 +69,7 @@ use transaction::prelude::{AttachmentsV1, BlobV1, IntentV1, PreviewFlags, Transa
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSetup) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -708,7 +705,7 @@ impl TestRunner {
     pub fn publish_package_at_address(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         address: [u8; NodeId::LENGTH],
     ) {
         let code_hash = hash(&code);
@@ -746,7 +743,7 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
@@ -763,7 +760,7 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
@@ -797,7 +794,7 @@ impl TestRunner {
 
     pub fn compile_and_publish_retain_blueprints<
         P: AsRef<Path>,
-        F: FnMut(&String, &mut BlueprintSchema) -> bool,
+        F: FnMut(&String, &mut BlueprintSetup) -> bool,
     >(
         &mut self,
         package_dir: P,
@@ -1749,20 +1746,21 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
-) -> PackageDefinition {
+) -> PackageSetup {
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         blueprint_name.to_string(),
-        BlueprintSchema {
-            outer_blueprint: None,
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
-            fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-            collections: vec![],
-            functions: btreemap!(
+        BlueprintSetup {
+            schema: BlueprintSchema {
+                outer_blueprint: None,
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                collections: vec![],
+                functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
                     receiver: Option::None,
                     input: LocalTypeIndex::WellKnown(ANY_ID),
@@ -1770,14 +1768,15 @@ pub fn single_function_package_definition(
                     export_name: format!("{}_{}", blueprint_name, function_name),
                 }
             ),
-            virtual_lazy_load_functions: btreemap!(),
-            event_schema: [].into(),
-            dependencies: btreeset!(),
-            method_auth_template: btreemap!(),
-            outer_method_auth_template: btreemap!(),
-        },
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+                dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
+            }
+        }
     );
-    PackageDefinition {
+    PackageSetup {
         blueprints,
         function_access_rules: btreemap!(
             blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))

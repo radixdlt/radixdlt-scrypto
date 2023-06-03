@@ -2,7 +2,7 @@ use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
@@ -27,7 +27,7 @@ fn missing_memory_should_cause_error() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageDefinition::default(),
+            PackageSetup::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -142,16 +142,17 @@ fn test_basic_package_missing_export() {
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "Test".to_string(),
-        BlueprintSchema {
-            outer_blueprint: None,
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
-            fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-            collections: vec![],
-            functions: btreemap!(
+        BlueprintSetup {
+            schema: BlueprintSchema {
+                outer_blueprint: None,
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                collections: vec![],
+                functions: btreemap!(
                 "f".to_string() => FunctionSchema {
                     receiver: Option::None,
                     input: LocalTypeIndex::WellKnown(ANY_ID),
@@ -159,12 +160,13 @@ fn test_basic_package_missing_export() {
                     export_name: "not_exist".to_string(),
                 }
             ),
-            virtual_lazy_load_functions: btreemap!(),
-            event_schema: [].into(),
-            dependencies: btreeset!(),
-            method_auth_template: btreemap!(),
-            outer_method_auth_template: btreemap!(),
-        },
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+                dependencies: btreeset!(),
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
+            }
+        }
     );
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -172,7 +174,7 @@ fn test_basic_package_missing_export() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageDefinition {
+            PackageSetup {
                 blueprints,
                 function_access_rules: btreemap!(),
             },

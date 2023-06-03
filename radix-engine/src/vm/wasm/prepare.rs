@@ -924,12 +924,12 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints(self, blueprints: &BTreeMap<String, BlueprintSchema>) -> Result<Self, PrepareError> {
+    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSchema>>(self, blueprints: I) -> Result<Self, PrepareError> {
         let exports = self
             .module
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
-        for (_, blueprint_schema) in blueprints {
+        for blueprint_schema in blueprints {
             for func in blueprint_schema.functions.values() {
                 let func_name = &func.export_name;
                 if !exports.entries().iter().any(|x| {
@@ -1263,7 +1263,7 @@ mod tests {
             )
             "#,
             PrepareError::NoExportSection,
-            |x| WasmModule::enforce_export_constraints(x, &blueprints)
+            |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
         // symbol not found
         assert_invalid_wasm!(
@@ -1277,7 +1277,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &blueprints)
+            |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
         // signature does not match
         assert_invalid_wasm!(
@@ -1291,7 +1291,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &blueprints)
+            |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
     }
 }

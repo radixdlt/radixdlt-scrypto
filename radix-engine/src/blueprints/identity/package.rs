@@ -17,7 +17,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
@@ -30,7 +30,7 @@ const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_
 pub struct IdentityNativePackage;
 
 impl IdentityNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let fields = Vec::new();
@@ -88,22 +88,24 @@ impl IdentityNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-                IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
-                    outer_blueprint: None,
-                    schema,
-                    fields,
-                    collections: vec![],
-                    functions,
-                    virtual_lazy_load_functions,
-                    event_schema: [].into(),
-                    dependencies: btreeset!(
-                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-                        IDENTITY_OWNER_BADGE.into(),
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                    ),
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
+                IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
+                    schema: BlueprintSchema {
+                        outer_blueprint: None,
+                        schema,
+                        fields,
+                        collections: vec![],
+                        functions,
+                        virtual_lazy_load_functions,
+                        event_schema: [].into(),
+                        dependencies: btreeset!(
+                            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                            IDENTITY_OWNER_BADGE.into(),
+                            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                        ),
+                        method_auth_template,
+                        outer_method_auth_template: btreemap!(),
+                    }
                 }
             );
 
@@ -114,7 +116,7 @@ impl IdentityNativePackage {
             )
         );
 
-        PackageDefinition {
+        PackageSetup {
             blueprints,
             function_access_rules,
         }
