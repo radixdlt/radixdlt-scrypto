@@ -153,19 +153,20 @@ fn test_basic_package_missing_export() {
                 fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
                 collections: vec![],
                 functions: btreemap!(
-                "f".to_string() => FunctionSchema {
-                    receiver: Option::None,
-                    input: LocalTypeIndex::WellKnown(ANY_ID),
-                    output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export_name: "not_exist".to_string(),
-                }
-            ),
+                    "f".to_string() => FunctionSchema {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export_name: "not_exist".to_string(),
+                    }
+                ),
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
-            }
+            },
+            function_access_rules: btreemap!(),
         }
     );
     // Act
@@ -176,7 +177,6 @@ fn test_basic_package_missing_export() {
             code,
             PackageSetup {
                 blueprints,
-                function_access_rules: btreemap!(),
             },
             BTreeMap::new(),
             BTreeMap::new(),

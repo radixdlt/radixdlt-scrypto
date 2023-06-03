@@ -345,21 +345,17 @@ impl AccountNativePackage {
                         ),
                         method_auth_template,
                         outer_method_auth_template: btreemap!(),
-                    }
+                    },
+                    function_access_rules: btreemap!(
+                        ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
+                        ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
+                        ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                    ),
                 }
             );
 
-        let function_access_rules = btreemap!(
-            ACCOUNT_BLUEPRINT.to_string() => btreemap!(
-                ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
-                ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
-                ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
-            )
-        );
-
         PackageSetup {
             blueprints,
-            function_access_rules,
         }
     }
 

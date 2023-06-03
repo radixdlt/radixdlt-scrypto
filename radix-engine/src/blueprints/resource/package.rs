@@ -1653,64 +1653,65 @@ impl ResourceManagerNativePackage {
 
         let blueprints = btreemap!(
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: fungible_resource_manager_schema
+                    schema: fungible_resource_manager_schema,
+                    function_access_rules: btreemap!(
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                    ),
                 },
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: non_fungible_resource_manager_schema
+                    schema: non_fungible_resource_manager_schema,
+                    function_access_rules: btreemap!(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                    ),
                 },
                 FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: fungible_vault_schema
+                    schema: fungible_vault_schema,
+                    function_access_rules: btreemap!(),
                 },
                 NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: non_fungible_vault_schema
+                    schema: non_fungible_vault_schema,
+                    function_access_rules: btreemap!(),
                 },
                 FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: fungible_bucket_schema
+                    schema: fungible_bucket_schema,
+                    function_access_rules: btreemap!(),
                 },
                 NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: non_fungible_bucket_schema
+                    schema: non_fungible_bucket_schema,
+                    function_access_rules: btreemap!(),
                 },
                 FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: fungible_proof_schema
+                    schema: fungible_proof_schema,
+                    function_access_rules: btreemap!(
+                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+                    ),
                 },
                 NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: non_fungible_proof_schema
+                    schema: non_fungible_proof_schema,
+                    function_access_rules: btreemap!(
+                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+                    ),
                 },
                 WORKTOP_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: worktop_schema
+                    schema: worktop_schema,
+                    function_access_rules: btreemap!(
+                        WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
+                    ),
                 },
                 AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: auth_zone_schema
+                    schema: auth_zone_schema,
+                    function_access_rules: btreemap!(),
                 }
             )
         ;
 
-        let function_access_rules = btreemap!(
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-            ),
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-            ),
-            WORKTOP_BLUEPRINT.to_string() => btreemap!(
-                WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
-            ),
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => btreemap!(
-                PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-            ),
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => btreemap!(
-                PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-            ),
-        );
-
         PackageSetup {
             blueprints,
-            function_access_rules,
         }
     }
 

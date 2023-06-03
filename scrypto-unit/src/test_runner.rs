@@ -1762,25 +1762,25 @@ pub fn single_function_package_definition(
                 collections: vec![],
                 functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
-                    receiver: Option::None,
-                    input: LocalTypeIndex::WellKnown(ANY_ID),
-                    output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export_name: format!("{}_{}", blueprint_name, function_name),
-                }
-            ),
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export_name: format!("{}_{}", blueprint_name, function_name),
+                    }
+                ),
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
-            }
-        }
+            },
+            function_access_rules: btreemap!(
+                function_name.to_string() => rule!(allow_all),
+            ),
+        },
     );
     PackageSetup {
         blueprints,
-        function_access_rules: btreemap!(
-            blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))
-        ),
     }
 }
 

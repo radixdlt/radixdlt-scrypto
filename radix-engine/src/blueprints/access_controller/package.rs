@@ -451,19 +451,15 @@ impl AccessControllerNativePackage {
                     ),
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                function_access_rules: btreemap!(
+                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
+                ),
             }
-        );
-
-        let function_access_rules = btreemap!(
-            ACCESS_CONTROLLER_BLUEPRINT.to_string() => btreemap!(
-                ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
-            )
         );
 
         PackageSetup {
             blueprints,
-            function_access_rules,
         }
     }
 

@@ -308,25 +308,21 @@ impl PoolNativePackage {
 
         let blueprints = btreemap!(
                 SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                    schema: single_resource_pool_blueprint_schema
+                    schema: single_resource_pool_blueprint_schema,
+                    function_access_rules: btreemap!(
+                        SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
                 },
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                    schema: two_resource_pool_blueprint_schema
+                    schema: two_resource_pool_blueprint_schema,
+                    function_access_rules: btreemap!(
+                        TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
                 }
             );
 
-        let function_access_rules = btreemap!(
-            SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => btreemap!(
-                SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-            ),
-            TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => btreemap!(
-                TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-            )
-        );
-
         PackageSetup {
             blueprints,
-            function_access_rules,
         }
     }
 

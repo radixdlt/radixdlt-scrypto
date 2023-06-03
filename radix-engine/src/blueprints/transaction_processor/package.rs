@@ -49,19 +49,15 @@ impl TransactionProcessorNativePackage {
                     dependencies: btreeset!(),
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                function_access_rules: btreemap!(
+                    TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?
+                ),
             }
-        );
-
-        let function_access_rules = btreemap!(
-            TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => btreemap!(
-                TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?
-            )
         );
 
         PackageSetup {
             blueprints,
-            function_access_rules,
         }
     }
 

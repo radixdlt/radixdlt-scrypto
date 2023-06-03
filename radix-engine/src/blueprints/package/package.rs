@@ -23,10 +23,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{
-    BlueprintSchema, FunctionSchema, RefTypes, SchemaMethodKey,
-    SchemaMethodPermission,
-};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
@@ -315,21 +312,17 @@ impl PackageNativePackage {
                         ),
                         method_auth_template,
                         outer_method_auth_template: btreemap!(),
-                    }
+                    },
+                    function_access_rules: btreemap!(
+                        PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
+                        PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                        PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                    ),
                 }
             );
 
-        let function_access_rules = btreemap!(
-            PACKAGE_BLUEPRINT.to_string() => btreemap!(
-                PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
-                PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
-            )
-        );
-
         PackageSetup {
             blueprints,
-            function_access_rules,
         }
     }
 
@@ -447,11 +440,29 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let info = PackageInfoSubstate {
-            schema: IndexedPackageSchema {
-                blueprints: definition.blueprints.into_iter().map(|(b, s)| (b, s.schema.into())).collect()
+        let (function_access_rules, info) = {
+            let mut access_rules = BTreeMap::new();
+            let mut blueprints = BTreeMap::new();
+
+            for (blueprint, setup) in definition.blueprints {
+                for (ident, rule) in setup.function_access_rules {
+                    access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
+                }
+
+                let indexed: IndexedBlueprintSchema = setup.schema.into();
+                blueprints.insert(blueprint, indexed);
             }
+
+            (
+                FunctionAccessRulesSubstate { access_rules },
+                PackageInfoSubstate {
+                    schema: IndexedPackageSchema {
+                        blueprints,
+                    }
+                },
+            )
         };
+
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
             code: vec![native_package_code_id],
@@ -460,7 +471,9 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
-        let function_access_rules = definition.function_access_rules.into();
+
+
+
 
         globalize_package(
             package_address,
@@ -595,10 +608,28 @@ impl PackageNativePackage {
             })?;
 
         // Build node init
-        let info = PackageInfoSubstate {
-            schema: IndexedPackageSchema {
-                blueprints: setup.blueprints.into_iter().map(|(b, s)| (b, s.schema.into())).collect()
-            },
+        // Build node init
+        let (function_access_rules, info) = {
+            let mut access_rules = BTreeMap::new();
+            let mut blueprints = BTreeMap::new();
+
+            for (blueprint, setup) in setup.blueprints {
+                for (ident, rule) in setup.function_access_rules {
+                    access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
+                }
+
+                let indexed: IndexedBlueprintSchema = setup.schema.into();
+                blueprints.insert(blueprint, indexed);
+            }
+
+            (
+                FunctionAccessRulesSubstate { access_rules },
+                PackageInfoSubstate {
+                    schema: IndexedPackageSchema {
+                        blueprints,
+                    }
+                },
+            )
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;
@@ -607,8 +638,6 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: royalty_config,
         };
-
-        let function_access_rules = setup.function_access_rules.into();
 
         globalize_package(
             package_address,

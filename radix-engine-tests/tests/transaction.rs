@@ -129,7 +129,6 @@ fn test_non_existent_blob_hash() {
                 code: ManifestBlobRef([0; 32]),
                 definition: PackageSetup {
                     blueprints: btreemap!(),
-                    function_access_rules: btreemap!(),
                 },
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
