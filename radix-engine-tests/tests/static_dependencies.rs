@@ -25,7 +25,7 @@ fn test_static_package_address() {
     let (mut code, mut definition) = Compile::compile("./tests/blueprints/static_dependencies");
     let place_holder: GlobalAddress =
         PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER).into();
-    for (_, blueprint) in &mut definition.schema.blueprints {
+    for (_, blueprint) in &mut definition.blueprints {
         if blueprint.dependencies.contains(&place_holder) {
             blueprint.dependencies.remove(&place_holder);
             blueprint.dependencies.insert(package_address1.into());

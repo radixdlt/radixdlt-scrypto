@@ -13,7 +13,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, PackageSchema, SchemaMethodKey, SchemaMethodPermission,
+    BlueprintCollectionSchema, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeRef};
@@ -1651,8 +1651,7 @@ impl ResourceManagerNativePackage {
             outer_method_auth_template: btreemap!(),
         };
 
-        let schema = PackageSchema {
-            blueprints: btreemap!(
+        let blueprints = btreemap!(
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
                 FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_schema,
@@ -1663,8 +1662,8 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => non_fungible_proof_schema,
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,
                 AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
-            ),
-        };
+            )
+        ;
 
         let function_access_rules = btreemap!(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
@@ -1690,7 +1689,7 @@ impl ResourceManagerNativePackage {
         );
 
         PackageDefinition {
-            schema,
+            blueprints,
             function_access_rules,
         }
     }

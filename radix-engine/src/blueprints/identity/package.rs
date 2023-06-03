@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
-use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
+use radix_engine_interface::schema::{ReceiverInfo};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
@@ -87,8 +87,7 @@ impl IdentityNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
-        let schema = PackageSchema {
-            blueprints: btreemap!(
+        let blueprints = btreemap!(
                 IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
@@ -106,8 +105,7 @@ impl IdentityNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 }
-            ),
-        };
+            );
 
         let function_access_rules = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => btreemap!(
@@ -117,7 +115,7 @@ impl IdentityNativePackage {
         );
 
         PackageDefinition {
-            schema,
+            blueprints,
             function_access_rules,
         }
     }

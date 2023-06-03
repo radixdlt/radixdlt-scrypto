@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
-use radix_engine_interface::schema::PackageSchema;
 use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
@@ -37,8 +36,7 @@ impl TransactionProcessorNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        let schema = PackageSchema {
-            blueprints: btreemap!(
+        let blueprints = btreemap!(
                 TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
@@ -51,8 +49,7 @@ impl TransactionProcessorNativePackage {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 }
-            ),
-        };
+            );
 
         let function_access_rules = btreemap!(
             TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => btreemap!(
@@ -61,7 +58,7 @@ impl TransactionProcessorNativePackage {
         );
 
         PackageDefinition {
-            schema,
+            blueprints,
             function_access_rules,
         }
     }

@@ -24,7 +24,7 @@ use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
-    BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey,
+    BlueprintSchema, FunctionSchema, RefTypes, SchemaMethodKey,
     SchemaMethodPermission,
 };
 use resources_tracker_macro::trace_resources;
@@ -61,8 +61,8 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 }
 
-fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
-    for blueprint in schema.blueprints.values() {
+fn validate_package_schema(blueprints: &BTreeMap<String, BlueprintSchema>) -> Result<(), PackageError> {
+    for blueprint in blueprints.values() {
         validate_schema(&blueprint.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
         if blueprint.fields.len() > 0xff {
@@ -72,12 +72,12 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageError> {
+fn validate_package_event_schema(blueprints: &BTreeMap<String, BlueprintSchema>) -> Result<(), PackageError> {
     for BlueprintSchema {
         schema,
         event_schema,
         ..
-    } in schema.blueprints.values()
+    } in blueprints.values()
     {
         // Package schema validation happens when the package is published. No need to redo
         // it here again.
@@ -299,8 +299,7 @@ impl PackageNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
-        let schema = PackageSchema {
-            blueprints: btreemap!(
+        let blueprints = btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
@@ -316,8 +315,7 @@ impl PackageNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 }
-            ),
-        };
+            );
 
         let function_access_rules = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => btreemap!(
@@ -328,7 +326,7 @@ impl PackageNativePackage {
         );
 
         PackageDefinition {
-            schema,
+            blueprints,
             function_access_rules,
         }
     }
@@ -441,14 +439,16 @@ impl PackageNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(&definition.schema)
+        validate_package_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&definition.schema)
+        validate_package_event_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: definition.schema.into(),
+            schema: IndexedPackageSchema {
+                blueprints: definition.blueprints.into_iter().map(|(b, s)| (b, s.into())).collect()
+            }
         };
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
@@ -536,9 +536,9 @@ impl PackageNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(&definition.schema)
+        validate_package_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&definition.schema)
+        validate_package_event_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
             collections,
@@ -546,7 +546,7 @@ impl PackageNativePackage {
             virtual_lazy_load_functions,
             functions,
             ..
-        } in definition.schema.blueprints.values()
+        } in definition.blueprints.values()
         {
             if parent.is_some() {
                 return Err(RuntimeError::ApplicationError(
@@ -585,7 +585,7 @@ impl PackageNativePackage {
 
         // Validate WASM
         WasmValidator::default()
-            .validate(&code, &definition.schema)
+            .validate(&code, &definition.blueprints)
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -594,7 +594,9 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: definition.schema.into(),
+            schema: IndexedPackageSchema {
+                blueprints: definition.blueprints.into_iter().map(|(b, s)| (b, s.into())).collect()
+            },
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;

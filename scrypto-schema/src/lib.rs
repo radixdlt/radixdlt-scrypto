@@ -40,15 +40,6 @@ impl KeyValueStoreSchema {
     }
 }
 
-// We keep one self-contained schema per blueprint:
-// - Easier macro to export schema, as they work at blueprint level
-// - Can always combine multiple schemas into one for storage benefits
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct PackageSchema {
-    pub blueprints: BTreeMap<String, BlueprintSchema>,
-}
-
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct SchemaMethodKey {

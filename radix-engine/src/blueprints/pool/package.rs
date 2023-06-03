@@ -306,12 +306,10 @@ impl PoolNativePackage {
             }
         };
 
-        let schema = PackageSchema {
-            blueprints: btreemap!(
+        let blueprints = btreemap!(
                 SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => single_resource_pool_blueprint_schema,
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => two_resource_pool_blueprint_schema
-            ),
-        };
+            );
 
         let function_access_rules = btreemap!(
             SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => btreemap!(
@@ -323,7 +321,7 @@ impl PoolNativePackage {
         );
 
         PackageDefinition {
-            schema,
+            blueprints,
             function_access_rules,
         }
     }

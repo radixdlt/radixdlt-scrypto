@@ -1218,9 +1218,9 @@ mod tests {
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::schema::PackageSchema;
     use radix_engine_interface::types::{NonFungibleData, RoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
+    use radix_engine_interface::schema::BlueprintSchema;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1437,7 +1437,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
             InstructionV1::CallFunction {
                 package_address: PACKAGE_PACKAGE,
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -1451,9 +1451,7 @@ mod tests {
                         .try_into()
                         .unwrap()
                     ),
-                    PackageSchema {
-                        blueprints: BTreeMap::new()
-                    },
+                    BTreeMap::<String, BlueprintSchema>::new(),
                     BTreeMap::<String, RoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
                     Roles::new()

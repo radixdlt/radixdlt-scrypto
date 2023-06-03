@@ -1,5 +1,4 @@
-use radix_engine_interface::schema::PackageSchema;
-
+use radix_engine_interface::schema::BlueprintSchema;
 use crate::types::*;
 use crate::vm::wasm::*;
 
@@ -29,7 +28,7 @@ impl WasmValidator {
     pub fn validate(
         &self,
         code: &[u8],
-        schema: &PackageSchema,
+        blueprints: &BTreeMap<String, BlueprintSchema>,
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
             .enforce_no_floating_point()?
@@ -40,7 +39,7 @@ impl WasmValidator {
             .enforce_br_table_limit(self.max_number_of_br_table_targets)?
             .enforce_function_limit(self.max_number_of_functions)?
             .enforce_global_limit(self.max_number_of_globals)?
-            .enforce_export_constraints(schema)?
+            .enforce_export_constraints(blueprints)?
             .inject_instruction_metering(
                 self.metering_config.parameters().instruction_cost_rules(),
             )?

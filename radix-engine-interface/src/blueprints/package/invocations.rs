@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_schema::PackageSchema;
+use scrypto_schema::BlueprintSchema;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -88,6 +88,6 @@ pub type PackageClaimRoyaltyOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageDefinition {
-    pub schema: PackageSchema,
+    pub blueprints: BTreeMap<String, BlueprintSchema>,
     pub function_access_rules: BTreeMap<String, BTreeMap<String, AccessRule>>,
 }

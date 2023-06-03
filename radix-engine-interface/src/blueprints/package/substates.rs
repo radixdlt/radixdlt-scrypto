@@ -61,18 +61,6 @@ pub struct IndexedPackageSchema {
     pub blueprints: BTreeMap<String, IndexedBlueprintSchema>,
 }
 
-impl From<PackageSchema> for IndexedPackageSchema {
-    fn from(value: PackageSchema) -> Self {
-        IndexedPackageSchema {
-            blueprints: value
-                .blueprints
-                .into_iter()
-                .map(|(name, b)| (name, b.into()))
-                .collect(),
-        }
-    }
-}
-
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
     fn from(schema: BlueprintSchema) -> Self {
         let mut partition_offset = 0u8;

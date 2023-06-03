@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
+    ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -327,12 +327,10 @@ impl ConsensusManagerNativePackage {
             outer_method_auth_template: btreemap!(),
         };
 
-        let schema = PackageSchema {
-            blueprints: btreemap!(
+        let blueprints = btreemap!(
                 CONSENSUS_MANAGER_BLUEPRINT.to_string() => consensus_manager_schema,
                 VALIDATOR_BLUEPRINT.to_string() => validator_schema
-            ),
-        };
+            );
 
         let function_access_rules = btreemap!(
             CONSENSUS_MANAGER_BLUEPRINT.to_string() => btreemap!(
@@ -341,7 +339,7 @@ impl ConsensusManagerNativePackage {
         );
 
         PackageDefinition {
-            schema,
+            blueprints,
             function_access_rules,
         }
     }

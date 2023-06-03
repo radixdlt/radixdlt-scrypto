@@ -44,7 +44,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -804,7 +804,7 @@ impl TestRunner {
         retain: F,
     ) -> PackageAddress {
         let (code, mut definition) = Compile::compile(package_dir);
-        definition.schema.blueprints.retain(retain);
+        definition.blueprints.retain(retain);
         self.publish_package(
             code,
             definition,
@@ -1750,8 +1750,8 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    let mut package_schema = PackageSchema::default();
-    package_schema.blueprints.insert(
+    let mut blueprints = BTreeMap::new();
+    blueprints.insert(
         blueprint_name.to_string(),
         BlueprintSchema {
             outer_blueprint: None,
@@ -1778,7 +1778,7 @@ pub fn single_function_package_definition(
         },
     );
     PackageDefinition {
-        schema: package_schema,
+        blueprints,
         function_access_rules: btreemap!(
             blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))
         ),

@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
+    ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
     VirtualLazyLoadSchema,
 };
 
@@ -327,8 +327,7 @@ impl AccountNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        let schema = PackageSchema {
-            blueprints: btreemap!(
+        let blueprints = btreemap!(
                 ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
@@ -346,8 +345,7 @@ impl AccountNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 }
-            ),
-        };
+            );
 
         let function_access_rules = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => btreemap!(
@@ -358,7 +356,7 @@ impl AccountNativePackage {
         );
 
         PackageDefinition {
-            schema,
+            blueprints,
             function_access_rules,
         }
     }

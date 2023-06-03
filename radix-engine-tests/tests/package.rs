@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -139,8 +139,8 @@ fn test_basic_package() {
 fn test_basic_package_missing_export() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let mut package_schema = PackageSchema::default();
-    package_schema.blueprints.insert(
+    let mut blueprints = BTreeMap::new();
+    blueprints.insert(
         "Test".to_string(),
         BlueprintSchema {
             outer_blueprint: None,
@@ -173,7 +173,7 @@ fn test_basic_package_missing_export() {
         .publish_package_advanced(
             code,
             PackageDefinition {
-                schema: package_schema,
+                blueprints,
                 function_access_rules: btreemap!(),
             },
             BTreeMap::new(),

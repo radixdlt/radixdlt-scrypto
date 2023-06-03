@@ -1,6 +1,5 @@
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
-use radix_engine_interface::schema::PackageSchema;
 
 use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
@@ -38,7 +37,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         ),
         code: Arc::new(
             validator
-                .validate(&code, &PackageSchema::default())
+                .validate(&code, &BTreeMap::default())
                 .map_err(|e| ExtractSchemaError::InvalidWasm(e))?
                 .0,
         ),
@@ -65,7 +64,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     }
 
     Ok(PackageDefinition {
-        schema: PackageSchema { blueprints },
+        blueprints,
         function_access_rules: blueprints_function_auth,
     })
 }
