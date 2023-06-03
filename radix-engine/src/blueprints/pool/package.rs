@@ -137,8 +137,8 @@ impl PoolNativePackage {
                 SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
 
                 // Royalty Module rules
-                SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [];
-                SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [];
+                SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
+                SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
 
                 // Main Module rules
                 SchemaMethodKey::main(SINGLE_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
@@ -279,8 +279,8 @@ impl PoolNativePackage {
                 SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
 
                 // Royalty Module rules
-                SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [];
-                SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [];
+                SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
+                SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
 
                 // Main Module rules
                 SchemaMethodKey::main(TWO_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
@@ -307,22 +307,23 @@ impl PoolNativePackage {
         };
 
         let blueprints = btreemap!(
-                SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                    schema: single_resource_pool_blueprint_schema,
-                    function_access_rules: btreemap!(
-                        SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                    ),
-                },
-                TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                    schema: two_resource_pool_blueprint_schema,
-                    function_access_rules: btreemap!(
-                        TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                    ),
-                }
-            );
+            SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
+                schema: single_resource_pool_blueprint_schema,
+                function_access_rules: btreemap!(
+                    SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                ),
+            },
+            TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
+                schema: two_resource_pool_blueprint_schema,
+                function_access_rules: btreemap!(
+                    TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                ),
+            }
+        );
 
         PackageSetup {
             blueprints,
+            royalty_config: btreemap!(),
         }
     }
 

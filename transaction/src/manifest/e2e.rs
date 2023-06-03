@@ -25,9 +25,8 @@ PUBLISH_PACKAGE_ADVANCED
     Blob("${code_blob_hash}")
     Tuple(
         Map<String, Tuple>(),
-        Map<String, Map>()
+        Map<String, Tuple>()
     )
-    Map<String, Tuple>()
     Map<String, Enum>()
     Enum<0u8>()
 ;

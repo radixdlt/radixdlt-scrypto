@@ -3,7 +3,6 @@ use crate::modules::{AccessRules, Attachable, Royalty};
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, COMPONENT_ADDRESS_ID,
 };
@@ -14,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
@@ -67,7 +66,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type Permissions: MethodMapping<MethodPermission>;
-    type Royalties: MethodMapping<MethodRoyalty>;
+    type Royalties: MethodMapping<RoyaltyAmount>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -187,12 +186,6 @@ impl<C: HasStub + HasMethods> Owned<C> {
     }
 }
 
-pub enum MethodRoyalty {
-    Free,
-    Xrd(Decimal),
-    Usd(Decimal),
-}
-
 pub trait FnMapping<T> {
     fn to_mapping(self) -> Vec<(String, T)>;
 }
@@ -215,11 +208,11 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
     fn to_mapping(self) -> Vec<(String, T)> {
         vec![
             (
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
                 self.set_royalty_config,
             ),
             (
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                 self.claim_royalty,
             ),
         ]
@@ -227,13 +220,13 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
 
     fn methods() -> Vec<&'static str> {
         vec![
-            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-            COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+            COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+            COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
         ]
     }
 }
 
-pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
+pub struct RoyaltiesConfig<R: MethodMapping<RoyaltyAmount>> {
     pub method_royalties: R,
 }
 
@@ -297,11 +290,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn royalties(mut self, royalties: C::Royalties) -> Self {
         for (method, royalty) in royalties.to_mapping() {
-            match royalty {
-                MethodRoyalty::Xrd(x) => self.royalty.set_rule(method, RoyaltyAmount::Xrd(x)),
-                MethodRoyalty::Usd(x) => self.royalty.set_rule(method, RoyaltyAmount::Usd(x)),
-                MethodRoyalty::Free => {}
-            }
+            self.royalty.set_rule(method, royalty);
         }
 
         self

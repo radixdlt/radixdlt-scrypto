@@ -35,7 +35,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{PackageSetup, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, BlueprintSetup};
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput,
+    PackageRoyaltySubstate, PackageSetup, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -720,7 +723,6 @@ impl TestRunner {
                     args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         definition,
-                        royalty_config: btreemap!(),
                         metadata: btreemap!(),
                         package_address: Some(address),
                         owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
@@ -744,13 +746,12 @@ impl TestRunner {
         &mut self,
         code: Vec<u8>,
         definition: PackageSetup,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, definition, royalty_config, metadata, owner_rule)
+            .publish_package_advanced(code, definition, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -774,13 +775,7 @@ impl TestRunner {
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
         let (code, definition) = Compile::compile(package_dir);
-        self.publish_package(
-            code,
-            definition,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
     pub fn compile_and_publish_at_address<P: AsRef<Path>>(
@@ -802,13 +797,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let (code, mut definition) = Compile::compile(package_dir);
         definition.blueprints.retain(retain);
-        self.publish_package(
-            code,
-            definition,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
@@ -1781,6 +1770,7 @@ pub fn single_function_package_definition(
     );
     PackageSetup {
         blueprints,
+        royalty_config: btreemap!(),
     }
 }
 

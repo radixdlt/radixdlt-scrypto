@@ -9,6 +9,13 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod radiswap {
+    enable_package_royalties! {
+        new => Xrd(5.into()),
+        add_liquidity => Xrd(1.into()),
+        remove_liquidity => Xrd(1.into()),
+        swap => Xrd(2.into()),
+    }
+
     struct Radiswap {
         // TODO: We need a stub for native blueprints so that we're not using `AnyComponent`.
         /// The liquidity pool used by Radiswap and that manages all of the pool unit tokens.

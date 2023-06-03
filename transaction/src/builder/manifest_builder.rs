@@ -4,8 +4,8 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -21,10 +21,10 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PackageSetup, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
-    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PackageClaimRoyaltiesInput, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PackageSetup, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
+    PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -594,15 +594,21 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn set_package_royalty_config(
+    pub fn set_package_royalty<S: ToString>(
         &mut self,
         package_address: PackageAddress,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        blueprint: S,
+        fn_name: S,
+        royalty: RoyaltyAmount,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
-            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&PackageSetRoyaltyConfigInput { royalty_config }),
+            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&PackageSetRoyaltyInput {
+                blueprint: blueprint.to_string(),
+                fn_name: fn_name.to_string(),
+                royalty,
+            }),
         })
         .0
     }
@@ -610,30 +616,34 @@ impl ManifestBuilder {
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&PackageClaimRoyaltyInput {}),
+            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
+            args: to_manifest_value(&PackageClaimRoyaltiesInput {}),
         })
         .0
     }
 
-    pub fn set_component_royalty_config(
+    pub fn set_component_royalty<S: ToString>(
         &mut self,
         component_address: ComponentAddress,
-        royalty_config: RoyaltyConfig,
+        method: S,
+        amount: RoyaltyAmount,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&ComponentSetRoyaltyInput {
+                method: method.to_string(),
+                amount,
+            }),
         })
         .0
     }
 
-    pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
+    pub fn claim_component_royalties(&mut self, component_address: ComponentAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
+            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
+            args: to_manifest_value(&ComponentClaimRoyaltiesInput {}),
         })
         .0
     }
@@ -693,7 +703,6 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         definition: PackageSetup,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> &mut Self {
@@ -707,7 +716,6 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config,
                 metadata,
                 package_address: None,
                 owner_rule,
@@ -727,8 +735,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                definition,
-                royalty_config: BTreeMap::new(),
+                setup: definition,
                 metadata: BTreeMap::new(),
             }),
         });
@@ -753,7 +760,6 @@ impl ManifestBuilder {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),

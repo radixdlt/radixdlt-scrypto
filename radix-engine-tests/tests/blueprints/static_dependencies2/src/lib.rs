@@ -40,7 +40,8 @@ mod some_resource {
 
 #[blueprint]
 mod some_package {
-    const SOME_PACKAGE: Package = package!("package_sim1p5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpwgs6ac");
+    const SOME_PACKAGE: Package =
+        package!("package_sim1p5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpwgs6ac");
 
     struct SomePackage {}
 

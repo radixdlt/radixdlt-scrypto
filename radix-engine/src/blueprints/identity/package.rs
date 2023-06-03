@@ -12,16 +12,16 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::ReceiverInfo;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
-use radix_engine_interface::schema::{ReceiverInfo};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
@@ -80,41 +80,42 @@ impl IdentityNativePackage {
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
 
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
 
             SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
         };
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-                IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: BlueprintSchema {
-                        outer_blueprint: None,
-                        schema,
-                        fields,
-                        collections: vec![],
-                        functions,
-                        virtual_lazy_load_functions,
-                        event_schema: [].into(),
-                        dependencies: btreeset!(
-                            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-                            IDENTITY_OWNER_BADGE.into(),
-                            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                        ),
-                        method_auth_template,
-                        outer_method_auth_template: btreemap!(),
-                    },
-                    function_access_rules: btreemap!(
-                        IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
-                        IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+            IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: BlueprintSchema {
+                    outer_blueprint: None,
+                    schema,
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions,
+                    event_schema: [].into(),
+                    dependencies: btreeset!(
+                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                        IDENTITY_OWNER_BADGE.into(),
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
-                }
-            );
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
+                },
+                function_access_rules: btreemap!(
+                    IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
+                    IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                ),
+            }
+        );
 
         PackageSetup {
             blueprints,
+            royalty_config: btreemap!(),
         }
     }
 

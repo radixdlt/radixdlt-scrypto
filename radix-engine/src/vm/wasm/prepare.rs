@@ -3,7 +3,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_interface::schema::{BlueprintSchema};
+use radix_engine_interface::schema::BlueprintSchema;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -924,7 +924,10 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSchema>>(self, blueprints: I) -> Result<Self, PrepareError> {
+    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+        self,
+        blueprints: I,
+    ) -> Result<Self, PrepareError> {
         let exports = self
             .module
             .export_section()

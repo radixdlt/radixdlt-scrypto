@@ -29,7 +29,6 @@ fn missing_memory_should_cause_error() {
             code,
             PackageSetup::default(),
             BTreeMap::new(),
-            BTreeMap::new(),
             OwnerRole::None,
         )
         .build();
@@ -125,7 +124,6 @@ fn test_basic_package() {
             code,
             single_function_package_definition("Test", "f"),
             BTreeMap::new(),
-            BTreeMap::new(),
             OwnerRole::None,
         )
         .build();
@@ -167,7 +165,7 @@ fn test_basic_package_missing_export() {
                 outer_method_auth_template: btreemap!(),
             },
             function_access_rules: btreemap!(),
-        }
+        },
     );
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -177,8 +175,8 @@ fn test_basic_package_missing_export() {
             code,
             PackageSetup {
                 blueprints,
+                royalty_config: btreemap!(),
             },
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )

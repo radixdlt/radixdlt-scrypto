@@ -1,6 +1,6 @@
-use std::iter;
 use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::schema::BlueprintSchema;
+use std::iter;
 
 use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
@@ -50,24 +50,30 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaErro
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
+    let mut royalties = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance
             .invoke_export(&function_export, vec![], &mut runtime)
             .map_err(ExtractSchemaError::RunSchemaGenError)?;
 
         let name = function_export.replace("_schema", "").to_string();
-        let (schema, function_access_rules): (BlueprintSchema, BTreeMap<String, AccessRule>) =
-            scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
+        let (schema, function_access_rules, royalty_config): (
+            BlueprintSchema,
+            BTreeMap<String, AccessRule>,
+            RoyaltyConfig,
+        ) = scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
 
         let blueprint_setup = BlueprintSetup {
             schema,
             function_access_rules,
         };
 
+        royalties.insert(name.clone(), royalty_config);
         blueprints.insert(name.clone(), blueprint_setup);
     }
 
     Ok(PackageSetup {
         blueprints,
+        royalty_config: royalties,
     })
 }

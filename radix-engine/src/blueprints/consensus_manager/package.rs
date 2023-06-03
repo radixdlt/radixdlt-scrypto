@@ -328,20 +328,21 @@ impl ConsensusManagerNativePackage {
         };
 
         let blueprints = btreemap!(
-                CONSENSUS_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: consensus_manager_schema,
-                    function_access_rules: btreemap!(
-                        CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
-                    ),
-                },
-                VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: validator_schema,
-                    function_access_rules: btreemap!(),
-                }
-            );
+            CONSENSUS_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: consensus_manager_schema,
+                function_access_rules: btreemap!(
+                    CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                ),
+            },
+            VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: validator_schema,
+                function_access_rules: btreemap!(),
+            }
+        );
 
         PackageSetup {
             blueprints,
+            royalty_config: btreemap!(),
         }
     }
 

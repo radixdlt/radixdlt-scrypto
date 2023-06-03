@@ -460,6 +460,7 @@ impl AccessControllerNativePackage {
 
         PackageSetup {
             blueprints,
+            royalty_config: btreemap!(),
         }
     }
 

@@ -10,8 +10,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
-    VirtualLazyLoadSchema,
+    ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef, VirtualLazyLoadSchema,
 };
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
@@ -328,34 +327,35 @@ impl AccountNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-                ACCOUNT_BLUEPRINT.to_string() => BlueprintSetup {
-                    schema: BlueprintSchema {
-                        outer_blueprint: None,
-                        schema,
-                        fields,
-                        collections,
-                        functions,
-                        virtual_lazy_load_functions,
-                        event_schema: [].into(),
-                        dependencies: btreeset!(
-                            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-                            ACCOUNT_OWNER_BADGE.into(),
-                            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                        ),
-                        method_auth_template,
-                        outer_method_auth_template: btreemap!(),
-                    },
-                    function_access_rules: btreemap!(
-                        ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
-                        ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
-                        ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+            ACCOUNT_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: BlueprintSchema {
+                    outer_blueprint: None,
+                    schema,
+                    fields,
+                    collections,
+                    functions,
+                    virtual_lazy_load_functions,
+                    event_schema: [].into(),
+                    dependencies: btreeset!(
+                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                        ACCOUNT_OWNER_BADGE.into(),
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
-                }
-            );
+                    method_auth_template,
+                    outer_method_auth_template: btreemap!(),
+                },
+                function_access_rules: btreemap!(
+                    ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
+                    ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
+                    ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                ),
+            }
+        );
 
         PackageSetup {
             blueprints,
+            royalty_config: btreemap!(),
         }
     }
 

@@ -28,20 +28,18 @@ fn test_static_package_address() {
     for (_, blueprint) in &mut definition.blueprints {
         if blueprint.schema.dependencies.contains(&place_holder) {
             blueprint.schema.dependencies.remove(&place_holder);
-            blueprint.schema.dependencies.insert(package_address1.into());
+            blueprint
+                .schema
+                .dependencies
+                .insert(package_address1.into());
         }
     }
 
     let start = find_subsequence(&code, &PACKAGE_ADDRESS_PLACE_HOLDER).unwrap();
     code[start..start + PACKAGE_ADDRESS_PLACE_HOLDER.len()]
         .copy_from_slice(package_address1.as_ref());
-    let package_address2 = test_runner.publish_package(
-        code,
-        definition,
-        BTreeMap::new(),
-        BTreeMap::new(),
-        OwnerRole::None,
-    );
+    let package_address2 =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())

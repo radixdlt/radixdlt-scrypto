@@ -12,7 +12,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_ID
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -28,7 +28,7 @@ use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{
@@ -631,14 +631,14 @@ where
         ast::Instruction::SetComponentRoyaltyConfig { address, args } => {
             InstructionV1::CallRoyaltyMethod {
                 address: generate_global_address(address, bech32_decoder)?,
-                method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::ClaimComponentRoyalty { address, args } => {
             InstructionV1::CallRoyaltyMethod {
                 address: generate_global_address(address, bech32_decoder)?,
-                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
@@ -665,12 +665,12 @@ where
         },
         ast::Instruction::SetPackageRoyaltyConfig { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {
@@ -1218,9 +1218,9 @@ mod tests {
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
+    use radix_engine_interface::schema::BlueprintSchema;
     use radix_engine_interface::types::{NonFungibleData, RoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
-    use radix_engine_interface::schema::BlueprintSchema;
 
     #[macro_export]
     macro_rules! generate_value_ok {

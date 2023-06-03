@@ -58,6 +58,7 @@ impl TransactionProcessorNativePackage {
 
         PackageSetup {
             blueprints,
+            royalty_config: btreemap!(),
         }
     }
 

@@ -16,15 +16,13 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
     pub setup: PackageSetup,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
-    pub definition: PackageSetup,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -37,7 +35,6 @@ pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub definition: PackageSetup,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -47,7 +44,6 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub code: ManifestBlobRef,
     pub definition: PackageSetup,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -66,29 +62,32 @@ pub struct PackagePublishNativeInput {
 
 pub type PackagePublishNativeOutput = PackageAddress;
 
-pub const PACKAGE_SET_ROYALTY_CONFIG_IDENT: &str = "PackageRoyalty_set_royalty_config";
+pub const PACKAGE_SET_ROYALTY_IDENT: &str = "PackageRoyalty_set_royalty";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageSetRoyaltyConfigInput {
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
+pub struct PackageSetRoyaltyInput {
+    pub blueprint: String,
+    pub fn_name: String,
+    pub royalty: RoyaltyAmount,
 }
 
-pub type PackageSetRoyaltyConfigOutput = ();
+pub type PackageSetRoyaltyOutput = ();
 
-pub const PACKAGE_CLAIM_ROYALTY_IDENT: &str = "PackageRoyalty_claim_royalty";
+pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageClaimRoyaltyInput {}
+pub struct PackageClaimRoyaltiesInput {}
 
-pub type PackageClaimRoyaltyOutput = Bucket;
+pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageSetup {
     pub blueprints: BTreeMap<String, BlueprintSetup>,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]

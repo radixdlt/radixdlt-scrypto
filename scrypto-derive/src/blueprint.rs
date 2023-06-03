@@ -271,7 +271,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         {
             let item: ItemUse = parse_quote! { use scrypto::prelude::MethodPermission::*; };
             use_statements.push(item);
-            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodRoyalty::*; };
+            let item: ItemUse = parse_quote! { use scrypto::prelude::RoyaltyAmount::*; };
             use_statements.push(item);
         }
 
@@ -331,6 +331,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
 
     let generated_schema_info = generate_schema(bp_ident, bp_items, &mut dependency_exprs)?;
+    let fn_idents = generated_schema_info.fn_idents;
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
     let function_idents = generated_schema_info.function_idents;
@@ -479,6 +480,37 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         };
 
+        let fn_names: Vec<String> = fn_idents.iter().map(|i| i.to_string()).collect();
+        let package_royalties_statements = {
+            let package_royalties_index = macro_statements.iter().position(|item| {
+                item.mac
+                    .path
+                    .get_ident()
+                    .unwrap()
+                    .eq(&Ident::new("enable_package_royalties", Span::call_site()))
+            });
+            if let Some(package_royalties_index) = package_royalties_index {
+                let royalties_macro = macro_statements.remove(package_royalties_index);
+                quote! {
+                    #royalties_macro
+                }
+            } else {
+                // TODO: Use AllPublicFunctions Template instead
+                quote! {
+                    fn package_royalty_config() -> RoyaltyConfig {
+                        let royalties = btreemap!(
+                            #(
+                                #fn_names.to_string() => Free,
+                            )*
+                        );
+                        RoyaltyConfig {
+                            rules: royalties,
+                        }
+                    }
+                }
+            }
+        };
+
         let schema_ident = format_ident!("{}_schema", bp_ident);
         let fn_names = generated_schema_info.fn_names;
         let fn_schemas = generated_schema_info.fn_schemas;
@@ -514,6 +546,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         quote! {
             #function_auth_statements
+
+            #package_royalties_statements
 
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
@@ -569,8 +603,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
 
                 let function_auth = function_auth();
+                let royalty_config = package_royalty_config();
 
-                let return_data = (schema, function_auth);
+                let return_data = (schema, function_auth, royalty_config);
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
@@ -595,7 +630,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         impl HasMethods for #bp_ident {
             type Permissions = Methods<MethodPermission>;
-            type Royalties = Methods<MethodRoyalty>;
+            type Royalties = Methods<RoyaltyAmount>;
         }
 
         impl HasTypeInfo for #bp_ident {
@@ -608,6 +643,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let methods_struct = generate_methods_struct(method_idents);
     let functions_struct = generate_functions_struct(function_idents);
+    let fns_struct = generate_fns_struct(fn_idents);
 
     trace!("Generated mod: \n{}", quote! { #output_original_code });
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
@@ -639,6 +675,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #methods_struct
 
             #functions_struct
+
+            #fns_struct
 
             #output_dispatcher
 
@@ -733,6 +771,43 @@ fn generate_functions_struct(function_idents: Vec<Ident>) -> TokenStream {
                     vec![
                         #(
                             (#function_names.to_string(), self.#function_idents)
+                        ,
+                        )*
+                    ]
+                }
+            }
+        }
+    }
+}
+
+fn generate_fns_struct(fn_idents: Vec<Ident>) -> TokenStream {
+    let fn_names: Vec<String> = fn_idents.iter().map(|i| i.to_string()).collect();
+
+    if fn_idents.is_empty() {
+        quote! {
+            pub struct Fns<T> {
+                t: PhantomData<T>,
+            }
+
+            impl<T> FnMapping<T> for Fns<T> {
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![]
+                }
+            }
+        }
+    } else {
+        quote! {
+            pub struct Fns<T> {
+                #(
+                    #fn_idents: T,
+                )*
+            }
+
+            impl<T> FnMapping<T> for Fns<T> {
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![
+                        #(
+                            (#fn_names.to_string(), self.#fn_idents)
                         ,
                         )*
                     ]
@@ -1056,6 +1131,7 @@ fn generate_stubs(
 struct GeneratedSchemaInfo {
     fn_names: Vec<String>,
     fn_schemas: Vec<Expr>,
+    fn_idents: Vec<Ident>,
     method_idents: Vec<Ident>,
     function_idents: Vec<Ident>,
 }
@@ -1068,6 +1144,7 @@ fn generate_schema(
 ) -> Result<GeneratedSchemaInfo> {
     let mut fn_names = Vec::<String>::new();
     let mut fn_schemas = Vec::<Expr>::new();
+    let mut fn_idents = Vec::<Ident>::new();
     let mut method_idents = Vec::<Ident>::new();
     let mut function_idents = Vec::<Ident>::new();
 
@@ -1115,9 +1192,11 @@ fn generate_schema(
 
                     replace_macros_in_body(&mut m.block, dependency_exprs)?;
 
+                    fn_names.push(function_name);
+                    fn_idents.push(m.sig.ident.clone());
+
                     if receiver.is_none() {
                         function_idents.push(m.sig.ident.clone());
-                        fn_names.push(function_name);
                         fn_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
                                 receiver: Option::None,
@@ -1128,7 +1207,6 @@ fn generate_schema(
                         });
                     } else {
                         method_idents.push(m.sig.ident.clone());
-                        fn_names.push(function_name);
                         fn_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
                                 receiver: Option::Some(#receiver),
@@ -1152,6 +1230,7 @@ fn generate_schema(
     Ok(GeneratedSchemaInfo {
         fn_names,
         fn_schemas,
+        fn_idents,
         method_idents,
         function_idents,
     })
@@ -1204,7 +1283,7 @@ mod tests {
                     use scrypto::prelude::*;
                     use super::*;
                     use scrypto::prelude::MethodPermission::*;
-                    use scrypto::prelude::MethodRoyalty::*;
+                    use scrypto::prelude::RoyaltyAmount::*;
 
                     fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
                         btreemap!(
@@ -1237,7 +1316,7 @@ mod tests {
 
                     impl HasMethods for Test {
                         type Permissions = Methods<MethodPermission>;
-                        type Royalties = Methods<MethodRoyalty>;
+                        type Royalties = Methods<RoyaltyAmount>;
                     }
 
                     impl HasTypeInfo for Test {
@@ -1272,6 +1351,20 @@ mod tests {
                     impl<T> FnMapping<T> for Functions<T> {
                         fn to_mapping(self) -> Vec<(String, T)> {
                             vec![
+                                ("y".to_string(), self.y),
+                            ]
+                        }
+                    }
+
+                    pub struct Fns<T> {
+                        x: T,
+                        y: T,
+                    }
+
+                    impl<T> FnMapping<T> for Fns<T> {
+                        fn to_mapping(self) -> Vec<(String, T)> {
+                            vec![
+                                ("x".to_string(), self.x),
                                 ("y".to_string(), self.y),
                             ]
                         }
@@ -1315,6 +1408,16 @@ mod tests {
                         btreemap!(
                             "y".to_string() => AccessRule::AllowAll,
                         )
+                    }
+
+                    fn package_royalty_config() -> RoyaltyConfig {
+                        let royalties = btreemap!(
+                            "x".to_string() => Free,
+                            "y".to_string() => Free,
+                        );
+                        RoyaltyConfig {
+                            rules: royalties,
+                        }
                     }
 
                     #[no_mangle]
@@ -1370,8 +1473,9 @@ mod tests {
                         };
 
                         let function_auth = function_auth();
+                        let royalty_config = package_royalty_config();
 
-                        let return_data = (schema, function_auth);
+                        let return_data = (schema, function_auth, royalty_config);
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
