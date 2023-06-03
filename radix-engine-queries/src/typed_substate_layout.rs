@@ -291,11 +291,9 @@ fn to_typed_object_substate_key_internal(
                 }
             }
         }
-        EntityType::GlobalOneResourcePool => {
-            TypedMainModuleSubstateKey::OneResourcePoolField(OneResourcePoolField::try_from(
-                substate_key,
-            )?)
-        }
+        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePoolField(
+            OneResourcePoolField::try_from(substate_key)?,
+        ),
         EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePoolField(
             TwoResourcePoolField::try_from(substate_key)?,
         ),

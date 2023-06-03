@@ -279,9 +279,8 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(
-        is_one_resource_pool_does_non_fungible_resources_are_not_accepted,
-    )
+    receipt
+        .expect_specific_failure(is_one_resource_pool_does_non_fungible_resources_are_not_accepted)
 }
 
 #[test]

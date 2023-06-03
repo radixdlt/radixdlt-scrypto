@@ -2205,9 +2205,7 @@ pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
         }
         (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
         (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
-        (POOL_PACKAGE, ONE_RESOURCE_POOL_BLUEPRINT_IDENT) => {
-            EntityType::GlobalOneResourcePool
-        }
+        (POOL_PACKAGE, ONE_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalOneResourcePool,
         (POOL_PACKAGE, TWO_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalTwoResourcePool,
         (POOL_PACKAGE, MULTI_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalMultiResourcePool,
         _ => EntityType::GlobalGenericComponent,

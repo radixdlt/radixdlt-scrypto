@@ -76,11 +76,9 @@ impl PoolNativePackage {
                 FunctionSchema {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(
-                        ),
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(
-                        ),
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(),
                     export_name: ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
@@ -89,8 +87,10 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
-                    output: aggregator.add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
                     export_name: ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
@@ -99,8 +99,11 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>(),
-                    output: aggregator.add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(
+                        ),
                     export_name: ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
@@ -498,10 +501,9 @@ impl PoolNativePackage {
             ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let OneResourcePoolContributeInput { bucket } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
+                let OneResourcePoolContributeInput { bucket } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
                 let rtn = OneResourcePoolBlueprint::contribute(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
