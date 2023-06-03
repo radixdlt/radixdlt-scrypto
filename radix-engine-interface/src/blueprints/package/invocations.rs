@@ -92,6 +92,6 @@ pub struct PackageSetup {
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSetup {
     pub schema: BlueprintSchema,
-    pub function_access_rules: BTreeMap<String, AccessRule>,
-    pub package_royalty_config: RoyaltyConfig,
+    pub function_auth: BTreeMap<String, AccessRule>,
+    pub royalty_config: RoyaltyConfig,
 }

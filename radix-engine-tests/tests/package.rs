@@ -164,8 +164,8 @@ fn test_basic_package_missing_export() {
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },
-            function_access_rules: btreemap!(),
-            package_royalty_config: RoyaltyConfig::default(),
+            function_auth: btreemap!(),
+            royalty_config: RoyaltyConfig::default(),
         },
     );
     // Act

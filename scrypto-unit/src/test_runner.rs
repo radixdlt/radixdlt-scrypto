@@ -1763,10 +1763,10 @@ pub fn single_function_package_definition(
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },
-            function_access_rules: btreemap!(
+            function_auth: btreemap!(
                 function_name.to_string() => rule!(allow_all),
             ),
-            package_royalty_config: RoyaltyConfig::default(),
+            royalty_config: RoyaltyConfig::default(),
         },
     );
     PackageSetup {

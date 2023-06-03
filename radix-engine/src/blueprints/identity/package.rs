@@ -106,11 +106,11 @@ impl IdentityNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 },
-                function_access_rules: btreemap!(
+                function_auth: btreemap!(
                     IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                     IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                 ),
-                package_royalty_config: RoyaltyConfig::default(),
+                royalty_config: RoyaltyConfig::default(),
             }
         );
 

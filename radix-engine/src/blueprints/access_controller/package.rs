@@ -452,10 +452,10 @@ impl AccessControllerNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 },
-                function_access_rules: btreemap!(
+                function_auth: btreemap!(
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                 ),
-                package_royalty_config: RoyaltyConfig::default(),
+                royalty_config: RoyaltyConfig::default(),
             }
         );
 

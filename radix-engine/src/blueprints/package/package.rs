@@ -318,12 +318,12 @@ impl PackageNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 },
-                function_access_rules: btreemap!(
+                function_auth: btreemap!(
                     PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
                     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                 ),
-                package_royalty_config: RoyaltyConfig::default(),
+                royalty_config: RoyaltyConfig::default(),
             }
         );
 
@@ -451,7 +451,7 @@ impl PackageNativePackage {
             let mut blueprints = BTreeMap::new();
 
             for (blueprint, setup) in definition.blueprints {
-                for (ident, rule) in setup.function_access_rules {
+                for (ident, rule) in setup.function_auth {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
                 }
 
@@ -604,13 +604,13 @@ impl PackageNativePackage {
             let mut royalties = BTreeMap::new();
 
             for (blueprint, setup) in setup.blueprints {
-                for (ident, rule) in setup.function_access_rules {
+                for (ident, rule) in setup.function_auth {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
                 }
 
                 let indexed: IndexedBlueprintSchema = setup.schema.into();
                 blueprints.insert(blueprint.clone(), indexed);
-                royalties.insert(blueprint.clone(), setup.package_royalty_config);
+                royalties.insert(blueprint.clone(), setup.royalty_config);
             }
 
             (

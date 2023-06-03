@@ -605,7 +605,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let function_auth = function_auth();
                 let royalty_config = package_royalty_config();
 
-                let return_data = (schema, function_auth, royalty_config);
+                let return_data = scrypto::blueprints::package::BlueprintSetup {
+                    schema,
+                    function_auth,
+                    royalty_config,
+                };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
@@ -1475,7 +1479,11 @@ mod tests {
                         let function_auth = function_auth();
                         let royalty_config = package_royalty_config();
 
-                        let return_data = (schema, function_auth, royalty_config);
+                        let return_data = scrypto::blueprints::package::BlueprintSetup {
+                            schema,
+                            function_auth,
+                            royalty_config,
+                        };
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

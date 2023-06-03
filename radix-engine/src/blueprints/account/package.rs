@@ -345,12 +345,12 @@ impl AccountNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 },
-                function_access_rules: btreemap!(
+                function_auth: btreemap!(
                     ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
                     ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
                     ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                 ),
-                package_royalty_config: RoyaltyConfig::default(),
+                royalty_config: RoyaltyConfig::default(),
             }
         );
 
