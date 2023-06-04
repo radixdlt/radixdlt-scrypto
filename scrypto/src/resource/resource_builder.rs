@@ -476,6 +476,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&FungibleResourceManagerCreateInput {
+                        features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                         divisibility,
                         metadata,
                         access_rules,
@@ -552,6 +553,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                     divisibility: self.resource_type.divisibility,
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),

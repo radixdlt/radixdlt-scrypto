@@ -971,7 +971,7 @@ impl ValidatorCreator {
         stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let stake_unit_resman =
-            ResourceManager::new_fungible(18, BTreeMap::new(), stake_unit_resource_auth, api)?;
+            ResourceManager::new_fungible(vec![TRACK_TOTAL_SUPPLY_FEATURE], 18, BTreeMap::new(), stake_unit_resource_auth, api)?;
 
         Ok(stake_unit_resman.0)
     }

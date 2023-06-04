@@ -388,6 +388,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_fungible_resource(
+            vec![],
             18,
             Default::default(),
             BTreeMap::<ResourceMethodAuthKey, (AccessRule, AccessRule)>::new(),
@@ -454,7 +455,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
-            .create_fungible_resource(18, Default::default(), access_rules, None)
+            .create_fungible_resource(vec![], 18, Default::default(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1494,7 +1495,7 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
     .collect();
 
     let manifest = ManifestBuilder::new()
-        .create_fungible_resource(18, BTreeMap::new(), access_rules, None)
+        .create_fungible_resource(vec![], 18, BTreeMap::new(), access_rules, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     *receipt

@@ -4,7 +4,6 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto::engine::wasm_api::call_method;
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -150,7 +149,7 @@ fn create_fungible_too_high_granularity_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_fungible_resource(23u8, BTreeMap::new(), access_rules, Some(dec!("100")))
+        .create_fungible_resource(vec![], 23u8, BTreeMap::new(), access_rules, Some(dec!("100")))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

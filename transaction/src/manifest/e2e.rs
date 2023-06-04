@@ -621,6 +621,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Array<String>()
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(
@@ -673,6 +674,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE
+    Array<String>()
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(

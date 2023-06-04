@@ -18,6 +18,7 @@ pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
     pub fn new_fungible<Y, E: Debug + ScryptoDecode>(
+        features: Vec<&str>,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -32,6 +33,7 @@ impl ResourceManager {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateInput {
+                    features: features.into_iter().map(|s| s.to_string()).collect(),
                     metadata,
                     access_rules,
                     divisibility,
@@ -44,6 +46,7 @@ impl ResourceManager {
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
+        features: Vec<String>,
         divisibility: u8,
         amount: Decimal,
         metadata: BTreeMap<String, MetadataValue>,
@@ -59,6 +62,7 @@ impl ResourceManager {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                    features,
                     metadata,
                     access_rules,
                     divisibility,

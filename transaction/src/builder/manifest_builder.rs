@@ -382,6 +382,7 @@ impl ManifestBuilder {
     /// Creates a fungible resource
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
+        features: Vec<&str>,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
@@ -398,6 +399,7 @@ impl ManifestBuilder {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                    features: features.into_iter().map(|s| s.to_string()).collect(),
                     divisibility,
                     metadata,
                     access_rules,
@@ -410,6 +412,7 @@ impl ManifestBuilder {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
+                    features: features.into_iter().map(|s| s.to_string()).collect(),
                     divisibility,
                     metadata,
                     access_rules,
@@ -799,7 +802,7 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(18, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(vec![TRACK_TOTAL_SUPPLY_FEATURE], 18, metadata, access_rules, initial_supply)
     }
 
     /// Creates a token resource with fixed supply.
@@ -814,7 +817,7 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(18, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(vec![TRACK_TOTAL_SUPPLY_FEATURE], 18, metadata, access_rules, Some(initial_supply))
     }
 
     /// Creates a badge resource with mutable supply.
@@ -832,7 +835,7 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(0, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(vec![], 0, metadata, access_rules, initial_supply)
     }
 
     /// Creates a badge resource with fixed supply.
@@ -847,7 +850,7 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(0, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(vec![], 0, metadata, access_rules, Some(initial_supply))
     }
 
     pub fn burn_from_worktop(

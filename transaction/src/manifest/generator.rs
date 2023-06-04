@@ -1625,6 +1625,7 @@ mod tests {
     fn test_create_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE
+                Array<String>()
                 18u8
                 Map<String, Enum>(
                     "name" => Enum<Metadata::String>("Token")
@@ -1645,6 +1646,7 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
+                    features: vec![],
                     divisibility: 18,
                     metadata: BTreeMap::from([(
                         "name".to_string(),
@@ -1669,6 +1671,7 @@ mod tests {
     fn test_create_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                Array<String>()
                 18u8
                 Map<String, Enum>(
                     "name" => Enum<Metadata::String>("Token")
@@ -1691,6 +1694,7 @@ mod tests {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                    features: vec![],
                     divisibility: 18,
                     metadata: BTreeMap::from([(
                         "name".to_string(),

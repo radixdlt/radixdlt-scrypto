@@ -65,6 +65,7 @@ pub struct FungibleResourceManagerBlueprint;
 
 impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
+        features: Vec<String>,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -77,7 +78,7 @@ impl FungibleResourceManagerBlueprint {
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            features.iter().map(|s| s.as_str()).collect(),
             None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -95,6 +96,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
+        features: Vec<String>,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -109,7 +111,7 @@ impl FungibleResourceManagerBlueprint {
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         Self::create_with_initial_supply_and_address(
-            vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
+            features,
             divisibility,
             metadata,
             access_rules,

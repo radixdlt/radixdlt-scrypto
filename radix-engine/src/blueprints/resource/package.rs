@@ -1749,6 +1749,7 @@ impl ResourceManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
+                    input.features,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
@@ -1769,6 +1770,7 @@ impl ResourceManagerNativePackage {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.features,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
