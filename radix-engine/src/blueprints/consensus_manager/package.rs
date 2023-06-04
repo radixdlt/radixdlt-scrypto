@@ -14,7 +14,10 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::require;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FeaturedSchema, FieldSchema, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FeaturedSchema,
+    FieldSchema, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
+};
 use resources_tracker_macro::trace_resources;
 
 use super::*;
@@ -31,13 +34,24 @@ impl ConsensusManagerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>()));
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>()));
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>()));
-        fields
-            .push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>()));
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>()));
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>()));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>(),
+        ));
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::SortedIndex(
@@ -147,7 +161,9 @@ impl ConsensusManagerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ValidatorSubstate>()));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ValidatorSubstate>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(

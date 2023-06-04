@@ -10,7 +10,11 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef, VirtualLazyLoadSchema};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema,
+    FieldSchema, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
+    VirtualLazyLoadSchema,
+};
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
 use crate::method_auth_template;
@@ -30,7 +34,9 @@ impl AccountNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<AccountSubstate>()));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<AccountSubstate>(),
+        ));
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(

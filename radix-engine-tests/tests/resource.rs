@@ -22,13 +22,15 @@ fn cannot_get_total_supply_of_xrd() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![],
-    );
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(..))))
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(..))
+        )
+    })
 }
 
 #[test]
@@ -149,7 +151,13 @@ fn create_fungible_too_high_granularity_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_fungible_resource(vec![], 23u8, BTreeMap::new(), access_rules, Some(dec!("100")))
+        .create_fungible_resource(
+            vec![],
+            23u8,
+            BTreeMap::new(),
+            access_rules,
+            Some(dec!("100")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

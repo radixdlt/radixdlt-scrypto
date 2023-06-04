@@ -9,8 +9,8 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema};
 use radix_engine_interface::schema::FunctionSchema;
+use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema};
 use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;

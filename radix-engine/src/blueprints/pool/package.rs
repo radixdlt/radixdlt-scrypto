@@ -32,7 +32,9 @@ impl PoolNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<SingleResourcePoolSubstate>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<SingleResourcePoolSubstate>(),
+            ));
 
             let collections = Vec::new();
 
@@ -84,7 +86,9 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<SingleResourcePoolProtectedDepositOutput>(
                         ),
-                    export: FeaturedSchema::normal(SINGLE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        SINGLE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -116,7 +120,9 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<SingleResourcePoolGetVaultAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<SingleResourcePoolGetVaultAmountOutput>(),
-                    export: FeaturedSchema::normal(SINGLE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        SINGLE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -150,7 +156,9 @@ impl PoolNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<TwoResourcePoolSubstate>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<TwoResourcePoolSubstate>(),
+            ));
 
             let collections = Vec::new();
 
@@ -212,7 +220,9 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -225,7 +235,9 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME,
+                    ),
                 },
             );
 

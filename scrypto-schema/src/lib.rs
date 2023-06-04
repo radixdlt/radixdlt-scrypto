@@ -130,18 +130,15 @@ pub enum BlueprintCollectionSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum FeaturedSchema<V> {
-    Normal {
-        value: V,
-    },
-    Conditional {
-        feature: String,
-        value: V,
-    },
+    Normal { value: V },
+    Conditional { feature: String, value: V },
 }
 
 impl<V> FeaturedSchema<V> {
     pub fn normal<I: Into<V>>(value: I) -> Self {
-        FeaturedSchema::Normal { value: value.into() }
+        FeaturedSchema::Normal {
+            value: value.into(),
+        }
     }
 }
 

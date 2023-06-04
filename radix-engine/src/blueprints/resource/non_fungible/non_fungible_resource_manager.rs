@@ -327,7 +327,11 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -386,7 +390,11 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update Total Supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -447,7 +455,11 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -650,7 +662,11 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),

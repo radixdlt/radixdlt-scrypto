@@ -936,7 +936,9 @@ impl WasmModule {
             for func in blueprint_schema.functions.values() {
                 let export_mapping = &func.export;
                 match export_mapping {
-                    FeaturedSchema::Conditional { value: export_name, ..}
+                    FeaturedSchema::Conditional {
+                        value: export_name, ..
+                    }
                     | FeaturedSchema::Normal { value: export_name } => {
                         if !exports.entries().iter().any(|x| {
                             x.field().eq(export_name) && {
@@ -1082,7 +1084,9 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::schema::{BlueprintSchema, ExportSchema, FieldSchema, FunctionSchema};
+    use radix_engine_interface::schema::{
+        BlueprintSchema, ExportSchema, FieldSchema, FunctionSchema,
+    };
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 

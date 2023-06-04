@@ -38,7 +38,10 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FieldSchema, InstanceSchema, KeyValueStoreSchema, TypeRef};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FieldSchema, InstanceSchema,
+    KeyValueStoreSchema, TypeRef,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -199,8 +202,13 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
 
-        let (expected_blueprint_parent, user_substates) =
-            self.verify_instance_schema_and_state(blueprint, &features, &instance_schema, fields, kv_entries)?;
+        let (expected_blueprint_parent, user_substates) = self.verify_instance_schema_and_state(
+            blueprint,
+            &features,
+            &instance_schema,
+            fields,
+            kv_entries,
+        )?;
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
@@ -358,7 +366,6 @@ where
                             }
                         }
                     };
-
 
                     self.validate_payload(
                         &field,
@@ -873,7 +880,14 @@ where
         let instance_context = actor.instance_context();
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
-        self.new_object_internal(&blueprint, features, instance_context, schema, fields, kv_entries)
+        self.new_object_internal(
+            &blueprint,
+            features,
+            instance_context,
+            schema,
+            fields,
+            kv_entries,
+        )
     }
 
     fn attach_access_rules(

@@ -21,8 +21,8 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{FeaturedSchema, ReceiverInfo};
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{FeaturedSchema, ReceiverInfo};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use resources_tracker_macro::trace_resources;
 

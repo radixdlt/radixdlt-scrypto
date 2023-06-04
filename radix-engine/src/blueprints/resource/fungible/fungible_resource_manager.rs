@@ -184,7 +184,11 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -216,7 +220,11 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),

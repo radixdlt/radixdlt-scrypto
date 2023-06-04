@@ -1,7 +1,6 @@
 use crate::ScryptoSbor;
 use core::fmt;
 use core::fmt::Formatter;
-use std::collections::BTreeSet;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
@@ -9,6 +8,7 @@ use radix_engine_derive::ManifestSbor;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
+use std::collections::BTreeSet;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

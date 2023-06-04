@@ -14,7 +14,9 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, FeaturedSchema, FieldSchema, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, FeaturedSchema, FieldSchema, SchemaMethodKey, SchemaMethodPermission,
+};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeRef};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
@@ -135,18 +137,16 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(
-                FieldSchema::normal(aggregator
+            fields.push(FieldSchema::normal(
+                aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(
-                    )),
-            );
-            fields.push(
-                FieldSchema::Conditional {
-                    feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                    value: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
-                }
-            );
+                    ),
+            ));
+            fields.push(FieldSchema::Conditional {
+                feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                value: aggregator
+                    .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
+            });
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -213,7 +213,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
-                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -224,7 +226,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
-                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -236,7 +240,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -249,7 +255,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
                     export: FeaturedSchema::Conditional {
                         feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        value: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string()
+                        value: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
                     },
                 },
             );
@@ -261,7 +267,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
-                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -293,10 +301,10 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(
-                FieldSchema::normal(aggregator
-                    .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>()),
-            );
+            fields.push(FieldSchema::normal(
+                aggregator
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
+            ));
             fields.push(
                 FieldSchema::normal(aggregator
                     .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
@@ -329,7 +337,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -423,7 +433,9 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
                         ),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -456,7 +468,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -467,7 +481,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -479,7 +495,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -492,7 +510,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
                     export: FeaturedSchema::Conditional {
                         feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        value: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
+                        value: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME
+                            .to_string(),
                     },
                 },
             );
@@ -504,7 +523,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -535,9 +556,12 @@ impl ResourceManagerNativePackage {
         let fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
-            fields
-                .push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>()));
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedFungibleResource>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -630,7 +654,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -686,10 +712,12 @@ impl ResourceManagerNativePackage {
         let non_fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
-            fields.push(
-                FieldSchema::normal(aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>()),
-            );
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+            ));
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::Index(BlueprintIndexSchema {}));
@@ -813,7 +841,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -835,7 +865,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -848,7 +880,9 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
                         ),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -882,8 +916,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>()));
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedFungibleResource>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LiquidFungibleResource>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -921,7 +959,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
-                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -941,7 +981,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -997,8 +1039,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>()));
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1037,7 +1083,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -1057,7 +1105,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -1077,7 +1127,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -1088,7 +1140,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -1099,7 +1153,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -1111,7 +1167,9 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesOutput>(
                         ),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME,
+                    ),
                 },
             );
             functions.insert(
@@ -1143,8 +1201,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>()));
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<FungibleProofSubstate>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<FungibleProofSubstate>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1203,8 +1265,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>()));
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>()));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1242,7 +1308,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                    export: FeaturedSchema::normal(NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(
+                        NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME,
+                    ),
                 },
             );
 
@@ -1274,7 +1342,9 @@ impl ResourceManagerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<WorktopSubstate>()));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -1378,7 +1448,9 @@ impl ResourceManagerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<AuthZone>()));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<AuthZone>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
