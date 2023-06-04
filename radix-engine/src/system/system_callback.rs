@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::RefTypes;
+use radix_engine_interface::schema::{ExportNameMapping, RefTypes};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -69,7 +69,9 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    Ok(function_schema.export_name.clone())
+    match &function_schema.export {
+        ExportNameMapping::Normal { export_name } => Ok(export_name.clone())
+    }
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(

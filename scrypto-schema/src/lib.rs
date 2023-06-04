@@ -89,19 +89,17 @@ impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
 pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
     pub schema: ScryptoSchema,
-
     /// State Schema
     pub fields: Vec<LocalTypeIndex>,
     pub collections: Vec<BlueprintCollectionSchema>,
+    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    pub dependencies: BTreeSet<GlobalAddress>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
     /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
-    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
-
-    pub dependencies: BTreeSet<GlobalAddress>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -131,11 +129,30 @@ pub enum BlueprintCollectionSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum ExportNameMapping {
+    Normal {
+        export_name: String,
+    },
+    /*
+    Conditional {
+        cfg: String,
+        export_name: String,
+    }
+     */
+}
+
+impl ExportNameMapping {
+    pub fn normal<S: ToString>(export_name: S) -> Self {
+        ExportNameMapping::Normal { export_name: export_name.to_string() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
-    pub export_name: String,
+    pub export: ExportNameMapping,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

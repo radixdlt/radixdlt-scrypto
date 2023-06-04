@@ -14,10 +14,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::require;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
-    ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, ExportNameMapping, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission};
 use resources_tracker_macro::trace_resources;
 
 use super::*;
@@ -54,7 +51,7 @@ impl ConsensusManagerNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
-                export_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
+                export: ExportNameMapping::normal(CONSENSUS_MANAGER_CREATE_IDENT),
             },
         );
         functions.insert(
@@ -65,7 +62,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>(),
-                export_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+                export: ExportNameMapping::normal(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT),
             },
         );
         functions.insert(
@@ -74,7 +71,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
                 output: aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
-                export_name: CONSENSUS_MANAGER_START_IDENT.to_string(),
+                export: ExportNameMapping::normal(CONSENSUS_MANAGER_START_IDENT),
             },
         );
         functions.insert(
@@ -85,7 +82,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(),
-                export_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+                export: ExportNameMapping::normal(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT),
             },
         );
         functions.insert(
@@ -96,7 +93,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(),
-                export_name: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
+                export: ExportNameMapping::normal(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT),
             },
         );
         functions.insert(
@@ -107,7 +104,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
-                export_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                export: ExportNameMapping::normal(CONSENSUS_MANAGER_NEXT_ROUND_IDENT),
             },
         );
         functions.insert(
@@ -118,7 +115,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>(),
-                export_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                export: ExportNameMapping::normal(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT),
             },
         );
 
@@ -159,7 +156,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
-                export_name: VALIDATOR_REGISTER_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_REGISTER_IDENT),
             },
         );
         functions.insert(
@@ -168,7 +165,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
-                export_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_UNREGISTER_IDENT),
             },
         );
         functions.insert(
@@ -177,7 +174,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
-                export_name: VALIDATOR_STAKE_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_STAKE_IDENT),
             },
         );
         functions.insert(
@@ -186,7 +183,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
-                export_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_UNSTAKE_IDENT),
             },
         );
         functions.insert(
@@ -195,7 +192,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
-                export_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_CLAIM_XRD_IDENT),
             },
         );
         functions.insert(
@@ -204,7 +201,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
-                export_name: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_UPDATE_KEY_IDENT),
             },
         );
         functions.insert(
@@ -213,7 +210,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
-                export_name: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_UPDATE_FEE_IDENT),
             },
         );
         functions.insert(
@@ -224,7 +221,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>(),
-                export_name: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT),
             },
         );
         functions.insert(
@@ -235,7 +232,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
-                export_name: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT),
             },
         );
         functions.insert(
@@ -246,7 +243,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>(),
-                export_name: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT),
             },
         );
         functions.insert(
@@ -257,7 +254,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>(),
-                export_name: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT),
             },
         );
         functions.insert(
@@ -266,7 +263,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
-                export_name: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+                export: ExportNameMapping::normal(VALIDATOR_APPLY_EMISSION_IDENT),
             },
         );
 

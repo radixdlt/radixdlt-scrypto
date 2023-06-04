@@ -3,7 +3,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintSchema, ExportNameMapping};
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -934,24 +934,28 @@ impl WasmModule {
             .ok_or(PrepareError::NoExportSection)?;
         for blueprint_schema in blueprints {
             for func in blueprint_schema.functions.values() {
-                let func_name = &func.export_name;
-                if !exports.entries().iter().any(|x| {
-                    x.field().eq(func_name) && {
-                        if let Internal::Function(func_index) = x.internal() {
-                            Self::function_matches(
-                                &self.module,
-                                *func_index as usize,
-                                vec![ValueType::I64],
-                                vec![ValueType::I64],
-                            )
-                        } else {
-                            false
+                let export_mapping = &func.export;
+                match export_mapping {
+                    ExportNameMapping::Normal { export_name } => {
+                        if !exports.entries().iter().any(|x| {
+                            x.field().eq(export_name) && {
+                                if let Internal::Function(func_index) = x.internal() {
+                                    Self::function_matches(
+                                        &self.module,
+                                        *func_index as usize,
+                                        vec![ValueType::I64],
+                                        vec![ValueType::I64],
+                                    )
+                                } else {
+                                    false
+                                }
+                            }
+                        }) {
+                            return Err(PrepareError::MissingExport {
+                                export_name: export_name.to_string(),
+                            });
                         }
                     }
-                }) {
-                    return Err(PrepareError::MissingExport {
-                        export_name: func_name.to_string(),
-                    });
                 }
             }
         }
@@ -1249,7 +1253,7 @@ mod tests {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(UNIT_ID),
-                        export_name: "Test_f".to_string(),
+                        export: ExportNameMapping::normal("Test_f"),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),
