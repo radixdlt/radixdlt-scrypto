@@ -32,7 +32,7 @@ impl PoolNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<SingleResourcePoolSubstate>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<SingleResourcePoolSubstate>()));
 
             let collections = Vec::new();
 
@@ -150,7 +150,7 @@ impl PoolNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<TwoResourcePoolSubstate>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<TwoResourcePoolSubstate>()));
 
             let collections = Vec::new();
 

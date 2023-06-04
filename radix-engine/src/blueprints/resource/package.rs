@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, FeaturedSchema, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, FeaturedSchema, FieldSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeRef};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
@@ -136,13 +136,13 @@ impl ResourceManagerNativePackage {
 
             let mut fields = Vec::new();
             fields.push(
-                aggregator
+                FieldSchema::normal(aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(
-                    ),
+                    )),
             );
             fields.push(
-                aggregator
-                    .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
+                FieldSchema::normal(aggregator
+                    .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>()),
             );
 
             let mut functions = BTreeMap::new();
@@ -291,15 +291,15 @@ impl ResourceManagerNativePackage {
 
             let mut fields = Vec::new();
             fields.push(
-                aggregator
-                    .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
+                FieldSchema::normal(aggregator
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>()),
             );
             fields.push(
-                aggregator
+                FieldSchema::normal(aggregator
                     .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
-                    ),
+                    )),
             );
-            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>()));
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -528,8 +528,8 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
             fields
-                .push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
+                .push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>()));
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedFungibleResource>()));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -679,9 +679,9 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
             fields.push(
-                aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
+                FieldSchema::normal(aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>()),
             );
-            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>()));
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::Index(BlueprintIndexSchema {}));
@@ -874,8 +874,8 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
-            fields.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>()));
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedFungibleResource>()));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -989,8 +989,8 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>()));
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>()));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1135,8 +1135,8 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<FungibleProofSubstate>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>()));
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<FungibleProofSubstate>()));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1195,8 +1195,8 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>());
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>()));
+            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>()));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1266,7 +1266,7 @@ impl ResourceManagerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<WorktopSubstate>());
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<WorktopSubstate>()));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -1370,7 +1370,7 @@ impl ResourceManagerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<AuthZone>());
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<AuthZone>()));
 
         let mut functions = BTreeMap::new();
         functions.insert(

@@ -102,7 +102,7 @@ pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
 
     pub schema: ScryptoSchema,
-    pub fields: Option<(PartitionOffset, Vec<LocalTypeIndex>)>,
+    pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
 
     /// For each function, there is a [`FunctionSchema`]
@@ -122,7 +122,7 @@ impl IndexedBlueprintSchema {
         }
     }
 
-    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, LocalTypeIndex)> {
+    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, FieldSchema)> {
         match &self.fields {
             Some((offset, fields)) => {
                 let field_index: usize = field_index.into();

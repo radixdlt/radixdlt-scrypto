@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, ReceiverInfo};
+use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema, ReceiverInfo};
 use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
@@ -167,7 +167,7 @@ impl AccessControllerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>()));
 
         let mut functions = BTreeMap::new();
         functions.insert(

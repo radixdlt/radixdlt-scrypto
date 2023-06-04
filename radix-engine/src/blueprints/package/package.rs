@@ -23,7 +23,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
@@ -235,11 +235,11 @@ impl PackageNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>()));
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>()));
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>()));
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>()));
+        fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>()));
 
         let mut functions = BTreeMap::new();
         functions.insert(

@@ -28,7 +28,7 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let mut fields = Vec::new();
-    fields.push(aggregator.add_child_type_and_descendents::<()>());
+    fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<()>()));
 
     let mut functions = BTreeMap::new();
 

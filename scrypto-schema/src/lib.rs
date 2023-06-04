@@ -90,7 +90,7 @@ pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
     pub schema: ScryptoSchema,
     /// State Schema
-    pub fields: Vec<LocalTypeIndex>,
+    pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,

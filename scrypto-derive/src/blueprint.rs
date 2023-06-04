@@ -561,7 +561,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 // Aggregate fields
                 let mut fields = Vec::new();
                 let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                fields.push(type_index);
+                fields.push(FieldSchema::normal(type_index));
 
                 // Aggregate functions
                 let mut functions = BTreeMap::new();
@@ -1436,7 +1436,7 @@ mod tests {
                         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
                         let mut fields = Vec::new();
                         let type_index = aggregator.add_child_type_and_descendents::<Test>();
-                        fields.push(type_index);
+                        fields.push(FieldSchema::normal(type_index));
                         let mut functions = BTreeMap::new();
                         functions.insert(
                             "x".to_string(),

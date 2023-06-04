@@ -1082,7 +1082,7 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
+    use radix_engine_interface::schema::{BlueprintSchema, ExportSchema, FieldSchema, FunctionSchema};
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
@@ -1247,14 +1247,14 @@ mod tests {
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(UNIT_ID),
-                        export: FeaturedSchema::normal("Test_f"),
+                        export: ExportSchema::normal("Test_f"),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),

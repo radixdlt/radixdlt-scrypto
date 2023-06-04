@@ -22,8 +22,7 @@ impl TransactionProcessorNativePackage {
     pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<()>());
+        let fields = Vec::new();
 
         let mut functions = BTreeMap::new();
         functions.insert(

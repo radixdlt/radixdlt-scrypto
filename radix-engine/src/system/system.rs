@@ -38,10 +38,7 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, InstanceSchema, KeyValueStoreSchema,
-    TypeRef,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FieldSchema, InstanceSchema, KeyValueStoreSchema, TypeRef};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -200,8 +197,10 @@ where
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
+        let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+
         let (expected_blueprint_parent, user_substates) =
-            self.verify_instance_schema_and_state(blueprint, &instance_schema, fields, kv_entries)?;
+            self.verify_instance_schema_and_state(blueprint, &features, &instance_schema, fields, kv_entries)?;
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
@@ -228,9 +227,6 @@ where
 
             self.api.kernel_allocate_node_id(entity_type)?
         };
-
-        let features = features.into_iter().map(|s| s.to_string()).collect();
-
 
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
@@ -307,6 +303,7 @@ where
     fn verify_instance_schema_and_state(
         &mut self,
         blueprint: &BlueprintId,
+        features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -347,14 +344,26 @@ where
                 )));
             }
 
-            if let Some((offset, field_type_index)) = blueprint_schema.fields {
+            if let Some((offset, field_schemas)) = blueprint_schema.fields {
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
+                    let field_type_index = match &field_schemas[i] {
+                        FieldSchema::Normal { value } => value.clone(),
+                        FieldSchema::Conditional { feature, value } => {
+                            if features.contains(feature) {
+                                value.clone()
+                            } else {
+                                continue;
+                            }
+                        }
+                    };
+
+
                     self.validate_payload(
                         &field,
                         &blueprint_schema.schema,
-                        field_type_index[i],
+                        field_type_index,
                         SchemaOrigin::Blueprint(blueprint.clone()),
                     )
                     .map_err(|err| {
@@ -516,12 +525,26 @@ where
     > {
         let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, type_index) = schema.field(field_index).ok_or_else(|| {
+        let (partition_offset, field_schema) = schema.field(field_index).ok_or_else(|| {
             RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                 info.blueprint.clone(),
                 field_index,
             ))
         })?;
+
+        let type_index = match field_schema {
+            FieldSchema::Normal { value } => value,
+            FieldSchema::Conditional { feature, value } => {
+                if info.features.contains(&feature) {
+                    value
+                } else {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint.clone(),
+                        field_index,
+                    )));
+                }
+            }
+        };
 
         let partition_num = base_partition
             .at_offset(partition_offset)
