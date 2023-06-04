@@ -141,8 +141,11 @@ impl ResourceManagerNativePackage {
                     )),
             );
             fields.push(
-                FieldSchema::normal(aggregator
-                    .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>()),
+                FieldSchema::Conditional {
+                    feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    value: aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
+                }
             );
 
             let mut functions = BTreeMap::new();
@@ -299,7 +302,12 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
                     )),
             );
-            fields.push(FieldSchema::normal(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>()));
+            fields.push(
+                FieldSchema::Conditional {
+                    feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    value: aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>(),
+                }
+            );
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
