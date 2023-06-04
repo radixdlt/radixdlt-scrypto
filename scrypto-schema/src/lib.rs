@@ -139,12 +139,13 @@ pub enum FeaturedSchema<V> {
     },
 }
 
-impl FeaturedSchema<String> {
-    pub fn normal<S: ToString>(export_name: S) -> Self {
-        FeaturedSchema::Normal { value: export_name.to_string() }
+impl<V> FeaturedSchema<V> {
+    pub fn normal<I: Into<V>>(value: I) -> Self {
+        FeaturedSchema::Normal { value: value.into() }
     }
 }
 
+pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;
 pub type ExportSchema = FeaturedSchema<String>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -152,7 +153,7 @@ pub struct FunctionSchema {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
-    pub export: FeaturedSchema<String>,
+    pub export: ExportSchema,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
