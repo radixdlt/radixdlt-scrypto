@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::{ExportSchema, RefTypes};
+use radix_engine_interface::schema::{FeaturedSchema, RefTypes};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -72,8 +72,8 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         })?;
 
     let export_name = match &function_schema.export {
-        ExportSchema::Normal { export_name } => export_name.clone(),
-        ExportSchema::Conditional { feature: cfg, export_name } => {
+        FeaturedSchema::Normal { value: export_name } => export_name.clone(),
+        FeaturedSchema::Conditional { feature: cfg, value: export_name } => {
             match &service.kernel_get_system_state().current {
                 Actor::Method(method) => {
                     if method.module_object_info.features.contains(cfg) {

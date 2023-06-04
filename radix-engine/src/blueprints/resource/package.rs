@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, ExportSchema, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, FeaturedSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeRef};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
@@ -154,7 +154,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -165,7 +165,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -176,7 +176,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME),
                 },
             );
 
@@ -188,7 +188,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerMintOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -198,7 +198,7 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME),
                 },
             );
 
@@ -210,7 +210,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -221,7 +221,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME),
                 },
             );
 
@@ -233,7 +233,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -244,9 +244,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
-                    export: ExportSchema::Conditional {
+                    export: FeaturedSchema::Conditional {
                         feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        export_name: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string()
+                        value: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string()
                     },
                 },
             );
@@ -258,7 +258,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME),
                 },
             );
 
@@ -321,7 +321,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -332,7 +332,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT),
                 },
             );
             functions.insert(
@@ -343,7 +343,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -354,7 +354,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT),
                 },
             );
 
@@ -366,7 +366,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME),
                 },
             );
 
@@ -378,7 +378,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT),
                 },
             );
 
@@ -390,7 +390,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT),
                 },
             );
             functions.insert(
@@ -401,7 +401,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerExistsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerExistsOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT),
                 },
             );
 
@@ -415,7 +415,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
                         ),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -426,7 +426,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT),
                 },
             );
 
@@ -437,7 +437,7 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -448,7 +448,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -459,7 +459,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME),
                 },
             );
 
@@ -471,7 +471,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -482,9 +482,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
-                    export: ExportSchema::Conditional {
+                    export: FeaturedSchema::Conditional {
                         feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
+                        value: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
                     },
                 },
             );
@@ -496,7 +496,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME),
                 },
             );
 
@@ -538,7 +538,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_TAKE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_TAKE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -547,7 +547,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_PUT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_PUT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -556,7 +556,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -566,7 +566,7 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFeeOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_LOCK_FEE_IDENT),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_LOCK_FEE_IDENT),
                 },
             );
             functions.insert(
@@ -578,7 +578,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_RECALL_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_RECALL_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -590,7 +590,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_FREEZE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_FREEZE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -602,7 +602,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -611,7 +611,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -622,7 +622,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -633,7 +633,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -645,7 +645,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(
                         ),
-                    export: ExportSchema::normal(FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME),
                 },
             );
 
@@ -693,7 +693,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -704,7 +704,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT),
                 },
             );
             functions.insert(
@@ -716,7 +716,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -728,7 +728,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -740,7 +740,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -756,7 +756,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesOutput>(
                         ),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT),
                 },
             );
             functions.insert(
@@ -765,7 +765,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -774,7 +774,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -785,7 +785,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT),
                 },
             );
             functions.insert(
@@ -794,7 +794,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -805,7 +805,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -816,7 +816,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT),
                 },
             );
             functions.insert(
@@ -827,7 +827,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -840,7 +840,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
                         ),
-                    export: ExportSchema::normal(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME),
                 },
             );
 
@@ -884,7 +884,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_PUT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_PUT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -893,7 +893,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_TAKE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_TAKE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -902,7 +902,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -913,7 +913,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -922,7 +922,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -933,7 +933,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -944,7 +944,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -955,7 +955,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleBucketLockAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -966,7 +966,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME),
                 },
             );
 
@@ -999,7 +999,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1008,7 +1008,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME),
                 },
             );
 
@@ -1018,7 +1018,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1029,7 +1029,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1038,7 +1038,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1049,7 +1049,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1058,7 +1058,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesInput>(),
                     output: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1069,7 +1069,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1080,7 +1080,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1091,7 +1091,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1103,7 +1103,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesOutput>(
                         ),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1114,7 +1114,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME),
                 },
             );
 
@@ -1145,7 +1145,7 @@ impl ResourceManagerNativePackage {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_PROOF_DROP_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_PROOF_DROP_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1154,7 +1154,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_PROOF_CLONE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_PROOF_CLONE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1163,7 +1163,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1174,7 +1174,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                    export: ExportSchema::normal(FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME),
                 },
             );
 
@@ -1205,7 +1205,7 @@ impl ResourceManagerNativePackage {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1214,7 +1214,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1223,7 +1223,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME),
                 },
             );
             functions.insert(
@@ -1234,7 +1234,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME),
                 },
             );
 
@@ -1246,7 +1246,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsOutput>(),
-                    export: ExportSchema::normal(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT),
+                    export: FeaturedSchema::normal(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT),
                 },
             );
 
@@ -1275,7 +1275,7 @@ impl ResourceManagerNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
-                export: ExportSchema::normal(WORKTOP_DROP_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_DROP_IDENT),
             },
         );
         functions.insert(
@@ -1284,7 +1284,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
-                export: ExportSchema::normal(WORKTOP_PUT_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_PUT_IDENT),
             },
         );
         functions.insert(
@@ -1293,7 +1293,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
-                export: ExportSchema::normal(WORKTOP_TAKE_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_TAKE_IDENT),
             },
         );
         functions.insert(
@@ -1303,7 +1303,7 @@ impl ResourceManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
-                export: ExportSchema::normal(WORKTOP_TAKE_NON_FUNGIBLES_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_TAKE_NON_FUNGIBLES_IDENT),
             },
         );
         functions.insert(
@@ -1312,7 +1312,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
-                export: ExportSchema::normal(WORKTOP_TAKE_ALL_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_TAKE_ALL_IDENT),
             },
         );
         functions.insert(
@@ -1321,7 +1321,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
-                export: ExportSchema::normal(WORKTOP_ASSERT_CONTAINS_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_IDENT),
             },
         );
         functions.insert(
@@ -1332,7 +1332,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
-                export: ExportSchema::normal(WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT),
             },
         );
         functions.insert(
@@ -1343,7 +1343,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesOutput>(),
-                export: ExportSchema::normal(WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT),
             },
         );
         functions.insert(
@@ -1352,7 +1352,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
-                export: ExportSchema::normal(WORKTOP_DRAIN_IDENT),
+                export: FeaturedSchema::normal(WORKTOP_DRAIN_IDENT),
             },
         );
         let schema = generate_full_schema(aggregator);
@@ -1379,7 +1379,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_POP_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_POP_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1388,7 +1388,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_PUSH_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_PUSH_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1397,7 +1397,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_CREATE_PROOF_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1408,7 +1408,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1419,7 +1419,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1429,7 +1429,7 @@ impl ResourceManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1438,7 +1438,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_CLEAR_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_CLEAR_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1449,7 +1449,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1458,7 +1458,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_DRAIN_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_DRAIN_EXPORT_NAME),
             },
         );
         functions.insert(
@@ -1467,7 +1467,7 @@ impl ResourceManagerNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
-                export: ExportSchema::normal(AUTH_ZONE_DROP_EXPORT_NAME),
+                export: FeaturedSchema::normal(AUTH_ZONE_DROP_EXPORT_NAME),
             },
         );
 

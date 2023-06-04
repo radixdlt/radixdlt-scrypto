@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintSchema, ExportSchema, ReceiverInfo};
+use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, ReceiverInfo};
 use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
@@ -178,7 +178,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT),
             },
         );
         functions.insert(
@@ -189,7 +189,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT),
             },
         );
         functions.insert(
@@ -200,7 +200,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCreateProofOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
             },
         );
         functions.insert(
@@ -211,7 +211,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT),
             },
         );
         functions.insert(
@@ -222,7 +222,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT),
             },
         );
         functions.insert(
@@ -233,7 +233,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT),
             },
         );
         functions.insert(
@@ -244,7 +244,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT),
             },
         );
         functions.insert(
@@ -255,7 +255,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT),
             },
         );
         functions.insert(
@@ -266,7 +266,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT),
             },
         );
         functions.insert(
@@ -277,7 +277,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT),
             },
         );
         functions.insert(
@@ -288,7 +288,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT),
             },
         );
         functions.insert(
@@ -299,7 +299,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT),
             },
         );
         functions.insert(
@@ -310,7 +310,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT),
             },
         );
         functions.insert(
@@ -321,7 +321,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT),
             },
         );
         functions.insert(
@@ -332,7 +332,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT),
             },
         );
         functions.insert(
@@ -343,7 +343,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
             },
         );
         functions.insert(
@@ -354,7 +354,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
             },
         );
         functions.insert(
@@ -365,7 +365,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
             },
         );
         functions.insert(
@@ -376,7 +376,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT),
             },
         );
         functions.insert(
@@ -387,7 +387,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(),
-                export: ExportSchema::normal(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT),
+                export: FeaturedSchema::normal(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT),
             },
         );
 
