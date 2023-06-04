@@ -45,7 +45,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, ExportNameMapping, FunctionSchema};
+use radix_engine_interface::schema::{BlueprintSchema, ExportSchema, FunctionSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -1756,7 +1756,7 @@ pub fn single_function_package_definition(
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: ExportNameMapping::normal(format!("{}_{}", blueprint_name, function_name)),
+                        export: ExportSchema::normal(format!("{}_{}", blueprint_name, function_name)),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),

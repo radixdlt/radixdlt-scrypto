@@ -129,19 +129,19 @@ pub enum BlueprintCollectionSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum ExportNameMapping {
+pub enum ExportSchema {
     Normal {
         export_name: String,
     },
     Conditional {
-        cfg: String,
+        feature: String,
         export_name: String,
     },
 }
 
-impl ExportNameMapping {
+impl ExportSchema {
     pub fn normal<S: ToString>(export_name: S) -> Self {
-        ExportNameMapping::Normal { export_name: export_name.to_string() }
+        ExportSchema::Normal { export_name: export_name.to_string() }
     }
 }
 
@@ -150,7 +150,7 @@ pub struct FunctionSchema {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
-    pub export: ExportNameMapping,
+    pub export: ExportSchema,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

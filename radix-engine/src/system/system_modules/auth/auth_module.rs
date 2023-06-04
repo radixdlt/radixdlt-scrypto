@@ -399,6 +399,7 @@ impl AuthModule {
                     global: false,
                     outer_object: None,
                     instance_schema: None,
+                    features: btreeset!(),
                 })).to_substates()
             ),
         )?;

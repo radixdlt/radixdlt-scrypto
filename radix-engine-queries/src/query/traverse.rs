@@ -124,6 +124,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 outer_object,
                 global: _,
                 instance_schema: _,
+                features: _,
             }) => {
                 if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                     && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)

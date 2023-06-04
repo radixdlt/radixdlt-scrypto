@@ -3,7 +3,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_interface::schema::{BlueprintSchema, ExportNameMapping};
+use radix_engine_interface::schema::{BlueprintSchema, ExportSchema};
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -936,8 +936,8 @@ impl WasmModule {
             for func in blueprint_schema.functions.values() {
                 let export_mapping = &func.export;
                 match export_mapping {
-                    ExportNameMapping::Conditional { export_name, ..}
-                    | ExportNameMapping::Normal { export_name } => {
+                    ExportSchema::Conditional { export_name, ..}
+                    | ExportSchema::Normal { export_name } => {
                         if !exports.entries().iter().any(|x| {
                             x.field().eq(export_name) && {
                                 if let Internal::Function(func_index) = x.internal() {
@@ -1254,7 +1254,7 @@ mod tests {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(UNIT_ID),
-                        export: ExportNameMapping::normal("Test_f"),
+                        export: ExportSchema::normal("Test_f"),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),

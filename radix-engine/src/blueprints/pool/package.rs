@@ -46,7 +46,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<SingleResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<SingleResourcePoolInstantiateOutput>(),
-                    export: ExportNameMapping::normal(SINGLE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: ExportSchema::normal(SINGLE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
                 },
             );
 
@@ -58,7 +58,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<SingleResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<SingleResourcePoolContributeOutput>(),
-                    export: ExportNameMapping::normal(SINGLE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: ExportSchema::normal(SINGLE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
                 },
             );
 
@@ -70,7 +70,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<SingleResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<SingleResourcePoolRedeemOutput>(),
-                    export: ExportNameMapping::normal(SINGLE_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: ExportSchema::normal(SINGLE_RESOURCE_POOL_REDEEM_EXPORT_NAME),
                 },
             );
 
@@ -84,7 +84,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<SingleResourcePoolProtectedDepositOutput>(
                         ),
-                    export: ExportNameMapping::normal(SINGLE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
+                    export: ExportSchema::normal(SINGLE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
                 },
             );
 
@@ -94,7 +94,7 @@ impl PoolNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<SingleResourcePoolProtectedWithdrawInput>(),
                     output: aggregator.add_child_type_and_descendents::<SingleResourcePoolProtectedWithdrawOutput>(),
-                    export: ExportNameMapping::normal(SINGLE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME),
+                    export: ExportSchema::normal(SINGLE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME),
                 },
             );
 
@@ -104,7 +104,7 @@ impl PoolNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<SingleResourcePoolGetRedemptionValueInput>(),
                     output: aggregator.add_child_type_and_descendents::<SingleResourcePoolGetRedemptionValueOutput>(),
-                    export: ExportNameMapping::normal(SINGLE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME),
+                    export: ExportSchema::normal(SINGLE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME),
                 },
             );
 
@@ -116,7 +116,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<SingleResourcePoolGetVaultAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<SingleResourcePoolGetVaultAmountOutput>(),
-                    export: ExportNameMapping::normal(SINGLE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME),
+                    export: ExportSchema::normal(SINGLE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME),
                 },
             );
 
@@ -164,7 +164,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
-                    export: ExportNameMapping::normal(TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: ExportSchema::normal(TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
                 },
             );
 
@@ -176,7 +176,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
-                    export: ExportNameMapping::normal(TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: ExportSchema::normal(TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
                 },
             );
 
@@ -188,7 +188,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
-                    export: ExportNameMapping::normal(TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: ExportSchema::normal(TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME),
                 },
             );
 
@@ -200,7 +200,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>(),
-                    export: ExportNameMapping::normal(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
+                    export: ExportSchema::normal(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
                 },
             );
 
@@ -212,7 +212,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
-                    export: ExportNameMapping::normal(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME),
+                    export: ExportSchema::normal(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME),
                 },
             );
 
@@ -225,7 +225,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: ExportNameMapping::normal(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME),
+                    export: ExportSchema::normal(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME),
                 },
             );
 
@@ -237,7 +237,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(),
-                    export: ExportNameMapping::normal(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME),
+                    export: ExportSchema::normal(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME),
                 },
             );
 

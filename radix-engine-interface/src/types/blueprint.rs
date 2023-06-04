@@ -1,6 +1,7 @@
 use crate::ScryptoSbor;
 use core::fmt;
 use core::fmt::Formatter;
+use std::collections::BTreeSet;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
@@ -16,6 +17,7 @@ pub struct ObjectInfo {
     pub global: bool,
     pub outer_object: Option<GlobalAddress>,
     pub instance_schema: Option<InstanceSchema>,
+    pub features: BTreeSet<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

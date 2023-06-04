@@ -4,7 +4,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::{ExportNameMapping, RefTypes};
+use radix_engine_interface::schema::{ExportSchema, RefTypes};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -38,6 +38,8 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             .ok_or(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
             ))?;
+
+
 
     match (&function_schema.receiver, with_receiver.as_ref()) {
         (Some(receiver_info), Some((_, direct_access))) => {
@@ -69,10 +71,29 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    match &function_schema.export {
-        ExportNameMapping::Normal { export_name } => Ok(export_name.clone()),
-        ExportNameMapping::Conditional { cfg: _, export_name } => Ok(export_name.clone()),
-    }
+    let export_name = match &function_schema.export {
+        ExportSchema::Normal { export_name } => export_name.clone(),
+        ExportSchema::Conditional { feature: cfg, export_name } => {
+            match &service.kernel_get_system_state().current {
+                Actor::Method(method) => {
+                    if method.module_object_info.features.contains(cfg) {
+                        export_name.clone()
+                    } else {
+                        return Err(RuntimeError::SystemUpstreamError(
+                            SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
+                        ));
+                    }
+                }
+                _ => {
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
+                    ));
+                }
+            }
+        },
+    };
+
+    Ok(export_name)
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(

@@ -146,6 +146,7 @@ where
                 global: true,
                 outer_object: None,
                 instance_schema: None,
+                features: btreeset!(),
             }));
         } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
@@ -165,6 +166,7 @@ where
                 global: true,
                 outer_object: None,
                 instance_schema: None,
+                features: btreeset!(),
             }));
         }
 
@@ -233,6 +235,7 @@ where
                     global:false,
                     outer_object,
                     instance_schema,
+                    features: btreeset!(),
                 })
             ).to_substates(),
         );
@@ -978,6 +981,7 @@ where
                     outer_object: None,
                     global: receiver_info.global,
                     instance_schema: None,
+                    features: btreeset!(),
                 },
                 None,
             ),

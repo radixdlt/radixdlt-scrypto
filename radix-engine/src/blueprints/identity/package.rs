@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{ExportNameMapping, ReceiverInfo};
+use radix_engine_interface::schema::{ExportSchema, ReceiverInfo};
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use resources_tracker_macro::trace_resources;
@@ -44,7 +44,7 @@ impl IdentityNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
-                export: ExportNameMapping::normal(IDENTITY_CREATE_ADVANCED_IDENT),
+                export: ExportSchema::normal(IDENTITY_CREATE_ADVANCED_IDENT),
             },
         );
         functions.insert(
@@ -53,7 +53,7 @@ impl IdentityNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
-                export: ExportNameMapping::normal(IDENTITY_CREATE_IDENT),
+                export: ExportSchema::normal(IDENTITY_CREATE_IDENT),
             },
         );
         functions.insert(
@@ -64,7 +64,7 @@ impl IdentityNativePackage {
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
-                export: ExportNameMapping::normal(IDENTITY_SECURIFY_IDENT),
+                export: ExportSchema::normal(IDENTITY_SECURIFY_IDENT),
             },
         );
 
