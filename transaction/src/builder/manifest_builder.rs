@@ -426,6 +426,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
+        features: Vec<&str>,
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
@@ -454,6 +455,7 @@ impl ManifestBuilder {
                     .to_string(),
                 args: to_manifest_value(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        features: features.into_iter().map(|s| s.to_string()).collect(),
                         id_type,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                         metadata,
@@ -468,6 +470,7 @@ impl ManifestBuilder {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                    features: features.into_iter().map(|s| s.to_string()).collect(),
                     id_type,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                     metadata,

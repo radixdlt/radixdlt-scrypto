@@ -22,6 +22,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
+    pub features: Vec<String>,
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -36,6 +37,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+    pub features: Vec<String>,
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -46,6 +48,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
+    pub features: Vec<String>,
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -61,6 +64,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithAddressInput {
+    pub features: Vec<String>,
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -76,6 +80,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
+    pub features: Vec<String>,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,

@@ -997,6 +997,7 @@ impl ValidatorCreator {
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
+            vec![TRACK_TOTAL_SUPPLY_FEATURE],
             NonFungibleIdType::UUID,
             BTreeMap::new(),
             unstake_nft_auth,

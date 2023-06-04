@@ -46,7 +46,7 @@ impl ResourceManager {
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
-        features: Vec<String>,
+        features: Vec<&str>,
         divisibility: u8,
         amount: Decimal,
         metadata: BTreeMap<String, MetadataValue>,
@@ -62,7 +62,7 @@ impl ResourceManager {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    features,
+                    features: features.into_iter().map(|s| s.to_string()).collect(),
                     metadata,
                     access_rules,
                     divisibility,
@@ -77,6 +77,7 @@ impl ResourceManager {
     }
 
     pub fn new_non_fungible<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
+        features: Vec<&str>,
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -91,6 +92,7 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                features: features.into_iter().map(|s| s.to_string()).collect(),
                 id_type,
                 non_fungible_schema,
                 metadata,
@@ -103,6 +105,7 @@ impl ResourceManager {
     }
 
     pub fn new_non_fungible_with_address<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
+        features: Vec<&str>,
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -117,6 +120,7 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: features.into_iter().map(|s| s.to_string()).collect(),
                 id_type,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
                 metadata,

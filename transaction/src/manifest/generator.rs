@@ -1464,6 +1464,7 @@ mod tests {
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE
+                Array<String>()
                 Enum<NonFungibleIdType::Integer>()
                 Tuple(
                     Tuple(
@@ -1492,6 +1493,7 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                    features: vec![],
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([(
@@ -1536,6 +1538,7 @@ mod tests {
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                        features: vec![],
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
                         ),
@@ -1553,6 +1556,7 @@ mod tests {
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                Array<String>()
                 Enum<NonFungibleIdType::Integer>()
                 Tuple(
                     Tuple(
@@ -1592,6 +1596,7 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        features: vec![],
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: BTreeMap::from([(

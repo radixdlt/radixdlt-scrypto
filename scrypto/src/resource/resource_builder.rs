@@ -496,6 +496,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                        features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                         id_type,
                         non_fungible_schema,
                         metadata,
@@ -605,6 +606,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
                     metadata: self.metadata,
@@ -657,6 +659,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
                     metadata: self.metadata,
@@ -709,6 +712,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                     id_type: BytesNonFungibleLocalId::id_type(),
                     non_fungible_schema,
                     metadata: self.metadata,
@@ -765,6 +769,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
+                        features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                         non_fungible_schema,
                         metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),

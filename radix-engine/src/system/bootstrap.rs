@@ -429,6 +429,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
@@ -450,6 +451,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
@@ -478,6 +480,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
@@ -506,6 +509,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
@@ -565,6 +569,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
@@ -651,6 +656,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
@@ -672,6 +678,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
@@ -693,6 +700,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                features: vec![],
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,

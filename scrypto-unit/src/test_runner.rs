@@ -1183,6 +1183,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
+                vec![],
                 NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 access_rules,

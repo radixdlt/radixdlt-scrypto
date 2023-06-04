@@ -1882,6 +1882,7 @@ impl ResourceManagerNativePackage {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
+                    input.features,
                     input.id_type,
                     input.non_fungible_schema,
                     input.metadata,
@@ -1903,6 +1904,7 @@ impl ResourceManagerNativePackage {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_address(
+                    input.features,
                     input.id_type,
                     input.non_fungible_schema,
                     input.metadata,
@@ -1925,6 +1927,7 @@ impl ResourceManagerNativePackage {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.features,
                     input.id_type,
                     input.non_fungible_schema,
                     input.metadata,
@@ -1949,6 +1952,7 @@ impl ResourceManagerNativePackage {
                     })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_uuid_with_initial_supply(
+                    input.features,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,

@@ -723,6 +723,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Array<String>()
     Enum<1u8>()
     Tuple(
         Tuple(
@@ -792,6 +793,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
+    Array<String>()
     Enum<1u8>()
     Tuple(
         Tuple(
@@ -1199,6 +1201,7 @@ CREATE_ACCESS_CONTROLLER
         // Arrange
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                vec![],
                 NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 BTreeMap::<_, (_, AccessRule)>::new(),

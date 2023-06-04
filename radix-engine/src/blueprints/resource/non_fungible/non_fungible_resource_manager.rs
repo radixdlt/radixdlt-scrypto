@@ -95,6 +95,7 @@ pub struct NonFungibleResourceManagerBlueprint;
 
 impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
+        features: Vec<String>,
         id_type: NonFungibleIdType,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
@@ -108,6 +109,7 @@ impl NonFungibleResourceManagerBlueprint {
             api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         Self::create_with_address(
+            features,
             id_type,
             non_fungible_schema,
             metadata,
@@ -118,6 +120,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_address<Y>(
+        features: Vec<String>,
         id_type: NonFungibleIdType,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
@@ -139,7 +142,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            features.iter().map(|s| s.as_str()).collect(),
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -156,6 +159,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
+        features: Vec<String>,
         id_type: NonFungibleIdType,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
@@ -213,7 +217,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            features.iter().map(|s| s.as_str()).collect(),
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -235,6 +239,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_uuid_with_initial_supply<Y>(
+        features: Vec<String>,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -272,7 +277,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            features.iter().map(|s| s.as_str()).collect(),
             Some(instance_schema),
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
@@ -645,7 +650,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        {
+        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),

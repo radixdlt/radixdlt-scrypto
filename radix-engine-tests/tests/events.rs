@@ -294,6 +294,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
+                vec![],
                 NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 access_rules,
@@ -535,6 +536,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
+                vec![],
                 NonFungibleIdType::Integer,
                 BTreeMap::new(),
                 access_rules,

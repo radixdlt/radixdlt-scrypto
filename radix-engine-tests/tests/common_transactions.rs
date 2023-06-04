@@ -267,6 +267,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             .build(),
         ResourceType::NonFungible { id_type } => ManifestBuilder::new()
             .create_non_fungible_resource(
+                vec![],
                 id_type,
                 BTreeMap::new(),
                 access_rules,
