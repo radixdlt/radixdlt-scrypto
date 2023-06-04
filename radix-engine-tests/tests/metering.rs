@@ -70,7 +70,7 @@ fn test_basic_transfer() {
         + 6142 /* DropLock */
         + 1680 /* DropNode */
         + 1140299 /* Invoke */
-        + 430721 /* LockSubstate */
+        + 431463 /* LockSubstate */
         + 8624 /* ReadSubstate */
         + 65000 /* RunNative */
         + 7500 /* RunSystem */
@@ -198,7 +198,7 @@ fn test_radiswap() {
         + 14689 /* DropLock */
         + 3780 /* DropNode */
         + 3803738 /* Invoke */
-        + 2656527 /* LockSubstate */
+        + 2657393 /* LockSubstate */
         + 20608 /* ReadSubstate */
         + 137500 /* RunNative */
         + 20000 /* RunSystem */
@@ -210,7 +210,7 @@ fn test_radiswap() {
     );
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7455627"),
+        dec!("0.7456493"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -308,11 +308,11 @@ fn test_flash_loan() {
         + 23199 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 4517979 /* LockSubstate */
+        + 4520281 /* LockSubstate */
         + 32928 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1311920 /* RunWasm */
+        + 1312010 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

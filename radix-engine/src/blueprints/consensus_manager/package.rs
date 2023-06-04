@@ -156,6 +156,7 @@ impl ConsensusManagerNativePackage {
                 SYSTEM_TRANSACTION_BADGE.into(),
                 VALIDATOR_OWNER_BADGE.into(),
             ),
+            features: btreeset!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -307,6 +308,7 @@ impl ConsensusManagerNativePackage {
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
             dependencies: btreeset!(),
+            features: btreeset!(),
         };
 
         let blueprints = btreemap!(

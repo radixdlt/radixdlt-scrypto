@@ -318,6 +318,7 @@ impl PackageNativePackage {
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                         PACKAGE_OWNER_BADGE.into(),
                     ),
+                    features: btreeset!(),
                 },
                 function_auth: btreemap!(
                     PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
@@ -563,6 +564,7 @@ impl PackageNativePackage {
             outer_blueprint: parent,
             virtual_lazy_load_functions,
             functions,
+            features,
             ..
         } in setup.blueprints.values().map(|s| &s.schema)
         {
@@ -598,6 +600,14 @@ impl PackageNativePackage {
                         ));
                     }
                 }
+            }
+
+            if !features.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Features not supported".to_string(),
+                    )),
+                ));
             }
         }
 

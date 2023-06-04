@@ -105,6 +105,7 @@ impl IdentityNativePackage {
                         IDENTITY_OWNER_BADGE.into(),
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
+                    features: btreeset!(),
                 },
                 function_auth: btreemap!(
                     IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),

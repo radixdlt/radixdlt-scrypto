@@ -51,6 +51,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
         dependencies: btreeset!(),
+        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
@@ -100,6 +101,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
         dependencies: btreeset!(),
+        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
@@ -150,6 +152,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
         dependencies: btreeset!(),
+        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(

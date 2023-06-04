@@ -188,6 +188,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
         dependencies: btreeset!(),
+        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(

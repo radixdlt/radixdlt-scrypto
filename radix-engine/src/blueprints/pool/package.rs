@@ -148,6 +148,7 @@ impl PoolNativePackage {
                 virtual_lazy_load_functions,
                 event_schema,
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 
@@ -275,6 +276,7 @@ impl PoolNativePackage {
                 virtual_lazy_load_functions,
                 event_schema,
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 

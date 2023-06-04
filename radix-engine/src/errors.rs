@@ -230,6 +230,7 @@ pub enum SystemError {
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
     InvalidInstanceSchema,
+    InvalidFeature(String),
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
     BlueprintDoesNotExist(BlueprintId),

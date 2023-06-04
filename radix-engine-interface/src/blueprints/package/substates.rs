@@ -93,6 +93,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
             dependencies: schema.dependencies,
+            features: schema.features,
         }
     }
 }
@@ -112,6 +113,7 @@ pub struct IndexedBlueprintSchema {
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub dependencies: BTreeSet<GlobalAddress>,
+    pub features: BTreeSet<String>,
 }
 
 impl IndexedBlueprintSchema {

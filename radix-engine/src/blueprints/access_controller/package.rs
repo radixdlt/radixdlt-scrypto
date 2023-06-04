@@ -453,7 +453,7 @@ impl AccessControllerNativePackage {
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
-
+                    features: btreeset!(),
                 },
                 function_auth: btreemap!(
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),

@@ -597,6 +597,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
                     dependencies,
+                    features: BTreeSet::new(),
                 };
 
                 let template = scrypto::blueprints::package::BlueprintTemplate {
@@ -1475,6 +1476,7 @@ mod tests {
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
                             dependencies,
+                            features: BTreeSet::new(),
                         };
 
                         let template = scrypto::blueprints::package::BlueprintTemplate {

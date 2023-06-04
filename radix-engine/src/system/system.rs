@@ -324,6 +324,17 @@ where
     > {
         let blueprint_schema = self.get_blueprint_definition(blueprint)?.schema;
 
+        // Validate features
+        {
+            for feature in features {
+                if !blueprint_schema.features.contains(feature) {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                        feature.to_string(),
+                    )));
+                }
+            }
+        }
+
         // Validate instance schema
         {
             if let Some(instance_schema) = instance_schema {

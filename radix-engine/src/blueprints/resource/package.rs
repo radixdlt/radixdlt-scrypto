@@ -292,6 +292,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
             }
         };
 
@@ -548,6 +549,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
             }
         };
 
@@ -704,6 +706,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 
@@ -907,6 +910,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 
@@ -1030,6 +1034,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 
@@ -1194,6 +1199,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 
@@ -1258,6 +1264,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 
@@ -1336,6 +1343,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
+                features: btreeset!(),
             }
         };
 
@@ -1443,6 +1451,7 @@ impl ResourceManagerNativePackage {
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
             dependencies: btreeset!(),
+            features: btreeset!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -1561,6 +1570,7 @@ impl ResourceManagerNativePackage {
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
             dependencies: btreeset!(),
+            features: btreeset!(),
         };
 
         let blueprints = btreemap!(
