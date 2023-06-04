@@ -407,6 +407,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(
                 &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                     divisibility: 18,
+                    features: vec![],
                     metadata,
                     access_rules,
                     initial_supply,

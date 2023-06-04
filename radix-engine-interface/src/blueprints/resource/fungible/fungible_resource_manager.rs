@@ -42,6 +42,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
 pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
+    pub features: Vec<String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
     pub resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up

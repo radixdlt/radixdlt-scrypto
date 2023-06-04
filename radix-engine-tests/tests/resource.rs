@@ -1,12 +1,36 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError, SystemUpstreamError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use scrypto::engine::wasm_api::call_method;
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+
+#[test]
+fn cannot_get_total_supply_of_xrd() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(
+            RADIX_TOKEN,
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(..))))
+}
 
 #[test]
 fn test_set_mintable_with_self_resource_address() {
