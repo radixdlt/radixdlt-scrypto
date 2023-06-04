@@ -70,7 +70,8 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         })?;
 
     match &function_schema.export {
-        ExportNameMapping::Normal { export_name } => Ok(export_name.clone())
+        ExportNameMapping::Normal { export_name } => Ok(export_name.clone()),
+        ExportNameMapping::Conditional { cfg: _, export_name } => Ok(export_name.clone()),
     }
 }
 

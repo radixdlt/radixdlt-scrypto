@@ -133,12 +133,10 @@ pub enum ExportNameMapping {
     Normal {
         export_name: String,
     },
-    /*
     Conditional {
         cfg: String,
         export_name: String,
-    }
-     */
+    },
 }
 
 impl ExportNameMapping {

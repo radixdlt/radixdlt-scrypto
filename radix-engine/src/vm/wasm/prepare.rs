@@ -936,7 +936,8 @@ impl WasmModule {
             for func in blueprint_schema.functions.values() {
                 let export_mapping = &func.export;
                 match export_mapping {
-                    ExportNameMapping::Normal { export_name } => {
+                    ExportNameMapping::Conditional { export_name, ..}
+                    | ExportNameMapping::Normal { export_name } => {
                         if !exports.entries().iter().any(|x| {
                             x.field().eq(export_name) && {
                                 if let Internal::Function(func_index) = x.internal() {
