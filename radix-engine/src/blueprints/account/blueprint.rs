@@ -199,6 +199,7 @@ impl AccountBlueprint {
     {
         let account_id = api.new_object(
             ACCOUNT_BLUEPRINT,
+            vec![],
             None,
             vec![scrypto_encode(&AccountSubstate {
                 default_deposit_rule: AccountDefaultDepositRule::Accept,

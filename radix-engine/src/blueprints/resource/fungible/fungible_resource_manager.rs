@@ -75,12 +75,15 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_simple_object(
+        let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
                 scrypto_encode(&Decimal::zero()).unwrap(),
             ],
+            btreemap!(),
         )?;
 
         let global_node_id =
@@ -128,12 +131,15 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_simple_object(
+        let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
                 scrypto_encode(&initial_supply).unwrap(),
             ],
+            btreemap!(),
         )?;
 
         let resource_address = ResourceAddress::new_or_panic(resource_address);
@@ -168,8 +174,13 @@ impl FungibleResourceManagerBlueprint {
         // check amount
         check_new_amount(divisibility, amount)?;
 
+        let bucket = Self::create_bucket(amount, api)?;
+
+        Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
+
         // Update total supply
-        {
+        // TODO: Could be further cleaned up by using event
+        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -180,10 +191,6 @@ impl FungibleResourceManagerBlueprint {
             api.field_lock_write_typed(total_supply_handle, &total_supply)?;
             api.field_lock_release(total_supply_handle)?;
         }
-
-        let bucket = Self::create_bucket(amount, api)?;
-
-        Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
         Ok(bucket)
     }
@@ -204,7 +211,8 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         // Update total supply
-        {
+        // TODO: Could be further cleaned up by using event
+        if api.actor_get_info()?.features.contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),

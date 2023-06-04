@@ -245,7 +245,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
                     export: ExportSchema::Conditional {
-                        feature: "track_total_supply".to_string(),
+                        feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                         export_name: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string()
                     },
                 },
@@ -483,8 +483,8 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
                     export: ExportSchema::Conditional {
-                        feature: "track_total_supply".to_string(),
-                        export_name: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
+                        feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                        export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
                     },
                 },
             );

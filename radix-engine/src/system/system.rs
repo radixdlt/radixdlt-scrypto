@@ -194,6 +194,7 @@ where
     fn new_object_internal(
         &mut self,
         blueprint: &BlueprintId,
+        features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
@@ -228,6 +229,9 @@ where
             self.api.kernel_allocate_node_id(entity_type)?
         };
 
+        let features = features.into_iter().map(|s| s.to_string()).collect();
+
+
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                 TypeInfoSubstate::Object(ObjectInfo {
@@ -235,7 +239,7 @@ where
                     global:false,
                     outer_object,
                     instance_schema,
-                    features: btreeset!(),
+                    features,
                 })
             ).to_substates(),
         );
@@ -836,6 +840,7 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
+        features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -845,7 +850,7 @@ where
         let instance_context = actor.instance_context();
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
-        self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
+        self.new_object_internal(&blueprint, features, instance_context, schema, fields, kv_entries)
     }
 
     fn attach_access_rules(
@@ -921,6 +926,7 @@ where
 
         self.new_object_internal(
             &blueprint,
+            vec![],
             Some(InstanceContext {
                 outer_object: address,
                 outer_blueprint: actor_blueprint.blueprint_name,
