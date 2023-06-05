@@ -208,6 +208,7 @@ fn test_radiswap() {
         + 100000 /* TxSignatureVerification */
         + 2123 /* WriteSubstate */
     );
+
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
         dec!("0.7456493"),

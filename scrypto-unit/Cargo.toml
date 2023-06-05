@@ -4,7 +4,7 @@ version = "0.10.0"
 edition = "2021"
 
 [dependencies]
-radix-engine = { path = "../radix-engine", default-features = false }
+radix-engine = { path = "../radix-engine", default-features = false, features = ["moka"] }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }

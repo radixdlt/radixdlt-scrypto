@@ -76,6 +76,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
 #[no_mangle]
 pub extern "C" fn MaxReturnSize_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
     let mut fields = Vec::new();
     fields.push(FieldSchema::normal(
         aggregator.add_child_type_and_descendents::<()>(),
