@@ -1,4 +1,5 @@
 use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -8,6 +9,71 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::*;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+
+#[test]
+fn can_call_public_function() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
+
+    // Act
+    let receipt = test_runner.call_function(
+        package_address,
+        "FunctionAccessRules",
+        "public_function",
+        manifest_args!(),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn cannot_call_protected_function_without_auth() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
+
+    // Act
+    let receipt = test_runner.call_function(
+        package_address,
+        "FunctionAccessRules",
+        "protected_function",
+        manifest_args!(),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+        )
+    });
+}
+
+#[test]
+fn can_call_protected_function_with_auth() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
+    let (key, _priv, account) = test_runner.new_account(true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account(account, RADIX_TOKEN)
+        .call_function(
+            package_address,
+            "FunctionAccessRules",
+            "protected_function",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner
+        .execute_manifest_ignoring_fee(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
 
 #[test]
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {

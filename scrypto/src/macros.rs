@@ -537,7 +537,7 @@ macro_rules! module_permissions {
 }
 
 #[macro_export]
-macro_rules! define_static_auth {
+macro_rules! enable_method_auth {
     (
         roles {
             $($role:ident),*
@@ -578,6 +578,21 @@ macro_rules! define_static_auth {
                 module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
             )*
             permissions
+        }
+    );
+}
+
+#[macro_export]
+macro_rules! enable_function_auth {
+    (
+        $($function:ident => $rule:expr;)*
+    ) => (
+        fn function_auth() -> BTreeMap<String, AccessRule> {
+            let rules = Functions::<AccessRule> {
+                $( $function: $rule, )*
+            };
+
+            rules.to_mapping().into_iter().collect()
         }
     );
 }

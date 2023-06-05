@@ -17,6 +17,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
@@ -29,7 +30,7 @@ const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_
 pub struct IdentityNativePackage;
 
 impl IdentityNativePackage {
-    pub fn schema() -> PackageSchema {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let fields = Vec::new();
@@ -86,7 +87,7 @@ impl IdentityNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
-        PackageSchema {
+        let schema = PackageSchema {
             blueprints: btreemap!(
                 IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
@@ -106,6 +107,18 @@ impl IdentityNativePackage {
                     outer_method_auth_template: btreemap!(),
                 }
             ),
+        };
+
+        let function_access_rules = btreemap!(
+            IDENTITY_BLUEPRINT.to_string() => btreemap!(
+                IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
+                IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+            )
+        );
+
+        PackageDefinition {
+            schema,
+            function_access_rules,
         }
     }
 
