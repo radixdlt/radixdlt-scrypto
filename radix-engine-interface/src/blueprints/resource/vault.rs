@@ -65,6 +65,15 @@ pub struct VaultCreateProofOfAmountInput {
 
 pub type VaultCreateProofOfAmountOutput = Proof;
 
+pub const VAULT_BURN_IDENT: &str = "burn";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VaultBurnInput {
+    pub amount: Decimal,
+}
+
+pub type VaultBurnOutput = ();
+
 //========
 // Stub
 //========

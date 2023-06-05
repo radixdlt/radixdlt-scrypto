@@ -27,6 +27,15 @@ pub struct ResourceManagerBurnInput {
 
 pub type ResourceManagerBurnOutput = ();
 
+pub const RESOURCE_MANAGER_PACKAGE_BURN_IDENT: &str = "package_burn";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ResourceManagerPackageBurnInput {
+    pub bucket: Bucket,
+}
+
+pub type ResourceManagerPackageBurnOutput = ();
+
 pub const RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT: &str = "create_empty_vault";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
