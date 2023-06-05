@@ -1305,9 +1305,7 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
         };
 
-
-
-        self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_lock_substate_with_default(
             &node_id,
             OBJECT_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
@@ -1320,7 +1318,22 @@ where
                 IndexedScryptoValue::from_typed(&wrapper)
             }),
             lock_data,
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api
+                .kernel_read_substate(handle)
+                .map(|v| {
+                    let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
+                    wrapper.mutability
+                })?;
+
+            if let SubstateMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(SystemError::MutatingImmutableSubstate));
+            }
+        }
+
+        Ok(handle)
     }
 
     fn key_value_store_remove_entry(
@@ -1778,7 +1791,7 @@ where
             KeyValueEntryLockData::Read
         };
 
-        self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_lock_substate_with_default(
             &node_id,
             partition_num,
             &SubstateKey::Map(key.to_vec()),
@@ -1791,7 +1804,22 @@ where
                 IndexedScryptoValue::from_typed(&wrapper)
             }),
             SystemLockData::KeyValueEntry(lock_data),
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api
+                .kernel_read_substate(handle)
+                .map(|v| {
+                    let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
+                    wrapper.mutability
+                })?;
+
+            if let SubstateMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(SystemError::MutatingImmutableSubstate));
+            }
+        }
+
+        Ok(handle)
     }
 
     fn actor_remove_key_value_entry(
