@@ -474,9 +474,9 @@ where
         let empty_kv_entry = SubstateWrapper {
             value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
             mutability: if freeze {
-                SubstateMutability::Mutable
-            } else {
                 SubstateMutability::Immutable
+            } else {
+                SubstateMutability::Mutable
             },
         };
 
