@@ -3,7 +3,7 @@ use radix_engine::{
     types::*,
     vm::wasm::PrepareError,
 };
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_queries::typed_substate_layout::PackageError;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
@@ -15,12 +15,12 @@ fn test_too_many_locals() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     let code = include_bytes!("./assets/too_many_locals.wasm").to_vec();
-    let schema = PackageSchema::default();
+    let definition = PackageDefinition::default();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .publish_package(code, schema)
+            .publish_package(code, definition)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

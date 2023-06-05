@@ -53,8 +53,12 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         outer_method_auth_template: btreemap!(),
     };
 
+    let function_access_rules: BTreeMap<String, AccessRule> = btreemap!(
+        "f".to_string() => AccessRule::AllowAll,
+    );
+
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&schema).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
     )
 }
 
@@ -89,8 +93,12 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         outer_method_auth_template: btreemap!(),
     };
 
+    let function_access_rules: BTreeMap<String, AccessRule> = btreemap!(
+        "f".to_string() => AccessRule::AllowAll,
+    );
+
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&schema).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
     )
 }
 
@@ -125,7 +133,11 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         outer_method_auth_template: btreemap!(),
     };
 
+    let function_access_rules: BTreeMap<String, AccessRule> = btreemap!(
+        "f".to_string() => AccessRule::AllowAll,
+    );
+
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&schema).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
     )
 }

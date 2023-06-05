@@ -4,6 +4,7 @@ use radix_engine::errors::KernelError;
 use radix_engine::errors::RejectionError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_queries::typed_substate_layout::PackagePublishWasmAdvancedManifestInput;
 use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
@@ -127,7 +128,10 @@ fn test_non_existent_blob_hash() {
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef([0; 32]),
-                schema: PackageSchema::default(),
+                definition: PackageDefinition {
+                    schema: PackageSchema::default(),
+                    function_access_rules: btreemap!(),
+                },
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,

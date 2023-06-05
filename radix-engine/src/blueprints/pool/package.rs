@@ -11,7 +11,9 @@ use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::rule;
 use radix_engine_interface::schema::*;
 use radix_engine_interface::types::*;
 use resources_tracker_macro::*;
@@ -22,7 +24,7 @@ pub const POOL_MANAGER_ROLE: &'static str = "pool_manager_role";
 
 pub struct PoolNativePackage;
 impl PoolNativePackage {
-    pub fn schema() -> PackageSchema {
+    pub fn definition() -> PackageDefinition {
         // Single Resource Pool
         let single_resource_pool_blueprint_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -304,11 +306,25 @@ impl PoolNativePackage {
             }
         };
 
-        PackageSchema {
+        let schema = PackageSchema {
             blueprints: btreemap!(
                 SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => single_resource_pool_blueprint_schema,
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => two_resource_pool_blueprint_schema
             ),
+        };
+
+        let function_access_rules = btreemap!(
+            SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => btreemap!(
+                SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+            ),
+            TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => btreemap!(
+                TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+            )
+        );
+
+        PackageDefinition {
+            schema,
+            function_access_rules,
         }
     }
 

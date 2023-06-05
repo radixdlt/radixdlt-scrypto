@@ -15,9 +15,12 @@ CALL_METHOD
 # Publishing a new package and setting some of its royalty and access rules.
 PUBLISH_PACKAGE_ADVANCED
     None
-    Blob("${code_blob_hash}") 
+    Blob("${code_blob_hash}")
     Tuple(
-        Map<String, Tuple>()
+        Tuple(
+            Map<String, Tuple>()
+        ),
+        Map<String, Map>()
     )
     Map<String, Tuple>()       # Royalty Configuration
     Map<String, Enum>()        # Metadata

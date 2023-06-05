@@ -15,7 +15,7 @@ fn cannot_set_package_metadata_with_no_owner() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            single_function_package_schema("Test", "f"),
+            single_function_package_definition("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -54,7 +54,7 @@ fn can_set_package_metadata_with_owner() {
     let (public_key, _, account) = test_runner.new_account(false);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .publish_package(code, single_function_package_schema("Test", "f"))
+        .publish_package(code, single_function_package_definition("Test", "f"))
         .call_method(
             account,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,

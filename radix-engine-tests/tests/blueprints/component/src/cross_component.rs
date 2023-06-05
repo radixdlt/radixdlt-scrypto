@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod cross_component {
-    define_static_auth! {
+    enable_method_auth! {
         methods {
             put_auth => PUBLIC;
             cross_component_call => PUBLIC;
