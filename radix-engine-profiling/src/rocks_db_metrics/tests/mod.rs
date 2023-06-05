@@ -1,5 +1,3 @@
-
-
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
@@ -10,7 +8,6 @@ const SIZE_STEP: usize = 20 * 1024;
 const COUNT: usize = 20;
 /// Multiplication of each step read (COUNT * READ_REPEATS)
 const READ_REPEATS: usize = 200;
-
 
 #[cfg(test)]
 mod common;

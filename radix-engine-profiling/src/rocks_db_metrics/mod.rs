@@ -13,7 +13,6 @@ use std::{cell::RefCell, collections::BTreeMap, path::PathBuf, time::Duration};
 #[cfg(test)]
 mod tests;
 
-
 /// Substate store with read time measurements for RocksDB and In Memory DB.
 pub struct SubstateStoreWithMetrics<S>
 where

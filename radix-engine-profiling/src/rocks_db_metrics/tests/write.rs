@@ -58,9 +58,11 @@ fn test_commit() {
 }
 
 #[test]
+// to run this test use following command in the main repository folder:
+// cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_partition
 fn test_commit_per_partition() {
     const N: usize = 100;
-    const ROUNDS_COUNT: usize = 10;
+    const ROUNDS_COUNT: usize = 100;
 
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) =
@@ -229,22 +231,6 @@ where
         }
     }
 
-    // let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
-    // if axis_ranges.2 > 0f32 {
-    //     axis_ranges.2 = 0f32;
-    // }
-    // axis_ranges.3 = rocksdb_data_output.iter().map(|i| (i.1 as i32)).max().unwrap() as f32 * 1.2f32;
-    // export_graph_and_print_summary(
-    //     &format!("RocksDB (with Merkle tree) random commits (N=1..{}) rounds: {}", N, rounds_count),
-    //     &rocksdb_data,
-    //     &rocksdb_data_output,
-    //     "/tmp/scrypto_rocksdb_merkle_commit_1.png",
-    //     "95th percentile of commits",
-    //     &rocksdb_data_intermediate,
-    //     axis_ranges,
-    //     Some("N")
-    // )
-    // .unwrap();
     (rocksdb_data, rocksdb_data_output, rocksdb_data_intermediate)
 }
 

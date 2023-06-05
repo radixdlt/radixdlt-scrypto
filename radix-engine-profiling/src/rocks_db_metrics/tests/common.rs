@@ -4,15 +4,13 @@ use plotters::prelude::*;
 use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{
-        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey,
-        DbSortKey, PartitionUpdates, SubstateDatabase,
+        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
+        PartitionUpdates, SubstateDatabase,
     },
 };
-use rand::{Rng, rngs::ThreadRng};
+use rand::{rngs::ThreadRng, Rng};
 #[allow(unused_imports)]
 use std::{io::Write, path::PathBuf};
-
-
 
 pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_store: &SubstateStoreWithMetrics<S>,
@@ -52,7 +50,14 @@ pub fn calculate_percent_to_max_points(
     output_values
 }
 
-pub fn generate_commit_data(rng: &mut ThreadRng, value_size: usize) -> (DbPartitionKey, DbSortKey, IndexMap<DbSortKey, DatabaseUpdate>) {
+pub fn generate_commit_data(
+    rng: &mut ThreadRng,
+    value_size: usize,
+) -> (
+    DbPartitionKey,
+    DbSortKey,
+    IndexMap<DbSortKey, DatabaseUpdate>,
+) {
     let mut value_data: DbSubstateValue = vec![0u8; value_size];
     rng.fill(value_data.as_mut_slice());
     let value = DatabaseUpdate::Set(value_data);
@@ -60,14 +65,12 @@ pub fn generate_commit_data(rng: &mut ThreadRng, value_size: usize) -> (DbPartit
     let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
     rng.fill(&mut node_id_value);
     let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
-    let partition_key =
-        SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
+    let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
     let mut substate_key_value = [0u8; NodeId::LENGTH];
     rng.fill(&mut substate_key_value);
-    let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
-        substate_key_value.into(),
-    ));
+    let sort_key =
+        SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(substate_key_value.into()));
 
     let mut partition = PartitionUpdates::new();
     partition.insert(sort_key.clone(), value);
@@ -99,7 +102,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
         for i in 0..writes_count / batch_size {
             let mut input_data = DatabaseUpdates::with_capacity(batch_size);
             for _ in 0..batch_size {
-                print!("\rRound {}/{}", i + 1, writes_count / batch_size );
+                print!("\rRound {}/{}", i + 1, writes_count / batch_size);
                 std::io::stdout().flush().ok();
 
                 let size = rng.gen_range(min_size..=max_size);
@@ -150,7 +153,7 @@ pub fn export_one_graph(
 
     // draw scatter plot
     let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?; 
+    root.fill(&WHITE)?;
     root.margin(20, 20, 20, 20);
 
     let mut scatter_ctx = ChartBuilder::on(&root)
@@ -197,15 +200,16 @@ pub fn export_one_graph(
             .map(|(k, v)| (*k, v.len()))
             .collect::<Vec<(usize, usize)>>()
     );
-    println!(
-        "Points list (size, time[µs]): {:?}",
-        data
-    );
+    println!("Points list (size, time[µs]): {:?}", data);
 
     Ok(())
 }
 
-pub fn calculate_axis_ranges(data: &Vec<(f32, f32)>, x_ofs: Option<f32>, y_ofs: Option<f32>) -> (f32, f32, f32, f32) {
+pub fn calculate_axis_ranges(
+    data: &Vec<(f32, f32)>,
+    x_ofs: Option<f32>,
+    y_ofs: Option<f32>,
+) -> (f32, f32, f32, f32) {
     let x_ofs = x_ofs.unwrap_or_else(|| 0f32);
     let y_ofs = y_ofs.unwrap_or_else(|| 0f32);
     let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32 - x_ofs;
@@ -218,8 +222,12 @@ pub fn calculate_axis_ranges(data: &Vec<(f32, f32)>, x_ofs: Option<f32>, y_ofs: 
     (x_min, x_max, y_min, y_max)
 }
 
-
-pub fn calculate_axis_ranges_for_two_series(data_series1: &Vec<(f32, f32)>, data_series2: &Vec<(f32, f32)>, x_ofs: Option<f32>, y_ofs: Option<f32>) -> (f32, f32, f32, f32) {
+pub fn calculate_axis_ranges_for_two_series(
+    data_series1: &Vec<(f32, f32)>,
+    data_series2: &Vec<(f32, f32)>,
+    x_ofs: Option<f32>,
+    y_ofs: Option<f32>,
+) -> (f32, f32, f32, f32) {
     let x_ofs = x_ofs.unwrap_or_else(|| 0f32);
     let y_ofs = y_ofs.unwrap_or_else(|| 0f32);
     let x_min1 = data_series1.iter().map(|i| i.0 as i32).min().unwrap() as f32;
@@ -264,7 +272,7 @@ pub fn export_graph_and_print_summary(
     output_data_name: &str,
     original_data: &BTreeMap<usize, Vec<Duration>>,
     axis_ranges: (f32, f32, f32, f32),
-    x_axis_description: Option<&str>
+    x_axis_description: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
     let x_min = axis_ranges.0;
@@ -338,10 +346,7 @@ pub fn export_graph_and_print_summary(
 
     // print some informations
     println!("Points count: {}", data.len());
-    println!(
-        "Distinct size point count: {}",
-        original_data.len()
-    );
+    println!("Distinct size point count: {}", original_data.len());
     println!(
         "Points counts list (size, count): {:?}",
         original_data
@@ -361,8 +366,6 @@ pub fn export_graph_and_print_summary(
 
     Ok(())
 }
-
-
 
 pub fn export_graph_and_print_summary_for_two_series(
     caption: &str,
@@ -486,7 +489,6 @@ pub fn export_graph_and_print_summary_for_two_series(
     Ok(())
 }
 
-
 pub fn export_graph_two_series(
     caption: &str,
     data_series1: &Vec<(f32, f32)>,
@@ -500,16 +502,17 @@ pub fn export_graph_two_series(
     (lin_slope_2, lin_intercept_2): (f32, f32),
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
-    let (x_min, x_max, y_min, mut y_max) = calculate_axis_ranges_for_two_series(&data_series1, &data_series2, None, None);
-    let y_max_1 = data_series1.last().unwrap().1 * 1.2f32;
-    let y_max_2 = data_series2.last().unwrap().1 * 1.2f32;
+    let (x_min, x_max, y_min, mut y_max) =
+        calculate_axis_ranges_for_two_series(&data_series1, &data_series2, None, None);
+    let y_max_1 = data_series1.last().unwrap().1;
+    let y_max_2 = data_series2.last().unwrap().1;
     if y_max_1 > y_max_2 && y_max_1 < y_max {
-        y_max = y_max_1;
+        y_max = y_max_1 * 1.2f32;
     } else if y_max_2 > y_max_1 && y_max_2 < y_max {
-        y_max = y_max_2;
+        y_max = y_max_2 * 1.2f32;
     }
 
-    let lin_x_axis = (x_min..(x_max+1f32)).step(1f32);
+    let lin_x_axis = (x_min..(x_max + 1f32)).step(1f32);
 
     // draw scatter plot
     let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
@@ -583,7 +586,6 @@ pub fn export_graph_two_series(
 
     Ok(())
 }
-
 
 pub fn print_read_not_found_results<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_store: &SubstateStoreWithMetrics<S>,

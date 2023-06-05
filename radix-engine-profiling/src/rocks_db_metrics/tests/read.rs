@@ -1,16 +1,12 @@
-use super::common::*;
 use super::super::*;
+use super::common::*;
 use super::*;
 use radix_engine_store_interface::{
     db_key_mapper::*,
-    interface::{
-        CommittableSubstateDatabase,DbPartitionKey,
-        DbSortKey, SubstateDatabase,
-    },
+    interface::{CommittableSubstateDatabase, DbPartitionKey, DbSortKey, SubstateDatabase},
 };
 use rand::Rng;
 use std::{io::Write, path::PathBuf};
-
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
@@ -28,7 +24,14 @@ fn test_read() {
     // prepare database
     let data_index_vector = {
         let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
-        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT, false)
+        prepare_db(
+            &mut substate_db,
+            MIN_SIZE,
+            MAX_SIZE,
+            SIZE_STEP,
+            COUNT,
+            false,
+        )
     };
 
     // reopen database
@@ -40,7 +43,8 @@ fn test_read() {
 
     // prepare data for linear approximation
     drop_highest_and_lowest_value(&mut substate_db, 3);
-    let rocksdb_output_data = calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
+    let rocksdb_output_data =
+        calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 
     // prepare data for plot
     let mut rocksdb_data = Vec::with_capacity(100000);
@@ -68,14 +72,22 @@ fn test_read() {
 
     // InMemory DB part
     let mut substate_db = SubstateStoreWithMetrics::new_inmem();
-    let data_index_vector = prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT, false);
+    let data_index_vector = prepare_db(
+        &mut substate_db,
+        MIN_SIZE,
+        MAX_SIZE,
+        SIZE_STEP,
+        COUNT,
+        false,
+    );
     run_read_test(&mut substate_db, &data_index_vector);
     // run read not found test
     run_read_not_found_test(&mut substate_db);
 
     // prepare data for linear approximation
     drop_highest_and_lowest_value(&mut substate_db, 3);
-    let inmem_output_data = calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
+    let inmem_output_data =
+        calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 
     // prepare data for plot
     let mut inmem_data = Vec::with_capacity(100000);
@@ -104,7 +116,7 @@ fn test_read() {
         "RocksDB - InMemoryDB random reads",
         &rocksdb_output_data,
         &inmem_output_data,
-        "/tmp/scrypto_diff_1.png"
+        "/tmp/scrypto_diff_1.png",
     )
     .unwrap();
 
@@ -161,9 +173,7 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
     println!("Read done");
 }
 
-fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
-    substate_db: &mut S,
-) {
+fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(substate_db: &mut S) {
     println!("Read not found test start...");
 
     let mut data_index_vector_2: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
@@ -193,4 +203,3 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
 
     println!("Read done");
 }
-
