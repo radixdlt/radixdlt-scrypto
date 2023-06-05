@@ -6,6 +6,11 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
+#[cfg(not(any(feature = "moka", feature = "lru")))]
+compile_error!("Either feature `moka` or `lru` must be enabled for this crate.");
+#[cfg(all(feature = "moka", feature = "lru"))]
+compile_error!("Feature `moka` and `lru` can't be enabled at the same time.");
+
 /// Radix Engine kernel, defining state, ownership and (low-level) invocation semantics.
 pub mod kernel;
 /// Radix Engine system, defining packages (a.k.a. classes), components (a.k.a. objects) and invocation semantics.

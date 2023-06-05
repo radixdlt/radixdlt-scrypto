@@ -66,25 +66,27 @@ pub struct PackagePublishNativeInput {
 
 pub type PackagePublishNativeOutput = PackageAddress;
 
-pub const PACKAGE_SET_ROYALTY_CONFIG_IDENT: &str = "PackageRoyalty_set_royalty_config";
+pub const PACKAGE_SET_ROYALTY_IDENT: &str = "PackageRoyalty_set_royalty";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageSetRoyaltyConfigInput {
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
+pub struct PackageSetRoyaltyInput {
+    pub blueprint: String,
+    pub fn_name: String,
+    pub royalty: RoyaltyAmount,
 }
 
-pub type PackageSetRoyaltyConfigOutput = ();
+pub type PackageSetRoyaltyOutput = ();
 
-pub const PACKAGE_CLAIM_ROYALTY_IDENT: &str = "PackageRoyalty_claim_royalty";
+pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageClaimRoyaltyInput {}
+pub struct PackageClaimRoyaltiesInput {}
 
-pub type PackageClaimRoyaltyOutput = Bucket;
+pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageDefinition {
