@@ -270,22 +270,21 @@ impl PackageNativePackage {
             },
         );
         functions.insert(
-            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            PACKAGE_SET_ROYALTY_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyConfigInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<PackageSetRoyaltyConfigOutput>(),
-                export_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyInput>(),
+                output: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyOutput>(),
+                export_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             },
         );
         functions.insert(
-            PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyInput>(),
-                output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyOutput>(),
-                export_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
+                output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
+                export_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             },
         );
 
@@ -294,8 +293,8 @@ impl PackageNativePackage {
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
 
-            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_IDENT) => [OWNER_ROLE];
         };
 
         let schema = generate_full_schema(aggregator);
@@ -414,15 +413,22 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
-            PACKAGE_SET_ROYALTY_CONFIG_IDENT => {
+            PACKAGE_SET_ROYALTY_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                Self::set_royalty_config(input, api)
+                let input: PackageSetRoyaltyInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = Self::set_royalty(input.blueprint, input.fn_name, input.royalty, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            PACKAGE_CLAIM_ROYALTY_IDENT => {
+            PACKAGE_CLAIM_ROYALTIES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                Self::claim_royalty(input, api)
+                let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = Self::claim_royalty(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -619,17 +625,15 @@ impl PackageNativePackage {
         )
     }
 
-    pub(crate) fn set_royalty_config<Y>(
-        input: &IndexedScryptoValue,
+    pub(crate) fn set_royalty<Y>(
+        blueprint: String,
+        fn_name: String,
+        royalty: RoyaltyAmount,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: PackageSetRoyaltyConfigInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
         // FIXME: double check if auth is set up for any package
 
         let handle = api.actor_lock_field(
@@ -639,23 +643,20 @@ impl PackageNativePackage {
         )?;
 
         let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
-        substate.blueprint_royalty_configs = input.royalty_config;
+        let royalty_config = substate
+            .blueprint_royalty_configs
+            .entry(blueprint)
+            .or_insert(RoyaltyConfig::default());
+        royalty_config.rules.insert(fn_name, royalty);
         api.field_lock_write_typed(handle, &substate)?;
         api.field_lock_release(handle)?;
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 
-    pub(crate) fn claim_royalty<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub(crate) fn claim_royalty<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: PackageClaimRoyaltyInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             PackageField::Royalty.into(),
@@ -668,6 +669,6 @@ impl PackageNativePackage {
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
         };
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        Ok(bucket)
     }
 }

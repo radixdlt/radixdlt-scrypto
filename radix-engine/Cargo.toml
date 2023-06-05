@@ -48,9 +48,9 @@ wabt = { version = "0.10.0" }
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "moka", "serde_json?/std"]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "lru/hashbrown", "serde_json?/alloc"]
+default = ["std", "moka"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std"]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
@@ -59,8 +59,10 @@ cpu_ram_metrics = ["std", "dep:perfcnt"]
 # Use `wasmer` as WASM engine, otherwise `wasmi`
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 
-# Use moka for caching
+# Two features for the two possible libraries to use for caching. Moka is not WASM friendly while LRU is. One of these
+# two features must be enabled.
 moka = ["dep:moka"]
+lru = ["dep:lru"]
 
 resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker"]
 

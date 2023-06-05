@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
@@ -215,11 +215,11 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
     fn to_mapping(self) -> Vec<(String, T)> {
         vec![
             (
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
                 self.set_royalty_config,
             ),
             (
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                 self.claim_royalty,
             ),
         ]
@@ -227,8 +227,8 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
 
     fn methods() -> Vec<&'static str> {
         vec![
-            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-            COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+            COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+            COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
         ]
     }
 }
