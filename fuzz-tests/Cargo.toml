@@ -18,7 +18,7 @@ once_cell = { version = "1.17.1"}
 arbitrary = { version = "1.3.0", features = ["derive"] }
 strum = { version = "0.24.1", default-features = false, features = ["derive"] }
 sbor = { path = "../sbor", default-features = false, features = ["radix_engine_fuzzing"] }
-radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_fuzzing"] }
+radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_fuzzing", "moka"] }
 radix-engine-common = { path = "../radix-engine-common", default-features = false, features = ["radix_engine_fuzzing"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false, features = ["radix_engine_fuzzing"]}
