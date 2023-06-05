@@ -156,6 +156,27 @@ impl AccountNativePackage {
         );
 
         functions.insert(
+            ACCOUNT_BURN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountBurnInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountBurnOutput>(),
+                export_name: ACCOUNT_BURN_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountBurnNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountBurnNonFungiblesOutput>(),
+                export_name: ACCOUNT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -518,6 +539,26 @@ impl AccountNativePackage {
                     input.ids,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_BURN_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::burn(input.resource_address, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountBurnNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    AccountBlueprint::burn_non_fungibles(input.resource_address, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
