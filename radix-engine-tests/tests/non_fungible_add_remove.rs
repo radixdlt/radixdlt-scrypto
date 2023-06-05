@@ -72,7 +72,12 @@ fn mint_and_burn_of_non_fungible_2x_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)))
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+        )
+    })
 }
 
 #[test]
@@ -101,5 +106,10 @@ fn mint_of_previously_minted_burned_non_fungible_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)))
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+        )
+    })
 }

@@ -393,7 +393,8 @@ impl TestRunner {
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
-            )?.value;
+            )?
+            .value;
 
         metadata_value
     }

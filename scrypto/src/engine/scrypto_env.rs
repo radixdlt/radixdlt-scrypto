@@ -206,6 +206,20 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
+    fn key_value_entry_remove(
+        &mut self,
+        _handle: KeyValueEntryHandle,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        todo!()
+    }
+
+    fn key_value_entry_freeze(
+        &mut self,
+        _handle: KeyValueEntryHandle,
+    ) -> Result<(), ClientApiError> {
+        todo!()
+    }
+
     fn key_value_entry_release(
         &mut self,
         handle: KeyValueEntryHandle,

@@ -411,13 +411,12 @@ where
                                     ))
                                 })?;
 
-
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
 
                                 let wrapped_value = SubstateWrapper {
                                     value: ScryptoValue::Enum {
                                         discriminator: 1u8,
-                                        fields: vec![value]
+                                        fields: vec![value],
                                     },
                                     mutability: SubstateMutability::Mutable,
                                 };
@@ -463,7 +462,6 @@ where
     fn key_value_entry_remove_and_release_lock(
         &mut self,
         handle: KeyValueEntryHandle,
-        freeze: bool,
     ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Replace with api::replace
         let current_value = self
@@ -472,21 +470,18 @@ where
             .map(|v| v.as_slice().to_vec())?;
 
         let empty_kv_entry = SubstateWrapper {
-            value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
-            mutability: if freeze {
-                SubstateMutability::Immutable
-            } else {
-                SubstateMutability::Mutable
+            value: ScryptoValue::Enum {
+                discriminator: 0u8,
+                fields: vec![],
             },
+            mutability: SubstateMutability::Mutable,
         };
 
-        self.kernel_write_substate(
-            handle,
-            IndexedScryptoValue::from_typed(&empty_kv_entry),
-        )?;
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&empty_kv_entry))?;
         self.kernel_drop_lock(handle)?;
 
-        let wrapper: SubstateWrapper2<Option<ScryptoValue>> = scrypto_decode(&current_value).unwrap();
+        let wrapper: SubstateWrapper2<Option<ScryptoValue>> =
+            scrypto_decode(&current_value).unwrap();
         let current_value = scrypto_encode(&wrapper.value).unwrap();
 
         Ok(current_value)
@@ -1145,12 +1140,56 @@ where
             }
         }
 
-        self.api
+        self.api.kernel_read_substate(handle).map(|v| {
+            let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
+            scrypto_encode(&wrapper.value).unwrap()
+        })
+    }
+
+    // TODO: Should this release lock or continue allow to mutate entry until lock released?
+    fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        match data {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write { .. }) => {}
+            _ => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::NotAKeyValueWriteLock,
+                ));
+            }
+        };
+
+        let v = self.api.kernel_read_substate(handle)?;
+        let mut wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
+        wrapper.mutability = SubstateMutability::Immutable;
+        let indexed = IndexedScryptoValue::from_typed(&wrapper);
+        self.api.kernel_write_substate(handle, indexed)?;
+        Ok(())
+    }
+
+    fn key_value_entry_remove(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let current_value = self
+            .api
             .kernel_read_substate(handle)
-            .map(|v| {
-                let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
-                scrypto_encode(&wrapper.value).unwrap()
-            })
+            .map(|v| v.as_slice().to_vec())?;
+
+        let empty_kv_entry = SubstateWrapper {
+            value: ScryptoValue::Enum {
+                discriminator: 0u8,
+                fields: vec![],
+            },
+            mutability: SubstateMutability::Mutable,
+        };
+
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&empty_kv_entry))?;
+
+        let wrapper: SubstateWrapper2<Option<ScryptoValue>> =
+            scrypto_decode(&current_value).unwrap();
+        let current_value = scrypto_encode(&wrapper.value).unwrap();
+
+        Ok(current_value)
     }
 
     #[trace_resources]
@@ -1200,7 +1239,7 @@ where
         let wrapped_value = SubstateWrapper {
             value: ScryptoValue::Enum {
                 discriminator: 1u8,
-                fields: vec![value]
+                fields: vec![value],
             },
             mutability: SubstateMutability::Mutable,
         };
@@ -1317,7 +1356,10 @@ where
             flags,
             Some(|| {
                 let wrapper = SubstateWrapper {
-                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
+                    value: ScryptoValue::Enum {
+                        discriminator: 0u8,
+                        fields: vec![],
+                    },
                     mutability: SubstateMutability::Mutable,
                 };
                 IndexedScryptoValue::from_typed(&wrapper)
@@ -1326,15 +1368,15 @@ where
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
-            let mutability = self.api
-                .kernel_read_substate(handle)
-                .map(|v| {
-                    let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
-                    wrapper.mutability
-                })?;
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
+                wrapper.mutability
+            })?;
 
             if let SubstateMutability::Immutable = mutability {
-                return Err(RuntimeError::SystemError(SystemError::MutatingImmutableSubstate));
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableSubstate,
+                ));
             }
         }
 
@@ -1347,7 +1389,7 @@ where
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
-        self.key_value_entry_remove_and_release_lock(handle, false)
+        self.key_value_entry_remove_and_release_lock(handle)
     }
 }
 
@@ -1803,7 +1845,10 @@ where
             flags,
             Some(|| {
                 let wrapper = SubstateWrapper {
-                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
+                    value: ScryptoValue::Enum {
+                        discriminator: 0u8,
+                        fields: vec![],
+                    },
                     mutability: SubstateMutability::Mutable,
                 };
                 IndexedScryptoValue::from_typed(&wrapper)
@@ -1812,15 +1857,15 @@ where
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
-            let mutability = self.api
-                .kernel_read_substate(handle)
-                .map(|v| {
-                    let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
-                    wrapper.mutability
-                })?;
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
+                wrapper.mutability
+            })?;
 
             if let SubstateMutability::Immutable = mutability {
-                return Err(RuntimeError::SystemError(SystemError::MutatingImmutableSubstate));
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableSubstate,
+                ));
             }
         }
 
@@ -1832,7 +1877,6 @@ where
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
-        freeze: bool,
     ) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.actor_lock_key_value_entry(
             object_handle,
@@ -1840,7 +1884,7 @@ where
             key,
             LockFlags::MUTABLE,
         )?;
-        self.key_value_entry_remove_and_release_lock(handle, freeze)
+        self.key_value_entry_remove_and_release_lock(handle)
     }
 }
 

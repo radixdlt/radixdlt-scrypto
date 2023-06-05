@@ -32,5 +32,9 @@ pub trait ClientKeyValueEntryApi<E> {
         self.key_value_entry_set(handle, buffer)
     }
 
+    fn key_value_entry_remove(&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, E>;
+
+    fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), E>;
+
     fn key_value_entry_release(&mut self, handle: KeyValueEntryHandle) -> Result<(), E>;
 }

@@ -527,7 +527,6 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-
             let value: SubstateWrapper2<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
 
             TypedMainModuleSubstateValue::NonFungibleResourceData(value.value)
@@ -618,7 +617,6 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-
             let value: SubstateWrapper2<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
 
             TypedMainModuleSubstateValue::GenericKeyValueStore(value.value)

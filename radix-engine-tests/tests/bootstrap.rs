@@ -251,7 +251,8 @@ fn test_genesis_resource_with_initial_allocation() {
             METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
-        .unwrap().value;
+        .unwrap()
+        .value;
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");

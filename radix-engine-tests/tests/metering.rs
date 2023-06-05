@@ -328,14 +328,14 @@ fn test_flash_loan() {
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
         + 4429294 /* LockSubstate */
-        + 33096 /* ReadSubstate */
+        + 33152 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
         + 1304420 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 4452 /* WriteSubstate */
+        + 4507 /* WriteSubstate */
     );
 }
 
