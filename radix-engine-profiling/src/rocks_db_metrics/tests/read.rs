@@ -59,7 +59,8 @@ fn test_read() {
         "/tmp/scrypto_rocksdb_1.png",
         "95th percentile of reads",
         &substate_db.read_metrics,
-        axis_ranges
+        axis_ranges,
+        None,
     )
     .unwrap();
 
@@ -93,7 +94,8 @@ fn test_read() {
         "/tmp/scrypto_inmem_1.png",
         "95th percentile of reads",
         &substate_db.read_metrics,
-        axis_ranges
+        axis_ranges,
+        None,
     )
     .unwrap();
 

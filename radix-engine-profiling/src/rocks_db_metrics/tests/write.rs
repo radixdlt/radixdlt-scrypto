@@ -7,8 +7,7 @@ use super::*;
 use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{
-        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey,
-        DbSortKey, PartitionUpdates, SubstateDatabase,
+        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionUpdates, SubstateDatabase,
     },
 };
 use std::{io::Write, path::PathBuf};
@@ -45,7 +44,8 @@ fn test_commit() {
         "/tmp/scrypto_rocksdb_commit_1.png",
         "95th percentile of commits",
         &substate_db.commit_metrics,
-        axis_ranges
+        axis_ranges,
+        None,
     )
     .unwrap();
 }
@@ -83,15 +83,15 @@ fn test_commit_merkle() {
         std::io::stdout().flush().ok();
 
         let value_size = 100;
-        for i in 1..=100 {
+        for n in 1..=100 {
             let mut input_data = DatabaseUpdates::new();
 
-            for j in 0..i {
+            for j in 0..n {
                 let mut value_data: DbSubstateValue = vec![0u8; value_size];
                 rng.fill(value_data.as_mut_slice());
                 let value = DatabaseUpdate::Set(value_data);
 
-                let substate_key_value: Vec<u8> = vec![j + 1]; //[0u8; NodeId::LENGTH];
+                let substate_key_value: Vec<u8> = vec![j + 1];
                 let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
                     substate_key_value.into(),
                 ));
@@ -100,7 +100,7 @@ fn test_commit_merkle() {
                 partition.insert(sort_key.clone(), value);
 
                 let partition_key =
-                    SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(i as u8));
+                    SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(n as u8));
 
                 input_data.insert(partition_key, partition);
             }
@@ -140,14 +140,6 @@ fn test_commit_merkle() {
         }
     }
 
-    // prepare data for plot
-    // let mut rocksdb_data = Vec::with_capacity(100000);
-    // for (_k, v) in substate_db.commit_metrics.borrow().iter() {
-    //     for (i, val) in v.iter().enumerate() {
-    //         rocksdb_data.push(((i+1) as f32, val.as_micros() as f32));
-    //     }
-    // }
-
     // export results
     // export_one_graph(
     //     "RocksDB (with Merkle tree) random commits",
@@ -161,13 +153,14 @@ fn test_commit_merkle() {
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     axis_ranges.3 = 200f32;
     export_graph_and_print_summary(
-        "RocksDB (with Merkle tree) random commits",
+        "RocksDB (with Merkle tree) random commits (N=1..100)",
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_rocksdb_merkle_commit_1.png",
         "95th percentile of commits",
         &substate_db.commit_metrics,
-        axis_ranges
+        axis_ranges,
+        Some("N")
     )
     .unwrap();
 }

@@ -130,6 +130,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     data_index_vector
 }
 
+#[allow(dead_code)]
 pub fn export_one_graph(
     caption: &str,
     data: &Vec<(f32, f32)>,
@@ -222,6 +223,7 @@ pub fn export_graph_and_print_summary(
     output_data_name: &str,
     original_data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
     axis_ranges: (f32, f32, f32, f32),
+    x_axis_description: Option<&str>
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
     let x_min = axis_ranges.0;
@@ -249,7 +251,7 @@ pub fn export_graph_and_print_summary(
         .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
     scatter_ctx
         .configure_mesh()
-        .x_desc("Size [bytes]")
+        .x_desc(x_axis_description.unwrap_or_else(|| "Size [bytes]"))
         .y_desc("Duration [microseconds]")
         .axis_desc_style(("sans-serif", 16))
         .draw()?;
