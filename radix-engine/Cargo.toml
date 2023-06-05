@@ -27,7 +27,9 @@ paste = "1.0.12"
 parity-wasm = { version = "0.42.2", features = ["sign_ext"] }
 
 # WASM validation
-wasmi-validation =  { version = "0.4.1" }
+# Currently wasmparser does not support 'no_std` - https://github.com/bytecodealliance/wasmtime/issues/3495
+# Thus using a wasmparser fork with 'no_std' support: https://crates.io/crates/wasmparser-nostd
+wasmparser = { version = "0.100.1", package = "wasmparser-nostd", default-features = false }
 
 # WASM instrumentation
 wasm-instrument = { version = "0.1.0", features = ["sign_ext"] }
@@ -50,7 +52,7 @@ wabt = { version = "0.10.0" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std", "wasmparser/std"]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.

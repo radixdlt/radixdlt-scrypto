@@ -1,3 +1,5 @@
+use crate::types::*;
+use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use parity_wasm::elements::{
     External, FunctionType,
     Instruction::{self, *},
@@ -8,10 +10,7 @@ use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
 };
-use wasmi_validation::{validate_module, PlainValidator};
-
-use crate::types::*;
-use crate::vm::wasm::{constants::*, errors::*, PrepareError};
+use wasmparser::Validator;
 
 use super::WasmiModule;
 #[derive(Debug, PartialEq)]
@@ -26,7 +25,9 @@ impl WasmModule {
             .map_err(|_| PrepareError::DeserializationError)?;
 
         // validate
-        validate_module::<PlainValidator>(&module).map_err(|_| PrepareError::ValidationError)?;
+        Validator::new()
+            .validate_all(code)
+            .map_err(|_| PrepareError::ValidationError)?;
 
         Ok(Self { module })
     }
