@@ -463,6 +463,7 @@ where
     fn key_value_entry_remove_and_release_lock(
         &mut self,
         handle: KeyValueEntryHandle,
+        freeze: bool,
     ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Replace with api::replace
         let current_value = self
@@ -472,7 +473,11 @@ where
 
         let empty_kv_entry = SubstateWrapper {
             value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
-            mutability: SubstateMutability::Mutable,
+            mutability: if freeze {
+                SubstateMutability::Mutable
+            } else {
+                SubstateMutability::Immutable
+            },
         };
 
         self.kernel_write_substate(
@@ -1342,7 +1347,7 @@ where
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
-        self.key_value_entry_remove_and_release_lock(handle)
+        self.key_value_entry_remove_and_release_lock(handle, false)
     }
 }
 
@@ -1827,6 +1832,7 @@ where
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
+        freeze: bool,
     ) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.actor_lock_key_value_entry(
             object_handle,
@@ -1834,7 +1840,7 @@ where
             key,
             LockFlags::MUTABLE,
         )?;
-        self.key_value_entry_remove_and_release_lock(handle)
+        self.key_value_entry_remove_and_release_lock(handle, freeze)
     }
 }
 

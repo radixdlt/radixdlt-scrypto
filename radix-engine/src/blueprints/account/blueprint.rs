@@ -538,6 +538,7 @@ impl AccountBlueprint {
                     OBJECT_HANDLE_SELF,
                     ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
                     &encoded_key,
+                    false,
                 )?;
             }
         };

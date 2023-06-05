@@ -19,6 +19,7 @@ pub trait ClientActorKeyValueEntryApi<E: Debug> {
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
+        freeze: bool,
     ) -> Result<Vec<u8>, E>;
 
     fn actor_remove_key_value_entry_typed<V: ScryptoDecode>(
@@ -26,8 +27,9 @@ pub trait ClientActorKeyValueEntryApi<E: Debug> {
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
+        freeze: bool,
     ) -> Result<Option<V>, E> {
-        let removed = self.actor_remove_key_value_entry(object_handle, collection_index, key)?;
+        let removed = self.actor_remove_key_value_entry(object_handle, collection_index, key, freeze)?;
         let rtn = scrypto_decode(&removed).unwrap();
         Ok(rtn)
     }
