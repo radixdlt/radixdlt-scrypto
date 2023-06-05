@@ -14,7 +14,7 @@ use crate::*;
 pub enum ManifestExpression {
     EntireWorktop,
     EntireAuthZone,
-    LastOwned,
+    Owned(u8),
 }
 
 //========
@@ -46,14 +46,11 @@ impl TryFrom<&[u8]> for ManifestExpression {
     type Error = ParseManifestExpressionError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 1 {
-            return Err(Self::Error::InvalidLength);
-        }
-        match slice[0] {
-            0 => Ok(Self::EntireWorktop),
-            1 => Ok(Self::EntireAuthZone),
-            2 => Ok(Self::LastOwned),
-            _ => Err(Self::Error::UnknownExpression),
+        match (slice.get(0), slice.len()) {
+            (Some(0), 1) => Ok(Self::EntireWorktop),
+            (Some(1), 1) => Ok(Self::EntireAuthZone),
+            (Some(2), 2) => Ok(Self::Owned(slice[1])),
+            _ => Err(Self::Error::InvalidLength),
         }
     }
 }
@@ -68,8 +65,9 @@ impl ManifestExpression {
             ManifestExpression::EntireAuthZone => {
                 bytes.push(1);
             }
-            ManifestExpression::LastOwned => {
+            ManifestExpression::Owned(i) => {
                 bytes.push(2);
+                bytes.push(*i);
             }
         };
         bytes

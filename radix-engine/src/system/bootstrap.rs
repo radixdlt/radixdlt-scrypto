@@ -424,7 +424,6 @@ pub fn create_system_bootstrap_transaction(
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         // TODO: add instruction for allocating the global address
         // Same for other global addresses below
-        let resource_address: ResourceAddress = RADIX_TOKEN.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(RADIX_TOKEN),
@@ -440,7 +439,7 @@ pub fn create_system_bootstrap_transaction(
                     metadata,
                     access_rules,
                     initial_supply,
-                    resource_address: ManifestExpression::LastOwned,
+                    resource_address: ManifestExpression::Owned(0),
                 },
             ),
         });
@@ -451,7 +450,6 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE),
@@ -465,7 +463,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(1),
             }),
         });
     }
@@ -475,7 +473,6 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = GLOBAL_CALLER_VIRTUAL_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(GLOBAL_CALLER_VIRTUAL_BADGE),
@@ -489,7 +486,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(2),
             }),
         });
     }
@@ -506,7 +503,6 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = PACKAGE_OWNER_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(PACKAGE_OWNER_BADGE),
@@ -520,7 +516,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(3),
             }),
         });
     }
@@ -537,7 +533,6 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = IDENTITY_OWNER_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(IDENTITY_OWNER_BADGE),
@@ -551,7 +546,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(4),
             }),
         });
 
@@ -609,7 +604,6 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = ACCOUNT_OWNER_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(ACCOUNT_OWNER_BADGE),
@@ -623,7 +617,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(5),
             }),
         });
 
@@ -718,7 +712,6 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE),
@@ -732,7 +725,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(6),
             }),
         });
     }
@@ -742,7 +735,6 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE),
@@ -756,7 +748,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(7),
             }),
         });
     }
@@ -766,7 +758,6 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address: ResourceAddress = SYSTEM_TRANSACTION_BADGE.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(SYSTEM_TRANSACTION_BADGE),
@@ -780,7 +771,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::LastOwned,
+                resource_address: ManifestExpression::Owned(8),
             }),
         });
     }

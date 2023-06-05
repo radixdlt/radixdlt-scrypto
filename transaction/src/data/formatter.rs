@@ -403,9 +403,9 @@ pub fn format_custom_value<F: fmt::Write>(
                 depth,
                 "Expression(\"{}\")",
                 match value {
-                    ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
-                    ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
-                    ManifestExpression::LastOwned => "LAST_OWNED",
+                    ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP".to_string(),
+                    ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE".to_string(),
+                    ManifestExpression::Owned(i) => format!("OWNED::{}", i),
                 }
             )?;
         }

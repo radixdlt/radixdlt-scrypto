@@ -616,7 +616,7 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
                 let proofs = LocalAuthZone::drain(self.api)?;
                 Ok(proofs.into_iter().map(|p| p.0).collect())
             }
-            ManifestExpression::LastOwned => {
+            ManifestExpression::Owned(_) => {
                 todo!()
             }
         }

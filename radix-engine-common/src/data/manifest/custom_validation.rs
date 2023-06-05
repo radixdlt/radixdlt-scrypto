@@ -80,7 +80,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                     }
                 };
             }
-            ManifestCustomValue::Expression(ManifestExpression::LastOwned) => {
+            ManifestCustomValue::Expression(ManifestExpression::Owned(_)) => {
                 let type_kind = schema
                     .resolve_type_kind(type_index)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?;
