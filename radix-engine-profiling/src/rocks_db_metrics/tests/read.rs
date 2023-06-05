@@ -58,7 +58,7 @@ fn test_read() {
         &rocksdb_output_data,
         "/tmp/scrypto_rocksdb_1.png",
         "95th percentile of reads",
-        &substate_db.read_metrics,
+        &substate_db.read_metrics.borrow(),
         axis_ranges,
         None,
     )
@@ -93,7 +93,7 @@ fn test_read() {
         &inmem_output_data,
         "/tmp/scrypto_inmem_1.png",
         "95th percentile of reads",
-        &substate_db.read_metrics,
+        &substate_db.read_metrics.borrow(),
         axis_ranges,
         None,
     )

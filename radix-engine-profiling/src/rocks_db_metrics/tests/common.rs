@@ -221,7 +221,7 @@ pub fn export_graph_and_print_summary(
     output_data: &Vec<(f32, f32)>,
     output_png_file: &str,
     output_data_name: &str,
-    original_data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
+    original_data: &BTreeMap<usize, Vec<Duration>>,
     axis_ranges: (f32, f32, f32, f32),
     x_axis_description: Option<&str>
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -299,12 +299,11 @@ pub fn export_graph_and_print_summary(
     println!("Points count: {}", data.len());
     println!(
         "Distinct size point count: {}",
-        original_data.borrow().len()
+        original_data.len()
     );
     println!(
         "Points counts list (size, count): {:?}",
         original_data
-            .borrow()
             .iter()
             .map(|(k, v)| (*k, v.len()))
             .collect::<Vec<(usize, usize)>>()
@@ -317,6 +316,7 @@ pub fn export_graph_and_print_summary(
         "Linear approx.:  f(size) = {} * size + {}\n",
         lin_slope, lin_intercept
     );
+    println!("Output graph file: {}\n", output_png_file);
 
     Ok(())
 }

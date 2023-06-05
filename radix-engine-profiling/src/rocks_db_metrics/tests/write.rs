@@ -43,7 +43,7 @@ fn test_commit() {
         &rocksdb_output_data,
         "/tmp/scrypto_rocksdb_commit_1.png",
         "95th percentile of commits",
-        &substate_db.commit_metrics,
+        &substate_db.commit_metrics.borrow(),
         axis_ranges,
         None,
     )
@@ -135,31 +135,24 @@ fn test_commit_merkle() {
          calculate_percent_to_max_points(&mut rocksdb_data_intermediate, 95f32);
     // prepare data for plot
     let mut rocksdb_data = Vec::with_capacity(100000);
-    for (k, v) in rocksdb_data_intermediate {
+    for (k, v) in &rocksdb_data_intermediate {
         for val in v {
-            rocksdb_data.push((k as f32, val.as_micros() as f32));
+            rocksdb_data.push((*k as f32, val.as_micros() as f32));
         }
     }
-
-    // export results
-    // export_one_graph(
-    //     "RocksDB (with Merkle tree) random commits",
-    //     &rocksdb_data,
-    //     "/tmp/scrypto_rocksdb_merkle_commit_1.png",
-    //     &substate_db.commit_metrics,
-    //     Some(100f32)
-    // )
-    // .unwrap();
-
+    
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
-    axis_ranges.3 = 1000f32;
+    if axis_ranges.2 > 0f32 {
+        axis_ranges.2 = 0f32;
+    }
+    axis_ranges.3 = rocksdb_data_output.iter().map(|i| (i.1 as i32)).max().unwrap() as f32 * 1.2f32;
     export_graph_and_print_summary(
         &format!("RocksDB (with Merkle tree) random commits (N=1..{}) rounds: {}", N, rounds_count),
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_rocksdb_merkle_commit_1.png",
         "95th percentile of commits",
-        &substate_db.commit_metrics,
+        &rocksdb_data_intermediate,
         axis_ranges,
         Some("N")
     )
