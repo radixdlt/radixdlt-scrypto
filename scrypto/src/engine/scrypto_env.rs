@@ -105,6 +105,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
+    fn attach_access_rules(
+        &mut self,
+        _node_id: &NodeId,
+        _access_rules_node_id: &NodeId,
+    ) -> Result<(), ClientApiError> {
+        todo!()
+    }
+
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,

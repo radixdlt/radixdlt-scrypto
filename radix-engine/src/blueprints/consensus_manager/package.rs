@@ -146,6 +146,12 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            dependencies: btreeset!(
+                RADIX_TOKEN.into(),
+                PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                SYSTEM_TRANSACTION_BADGE.into(),
+                VALIDATOR_OWNER_BADGE.into(),
+            ),
             method_auth_template: method_permissions_instance,
             outer_method_auth_template: btreemap!(),
         };
@@ -315,6 +321,7 @@ impl ConsensusManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            dependencies: btreeset!(),
             method_auth_template: method_permissions_instance,
             outer_method_auth_template: btreemap!(),
         };

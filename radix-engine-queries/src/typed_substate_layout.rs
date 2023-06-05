@@ -6,6 +6,8 @@ pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
+pub use radix_engine::blueprints::pool::single_resource_pool::*;
+pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
@@ -103,6 +105,8 @@ pub enum TypedMainModuleSubstateKey {
     AccountField(AccountField),
     AccountVaultIndexKey(ResourceAddress),
     AccountResourceDepositRuleIndexKey(ResourceAddress),
+    SingleResourcePoolField(SingleResourcePoolField),
+    TwoResourcePoolField(TwoResourcePoolField),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -285,6 +289,14 @@ fn to_typed_object_substate_key_internal(
                 }
             }
         }
+        EntityType::GlobalSingleResourcePool => {
+            TypedMainModuleSubstateKey::SingleResourcePoolField(SingleResourcePoolField::try_from(
+                substate_key,
+            )?)
+        }
+        EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePoolField(
+            TwoResourcePoolField::try_from(substate_key)?,
+        ),
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
             let key = substate_key.for_map().ok_or(())?;
@@ -337,6 +349,8 @@ pub enum TypedMainModuleSubstateValue {
     Account(TypedAccountFieldValue),
     AccountVaultIndex(AccountVaultIndexEntry),
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
+    SingleResourcePool(TypedSingleResourcePoolFieldValue),
+    TwoResourcePool(TypedTwoResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
@@ -402,6 +416,16 @@ pub enum GenericScryptoComponentFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedAccountFieldValue {
     Account(AccountSubstate),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedSingleResourcePoolFieldValue {
+    SingleResourcePool(SingleResourcePoolSubstate),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedTwoResourcePoolFieldValue {
+    TwoResourcePool(TwoResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -588,6 +612,20 @@ fn to_typed_object_substate_value(
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
             TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::SingleResourcePoolField(offset) => {
+            TypedMainModuleSubstateValue::SingleResourcePool(match offset {
+                SingleResourcePoolField::SingleResourcePool => {
+                    TypedSingleResourcePoolFieldValue::SingleResourcePool(scrypto_decode(data)?)
+                }
+            })
+        }
+        TypedMainModuleSubstateKey::TwoResourcePoolField(offset) => {
+            TypedMainModuleSubstateValue::TwoResourcePool(match offset {
+                TwoResourcePoolField::TwoResourcePool => {
+                    TypedTwoResourcePoolFieldValue::TwoResourcePool(scrypto_decode(data)?)
+                }
+            })
         }
     };
     Ok(substate_value)

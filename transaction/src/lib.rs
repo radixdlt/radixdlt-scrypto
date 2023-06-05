@@ -15,9 +15,13 @@ pub mod validation;
 /// The idea is that we can just include the current crate's prelude and avoid messing around with tons of includes.
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
-    // Exports from upstream libaries
+    // Exports from upstream crates
     pub use radix_engine_constants::*;
     pub use radix_engine_interface::prelude::*;
+
+    // Exports from this crate
+    pub use crate::builder::*;
+    pub use crate::model::*;
 }
 
 // Extra things which this crate wants which upstream crates likely don't
@@ -25,6 +29,7 @@ pub(crate) mod internal_prelude {
     pub use crate::prelude::*;
 
     pub use crate::builder::*;
+    pub use crate::define_raw_transaction_payload;
     pub use crate::ecdsa_secp256k1::*;
     pub use crate::eddsa_ed25519::*;
     pub use crate::errors::*;

@@ -198,7 +198,7 @@ CALL_METHOD
             vec![],
             apply_address_replacements(
                 r##"
-RECALL_RESOURCE
+RECALL_VAULT
     Address("${vault_address}")
     Decimal("1.2")
 ;
@@ -990,32 +990,37 @@ CREATE_ACCESS_CONTROLLER
         blobs: Vec<Vec<u8>>,
         expected_canonical: impl AsRef<str>,
     ) {
+        let blob_provider = BlobProvider::new_with_blobs(blobs);
+
         let original_string = manifest.as_ref();
-        let original_compiled = compile(original_string, network, blobs.clone())
+        let original_compiled = compile(original_string, network, blob_provider.clone())
             .expect("Manifest string could not be compiled");
         let original_binary =
             manifest_encode(&original_compiled).expect("Compiled manifest could not be encoded");
 
         let original_decompiled = decompile(&original_compiled.instructions, network)
             .expect("Manifest could not be decompiled");
-        let recompiled = compile(&original_decompiled, network, blobs.clone())
+        let recompiled = compile(&original_decompiled, network, blob_provider.clone())
             .expect("Decompiled manifest could not be recompiled");
         let recompiled_binary =
             manifest_encode(&recompiled).expect("Recompiled manifest could not be encoded");
 
         let recompiled_decompiled = decompile(&recompiled.instructions, network)
             .expect("Recompiled manifest could not be decompiled");
-        let re_recompiled = compile(&recompiled_decompiled, network, blobs.clone())
+        let re_recompiled = compile(&recompiled_decompiled, network, blob_provider.clone())
             .expect("Decompiled recompiled manifest could not be re-recompiled");
         let re_recompiled_binary =
             manifest_encode(&re_recompiled).expect("Re-recompiled manifest could not be encoded");
 
         // If you use the following output for test cases, make sure you've checked the diff
         println!("{}", recompiled_decompiled);
-        let intent = build_intent(expected_canonical.as_ref(), blobs)
-            .expect("Canonical manifest could not be compiled")
-            .to_payload_bytes()
-            .unwrap();
+        let intent = build_intent(
+            expected_canonical.as_ref(),
+            blob_provider.blobs().into_values().collect(),
+        )
+        .expect("Canonical manifest could not be compiled")
+        .to_payload_bytes()
+        .unwrap();
         print_blob(name, intent);
 
         // Check round-trip property
@@ -1047,16 +1052,18 @@ CREATE_ACCESS_CONTROLLER
     }
 
     fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> Result<IntentV1, CompileError> {
+        let blob_provider = BlobProvider::new_with_blobs(blobs);
+
         let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
         let network = NetworkDefinition::simulator();
-        let (instructions, blobs) = compile(manifest, &network, blobs)?.for_intent();
+        let (instructions, blobs) = compile(manifest, &network, blob_provider)?.for_intent();
 
         Ok(IntentV1 {
             header: TransactionHeaderV1 {
                 network_id: network.id,
-                start_epoch_inclusive: 0,
-                end_epoch_exclusive: 1000,
+                start_epoch_inclusive: Epoch::zero(),
+                end_epoch_exclusive: Epoch::of(1000),
                 nonce: 5,
                 notary_public_key: sk_notary.public_key().into(),
                 notary_is_signatory: false,
@@ -1202,7 +1209,7 @@ CREATE_ACCESS_CONTROLLER
         let inverted_manifest = {
             let network = NetworkDefinition::simulator();
             let decompiled = decompile(&manifest.instructions, &network).unwrap();
-            compile(&decompiled, &network, vec![]).unwrap()
+            compile(&decompiled, &network, BlobProvider::new()).unwrap()
         };
 
         // Assert

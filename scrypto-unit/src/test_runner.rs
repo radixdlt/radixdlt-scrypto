@@ -54,10 +54,10 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
-    AttachmentsV1, BlobV1, BlobsV1, Executable, InstructionV1, InstructionsV1, IntentV1,
-    PreviewFlags, PreviewIntentV1, SystemTransactionV1, TestTransaction, TransactionHeaderV1,
-    TransactionPayloadEncode,
+    AttachmentsV1, BlobV1, Executable, InstructionV1, IntentV1, PreviewFlags, PreviewIntentV1,
+    SystemTransactionV1, TestTransaction, TransactionHeaderV1, TransactionPayload,
 };
+use transaction::prelude::{BlobsV1, InstructionsV1};
 
 pub struct Compile;
 
@@ -125,13 +125,13 @@ impl Compile {
 
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
-    pub initial_epoch: u64,
+    pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
-    pub fn default(initial_epoch: u64, initial_config: ConsensusManagerConfig) -> CustomGenesis {
+    pub fn default(initial_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
             .public_key();
@@ -164,7 +164,7 @@ impl CustomGenesis {
         validator_public_key: EcdsaSecp256k1PublicKey,
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
-        initial_epoch: u64,
+        initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
@@ -738,6 +738,25 @@ impl TestRunner {
         )
     }
 
+    pub fn compile_and_publish_retain_blueprints<
+        P: AsRef<Path>,
+        F: FnMut(&String, &mut BlueprintSchema) -> bool,
+    >(
+        &mut self,
+        package_dir: P,
+        retain: F,
+    ) -> PackageAddress {
+        let (code, mut schema) = Compile::compile(package_dir);
+        schema.blueprints.retain(retain);
+        self.publish_package(
+            code,
+            schema,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            OwnerRole::None,
+        )
+    }
+
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
@@ -866,7 +885,7 @@ impl TestRunner {
                     header: TransactionHeaderV1 {
                         network_id: NetworkDefinition::simulator().id,
                         start_epoch_inclusive: epoch,
-                        end_epoch_exclusive: epoch + 10,
+                        end_epoch_exclusive: epoch.after(10),
                         nonce: 0,
                         notary_public_key: PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
                             [0u8; 33],
@@ -973,12 +992,16 @@ impl TestRunner {
         ResourceAddress,
         ResourceAddress,
         ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
     ) {
         let mint_auth = self.create_non_fungible_resource(account);
         let burn_auth = self.create_non_fungible_resource(account);
         let withdraw_auth = self.create_non_fungible_resource(account);
         let recall_auth = self.create_non_fungible_resource(account);
         let update_metadata_auth = self.create_non_fungible_resource(account);
+        let freeze_auth = self.create_non_fungible_resource(account);
+        let unfreeze_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
         let mut access_rules = BTreeMap::new();
@@ -1018,6 +1041,20 @@ impl TestRunner {
             ),
         );
         access_rules.insert(
+            Freeze,
+            (
+                rule!(require(freeze_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            Unfreeze,
+            (
+                rule!(require(unfreeze_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
             Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
@@ -1031,8 +1068,21 @@ impl TestRunner {
             withdraw_auth,
             recall_auth,
             update_metadata_auth,
+            freeze_auth,
+            unfreeze_auth,
             admin_auth,
         )
+    }
+
+    pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
+        access_rules.insert(Unfreeze, (rule!(allow_all), LOCKED));
+
+        self.create_fungible_resource_and_deposit(access_rules, account)
     }
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
@@ -1220,7 +1270,7 @@ impl TestRunner {
         receipt.expect_commit(true).new_component_addresses()[0]
     }
 
-    pub fn set_current_epoch(&mut self, epoch: u32) {
+    pub fn set_current_epoch(&mut self, epoch: Epoch) {
         let mut substate = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
@@ -1229,7 +1279,7 @@ impl TestRunner {
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();
-        substate.epoch = epoch as u64;
+        substate.epoch = epoch;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             OBJECT_BASE_PARTITION,
@@ -1238,7 +1288,7 @@ impl TestRunner {
         );
     }
 
-    pub fn get_current_epoch(&mut self) -> u32 {
+    pub fn get_current_epoch(&mut self) -> Epoch {
         let receipt = self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
@@ -1247,7 +1297,7 @@ impl TestRunner {
             }],
             btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit(true).output::<u64>(0) as u32
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1285,6 +1335,27 @@ impl TestRunner {
         self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
     }
 
+    pub fn execute_system_transaction_with_preallocated_addresses(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
+        mut proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> TransactionReceipt {
+        let nonce = self.next_transaction_nonce();
+        proofs.insert(AuthAddresses::system_role());
+        self.execute_transaction(
+            SystemTransactionV1 {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_addresses,
+            }
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
+        )
+    }
+
     pub fn execute_system_transaction(
         &mut self,
         instructions: Vec<InstructionV1>,
@@ -1311,7 +1382,7 @@ impl TestRunner {
     /// Please note that this assumes that state is right at the beginning of an epoch.
     pub fn advance_to_round_at_timestamp(
         &mut self,
-        round: u64,
+        round: Round,
         proposer_timestamp_ms: i64,
     ) -> TransactionReceipt {
         self.execute_system_transaction(
@@ -1322,7 +1393,7 @@ impl TestRunner {
                     round,
                     proposer_timestamp_ms,
                     leader_proposal_history: LeaderProposalHistory {
-                        gap_round_leaders: (1..round).map(|_| 0).collect(),
+                        gap_round_leaders: (1..round.number()).map(|_| 0).collect(),
                         current_leader: 0,
                         is_fallback: false,
                     },
@@ -1333,7 +1404,7 @@ impl TestRunner {
     }
 
     /// Performs an [`advance_to_round_at_timestamp()`] with an unchanged timestamp.
-    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+    pub fn advance_to_round(&mut self, round: Round) -> TransactionReceipt {
         let current_timestamp_ms = self.get_current_proposer_timestamp_ms();
         self.advance_to_round_at_timestamp(round, current_timestamp_ms)
     }
@@ -1588,6 +1659,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
             ),
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
+            dependencies: btreeset!(),
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         },

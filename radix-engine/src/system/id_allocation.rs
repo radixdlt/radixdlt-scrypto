@@ -5,6 +5,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::BlueprintId;
 
@@ -61,6 +62,12 @@ impl IDAllocation {
                         }
                         (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
                         (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
+                        (POOL_PACKAGE, SINGLE_RESOURCE_POOL_CONTRIBUTE_IDENT) => {
+                            EntityType::GlobalSingleResourcePool
+                        }
+                        (POOL_PACKAGE, TWO_RESOURCE_POOL_CONTRIBUTE_IDENT) => {
+                            EntityType::GlobalTwoResourcePool
+                        }
                         _ => EntityType::GlobalGenericComponent,
                     }
                 } else {
@@ -101,6 +108,12 @@ impl IDAllocation {
                 }
                 (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
                 (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
+                (POOL_PACKAGE, SINGLE_RESOURCE_POOL_CONTRIBUTE_IDENT) => {
+                    EntityType::GlobalSingleResourcePool
+                }
+                (POOL_PACKAGE, TWO_RESOURCE_POOL_CONTRIBUTE_IDENT) => {
+                    EntityType::GlobalTwoResourcePool
+                }
                 _ => EntityType::GlobalGenericComponent,
             },
         }

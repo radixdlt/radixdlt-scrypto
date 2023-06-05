@@ -11,6 +11,24 @@ pub struct ValidatedNotarizedTransactionV1 {
     pub signer_keys: Vec<PublicKey>,
 }
 
+impl HasIntentHash for ValidatedNotarizedTransactionV1 {
+    fn intent_hash(&self) -> IntentHash {
+        self.prepared.intent_hash()
+    }
+}
+
+impl HasSignedIntentHash for ValidatedNotarizedTransactionV1 {
+    fn signed_intent_hash(&self) -> SignedIntentHash {
+        self.prepared.signed_intent_hash()
+    }
+}
+
+impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
+    fn notarized_transaction_hash(&self) -> NotarizedTransactionHash {
+        self.prepared.notarized_transaction_hash()
+    }
+}
+
 impl ValidatedNotarizedTransactionV1 {
     pub fn get_executable<'a>(&'a self) -> Executable<'a> {
         let intent = &self.prepared.signed_intent.intent;

@@ -59,6 +59,8 @@ const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
 const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
 const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
 const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
+const FUNGIBLE_VAULT_FREEZE_EXPORT_NAME: &str = "freeze_FungibleVault";
+const FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME: &str = "unfreeze_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
     "create_proof_of_amount_FungibleVault";
@@ -69,6 +71,8 @@ const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME: &str = "freeze_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME: &str = "unfreeze_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
     "create_proof_of_amount_NonFungibleVault";
@@ -290,6 +294,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
+                dependencies: btreeset!(),
                 method_auth_template: method_permissions_instance,
                 outer_method_auth_template: btreemap!(),
             }
@@ -550,6 +555,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
+                dependencies: btreeset!(),
                 method_auth_template: method_permissions_instance,
                 outer_method_auth_template: btreemap!(),
             }
@@ -615,6 +621,30 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
+                VAULT_FREEZE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo {
+                        receiver: Receiver::SelfRefMut,
+                        ref_types: RefTypes::DIRECT_ACCESS,
+                    }),
+                    input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
+                    export_name: FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_UNFREEZE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo {
+                        receiver: Receiver::SelfRefMut,
+                        ref_types: RefTypes::DIRECT_ACCESS,
+                    }),
+                    input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
+                    export_name: FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 VAULT_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -670,10 +700,29 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let outer_method_permissions_instance = method_auth_template! {
+            let method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+            };
+
+            let outer_method_auth_template = method_auth_template! {
+                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
                 SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
@@ -690,8 +739,9 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                dependencies: btreeset!(),
+                method_auth_template,
+                outer_method_auth_template,
             }
         };
 
@@ -739,6 +789,30 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
                     export_name: NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_FREEZE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo {
+                        receiver: Receiver::SelfRefMut,
+                        ref_types: RefTypes::DIRECT_ACCESS,
+                    }),
+                    input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
+                    export_name: NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_UNFREEZE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo {
+                        receiver: Receiver::SelfRefMut,
+                        ref_types: RefTypes::DIRECT_ACCESS,
+                    }),
+                    input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
+                    export_name: NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -854,13 +928,37 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let outer_method_permissions_instance = method_auth_template! {
+            let method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
+            };
+
+            let outer_method_auth_template = method_auth_template! {
+                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+
                 SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
                 SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
                 SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
@@ -875,8 +973,9 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                dependencies: btreeset!(),
+                method_auth_template,
+                outer_method_auth_template,
             }
         };
 
@@ -1004,6 +1103,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1169,6 +1269,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1237,6 +1338,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1318,6 +1420,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
+                dependencies: btreeset!(),
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: outer_method_permissions_instance,
             }
@@ -1424,6 +1527,7 @@ impl ResourceManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
+            dependencies: btreeset!(),
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         };
@@ -1541,6 +1645,7 @@ impl ResourceManagerNativePackage {
             functions,
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
+            dependencies: btreeset!(),
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         };
@@ -1863,7 +1968,7 @@ impl ResourceManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleResourceManagerBlueprint::create_vault(api)?;
+                let rtn = NonFungibleResourceManagerBlueprint::create_empty_vault(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -1949,6 +2054,24 @@ impl ResourceManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::recall(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::freeze(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::unfreeze(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
@@ -2047,6 +2170,24 @@ impl ResourceManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::recall(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::freeze(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::unfreeze(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {

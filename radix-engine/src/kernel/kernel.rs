@@ -197,13 +197,11 @@ where
                 .current_frame
                 .get_node_visibility(&node_id)
                 .can_be_invoked(*is_direct_access),
-            Actor::Function { blueprint: _, .. } | Actor::VirtualLazyLoad { blueprint: _, .. } => {
-                true
-                // TODO: enable when package dependencies are explicitly declared.
-                // self
-                // .current_frame
-                // .get_node_visibility(blueprint.package_address.as_node_id())
-                // .can_be_invoked(false),
+            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
+                // TODO: Josh comment: what's the purpose of this?
+                self.current_frame
+                    .get_node_visibility(blueprint.package_address.as_node_id())
+                    .can_be_invoked(false)
             }
             Actor::Root => true,
         };
@@ -613,49 +611,9 @@ where
                 }
             }
             Err(err) => {
-                match &err {
-                    // TODO: This is a hack to allow for package imports to be visible
-                    // TODO: Remove this once we are able to get this information through the Blueprint ABI
-                    LockSubstateError::NodeNotVisible(node_id) if node_id.is_global_package() => {
-                        let (handle, store_access) = self
-                            .store
-                            .acquire_lock(
-                                node_id,
-                                OBJECT_BASE_PARTITION,
-                                substate_key,
-                                LockFlags::read_only(),
-                            )
-                            .map_err(|e| LockSubstateError::TrackError(Box::new(e)))
-                            .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)?;
-                        self.store.release_lock(handle);
-
-                        self.current_frame
-                            .add_global_reference(GlobalAddress::new_or_panic(
-                                node_id.clone().into(),
-                            ));
-                        let (lock_handle, _) = self
-                            .current_frame
-                            .acquire_lock(
-                                &mut self.heap,
-                                self.store,
-                                &node_id,
-                                OBJECT_BASE_PARTITION,
-                                substate_key,
-                                flags,
-                                None,
-                                M::LockData::default(),
-                            )
-                            .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)?;
-                        (lock_handle, store_access)
-                    }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                            CallFrameError::LockSubstateError(err.clone()),
-                        )))
-                    }
-                }
+                return Err(RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::LockSubstateError(err.clone()),
+                )));
             }
         };
 

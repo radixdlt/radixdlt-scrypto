@@ -51,9 +51,9 @@ dependencies = [
 
 [[package]]
 name = "bnum"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a66412baacf51dfc30a1e220bc7cc947001e8c47e3716468a3857f98887a7f3"
+checksum = "845141a4fade3f790628b7daaaa298a25b204fb28907eb54febe5142db6ce653"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -228,9 +228,9 @@ checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 
 [[package]]
 name = "paste"
-version = "1.0.11"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d01a5bd0424d00070b0098dd17ebca6f961a959dead1dbcbbbc1d1cd8d3deeba"
+checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
 
 [[package]]
 name = "proc-macro2"
@@ -293,6 +293,7 @@ dependencies = [
  "const-sha1",
  "hex",
  "lazy_static",
+ "paste",
  "radix-engine-common",
  "radix-engine-derive",
  "sbor",
@@ -351,6 +352,7 @@ name = "scrypto"
 version = "0.10.0"
 dependencies = [
  "bech32",
+ "const-sha1",
  "hex",
  "num-bigint",
  "num-traits",
@@ -371,6 +373,7 @@ version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
+ "radix-engine-common",
  "sbor",
  "scrypto-schema",
  "serde",

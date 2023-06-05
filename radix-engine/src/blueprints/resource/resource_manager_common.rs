@@ -102,41 +102,70 @@ fn build_access_rules(
         let (recall_access_rule, recall_mutability) = access_rules_map
             .remove(&ResourceMethodAuthKey::Recall)
             .unwrap_or((DenyAll, rule!(deny_all)));
+        let (freeze_access_rule, freeze_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Freeze)
+            .unwrap_or((DenyAll, rule!(deny_all)));
+        let (unfreeze_access_rule, unfreeze_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Unfreeze)
+            .unwrap_or((DenyAll, rule!(deny_all)));
 
         // Withdraw
         {
             roles.define_role(
-                WITHDRAW_UPDATE_ROLE,
-                RoleEntry::new(withdraw_mutability, [WITHDRAW_UPDATE_ROLE], true),
-            );
-            roles.define_role(
                 WITHDRAW_ROLE,
                 RoleEntry::new(withdraw_access_rule, [WITHDRAW_UPDATE_ROLE], true),
+            );
+            roles.define_role(
+                WITHDRAW_UPDATE_ROLE,
+                RoleEntry::new(withdraw_mutability, [WITHDRAW_UPDATE_ROLE], true),
             );
         }
 
         // Recall
         {
             roles.define_role(
+                RECALL_ROLE,
+                RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], true),
+            );
+            roles.define_role(
                 RECALL_UPDATE_ROLE,
                 RoleEntry::new(recall_mutability, [RECALL_UPDATE_ROLE], true),
             );
+        }
+
+        // Freeze
+        {
             roles.define_role(
-                RECALL_ROLE,
-                RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], true),
+                FREEZE_ROLE,
+                RoleEntry::new(freeze_access_rule, [FREEZE_UPDATE_ROLE], true),
+            );
+            roles.define_role(
+                FREEZE_UPDATE_ROLE,
+                RoleEntry::new(freeze_mutability, [FREEZE_UPDATE_ROLE], true),
+            );
+        }
+
+        // Unfreeze
+        {
+            roles.define_role(
+                UNFREEZE_ROLE,
+                RoleEntry::new(unfreeze_access_rule, [UNFREEZE_UPDATE_ROLE], true),
+            );
+            roles.define_role(
+                UNFREEZE_UPDATE_ROLE,
+                RoleEntry::new(unfreeze_mutability, [UNFREEZE_UPDATE_ROLE], true),
             );
         }
 
         // Deposit
         {
             roles.define_role(
-                DEPOSIT_UPDATE_ROLE,
-                RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], true),
-            );
-
-            roles.define_role(
                 DEPOSIT_ROLE,
                 RoleEntry::new(deposit_access_rule, [DEPOSIT_UPDATE_ROLE], true),
+            );
+            roles.define_role(
+                DEPOSIT_UPDATE_ROLE,
+                RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], true),
             );
         }
 

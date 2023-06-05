@@ -300,6 +300,9 @@ impl<L: Clone> CallFrame<L> {
 
         // Additional global references
         let mut additional_global_refs = Vec::new();
+
+        additional_global_refs.push(frame.actor.package_address().clone().into());
+
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
@@ -322,6 +325,7 @@ impl<L: Clone> CallFrame<L> {
                 additional_global_refs.push(blueprint.package_address.clone().into());
             }
         }
+
         for reference in additional_global_refs {
             frame.add_global_reference(reference);
         }
