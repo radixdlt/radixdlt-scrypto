@@ -87,6 +87,7 @@ fn test_commit_merkle() {
         let value_size = 100;
         for n in 1..=N {
             let mut input_data = DatabaseUpdates::new();
+            let mut partition = PartitionUpdates::new();
 
             for j in 0..n {
                 let mut value_data: DbSubstateValue = vec![0u8; value_size];
@@ -97,14 +98,13 @@ fn test_commit_merkle() {
                     substate_key_value.into(),
                 ));
 
-                let mut partition = PartitionUpdates::new();
                 partition.insert(sort_key.clone(), value);
-
-                let partition_key =
-                    SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(n as u8));
-
-                input_data.insert(partition_key, partition);
             }
+
+            let partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(n as u8));
+
+            input_data.insert(partition_key, partition);
 
             substate_db.commit(&input_data);
         }
@@ -152,7 +152,7 @@ fn test_commit_merkle() {
     // .unwrap();
 
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
-    axis_ranges.3 = 200f32;
+    axis_ranges.3 = 1000f32;
     export_graph_and_print_summary(
         &format!("RocksDB (with Merkle tree) random commits (N=1..{}) rounds: {}", N, rounds_count),
         &rocksdb_data,
