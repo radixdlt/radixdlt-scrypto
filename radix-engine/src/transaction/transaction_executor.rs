@@ -192,7 +192,7 @@ where
             println!("Payload size: {}", executable.payload_size());
             println!("Fee payment: {:?}", executable.fee_payment());
             println!(
-                "Pre-allocated IDs: {:?}",
+                "Pre-allocated addresses: {:?}",
                 executable.pre_allocated_addresses()
             );
             println!("Blobs: {:?}", executable.blobs().keys());

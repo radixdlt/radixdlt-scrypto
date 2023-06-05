@@ -12,6 +12,7 @@ use crate::errors::*;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
@@ -42,7 +43,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         transaction_hash: &'a Hash,
         runtime_validations: &'a [RuntimeValidationRequest],
         manifest_encoded_instructions: &'a [u8],
-        _pre_allocated_addresses: &'a Vec<(BlueprintId, GlobalAddress)>,
+        pre_allocated_addresses: &'a Vec<(BlueprintId, GlobalAddress)>,
         references: &'a IndexSet<Reference>,
         blobs: &'a IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -62,7 +63,30 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         SystemConfig::on_init(&mut kernel)?;
 
-        // TODO global address preallocation!
+        // Allocate global addresses
+        let mut global_address_ownerships = Vec::new();
+        for (blueprint_id, address) in pre_allocated_addresses {
+            let node_id = kernel.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+            kernel.kernel_create_node(
+                node_id,
+                btreemap!(
+                    TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                        TypeInfoSubstate::GlobalAddressOwnership(address.clone())
+                    ).to_substates()
+                ),
+            )?;
+            kernel.kernel_create_node(
+                node_id,
+                btreemap!(
+                    TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                        TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom {
+                            blueprint_id: blueprint_id.clone(),
+                        })
+                    ).to_substates()
+                ),
+            )?;
+            global_address_ownerships.push(Own(node_id));
+        }
 
         // Reference management
         for reference in references.iter() {
@@ -135,7 +159,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 transaction_hash,
                 runtime_validations,
                 manifest_encoded_instructions,
-                global_address_ownerships: vec![], // TODO
+                global_address_ownerships,
                 references,
                 blobs,
             })
