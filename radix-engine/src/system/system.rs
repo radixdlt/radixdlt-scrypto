@@ -418,7 +418,8 @@ where
                                     value: ScryptoValue::Enum {
                                         discriminator: 1u8,
                                         fields: vec![value]
-                                    }
+                                    },
+                                    mutability: SubstateMutability::Mutable,
                                 };
                                 let value = IndexedScryptoValue::from_typed(&wrapped_value);
 
@@ -470,7 +471,8 @@ where
             .map(|v| v.as_slice().to_vec())?;
 
         let empty_kv_entry = SubstateWrapper {
-            value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] }
+            value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
+            mutability: SubstateMutability::Mutable,
         };
 
         self.kernel_write_substate(
@@ -1103,13 +1105,21 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SubstateMutability {
+    Mutable,
+    Immutable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SubstateWrapper {
     pub value: ScryptoValue,
+    pub mutability: SubstateMutability,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SubstateWrapper2<V> {
     pub value: V,
+    pub mutability: SubstateMutability,
 }
 
 impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1133,10 +1143,7 @@ where
         self.api
             .kernel_read_substate(handle)
             .map(|v| {
-                let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().map_err(|e| {
-                    println!("{:?}", v);
-                    e
-                }).unwrap();
+                let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().unwrap();
                 scrypto_encode(&wrapper.value).unwrap()
             })
     }
@@ -1189,7 +1196,8 @@ where
             value: ScryptoValue::Enum {
                 discriminator: 1u8,
                 fields: vec![value]
-            }
+            },
+            mutability: SubstateMutability::Mutable,
         };
         let indexed =
             IndexedScryptoValue::from_vec(scrypto_encode(&wrapped_value).unwrap()).unwrap();
@@ -1306,7 +1314,8 @@ where
             flags,
             Some(|| {
                 let wrapper = SubstateWrapper {
-                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] }
+                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
+                    mutability: SubstateMutability::Mutable,
                 };
                 IndexedScryptoValue::from_typed(&wrapper)
             }),
@@ -1776,7 +1785,8 @@ where
             flags,
             Some(|| {
                 let wrapper = SubstateWrapper {
-                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] }
+                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] },
+                    mutability: SubstateMutability::Mutable,
                 };
                 IndexedScryptoValue::from_typed(&wrapper)
             }),
