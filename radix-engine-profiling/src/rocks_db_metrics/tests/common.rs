@@ -210,8 +210,49 @@ pub fn calculate_axis_ranges(data: &Vec<(f32, f32)>, x_ofs: Option<f32>, y_ofs: 
     let y_ofs = y_ofs.unwrap_or_else(|| 0f32);
     let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32 - x_ofs;
     let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32 + x_ofs;
-    let y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
+    let mut y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
     let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    if y_min > 0f32 {
+        y_min = 0f32;
+    }
+    (x_min, x_max, y_min, y_max)
+}
+
+
+pub fn calculate_axis_ranges_for_two_series(data_series1: &Vec<(f32, f32)>, data_series2: &Vec<(f32, f32)>, x_ofs: Option<f32>, y_ofs: Option<f32>) -> (f32, f32, f32, f32) {
+    let x_ofs = x_ofs.unwrap_or_else(|| 0f32);
+    let y_ofs = y_ofs.unwrap_or_else(|| 0f32);
+    let x_min1 = data_series1.iter().map(|i| i.0 as i32).min().unwrap() as f32;
+    let x_max1 = data_series1.iter().map(|i| i.0 as i32).max().unwrap() as f32;
+    let y_min1 = data_series1.iter().map(|i| i.1 as i32).min().unwrap() as f32;
+    let y_max1 = data_series1.iter().map(|i| i.1 as i32).max().unwrap() as f32;
+    let x_min2 = data_series2.iter().map(|i| i.0 as i32).min().unwrap() as f32;
+    let x_max2 = data_series2.iter().map(|i| i.0 as i32).max().unwrap() as f32;
+    let y_min2 = data_series2.iter().map(|i| i.1 as i32).min().unwrap() as f32;
+    let y_max2 = data_series2.iter().map(|i| i.1 as i32).max().unwrap() as f32;
+    let x_min = if x_min1 < x_min2 {
+        x_min1 - x_ofs
+    } else {
+        x_min2 - x_ofs
+    };
+    let x_max = if x_max1 > x_max2 {
+        x_max1 + x_ofs
+    } else {
+        x_max2 + x_ofs
+    };
+    let mut y_min = if y_min1 < y_min2 {
+        y_min1 - y_ofs
+    } else {
+        y_min2 - y_ofs
+    };
+    let y_max = if y_max1 > y_max2 {
+        y_max1 + y_ofs
+    } else {
+        y_max2 + y_ofs
+    };
+    if y_min > 0f32 {
+        y_min = 0f32;
+    }
     (x_min, x_max, y_min, y_max)
 }
 
@@ -441,6 +482,104 @@ pub fn export_graph_and_print_summary_for_two_series(
         "Liny by 1st and last RocksDB point:  f(size) = {} * size + {}\n",
         lin_slope_2, lin_intercept_2
     );
+
+    Ok(())
+}
+
+
+pub fn export_graph_two_series(
+    caption: &str,
+    data_series1: &Vec<(f32, f32)>,
+    data_series2: &Vec<(f32, f32)>,
+    output_png_file: &str,
+    x_axis_label: &str,
+    y_axis_label: &str,
+    label1: &str,
+    label2: &str,
+    (lin_slope_1, lin_intercept_1): (f32, f32),
+    (lin_slope_2, lin_intercept_2): (f32, f32),
+) -> Result<(), Box<dyn std::error::Error>> {
+    // calculate axis max/min values
+    let (x_min, x_max, y_min, mut y_max) = calculate_axis_ranges_for_two_series(&data_series1, &data_series2, None, None);
+    let y_max_1 = data_series1.last().unwrap().1 * 1.2f32;
+    let y_max_2 = data_series2.last().unwrap().1 * 1.2f32;
+    if y_max_1 > y_max_2 && y_max_1 < y_max {
+        y_max = y_max_1;
+    } else if y_max_2 > y_max_1 && y_max_2 < y_max {
+        y_max = y_max_2;
+    }
+
+    let lin_x_axis = (x_min..(x_max+1f32)).step(1f32);
+
+    // draw scatter plot
+    let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
+    root.fill(&WHITE)?;
+    root.margin(20, 20, 20, 20);
+
+    let mut scatter_ctx = ChartBuilder::on(&root)
+        .caption(caption, ("sans-serif", 20).into_font())
+        .x_label_area_size(40)
+        .y_label_area_size(80)
+        .margin(20)
+        .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+    scatter_ctx
+        .configure_mesh()
+        .x_desc(x_axis_label)
+        .y_desc(y_axis_label)
+        .axis_desc_style(("sans-serif", 16))
+        .draw()?;
+    // 1. draw read series1 points
+    scatter_ctx
+        .draw_series(
+            data_series1
+                .iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?
+        .label(label1)
+        .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+    // 2. draw read series2 points
+    scatter_ctx
+        .draw_series(
+            data_series2
+                .iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, BLUE.filled())),
+        )?
+        .label(label2)
+        .legend(|(x, y)| Circle::new((x + 10, y), 2, BLUE.filled()));
+    //4. draw linear approximetion line
+    scatter_ctx
+        .draw_series(LineSeries::new(
+            lin_x_axis
+                .values()
+                .map(|x| (x, lin_slope_1 * x + lin_intercept_1)),
+            &RED,
+        ))?
+        .label(format!(
+            "Linear approx. of series 1 f(x)={:.4}*x+{:.1}",
+            lin_slope_1, lin_intercept_1
+        ))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+    scatter_ctx
+        .draw_series(LineSeries::new(
+            lin_x_axis
+                .values()
+                .map(|x| (x, lin_slope_2 * x + lin_intercept_2)),
+            &BLACK,
+        ))?
+        .label(format!(
+            "Linear approx. of series 2 f(x)={:.4}*x+{:.1}",
+            lin_slope_2, lin_intercept_2
+        ))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
+    scatter_ctx
+        .configure_series_labels()
+        .background_style(&WHITE)
+        .border_style(&BLACK)
+        .label_font(("sans-serif", 16))
+        .position(SeriesLabelPosition::UpperMiddle)
+        .draw()?;
+
+    root.present().expect("Unable to write result to file");
 
     Ok(())
 }
