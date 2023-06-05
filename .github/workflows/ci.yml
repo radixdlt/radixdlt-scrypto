@@ -30,7 +30,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Check format
       run: bash ./check.sh
   sbor-unit-tests:
@@ -43,7 +43,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: sbor
@@ -63,7 +63,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: sbor-tests
@@ -83,7 +83,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: scrypto
@@ -106,7 +106,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
@@ -123,7 +123,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -150,7 +150,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Install RocksDB metrics dependency
@@ -182,7 +182,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -203,7 +203,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -224,7 +224,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -240,7 +240,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -256,7 +256,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: transaction
@@ -270,7 +270,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
@@ -304,7 +304,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
@@ -332,7 +332,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.69.0
+        toolchain: stable
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
