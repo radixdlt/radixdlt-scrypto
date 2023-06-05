@@ -233,7 +233,7 @@ pub fn export_graph_and_print_summary(
 
     // 4. calculate linear approximation
     let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&output_data).unwrap();
-    let lin_x_axis = (x_min as f32..x_max as f32).step(1f32);
+    let lin_x_axis = (x_min as f32..(x_max + 1f32) as f32).step(1f32);
     if lin_intercept < y_min.into() {
         y_min = lin_intercept as f32;
     }

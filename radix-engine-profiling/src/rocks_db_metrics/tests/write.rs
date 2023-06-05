@@ -54,7 +54,7 @@ fn test_commit() {
 #[test]
 fn test_commit_merkle() {
     const N: usize = 100;
-    let rounds_count = 1000;
+    let rounds_count = 100;
 
     // RocksDB part
     let path = PathBuf::from(r"/tmp/radix-scrypto-db");
@@ -154,7 +154,7 @@ fn test_commit_merkle() {
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     axis_ranges.3 = 200f32;
     export_graph_and_print_summary(
-        &format!("RocksDB (with Merkle tree) random commits (N=1..{})", N),
+        &format!("RocksDB (with Merkle tree) random commits (N=1..{}) rounds: {}", N, rounds_count),
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_rocksdb_merkle_commit_1.png",
