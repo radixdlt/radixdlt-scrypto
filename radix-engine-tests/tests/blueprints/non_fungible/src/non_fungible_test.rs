@@ -2,8 +2,6 @@ use scrypto::api::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
-mod nf_data_with_global;
-
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
@@ -439,7 +437,7 @@ mod non_fungible_test {
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
                     })
-                        .unwrap(),
+                    .unwrap(),
                 )
                 .unwrap();
             let (_resource_address, bucket): (ResourceAddress, Bucket) =

@@ -6,13 +6,13 @@ pub struct Sandwich {
 }
 
 #[blueprint]
-mod mint_and_burn {
-    struct MintAndBurn {
+mod add_and_remove {
+    struct AddAndRemove {
         vault: Vault,
         other_vault: Vault,
     }
 
-    impl MintAndBurn {
+    impl AddAndRemove {
         pub fn new() {
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
@@ -22,21 +22,26 @@ mod mint_and_burn {
             let vault = resource_manager.create_empty_vault();
             let other_vault = resource_manager.create_empty_vault();
 
-            Self { vault, other_vault }.instantiate().globalize();
+            Self { vault, other_vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
         }
 
-        pub fn mint_and_burn(&mut self, i: u64) {
+        pub fn add_and_remove(&mut self) {
             let resource_manager = self.vault.resource_manager();
 
+            let id = NonFungibleLocalId::integer(1);
+
             let bucket = resource_manager.mint_non_fungible(
-                &NonFungibleLocalId::integer(i),
+                &id,
                 Sandwich {
                     name: "Test".to_owned(),
                 },
             );
             self.vault.put(bucket);
-            let bucket = self.vault.take_all();
-            self.other_vault.put(bucket);
+            let bucket = self.vault.as_non_fungible().take_non_fungible(&id);
+            self.other_vault.as_non_fungible().put(bucket);
         }
     }
 }
