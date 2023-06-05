@@ -4,6 +4,7 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
+use radix_engine::system::system::SubstateWrapper2;
 use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -245,12 +246,12 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper2<Option<MetadataValue>>>(
             &resource_address.as_node_id(),
             METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
-        .unwrap();
+        .unwrap().value;
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");

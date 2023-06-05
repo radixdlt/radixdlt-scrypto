@@ -411,8 +411,16 @@ where
                                     ))
                                 })?;
 
+
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let value = IndexedScryptoValue::from_typed(&Some(value));
+
+                                let wrapped_value = SubstateWrapper {
+                                    value: ScryptoValue::Enum {
+                                        discriminator: 1u8,
+                                        fields: vec![value]
+                                    }
+                                };
+                                let value = IndexedScryptoValue::from_typed(&wrapped_value);
 
                                 if !blueprint_kv_schema.can_own {
                                     if !value.owned_nodes().is_empty() {
@@ -460,11 +468,20 @@ where
             .api
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
+
+        let empty_kv_entry = SubstateWrapper {
+            value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] }
+        };
+
         self.kernel_write_substate(
             handle,
-            IndexedScryptoValue::from_typed(&None::<ScryptoValue>),
+            IndexedScryptoValue::from_typed(&empty_kv_entry),
         )?;
         self.kernel_drop_lock(handle)?;
+
+        let wrapper: SubstateWrapper2<Option<ScryptoValue>> = scrypto_decode(&current_value).unwrap();
+        let current_value = scrypto_encode(&wrapper.value).unwrap();
+
         Ok(current_value)
     }
 
@@ -1085,6 +1102,16 @@ where
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct SubstateWrapper {
+    pub value: ScryptoValue,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct SubstateWrapper2<V> {
+    pub value: V,
+}
+
 impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1105,7 +1132,13 @@ where
 
         self.api
             .kernel_read_substate(handle)
-            .map(|v| v.as_slice().to_vec())
+            .map(|v| {
+                let wrapper: SubstateWrapper2<Option<ScryptoValue>> = v.as_typed().map_err(|e| {
+                    println!("{:?}", v);
+                    e
+                }).unwrap();
+                scrypto_encode(&wrapper.value).unwrap()
+            })
     }
 
     #[trace_resources]
@@ -1152,8 +1185,14 @@ where
         };
 
         let value = substate.as_scrypto_value().clone();
+        let wrapped_value = SubstateWrapper {
+            value: ScryptoValue::Enum {
+                discriminator: 1u8,
+                fields: vec![value]
+            }
+        };
         let indexed =
-            IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
+            IndexedScryptoValue::from_vec(scrypto_encode(&wrapped_value).unwrap()).unwrap();
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -1258,12 +1297,19 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
         };
 
+
+
         self.api.kernel_lock_substate_with_default(
             &node_id,
             OBJECT_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
             flags,
-            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] }
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
             lock_data,
         )
     }
@@ -1728,7 +1774,12 @@ where
             partition_num,
             &SubstateKey::Map(key.to_vec()),
             flags,
-            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: ScryptoValue::Enum { discriminator: 0u8, fields: vec![] }
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
             SystemLockData::KeyValueEntry(lock_data),
         )
     }

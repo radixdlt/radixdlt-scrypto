@@ -11,6 +11,7 @@ use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::SubstateWrapper2;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
@@ -386,11 +387,11 @@ impl TestRunner {
 
         let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+            .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper2<Option<MetadataValue>>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
-            )?;
+            )?.value;
 
         metadata_value
     }
