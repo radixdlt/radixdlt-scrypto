@@ -506,10 +506,10 @@ pub fn export_graph_two_series(
         calculate_axis_ranges_for_two_series(&data_series1, &data_series2, None, None);
     let y_max_1 = data_series1.last().unwrap().1;
     let y_max_2 = data_series2.last().unwrap().1;
-    if y_max_1 > y_max_2 && y_max_1 < y_max {
-        y_max = y_max_1 * 1.2f32;
-    } else if y_max_2 > y_max_1 && y_max_2 < y_max {
-        y_max = y_max_2 * 1.2f32;
+    if y_max_1 > y_max_2 && y_max_1 <= y_max {
+        y_max = y_max_1 * 1.1f32;
+    } else if y_max_2 > y_max_1 && y_max_2 <= y_max {
+        y_max = y_max_2 * 1.1f32;
     }
 
     let lin_x_axis = (x_min..(x_max + 1f32)).step(1f32);

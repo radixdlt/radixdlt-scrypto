@@ -172,7 +172,7 @@ where
     let mut rocksdb_data_intermediate: BTreeMap<usize, Vec<Duration>> = BTreeMap::new();
 
     for round in 0..rounds_count {
-        print!("\rRound {}/{}", round, rounds_count);
+        print!("\rRound {}/{}", round + 1, rounds_count);
         std::io::stdout().flush().ok();
 
         let value_size = 100;
