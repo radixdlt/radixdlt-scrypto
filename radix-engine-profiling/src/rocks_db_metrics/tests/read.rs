@@ -40,7 +40,7 @@ fn test_read() {
 
     // prepare data for linear approximation
     drop_highest_and_lowest_value(&mut substate_db, 3);
-    let rocksdb_output_data = calculate_percent_to_max_points(&substate_db.read_metrics, 95f32);
+    let rocksdb_output_data = calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 
     // prepare data for plot
     let mut rocksdb_data = Vec::with_capacity(100000);
@@ -51,13 +51,15 @@ fn test_read() {
     }
 
     // export results
+    let axis_ranges = calculate_axis_ranges(&rocksdb_data, Some(100f32), Some(5000f32));
     export_graph_and_print_summary(
         "RocksDB random reads",
         &rocksdb_data,
         &rocksdb_output_data,
         "/tmp/scrypto_rocksdb_1.png",
         "95th percentile of reads",
-        &substate_db.read_metrics
+        &substate_db.read_metrics,
+        axis_ranges
     )
     .unwrap();
 
@@ -72,7 +74,7 @@ fn test_read() {
 
     // prepare data for linear approximation
     drop_highest_and_lowest_value(&mut substate_db, 3);
-    let inmem_output_data = calculate_percent_to_max_points(&substate_db.read_metrics, 95f32);
+    let inmem_output_data = calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 
     // prepare data for plot
     let mut inmem_data = Vec::with_capacity(100000);
@@ -83,13 +85,15 @@ fn test_read() {
     }
 
     // export results
+    let axis_ranges = calculate_axis_ranges(&rocksdb_data, Some(100f32), Some(5000f32));
     export_graph_and_print_summary(
         "InMemoryDB random reads",
         &inmem_data,
         &inmem_output_data,
         "/tmp/scrypto_inmem_1.png",
         "95th percentile of reads",
-        &substate_db.read_metrics
+        &substate_db.read_metrics,
+        axis_ranges
     )
     .unwrap();
 

@@ -39,13 +39,12 @@ pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDa
 }
 
 pub fn calculate_percent_to_max_points(
-    data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
+    data: &mut BTreeMap<usize, Vec<Duration>>,
     percent: f32,
 ) -> Vec<(f32, f32)> {
     assert!(percent <= 100f32);
     let mut output_values = Vec::new();
-    let mut binding = data.borrow_mut();
-    for (k, v) in binding.iter_mut() {
+    for (k, v) in data.iter_mut() {
         v.sort();
         let idx = (((v.len() - 1) as f32 * percent) / 100f32).round() as usize;
         output_values.push((*k as f32, v[idx].as_micros() as f32));
@@ -136,16 +135,21 @@ pub fn export_one_graph(
     data: &Vec<(f32, f32)>,
     output_png_file: &str,
     original_data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
+    y_max_value: Option<f32>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
     let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32;
     let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32;
     let y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32;
-    let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32;
+    let y_max: f32 = if let Some(y) = y_max_value {
+        y
+    } else {
+        data.iter().map(|i| i.1 as i32).max().unwrap() as f32
+    };
 
     // draw scatter plot
     let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
+    root.fill(&WHITE)?; 
     root.margin(20, 20, 20, 20);
 
     let mut scatter_ctx = ChartBuilder::on(&root)
@@ -200,6 +204,16 @@ pub fn export_one_graph(
     Ok(())
 }
 
+pub fn calculate_axis_ranges(data: &Vec<(f32, f32)>, x_ofs: Option<f32>, y_ofs: Option<f32>) -> (f32, f32, f32, f32) {
+    let x_ofs = x_ofs.unwrap_or_else(|| 0f32);
+    let y_ofs = y_ofs.unwrap_or_else(|| 0f32);
+    let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32 - x_ofs;
+    let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32 + x_ofs;
+    let y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
+    let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    (x_min, x_max, y_min, y_max)
+}
+
 pub fn export_graph_and_print_summary(
     caption: &str,
     data: &Vec<(f32, f32)>,
@@ -207,20 +221,19 @@ pub fn export_graph_and_print_summary(
     output_png_file: &str,
     output_data_name: &str,
     original_data: &RefCell<BTreeMap<usize, Vec<Duration>>>,
+    axis_ranges: (f32, f32, f32, f32),
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
-    let y_ofs = 10f32;
-    let x_ofs = 5000f32;
-    let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32 - x_ofs;
-    let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32 + x_ofs;
-    let mut y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
-    let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    let x_min = axis_ranges.0;
+    let x_max = axis_ranges.1;
+    let mut y_min = axis_ranges.2;
+    let y_max = axis_ranges.3;
 
     // 4. calculate linear approximation
     let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&output_data).unwrap();
-    let lin_x_axis = (x_min as f32..x_max as f32).step(10f32);
+    let lin_x_axis = (x_min as f32..x_max as f32).step(1f32);
     if lin_intercept < y_min.into() {
-        y_min = lin_intercept as f32 - y_ofs;
+        y_min = lin_intercept as f32;
     }
 
     // draw scatter plot
