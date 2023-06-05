@@ -53,6 +53,9 @@ fn test_commit() {
 
 #[test]
 fn test_commit_merkle() {
+    const N: usize = 100;
+    let rounds_count = 1000;
+
     // RocksDB part
     let path = PathBuf::from(r"/tmp/radix-scrypto-db");
     // clean database
@@ -77,21 +80,19 @@ fn test_commit_merkle() {
 
     let mut rocksdb_data_intermediate: BTreeMap<usize, Vec<Duration>> = BTreeMap::new();
 
-    let rounds_count = 1000;
     for round in 0..rounds_count {
         print!("\rRound {}/{}", round, rounds_count );
         std::io::stdout().flush().ok();
 
         let value_size = 100;
-        for n in 1..=100 {
+        for n in 1..=N {
             let mut input_data = DatabaseUpdates::new();
 
             for j in 0..n {
                 let mut value_data: DbSubstateValue = vec![0u8; value_size];
                 rng.fill(value_data.as_mut_slice());
                 let value = DatabaseUpdate::Set(value_data);
-
-                let substate_key_value: Vec<u8> = vec![j + 1];
+                let substate_key_value: Vec<u8> = (j + 1).to_be_bytes().to_vec();
                 let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
                     substate_key_value.into(),
                 ));
@@ -153,7 +154,7 @@ fn test_commit_merkle() {
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     axis_ranges.3 = 200f32;
     export_graph_and_print_summary(
-        "RocksDB (with Merkle tree) random commits (N=1..100)",
+        &format!("RocksDB (with Merkle tree) random commits (N=1..{})", N),
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_rocksdb_merkle_commit_1.png",
