@@ -181,17 +181,16 @@ where
             .remove(&AccessRulesField::AccessRules.into())
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
-        partitions.insert( ACCESS_RULES_FIELD_PARTITION, btreemap!(
+        partitions.insert(ACCESS_RULES_BASE_PARTITION, btreemap!(
             AccessRulesField::AccessRules.into() => IndexedScryptoValue::from_typed(&access_rules),
         ));
     } else {
         partitions.insert(
-            ACCESS_RULES_FIELD_PARTITION,
+            ACCESS_RULES_BASE_PARTITION,
             btreemap!(
                 AccessRulesField::AccessRules.into() =>
                 IndexedScryptoValue::from_typed(&MethodAccessRulesSubstate {
                     roles: BTreeMap::new(),
-                    role_mutability: BTreeMap::new(),
                 }),
             ),
         );

@@ -9,7 +9,7 @@ use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
     AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
     ObjectInfo, PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField,
-    ACCESS_RULES_FIELD_PARTITION, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
+    ACCESS_RULES_BASE_PARTITION, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
     ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
@@ -177,7 +177,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     for partition_num in [
                         TYPE_INFO_FIELD_PARTITION,
                         ROYALTY_BASE_PARTITION,
-                        ACCESS_RULES_FIELD_PARTITION,
+                        ACCESS_RULES_BASE_PARTITION,
                     ] {
                         self.traverse_substates::<TupleKey>(node_id, partition_num, depth)
                     }

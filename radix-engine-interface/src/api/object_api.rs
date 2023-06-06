@@ -51,7 +51,7 @@ impl ObjectModuleId {
         match self {
             ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
-            ObjectModuleId::AccessRules => ACCESS_RULES_FIELD_PARTITION,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_PARTITION,
             ObjectModuleId::Main => MAIN_BASE_PARTITION,
         }
     }

@@ -13,7 +13,10 @@ pub const ROYALTY_BASE_PARTITION: PartitionNumber = PartitionNumber(2u8);
 pub const ROYALTY_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 
-pub const ACCESS_RULES_FIELD_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ACCESS_RULES_BASE_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ACCESS_RULES_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+
+pub const ACCESS_RULES_MUTABILITY_PARTITION: PartitionNumber = PartitionNumber(5u8);
 
 pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 

@@ -175,7 +175,7 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
             access_rules_of,
-            ACCESS_RULES_FIELD_PARTITION,
+            ACCESS_RULES_BASE_PARTITION,
             &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
             SystemLockData::default(),

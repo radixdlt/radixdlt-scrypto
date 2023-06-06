@@ -889,12 +889,20 @@ where
         node_id: &NodeId,
         access_rules_node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        self.kernel_move_module(
-            access_rules_node_id,
-            MAIN_BASE_PARTITION,
-            node_id,
-            ObjectModuleId::AccessRules.base_partition_num(),
-        )?;
+        // Move and drop
+        let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint;
+        let schema = self.get_blueprint_schema(&blueprint_id)?;
+        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
+        for offset in 0u8..schema.num_partitions {
+            let src = MAIN_BASE_PARTITION
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+            let dest = module_base_partition
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+
+            self.kernel_move_module(access_rules_node_id, src, node_id, dest)?;
+        }
         self.kernel_drop_node(access_rules_node_id)?;
 
         Ok(())
