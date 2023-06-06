@@ -515,21 +515,21 @@ pub fn export_graph_two_series(
     (lin_slope_2, lin_intercept_2): (f32, f32),
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
-    let (x_min, x_max, mut y_min, mut y_max) =
+    let (x_min, x_max, mut y_min, _y_max) =
         calculate_axis_ranges_for_two_series(&data_series1, &data_series2, None, None);
-    let y_max_1 = data_series1.last().unwrap().1;
-    let y_max_2 = data_series2.last().unwrap().1;
-    if y_max_1 > y_max_2 && y_max_1 <= y_max {
-        y_max = y_max_1 * 1.1f32;
-    } else if y_max_2 > y_max_1 && y_max_2 <= y_max {
-        y_max = y_max_2 * 1.1f32;
-    }
     if lin_intercept_1 < 0f32 && lin_intercept_1 < y_min {
         y_min = lin_intercept_1;
     }
     if lin_intercept_2 < 0f32 && lin_intercept_2 < y_min {
         y_min = lin_intercept_2;
     }
+    let line_max_y_1 = lin_slope_1 * x_max + lin_intercept_1;
+    let line_max_y_2 = lin_slope_2 * x_max + lin_intercept_2;
+    let y_max: f32 = if line_max_y_1 > line_max_y_2 {
+        line_max_y_1 * 1.1f32
+    } else {
+        line_max_y_2 * 1.1f32
+    };
 
     let lin_x_axis = (x_min..(x_max + 1f32)).step(1f32);
 

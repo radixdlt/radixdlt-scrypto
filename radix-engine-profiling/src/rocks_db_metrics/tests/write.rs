@@ -19,7 +19,7 @@ use std::{io::Write, path::PathBuf};
 // to run this test use following command in the main repository folder:
 // cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_size
 fn test_commit_per_size() {
-    const ROUNDS_COUNT: usize = 50;
+    const ROUNDS_COUNT: usize = 20;
 
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) =
@@ -30,7 +30,8 @@ fn test_commit_per_size() {
     let (lin_slope, lin_intercept): (f32, f32) =
         linear_regression_of(&rocksdb_data_output).unwrap();
 
-    let axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
+    let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
+    axis_ranges.3 = (lin_slope * (4 * 1024 * 1024) as f32 + lin_intercept) * 1.2f32;
     export_graph_and_print_summary(
         &format!("RocksDB per size commits, rounds: {}", ROUNDS_COUNT),
         &rocksdb_data,
@@ -52,7 +53,8 @@ fn test_commit_per_size() {
     let (jmt_lin_slope, jmt_lin_intercept): (f32, f32) =
         linear_regression_of(&jmt_rocksdb_data_output).unwrap();
 
-    let axis_ranges = calculate_axis_ranges(&jmt_rocksdb_data, None, None);
+    let mut axis_ranges = calculate_axis_ranges(&jmt_rocksdb_data, None, None);
+    axis_ranges.3 = (jmt_lin_slope * (4 * 1024 * 1024) as f32 + jmt_lin_intercept) * 1.2f32;
     export_graph_and_print_summary(
         &format!(
             "RocksDB with Merkle tree per size commits, rounds: {}",
@@ -298,7 +300,7 @@ where
 
     // repeat 1 substate commit n-times
     for i in 0..rounds_count {
-        print!("Round {}/{}\r", i, rounds_count);
+        print!("Round {}/{}\r", i + 1, rounds_count);
         std::io::stdout().flush().ok();
 
         let mut idx_vector = size_vector.clone();
