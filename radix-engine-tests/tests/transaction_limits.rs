@@ -5,7 +5,7 @@ use radix_engine::{
     types::*,
     vm::wasm::WASM_MEMORY_PAGE_SIZE,
 };
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TestTransaction};
 
@@ -21,7 +21,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
-        single_function_package_schema("Test", "f"),
+        single_function_package_definition("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         OwnerRole::None,
@@ -267,7 +267,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     let manifest = ManifestBuilder::new()
         .publish_package_advanced(
             code,
-            PackageSchema::default(),
+            PackageDefinition::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,

@@ -22,10 +22,10 @@ fn test_static_package_address() {
     let package_address1 =
         test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
 
-    let (mut code, mut schema) = Compile::compile("./tests/blueprints/static_dependencies");
+    let (mut code, mut definition) = Compile::compile("./tests/blueprints/static_dependencies");
     let place_holder: GlobalAddress =
         PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER).into();
-    for (_, blueprint) in &mut schema.blueprints {
+    for (_, blueprint) in &mut definition.schema.blueprints {
         if blueprint.dependencies.contains(&place_holder) {
             blueprint.dependencies.remove(&place_holder);
             blueprint.dependencies.insert(package_address1.into());
@@ -37,7 +37,7 @@ fn test_static_package_address() {
         .copy_from_slice(package_address1.as_ref());
     let package_address2 = test_runner.publish_package(
         code,
-        schema,
+        definition,
         BTreeMap::new(),
         BTreeMap::new(),
         OwnerRole::None,
