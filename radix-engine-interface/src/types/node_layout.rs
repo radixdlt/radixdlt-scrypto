@@ -10,7 +10,7 @@ pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
 pub const METADATA_KV_STORE_PARTITION: PartitionNumber = PartitionNumber(1u8);
 pub const ROYALTY_FIELD_PARTITION: PartitionNumber = PartitionNumber(2u8);
 pub const ACCESS_RULES_FIELD_PARTITION: PartitionNumber = PartitionNumber(3u8);
-pub const OBJECT_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
+pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]

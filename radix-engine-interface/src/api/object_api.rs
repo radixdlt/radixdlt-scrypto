@@ -52,7 +52,7 @@ impl ObjectModuleId {
             ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_FIELD_PARTITION,
             ObjectModuleId::AccessRules => ACCESS_RULES_FIELD_PARTITION,
-            ObjectModuleId::Main => OBJECT_BASE_PARTITION,
+            ObjectModuleId::Main => MAIN_BASE_PARTITION,
         }
     }
 

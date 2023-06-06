@@ -427,7 +427,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
@@ -442,7 +442,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
@@ -495,7 +495,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
@@ -522,7 +522,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();

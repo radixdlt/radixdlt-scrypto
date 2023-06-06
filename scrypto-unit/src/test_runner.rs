@@ -417,7 +417,7 @@ impl TestRunner {
                     self.substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            OBJECT_BASE_PARTITION,
+                            MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
                         )
                 })
@@ -432,7 +432,7 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
             )
         {
@@ -442,7 +442,7 @@ impl TestRunner {
                     self.substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            OBJECT_BASE_PARTITION,
+                            MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
                         )
                 })
@@ -488,7 +488,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                 &vault_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
             .map(|output| output.amount())
@@ -502,7 +502,7 @@ impl TestRunner {
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &NonFungibleVaultField::LiquidNonFungible.into(),
             )
             .map(|vault| vault.amount);
@@ -511,7 +511,7 @@ impl TestRunner {
             .substate_db()
             .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                 &vault_id,
-                OBJECT_BASE_PARTITION
+                MAIN_BASE_PARTITION
                     .at_offset(PartitionOffset(1u8))
                     .unwrap(),
             );
@@ -597,7 +597,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ValidatorField::Validator.into(),
             )
             .unwrap()
@@ -608,7 +608,7 @@ impl TestRunner {
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentValidatorSet.into(),
             )
             .unwrap();
@@ -1286,14 +1286,14 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
                 &CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();
         substate.epoch = epoch;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
             &substate,
         );
@@ -1426,7 +1426,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ProposerMilliTimestampSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentTime.into(),
             )
             .unwrap()
@@ -1558,7 +1558,7 @@ impl TestRunner {
             self.substate_db()
                 .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &PackageField::Info.into(),
                 )
                 .unwrap()

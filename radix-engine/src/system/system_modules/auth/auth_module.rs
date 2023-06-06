@@ -88,7 +88,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::FunctionAccessRules.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -391,7 +391,7 @@ impl AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {

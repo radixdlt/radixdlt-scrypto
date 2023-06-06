@@ -70,7 +70,7 @@ impl Publish {
 
             let node_id: NodeId = package_address.0.into();
             let db_partition_key =
-                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_PARTITION);
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, MAIN_BASE_PARTITION);
             let code_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Code.into());
             let package_code = PackageCodeSubstate { code };

@@ -107,7 +107,7 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
                     WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(

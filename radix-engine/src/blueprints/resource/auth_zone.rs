@@ -97,7 +97,7 @@ impl AuthZoneBlueprint {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                        OBJECT_BASE_PARTITION => composed_proof.into(),
+                        MAIN_BASE_PARTITION => composed_proof.into(),
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                             blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                             global: false,
@@ -111,7 +111,7 @@ impl AuthZoneBlueprint {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                    OBJECT_BASE_PARTITION => composed_proof.into(),
+                    MAIN_BASE_PARTITION => composed_proof.into(),
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                         global: false,
@@ -149,7 +149,7 @@ impl AuthZoneBlueprint {
         api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => composed_proof.into(),
+                MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
@@ -189,7 +189,7 @@ impl AuthZoneBlueprint {
         api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => composed_proof.into(),
+                MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
                     global: false,
@@ -275,7 +275,7 @@ impl AuthZoneBlueprint {
         // Detach proofs from the auth zone
         let handle = api.kernel_lock_substate(
             input.auth_zone.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
             SystemLockData::Default,

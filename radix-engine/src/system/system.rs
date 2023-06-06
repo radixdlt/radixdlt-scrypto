@@ -238,7 +238,7 @@ where
         );
 
         for (offset, partition) in user_substates.into_iter() {
-            let partition_num = OBJECT_BASE_PARTITION
+            let partition_num = MAIN_BASE_PARTITION
                 .at_offset(offset)
                 .expect("Module number overflow");
             node_substates.insert(partition_num, partition);
@@ -264,7 +264,7 @@ where
         } else {
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -500,7 +500,7 @@ where
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
-                Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
+                Ok((address.into_node_id(), MAIN_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
@@ -751,7 +751,7 @@ where
                     // Move and drop
                     self.kernel_move_module(
                         &node_id,
-                        OBJECT_BASE_PARTITION,
+                        MAIN_BASE_PARTITION,
                         global_address.as_node_id(),
                         module_id.base_partition_num(),
                     )?;
@@ -871,7 +871,7 @@ where
     ) -> Result<(), RuntimeError> {
         self.kernel_move_module(
             access_rules_node_id,
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             node_id,
             ObjectModuleId::AccessRules.base_partition_num(),
         )?;
@@ -1094,7 +1094,7 @@ where
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let user_substates = node_substates.remove(&OBJECT_BASE_PARTITION).unwrap();
+        let user_substates = node_substates.remove(&MAIN_BASE_PARTITION).unwrap();
         let fields = user_substates
             .into_iter()
             .map(|(_key, v)| v.into())
@@ -1279,7 +1279,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(),
+                MAIN_BASE_PARTITION => btreemap!(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
                         schema,
@@ -1351,7 +1351,7 @@ where
 
         let handle = self.api.kernel_lock_substate_with_default(
             &node_id,
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| {

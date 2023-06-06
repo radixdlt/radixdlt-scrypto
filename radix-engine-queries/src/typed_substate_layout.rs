@@ -160,10 +160,10 @@ pub fn to_typed_substate_key(
         ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModuleField(
             AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
         ),
-        partition_num @ _ if partition_num >= OBJECT_BASE_PARTITION => {
+        partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
             TypedSubstateKey::MainModule(to_typed_object_module_substate_key(
                 entity_type,
-                partition_num.0 - OBJECT_BASE_PARTITION.0,
+                partition_num.0 - MAIN_BASE_PARTITION.0,
                 substate_key,
             )?)
         }

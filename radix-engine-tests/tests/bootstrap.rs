@@ -238,7 +238,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let total_supply = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
         .unwrap();
@@ -406,7 +406,7 @@ fn test_genesis_time() {
     let proposer_minute_timestamp = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, ProposerMinuteTimestampSubstate>(
             CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         )
         .unwrap();

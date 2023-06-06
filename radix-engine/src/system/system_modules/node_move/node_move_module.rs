@@ -51,7 +51,7 @@ impl NodeMoveModule {
                 if callee.is_barrier() {
                     let handle = api.kernel_lock_substate(
                         &node_id,
-                        OBJECT_BASE_PARTITION,
+                        MAIN_BASE_PARTITION,
                         &FungibleProofField::Moveable.into(),
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
@@ -71,7 +71,7 @@ impl NodeMoveModule {
                 } else if callee.is_auth_zone() {
                     let handle = api.kernel_lock_substate(
                         &node_id,
-                        OBJECT_BASE_PARTITION,
+                        MAIN_BASE_PARTITION,
                         &FungibleProofField::Moveable.into(),
                         LockFlags::read_only(),
                         SystemLockData::default(),
@@ -107,7 +107,7 @@ impl NodeMoveModule {
                 if callee.is_barrier() {
                     let handle = api.kernel_lock_substate(
                         &node_id,
-                        OBJECT_BASE_PARTITION,
+                        MAIN_BASE_PARTITION,
                         &NonFungibleProofField::Moveable.into(),
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
@@ -127,7 +127,7 @@ impl NodeMoveModule {
                 } else if callee.is_auth_zone() {
                     let handle = api.kernel_lock_substate(
                         &node_id,
-                        OBJECT_BASE_PARTITION,
+                        MAIN_BASE_PARTITION,
                         &NonFungibleProofField::Moveable.into(),
                         LockFlags::read_only(),
                         SystemLockData::default(),

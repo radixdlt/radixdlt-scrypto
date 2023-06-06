@@ -189,7 +189,7 @@ where
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node_substates
-            .remove(&OBJECT_BASE_PARTITION)
+            .remove(&MAIN_BASE_PARTITION)
             .unwrap()
             .remove(&AccessRulesField::AccessRules.into())
             .unwrap();
@@ -218,7 +218,7 @@ where
         .into_iter()
         .map(|(k, v)| (k, v.to_substates()))
         .collect();
-    modules.insert(OBJECT_BASE_PARTITION, node_init);
+    modules.insert(MAIN_BASE_PARTITION, node_init);
 
     api.kernel_create_node(node_id, modules)?;
 

@@ -338,7 +338,7 @@ pub fn export_package_schema(
     let package_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &PackageField::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
@@ -431,7 +431,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let package_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &PackageField::Info.into(),
         )
         .unwrap();
@@ -458,14 +458,14 @@ pub fn db_upsert_timestamps(
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
-        OBJECT_BASE_PARTITION,
+        MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTime.into(),
         &milli_timestamp,
     );
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
-        OBJECT_BASE_PARTITION,
+        MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         &minute_timestamp,
     );
@@ -481,7 +481,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let mut consensus_manager_substate = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
             &CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
         )
         .unwrap_or_else(|| ConsensusManagerSubstate {
@@ -494,7 +494,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
-        OBJECT_BASE_PARTITION,
+        MAIN_BASE_PARTITION,
         &ConsensusManagerField::ConsensusManager.into(),
         &consensus_manager_substate,
     );
