@@ -34,6 +34,7 @@ use radix_engine_store_interface::{
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
+use transaction::prelude::BlobV1;
 use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
@@ -279,6 +280,8 @@ pub fn create_system_bootstrap_transaction(
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_addresses = vec![];
+    let mut own_id = 0u32;
+    let mut blobs = vec![];
 
     // Package Package
     {
@@ -286,13 +289,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(PACKAGE_PACKAGE),
         ));
-        let package_address = PACKAGE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -308,13 +313,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(METADATA_MODULE_PACKAGE),
         ));
-        let package_address = METADATA_MODULE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 native_package_code_id: METADATA_CODE_ID,
                 schema: MetadataNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -330,14 +337,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(ROYALTY_MODULE_PACKAGE),
         ));
-        let package_address = ROYALTY_MODULE_PACKAGE.into();
-
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 native_package_code_id: ROYALTY_CODE_ID,
                 schema: RoyaltyNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -353,13 +361,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(ACCESS_RULES_MODULE_PACKAGE),
         ));
-        let package_address = ACCESS_RULES_MODULE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 schema: AccessRulesNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -375,13 +385,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(RESOURCE_PACKAGE),
         ));
-        let package_address = RESOURCE_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 schema: ResourceManagerNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -439,7 +451,10 @@ pub fn create_system_bootstrap_transaction(
                     metadata,
                     access_rules,
                     initial_supply,
-                    resource_address: ManifestOwned(0),
+                    resource_address: ManifestOwned({
+                        own_id += 1;
+                        own_id - 1
+                    }),
                 },
             ),
         });
@@ -463,7 +478,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned(1),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
     }
@@ -486,7 +504,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned(2),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
     }
@@ -516,7 +537,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestOwned(3),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
     }
@@ -546,7 +570,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestOwned(4),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
 
@@ -554,13 +581,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(IDENTITY_PACKAGE),
         ));
-        let package_address = IDENTITY_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 schema: IdentityNativePackage::schema(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
@@ -576,13 +605,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(CONSENSUS_MANAGER_PACKAGE),
         ));
-        let package_address = CONSENSUS_MANAGER_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 schema: ConsensusManagerNativePackage::schema(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
@@ -617,7 +648,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestOwned(5),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
 
@@ -625,13 +659,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(ACCOUNT_PACKAGE),
         ));
-        let package_address = ACCOUNT_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 schema: AccountNativePackage::schema(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
@@ -647,13 +683,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(ACCESS_CONTROLLER_PACKAGE),
         ));
-        let package_address = ACCESS_CONTROLLER_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
@@ -669,13 +707,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(POOL_PACKAGE),
         ));
-        let package_address = POOL_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 schema: PoolNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: POOL_ID,
@@ -691,13 +731,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(TRANSACTION_PROCESSOR_PACKAGE),
         ));
-        let package_address = TRANSACTION_PROCESSOR_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
                 schema: TransactionProcessorNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
@@ -725,7 +767,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned(6),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
     }
@@ -748,7 +793,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned(7),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
     }
@@ -771,7 +819,10 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned(8),
+                resource_address: ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                }),
             }),
         });
     }
@@ -780,18 +831,22 @@ pub fn create_system_bootstrap_transaction(
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
+        let faucet_code_hash = hash(&faucet_code);
+        blobs.push(BlobV1(faucet_code));
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(FAUCET_PACKAGE),
         ));
-        let package_address = FAUCET_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedInput {
-                package_address: Some(package_address),
-                code: faucet_code,
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
+                code: ManifestBlobRef(faucet_code_hash.0),
                 schema: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
@@ -806,18 +861,22 @@ pub fn create_system_bootstrap_transaction(
         // TODO: calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
+        let genesis_helper_code_hash = hash(&genesis_helper_code);
+        blobs.push(BlobV1(genesis_helper_code));
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(GENESIS_HELPER_PACKAGE),
         ));
-        let package_address = GENESIS_HELPER_PACKAGE.into();
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedInput {
-                package_address: Some(package_address),
-                code: genesis_helper_code,
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                package_address: Some(ManifestOwned({
+                    own_id += 1;
+                    own_id - 1
+                })),
+                code: ManifestBlobRef(genesis_helper_code_hash.0),
                 schema: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
@@ -883,7 +942,7 @@ pub fn create_system_bootstrap_transaction(
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
         pre_allocated_addresses,
-        blobs: BlobsV1 { blobs: vec![] },
+        blobs: BlobsV1 { blobs },
         hash_for_execution: hash(format!("Genesis Bootstrap")),
     }
 }

@@ -2,6 +2,8 @@ use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
+use radix_engine_common::data::manifest::model::ManifestOwned;
+use radix_engine_common::prelude::Own;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
@@ -32,9 +34,9 @@ pub type PackagePublishWasmOutput = (PackageAddress, Bucket);
 
 pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishWasmAdvancedInput {
-    pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+    pub package_address: Option<Own>,
     pub code: Vec<u8>,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -44,7 +46,7 @@ pub struct PackagePublishWasmAdvancedInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmAdvancedManifestInput {
-    pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+    pub package_address: Option<ManifestOwned>,
     pub code: ManifestBlobRef,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -56,9 +58,19 @@ pub type PackagePublishWasmAdvancedOutput = PackageAddress;
 
 pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishNativeInput {
-    pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+    pub package_address: Option<Own>,
+    pub native_package_code_id: u8,
+    pub schema: PackageSchema,
+    pub metadata: BTreeMap<String, MetadataValue>,
+    pub package_access_rules: BTreeMap<FnKey, AccessRule>,
+    pub default_package_access_rule: AccessRule,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct PackagePublishNativeManifestInput {
+    pub package_address: Option<ManifestOwned>,
     pub native_package_code_id: u8,
     pub schema: PackageSchema,
     pub metadata: BTreeMap<String, MetadataValue>,

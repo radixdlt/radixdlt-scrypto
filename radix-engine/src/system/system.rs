@@ -134,6 +134,18 @@ where
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
     ) -> Result<NodeId, RuntimeError> {
+        // Create global address phantom
+        self.api.kernel_create_node(
+            global_address.as_node_id().clone(),
+            btreemap!(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom {
+                        blueprint_id,
+                    })
+                ).to_substates()
+            ),
+        )?;
+
         // Create global address ownership
         let global_address_ownership = self
             .api
@@ -143,17 +155,6 @@ where
             btreemap!(
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::GlobalAddressOwnership(global_address.clone())
-                ).to_substates()
-            ),
-        )?;
-        // Create global address phantom
-        self.api.kernel_create_node(
-            global_address.as_node_id().clone(),
-            btreemap!(
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom {
-                        blueprint_id,
-                    })
                 ).to_substates()
             ),
         )?;

@@ -127,7 +127,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 }
 
 fn globalize_package<Y>(
-    package_address: Option<[u8; NodeId::LENGTH]>,
+    package_address_own: Option<Own>,
     info: PackageInfoSubstate,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
@@ -208,8 +208,20 @@ where
         );
     }
 
-    let node_id = if let Some(address) = package_address {
-        NodeId(address)
+    let node_id = if let Some(own) = package_address_own {
+        let substates = api.kernel_drop_node(own.as_node_id())?;
+
+        let type_info: Option<TypeInfoSubstate> = substates
+            .get(&TYPE_INFO_FIELD_PARTITION)
+            .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
+            .and_then(|x| x.as_typed().ok());
+
+        match type_info {
+            Some(TypeInfoSubstate::GlobalAddressOwnership(x)) => x.into(),
+            _ => {
+                panic!("Should not reach here as preallocated package address is highly privileged")
+            }
+        }
     } else {
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
@@ -439,7 +451,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_native<Y>(
-        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+        package_address: Option<Own>,
         native_package_code_id: u8,
         schema: PackageSchema,
         metadata: BTreeMap<String, MetadataValue>,
@@ -511,7 +523,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_wasm_advanced<Y>(
-        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+        package_address: Option<Own>,
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -537,7 +549,7 @@ impl PackageNativePackage {
     }
 
     fn publish_wasm_internal<Y>(
-        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+        package_address: Option<Own>,
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
