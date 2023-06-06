@@ -125,8 +125,7 @@ impl TransactionProcessorBlueprint {
         let instructions =
             manifest_decode::<Vec<InstructionV1>>(&input.manifest_encoded_instructions)
                 .expect("Instructions could not be decoded");
-
-        let mut processor = TransactionProcessor::new(input.blobs);
+        let mut processor = TransactionProcessor::new(input.blobs, input.global_address_ownerships);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
             api.update_instruction_index(index)?;
@@ -418,14 +417,18 @@ struct TransactionProcessor {
 }
 
 impl TransactionProcessor {
-    fn new(blobs_by_hash: IndexMap<Hash, Vec<u8>>) -> Self {
-        Self {
+    fn new(blobs_by_hash: IndexMap<Hash, Vec<u8>>, global_address_ownerships: Vec<Own>) -> Self {
+        let mut processor = Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
             owned_nodes: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
+        };
+        for o in global_address_ownerships {
+            processor.add_owned(o.into()).unwrap();
         }
+        processor
     }
 
     fn add_owned(&mut self, node_id: NodeId) -> Result<u32, RuntimeError> {

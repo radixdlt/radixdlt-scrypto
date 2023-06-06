@@ -20,7 +20,8 @@ mod radiswap {
             resource_address1: ResourceAddress,
             resource_address2: ResourceAddress,
         ) -> Global<Radiswap> {
-            let component_address = Runtime::preallocate_global_component_address();
+            let (address_ownership, component_address) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(component_address);
 
@@ -41,7 +42,7 @@ mod radiswap {
             Self { pool_component }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .with_address(component_address)
+                .with_address(address_ownership)
                 .globalize()
         }
 

@@ -196,16 +196,19 @@ where
         &mut self,
         modules: Vec<u8>,
         address_ownership: Vec<u8>,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
         let address_ownership = scrypto_decode::<NodeId>(&address_ownership)
             .map_err(|_| WasmRuntimeError::InvalidNodeId)?;
 
-        self.api
+        let address = self
+            .api
             .globalize_with_address(modules, address_ownership)?;
 
-        Ok(())
+        let address_encoded = scrypto_encode(&address).expect("Failed to encode object address");
+
+        self.allocate_buffer(address_encoded)
     }
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -541,7 +544,7 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         modules: Vec<u8>,
         address: Vec<u8>,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

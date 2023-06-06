@@ -317,13 +317,15 @@ fn globalize_object_with_address(
     modules_len: u32,
     address_ptr: u32,
     address_len: u32,
-) -> Result<(), InvokeError<WasmRuntimeError>> {
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.globalize_object_with_address(
-        read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
-        read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
-    )
+    runtime
+        .globalize_object_with_address(
+            read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
+            read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
+        )
+        .map(|buffer| buffer.0)
 }
 
 fn get_object_info(
@@ -765,7 +767,7 @@ impl WasmiModule {
              modules_len: u32,
              address_ptr: u32,
              address_len: u32|
-             -> Result<(), Trap> {
+             -> Result<u64, Trap> {
                 globalize_object_with_address(
                     caller,
                     modules_ptr,

@@ -60,7 +60,7 @@ pub trait WasmRuntime {
         &mut self,
         modules: Vec<u8>,
         address: Vec<u8>,
-    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn key_value_store_new(
         &mut self,
