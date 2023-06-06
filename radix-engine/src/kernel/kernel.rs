@@ -349,19 +349,6 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
-
-    fn kernel_list_modules(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
-        // FIXME: costing!
-
-        self.current_frame
-            .list_modules(node_id, &mut self.heap)
-            .map_err(CallFrameError::ListNodeModuleError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
-    }
 }
 
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>

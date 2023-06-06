@@ -691,9 +691,10 @@ where
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
 
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
+        let blueprint_id = match type_info {
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, ref blueprint, .. }) if !*global => {
                 *global = true;
+                blueprint
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -701,6 +702,9 @@ where
                 )))
             }
         };
+
+        let schema = self.get_blueprint_schema(blueprint_id)?;
+        let num_main_partitions = schema.num_partitions();
 
         // Create a global node
         self.kernel_create_node(
@@ -711,9 +715,8 @@ where
         )?;
 
         // Move self modules to the newly created global node, and drop
-        let mut partition_numbers = self.kernel_list_modules(&node_id)?;
-        partition_numbers.remove(&TYPE_INFO_FIELD_PARTITION);
-        for partition_number in partition_numbers {
+        for offset in 0u8..num_main_partitions {
+            let partition_number = MAIN_BASE_PARTITION.at_offset(PartitionOffset(offset)).unwrap();
             self.kernel_move_module(
                 &node_id,
                 partition_number,
@@ -721,6 +724,7 @@ where
                 partition_number,
             )?;
         }
+
         self.kernel_drop_node(&node_id)?;
 
         // Move other modules, and drop
@@ -758,6 +762,7 @@ where
                         global_address.as_node_id(),
                         module_id.base_partition_num(),
                     )?;
+
                     self.kernel_drop_node(&node_id)?;
                 }
             }
@@ -2157,13 +2162,6 @@ where
             dest_node_id,
             dest_partition_number,
         )
-    }
-
-    fn kernel_list_modules(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
-        self.api.kernel_list_modules(node_id)
     }
 }
 
