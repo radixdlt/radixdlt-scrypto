@@ -129,6 +129,38 @@ where
         Ok(())
     }
 
+    pub fn prepare_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+        global_address: GlobalAddress,
+    ) -> Result<NodeId, RuntimeError> {
+        // Create global address ownership
+        let global_address_ownership = self
+            .api
+            .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        self.api.kernel_create_node(
+            global_address_ownership,
+            btreemap!(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::GlobalAddressOwnership(global_address.clone())
+                ).to_substates()
+            ),
+        )?;
+        // Create global address phantom
+        self.api.kernel_create_node(
+            global_address.as_node_id().clone(),
+            btreemap!(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom {
+                        blueprint_id,
+                    })
+                ).to_substates()
+            ),
+        )?;
+
+        Ok(global_address_ownership)
+    }
+
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
         // This is to solve the bootstrapping problem.
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
@@ -856,24 +888,19 @@ where
         &mut self,
         blueprint_id: BlueprintId,
     ) -> Result<(NodeId, GlobalAddress), RuntimeError> {
-        let global_address = self.api.kernel_allocate_node_id(
+        let global_address_node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
-                blueprint_id,
+                blueprint_id: blueprint_id.clone(),
                 global: true,
             }
             .entity_type(),
         )?;
-        let global_address_ownership = self
-            .api
-            .kernel_allocate_node_id(IDAllocation::GlobalAddressOwnership.entity_type())?;
+        let global_address = GlobalAddress::try_from(global_address_node_id.0).unwrap();
 
-        // TODO: create global address ownership
-        // TODO: create global address phantom
+        // Create global address ownership
+        let global_address_ownership = self.prepare_global_address(blueprint_id, global_address)?;
 
-        Ok((
-            global_address_ownership,
-            GlobalAddress::new_or_panic(global_address.0),
-        ))
+        Ok((global_address_ownership, global_address))
     }
 
     #[trace_resources]
@@ -882,12 +909,7 @@ where
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
     ) -> Result<NodeId, RuntimeError> {
-        let global_address_ownership = self
-            .api
-            .kernel_allocate_node_id(IDAllocation::GlobalAddressOwnership.entity_type())?;
-
-        // TODO: create global address ownership
-        // TODO: create global address phantom
+        let global_address_ownership = self.prepare_global_address(blueprint_id, global_address)?;
 
         Ok(global_address_ownership)
     }

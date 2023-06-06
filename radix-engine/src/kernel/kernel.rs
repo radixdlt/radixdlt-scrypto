@@ -21,7 +21,7 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::track::interface::{AcquireLockError, NodeSubstates, StoreAccessInfo, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     RuntimeValidationRequest, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
@@ -66,26 +66,10 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         // Allocate global addresses
         let mut global_address_ownerships = Vec::new();
         for (blueprint_id, address) in pre_allocated_addresses {
-            let node_id = kernel.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-            kernel.kernel_create_node(
-                node_id,
-                btreemap!(
-                    TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
-                        TypeInfoSubstate::GlobalAddressOwnership(address.clone())
-                    ).to_substates()
-                ),
-            )?;
-            kernel.kernel_create_node(
-                node_id,
-                btreemap!(
-                    TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
-                        TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom {
-                            blueprint_id: blueprint_id.clone(),
-                        })
-                    ).to_substates()
-                ),
-            )?;
-            global_address_ownerships.push(Own(node_id));
+            let mut system = SystemService::new(&mut kernel);
+            let global_address_ownership =
+                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
+            global_address_ownerships.push(Own(global_address_ownership));
         }
 
         // Reference management
