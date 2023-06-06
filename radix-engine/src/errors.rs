@@ -31,7 +31,6 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
     NodeIdWasNotAllocated(NodeId),
-    AllocatedIDsNotEmpty(IndexSet<NodeId>),
     OutOfID,
 }
 

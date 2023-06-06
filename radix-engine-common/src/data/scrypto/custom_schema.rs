@@ -45,7 +45,7 @@ pub enum OwnValidation {
 }
 
 impl OwnValidation {
-    pub fn could_match_bucket(&self) -> bool {
+    pub fn could_match_manifest_bucket(&self) -> bool {
         match self {
             OwnValidation::IsBucket => true,
             OwnValidation::IsProof => false,
@@ -56,7 +56,7 @@ impl OwnValidation {
         }
     }
 
-    pub fn could_match_proof(&self) -> bool {
+    pub fn could_match_manifest_proof(&self) -> bool {
         match self {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => true,
@@ -67,7 +67,7 @@ impl OwnValidation {
         }
     }
 
-    pub fn could_match_owned(&self) -> bool {
+    pub fn could_match_manifest_own(&self) -> bool {
         match self {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => false,

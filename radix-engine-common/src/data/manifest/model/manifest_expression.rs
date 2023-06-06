@@ -45,10 +45,13 @@ impl TryFrom<&[u8]> for ManifestExpression {
     type Error = ParseManifestExpressionError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match (slice.get(0), slice.len()) {
-            (Some(0), 1) => Ok(Self::EntireWorktop),
-            (Some(1), 1) => Ok(Self::EntireAuthZone),
-            _ => Err(Self::Error::InvalidLength),
+        if slice.len() != 1 {
+            return Err(Self::Error::InvalidLength);
+        }
+        match slice[0] {
+            0 => Ok(Self::EntireWorktop),
+            1 => Ok(Self::EntireAuthZone),
+            _ => Err(Self::Error::UnknownExpression),
         }
     }
 }

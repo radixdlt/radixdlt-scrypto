@@ -37,7 +37,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                         match element_type_validation {
                             TypeValidation::None => {},
                             TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
-                                if !own_validation.could_match_bucket() {
+                                if !own_validation.could_match_manifest_bucket() {
                                     return Err(PayloadValidationError::ValidationError(ValidationError::CustomError(format!("ENTIRE_WORKTOP gives an array of buckets, but an array of Own<{:?}> was expected", own_validation))))
                                 }
                             },
@@ -68,7 +68,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                         match element_type_validation {
                             TypeValidation::None => {},
                             TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
-                                if !own_validation.could_match_proof() {
+                                if !own_validation.could_match_manifest_proof() {
                                     return Err(PayloadValidationError::ValidationError(ValidationError::CustomError(format!("ENTIRE_AUTH_ZONE gives an array of proofs, but an array of Own<{:?}> was expected", own_validation))))
                                 }
                             },
@@ -148,7 +148,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 match validation {
                     TypeValidation::None => {}
                     TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
-                        if !own_validation.could_match_bucket() {
+                        if !own_validation.could_match_manifest_bucket() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
                                     "Expected Own<{:?}>, but found bucket",
@@ -168,7 +168,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 match validation {
                     TypeValidation::None => {}
                     TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
-                        if !own_validation.could_match_proof() {
+                        if !own_validation.could_match_manifest_proof() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
                                     "Expected Own<{:?}>, but found proof",
@@ -188,7 +188,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 match validation {
                     TypeValidation::None => {}
                     TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
-                        if !own_validation.could_match_owned() {
+                        if !own_validation.could_match_manifest_own() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
                                     "Expected Own<{:?}>, but found owned",
