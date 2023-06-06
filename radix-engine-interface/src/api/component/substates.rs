@@ -1,4 +1,3 @@
-use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
 use sbor::rust::prelude::*;
@@ -11,13 +10,13 @@ pub struct ComponentRoyaltyConfigSubstate {
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltyAccumulatorSubstate {
-    pub royalty_vault: Option<Vault>,
+    pub royalty_vault: Vault,
 }
 
 impl Clone for ComponentRoyaltyAccumulatorSubstate {
     fn clone(&self) -> Self {
         Self {
-            royalty_vault: self.royalty_vault.as_ref().map(|v| Vault(v.0.clone()))
+            royalty_vault: Vault(self.royalty_vault.0.clone())
         }
     }
 }

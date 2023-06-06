@@ -411,17 +411,12 @@ impl TestRunner {
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
         {
-            output
-                .royalty_vault
-                .and_then(|vault| {
-                    self.substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                            vault.0.as_node_id(),
-                            MAIN_BASE_PARTITION,
-                            &FungibleVaultField::LiquidFungible.into(),
-                        )
-                })
-                .map(|r| r.amount())
+            self.substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                    output.royalty_vault.0.as_node_id(),
+                    MAIN_BASE_PARTITION,
+                    &FungibleVaultField::LiquidFungible.into(),
+                ).map(|r| r.amount())
         } else {
             None
         }
@@ -458,8 +453,13 @@ impl TestRunner {
         resource_address: ResourceAddress,
     ) -> Option<Decimal> {
         let vaults = self.get_component_vaults(account_address, resource_address);
+        let index = if resource_address.eq(&RADIX_TOKEN) { // To account for royalty vault
+            1usize
+        } else {
+            0usize
+        };
         vaults
-            .get(0)
+            .get(index)
             .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
     }
 

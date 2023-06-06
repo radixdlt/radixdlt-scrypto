@@ -642,21 +642,24 @@ where
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
         global_address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
-        // Check module configuration
-        let module_ids = modules
-            .keys()
-            .cloned()
-            .collect::<BTreeSet<ObjectModuleId>>();
-        let standard_object = btreeset!(
-            ObjectModuleId::Main,
-            ObjectModuleId::Metadata,
-            ObjectModuleId::Royalty,
-            ObjectModuleId::AccessRules
-        );
-        if module_ids != standard_object {
-            return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                Box::new(InvalidModuleSet(module_ids)),
-            )));
+        if !global_address.as_node_id().eq(RADIX_TOKEN.as_node_id()) {
+            // Check module configuration
+            let module_ids = modules
+                .keys()
+                .cloned()
+                .collect::<BTreeSet<ObjectModuleId>>();
+
+            let standard_object = btreeset!(
+                ObjectModuleId::Main,
+                ObjectModuleId::Metadata,
+                ObjectModuleId::Royalty,
+                ObjectModuleId::AccessRules
+            );
+            if module_ids != standard_object {
+                return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
+                    Box::new(InvalidModuleSet(module_ids)),
+                )));
+            }
         }
 
         // Read the type info
