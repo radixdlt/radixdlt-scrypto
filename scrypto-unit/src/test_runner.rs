@@ -416,7 +416,7 @@ impl TestRunner {
                 .and_then(|vault| {
                     self.substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                            vault.as_node_id(),
+                            vault.0.as_node_id(),
                             MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
                         )

@@ -307,12 +307,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 )?;
                 let mut substate: ComponentRoyaltyAccumulatorSubstate =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
-                let vault_id = if let Some(vault) = substate.royalty_vault {
-                    vault
+
+                let vault_id = if let Some(vault) = &substate.royalty_vault {
+                    vault.0
                 } else {
                     let mut system = SystemService::new(api);
                     let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
-                    substate.royalty_vault = Some(new_vault);
+                    substate.royalty_vault = Some(Vault(new_vault.clone()));
                     new_vault
                 };
                 apply_royalty_cost(
