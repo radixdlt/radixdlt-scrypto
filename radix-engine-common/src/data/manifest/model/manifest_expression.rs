@@ -5,6 +5,7 @@ use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::copy_u8_array;
 
 use crate::data::manifest::*;
 use crate::*;
@@ -14,7 +15,7 @@ use crate::*;
 pub enum ManifestExpression {
     EntireWorktop,
     EntireAuthZone,
-    Owned(u8),
+    Owned(u32),
 }
 
 //========
@@ -49,7 +50,7 @@ impl TryFrom<&[u8]> for ManifestExpression {
         match (slice.get(0), slice.len()) {
             (Some(0), 1) => Ok(Self::EntireWorktop),
             (Some(1), 1) => Ok(Self::EntireAuthZone),
-            (Some(2), 2) => Ok(Self::Owned(slice[1])),
+            (Some(2), 5) => Ok(Self::Owned(u32::from_le_bytes(copy_u8_array(&slice[1..])))),
             _ => Err(Self::Error::InvalidLength),
         }
     }
@@ -67,7 +68,7 @@ impl ManifestExpression {
             }
             ManifestExpression::Owned(i) => {
                 bytes.push(2);
-                bytes.push(*i);
+                bytes.extend(i.to_le_bytes())
             }
         };
         bytes

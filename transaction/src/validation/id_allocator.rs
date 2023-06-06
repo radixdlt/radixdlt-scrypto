@@ -31,4 +31,8 @@ impl ManifestIdAllocator {
     pub fn new_proof_id(&mut self) -> Result<ManifestProof, ManifestIdAllocationError> {
         Ok(ManifestProof(self.next()?))
     }
+
+    pub fn new_owned_id(&mut self) -> Result<u32, ManifestIdAllocationError> {
+        Ok(self.next()?)
+    }
 }

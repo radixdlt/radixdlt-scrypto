@@ -915,7 +915,7 @@ fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, Generat
                 "ENTIRE_WORKTOP" => Ok(ManifestExpression::EntireWorktop),
                 "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
                 x if x.starts_with("OWNED::") => Ok(ManifestExpression::Owned(
-                    u8::from_str(&x[7..])
+                    u32::from_str(&x[7..])
                         .map_err(|_| GeneratorError::InvalidExpression(s.into()))?,
                 )),
                 _ => Err(GeneratorError::InvalidExpression(s.into())),

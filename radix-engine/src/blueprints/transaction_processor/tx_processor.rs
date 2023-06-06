@@ -54,6 +54,7 @@ pub enum TransactionProcessorError {
     },
     BucketNotFound(u32),
     ProofNotFound(u32),
+    OwnedNotFound(u32),
     BlobNotFound(Hash),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
@@ -80,9 +81,7 @@ macro_rules! handle_call_method {
             scrypto_encode(&scrypto_value).unwrap(),
         )?;
         let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-            &result, &$worktop, $api,
-        )?;
+        TransactionProcessor::handle_call_return_data(&result, &$worktop, &mut $processor, $api)?;
         InstructionOutput::CallReturn(result.into())
     }};
 }
@@ -260,8 +259,11 @@ impl TransactionProcessorBlueprint {
                     let rtn = bucket.burn(api)?;
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
+                    TransactionProcessor::handle_call_return_data(
+                        &result,
+                        &worktop,
+                        &mut processor,
+                        api,
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
@@ -298,8 +300,11 @@ impl TransactionProcessorBlueprint {
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
+                    TransactionProcessor::handle_call_return_data(
+                        &result,
+                        &worktop,
+                        &mut processor,
+                        api,
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
@@ -407,6 +412,7 @@ impl TransactionProcessorBlueprint {
 struct TransactionProcessor {
     proof_id_mapping: IndexMap<ManifestProof, NodeId>,
     bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
+    owned_nodes: NonIterMap<u32, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
@@ -416,9 +422,32 @@ impl TransactionProcessor {
         Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
+            owned_nodes: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
         }
+    }
+
+    fn add_owned(&mut self, node_id: NodeId) -> Result<u32, RuntimeError> {
+        let new_id = self.id_allocator.new_owned_id().map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::IdAllocationError(e),
+            ))
+        })?;
+        self.owned_nodes.insert(new_id, node_id);
+        Ok(new_id)
+    }
+
+    fn take_owned(&mut self, owned_id: &u32) -> Result<Own, RuntimeError> {
+        let real_id = self
+            .owned_nodes
+            .remove(owned_id)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::OwnedNotFound(*owned_id),
+                ),
+            ))?;
+        Ok(Own(real_id))
     }
 
     fn get_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<Bucket, RuntimeError> {
@@ -500,32 +529,35 @@ impl TransactionProcessor {
         Ok(new_id)
     }
 
-    fn move_proofs_to_authzone_and_buckets_to_worktop<Y>(
+    fn handle_call_return_data<Y>(
         value: &IndexedScryptoValue,
         worktop: &Worktop,
+        processor: &mut TransactionProcessor,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for owned_node in value.owned_nodes() {
-            let info = api.get_object_info(owned_node)?;
+        for node_id in value.owned_nodes() {
+            let info = api.get_object_info(node_id)?;
             match (
                 info.blueprint.package_address,
                 info.blueprint.blueprint_name.as_str(),
             ) {
                 (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
-                    let bucket = Bucket(Own(owned_node.clone()));
+                    let bucket = Bucket(Own(node_id.clone()));
                     worktop.put(bucket, api)?;
                 }
                 (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                    let proof = Proof(Own(owned_node.clone()));
+                    let proof = Proof(Own(node_id.clone()));
                     LocalAuthZone::push(proof, api)?;
                 }
-                _ => {}
+                _ => {
+                    processor.add_owned(node_id.clone())?;
+                }
             }
         }
 
@@ -608,8 +640,9 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
                 let proofs = LocalAuthZone::drain(self.api)?;
                 Ok(proofs.into_iter().map(|p| p.0).collect())
             }
-            ManifestExpression::Owned(_) => {
-                todo!()
+            ManifestExpression::Owned(i) => {
+                let owned = self.processor.take_owned(&i)?;
+                Ok(vec![owned])
             }
         }
     }
