@@ -19,7 +19,7 @@ use crate::vm::ScryptoVm;
 use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
     CONSENSUS_MANAGER_CREATE_IDENT,
@@ -48,7 +48,7 @@ pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
 
@@ -60,7 +60,10 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
             key,
             accept_delegated_stake: true,
             is_registered: true,
-            metadata: vec![],
+            metadata: vec![(
+                "url".to_string(),
+                MetadataValue::Url(Url(format!("http://test.local?validator={:?}", key))),
+            )],
             owner: default_owner_address,
         }
     }
@@ -76,7 +79,7 @@ pub struct GenesisStakeAllocation {
 pub struct GenesisResource {
     pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
     pub initial_supply: Decimal,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
 
