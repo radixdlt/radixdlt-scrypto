@@ -10,6 +10,7 @@ use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
+use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 
 // TODO: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -341,22 +342,29 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: Option<&NodeId>,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
+        access_rules_of: &NodeId,
         key: &RoleKey,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.eq(SELF_ROLE) {
-            if let Some(access_rules_of) = access_rules_of {
-                rule!(require(global_caller(GlobalAddress::new_or_panic(
+            rule!(require(global_caller(GlobalAddress::new_or_panic(
                     access_rules_of.0
                 ))))
-            } else {
-                return Ok(AuthorizationCheckResult::Failed(vec![]));
-            }
         } else {
-            match access_rules.get(key) {
+
+            let handle = api.kernel_lock_substate(
+                access_rules_of,
+                ACCESS_RULES_BASE_PARTITION,
+                &AccessRulesField::AccessRules.into(),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
+            let access_rules: MethodAccessRulesSubstate =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_drop_lock(handle)?;
+
+            match access_rules.roles.get(key) {
                 Some(access_rule) => access_rule.clone(),
                 None => {
                     return Ok(AuthorizationCheckResult::Failed(vec![]));
@@ -367,7 +375,7 @@ impl Authorization {
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,
-            access_rules_of,
+            Some(access_rules_of),
             &access_rule,
             already_verified_authorities,
             api,
@@ -433,7 +441,6 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: &NodeId,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
         role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {
@@ -445,8 +452,7 @@ impl Authorization {
             let result = Self::check_authorization_against_role_key_internal(
                 acting_location,
                 auth_zone_id,
-                Some(access_rules_of),
-                access_rules,
+                access_rules_of,
                 key,
                 &mut already_verified_authorities,
                 api,
