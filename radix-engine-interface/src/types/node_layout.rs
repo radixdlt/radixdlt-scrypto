@@ -22,12 +22,6 @@ pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccessRulesField {
-    AccessRules,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum TypeInfoField {
     TypeInfo,
 }
@@ -258,7 +252,6 @@ macro_rules! substate_key {
     };
 }
 
-substate_key!(AccessRulesField);
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(ComponentField);

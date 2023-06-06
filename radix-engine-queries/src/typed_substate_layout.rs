@@ -91,7 +91,7 @@ impl TypedSubstateKey {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesSubstateKey {
-    Field(AccessRulesField),
+    Rule(RoleKey),
     Mutability(RoleKey),
 }
 
@@ -164,8 +164,11 @@ pub fn to_typed_substate_key(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
         ACCESS_RULES_BASE_PARTITION => {
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Field(
-                AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
+            let key = substate_key
+                .for_map()
+                .ok_or_else(|| error("Access Rules key"))?;
+            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
+                scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
             ))
         }
         ACCESS_RULES_MUTABILITY_PARTITION => {
@@ -340,7 +343,7 @@ pub enum TypedTypeInfoModuleFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModule {
-    MethodAccessRules(MethodAccessRulesSubstate),
+    Rule(Option<AccessRule>),
     Mutability(Option<(RoleList, bool)>),
 }
 
@@ -476,12 +479,9 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
-            TypedAccessRulesSubstateKey::Field(field) => {
-                TypedSubstateValue::AccessRulesModule(match field {
-                    AccessRulesField::AccessRules => {
-                        TypedAccessRulesModule::MethodAccessRules(scrypto_decode(data)?)
-                    }
-                })
+            TypedAccessRulesSubstateKey::Rule(_) => {
+                let value: SubstateWrapper2<Option<AccessRule>> = scrypto_decode(data)?;
+                TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Rule(value.value))
             }
             TypedAccessRulesSubstateKey::Mutability(_) => {
                 let value: SubstateWrapper2<Option<(RoleList, bool)>> = scrypto_decode(data)?;

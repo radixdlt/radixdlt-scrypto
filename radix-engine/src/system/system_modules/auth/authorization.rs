@@ -1,6 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system::{SubstateMutability, SubstateWrapper, SubstateWrapper2};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
@@ -10,7 +11,6 @@ use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
-use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 
 // TODO: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -349,23 +349,32 @@ impl Authorization {
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.eq(SELF_ROLE) {
             rule!(require(global_caller(GlobalAddress::new_or_panic(
-                    access_rules_of.0
-                ))))
+                access_rules_of.0
+            ))))
         } else {
-
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_lock_substate_with_default(
                 access_rules_of,
                 ACCESS_RULES_BASE_PARTITION,
-                &AccessRulesField::AccessRules.into(),
+                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: ScryptoValue::Enum {
+                            discriminator: 0u8,
+                            fields: vec![],
+                        },
+                        mutability: SubstateMutability::Mutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
                 SystemLockData::default(),
             )?;
-            let access_rules: MethodAccessRulesSubstate =
+            let substate: SubstateWrapper2<Option<AccessRule>> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
 
-            match access_rules.roles.get(key) {
-                Some(access_rule) => access_rule.clone(),
+            match substate.value {
+                Some(access_rule) => access_rule,
                 None => {
                     return Ok(AuthorizationCheckResult::Failed(vec![]));
                 }

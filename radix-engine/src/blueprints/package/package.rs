@@ -2,9 +2,7 @@ use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
-};
+use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::track::interface::NodeSubstates;
@@ -17,7 +15,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -173,29 +171,6 @@ where
     };
     partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
 
-    if let Some(access_rules) = access_rules {
-        let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
-        let access_rules = node_substates
-            .remove(&MAIN_BASE_PARTITION)
-            .unwrap()
-            .remove(&AccessRulesField::AccessRules.into())
-            .unwrap();
-        let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
-        partitions.insert(ACCESS_RULES_BASE_PARTITION, btreemap!(
-            AccessRulesField::AccessRules.into() => IndexedScryptoValue::from_typed(&access_rules),
-        ));
-    } else {
-        partitions.insert(
-            ACCESS_RULES_BASE_PARTITION,
-            btreemap!(
-                AccessRulesField::AccessRules.into() =>
-                IndexedScryptoValue::from_typed(&MethodAccessRulesSubstate {
-                    roles: BTreeMap::new(),
-                }),
-            ),
-        );
-    }
-
     let node_id = if let Some(address) = package_address {
         NodeId(address)
     } else {
@@ -203,6 +178,30 @@ where
     };
 
     api.kernel_create_node(node_id, partitions)?;
+
+    if let Some(access_rules) = access_rules {
+        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
+        for offset in 0u8..2u8 {
+            let src = MAIN_BASE_PARTITION
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+            let dest = module_base_partition
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+
+            api.kernel_move_module(access_rules.0.as_node_id(), src, &node_id, dest)?;
+        }
+
+        api.kernel_drop_node(access_rules.0.as_node_id())?;
+        /*
+        for (partition, substates) in node_substates {
+            // TODO: Cleanup
+            let offset = partition.0 - MAIN_BASE_PARTITION.0;
+            let partition_num = ACCESS_RULES_BASE_PARTITION.at_offset(PartitionOffset(offset)).unwrap();
+            partitions.insert(partition_num, substates);
+        }
+         */
+    }
 
     let package_address = PackageAddress::new_or_panic(node_id.into());
     Ok(package_address)
