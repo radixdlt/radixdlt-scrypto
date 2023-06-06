@@ -516,7 +516,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             (name, parameters)
         }
         InstructionV1::CallDirectVaultMethod {
-            vault_id,
+            address: vault_id,
             method_name,
             args,
         } => {

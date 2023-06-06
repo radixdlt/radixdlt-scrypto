@@ -164,7 +164,7 @@ pub enum InstructionV1 {
 
     #[sbor(discriminator(INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR))]
     CallDirectVaultMethod {
-        vault_id: InternalAddress,
+        address: InternalAddress,
         method_name: String,
         args: ManifestValue,
     },

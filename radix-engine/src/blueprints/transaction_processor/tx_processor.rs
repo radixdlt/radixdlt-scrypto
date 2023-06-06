@@ -62,8 +62,8 @@ pub enum TransactionProcessorError {
 
 pub struct TransactionProcessorBlueprint;
 
-macro_rules! handle_call_module_method {
-    ($module_id:expr, $address:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+macro_rules! handle_call_method {
+    ($module_id:expr, $node_id:expr, $direct_access:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
         let mut processor_with_api = TransactionProcessorWithApi {
             worktop: $worktop,
             processor: $processor,
@@ -73,8 +73,8 @@ macro_rules! handle_call_module_method {
         $processor = processor_with_api.processor;
 
         let rtn = $api.call_method_advanced(
-            $address.as_node_id(),
-            false,
+            $node_id,
+            $direct_access,
             $module_id,
             &$method_name,
             scrypto_encode(&scrypto_value).unwrap(),
@@ -255,6 +255,16 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
+                InstructionV1::BurnResource { bucket_id } => {
+                    let bucket = processor.take_bucket(&bucket_id)?;
+                    let rtn = bucket.burn(api)?;
+
+                    let result = IndexedScryptoValue::from_typed(&rtn);
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, &worktop, api,
+                    )?;
+                    InstructionOutput::CallReturn(result.into())
+                }
                 InstructionV1::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;
                     let proof = proof.clone(api)?;
@@ -264,17 +274,6 @@ impl TransactionProcessorBlueprint {
                 InstructionV1::DropProof { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     proof.drop(api)?;
-                    InstructionOutput::None
-                }
-                InstructionV1::DropAllProofs => {
-                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
-                    // the former will drop all named proofs before clearing the auth zone.
-
-                    for (_, real_id) in processor.proof_id_mapping.drain(..) {
-                        let proof = Proof(Own(real_id));
-                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
-                    }
-                    LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::CallFunction {
@@ -309,9 +308,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    handle_call_module_method!(
+                    handle_call_method!(
                         ObjectModuleId::Main,
-                        address,
+                        address.as_node_id(),
+                        false,
                         method_name,
                         args,
                         worktop,
@@ -324,9 +324,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    handle_call_module_method!(
+                    handle_call_method!(
                         ObjectModuleId::Royalty,
-                        address,
+                        address.as_node_id(),
+                        false,
                         method_name,
                         args,
                         worktop,
@@ -339,9 +340,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    handle_call_module_method!(
+                    handle_call_method!(
                         ObjectModuleId::Metadata,
-                        address,
+                        address.as_node_id(),
+                        false,
                         method_name,
                         args,
                         worktop,
@@ -354,9 +356,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    handle_call_module_method!(
+                    handle_call_method!(
                         ObjectModuleId::AccessRules,
-                        address,
+                        address.as_node_id(),
+                        false,
                         method_name,
                         args,
                         worktop,
@@ -364,43 +367,32 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-
-                InstructionV1::BurnResource { bucket_id } => {
-                    let bucket = processor.take_bucket(&bucket_id)?;
-                    let rtn = bucket.burn(api)?;
-
-                    let result = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
                 InstructionV1::CallDirectVaultMethod {
-                    vault_id,
+                    address,
                     method_name,
                     args,
                 } => {
-                    let mut processor_with_api = TransactionProcessorWithApi {
+                    handle_call_method!(
+                        ObjectModuleId::Main,
+                        address.as_node_id(),
+                        true,
+                        method_name,
+                        args,
                         worktop,
                         processor,
-                        api,
-                    };
-                    let scrypto_value = transform(args, &mut processor_with_api)?;
-                    processor = processor_with_api.processor;
+                        api
+                    )
+                }
+                InstructionV1::DropAllProofs => {
+                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
+                    // the former will drop all named proofs before clearing the auth zone.
 
-                    let rtn = api.call_method_advanced(
-                        vault_id.as_node_id(),
-                        true,
-                        ObjectModuleId::Main,
-                        method_name.as_str(),
-                        scrypto_encode(&scrypto_value).unwrap(),
-                    )?;
-
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
+                    for (_, real_id) in processor.proof_id_mapping.drain(..) {
+                        let proof = Proof(Own(real_id));
+                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
+                    }
+                    LocalAuthZone::clear(api)?;
+                    InstructionOutput::None
                 }
             };
             outputs.push(result);

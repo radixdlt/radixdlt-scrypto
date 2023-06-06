@@ -516,7 +516,7 @@ impl TxFuzzer {
                     let input = VaultFreezeInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallDirectVaultMethod {
-                        vault_id: InternalAddress::new_or_panic(vault_id.into()),
+                        address: InternalAddress::new_or_panic(vault_id.into()),
                         method_name: VAULT_FREEZE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
@@ -590,7 +590,7 @@ impl TxFuzzer {
                     };
 
                     Some(InstructionV1::CallDirectVaultMethod {
-                        vault_id: InternalAddress::new_or_panic(vault_id.into()),
+                        address: InternalAddress::new_or_panic(vault_id.into()),
                         method_name: VAULT_RECALL_IDENT.to_string(),
                         args: manifest_args!(amount),
                     })
@@ -682,7 +682,7 @@ impl TxFuzzer {
                     let input = VaultUnfreezeInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallDirectVaultMethod {
-                        vault_id: InternalAddress::new_or_panic(vault_id.into()),
+                        address: InternalAddress::new_or_panic(vault_id.into()),
                         method_name: VAULT_UNFREEZE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
