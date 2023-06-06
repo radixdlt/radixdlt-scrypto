@@ -177,13 +177,6 @@ where
     };
     partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
 
-    let royalty_partition: BTreeMap<SubstateKey, IndexedScryptoValue> = btreemap!(
-        RoyaltyField::RoyaltyConfig.into() => IndexedScryptoValue::from_typed(&ComponentRoyaltyConfigSubstate { royalty_config: RoyaltyConfig::default() }),
-        RoyaltyField::RoyaltyAccumulator.into() => IndexedScryptoValue::from_typed(&ComponentRoyaltyAccumulatorSubstate { royalty_vault: None, }),
-    );
-
-    partitions.insert(ROYALTY_FIELD_PARTITION, royalty_partition);
-
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node_substates
