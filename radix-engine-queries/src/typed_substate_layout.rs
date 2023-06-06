@@ -154,7 +154,7 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        ROYALTY_FIELD_PARTITION => TypedSubstateKey::RoyaltyModuleField(
+        ROYALTY_FIELDS_PARTITION => TypedSubstateKey::RoyaltyModuleField(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
         ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModuleField(
@@ -329,7 +329,6 @@ pub enum TypedAccessRulesModuleFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleFieldValue {
-    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
 }
 
@@ -468,9 +467,6 @@ fn to_typed_substate_value_internal(
         }
         TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {
             TypedSubstateValue::RoyaltyModuleFieldValue(match royalty_offset {
-                RoyaltyField::RoyaltyConfig => {
-                    TypedRoyaltyModuleFieldValue::ComponentRoyaltyConfig(scrypto_decode(data)?)
-                }
                 RoyaltyField::RoyaltyAccumulator => {
                     TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(scrypto_decode(data)?)
                 }

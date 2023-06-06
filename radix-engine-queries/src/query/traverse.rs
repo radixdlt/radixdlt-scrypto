@@ -10,7 +10,7 @@ use radix_engine_interface::types::{
     AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
     ObjectInfo, PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField,
     ACCESS_RULES_FIELD_PARTITION, METADATA_KV_STORE_PARTITION, MAIN_BASE_PARTITION,
-    ROYALTY_FIELD_PARTITION, TYPE_INFO_FIELD_PARTITION,
+    ROYALTY_FIELDS_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::{
@@ -178,7 +178,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else {
                     for partition_num in [
                         TYPE_INFO_FIELD_PARTITION,
-                        ROYALTY_FIELD_PARTITION,
+                        ROYALTY_FIELDS_PARTITION,
                         ACCESS_RULES_FIELD_PARTITION,
                     ] {
                         self.traverse_substates::<TupleKey>(node_id, partition_num, depth)

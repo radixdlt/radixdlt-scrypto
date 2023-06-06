@@ -4,7 +4,7 @@ use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
-use crate::system::system::SystemService;
+use crate::system::system::{SubstateMutability, SubstateWrapper, SubstateWrapper2, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{StoreAccess, StoreAccessInfo};
@@ -15,7 +15,7 @@ use crate::{
 };
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+    ComponentRoyaltyAccumulatorSubstate,
 };
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
@@ -285,22 +285,34 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Apply component royalty
         //===========================
         if let Some(component_address) = optional_component {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_lock_substate_with_default(
                 component_address.as_node_id(),
-                ROYALTY_FIELD_PARTITION,
-                &RoyaltyField::RoyaltyConfig.into(),
+                ROYALTY_CONFIG_PARTITION,
+                &SubstateKey::Map(scrypto_encode(ident).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: ScryptoValue::Enum {
+                            discriminator: 0u8,
+                            fields: vec![],
+                        },
+                        mutability: SubstateMutability::Mutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
                 SystemLockData::default(),
             )?;
-            let substate: ComponentRoyaltyConfigSubstate =
+
+            let substate: SubstateWrapper2<Option<RoyaltyAmount>> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
+
+            let royalty_charge = substate.value.unwrap_or(RoyaltyAmount::Free);
 
             if royalty_charge.is_non_zero() {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    ROYALTY_FIELD_PARTITION,
+                    ROYALTY_FIELDS_PARTITION,
                     &RoyaltyField::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                     SystemLockData::default(),
