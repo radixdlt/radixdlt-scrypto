@@ -633,6 +633,10 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         self.processor.take_proof(&p).map(|x| x.0)
     }
 
+    fn replace_owned(&mut self, p: ManifestOwned) -> Result<Own, RuntimeError> {
+        self.processor.take_owned(&p.0)
+    }
+
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
         match e {
             ManifestExpression::EntireWorktop => {

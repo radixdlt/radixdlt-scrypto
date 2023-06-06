@@ -66,6 +66,17 @@ impl OwnValidation {
             OwnValidation::IsTypedObject(_, _) => true,
         }
     }
+
+    pub fn could_match_owned(&self) -> bool {
+        match self {
+            OwnValidation::IsBucket => false,
+            OwnValidation::IsProof => false,
+            OwnValidation::IsVault => true,
+            OwnValidation::IsKeyValueStore => false,
+            // Hard to validate without knowing package addresses from engine, assume fine
+            OwnValidation::IsTypedObject(_, _) => true,
+        }
+    }
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {

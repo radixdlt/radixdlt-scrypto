@@ -14,6 +14,7 @@ pub enum ManifestCustomValue {
     Decimal(ManifestDecimal),
     PreciseDecimal(ManifestPreciseDecimal),
     NonFungibleLocalId(ManifestNonFungibleLocalId),
+    Owned(ManifestOwned),
 }
 
 impl CustomValue<ManifestCustomValueKind> for ManifestCustomValue {
@@ -29,6 +30,7 @@ impl CustomValue<ManifestCustomValueKind> for ManifestCustomValue {
             ManifestCustomValue::NonFungibleLocalId(_) => {
                 ManifestCustomValueKind::NonFungibleLocalId
             }
+            ManifestCustomValue::Owned(_) => ManifestCustomValueKind::Owned,
         }
     }
 }
@@ -62,6 +64,9 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::NonFungibleLocalId(_) => encoder.write_value_kind(
                 ValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId),
             ),
+            ManifestCustomValue::Owned(_) => {
+                encoder.write_value_kind(ValueKind::Custom(ManifestCustomValueKind::Owned))
+            }
         }
     }
 
@@ -76,6 +81,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::Decimal(v) => v.encode_body(encoder),
             ManifestCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ManifestCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
+            ManifestCustomValue::Owned(v) => v.encode_body(encoder),
         }
     }
 }
@@ -119,6 +125,9 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
                 ManifestCustomValueKind::NonFungibleLocalId => {
                     ManifestNonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleLocalId)
+                }
+                ManifestCustomValueKind::Owned => {
+                    ManifestOwned::decode_body_with_value_kind(decoder, value_kind).map(Self::Owned)
                 }
             },
             _ => Err(DecodeError::UnexpectedCustomValueKind {

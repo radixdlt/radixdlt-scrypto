@@ -44,6 +44,9 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                     write!(f, "\"{}\"", value.0)?;
                 }
             }
+            ManifestCustomValue::Owned(value) => {
+                write!(f, "\"{}\"", value.0)?;
+            }
             ManifestCustomValue::Expression(value) => {
                 match value {
                     ManifestExpression::EntireWorktop => write!(f, "\"ENTIRE_WORKTOP\"")?,

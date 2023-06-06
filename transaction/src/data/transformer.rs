@@ -9,11 +9,13 @@ use radix_engine_interface::data::scrypto::model::{Own, Reference};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
+use radix_engine_interface::prelude::ManifestOwned;
 use sbor::rust::vec::Vec;
 
 pub trait TransformHandler<E> {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, E>;
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, E>;
+    fn replace_owned(&mut self, p: ManifestOwned) -> Result<Own, E>;
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, E>;
     fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, E>;
 }
@@ -96,6 +98,9 @@ pub fn transform<T: TransformHandler<E>, E>(
             ManifestCustomValue::Proof(p) => Ok(ScryptoValue::Custom {
                 value: ScryptoCustomValue::Own(handler.replace_proof(p)?),
             }),
+            ManifestCustomValue::Owned(p) => Ok(ScryptoValue::Custom {
+                value: ScryptoCustomValue::Own(handler.replace_owned(p)?),
+            }),
             ManifestCustomValue::Expression(e) => Ok(ScryptoValue::Array {
                 element_value_kind: ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
                 elements: handler
@@ -164,6 +169,7 @@ pub fn transform_value_kind(kind: ManifestValueKind) -> ScryptoValueKind {
             ManifestCustomValueKind::NonFungibleLocalId => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
             }
+            ManifestCustomValueKind::Owned => ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
         },
     }
 }

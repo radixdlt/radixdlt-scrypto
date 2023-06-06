@@ -21,6 +21,7 @@ pub fn extract_references(
                         }
                         ManifestCustomValue::Bucket(_)
                         | ManifestCustomValue::Proof(_)
+                        | ManifestCustomValue::Owned(_)
                         | ManifestCustomValue::Expression(_)
                         | ManifestCustomValue::Blob(_)
                         | ManifestCustomValue::Decimal(_)

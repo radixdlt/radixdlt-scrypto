@@ -205,6 +205,26 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                     _ => return Err(PayloadValidationError::SchemaInconsistency),
                 };
             }
+            ManifestCustomValue::Owned(_) => {
+                // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Own
+                let validation = schema
+                    .resolve_type_validation(type_index)
+                    .ok_or(PayloadValidationError::SchemaInconsistency)?;
+                match validation {
+                    TypeValidation::None => {}
+                    TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
+                        if !own_validation.could_match_owned() {
+                            return Err(PayloadValidationError::ValidationError(
+                                ValidationError::CustomError(format!(
+                                    "Expected Own<{:?}>, but found owned",
+                                    own_validation
+                                )),
+                            ));
+                        }
+                    }
+                    _ => return Err(PayloadValidationError::SchemaInconsistency),
+                };
+            }
             // No custom validations apply (yet) to Decimal/PreciseDecimal/NonFungibleLocalId
             ManifestCustomValue::Decimal(_) => {}
             ManifestCustomValue::PreciseDecimal(_) => {}
