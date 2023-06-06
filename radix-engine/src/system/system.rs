@@ -11,7 +11,7 @@ use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
-use crate::system::node_init::{type_info_partition};
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
@@ -692,7 +692,11 @@ where
         self.api.kernel_drop_lock(lock_handle)?;
 
         let blueprint_id = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, ref blueprint, .. }) if !*global => {
+            TypeInfoSubstate::Object(ObjectInfo {
+                ref mut global,
+                ref blueprint,
+                ..
+            }) if !*global => {
                 *global = true;
                 blueprint
             }
@@ -716,7 +720,9 @@ where
 
         // Move self modules to the newly created global node, and drop
         for offset in 0u8..num_main_partitions {
-            let partition_number = MAIN_BASE_PARTITION.at_offset(PartitionOffset(offset)).unwrap();
+            let partition_number = MAIN_BASE_PARTITION
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
             self.kernel_move_module(
                 &node_id,
                 partition_number,
@@ -734,13 +740,13 @@ where
                 ObjectModuleId::AccessRules
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
-                    let blueprint = self.get_object_info(&node_id)?.blueprint;
+                    let blueprint_id = self.get_object_info(&node_id)?.blueprint;
                     let expected_blueprint = module_id.static_blueprint().unwrap();
-                    if !blueprint.eq(&expected_blueprint) {
+                    if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
                                 expected_blueprint,
-                                actual_blueprint: blueprint,
+                                actual_blueprint: blueprint_id,
                             }),
                         )));
                     }
@@ -756,12 +762,18 @@ where
                         );
 
                     // Move and drop
-                    self.kernel_move_module(
-                        &node_id,
-                        MAIN_BASE_PARTITION,
-                        global_address.as_node_id(),
-                        module_id.base_partition_num(),
-                    )?;
+                    let schema = self.get_blueprint_schema(&blueprint_id)?;
+                    let module_base_partition = module_id.base_partition_num();
+                    for offset in 0u8..schema.num_partitions {
+                        let src = MAIN_BASE_PARTITION
+                            .at_offset(PartitionOffset(offset))
+                            .unwrap();
+                        let dest = module_base_partition
+                            .at_offset(PartitionOffset(offset))
+                            .unwrap();
+
+                        self.kernel_move_module(&node_id, src, global_address.as_node_id(), dest)?;
+                    }
 
                     self.kernel_drop_node(&node_id)?;
                 }

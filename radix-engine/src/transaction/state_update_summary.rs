@@ -303,11 +303,8 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             // If there is an update to the liquid resource
 
             let vault_updates = self.tracked.get(node_id).and_then(|n| {
-                n.tracked_partitions.get(
-                    &MAIN_BASE_PARTITION
-                        .at_offset(PartitionOffset(1u8))
-                        .unwrap(),
-                )
+                n.tracked_partitions
+                    .get(&MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap())
             });
 
             if let Some(tracked_module) = vault_updates {

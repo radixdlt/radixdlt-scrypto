@@ -1,7 +1,7 @@
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::node_init::{type_info_partition};
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
@@ -140,7 +140,6 @@ where
     // Use kernel API to commit substates directly.
     // Can't use the ClientApi because of chicken-and-egg issue.
 
-
     let mut partitions: NodeSubstates = BTreeMap::new();
 
     // Prepare node init.
@@ -160,7 +159,7 @@ where
             global: true,
             outer_object: None,
             instance_schema: None,
-        }))
+        })),
     );
     let metadata_partition = {
         let mut metadata_partition = BTreeMap::new();
@@ -186,13 +185,16 @@ where
             AccessRulesField::AccessRules.into() => IndexedScryptoValue::from_typed(&access_rules),
         ));
     } else {
-        partitions.insert(ACCESS_RULES_FIELD_PARTITION, btreemap!(
-            AccessRulesField::AccessRules.into() =>
-            IndexedScryptoValue::from_typed(&MethodAccessRulesSubstate {
-                roles: BTreeMap::new(),
-                role_mutability: BTreeMap::new(),
-            }),
-        ));
+        partitions.insert(
+            ACCESS_RULES_FIELD_PARTITION,
+            btreemap!(
+                AccessRulesField::AccessRules.into() =>
+                IndexedScryptoValue::from_typed(&MethodAccessRulesSubstate {
+                    roles: BTreeMap::new(),
+                    role_mutability: BTreeMap::new(),
+                }),
+            ),
+        );
     }
 
     let node_id = if let Some(address) = package_address {

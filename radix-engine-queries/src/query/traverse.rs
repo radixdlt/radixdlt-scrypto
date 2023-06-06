@@ -9,8 +9,8 @@ use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
     AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
     ObjectInfo, PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField,
-    ACCESS_RULES_FIELD_PARTITION, METADATA_KV_STORE_PARTITION, MAIN_BASE_PARTITION,
-    ROYALTY_FIELDS_PARTITION, TYPE_INFO_FIELD_PARTITION,
+    ACCESS_RULES_FIELD_PARTITION, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
+    ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::{
@@ -164,9 +164,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                             &node_id,
-                            MAIN_BASE_PARTITION
-                                .at_offset(PartitionOffset(1u8))
-                                .unwrap(),
+                            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
                         );
                     for (_key, non_fungible_local_id) in entries {
                         self.visitor.visit_non_fungible(
@@ -178,7 +176,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else {
                     for partition_num in [
                         TYPE_INFO_FIELD_PARTITION,
-                        ROYALTY_FIELDS_PARTITION,
+                        ROYALTY_BASE_PARTITION,
                         ACCESS_RULES_FIELD_PARTITION,
                     ] {
                         self.traverse_substates::<TupleKey>(node_id, partition_num, depth)

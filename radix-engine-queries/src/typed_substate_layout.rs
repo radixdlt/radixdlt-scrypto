@@ -154,7 +154,7 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        ROYALTY_FIELDS_PARTITION => TypedSubstateKey::RoyaltyModuleField(
+        ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModuleField(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
         ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModuleField(

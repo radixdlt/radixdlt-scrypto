@@ -14,9 +14,7 @@ use crate::{
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate,
-};
+use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -287,7 +285,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate_with_default(
                 component_address.as_node_id(),
-                ROYALTY_CONFIG_PARTITION,
+                ROYALTY_BASE_PARTITION
+                    .at_offset(ROYALTY_CONFIG_PARTITION_OFFSET)
+                    .unwrap(),
                 &SubstateKey::Map(scrypto_encode(ident).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
@@ -312,7 +312,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             if royalty_charge.is_non_zero() {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    ROYALTY_FIELDS_PARTITION,
+                    ROYALTY_BASE_PARTITION
+                        .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                        .unwrap(),
                     &RoyaltyField::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                     SystemLockData::default(),

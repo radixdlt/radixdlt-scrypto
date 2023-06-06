@@ -1,7 +1,7 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node_init::{type_info_partition};
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
@@ -88,8 +88,6 @@ impl AuthZoneBlueprint {
             let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
             compose_proof_by_amount(&proofs, resource_address, Some(amount), api)?
         };
-
-
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         match composed_proof {

@@ -399,27 +399,25 @@ impl TestRunner {
         metadata_value
     }
 
-    pub fn inspect_component_royalty(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Option<Decimal> {
-        if let Some(output) = self
+    pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
+        let accumulator = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
-                ROYALTY_FIELDS_PARTITION,
+                ROYALTY_BASE_PARTITION
+                    .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                    .unwrap(),
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
-        {
-            self.substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                    output.royalty_vault.0.as_node_id(),
-                    MAIN_BASE_PARTITION,
-                    &FungibleVaultField::LiquidFungible.into(),
-                ).map(|r| r.amount())
-        } else {
-            None
-        }
+            .unwrap();
+        self.substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                accumulator.royalty_vault.0.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
+            )
+            .map(|r| r.amount())
+            .unwrap()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
@@ -453,7 +451,8 @@ impl TestRunner {
         resource_address: ResourceAddress,
     ) -> Option<Decimal> {
         let vaults = self.get_component_vaults(account_address, resource_address);
-        let index = if resource_address.eq(&RADIX_TOKEN) { // To account for royalty vault
+        let index = if resource_address.eq(&RADIX_TOKEN) {
+            // To account for royalty vault
             1usize
         } else {
             0usize
@@ -511,9 +510,7 @@ impl TestRunner {
             .substate_db()
             .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                 &vault_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PartitionOffset(1u8))
-                    .unwrap(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
             );
         let id = substate_iter.next().map(|(_key, id)| id);
 

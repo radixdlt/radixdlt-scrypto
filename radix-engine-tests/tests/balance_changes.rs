@@ -74,7 +74,7 @@ fn test_balance_changes_when_success() {
                 RADIX_TOKEN => BalanceChange::Fungible(dec!("-1"))
             ),
             component_address.into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(dec!("1")) // 1 for put another 1 for component royalties
+                RADIX_TOKEN => BalanceChange::Fungible(dec!("2")) // 1 for put another 1 for component royalties
             ),
             package_address.into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(dec!("2"))
