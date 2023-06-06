@@ -1,6 +1,8 @@
 use native_sdk::account::*;
 use native_sdk::consensus_manager::*;
 use scrypto::api::node_modules::metadata::*;
+use scrypto::api::object_api::ObjectModuleId;
+use scrypto::api::ClientObjectApi;
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -10,7 +12,7 @@ pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
 
@@ -24,7 +26,7 @@ pub struct GenesisStakeAllocation {
 pub struct GenesisResource {
     pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
     pub initial_supply: Decimal,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
 
@@ -128,6 +130,18 @@ mod genesis_helper {
                 .update_accept_delegated_stake(validator.accept_delegated_stake, &mut ScryptoEnv)
                 .unwrap();
 
+            for (key, value) in validator.metadata {
+                ScryptoEnv
+                    .call_method_advanced(
+                        &validator_address.into_node_id(),
+                        false,
+                        ObjectModuleId::Metadata,
+                        METADATA_SET_IDENT,
+                        scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
+                    )
+                    .expect("Failed to set validator metadata");
+            }
+
             self.validators.insert(validator.key, validator_address);
         }
 
@@ -164,11 +178,7 @@ mod genesis_helper {
         }
 
         fn create_resource(resource: GenesisResource) -> (ResourceAddress, Bucket) {
-            let metadata: BTreeMap<String, MetadataValue> = resource
-                .metadata
-                .into_iter()
-                .map(|(k, v)| (k, MetadataValue::String(v)))
-                .collect();
+            let metadata: BTreeMap<String, MetadataValue> = resource.metadata.into_iter().collect();
 
             let address_bytes = NodeId::new(
                 EntityType::GlobalFungibleResourceManager as u8,
