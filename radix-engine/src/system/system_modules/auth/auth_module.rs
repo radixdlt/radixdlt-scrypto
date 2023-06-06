@@ -5,7 +5,7 @@ use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
-use crate::system::node_init::{ModuleInit, type_info_partition};
+use crate::system::node_init::{type_info_partition};
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };

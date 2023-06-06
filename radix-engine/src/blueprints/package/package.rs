@@ -1,7 +1,7 @@
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::node_init::ModuleInit;
+use crate::system::node_init::{type_info_partition};
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
@@ -143,8 +143,11 @@ where
     // Use kernel API to commit substates directly.
     // Can't use the ClientApi because of chicken-and-egg issue.
 
+
+    let mut partitions: NodeSubstates = BTreeMap::new();
+
     // Prepare node init.
-    let node_init = btreemap!(
+    let main_partition = btreemap!(
         PackageField::Info.into() => IndexedScryptoValue::from_typed(&info),
         PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
         PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
@@ -152,39 +155,34 @@ where
         PackageField::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
     );
 
-    // Prepare node modules.
-    let mut node_modules = BTreeMap::new();
-    node_modules.insert(
+    partitions.insert(MAIN_BASE_PARTITION, main_partition);
+    partitions.insert(
         TYPE_INFO_FIELD_PARTITION,
-        ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+        type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
             outer_object: None,
             instance_schema: None,
-        })),
+        }))
     );
-    let mut metadata_init = BTreeMap::new();
-    for (key, value) in metadata {
-        metadata_init.insert(
-            SubstateKey::Map(scrypto_encode(&key).unwrap()),
-            IndexedScryptoValue::from_typed(&Some(value)),
-        );
-    }
-    node_modules.insert(
-        METADATA_KV_STORE_PARTITION,
-        ModuleInit::Metadata(metadata_init),
+    let metadata_partition = {
+        let mut metadata_partition = BTreeMap::new();
+        for (key, value) in metadata {
+            metadata_partition.insert(
+                SubstateKey::Map(scrypto_encode(&key).unwrap()),
+                IndexedScryptoValue::from_typed(&Some(value)),
+            );
+        }
+        metadata_partition
+    };
+    partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
+
+    let royalty_partition: BTreeMap<SubstateKey, IndexedScryptoValue> = btreemap!(
+        RoyaltyField::RoyaltyConfig.into() => IndexedScryptoValue::from_typed(&ComponentRoyaltyConfigSubstate { royalty_config: RoyaltyConfig::default() }),
+        RoyaltyField::RoyaltyAccumulator.into() => IndexedScryptoValue::from_typed(&ComponentRoyaltyAccumulatorSubstate { royalty_vault: None, }),
     );
-    node_modules.insert(
-        ROYALTY_FIELD_PARTITION,
-        ModuleInit::Royalty(
-            ComponentRoyaltyConfigSubstate {
-                royalty_config: RoyaltyConfig::default(),
-            },
-            ComponentRoyaltyAccumulatorSubstate {
-                royalty_vault: None,
-            },
-        ),
-    );
+
+    partitions.insert(ROYALTY_FIELD_PARTITION, royalty_partition);
 
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
@@ -194,18 +192,17 @@ where
             .remove(&AccessRulesField::AccessRules.into())
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
-        node_modules.insert(
-            ACCESS_RULES_FIELD_PARTITION,
-            ModuleInit::AccessRules(access_rules),
-        );
+        partitions.insert( ACCESS_RULES_FIELD_PARTITION, btreemap!(
+            AccessRulesField::AccessRules.into() => IndexedScryptoValue::from_typed(&access_rules),
+        ));
     } else {
-        node_modules.insert(
-            ACCESS_RULES_FIELD_PARTITION,
-            ModuleInit::AccessRules(MethodAccessRulesSubstate {
+        partitions.insert(ACCESS_RULES_FIELD_PARTITION, btreemap!(
+            AccessRulesField::AccessRules.into() =>
+            IndexedScryptoValue::from_typed(&MethodAccessRulesSubstate {
                 roles: BTreeMap::new(),
                 role_mutability: BTreeMap::new(),
             }),
-        );
+        ));
     }
 
     let node_id = if let Some(address) = package_address {
@@ -214,13 +211,7 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    let mut modules: NodeSubstates = node_modules
-        .into_iter()
-        .map(|(k, v)| (k, v.to_substates()))
-        .collect();
-    modules.insert(MAIN_BASE_PARTITION, node_init);
-
-    api.kernel_create_node(node_id, modules)?;
+    api.kernel_create_node(node_id, partitions)?;
 
     let package_address = PackageAddress::new_or_panic(node_id.into());
     Ok(package_address)

@@ -11,7 +11,7 @@ use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
-use crate::system::node_init::{ModuleInit, type_info_partition};
+use crate::system::node_init::{type_info_partition};
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,

@@ -1,7 +1,7 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node_init::{ModuleInit, type_info_partition};
+use crate::system::node_init::{type_info_partition};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
