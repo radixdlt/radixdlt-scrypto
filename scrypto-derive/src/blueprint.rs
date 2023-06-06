@@ -428,7 +428,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
 
             let import_statement = quote! {
-                import_blueprint! {
+                extern_blueprint_internal! {
                     #package_expr,
                     #blueprint,
                     #blueprint_name,

@@ -17,16 +17,11 @@ mod external_blueprint_caller {
         13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
     ]);
 
-    import_blueprint!(
+    extern_blueprint!(
         TARGET_PACKAGE_ADDRESS,
-        ExternalBlueprintTarget,
-        "ExternalBlueprintTarget",
-        "OwnedExternalBlueprintTarget",
-        "GlobalExternalBlueprintTarget",
-        ExternalBlueprintTargetFunctions {
+        ExternalBlueprintTarget {
             fn create() -> Global<ExternalBlueprintTarget>;
             fn get_value_via_package_call() -> String;
-        }, {
             fn get_value_via_ref(&self) -> ExtraStruct;
             fn get_value_via_mut_ref(&mut self) -> ExtraEnum;
         }

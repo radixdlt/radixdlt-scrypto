@@ -8,7 +8,7 @@ pub use crate::modules::*;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
-    blueprint, debug, enable_function_auth, enable_method_auth, error, import_blueprint,
+    blueprint, debug, enable_function_auth, enable_method_auth, error, extern_blueprint_internal,
     include_code, include_schema, info, main_permissions, metadata, method_permission,
     method_permissions, module_permissions, permission_role_list, resource_list,
     role_definition_entry, roles, royalties, this_package, to_role_key, trace, warn,

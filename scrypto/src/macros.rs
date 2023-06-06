@@ -282,7 +282,7 @@ macro_rules! external_methods {
 }
 
 #[macro_export]
-macro_rules! import_blueprint {
+macro_rules! extern_blueprint_internal {
     (
         $package_address:expr, $blueprint:ident, $blueprint_name:expr, $owned_type_name:expr, $global_type_name: expr, $functions:ident {
             $($function_contents:tt)*
