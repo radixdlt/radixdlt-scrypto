@@ -12,6 +12,16 @@ use rand::{rngs::ThreadRng, Rng};
 #[allow(unused_imports)]
 use std::{io::Write, path::PathBuf};
 
+macro_rules! number_to_str {
+    ( $x:expr, $precission:expr ) => {{
+        if $x < 0f32 {
+            format!("{:.1$}", $x, $precission)
+        } else {
+            format!("+{:.1$}", $x, $precission)
+        }
+    }};
+}
+
 pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_store: &SubstateStoreWithMetrics<S>,
     count: usize,
@@ -330,8 +340,9 @@ pub fn export_graph_and_print_summary(
             &BLUE,
         ))?
         .label(format!(
-            "Linear approx.: f(x)={:.4}*x+{:.1}",
-            lin_slope, lin_intercept
+            "Linear approx.: f(x)={:.4}*x{}",
+            lin_slope,
+            number_to_str!(lin_intercept as f32, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
     scatter_ctx
@@ -449,8 +460,9 @@ pub fn export_graph_and_print_summary_for_two_series(
             &RED,
         ))?
         .label(format!(
-            "Linear approx. of diff points: f(x)={:.4}*x+{:.1}",
-            lin_slope, lin_intercept
+            "Linear approx. of diff points: f(x)={:.4}*x{}",
+            lin_slope,
+            number_to_str!(lin_intercept as f32, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
     scatter_ctx
@@ -461,8 +473,9 @@ pub fn export_graph_and_print_summary_for_two_series(
             &BLACK,
         ))?
         .label(format!(
-            "Line by 1st and last RocksDB point: f(x)={:.4}*x+{:.1}",
-            lin_slope_2, lin_intercept_2
+            "Line by 1st and last RocksDB point: f(x)={:.4}*x{}",
+            lin_slope_2,
+            number_to_str!(lin_intercept_2 as f32, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
     scatter_ctx
@@ -502,7 +515,7 @@ pub fn export_graph_two_series(
     (lin_slope_2, lin_intercept_2): (f32, f32),
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
-    let (x_min, x_max, y_min, mut y_max) =
+    let (x_min, x_max, mut y_min, mut y_max) =
         calculate_axis_ranges_for_two_series(&data_series1, &data_series2, None, None);
     let y_max_1 = data_series1.last().unwrap().1;
     let y_max_2 = data_series2.last().unwrap().1;
@@ -510,6 +523,12 @@ pub fn export_graph_two_series(
         y_max = y_max_1 * 1.1f32;
     } else if y_max_2 > y_max_1 && y_max_2 <= y_max {
         y_max = y_max_2 * 1.1f32;
+    }
+    if lin_intercept_1 < 0f32 && lin_intercept_1 < y_min {
+        y_min = lin_intercept_1;
+    }
+    if lin_intercept_2 < 0f32 && lin_intercept_2 < y_min {
+        y_min = lin_intercept_2;
     }
 
     let lin_x_axis = (x_min..(x_max + 1f32)).step(1f32);
@@ -558,8 +577,9 @@ pub fn export_graph_two_series(
             &RED,
         ))?
         .label(format!(
-            "Linear approx. of series 1 f(x)={:.4}*x+{:.1}",
-            lin_slope_1, lin_intercept_1
+            "Linear approx. of series 1 f(x)={:.4}*x{}",
+            lin_slope_1,
+            number_to_str!(lin_intercept_1, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
     scatter_ctx
@@ -570,8 +590,9 @@ pub fn export_graph_two_series(
             &BLACK,
         ))?
         .label(format!(
-            "Linear approx. of series 2 f(x)={:.4}*x+{:.1}",
-            lin_slope_2, lin_intercept_2
+            "Linear approx. of series 2 f(x)={:.4}*x{}",
+            lin_slope_2,
+            number_to_str!(lin_intercept_2, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
     scatter_ctx

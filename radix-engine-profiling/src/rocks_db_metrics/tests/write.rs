@@ -15,44 +15,73 @@ use radix_engine_store_interface::{
 use rand::Rng;
 use std::{io::Write, path::PathBuf};
 
-const COMMIT_REPEATS: usize = 50;
-
 #[test]
-fn test_commit() {
-    // RocksDB part
-    let path = PathBuf::from(r"/tmp/radix-scrypto-db");
-    // clean database
-    std::fs::remove_dir_all(path.clone()).ok();
+// to run this test use following command in the main repository folder:
+// cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_size
+fn test_commit_per_size() {
+    const ROUNDS_COUNT: usize = 50;
 
-    // prepare database
-    {
-        let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
-        prepare_db(
-            &mut substate_db,
-            MIN_SIZE,
-            MAX_SIZE,
-            SIZE_STEP,
-            COUNT,
-            false,
-        );
-    }
+    println!("No JMT part");
+    let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) =
+        test_commit_per_size_internal(ROUNDS_COUNT, |path| {
+            SubstateStoreWithMetrics::new_rocksdb(path)
+        });
 
-    // reopen database and measure commit times
-    let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
+    let (lin_slope, lin_intercept): (f32, f32) =
+        linear_regression_of(&rocksdb_data_output).unwrap();
 
-    let (rocksdb_data, rocksdb_output_data) = commit_test_internal(&mut substate_db);
-
-    // export results
-    let axis_ranges = calculate_axis_ranges(&rocksdb_data, Some(100f32), Some(5000f32));
+    let axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     export_graph_and_print_summary(
-        "RocksDB random commits",
+        &format!("RocksDB per size commits, rounds: {}", ROUNDS_COUNT),
         &rocksdb_data,
-        &rocksdb_output_data,
-        "/tmp/scrypto_rocksdb_commit_1.png",
+        &rocksdb_data_output,
+        "/tmp/scrypto_rocksdb_per_size_commits.png",
         "95th percentile of commits",
-        &substate_db.commit_metrics.borrow(),
+        &rocksdb_data_original,
         axis_ranges,
-        None,
+        Some("Size [bytes]"),
+    )
+    .unwrap();
+
+    println!("JMT part");
+    let (jmt_rocksdb_data, jmt_rocksdb_data_output, jmt_rocksdb_data_original) =
+        test_commit_per_size_internal(ROUNDS_COUNT, |path| {
+            SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path)
+        });
+
+    let (jmt_lin_slope, jmt_lin_intercept): (f32, f32) =
+        linear_regression_of(&jmt_rocksdb_data_output).unwrap();
+
+    let axis_ranges = calculate_axis_ranges(&jmt_rocksdb_data, None, None);
+    export_graph_and_print_summary(
+        &format!(
+            "RocksDB with Merkle tree per size commits, rounds: {}",
+            ROUNDS_COUNT
+        ),
+        &jmt_rocksdb_data,
+        &jmt_rocksdb_data_output,
+        "/tmp/scrypto_rocksdb_per_size_commits_JMT.png",
+        "95th percentile of commits",
+        &jmt_rocksdb_data_original,
+        axis_ranges,
+        Some("Size [bytes]"),
+    )
+    .unwrap();
+
+    export_graph_two_series(
+        &format!(
+            "95th percentile of commits per size, rounds: {}",
+            ROUNDS_COUNT
+        ),
+        &rocksdb_data_output,
+        &jmt_rocksdb_data_output,
+        "/tmp/scrypto_rocksdb_per_size_commits_diff.png",
+        "Size [bytes]",
+        "Duration [µs]",
+        "Series 1: commits",
+        "Series 2: commits with JMT",
+        (lin_slope, lin_intercept),
+        (jmt_lin_slope, jmt_lin_intercept),
     )
     .unwrap();
 }
@@ -234,9 +263,31 @@ where
     (rocksdb_data, rocksdb_data_output, rocksdb_data_intermediate)
 }
 
-fn commit_test_internal<S: SubstateDatabase + CommittableSubstateDatabase>(
-    substate_db: &mut SubstateStoreWithMetrics<S>,
-) -> (Vec<(f32, f32)>, Vec<(f32, f32)>) {
+fn test_commit_per_size_internal<F, S>(
+    rounds_count: usize,
+    create_store: F,
+) -> (
+    Vec<(f32, f32)>,
+    Vec<(f32, f32)>,
+    BTreeMap<usize, Vec<Duration>>,
+)
+where
+    F: Fn(PathBuf) -> SubstateStoreWithMetrics<S>,
+    S: SubstateDatabase + CommittableSubstateDatabase,
+{
+    // RocksDB part
+    let path = PathBuf::from(r"/tmp/radix-scrypto-db");
+    // clean database
+    std::fs::remove_dir_all(path.clone()).ok();
+
+    // prepare database
+    {
+        let mut substate_db = create_store(path.clone());
+        prepare_db(&mut substate_db, 1, 4 * 1024 * 1024, 100 * 1024, 10, false);
+    }
+
+    // reopen database and measure commit times
+    let mut substate_db = create_store(path.clone());
     let mut rng = rand::thread_rng();
 
     // prepare vector with substate sizes
@@ -246,8 +297,8 @@ fn commit_test_internal<S: SubstateDatabase + CommittableSubstateDatabase>(
     }
 
     // repeat 1 substate commit n-times
-    for i in 0..COMMIT_REPEATS {
-        print!("Round {}/{}\r", i, COMMIT_REPEATS);
+    for i in 0..rounds_count {
+        print!("Round {}/{}\r", i, rounds_count);
         std::io::stdout().flush().ok();
 
         let mut idx_vector = size_vector.clone();
@@ -281,6 +332,7 @@ fn commit_test_internal<S: SubstateDatabase + CommittableSubstateDatabase>(
             rocksdb_data.push((*k as f32, i.as_micros() as f32));
         }
     }
+    let original_data = substate_db.commit_metrics.borrow().clone();
 
-    (rocksdb_data, rocksdb_output_data)
+    (rocksdb_data, rocksdb_output_data, original_data)
 }
