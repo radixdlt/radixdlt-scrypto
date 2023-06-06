@@ -647,10 +647,6 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
                 let proofs = LocalAuthZone::drain(self.api)?;
                 Ok(proofs.into_iter().map(|p| p.0).collect())
             }
-            ManifestExpression::Owned(i) => {
-                let owned = self.processor.take_owned(&i)?;
-                Ok(vec![owned])
-            }
         }
     }
 

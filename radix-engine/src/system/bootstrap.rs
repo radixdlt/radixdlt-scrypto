@@ -439,7 +439,7 @@ pub fn create_system_bootstrap_transaction(
                     metadata,
                     access_rules,
                     initial_supply,
-                    resource_address: ManifestExpression::Owned(0),
+                    resource_address: ManifestOwned(0),
                 },
             ),
         });
@@ -463,7 +463,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::Owned(1),
+                resource_address: ManifestOwned(1),
             }),
         });
     }
@@ -486,7 +486,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::Owned(2),
+                resource_address: ManifestOwned(2),
             }),
         });
     }
@@ -516,7 +516,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestExpression::Owned(3),
+                resource_address: ManifestOwned(3),
             }),
         });
     }
@@ -546,7 +546,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestExpression::Owned(4),
+                resource_address: ManifestOwned(4),
             }),
         });
 
@@ -617,7 +617,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestExpression::Owned(5),
+                resource_address: ManifestOwned(5),
             }),
         });
 
@@ -725,7 +725,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::Owned(6),
+                resource_address: ManifestOwned(6),
             }),
         });
     }
@@ -748,7 +748,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::Owned(7),
+                resource_address: ManifestOwned(7),
             }),
         });
     }
@@ -771,7 +771,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestExpression::Owned(8),
+                resource_address: ManifestOwned(8),
             }),
         });
     }

@@ -2,7 +2,7 @@ use crate::blueprints::resource::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::data::manifest::model::ManifestExpression;
+use radix_engine_common::data::manifest::model::ManifestOwned;
 use radix_engine_common::data::scrypto::model::Own;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -55,7 +55,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
-    pub resource_address: ManifestExpression,
+    pub resource_address: ManifestOwned,
 }
 
 pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);

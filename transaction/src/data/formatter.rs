@@ -396,9 +396,7 @@ pub fn format_custom_value<F: fmt::Write>(
             }
         }
         ManifestCustomValue::Owned(value) => {
-            
-                write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
-            
+            write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
         }
         ManifestCustomValue::Expression(value) => {
             write_with_indent!(
@@ -410,7 +408,6 @@ pub fn format_custom_value<F: fmt::Write>(
                 match value {
                     ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP".to_string(),
                     ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE".to_string(),
-                    ManifestExpression::Owned(i) => format!("OWNED::{}", i),
                 }
             )?;
         }

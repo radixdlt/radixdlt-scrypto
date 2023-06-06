@@ -51,7 +51,6 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                 match value {
                     ManifestExpression::EntireWorktop => write!(f, "\"ENTIRE_WORKTOP\"")?,
                     ManifestExpression::EntireAuthZone => write!(f, "\"ENTIRE_AUTH_ZONE\"")?,
-                    ManifestExpression::Owned(i) => write!(f, "\"OWNED::{}\"", i)?,
                 };
             }
             ManifestCustomValue::Blob(value) => {

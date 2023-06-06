@@ -51,7 +51,6 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                 let text = match value {
                     ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP".to_string(),
                     ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE".to_string(),
-                    ManifestExpression::Owned(i) => format!("OWNED::{}", i),
                 };
                 (SerializableType::String(text.to_string()), true)
             }
