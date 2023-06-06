@@ -426,13 +426,13 @@ impl TransactionProcessor {
             blobs_by_hash,
         };
         for o in global_address_ownerships {
-            processor.add_owned(o.into()).unwrap();
+            processor.add_own(o.into()).unwrap();
         }
         processor
     }
 
-    fn add_owned(&mut self, node_id: NodeId) -> Result<u32, RuntimeError> {
-        let new_id = self.id_allocator.new_owned_id().map_err(|e| {
+    fn add_own(&mut self, node_id: NodeId) -> Result<u32, RuntimeError> {
+        let new_id = self.id_allocator.new_own_id().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                 TransactionProcessorError::IdAllocationError(e),
             ))
@@ -441,13 +441,13 @@ impl TransactionProcessor {
         Ok(new_id)
     }
 
-    fn take_owned(&mut self, owned_id: &u32) -> Result<Own, RuntimeError> {
+    fn take_own(&mut self, own_id: &u32) -> Result<Own, RuntimeError> {
         let real_id = self
             .owned_nodes
-            .remove(owned_id)
+            .remove(own_id)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::OwnedNotFound(*owned_id),
+                    TransactionProcessorError::OwnedNotFound(*own_id),
                 ),
             ))?;
         Ok(Own(real_id))
@@ -559,7 +559,7 @@ impl TransactionProcessor {
                     LocalAuthZone::push(proof, api)?;
                 }
                 _ => {
-                    processor.add_owned(node_id.clone())?;
+                    processor.add_own(node_id.clone())?;
                 }
             }
         }
@@ -633,8 +633,8 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         self.processor.take_proof(&p).map(|x| x.0)
     }
 
-    fn replace_owned(&mut self, p: ManifestOwned) -> Result<Own, RuntimeError> {
-        self.processor.take_owned(&p.0)
+    fn replace_own(&mut self, p: ManifestOwn) -> Result<Own, RuntimeError> {
+        self.processor.take_own(&p.0)
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {

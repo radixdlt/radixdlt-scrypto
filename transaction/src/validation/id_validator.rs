@@ -147,7 +147,7 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    fn replace_owned(&mut self, _p: ManifestOwned) -> Result<Own, ManifestIdValidationError> {
+    fn replace_own(&mut self, _p: ManifestOwn) -> Result<Own, ManifestIdValidationError> {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 

@@ -294,7 +294,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -318,7 +318,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -342,7 +342,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -366,7 +366,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -390,7 +390,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -451,7 +451,7 @@ pub fn create_system_bootstrap_transaction(
                     metadata,
                     access_rules,
                     initial_supply,
-                    resource_address: ManifestOwned({
+                    resource_address: ManifestOwn({
                         own_id += 1;
                         own_id - 1
                     }),
@@ -478,7 +478,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -504,7 +504,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -537,7 +537,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -570,7 +570,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -586,7 +586,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -610,7 +610,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -648,7 +648,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -664,7 +664,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -688,7 +688,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -712,7 +712,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -736,7 +736,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -767,7 +767,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -793,7 +793,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -819,7 +819,7 @@ pub fn create_system_bootstrap_transaction(
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address: ManifestOwned({
+                resource_address: ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 }),
@@ -842,7 +842,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),
@@ -872,7 +872,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
-                package_address: Some(ManifestOwned({
+                package_address: Some(ManifestOwn({
                     own_id += 1;
                     own_id - 1
                 })),

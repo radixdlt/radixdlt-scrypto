@@ -5,10 +5,10 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
-    component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID,
+    component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
 };
 use radix_engine_common::prelude::{
-    OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation, VALUE_KIND_OWN,
+    OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
@@ -436,7 +436,7 @@ impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Owned<AnyComponent> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([VALUE_KIND_OWN]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         own_type_data()

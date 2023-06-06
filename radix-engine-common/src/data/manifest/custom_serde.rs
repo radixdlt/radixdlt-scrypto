@@ -44,7 +44,7 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                     (SerializableType::String(value.0.to_string()), true)
                 }
             }
-            ManifestCustomValue::Owned(value) => {
+            ManifestCustomValue::Own(value) => {
                 (SerializableType::String(value.0.to_string()), true)
             }
             ManifestCustomValue::Expression(value) => {
