@@ -2,6 +2,7 @@
 // cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit
 
 use super::super::*;
+use super::*;
 use super::common::*;
 use linreg::linear_regression_of;
 use radix_engine_store_interface::{
@@ -24,18 +25,35 @@ fn test_commit_per_size() {
     const SIZE_STEP: usize = 100 * 1024;
     const PREPARE_DB_WRITE_REPEATS: usize = 10;
 
+    let rounds_count = match std::env::var("ROUNDS_COUNT") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => ROUNDS_COUNT
+    };
+    let min_size = match std::env::var("MIN_SIZE") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => MIN_SIZE
+    };
+    let max_size = match std::env::var("MAX_SIZE") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => MAX_SIZE
+    };
+    let size_step = match std::env::var("SIZE_STEP") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => SIZE_STEP
+    };
+
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) =
-        test_commit_per_size_internal(ROUNDS_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP, PREPARE_DB_WRITE_REPEATS, 
+        test_commit_per_size_internal(rounds_count, min_size, max_size, size_step, PREPARE_DB_WRITE_REPEATS, 
             |path| SubstateStoreWithMetrics::new_rocksdb(path) );
 
     let (lin_slope, lin_intercept): (f32, f32) =
         linear_regression_of(&rocksdb_data_output).unwrap();
 
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
-    axis_ranges.3 = (lin_slope * MAX_SIZE as f32 + lin_intercept) * 1.2f32;
+    axis_ranges.3 = (lin_slope * max_size as f32 + lin_intercept) * 1.2f32;
     export_graph_and_print_summary(
-        &format!("RocksDB per size commits, rounds: {}", ROUNDS_COUNT),
+        &format!("RocksDB per size commits, rounds: {}", rounds_count),
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_rocksdb_per_size_commits.png",
@@ -48,18 +66,18 @@ fn test_commit_per_size() {
 
     println!("JMT part");
     let (jmt_rocksdb_data, jmt_rocksdb_data_output, jmt_rocksdb_data_original) =
-        test_commit_per_size_internal(ROUNDS_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP, PREPARE_DB_WRITE_REPEATS, 
+        test_commit_per_size_internal(rounds_count, min_size, max_size, size_step, PREPARE_DB_WRITE_REPEATS, 
             |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path) );
 
     let (jmt_lin_slope, jmt_lin_intercept): (f32, f32) =
         linear_regression_of(&jmt_rocksdb_data_output).unwrap();
 
     let mut axis_ranges = calculate_axis_ranges(&jmt_rocksdb_data, None, None);
-    axis_ranges.3 = (jmt_lin_slope * MAX_SIZE as f32 + jmt_lin_intercept) * 1.2f32;
+    axis_ranges.3 = (jmt_lin_slope * max_size as f32 + jmt_lin_intercept) * 1.2f32;
     export_graph_and_print_summary(
         &format!(
             "RocksDB with Merkle tree per size commits, rounds: {}",
-            ROUNDS_COUNT
+            rounds_count
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
@@ -74,7 +92,7 @@ fn test_commit_per_size() {
     export_graph_two_series(
         &format!(
             "95th percentile of commits per size, rounds: {}",
-            ROUNDS_COUNT
+            rounds_count
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
@@ -287,10 +305,10 @@ where
     // clean database
     std::fs::remove_dir_all(path.clone()).ok();
 
-    // prepare database
+    // prepare database with maxium size
     {
         let mut substate_db = create_store(path.clone());
-        prepare_db(&mut substate_db, min_size, max_size, size_step, prepare_db_write_repeats, false);
+        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, prepare_db_write_repeats, false);
     }
 
     // reopen database and measure commit times
