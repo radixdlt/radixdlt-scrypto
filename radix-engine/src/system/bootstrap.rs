@@ -434,8 +434,6 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
-        // TODO: add instruction for allocating the global address
-        // Same for other global addresses below
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(RADIX_TOKEN),

@@ -81,7 +81,7 @@ macro_rules! handle_call_method {
             scrypto_encode(&scrypto_value).unwrap(),
         )?;
         let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-        TransactionProcessor::handle_call_return_data(&result, &$worktop, &mut $processor, $api)?;
+        $processor.handle_call_return_data(&result, &$worktop, $api)?;
         InstructionOutput::CallReturn(result.into())
     }};
 }
@@ -258,12 +258,7 @@ impl TransactionProcessorBlueprint {
                     let rtn = bucket.burn(api)?;
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::handle_call_return_data(
-                        &result,
-                        &worktop,
-                        &mut processor,
-                        api,
-                    )?;
+                    processor.handle_call_return_data(&result, &worktop, api)?;
                     InstructionOutput::CallReturn(result.into())
                 }
                 InstructionV1::CloneProof { proof_id } => {
@@ -299,12 +294,7 @@ impl TransactionProcessorBlueprint {
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::handle_call_return_data(
-                        &result,
-                        &worktop,
-                        &mut processor,
-                        api,
-                    )?;
+                    processor.handle_call_return_data(&result, &worktop, api)?;
                     InstructionOutput::CallReturn(result.into())
                 }
                 InstructionV1::CallMethod {
@@ -533,9 +523,9 @@ impl TransactionProcessor {
     }
 
     fn handle_call_return_data<Y>(
+        &mut self,
         value: &IndexedScryptoValue,
         worktop: &Worktop,
-        processor: &mut TransactionProcessor,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -559,7 +549,7 @@ impl TransactionProcessor {
                     LocalAuthZone::push(proof, api)?;
                 }
                 _ => {
-                    processor.add_own(node_id.clone())?;
+                    self.add_own(node_id.clone())?;
                 }
             }
         }

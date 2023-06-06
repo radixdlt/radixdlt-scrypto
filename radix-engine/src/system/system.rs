@@ -664,12 +664,21 @@ where
         }
 
         // Check global address ownership
-        let global_address = match self.get_node_type_info(&global_address_ownership) {
-            Some(TypeInfoSubstate::GlobalAddressOwnership(address)) => address,
-            _ => {
-                return Err(RuntimeError::SystemError(
-                    SystemError::InvalidGlobalAddressOwnership,
-                ));
+        let global_address = {
+            let substates = self.kernel_drop_node(&global_address_ownership)?;
+
+            let type_info: Option<TypeInfoSubstate> = substates
+                .get(&TYPE_INFO_FIELD_PARTITION)
+                .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
+                .and_then(|x| x.as_typed().ok());
+
+            match type_info {
+                Some(TypeInfoSubstate::GlobalAddressOwnership(x)) => x,
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidGlobalAddressOwnership,
+                    ));
+                }
             }
         };
 
