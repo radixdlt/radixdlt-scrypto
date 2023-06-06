@@ -224,6 +224,7 @@ pub enum SystemError {
     CannotGlobalize(Box<CannotGlobalizeError>),
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
+    InvalidGlobalAddressOwnership,
     InvalidModule,
     InvalidGlobalEntityType,
     InvalidChildObjectCreation,

@@ -12,7 +12,6 @@ use crate::errors::*;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
@@ -21,7 +20,7 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::track::interface::{AcquireLockError, NodeSubstates, StoreAccessInfo, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     RuntimeValidationRequest, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,

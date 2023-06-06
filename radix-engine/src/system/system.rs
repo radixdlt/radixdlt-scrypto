@@ -643,8 +643,8 @@ where
     fn globalize_with_address_internal(
         &mut self,
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
-        global_address: GlobalAddress,
-    ) -> Result<(), RuntimeError> {
+        global_address_ownership: NodeId,
+    ) -> Result<GlobalAddress, RuntimeError> {
         // Check module configuration
         let module_ids = modules
             .keys()
@@ -661,6 +661,16 @@ where
                 Box::new(InvalidModuleSet(module_ids)),
             )));
         }
+
+        // Check global address ownership
+        let global_address = match self.get_node_type_info(&global_address_ownership) {
+            Some(TypeInfoSubstate::GlobalAddressOwnership(address)) => address,
+            _ => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::InvalidGlobalAddressOwnership,
+                ));
+            }
+        };
 
         // Read the type info
         let node_id = modules
@@ -763,7 +773,7 @@ where
             }
         }
 
-        Ok(())
+        Ok(global_address)
     }
 
     pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
@@ -914,24 +924,20 @@ where
         Ok(global_address_ownership)
     }
 
+    // FIXME ensure that only the package actor can globalize its own blueprints
+
     #[trace_resources]
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, RuntimeError> {
-        // FIXME ensure that only the package actor can globalize its own blueprints
-
         let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
-        let global_node_id = self.api.kernel_allocate_node_id(
-            IDAllocation::Object {
-                blueprint_id,
-                global: true,
-            }
-            .entity_type(),
-        )?;
-        let global_address = GlobalAddress::new_or_panic(global_node_id.into());
 
-        self.globalize_with_address_internal(modules, global_address)?;
+        // TODO: optimize by skipping address allocation
+        let (global_address_ownership, global_address) =
+            self.allocate_global_address(blueprint_id)?;
+
+        self.globalize_with_address_internal(modules, global_address_ownership)?;
 
         Ok(global_address)
     }
@@ -942,14 +948,7 @@ where
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_ownership: NodeId,
     ) -> Result<GlobalAddress, RuntimeError> {
-        // FIXME ensure that only the package actor can globalize its own blueprints
-
-        // TODO check global address ownership
-
-        let global_address = todo!();
-        self.globalize_with_address_internal(modules, global_address)?;
-
-        Ok(global_address)
+        self.globalize_with_address_internal(modules, address_ownership)
     }
 
     #[trace_resources]
@@ -962,8 +961,7 @@ where
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
-        let global_address = todo!();
-        self.globalize_with_address_internal(modules, global_address)?;
+        let global_address = self.globalize_with_address_internal(modules, address_ownership)?;
 
         let blueprint = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
 
