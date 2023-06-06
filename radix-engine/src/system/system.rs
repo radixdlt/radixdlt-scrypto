@@ -11,7 +11,7 @@ use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
-use crate::system::node_init::ModuleInit;
+use crate::system::node_init::{ModuleInit, type_info_partition};
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
@@ -227,14 +227,14 @@ where
         };
 
         let mut node_substates = btreemap!(
-            TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+            TYPE_INFO_FIELD_PARTITION => type_info_partition(
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: blueprint.clone(),
                     global:false,
                     outer_object,
                     instance_schema,
                 })
-            ).to_substates(),
+            ),
         );
 
         for (offset, partition) in user_substates.into_iter() {
@@ -703,7 +703,7 @@ where
         self.kernel_create_node(
             global_address.into(),
             btreemap!(
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(type_info).to_substates()
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(type_info)
             ),
         )?;
 
@@ -1280,11 +1280,11 @@ where
             node_id,
             btreemap!(
                 OBJECT_BASE_PARTITION => btreemap!(),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
                         schema,
                     })
-                ).to_substates(),
+                ),
             ),
         )?;
 
