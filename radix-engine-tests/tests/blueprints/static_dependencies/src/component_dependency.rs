@@ -2,15 +2,38 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod faucet_call {
-    const FAUCET_ADDRESS: ComponentAddress =
-        address!("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh");
+    extern_blueprint!(
+        "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
+        Faucet as FiFi {
+            fn lock_fee(&self, amount: Decimal);
+        }
+    );
+
+    const FAUCET: Global<FiFi> = global_component!(
+        FiFi,
+        "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh"
+    );
 
     struct FaucetCall {}
 
     impl FaucetCall {
         pub fn call_faucet_lock_fee() {
             let amount: Decimal = 10.into();
-            Runtime::call_method(FAUCET_ADDRESS, "lock_fee", scrypto_args!(amount))
+            FAUCET.lock_fee(amount);
+        }
+
+        pub fn call_faucet_lock_fee2(faucet: Global<FiFi>) {
+            let amount: Decimal = 10.into();
+            faucet.lock_fee(amount);
+        }
+
+        pub fn call_faucet_lock_fee3() {
+            let amount: Decimal = 10.into();
+            let faucet = global_component!(
+                FiFi,
+                "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh"
+            );
+            faucet.lock_fee(amount);
         }
     }
 }

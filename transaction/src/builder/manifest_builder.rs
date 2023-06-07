@@ -703,7 +703,6 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         definition: PackageDefinition,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> &mut Self {
@@ -717,7 +716,6 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config,
                 metadata,
                 package_address: None,
                 owner_rule,
@@ -738,7 +736,6 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
             }),
         });
@@ -763,7 +760,6 @@ impl ManifestBuilder {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),

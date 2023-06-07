@@ -120,13 +120,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     let (code, definition) = Compile::compile("./tests/blueprints/events_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .publish_package_advanced(
-            code,
-            definition,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        .publish_package_advanced(code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
     // Act
@@ -165,13 +159,7 @@ fn local_type_index_with_misleading_name_fails() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .publish_package_advanced(
-            code,
-            definition,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        .publish_package_advanced(code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
     // Act
