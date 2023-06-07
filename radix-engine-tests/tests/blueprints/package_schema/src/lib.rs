@@ -210,7 +210,12 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
 
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(
+            schema,
+            function_access_rules,
+            RoyaltyConfig::default(),
+        ))
+        .unwrap(),
     )
 }
 

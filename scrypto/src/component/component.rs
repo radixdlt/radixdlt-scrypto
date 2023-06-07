@@ -3,7 +3,6 @@ use crate::modules::{AccessRules, Attachable, Royalty};
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
 };
@@ -26,6 +25,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
+use sbor::rust::ops::DerefMut;
 use sbor::rust::prelude::*;
 use sbor::*;
 use sbor::{
@@ -41,7 +41,24 @@ pub trait HasTypeInfo {
     const GLOBAL_TYPE_NAME: &'static str;
 }
 
-pub struct Blueprint<C>(PhantomData<C>);
+pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
+
+impl<C: HasTypeInfo> Blueprint<C> {
+    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(
+            package_address,
+            C::BLUEPRINT_NAME,
+            function_name,
+            scrypto_encode(args).unwrap(),
+        )
+    }
+
+    pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
+    }
+}
 
 pub trait HasStub {
     type Stub: ObjectStub;
@@ -49,7 +66,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type Permissions: MethodMapping<MethodPermission>;
-    type Royalties: MethodMapping<MethodRoyalty>;
+    type Royalties: MethodMapping<RoyaltyAmount>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -90,6 +107,12 @@ impl<C: HasStub> Deref for Owned<C> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<C: HasStub> DerefMut for Owned<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -163,12 +186,6 @@ impl<C: HasStub + HasMethods> Owned<C> {
     }
 }
 
-pub enum MethodRoyalty {
-    Free,
-    Xrd(Decimal),
-    Usd(Decimal),
-}
-
 pub trait FnMapping<T> {
     fn to_mapping(self) -> Vec<(String, T)>;
 }
@@ -209,7 +226,7 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
     }
 }
 
-pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
+pub struct RoyaltiesConfig<R: MethodMapping<RoyaltyAmount>> {
     pub method_royalties: R,
 }
 
@@ -273,11 +290,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn royalties(mut self, royalties: C::Royalties) -> Self {
         for (method, royalty) in royalties.to_mapping() {
-            match royalty {
-                MethodRoyalty::Xrd(x) => self.royalty.set_rule(method, RoyaltyAmount::Xrd(x)),
-                MethodRoyalty::Usd(x) => self.royalty.set_rule(method, RoyaltyAmount::Usd(x)),
-                MethodRoyalty::Free => {}
-            }
+            self.royalty.set_rule(method, royalty);
         }
 
         self
@@ -329,6 +342,12 @@ impl<O: HasStub> Deref for Global<O> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<O: HasStub> DerefMut for Global<O> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

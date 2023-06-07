@@ -96,16 +96,6 @@ fn test_radiswap() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
-        btreemap!(
-            "Radiswap".to_owned() => {
-                let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_pool", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("add_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("remove_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("swap", RoyaltyAmount::Xrd(2.into()));
-                config
-            }
-        ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -241,14 +231,6 @@ fn test_flash_loan() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
-        btreemap!(
-            "BasicFlashLoan".to_owned() => {
-                let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_default", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("take_loan", RoyaltyAmount::Xrd(2.into()));
-                config
-            }
-        ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -360,7 +342,6 @@ fn test_publish_large_package() {
         .publish_package_advanced(
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )

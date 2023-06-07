@@ -1,61 +1,53 @@
 use scrypto::prelude::*;
 
-// TODO: Change this to be a stub
-#[blueprint]
-mod preallocated {
-    struct Preallocated {
-        secret: String,
-    }
-
-    impl Preallocated {
-        pub fn new(
-            preallocated_address: Owned<AnyComponent>,
-            secret: String,
-        ) -> Global<Preallocated> {
-            Self { secret }
-                .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
-                .with_address(preallocated_address)
-                .globalize()
-        }
-
-        pub fn get_secret(&self) -> String {
-            self.secret.clone()
-        }
-    }
-}
-
 #[blueprint]
 mod preallocated_call {
-    use super::preallocated::*;
-
-    const PREALLOCATED: ComponentAddress = ComponentAddress::new_or_panic([
-        192, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-    ]);
+    extern_blueprint!(
+        "package_sim1p5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpwgs6ac",
+        Preallocated {
+            fn get_secret(&self) -> String;
+        }
+    );
 
     struct PreallocatedCall {}
 
     impl PreallocatedCall {
         pub fn call_preallocated() -> String {
-            let preallocated: Global<Preallocated> = PREALLOCATED.into();
-            preallocated.get_secret()
+            let component = global_component!(
+                Preallocated,
+                "component_sim1cqqqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgp55w6zv"
+            );
+            component.get_secret()
         }
     }
 }
 
 #[blueprint]
 mod some_resource {
-    const SOME_RESOURCE: ResourceManager =
-        ResourceManager::from_address(ResourceAddress::new_or_panic([
-            93, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-            1,
-        ]));
-
     struct SomeResource {}
 
     impl SomeResource {
         pub fn call_some_resource_total_supply() -> Decimal {
-            SOME_RESOURCE.total_supply()
+            resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6")
+                .total_supply()
+        }
+
+        pub fn resource() -> ResourceManager {
+            resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6")
+        }
+    }
+}
+
+#[blueprint]
+mod some_package {
+    const SOME_PACKAGE: Package =
+        package!("package_sim1p5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpwgs6ac");
+
+    struct SomePackage {}
+
+    impl SomePackage {
+        pub fn set_package_metadata() {
+            SOME_PACKAGE.metadata().set("key", "value".to_string());
         }
     }
 }

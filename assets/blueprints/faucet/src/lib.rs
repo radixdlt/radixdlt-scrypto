@@ -9,7 +9,10 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(address_reservation: Owned<AnyComponent>, bucket: Bucket) -> Global<Faucet> {
+        pub fn new(
+            address_reservation: GlobalAddressReservation,
+            bucket: Bucket,
+        ) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
                 transactions: KeyValueStore::new(),

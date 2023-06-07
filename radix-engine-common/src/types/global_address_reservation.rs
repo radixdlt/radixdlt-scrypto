@@ -9,7 +9,7 @@ use sbor::rust::prelude::*;
 use sbor::*;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GlobalAddressReservation(pub Own);
 
 impl Categorize<ScryptoCustomValueKind> for GlobalAddressReservation {

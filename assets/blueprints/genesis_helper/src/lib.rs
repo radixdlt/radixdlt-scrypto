@@ -76,7 +76,7 @@ mod genesis_helper {
 
     impl GenesisHelper {
         pub fn new(
-            address_reservation: Owned<AnyComponent>,
+            address_reservation: GlobalAddressReservation,
             whole_lotta_xrd: Bucket,
             consensus_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
