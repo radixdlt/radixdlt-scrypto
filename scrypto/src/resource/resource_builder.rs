@@ -15,6 +15,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
 use sbor::rust::vec;
 use scrypto::prelude::ScryptoValue;
+use scrypto::prelude::ToString;
 use scrypto::resource::ResourceManager;
 
 /// Not divisible.
