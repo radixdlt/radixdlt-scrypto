@@ -4,7 +4,7 @@ use radix_engine_common::types::*;
 use radix_engine_common::ScryptoSbor;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SingleResourcePoolError {
+pub enum OneResourcePoolError {
     NonFungibleResourcesAreNotAccepted {
         resource_address: ResourceAddress,
     },
@@ -16,8 +16,8 @@ pub enum SingleResourcePoolError {
     ContributionOfEmptyBucketError,
 }
 
-impl From<SingleResourcePoolError> for RuntimeError {
-    fn from(error: SingleResourcePoolError) -> Self {
-        Self::ApplicationError(ApplicationError::SingleResourcePoolError(error))
+impl From<OneResourcePoolError> for RuntimeError {
+    fn from(error: OneResourcePoolError) -> Self {
+        Self::ApplicationError(ApplicationError::OneResourcePoolError(error))
     }
 }

@@ -41,7 +41,9 @@ impl HrpSet {
             EntityType::InternalAccount => &self.internal_account,
             EntityType::InternalGenericComponent => &self.internal_component,
             EntityType::InternalKeyValueStore => &self.internal_key_value_store,
-            EntityType::GlobalSingleResourcePool | EntityType::GlobalTwoResourcePool => &self.pool,
+            EntityType::GlobalOneResourcePool
+            | EntityType::GlobalTwoResourcePool
+            | EntityType::GlobalMultiResourcePool => &self.pool,
         }
     }
 }

@@ -434,7 +434,7 @@ fn contribution_emits_expected_event() {
     // Assert
     let ContributionEvent {
         contributed_resources,
-        pool_unit_tokens_minted,
+        pool_units_minted,
     } = receipt
         .expect_commit_success()
         .application_events
@@ -454,7 +454,7 @@ fn contribution_emits_expected_event() {
             test_runner.pool_resource2 => dec!("8.88"),
         )
     );
-    assert_eq!(pool_unit_tokens_minted, dec!("4.44"));
+    assert_eq!(pool_units_minted, dec!("4.44"));
 }
 
 #[test]
