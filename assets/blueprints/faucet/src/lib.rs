@@ -9,14 +9,17 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> Global<Faucet> {
+        pub fn new(
+            address_reservation: GlobalAddressReservation,
+            bucket: Bucket,
+        ) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
-            .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .with_address(address_reservation)
             .globalize()
         }
 

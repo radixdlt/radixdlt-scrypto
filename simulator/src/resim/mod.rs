@@ -184,7 +184,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
             blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
         },
         hash_for_execution: hash(format!("Simulator system transaction: {}", nonce)),
-        pre_allocated_ids: index_set_new(),
+        pre_allocated_addresses: vec![],
     };
 
     let receipt = execute_and_commit_transaction(
@@ -416,7 +416,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                        _ => return None,
                     }
                 }
             }

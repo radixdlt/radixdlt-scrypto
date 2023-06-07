@@ -21,8 +21,8 @@ use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
-    CONSENSUS_MANAGER_CREATE_IDENT,
+    ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
+    CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -34,6 +34,7 @@ use radix_engine_store_interface::{
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
+use transaction::prelude::BlobV1;
 use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
@@ -43,7 +44,7 @@ const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub accept_delegated_stake: bool,
@@ -69,27 +70,27 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisStakeAllocation {
     pub account_index: u32,
     pub xrd_amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisResource {
-    pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
+    pub address_reservation: ManifestOwn,
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisResourceAllocation {
     pub account_index: u32,
     pub amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
@@ -161,7 +162,7 @@ where
 
     pub fn bootstrap_with_genesis_data(
         &mut self,
-        genesis_data_chunks: Vec<GenesisDataChunk>,
+        genesis_data_chunks: Vec<(Vec<(BlueprintId, GlobalAddress)>, GenesisDataChunk)>,
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
@@ -180,7 +181,7 @@ where
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
-                let receipt = self.ingest_genesis_data_chunk(chunk, chunk_index);
+                let receipt = self.ingest_genesis_data_chunk(chunk.0, chunk.1, chunk_index);
                 data_ingestion_receipts.push(receipt);
             }
 
@@ -226,11 +227,16 @@ where
 
     fn ingest_genesis_data_chunk(
         &mut self,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
         chunk: GenesisDataChunk,
         chunk_number: usize,
     ) -> TransactionReceipt {
-        let transaction =
-            create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
+        let transaction = create_genesis_data_ingestion_transaction(
+            pre_allocated_addresses,
+            &GENESIS_HELPER,
+            chunk,
+            chunk_number,
+        );
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
@@ -281,18 +287,21 @@ pub fn create_system_bootstrap_transaction(
 
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
-    let mut pre_allocated_ids = index_set_new();
+    let mut pre_allocated_addresses = vec![];
+    let mut blobs = vec![];
 
     // Package Package
     {
-        pre_allocated_ids.insert(PACKAGE_PACKAGE.into());
-        let package_address = PACKAGE_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(PACKAGE_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: PACKAGE_CODE_ID,
                 definition: PackageNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -302,14 +311,16 @@ pub fn create_system_bootstrap_transaction(
 
     // Metadata Package
     {
-        pre_allocated_ids.insert(METADATA_MODULE_PACKAGE.into());
-        let package_address = METADATA_MODULE_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(METADATA_MODULE_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: METADATA_CODE_ID,
                 definition: MetadataNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -319,15 +330,16 @@ pub fn create_system_bootstrap_transaction(
 
     // Royalty Package
     {
-        pre_allocated_ids.insert(ROYALTY_MODULE_PACKAGE.into());
-        let package_address = ROYALTY_MODULE_PACKAGE.into();
-
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ROYALTY_MODULE_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: ROYALTY_CODE_ID,
                 definition: RoyaltyNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -337,14 +349,16 @@ pub fn create_system_bootstrap_transaction(
 
     // Access Rules Package
     {
-        pre_allocated_ids.insert(ACCESS_RULES_MODULE_PACKAGE.into());
-        let package_address = ACCESS_RULES_MODULE_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ACCESS_RULES_MODULE_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 definition: AccessRulesNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -354,14 +368,16 @@ pub fn create_system_bootstrap_transaction(
 
     // Resource Package
     {
-        pre_allocated_ids.insert(RESOURCE_PACKAGE.into());
-        let package_address = RESOURCE_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(RESOURCE_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 definition: ResourceManagerNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -400,20 +416,22 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
-        let resource_address = RADIX_TOKEN.into();
-        pre_allocated_ids.insert(RADIX_TOKEN.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(RADIX_TOKEN),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
             args: to_manifest_value(
-                &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                     divisibility: 18,
                     metadata,
                     access_rules,
                     initial_supply,
-                    resource_address,
+                    resource_address: id_allocator.new_own_id(),
                 },
             ),
         });
@@ -424,18 +442,20 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
     }
@@ -445,18 +465,20 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = GLOBAL_CALLER_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(GLOBAL_CALLER_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(GLOBAL_CALLER_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
     }
@@ -473,18 +495,20 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = PACKAGE_OWNER_BADGE.into();
-        pre_allocated_ids.insert(PACKAGE_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(PACKAGE_OWNER_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
     }
@@ -501,29 +525,33 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = IDENTITY_OWNER_BADGE.into();
-        pre_allocated_ids.insert(IDENTITY_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(IDENTITY_OWNER_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
 
-        pre_allocated_ids.insert(IDENTITY_PACKAGE.into());
-        let package_address = IDENTITY_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(IDENTITY_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 definition: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
@@ -533,14 +561,16 @@ pub fn create_system_bootstrap_transaction(
 
     // ConsensusManager Package
     {
-        pre_allocated_ids.insert(CONSENSUS_MANAGER_PACKAGE.into());
-        let package_address = CONSENSUS_MANAGER_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
@@ -560,29 +590,33 @@ pub fn create_system_bootstrap_transaction(
             ),
         );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ACCOUNT_OWNER_BADGE.into();
-        pre_allocated_ids.insert(ACCOUNT_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(ACCOUNT_OWNER_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
 
-        pre_allocated_ids.insert(ACCOUNT_PACKAGE.into());
-        let package_address = ACCOUNT_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ACCOUNT_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 definition: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
@@ -592,14 +626,16 @@ pub fn create_system_bootstrap_transaction(
 
     // AccessController Package
     {
-        pre_allocated_ids.insert(ACCESS_CONTROLLER_PACKAGE.into());
-        let package_address = ACCESS_CONTROLLER_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(ACCESS_CONTROLLER_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 definition: AccessControllerNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
@@ -609,14 +645,16 @@ pub fn create_system_bootstrap_transaction(
 
     // Pool Package
     {
-        pre_allocated_ids.insert(POOL_PACKAGE.into());
-        let package_address = POOL_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(POOL_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 definition: PoolNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: POOL_ID,
@@ -626,14 +664,16 @@ pub fn create_system_bootstrap_transaction(
 
     // TransactionProcessor Package
     {
-        pre_allocated_ids.insert(TRANSACTION_PROCESSOR_PACKAGE.into());
-        let package_address = TRANSACTION_PROCESSOR_PACKAGE.into();
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(TRANSACTION_PROCESSOR_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
                 definition: TransactionProcessorNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
@@ -646,18 +686,20 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
     }
@@ -667,18 +709,20 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
     }
@@ -688,18 +732,20 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = SYSTEM_TRANSACTION_BADGE.into();
-        pre_allocated_ids.insert(SYSTEM_TRANSACTION_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(SYSTEM_TRANSACTION_BADGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
-                resource_address,
+                resource_address: id_allocator.new_own_id(),
             }),
         });
     }
@@ -708,15 +754,19 @@ pub fn create_system_bootstrap_transaction(
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
-        let package_address = FAUCET_PACKAGE.into();
-        pre_allocated_ids.insert(FAUCET_PACKAGE.into());
+        let faucet_code_hash = hash(&faucet_code);
+        blobs.push(BlobV1(faucet_code));
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(FAUCET_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedInput {
-                package_address: Some(package_address),
-                code: faucet_code,
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
+                code: ManifestBlobRef(faucet_code_hash.0),
                 definition: manifest_decode(&faucet_abi).unwrap(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,
@@ -730,15 +780,19 @@ pub fn create_system_bootstrap_transaction(
         // TODO: calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
-        let package_address = GENESIS_HELPER_PACKAGE.into();
-        pre_allocated_ids.insert(GENESIS_HELPER_PACKAGE.into());
+        let genesis_helper_code_hash = hash(&genesis_helper_code);
+        blobs.push(BlobV1(genesis_helper_code));
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(GENESIS_HELPER_PACKAGE),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedInput {
-                package_address: Some(package_address),
-                code: genesis_helper_code,
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                package_address: Some(id_allocator.new_own_id()),
+                code: ManifestBlobRef(genesis_helper_code_hash.0),
                 definition: manifest_decode(&genesis_helper_abi).unwrap(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,
@@ -748,42 +802,47 @@ pub fn create_system_bootstrap_transaction(
 
     // Create ConsensusManager
     {
-        let consensus_manager_component_address =
-            Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER);
-        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE);
-        pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
-        pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
+        pre_allocated_addresses.push((
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+        ));
+        pre_allocated_addresses.push((
+            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: manifest_args!(
-                validator_owner_token,
-                consensus_manager_component_address,
+            args: to_manifest_value(&ConsensusManagerCreateManifestInput {
+                validator_owner_token_address: id_allocator.new_own_id(),
+                component_address: id_allocator.new_own_id(),
                 initial_epoch,
                 initial_config,
-                initial_time_ms
-            ),
+                initial_time_ms,
+            }),
         });
     }
 
     // Create GenesisHelper
     {
-        let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
+        let whole_lotta_xrd = id_allocator.new_bucket_id();
         instructions.push(
             InstructionV1::TakeAllFromWorktop {
                 resource_address: RADIX_TOKEN,
             }
             .into(),
         );
-        pre_allocated_ids.insert(GENESIS_HELPER.into());
-        let address_bytes = GENESIS_HELPER.as_node_id().0;
+        pre_allocated_addresses.push((
+            BlueprintId::new(&GENESIS_HELPER_PACKAGE, GENESIS_HELPER_BLUEPRINT),
+            GlobalAddress::from(GENESIS_HELPER),
+        ));
         instructions.push(InstructionV1::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
             blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: manifest_args!(
-                address_bytes,
+                id_allocator.new_own_id(),
                 whole_lotta_xrd,
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
@@ -793,28 +852,19 @@ pub fn create_system_bootstrap_transaction(
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_ids,
-        blobs: BlobsV1 { blobs: vec![] },
+        pre_allocated_addresses,
+        blobs: BlobsV1 { blobs },
         hash_for_execution: hash(format!("Genesis Bootstrap")),
     }
 }
 
 pub fn create_genesis_data_ingestion_transaction(
+    pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
     genesis_helper: &ComponentAddress,
     chunk: GenesisDataChunk,
     chunk_number: usize,
 ) -> SystemTransactionV1 {
     let mut instructions = Vec::new();
-    let mut pre_allocated_ids = index_set_new();
-
-    if let GenesisDataChunk::Resources(resources) = &chunk {
-        for resource in resources {
-            pre_allocated_ids.insert(NodeId::new(
-                EntityType::GlobalFungibleResourceManager as u8,
-                &resource.address_bytes_without_entity_id,
-            ));
-        }
-    }
 
     instructions.push(InstructionV1::CallMethod {
         address: genesis_helper.clone().into(),
@@ -824,7 +874,7 @@ pub fn create_genesis_data_ingestion_transaction(
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_ids,
+        pre_allocated_addresses,
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Data Chunk: {}", chunk_number)),
     }
@@ -847,19 +897,21 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
         .into(),
     );
 
-    let bucket = id_allocator.new_bucket_id().unwrap();
-    let address_bytes = FAUCET.as_node_id().0;
+    let bucket = id_allocator.new_bucket_id();
 
     instructions.push(InstructionV1::CallFunction {
         package_address: FAUCET_PACKAGE,
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
-        args: manifest_args!(address_bytes, bucket),
+        args: manifest_args!(ManifestOwn(0), bucket),
     });
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_ids: indexset! { FAUCET.as_node_id().clone() },
+        pre_allocated_addresses: vec![(
+            BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
+            GlobalAddress::from(FAUCET),
+        )],
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
     }

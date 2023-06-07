@@ -55,13 +55,15 @@ pub enum VersionedTransactionPayload {
     SystemTransactionV1 {
         instructions: InstructionsV1,
         blobs: BlobsV1,
-        pre_allocated_ids: IndexSet<NodeId>,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
         hash_for_execution: Hash,
     },
 }
 
 #[cfg(test)]
 mod tests {
+    use radix_engine_interface::blueprints::resource::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
+
     use super::*;
     use crate::model::*;
     use crate::{ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey};
@@ -317,16 +319,19 @@ mod tests {
         .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
-        let pre_allocated_ids_v1 = indexset![XRD.into_node_id()];
-        let expected_preallocated_ids_hash =
-            hash_manifest_encoded_without_prefix_byte(&pre_allocated_ids_v1);
+        let pre_allocated_addresses_v1 = vec![(
+            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            XRD.into(),
+        )];
+        let expected_preallocated_addresses_hash =
+            hash_manifest_encoded_without_prefix_byte(&pre_allocated_addresses_v1);
 
         let hash_for_execution = hash(format!("Pretend genesis transaction"));
 
         let system_transaction_v1 = SystemTransactionV1 {
             instructions: instructions_v1.clone(),
             blobs: blobs_v1.clone(),
-            pre_allocated_ids: pre_allocated_ids_v1.clone(),
+            pre_allocated_addresses: pre_allocated_addresses_v1.clone(),
             hash_for_execution: hash_for_execution.clone(),
         };
         let expected_system_transaction_hash = SystemTransactionHash::from_hash(hash(
@@ -338,7 +343,7 @@ mod tests {
                 .as_slice(),
                 expected_instructions_hash.0.as_slice(),
                 expected_blobs_hash.0.as_slice(),
-                expected_preallocated_ids_hash.0.as_slice(),
+                expected_preallocated_addresses_hash.0.as_slice(),
                 hash_for_execution.0.as_slice(),
             ]
             .concat(),
@@ -355,7 +360,7 @@ mod tests {
             VersionedTransactionPayload::SystemTransactionV1 {
                 instructions: instructions_v1,
                 blobs: blobs_v1,
-                pre_allocated_ids: pre_allocated_ids_v1,
+                pre_allocated_addresses: pre_allocated_addresses_v1,
                 hash_for_execution
             }
         );
@@ -370,11 +375,11 @@ mod tests {
         );
         assert_eq!(
             expected_system_transaction_hash.to_string(),
-            "bab4dc066c63b9dfe3f88a295ce1b35873a98016f0a7148e3831580b322f62f7"
+            "53d3dfad74617591833b618a1470d213471f4c4c2bb7784b1de8f16cc3751c51"
         );
         assert_eq!(
             hex::encode(system_transaction_payload_bytes),
-            "4d220404202201120020200207040001020307020506202001071e5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c62007207646fcb3e6a2dbf0fd4830933c54928d3e8dafaf9f704afdae56336fc67aae0d"
+            "4d220404202201120020200207040001020307020506202101022102800d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c60c1746756e6769626c655265736f757263654d616e61676572805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c62007207646fcb3e6a2dbf0fd4830933c54928d3e8dafaf9f704afdae56336fc67aae0d"
         );
     }
 }

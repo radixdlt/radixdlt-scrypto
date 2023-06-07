@@ -712,9 +712,8 @@ impl<L: Clone> CallFrame<L> {
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
+        push_to_store: bool,
     ) -> Result<StoreAccessInfo, CreateNodeError> {
-        let push_to_store = node_id.is_global();
-
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 //==============
