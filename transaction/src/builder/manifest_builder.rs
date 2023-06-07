@@ -721,7 +721,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                definition,
+                setup: definition,
                 metadata,
                 package_address: None,
                 owner_rule,
@@ -765,7 +765,7 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
-                definition,
+                setup: definition,
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
