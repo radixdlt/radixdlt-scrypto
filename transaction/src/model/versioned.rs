@@ -375,7 +375,7 @@ mod tests {
         );
         assert_eq!(
             expected_system_transaction_hash.to_string(),
-            "bab4dc066c63b9dfe3f88a295ce1b35873a98016f0a7148e3831580b322f62f7"
+            "53d3dfad74617591833b618a1470d213471f4c4c2bb7784b1de8f16cc3751c51"
         );
         assert_eq!(
             hex::encode(system_transaction_payload_bytes),

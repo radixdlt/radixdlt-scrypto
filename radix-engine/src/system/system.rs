@@ -920,7 +920,9 @@ where
         // Create global address ownership
         let global_address_ownership = self.prepare_global_address(blueprint_id, global_address)?;
 
-        // TODO: add check if all allocated address are consumed!
+        // NOTE: Because allocated global address is represented as an owned object and nobody is allowed
+        // to drop it except the system during globalization, we don't track the lifecycle of
+        // allocated addresses.
 
         Ok((global_address_ownership, global_address))
     }

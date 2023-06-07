@@ -65,11 +65,14 @@ fn genesis_epoch_has_correct_initial_validators() {
     }
 
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(validators),
-        GenesisDataChunk::Stakes {
-            accounts,
-            allocations: stake_allocations,
-        },
+        (vec![], GenesisDataChunk::Validators(validators)),
+        (
+            vec![],
+            GenesisDataChunk::Stakes {
+                accounts,
+                allocations: stake_allocations,
+            },
+        ),
     ];
 
     let genesis = CustomGenesis {
@@ -561,11 +564,14 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         .map(|validator| validator.owner)
         .collect::<Vec<_>>();
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(validators),
-        GenesisDataChunk::Stakes {
-            accounts,
-            allocations,
-        },
+        (vec![], GenesisDataChunk::Validators(validators)),
+        (
+            vec![],
+            GenesisDataChunk::Stakes {
+                accounts,
+                allocations,
+            },
+        ),
     ];
     let genesis = CustomGenesis {
         genesis_data_chunks,
@@ -1114,12 +1120,15 @@ fn create_custom_genesis(
     }
 
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(validators),
-        GenesisDataChunk::Stakes {
-            accounts,
-            allocations: stake_allocations,
-        },
-        GenesisDataChunk::XrdBalances(xrd_balances),
+        (vec![], GenesisDataChunk::Validators(validators)),
+        (
+            vec![],
+            GenesisDataChunk::Stakes {
+                accounts,
+                allocations: stake_allocations,
+            },
+        ),
+        (vec![], GenesisDataChunk::XrdBalances(xrd_balances)),
     ];
 
     let genesis = CustomGenesis {
@@ -2327,25 +2336,25 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     // Act
     let mut pre_allocated_addresses = vec![];
     pre_allocated_addresses.push((
-        BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-        GlobalAddress::from(CONSENSUS_MANAGER),
-    ));
-    pre_allocated_addresses.push((
         BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
         GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+    ));
+    pre_allocated_addresses.push((
+        BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+        GlobalAddress::from(CONSENSUS_MANAGER),
     ));
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: manifest_args!(
-                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-                Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
-                Epoch::of(1),
-                CustomGenesis::default_consensus_manager_config(),
-                120000i64
-            ),
+            args: to_manifest_value(&ConsensusManagerCreateManifestInput {
+                validator_owner_token_address: ManifestOwn(0),
+                component_address: ManifestOwn(1),
+                initial_epoch: Epoch::of(1),
+                initial_config: CustomGenesis::default_consensus_manager_config(),
+                initial_time_ms: 120000i64,
+            }),
         }],
         btreeset![AuthAddresses::system_role()],
         pre_allocated_addresses,

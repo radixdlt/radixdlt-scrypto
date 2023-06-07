@@ -49,6 +49,9 @@ impl<'a> Executable<'a> {
         for resource in &context.auth_zone_params.virtual_resources {
             references.insert(resource.clone().into());
         }
+        for preallocated_address in &context.pre_allocated_addresses {
+            references.insert(preallocated_address.0.package_address.clone().into());
+        }
 
         Self {
             encoded_instructions,

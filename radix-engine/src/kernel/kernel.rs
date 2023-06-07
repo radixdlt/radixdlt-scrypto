@@ -62,15 +62,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         SystemConfig::on_init(&mut kernel)?;
 
-        // Allocate global addresses
-        let mut global_address_ownerships = Vec::new();
-        for (blueprint_id, address) in pre_allocated_addresses {
-            let mut system = SystemService::new(&mut kernel);
-            let global_address_ownership =
-                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
-            global_address_ownerships.push(Own(global_address_ownership));
-        }
-
         // Reference management
         for reference in references.iter() {
             let node_id = &reference.0;
@@ -130,6 +121,15 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
+        }
+
+        // Allocate global addresses
+        let mut global_address_ownerships = Vec::new();
+        for (blueprint_id, address) in pre_allocated_addresses {
+            let mut system = SystemService::new(&mut kernel);
+            let global_address_ownership =
+                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
+            global_address_ownerships.push(Own(global_address_ownership));
         }
 
         let mut system = SystemService::new(&mut kernel);

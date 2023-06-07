@@ -124,7 +124,7 @@ impl Compile {
 }
 
 pub struct CustomGenesis {
-    pub genesis_data_chunks: Vec<GenesisDataChunk>,
+    pub genesis_data_chunks: Vec<(Vec<(BlueprintId, GlobalAddress)>, GenesisDataChunk)>,
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
@@ -169,17 +169,23 @@ impl CustomGenesis {
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator]),
-            GenesisDataChunk::Stakes {
-                accounts: vec![staker_account],
-                allocations: vec![(
-                    validator_public_key,
-                    vec![GenesisStakeAllocation {
-                        account_index: 0,
-                        xrd_amount: stake_xrd_amount,
-                    }],
-                )],
-            },
+            (
+                vec![],
+                GenesisDataChunk::Validators(vec![genesis_validator]),
+            ),
+            (
+                vec![],
+                GenesisDataChunk::Stakes {
+                    accounts: vec![staker_account],
+                    allocations: vec![(
+                        validator_public_key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount,
+                        }],
+                    )],
+                },
+            ),
         ];
         CustomGenesis {
             genesis_data_chunks,

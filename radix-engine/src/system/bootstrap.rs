@@ -44,7 +44,7 @@ const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub accept_delegated_stake: bool,
@@ -67,27 +67,27 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisStakeAllocation {
     pub account_index: u32,
     pub xrd_amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisResource {
-    pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
+    pub address_ownership: ManifestOwn,
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, String)>,
     pub owner: Option<ComponentAddress>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisResourceAllocation {
     pub account_index: u32,
     pub amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
@@ -159,7 +159,7 @@ where
 
     pub fn bootstrap_with_genesis_data(
         &mut self,
-        genesis_data_chunks: Vec<GenesisDataChunk>,
+        genesis_data_chunks: Vec<(Vec<(BlueprintId, GlobalAddress)>, GenesisDataChunk)>,
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
@@ -178,7 +178,7 @@ where
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
-                let receipt = self.ingest_genesis_data_chunk(chunk, chunk_index);
+                let receipt = self.ingest_genesis_data_chunk(chunk.0, chunk.1, chunk_index);
                 data_ingestion_receipts.push(receipt);
             }
 
@@ -224,11 +224,16 @@ where
 
     fn ingest_genesis_data_chunk(
         &mut self,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
         chunk: GenesisDataChunk,
         chunk_number: usize,
     ) -> TransactionReceipt {
-        let transaction =
-            create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
+        let transaction = create_genesis_data_ingestion_transaction(
+            pre_allocated_addresses,
+            &GENESIS_HELPER,
+            chunk,
+            chunk_number,
+        );
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
@@ -277,9 +282,9 @@ pub fn create_system_bootstrap_transaction(
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
 
-    let mut pre_allocated_addresses = vec![];
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
+    let mut pre_allocated_addresses = vec![];
     let mut blobs = vec![];
 
     // Package Package
@@ -875,28 +880,12 @@ pub fn create_system_bootstrap_transaction(
 }
 
 pub fn create_genesis_data_ingestion_transaction(
+    pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
     genesis_helper: &ComponentAddress,
     chunk: GenesisDataChunk,
     chunk_number: usize,
 ) -> SystemTransactionV1 {
     let mut instructions = Vec::new();
-    let mut pre_allocated_addresses = vec![];
-
-    if let GenesisDataChunk::Resources(resources) = &chunk {
-        for resource in resources {
-            pre_allocated_addresses.push((
-                BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-                GlobalAddress::try_from(
-                    NodeId::new(
-                        EntityType::GlobalFungibleResourceManager as u8,
-                        &resource.address_bytes_without_entity_id,
-                    )
-                    .0,
-                )
-                .unwrap(),
-            ));
-        }
-    }
 
     instructions.push(InstructionV1::CallMethod {
         address: genesis_helper.clone().into(),
