@@ -431,6 +431,7 @@ mod non_fungible_test {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                        features: vec![],
                         id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
