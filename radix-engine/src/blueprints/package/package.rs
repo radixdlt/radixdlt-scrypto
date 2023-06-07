@@ -400,7 +400,7 @@ impl PackageNativePackage {
                 let rtn = Self::publish_native(
                     input.package_address,
                     input.native_package_code_id,
-                    input.definition,
+                    input.setup,
                     input.metadata,
                     api,
                 )?;
@@ -438,7 +438,7 @@ impl PackageNativePackage {
                 let rtn = Self::publish_wasm_advanced(
                     input.package_address,
                     input.code,
-                    input.definition,
+                    input.setup,
                     input.metadata,
                     input.owner_rule,
                     api,

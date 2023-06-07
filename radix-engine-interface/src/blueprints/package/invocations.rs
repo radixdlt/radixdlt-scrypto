@@ -35,7 +35,7 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub code: Vec<u8>,
-    pub definition: PackageSetup,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -44,7 +44,7 @@ pub struct PackagePublishWasmAdvancedInput {
 pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<ManifestOwn>,
     pub code: ManifestBlobRef,
-    pub definition: PackageSetup,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -57,7 +57,7 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub native_package_code_id: u8,
-    pub definition: PackageSetup,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -65,7 +65,7 @@ pub struct PackagePublishNativeInput {
 pub struct PackagePublishNativeManifestInput {
     pub package_address: Option<ManifestOwn>,
     pub native_package_code_id: u8,
-    pub definition: PackageSetup,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
