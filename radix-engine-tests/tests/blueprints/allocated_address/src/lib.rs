@@ -19,6 +19,17 @@ mod apa {
             ScryptoEnv.drop_object(own.0.handle().as_node_id()).unwrap();
         }
 
+        pub fn create_and_pass_address() {
+            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let _: () = Runtime::call_function(
+                Runtime::package_address(),
+                "AllocatedAddressTest",
+                "receive_address",
+                scrypto_args!(address),
+            );
+            Self::globalize_with_preallocated_address(own);
+        }
+
         pub fn create_and_call() {
             let (_own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
             Runtime::call_method(address, "hi", scrypto_args!())
@@ -68,6 +79,10 @@ mod apa {
                 .prepare_to_globalize(OwnerRole::None)
                 .with_address(own)
                 .globalize();
+        }
+
+        pub fn receive_address(address: ComponentAddress) {
+            info!("Received: {:?}", address);
         }
     }
 }
