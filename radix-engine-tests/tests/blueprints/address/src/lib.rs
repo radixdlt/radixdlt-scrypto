@@ -198,7 +198,7 @@ mod preallocation_component {
             let one = Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .with_address(Owned::<AnyComponent>(own.0.clone()))
+                .with_address(own.clone())
                 .globalize();
             let two = Self {}
                 .instantiate()

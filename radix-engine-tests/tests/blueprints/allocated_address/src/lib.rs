@@ -16,14 +16,14 @@ mod apa {
     }
 
     impl AllocatedAddressTest {
-        pub fn create_and_return() -> (Owned<AnyComponent>, ComponentAddress) {
+        pub fn create_and_return() -> (GlobalAddressReservation, ComponentAddress) {
             let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
             (own, address)
         }
 
         pub fn create_and_drop() {
             let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
-            ScryptoEnv.drop_object(own.0.handle().as_node_id()).unwrap();
+            ScryptoEnv.drop_object(own.0.as_node_id()).unwrap();
         }
 
         pub fn create_and_pass_address() {
@@ -89,7 +89,7 @@ mod apa {
                 .globalize();
         }
 
-        pub fn globalize_with_preallocated_address(own: Owned<AnyComponent>) {
+        pub fn globalize_with_preallocated_address(own: GlobalAddressReservation) {
             Self { store: None }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)

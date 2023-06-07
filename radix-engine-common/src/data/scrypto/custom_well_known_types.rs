@@ -263,6 +263,10 @@ create_well_known_lookup!(
         (OWN_PROOF_ID, own_proof_type_data()),
         (OWN_VAULT_ID, own_vault_type_data()),
         (OWN_KEY_VALUE_STORE_ID, own_key_value_store_type_data()),
+        (
+            OWN_GLOBAL_ADDRESS_RESERVATION_ID,
+            own_global_address_reservation_type_data()
+        ),
         // Others
         (DECIMAL_ID, decimal_type_data()),
         (PRECISE_DECIMAL_ID, precise_decimal_type_data()),
