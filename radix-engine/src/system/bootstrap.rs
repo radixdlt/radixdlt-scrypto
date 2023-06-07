@@ -78,7 +78,7 @@ pub struct GenesisStakeAllocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisResource {
-    pub address_ownership: ManifestOwn,
+    pub address_reservation: ManifestOwn,
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,

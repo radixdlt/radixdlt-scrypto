@@ -126,17 +126,17 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_ownership: NodeId,
+        address_reservation: NodeId,
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
-        let address_ownership = scrypto_encode(&address_ownership).unwrap();
+        let address_reservation = scrypto_encode(&address_reservation).unwrap();
 
         let bytes = copy_buffer(unsafe {
             globalize_with_address(
                 modules.as_ptr(),
                 modules.len(),
-                address_ownership.as_ptr(),
-                address_ownership.len(),
+                address_reservation.as_ptr(),
+                address_reservation.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -145,7 +145,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         _modules: BTreeMap<ObjectModuleId, NodeId>,
-        _address_ownership: NodeId,
+        _address_reservation: NodeId,
         _inner_object_blueprint: &str,
         _inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<(GlobalAddress, NodeId), ClientApiError> {

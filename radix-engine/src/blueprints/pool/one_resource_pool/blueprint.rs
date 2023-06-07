@@ -37,7 +37,7 @@ impl OneResourcePoolBlueprint {
 
         // Allocating the component address of the pool - this will be used later for the component
         // caller badge.
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: POOL_PACKAGE,
             blueprint_name: ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
         })?;
@@ -93,7 +93,7 @@ impl OneResourcePoolBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_ownership,
+            address_reservation,
         )?;
 
         Ok(ComponentAddress::new_or_panic(address.as_node_id().0))

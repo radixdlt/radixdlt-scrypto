@@ -217,7 +217,7 @@ where
             .and_then(|x| x.as_typed().ok());
 
         match type_info {
-            Some(TypeInfoSubstate::GlobalAddressOwnership(x)) => x.into(),
+            Some(TypeInfoSubstate::GlobalAddressReservation(x)) => x.into(),
             _ => {
                 panic!("Should not reach here as preallocated package address is highly privileged")
             }

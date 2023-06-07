@@ -183,7 +183,7 @@ fn build_access_rules(
 
 pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
-    resource_address_ownership: Own,
+    resource_address_reservation: Own,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     api: &mut Y,
@@ -204,7 +204,7 @@ where
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
         ),
-        resource_address_ownership.0,
+        resource_address_reservation.0,
     )?;
 
     Ok(ResourceAddress::new_or_panic(address.into()))
@@ -212,7 +212,7 @@ where
 
 pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
-    resource_address_ownership: Own,
+    resource_address_reservation: Own,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     initial_supply: Decimal,
@@ -233,7 +233,7 @@ where
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
         ),
-        resource_address_ownership.0,
+        resource_address_reservation.0,
         FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
             scrypto_encode(&LiquidFungibleResource::new(initial_supply)).unwrap(),
@@ -249,7 +249,7 @@ where
 
 pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
-    resource_address_ownership: Own,
+    resource_address_reservation: Own,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     ids: BTreeSet<NonFungibleLocalId>,
@@ -272,7 +272,7 @@ where
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
         ),
-        resource_address_ownership.0,
+        resource_address_reservation.0,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
             scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),

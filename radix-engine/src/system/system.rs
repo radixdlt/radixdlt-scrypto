@@ -146,20 +146,20 @@ where
             ),
         )?;
 
-        // Create global address ownership
-        let global_address_ownership = self
+        // Create global address reservation
+        let global_address_reservation = self
             .api
             .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         self.api.kernel_create_node(
-            global_address_ownership,
+            global_address_reservation,
             btreemap!(
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::GlobalAddressOwnership(global_address.clone())
+                    TypeInfoSubstate::GlobalAddressReservation(global_address.clone())
                 ).to_substates()
             ),
         )?;
 
-        Ok(global_address_ownership)
+        Ok(global_address_reservation)
     }
 
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
@@ -644,7 +644,7 @@ where
     fn globalize_with_address_internal(
         &mut self,
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
-        global_address_ownership: NodeId,
+        global_address_reservation: NodeId,
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check module configuration
         let module_ids = modules
@@ -663,9 +663,9 @@ where
             )));
         }
 
-        // Check global address ownership
+        // Check global address reservation
         let global_address = {
-            let substates = self.kernel_drop_node(&global_address_ownership)?;
+            let substates = self.kernel_drop_node(&global_address_reservation)?;
 
             let type_info: Option<TypeInfoSubstate> = substates
                 .get(&TYPE_INFO_FIELD_PARTITION)
@@ -673,10 +673,10 @@ where
                 .and_then(|x| x.as_typed().ok());
 
             match type_info {
-                Some(TypeInfoSubstate::GlobalAddressOwnership(x)) => x,
+                Some(TypeInfoSubstate::GlobalAddressReservation(x)) => x,
                 _ => {
                     return Err(RuntimeError::SystemError(
-                        SystemError::InvalidGlobalAddressOwnership,
+                        SystemError::InvalidGlobalAddressReservation,
                     ));
                 }
             }
@@ -684,7 +684,6 @@ where
 
         // Check blueprint id
         let expected_blueprint_id = {
-            // Check global address phantom
             let lock_handle = self.kernel_lock_substate(
                 global_address.as_node_id(),
                 TYPE_INFO_FIELD_PARTITION,
@@ -952,14 +951,15 @@ where
         )?;
         let global_address = GlobalAddress::try_from(global_address_node_id.0).unwrap();
 
-        // Create global address ownership
-        let global_address_ownership = self.prepare_global_address(blueprint_id, global_address)?;
+        // Create global address reservation
+        let global_address_reservation =
+            self.prepare_global_address(blueprint_id, global_address)?;
 
         // NOTE: Because allocated global address is represented as an owned object and nobody is allowed
         // to drop it except the system during globalization, we don't track the lifecycle of
         // allocated addresses.
 
-        Ok((global_address_ownership, global_address))
+        Ok((global_address_reservation, global_address))
     }
 
     #[trace_resources]
@@ -968,9 +968,10 @@ where
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
     ) -> Result<NodeId, RuntimeError> {
-        let global_address_ownership = self.prepare_global_address(blueprint_id, global_address)?;
+        let global_address_reservation =
+            self.prepare_global_address(blueprint_id, global_address)?;
 
-        Ok(global_address_ownership)
+        Ok(global_address_reservation)
     }
 
     // FIXME ensure that only the package actor can globalize its own blueprints
@@ -983,10 +984,10 @@ where
         let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
 
         // TODO: optimize by skipping address allocation
-        let (global_address_ownership, global_address) =
+        let (global_address_reservation, global_address) =
             self.allocate_global_address(blueprint_id)?;
 
-        self.globalize_with_address_internal(modules, global_address_ownership)?;
+        self.globalize_with_address_internal(modules, global_address_reservation)?;
 
         Ok(global_address)
     }
@@ -995,22 +996,22 @@ where
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_ownership: NodeId,
+        address_reservation: NodeId,
     ) -> Result<GlobalAddress, RuntimeError> {
-        self.globalize_with_address_internal(modules, address_ownership)
+        self.globalize_with_address_internal(modules, address_reservation)
     }
 
     #[trace_resources]
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_ownership: NodeId,
+        address_reservation: NodeId,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
-        let global_address = self.globalize_with_address_internal(modules, address_ownership)?;
+        let global_address = self.globalize_with_address_internal(modules, address_reservation)?;
 
         let blueprint = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
 

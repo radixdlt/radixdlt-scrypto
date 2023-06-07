@@ -1013,7 +1013,7 @@ impl ValidatorCreator {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: CONSENSUS_MANAGER_PACKAGE,
             blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
         })?;
@@ -1058,7 +1058,7 @@ impl ValidatorCreator {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_ownership,
+            address_reservation,
         )?;
 
         Ok((

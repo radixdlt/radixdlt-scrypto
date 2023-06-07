@@ -27,7 +27,7 @@ pub struct TransactionProcessorRunInput {
     pub transaction_hash: Hash,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
     pub manifest_encoded_instructions: Vec<u8>,
-    pub global_address_ownerships: Vec<Own>,
+    pub global_address_reservations: Vec<Own>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
     pub blobs: IndexMap<Hash, Vec<u8>>,
 }
@@ -38,7 +38,7 @@ pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
     pub transaction_hash: &'a Hash,
     pub runtime_validations: &'a [RuntimeValidationRequest],
     pub manifest_encoded_instructions: &'a [u8],
-    pub global_address_ownerships: Vec<Own>,
+    pub global_address_reservations: Vec<Own>,
     pub references: &'a IndexSet<Reference>,
     pub blobs: &'a IndexMap<Hash, Vec<u8>>,
 }
@@ -125,7 +125,8 @@ impl TransactionProcessorBlueprint {
         let instructions =
             manifest_decode::<Vec<InstructionV1>>(&input.manifest_encoded_instructions)
                 .expect("Instructions could not be decoded");
-        let mut processor = TransactionProcessor::new(input.blobs, input.global_address_ownerships);
+        let mut processor =
+            TransactionProcessor::new(input.blobs, input.global_address_reservations);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
             api.update_instruction_index(index)?;
@@ -407,7 +408,7 @@ struct TransactionProcessor {
 }
 
 impl TransactionProcessor {
-    fn new(blobs_by_hash: IndexMap<Hash, Vec<u8>>, global_address_ownerships: Vec<Own>) -> Self {
+    fn new(blobs_by_hash: IndexMap<Hash, Vec<u8>>, global_address_reservations: Vec<Own>) -> Self {
         let mut processor = Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
@@ -415,7 +416,7 @@ impl TransactionProcessor {
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
         };
-        for o in global_address_ownerships {
+        for o in global_address_reservations {
             processor.create_manifest_own(o.into()).unwrap();
         }
         processor
@@ -542,7 +543,7 @@ impl TransactionProcessor {
                     }
                 },
                 TypeInfoSubstate::KeyValueStore(_)
-                | TypeInfoSubstate::GlobalAddressOwnership(_) => {
+                | TypeInfoSubstate::GlobalAddressReservation(_) => {
                     self.create_manifest_own(node_id.clone())?;
                 }
                 TypeInfoSubstate::GlobalAddressPhantom(_) => unreachable!(),

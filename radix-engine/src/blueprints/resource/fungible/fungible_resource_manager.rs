@@ -83,14 +83,14 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
         let resource_address = ResourceAddress::new_or_panic(address.into());
         globalize_resource_manager(
             object_id,
-            Own(address_ownership),
+            Own(address_reservation),
             access_rules,
             metadata,
             api,
@@ -109,7 +109,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
@@ -119,7 +119,7 @@ impl FungibleResourceManagerBlueprint {
             metadata,
             access_rules,
             initial_supply,
-            Own(address_ownership),
+            Own(address_reservation),
             api,
         )
     }
@@ -129,7 +129,7 @@ impl FungibleResourceManagerBlueprint {
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
-        resource_address_ownership: Own,
+        resource_address_reservation: Own,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
@@ -149,7 +149,7 @@ impl FungibleResourceManagerBlueprint {
 
         let (resource_address, bucket) = globalize_fungible_with_initial_supply(
             object_id,
-            resource_address_ownership,
+            resource_address_reservation,
             access_rules,
             metadata,
             initial_supply,

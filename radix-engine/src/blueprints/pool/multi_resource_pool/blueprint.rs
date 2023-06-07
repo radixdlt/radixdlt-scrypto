@@ -48,7 +48,7 @@ impl MultiResourcePoolBlueprint {
 
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: POOL_PACKAGE,
             blueprint_name: MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
         })?;
@@ -110,7 +110,7 @@ impl MultiResourcePoolBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_ownership,
+            address_reservation,
         )?;
 
         Ok(ComponentAddress::new_or_panic(address.as_node_id().0))

@@ -9,14 +9,14 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(address_ownership: Owned<AnyComponent>, bucket: Bucket) -> Global<Faucet> {
+        pub fn new(address_reservation: Owned<AnyComponent>, bucket: Bucket) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
-            .with_address(address_ownership)
+            .with_address(address_reservation)
             .globalize()
         }
 

@@ -18,7 +18,7 @@ pub enum IDAllocation {
         global: bool,
     },
     KeyValueStore,
-    GlobalAddressOwnership,
+    GlobalAddressReservation,
     GlobalAddressPhantom {
         blueprint_id: BlueprintId,
     },
@@ -29,7 +29,7 @@ impl IDAllocation {
         match self {
             IDAllocation::Object { global, .. } => *global,
             IDAllocation::KeyValueStore => false,
-            IDAllocation::GlobalAddressOwnership => false,
+            IDAllocation::GlobalAddressReservation => false,
             IDAllocation::GlobalAddressPhantom { .. } => true,
         }
     }
@@ -47,7 +47,7 @@ impl IDAllocation {
                 }
             }
             IDAllocation::KeyValueStore => EntityType::InternalKeyValueStore,
-            IDAllocation::GlobalAddressOwnership => EntityType::InternalGenericComponent,
+            IDAllocation::GlobalAddressReservation => EntityType::InternalGenericComponent,
             IDAllocation::GlobalAddressPhantom { blueprint_id } => {
                 get_global_entity_type(&blueprint_id)
             }

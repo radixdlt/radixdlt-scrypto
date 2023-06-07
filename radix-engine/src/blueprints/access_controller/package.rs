@@ -618,7 +618,7 @@ impl AccessControllerNativePackage {
 
         // Allocating the address of the access controller - this will be needed for the metadata
         // and access rules of the recovery badge
-        let (address_ownership, address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
         })?;
@@ -733,7 +733,7 @@ impl AccessControllerNativePackage {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_ownership,
+            address_reservation,
         )?;
 
         // Invoking the post-initialization method on the component

@@ -83,8 +83,8 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
                 blueprint: blueprint_id.blueprint_name,
             },
             TypeInfoSubstate::KeyValueStore(_) => TypeInfoForValidation::KeyValueStore,
-            TypeInfoSubstate::GlobalAddressOwnership(_) => {
-                TypeInfoForValidation::GlobalAddressOwnership
+            TypeInfoSubstate::GlobalAddressReservation(_) => {
+                TypeInfoForValidation::GlobalAddressReservation
             }
             TypeInfoSubstate::GlobalAddressPhantom(info) => TypeInfoForValidation::Object {
                 package: info.blueprint_id.package_address,
@@ -106,7 +106,7 @@ pub enum TypeInfoForValidation {
         blueprint: String,
     },
     KeyValueStore,
-    GlobalAddressOwnership,
+    GlobalAddressReservation,
 }
 
 impl TypeInfoForValidation {

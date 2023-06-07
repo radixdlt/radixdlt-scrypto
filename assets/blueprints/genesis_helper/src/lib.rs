@@ -24,7 +24,7 @@ pub struct GenesisStakeAllocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
-    pub address_ownership: Own,
+    pub address_reservation: Own,
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
@@ -76,7 +76,7 @@ mod genesis_helper {
 
     impl GenesisHelper {
         pub fn new(
-            address_ownership: Owned<AnyComponent>,
+            address_reservation: Owned<AnyComponent>,
             whole_lotta_xrd: Bucket,
             consensus_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
@@ -92,7 +92,7 @@ mod genesis_helper {
             .roles(roles! {
                 system => rule!(require(system_role.clone())), mutable_by: system;
             })
-            .with_address(address_ownership)
+            .with_address(address_reservation)
             .globalize()
         }
 
@@ -249,7 +249,7 @@ mod genesis_helper {
                             metadata,
                             access_rules,
                             initial_supply: resource.initial_supply,
-                            resource_address: resource.address_ownership,
+                            resource_address: resource.address_reservation,
                         },
                     )
                     .unwrap(),

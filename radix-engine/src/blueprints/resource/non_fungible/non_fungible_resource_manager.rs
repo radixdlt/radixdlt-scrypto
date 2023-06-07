@@ -103,7 +103,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
@@ -112,7 +112,7 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungible_schema,
             metadata,
             access_rules,
-            Own(address_ownership),
+            Own(address_reservation),
             api,
         )
     }
@@ -122,7 +122,7 @@ impl NonFungibleResourceManagerBlueprint {
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        resource_address_ownership: Own,
+        resource_address_reservation: Own,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -150,7 +150,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         globalize_resource_manager(
             object_id,
-            resource_address_ownership,
+            resource_address_reservation,
             access_rules,
             metadata,
             api,
@@ -181,7 +181,7 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
@@ -226,7 +226,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            Own(address_ownership),
+            Own(address_reservation),
             access_rules,
             metadata,
             ids,
@@ -263,7 +263,7 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let (address_ownership, _address) = api.allocate_global_address(BlueprintId {
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
@@ -285,7 +285,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            Own(address_ownership),
+            Own(address_reservation),
             access_rules,
             metadata,
             ids,

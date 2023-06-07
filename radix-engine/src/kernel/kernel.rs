@@ -124,12 +124,12 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         }
 
         // Allocate global addresses
-        let mut global_address_ownerships = Vec::new();
+        let mut global_address_reservations = Vec::new();
         for (blueprint_id, address) in pre_allocated_addresses {
             let mut system = SystemService::new(&mut kernel);
-            let global_address_ownership =
+            let global_address_reservation =
                 system.prepare_global_address(blueprint_id.clone(), address.clone())?;
-            global_address_ownerships.push(Own(global_address_ownership));
+            global_address_reservations.push(Own(global_address_reservation));
         }
 
         let mut system = SystemService::new(&mut kernel);
@@ -142,7 +142,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 transaction_hash,
                 runtime_validations,
                 manifest_encoded_instructions,
-                global_address_ownerships,
+                global_address_reservations,
                 references,
                 blobs,
             })

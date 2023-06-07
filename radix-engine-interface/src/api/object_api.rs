@@ -129,13 +129,13 @@ pub trait ClientObjectApi<E> {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_ownership: NodeId,
+        address_reservation: NodeId,
     ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_ownership: NodeId,
+        address_reservation: NodeId,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<(GlobalAddress, NodeId), E>;
