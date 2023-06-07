@@ -3,7 +3,6 @@ use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_common::data::manifest::model::ManifestOwn;
-use radix_engine_common::prelude::Own;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
@@ -34,7 +33,7 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishWasmAdvancedInput {
-    pub package_address: Option<Own>,
+    pub package_address: Option<GlobalAddressReservation>,
     pub code: Vec<u8>,
     pub definition: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -56,7 +55,7 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishNativeInput {
-    pub package_address: Option<Own>,
+    pub package_address: Option<GlobalAddressReservation>,
     pub native_package_code_id: u8,
     pub definition: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,

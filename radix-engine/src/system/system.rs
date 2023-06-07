@@ -683,7 +683,7 @@ where
         };
 
         // Check blueprint id
-        let expected_blueprint_id = {
+        let reserved_blueprint_id = {
             let lock_handle = self.kernel_lock_substate(
                 global_address.as_node_id(),
                 TYPE_INFO_FIELD_PARTITION,
@@ -739,8 +739,8 @@ where
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                         CannotGlobalizeError::AlreadyGlobalized,
                     )));
-                } else if blueprint.package_address != expected_blueprint_id.package_address
-                    || blueprint.blueprint_name != expected_blueprint_id.blueprint_name
+                } else if blueprint.package_address != reserved_blueprint_id.package_address
+                    || blueprint.blueprint_name != reserved_blueprint_id.blueprint_name
                 {
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                         CannotGlobalizeError::InvalidBlueprintId,
