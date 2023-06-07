@@ -131,8 +131,8 @@ fn test_non_existent_blob_hash() {
                 definition: PackageDefinition {
                     schema: PackageSchema::default(),
                     function_access_rules: btreemap!(),
+                    royalty_config: btreemap!(),
                 },
-                royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,
                 package_address: None,

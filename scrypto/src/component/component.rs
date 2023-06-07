@@ -3,7 +3,6 @@ use crate::modules::{AccessRules, Attachable, Royalty};
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, COMPONENT_ADDRESS_ID,
 };
@@ -67,7 +66,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type Permissions: MethodMapping<MethodPermission>;
-    type Royalties: MethodMapping<MethodRoyalty>;
+    type Royalties: MethodMapping<RoyaltyAmount>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -187,12 +186,6 @@ impl<C: HasStub + HasMethods> Owned<C> {
     }
 }
 
-pub enum MethodRoyalty {
-    Free,
-    Xrd(Decimal),
-    Usd(Decimal),
-}
-
 pub trait FnMapping<T> {
     fn to_mapping(self) -> Vec<(String, T)>;
 }
@@ -233,7 +226,7 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
     }
 }
 
-pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
+pub struct RoyaltiesConfig<R: MethodMapping<RoyaltyAmount>> {
     pub method_royalties: R,
 }
 
@@ -297,11 +290,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn royalties(mut self, royalties: C::Royalties) -> Self {
         for (method, royalty) in royalties.to_mapping() {
-            match royalty {
-                MethodRoyalty::Xrd(x) => self.royalty.set_rule(method, RoyaltyAmount::Xrd(x)),
-                MethodRoyalty::Usd(x) => self.royalty.set_rule(method, RoyaltyAmount::Usd(x)),
-                MethodRoyalty::Free => {}
-            }
+            self.royalty.set_rule(method, royalty);
         }
 
         self

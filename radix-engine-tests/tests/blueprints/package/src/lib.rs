@@ -58,7 +58,12 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     );
 
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(
+            schema,
+            function_access_rules,
+            RoyaltyConfig::default(),
+        ))
+        .unwrap(),
     )
 }
 
@@ -98,7 +103,12 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     );
 
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(
+            schema,
+            function_access_rules,
+            RoyaltyConfig::default(),
+        ))
+        .unwrap(),
     )
 }
 
@@ -138,6 +148,11 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(
+            schema,
+            function_access_rules,
+            RoyaltyConfig::default(),
+        ))
+        .unwrap(),
     )
 }

@@ -14,7 +14,6 @@ fn test_loop() {
         code,
         single_function_package_definition("Test", "f"),
         BTreeMap::new(),
-        BTreeMap::new(),
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
@@ -40,7 +39,6 @@ fn test_loop_out_of_cost_unit() {
         code,
         single_function_package_definition("Test", "f"),
         BTreeMap::new(),
-        BTreeMap::new(),
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
@@ -65,7 +63,6 @@ fn test_recursion() {
         code,
         single_function_package_definition("Test", "f"),
         BTreeMap::new(),
-        BTreeMap::new(),
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
@@ -88,7 +85,6 @@ fn test_recursion_stack_overflow() {
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),
-        BTreeMap::new(),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -117,7 +113,6 @@ fn test_grow_memory() {
         code,
         single_function_package_definition("Test", "f"),
         BTreeMap::new(),
-        BTreeMap::new(),
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
@@ -140,7 +135,6 @@ fn test_grow_memory_out_of_cost_unit() {
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),
-        BTreeMap::new(),
         BTreeMap::new(),
         OwnerRole::None,
     );

@@ -472,8 +472,22 @@ macro_rules! enable_function_auth {
 }
 
 #[macro_export]
-macro_rules! role_definition_entry {
+macro_rules! enable_package_royalties {
+    ($($function:ident => $royalty:expr,)*) => (
+        fn package_royalty_config() -> RoyaltyConfig {
+            let royalties = Fns::<RoyaltyAmount> {
+                $( $function: $royalty, )*
+            };
 
+            RoyaltyConfig {
+                rules: royalties.to_mapping().into_iter().collect()
+            }
+        }
+    );
+}
+
+#[macro_export]
+macro_rules! role_definition_entry {
     ($rule:expr, mutable_by: $($mutators:ident),+) => {{
         let mut list = RoleList::none();
         permission_role_list!(list, $($mutators),+);
@@ -503,7 +517,7 @@ macro_rules! roles {
 #[macro_export]
 macro_rules! royalties {
     ($($method:ident => $royalty:expr),*) => ({
-        Methods::<MethodRoyalty> {
+        Methods::<RoyaltyAmount> {
             $(
                 $method: $royalty.into(),
             )*
