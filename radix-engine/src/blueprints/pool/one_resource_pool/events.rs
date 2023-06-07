@@ -5,7 +5,7 @@ use radix_engine_common::{ScryptoEvent, ScryptoSbor};
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct ContributionEvent {
     pub amount_of_resources_contributed: Decimal,
-    pub pool_unit_tokens_minted: Decimal,
+    pub pool_units_minted: Decimal,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
