@@ -13,6 +13,7 @@ use radix_engine_interface::*;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
+use sbor::rust::vec;
 use scrypto::prelude::ScryptoValue;
 use scrypto::resource::ResourceManager;
 
