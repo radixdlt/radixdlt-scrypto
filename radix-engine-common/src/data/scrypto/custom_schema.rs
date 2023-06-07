@@ -72,7 +72,7 @@ impl OwnValidation {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => false,
             OwnValidation::IsVault => true,
-            OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsKeyValueStore => true,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
         }
