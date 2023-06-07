@@ -2,7 +2,6 @@ use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::track::interface::NodeSubstates;
@@ -18,19 +17,16 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{
-    BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey,
-    SchemaMethodPermission,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
 use crate::method_auth_template;
-pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
+use crate::system::system::{SubstateMutability, SubstateWrapper};
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -131,7 +127,7 @@ fn globalize_package<Y, L: Default>(
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
     royalty: PackageRoyaltySubstate,
-    function_access_rules: FunctionAccessRulesSubstate,
+    function_access_rules: BTreeMap<FnKey, AccessRule>,
     metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
     api: &mut Y,
@@ -150,10 +146,28 @@ where
         PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
         PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
         PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
-        PackageField::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
     );
 
     partitions.insert(MAIN_BASE_PARTITION, main_partition);
+
+
+    let function_access_rules_partition = {
+        function_access_rules.into_iter()
+            .map(|(k, rule)| {
+                let value = SubstateWrapper {
+                    value: Some(rule),
+                    mutability: SubstateMutability::Immutable,
+                };
+                (
+                    SubstateKey::Map(scrypto_encode(&k).unwrap()),
+                    IndexedScryptoValue::from_typed(&value),
+                )
+            })
+            .collect()
+    };
+
+    partitions.insert(MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(), function_access_rules_partition);
+
     partitions.insert(
         TYPE_INFO_FIELD_PARTITION,
         type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
@@ -167,9 +181,13 @@ where
     let metadata_partition = {
         let mut metadata_partition = BTreeMap::new();
         for (key, value) in metadata {
+            let value = SubstateWrapper {
+                value: Some(value),
+                mutability: SubstateMutability::Immutable,
+            };
             metadata_partition.insert(
                 SubstateKey::Map(scrypto_encode(&key).unwrap()),
-                IndexedScryptoValue::from_typed(&Some(value)),
+                IndexedScryptoValue::from_typed(&value),
             );
         }
         metadata_partition
@@ -280,8 +298,16 @@ impl PackageNativePackage {
         fields.push(FieldSchema::normal(
             aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>(),
         ));
-        fields.push(FieldSchema::normal(
-            aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>(),
+
+        let mut collections = Vec::new();
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<FnKey>()),
+                value: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<AccessRule>(),
+                ),
+                can_own: false,
+            },
         ));
 
         let mut functions = BTreeMap::new();
@@ -340,7 +366,7 @@ impl PackageNativePackage {
                     outer_blueprint: None,
                     schema,
                     fields,
-                    collections: vec![],
+                    collections,
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
@@ -504,7 +530,7 @@ impl PackageNativePackage {
             }
 
             (
-                FunctionAccessRulesSubstate { access_rules },
+                access_rules,
                 PackageInfoSubstate {
                     blueprints,
                 },
@@ -670,7 +696,7 @@ impl PackageNativePackage {
             }
 
             (
-                FunctionAccessRulesSubstate { access_rules },
+                access_rules,
                 PackageInfoSubstate {
                     blueprints,
                 },

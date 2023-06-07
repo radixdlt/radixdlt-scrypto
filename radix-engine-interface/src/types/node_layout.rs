@@ -45,7 +45,6 @@ pub enum PackageField {
     CodeType,
     Code,
     Royalty,
-    FunctionAccessRules,
 }
 
 #[repr(u8)]
@@ -53,6 +52,21 @@ pub enum PackageField {
 pub enum FungibleResourceManagerField {
     Divisibility,
     TotalSupply,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum PackagePartitionOffset {
+    Fields,
+    FunctionAccessRules,
+}
+
+impl TryFrom<u8> for PackagePartitionOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
 }
 
 #[repr(u8)]

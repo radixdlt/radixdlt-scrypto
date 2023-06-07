@@ -7,10 +7,10 @@ use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, FunctionAccessRulesSubstate,
+    AccessRulesNativePackage,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::SystemService;
+use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
@@ -86,20 +86,27 @@ impl AuthModule {
                 AccessRule::AllowAll
             }
         } else {
-            let handle = api.kernel_lock_substate(
+            let fn_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
+
+            let handle = api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &PackageField::FunctionAccessRules.into(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(), // TODO: Cleanup
+                &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: None::<()>,
+                        mutability: SubstateMutability::Mutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
                 SystemLockData::default(),
             )?;
-            let package_access_rules: FunctionAccessRulesSubstate =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let function_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
 
-            let access_rule = package_access_rules.access_rules.get(&function_key);
-            if let Some(access_rule) = access_rule {
-                access_rule.clone()
+            let access_rule: SubstateWrapper<Option<AccessRule>> = api.kernel_read_substate(handle)?.as_typed().unwrap();
+
+            if let Some(access_rule) = access_rule.value {
+                access_rule
             } else {
                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                     AuthError::NoFunction(FnIdentifier {

@@ -101,6 +101,7 @@ pub enum TypedAccessRulesSubstateKey {
 pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
+    PackageFunctionAccessRulesKey(FnKey),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
     NonFungibleResourceData(NonFungibleLocalId),
@@ -219,7 +220,19 @@ fn to_typed_object_substate_key_internal(
             )?)
         }
         EntityType::GlobalPackage => {
-            TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
+            let partition_offset =
+                PackagePartitionOffset::try_from(partition_offset)?;
+            match partition_offset {
+                PackagePartitionOffset::Fields => {
+                    TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
+                }
+                PackagePartitionOffset::FunctionAccessRules => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageFunctionAccessRulesKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+            }
         }
         EntityType::GlobalFungibleResourceManager => {
             TypedMainModuleSubstateKey::FungibleResourceField(
@@ -360,6 +373,7 @@ pub enum TypedRoyaltyModuleFieldValue {
 pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
+    PackageFunctionAccessRule(Option<AccessRule>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
     NonFungibleResourceData(Option<ScryptoOwnedRawValue>),
@@ -387,7 +401,6 @@ pub enum TypedPackageFieldValue {
     CodeType(PackageCodeTypeSubstate),
     Code(PackageCodeSubstate),
     Royalty(PackageRoyaltySubstate),
-    FunctionAccessRules(PackageFunctionAccessRulesSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -528,10 +541,11 @@ fn to_typed_object_substate_value(
                 PackageField::CodeType => TypedPackageFieldValue::CodeType(scrypto_decode(data)?),
                 PackageField::Code => TypedPackageFieldValue::Code(scrypto_decode(data)?),
                 PackageField::Royalty => TypedPackageFieldValue::Royalty(scrypto_decode(data)?),
-                PackageField::FunctionAccessRules => {
-                    TypedPackageFieldValue::FunctionAccessRules(scrypto_decode(data)?)
-                }
             })
+        }
+        TypedMainModuleSubstateKey::PackageFunctionAccessRulesKey(_fn_key) => {
+            let value: SubstateWrapper<Option<AccessRule>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageFunctionAccessRule(value.value)
         }
         TypedMainModuleSubstateKey::FungibleResourceField(offset) => {
             TypedMainModuleSubstateValue::FungibleResource(match offset {
