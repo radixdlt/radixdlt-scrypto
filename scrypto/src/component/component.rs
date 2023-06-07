@@ -25,6 +25,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
+use sbor::rust::ops::DerefMut;
 use sbor::rust::prelude::*;
 use sbor::*;
 use sbor::{
@@ -40,7 +41,24 @@ pub trait HasTypeInfo {
     const GLOBAL_TYPE_NAME: &'static str;
 }
 
-pub struct Blueprint<C>(PhantomData<C>);
+pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
+
+impl<C: HasTypeInfo> Blueprint<C> {
+    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(
+            package_address,
+            C::BLUEPRINT_NAME,
+            function_name,
+            scrypto_encode(args).unwrap(),
+        )
+    }
+
+    pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
+    }
+}
 
 pub trait HasStub {
     type Stub: ObjectStub;
@@ -89,6 +107,12 @@ impl<C: HasStub> Deref for Owned<C> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<C: HasStub> DerefMut for Owned<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -318,6 +342,12 @@ impl<O: HasStub> Deref for Global<O> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<O: HasStub> DerefMut for Global<O> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
