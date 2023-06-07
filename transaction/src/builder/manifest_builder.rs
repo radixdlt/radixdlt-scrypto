@@ -4,8 +4,8 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -21,10 +21,10 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
-    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PackageClaimRoyaltiesInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
+    PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -40,7 +40,6 @@ use radix_engine_interface::data::manifest::{
 };
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
-use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
@@ -595,15 +594,21 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn set_package_royalty_config(
+    pub fn set_package_royalty<S: ToString>(
         &mut self,
         package_address: PackageAddress,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        blueprint: S,
+        fn_name: S,
+        royalty: RoyaltyAmount,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
-            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&PackageSetRoyaltyConfigInput { royalty_config }),
+            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&PackageSetRoyaltyInput {
+                blueprint: blueprint.to_string(),
+                fn_name: fn_name.to_string(),
+                royalty,
+            }),
         })
         .0
     }
@@ -611,30 +616,34 @@ impl ManifestBuilder {
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&PackageClaimRoyaltyInput {}),
+            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
+            args: to_manifest_value(&PackageClaimRoyaltiesInput {}),
         })
         .0
     }
 
-    pub fn set_component_royalty_config(
+    pub fn set_component_royalty<S: ToString>(
         &mut self,
         component_address: ComponentAddress,
-        royalty_config: RoyaltyConfig,
+        method: S,
+        amount: RoyaltyAmount,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&ComponentSetRoyaltyInput {
+                method: method.to_string(),
+                amount,
+            }),
         })
         .0
     }
 
-    pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
+    pub fn claim_component_royalties(&mut self, component_address: ComponentAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
+            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
+            args: to_manifest_value(&ComponentClaimRoyaltiesInput {}),
         })
         .0
     }
@@ -693,7 +702,7 @@ impl ManifestBuilder {
     pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
-        schema: PackageSchema,
+        definition: PackageDefinition,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
@@ -707,7 +716,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                schema,
+                definition,
                 royalty_config,
                 metadata,
                 package_address: None,
@@ -718,7 +727,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package with an owner badge.
-    pub fn publish_package(&mut self, code: Vec<u8>, schema: PackageSchema) -> &mut Self {
+    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageDefinition) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
@@ -728,7 +737,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                schema,
+                definition,
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
             }),
@@ -740,7 +749,7 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        schema: PackageSchema,
+        definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -753,7 +762,7 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
-                schema,
+                definition,
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
@@ -923,7 +932,29 @@ impl ManifestBuilder {
     }
 
     pub fn recall(&mut self, vault_id: InternalAddress, amount: Decimal) -> &mut Self {
-        self.add_instruction(InstructionV1::RecallResource { vault_id, amount });
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            vault_id,
+            method_name: VAULT_RECALL_IDENT.to_string(),
+            args: to_manifest_value(&VaultRecallInput { amount }),
+        });
+        self
+    }
+
+    pub fn freeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            vault_id,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: to_manifest_value(&VaultFreezeInput {}),
+        });
+        self
+    }
+
+    pub fn unfreeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            vault_id,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: to_manifest_value(&VaultUnfreezeInput {}),
+        });
         self
     }
 

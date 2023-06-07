@@ -1,11 +1,10 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::{transaction::TransactionReceipt, types::*};
-use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
-    model::{TransactionHeaderV1, TransactionPayloadEncode},
+    model::{TransactionHeaderV1, TransactionPayload},
     validation::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
 };
 
@@ -38,13 +37,29 @@ fn bench_radiswap(c: &mut Criterion) {
         OwnerRole::Updateable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
-    // Instantiate radiswap
+    // Instantiate Radiswap
     let btc = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
     let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
+    let component_address: ComponentAddress = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(account2, 10u32.into())
+                .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
+                .call_method(
+                    account2,
+                    "try_deposit_batch_or_abort",
+                    manifest_args!(ManifestExpression::EntireWorktop),
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+        )
+        .expect_commit(true)
+        .output(1);
+
+    // Contributing an initial amount to radiswap
     let btc_init_amount = Decimal::from(500_000);
     let eth_init_amount = Decimal::from(300_000);
-    let fee_amount = dec!("0.01");
-    let (component_address, _) = test_runner
+    test_runner
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(account2, 10u32.into())
@@ -52,19 +67,10 @@ fn bench_radiswap(c: &mut Criterion) {
                 .withdraw_from_account(account2, eth, eth_init_amount)
                 .take_all_from_worktop(btc, |builder, bucket1| {
                     builder.take_all_from_worktop(eth, |builder, bucket2| {
-                        builder.call_function(
-                            package_address,
-                            "Radiswap",
-                            "instantiate_pool",
-                            manifest_args!(
-                                bucket1,
-                                bucket2,
-                                dec!("1000"),
-                                "LP_BTC_ETH",
-                                "LP token for BTC/ETH swap",
-                                "https://www.radiswap.com",
-                                fee_amount
-                            ),
+                        builder.call_method(
+                            component_address,
+                            "add_liquidity",
+                            manifest_args!(bucket1, bucket2),
                         )
                     })
                 })
@@ -76,8 +82,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit(true)
-        .output::<(ComponentAddress, Own)>(5);
+        .expect_commit(true);
 
     // Transfer `10,000 BTC` from `account2` to `account3`
     let btc_amount = Decimal::from(10_000);
@@ -95,11 +100,13 @@ fn bench_radiswap(c: &mut Criterion) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
+    assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
 
     // Swap 1 BTC into ETH
+    let btc_to_swap = Decimal::from(1);
     let manifest = ManifestBuilder::new()
         .lock_fee(account3, 10u32.into())
-        .withdraw_from_account(account3, btc, dec!(1))
+        .withdraw_from_account(account3, btc, btc_to_swap)
         .take_all_from_worktop(btc, |builder, bucket| {
             builder.call_method(component_address, "swap", manifest_args!(bucket))
         })
@@ -113,8 +120,8 @@ fn bench_radiswap(c: &mut Criterion) {
     let transaction_payload = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(100),
             nonce: 0,
             notary_public_key: pk3.clone().into(),
             notary_is_signatory: true,
@@ -151,11 +158,9 @@ fn do_swap(
     nonce: u32,
 ) -> TransactionReceipt {
     // Validate
-    let validated = NotarizedTransactionValidator::new(ValidationConfig::default(
-        NetworkDefinition::simulator().id,
-    ))
-    .check_length_decode_and_validate_from_slice(transaction_payload)
-    .unwrap();
+    let validated = NotarizedTransactionValidator::new(ValidationConfig::simulator())
+        .validate_from_payload_bytes(transaction_payload)
+        .unwrap();
 
     let mut executable = validated.get_executable();
 

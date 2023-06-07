@@ -162,12 +162,11 @@ pub enum InstructionV1 {
         args: ManifestValue,
     },
 
-    // TODO: Generify?
-    // TODO: Dedicated bucket for this?
-    #[sbor(discriminator(INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR))]
-    RecallResource {
+    #[sbor(discriminator(INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR))]
+    CallDirectVaultMethod {
         vault_id: InternalAddress,
-        amount: Decimal,
+        method_name: String,
+        args: ManifestValue,
     },
 
     //==============
@@ -236,7 +235,7 @@ pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
 pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
 pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
 pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 0x44;
-pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 0x45;
+pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 
 //==============
 // Complex

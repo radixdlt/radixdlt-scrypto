@@ -37,6 +37,12 @@ impl From<ResourceAddress> for ResourceManager {
     }
 }
 
+impl Into<GlobalAddress> for ResourceManager {
+    fn into(self) -> GlobalAddress {
+        GlobalAddress::new_or_panic(self.0 .0 .0.as_node_id().0)
+    }
+}
+
 impl Deref for ResourceManager {
     type Target = Global<ResourceManagerStub>;
 
@@ -46,6 +52,13 @@ impl Deref for ResourceManager {
 }
 
 impl ResourceManager {
+    pub const fn from_address(address: ResourceAddress) -> Self {
+        let stub = ResourceManagerStub(ObjectStubHandle::Global(GlobalAddress::new_or_panic(
+            address.into_node_id().0,
+        )));
+        Self(Global(stub))
+    }
+
     pub fn resource_address(&self) -> ResourceAddress {
         ResourceAddress::new_or_panic(self.0 .0 .0.as_node_id().0.clone())
     }
@@ -73,6 +86,16 @@ impl ResourceManager {
     pub fn set_recallable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
         access_rules.update_role_rule(RECALL_ROLE, access_rule);
+    }
+
+    pub fn set_freezeable(&self, access_rule: AccessRule) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_rule(FREEZE_ROLE, access_rule);
+    }
+
+    pub fn set_unfreezeable(&self, access_rule: AccessRule) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_rule(UNFREEZE_ROLE, access_rule);
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
@@ -119,6 +142,16 @@ impl ResourceManager {
         let access_rules = self.0.access_rules();
         access_rules.update_role_mutability(RECALL_ROLE, RoleList::none());
     }
+
+    pub fn lock_freezeable(&self) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_mutability(FREEZE_ROLE, RoleList::none());
+    }
+
+    pub fn lock_unfreezeable(&self) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_role_mutability(UNFREEZE_ROLE, RoleList::none());
+    }
 }
 
 impl HasStub for ResourceManagerStub {
@@ -139,6 +172,13 @@ impl ObjectStub for ResourceManagerStub {
 }
 
 impl ResourceManagerStub {
+    pub fn create_empty_vault(&self) -> Vault {
+        self.call(
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+            &ResourceManagerCreateEmptyVaultInput {},
+        )
+    }
+
     pub fn resource_type(&self) -> ResourceType {
         self.call(
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,

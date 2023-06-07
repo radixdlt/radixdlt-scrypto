@@ -3,6 +3,7 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
+use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
@@ -18,7 +19,7 @@ use crate::vm::ScryptoVm;
 use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
     CONSENSUS_MANAGER_CREATE_IDENT,
@@ -31,7 +32,7 @@ use radix_engine_store_interface::{
     interface::{CommittableSubstateDatabase, SubstateDatabase},
 };
 use transaction::model::{
-    BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayloadEncode,
+    BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
 use transaction::validation::ManifestIdAllocator;
 
@@ -47,7 +48,7 @@ pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
 
@@ -59,7 +60,10 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
             key,
             accept_delegated_stake: true,
             is_registered: true,
-            metadata: vec![],
+            metadata: vec![(
+                "url".to_string(),
+                MetadataValue::Url(Url(format!("http://test.local?validator={:?}", key))),
+            )],
             owner: default_owner_address,
         }
     }
@@ -75,7 +79,7 @@ pub struct GenesisStakeAllocation {
 pub struct GenesisResource {
     pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
     pub initial_supply: Decimal,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
 
@@ -137,7 +141,7 @@ where
     pub fn bootstrap_test_default(&mut self) -> Option<GenesisReceipts> {
         self.bootstrap_with_genesis_data(
             vec![],
-            1u64,
+            Epoch::of(1),
             ConsensusManagerConfig {
                 max_validators: 10,
                 epoch_change_condition: EpochChangeCondition {
@@ -158,7 +162,7 @@ where
     pub fn bootstrap_with_genesis_data(
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
-        initial_epoch: u64,
+        initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> Option<GenesisReceipts> {
@@ -194,7 +198,7 @@ where
 
     fn execute_system_bootstrap(
         &mut self,
-        initial_epoch: u64,
+        initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
     ) -> TransactionReceipt {
@@ -268,7 +272,7 @@ where
 }
 
 pub fn create_system_bootstrap_transaction(
-    initial_epoch: u64,
+    initial_epoch: Epoch,
     initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
 ) -> SystemTransactionV1 {
@@ -290,15 +294,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
-                schema: PackageNativePackage::schema(),
-                dependent_resources: vec![
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
-                    PACKAGE_OWNER_BADGE,
-                ],
-                dependent_components: vec![],
+                definition: PackageNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: PackageNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -314,12 +311,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
-                schema: MetadataNativePackage::schema(),
-                dependent_resources: vec![],
-                dependent_components: vec![],
+                definition: MetadataNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: MetadataNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -336,12 +329,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
-                schema: RoyaltyNativePackage::schema(),
-                dependent_resources: vec![RADIX_TOKEN],
-                dependent_components: vec![],
+                definition: RoyaltyNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: RoyaltyNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -357,12 +346,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
-                schema: AccessRulesNativePackage::schema(),
-                dependent_resources: vec![],
-                dependent_components: vec![],
+                definition: AccessRulesNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: AccessRulesNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -378,12 +363,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
-                schema: ResourceManagerNativePackage::schema(),
-                dependent_resources: vec![],
-                dependent_components: vec![],
+                definition: ResourceManagerNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -543,18 +524,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: IdentityNativePackage::schema(),
-                dependent_resources: vec![
-                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-                    IDENTITY_OWNER_BADGE,
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
-                ],
-                dependent_components: vec![],
+                definition: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -569,18 +541,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: ConsensusManagerNativePackage::schema(),
+                definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
-                dependent_resources: vec![
-                    RADIX_TOKEN,
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
-                    SYSTEM_TRANSACTION_BADGE,
-                    VALIDATOR_OWNER_BADGE,
-                ],
-                dependent_components: vec![],
-                package_access_rules: ConsensusManagerNativePackage::package_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -620,18 +583,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: AccountNativePackage::schema(),
+                definition: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
-                dependent_resources: vec![
-                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-                    ACCOUNT_OWNER_BADGE,
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
-                ],
-                dependent_components: vec![],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -646,13 +600,26 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: AccessControllerNativePackage::schema(),
+                definition: AccessControllerNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
-                dependent_resources: vec![PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE],
-                dependent_components: vec![CONSENSUS_MANAGER],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
+            }),
+        });
+    }
+
+    // Pool Package
+    {
+        pre_allocated_ids.insert(POOL_PACKAGE.into());
+        let package_address = POOL_PACKAGE.into();
+        instructions.push(InstructionV1::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                definition: PoolNativePackage::definition(),
+                metadata: BTreeMap::new(),
+                native_package_code_id: POOL_ID,
             }),
         });
     }
@@ -667,13 +634,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: TransactionProcessorNativePackage::schema(),
+                definition: TransactionProcessorNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
-                dependent_resources: vec![],
-                dependent_components: vec![CONSENSUS_MANAGER],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -754,7 +717,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: faucet_code,
-                schema: manifest_decode(&faucet_abi).unwrap(),
+                definition: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,
@@ -777,7 +740,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: genesis_helper_code,
-                schema: manifest_decode(&genesis_helper_abi).unwrap(),
+                definition: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,

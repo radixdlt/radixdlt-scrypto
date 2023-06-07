@@ -1,3 +1,4 @@
+use super::blob_provider::*;
 use crate::data::*;
 use crate::errors::*;
 use crate::internal_prelude::TransactionManifestV1;
@@ -11,7 +12,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_ID
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -27,7 +28,7 @@ use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{
@@ -169,11 +170,14 @@ impl NameResolver {
     }
 }
 
-pub fn generate_manifest(
+pub fn generate_manifest<B>(
     instructions: &[ast::Instruction],
     bech32_decoder: &Bech32Decoder,
-    blobs: BTreeMap<Hash, Vec<u8>>,
-) -> Result<TransactionManifestV1, GeneratorError> {
+    blobs: B,
+) -> Result<TransactionManifestV1, GeneratorError>
+where
+    B: IsBlobProvider,
+{
     let mut id_validator = ManifestValidator::new();
     let mut name_resolver = NameResolver::new();
     let mut output = Vec::new();
@@ -190,17 +194,20 @@ pub fn generate_manifest(
 
     Ok(TransactionManifestV1 {
         instructions: output,
-        blobs,
+        blobs: blobs.blobs(),
     })
 }
 
-pub fn generate_instruction(
+pub fn generate_instruction<B>(
     instruction: &ast::Instruction,
     id_validator: &mut ManifestValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<InstructionV1, GeneratorError> {
+    blobs: &B,
+) -> Result<InstructionV1, GeneratorError>
+where
+    B: IsBlobProvider,
+{
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
             resource_address,
@@ -509,16 +516,31 @@ pub fn generate_instruction(
                 args,
             }
         }
-        ast::Instruction::RecallResource { vault_id, amount } => InstructionV1::RecallResource {
-            vault_id: generate_local_address(vault_id, bech32_decoder)?,
-            amount: generate_decimal(amount)?,
-        },
 
         ast::Instruction::DropAllProofs => {
             id_validator
                 .drop_all_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::DropAllProofs
+        }
+
+        /* direct vault method aliases */
+        ast::Instruction::RecallVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
+            vault_id: generate_local_address(vault_id, bech32_decoder)?,
+            method_name: VAULT_RECALL_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::FreezeVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
+            vault_id: generate_local_address(vault_id, bech32_decoder)?,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::UnfreezeVault { vault_id, args } => {
+            InstructionV1::CallDirectVaultMethod {
+                vault_id: generate_local_address(vault_id, bech32_decoder)?,
+                method_name: VAULT_UNFREEZE_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
         }
 
         /* call function aliases */
@@ -609,14 +631,14 @@ pub fn generate_instruction(
         ast::Instruction::SetComponentRoyaltyConfig { address, args } => {
             InstructionV1::CallRoyaltyMethod {
                 address: generate_global_address(address, bech32_decoder)?,
-                method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::ClaimComponentRoyalty { address, args } => {
             InstructionV1::CallRoyaltyMethod {
                 address: generate_global_address(address, bech32_decoder)?,
-                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
@@ -643,12 +665,12 @@ pub fn generate_instruction(
         },
         ast::Instruction::SetPackageRoyaltyConfig { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {
@@ -669,12 +691,15 @@ macro_rules! invalid_type {
     };
 }
 
-fn generate_args(
+fn generate_args<B>(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ManifestValue, GeneratorError> {
+    blobs: &B,
+) -> Result<ManifestValue, GeneratorError>
+where
+    B: IsBlobProvider,
+{
     let mut fields = Vec::new();
     for v in values {
         fields.push(generate_value(v, None, resolver, bech32_decoder, blobs)?);
@@ -897,16 +922,16 @@ fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, Generat
     }
 }
 
-fn generate_blob(
-    value: &ast::Value,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ManifestBlobRef, GeneratorError> {
+fn generate_blob<B>(value: &ast::Value, blobs: &B) -> Result<ManifestBlobRef, GeneratorError>
+where
+    B: IsBlobProvider,
+{
     match value {
         ast::Value::Blob(inner) => match &**inner {
             ast::Value::String(s) => {
                 let hash = Hash::from_str(s).map_err(|_| GeneratorError::InvalidBlobHash)?;
                 blobs
-                    .get(&hash)
+                    .get_blob(&hash)
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
                 Ok(ManifestBlobRef(hash.0))
             }
@@ -947,13 +972,16 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
     Ok(bytes)
 }
 
-pub fn generate_value(
+pub fn generate_value<B>(
     value: &ast::Value,
     expected_type: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ManifestValue, GeneratorError> {
+    blobs: &B,
+) -> Result<ManifestValue, GeneratorError>
+where
+    B: IsBlobProvider,
+{
     if let Some(ty) = expected_type {
         if ty != value.value_kind() {
             return Err(GeneratorError::UnexpectedValue {
@@ -1118,13 +1146,16 @@ pub fn generate_value(
     }
 }
 
-fn generate_singletons(
+fn generate_singletons<B>(
     elements: &Vec<ast::Value>,
     expected_value_kind: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Vec<ManifestValue>, GeneratorError> {
+    blobs: &B,
+) -> Result<Vec<ManifestValue>, GeneratorError>
+where
+    B: IsBlobProvider,
+{
     let mut result = vec![];
     for element in elements {
         result.push(generate_value(
@@ -1138,14 +1169,17 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_kv_entries(
+fn generate_kv_entries<B>(
     entries: &[(ast::Value, ast::Value)],
     key_value_kind: ManifestValueKind,
     value_value_kind: ManifestValueKind,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Vec<(ManifestValue, ManifestValue)>, GeneratorError> {
+    blobs: &B,
+) -> Result<Vec<(ManifestValue, ManifestValue)>, GeneratorError>
+where
+    B: IsBlobProvider,
+{
     let mut result = vec![];
     for entry in entries {
         let key = generate_value(
@@ -1199,7 +1233,7 @@ mod tests {
                     None,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut BTreeMap::new()
+                    &BlobProvider::default()
                 ),
                 Ok($expected)
             );
@@ -1208,7 +1242,7 @@ mod tests {
 
     #[macro_export]
     macro_rules! generate_instruction_ok {
-        ( $s:expr, $expected:expr, $($blob_hash: expr),* ) => {{
+        ( $s:expr, $expected:expr $(,)? ) => {{
             // If you use the following output for test cases, make sure you've checked the diff
             // println!("{}", crate::manifest::decompile(&[$expected.clone()], &NetworkDefinition::simulator()).unwrap());
             let instruction = Parser::new(tokenize($s).unwrap())
@@ -1222,11 +1256,7 @@ mod tests {
                     &mut id_validator,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut BTreeMap::from([
-                        $(
-                            (($blob_hash).parse().unwrap(), Vec::new()),
-                        )*
-                    ])
+                    &MockBlobProvider::default()
                 ),
                 Ok($expected)
             );
@@ -1242,7 +1272,7 @@ mod tests {
                 None,
                 &mut NameResolver::new(),
                 &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                &mut BTreeMap::new(),
+                &BlobProvider::default(),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
@@ -1429,8 +1459,6 @@ mod tests {
                     Roles::new()
                 ),
             },
-            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
-            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
         );
     }
 

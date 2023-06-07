@@ -7,6 +7,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
     PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
@@ -27,7 +28,7 @@ const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_e
 pub struct AccountNativePackage;
 
 impl AccountNativePackage {
-    pub fn schema() -> PackageSchema {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -326,7 +327,7 @@ impl AccountNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        PackageSchema {
+        let schema = PackageSchema {
             blueprints: btreemap!(
                 ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
@@ -336,10 +337,29 @@ impl AccountNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
+                    dependencies: btreeset!(
+                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                        ACCOUNT_OWNER_BADGE.into(),
+                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    ),
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 }
             ),
+        };
+
+        let function_access_rules = btreemap!(
+            ACCOUNT_BLUEPRINT.to_string() => btreemap!(
+                ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
+                ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
+                ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+            )
+        );
+
+        PackageDefinition {
+            schema,
+            function_access_rules,
         }
     }
 

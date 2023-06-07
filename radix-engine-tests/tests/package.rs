@@ -2,6 +2,7 @@ use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
@@ -26,7 +27,7 @@ fn missing_memory_should_cause_error() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageSchema::default(),
+            PackageDefinition::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -122,7 +123,7 @@ fn test_basic_package() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            single_function_package_schema("Test", "f"),
+            single_function_package_definition("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
@@ -160,6 +161,7 @@ fn test_basic_package_missing_export() {
             ),
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
+            dependencies: btreeset!(),
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         },
@@ -170,7 +172,10 @@ fn test_basic_package_missing_export() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            package_schema,
+            PackageDefinition {
+                schema: package_schema,
+                function_access_rules: btreemap!(),
+            },
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,

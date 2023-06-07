@@ -43,12 +43,12 @@ pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
-        valid_from: u32,
-        current_epoch: u32,
+        valid_from: Epoch,
+        current_epoch: Epoch,
     },
     TransactionEpochNoLongerValid {
-        valid_until: u32,
-        current_epoch: u32,
+        valid_until: Epoch,
+        current_epoch: Epoch,
     },
     BucketNotFound(u32),
     ProofNotFound(u32),
@@ -373,13 +373,25 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
-                InstructionV1::RecallResource { vault_id, amount } => {
+                InstructionV1::CallDirectVaultMethod {
+                    vault_id,
+                    method_name,
+                    args,
+                } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
+
                     let rtn = api.call_method_advanced(
                         vault_id.as_node_id(),
                         true,
                         ObjectModuleId::Main,
-                        VAULT_RECALL_IDENT,
-                        scrypto_encode(&VaultRecallInput { amount }).unwrap(),
+                        method_name.as_str(),
+                        scrypto_encode(&scrypto_value).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
@@ -541,9 +553,7 @@ impl TransactionProcessor {
             } => {
                 // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                 //        Which could allow for better caching of transaction validity over epoch boundaries
-                let current_epoch: u32 = Runtime::current_epoch(env)?
-                    .try_into()
-                    .expect("Epoch convertible to u32");
+                let current_epoch = Runtime::current_epoch(env)?;
 
                 if !should_skip_assertion && current_epoch < *start_epoch_inclusive {
                     return Err(RuntimeError::ApplicationError(
@@ -559,7 +569,7 @@ impl TransactionProcessor {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::TransactionProcessorError(
                             TransactionProcessorError::TransactionEpochNoLongerValid {
-                                valid_until: *end_epoch_exclusive - 1,
+                                valid_until: end_epoch_exclusive.previous(),
                                 current_epoch,
                             },
                         ),

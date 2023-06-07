@@ -6,25 +6,18 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NotarizedTransactionV1 {
     pub signed_intent: SignedIntentV1,
     pub notary_signature: NotarySignatureV1,
 }
 
-impl TransactionPayloadEncode for NotarizedTransactionV1 {
-    type EncodablePayload<'a> =
-        SborFixedEnumVariant<{ TransactionDiscriminator::V1Notarized as u8 }, &'a Self>;
-
+impl TransactionPayload for NotarizedTransactionV1 {
+    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1Notarized as u8 }, Self>;
     type Prepared = PreparedNotarizedTransactionV1;
-
-    fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
-        SborFixedEnumVariant::new(self)
-    }
+    type Raw = RawNotarizedTransaction;
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // For toolkit
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedNotarizedTransactionV1 {
     pub signed_intent: PreparedSignedIntentV1,
@@ -55,6 +48,8 @@ impl TransactionFullChildPreparable for PreparedNotarizedTransactionV1 {
 }
 
 impl TransactionPayloadPreparable for PreparedNotarizedTransactionV1 {
+    type Raw = RawNotarizedTransaction;
+
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
         let ((signed_intent, notary_signature), summary) =

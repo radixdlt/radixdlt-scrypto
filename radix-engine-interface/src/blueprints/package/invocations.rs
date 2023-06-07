@@ -15,7 +15,7 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
-    pub schema: PackageSchema,
+    pub definition: PackageDefinition,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
@@ -23,7 +23,7 @@ pub struct PackagePublishWasmInput {
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
-    pub schema: PackageSchema,
+    pub definition: PackageDefinition,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
@@ -36,7 +36,7 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub code: Vec<u8>,
-    pub schema: PackageSchema,
+    pub definition: PackageDefinition,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
@@ -46,7 +46,7 @@ pub struct PackagePublishWasmAdvancedInput {
 pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub code: ManifestBlobRef,
-    pub schema: PackageSchema,
+    pub definition: PackageDefinition,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
@@ -60,32 +60,36 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 pub struct PackagePublishNativeInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub native_package_code_id: u8,
-    pub schema: PackageSchema,
-    pub dependent_resources: Vec<ResourceAddress>,
-    pub dependent_components: Vec<ComponentAddress>,
+    pub definition: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub package_access_rules: BTreeMap<FnKey, AccessRule>,
-    pub default_package_access_rule: AccessRule,
 }
 
 pub type PackagePublishNativeOutput = PackageAddress;
 
-pub const PACKAGE_SET_ROYALTY_CONFIG_IDENT: &str = "PackageRoyalty_set_royalty_config";
+pub const PACKAGE_SET_ROYALTY_IDENT: &str = "PackageRoyalty_set_royalty";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageSetRoyaltyConfigInput {
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
+pub struct PackageSetRoyaltyInput {
+    pub blueprint: String,
+    pub fn_name: String,
+    pub royalty: RoyaltyAmount,
 }
 
-pub type PackageSetRoyaltyConfigOutput = ();
+pub type PackageSetRoyaltyOutput = ();
 
-pub const PACKAGE_CLAIM_ROYALTY_IDENT: &str = "PackageRoyalty_claim_royalty";
+pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageClaimRoyaltyInput {}
+pub struct PackageClaimRoyaltiesInput {}
 
-pub type PackageClaimRoyaltyOutput = Bucket;
+pub type PackageClaimRoyaltiesOutput = Bucket;
+
+#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
+pub struct PackageDefinition {
+    pub schema: PackageSchema,
+    pub function_access_rules: BTreeMap<String, BTreeMap<String, AccessRule>>,
+}

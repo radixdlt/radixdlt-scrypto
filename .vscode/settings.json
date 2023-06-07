@@ -2,7 +2,7 @@
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
         "simulator/Cargo.toml",
-        "fuzz-tests/Cargo.toml"
+        "fuzz-tests/Cargo.toml",
     ],
     "cSpell.words": [
         "bech",

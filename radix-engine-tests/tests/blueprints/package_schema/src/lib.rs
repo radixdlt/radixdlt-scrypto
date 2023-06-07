@@ -185,12 +185,32 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
+        dependencies: btreeset!(),
         method_auth_template: btreemap!(),
         outer_method_auth_template: btreemap!(),
     };
 
+    let function_access_rules: BTreeMap<String, AccessRule> = btreemap!(
+        "invalid_output".to_string() => AccessRule::AllowAll,
+        "unit".to_string() => AccessRule::AllowAll,
+        "bool".to_string() => AccessRule::AllowAll,
+        "i8".to_string() => AccessRule::AllowAll,
+        "i16".to_string() => AccessRule::AllowAll,
+        "i32".to_string() => AccessRule::AllowAll,
+        "i64".to_string() => AccessRule::AllowAll,
+        "i128".to_string() => AccessRule::AllowAll,
+        "u8".to_string() => AccessRule::AllowAll,
+        "u16".to_string() => AccessRule::AllowAll,
+        "u32".to_string() => AccessRule::AllowAll,
+        "u64".to_string() => AccessRule::AllowAll,
+        "u128".to_string() => AccessRule::AllowAll,
+        "result".to_string() => AccessRule::AllowAll,
+        "tree_map".to_string() => AccessRule::AllowAll,
+        "hash_set".to_string() => AccessRule::AllowAll,
+    );
+
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&schema).unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&(schema, function_access_rules)).unwrap(),
     )
 }
 

@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod mutable_access_rules_component {
-    define_static_auth! {
+    enable_method_auth! {
         roles {
             borrow_funds_auth,
             deposit_funds_auth

@@ -1,6 +1,9 @@
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
+use crate::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
+use crate::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
+use crate::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError,
@@ -37,8 +40,8 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
-    InstanceSchema, KeyValueStoreSchema, TypeRef,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, InstanceSchema, KeyValueStoreSchema,
+    TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -841,6 +844,22 @@ where
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
         self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
+    }
+
+    fn attach_access_rules(
+        &mut self,
+        node_id: &NodeId,
+        access_rules_node_id: &NodeId,
+    ) -> Result<(), RuntimeError> {
+        self.kernel_move_module(
+            access_rules_node_id,
+            OBJECT_BASE_PARTITION,
+            node_id,
+            ObjectModuleId::AccessRules.base_partition_num(),
+        )?;
+        self.kernel_drop_node(access_rules_node_id)?;
+
+        Ok(())
     }
 
     #[trace_resources]
@@ -2186,6 +2205,9 @@ pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
         }
         (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
         (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
+        (POOL_PACKAGE, ONE_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalOneResourcePool,
+        (POOL_PACKAGE, TWO_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalTwoResourcePool,
+        (POOL_PACKAGE, MULTI_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalMultiResourcePool,
         _ => EntityType::GlobalGenericComponent,
     }
 }

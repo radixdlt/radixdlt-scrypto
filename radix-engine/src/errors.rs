@@ -2,6 +2,9 @@ use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
+use crate::blueprints::pool::multi_resource_pool::MultiResourcePoolError;
+use crate::blueprints::pool::one_resource_pool::OneResourcePoolError;
+use crate::blueprints::pool::two_resource_pool::TwoResourcePoolError;
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
     BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,
@@ -43,12 +46,12 @@ pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
     TransactionEpochNotYetValid {
-        valid_from: u32,
-        current_epoch: u32,
+        valid_from: Epoch,
+        current_epoch: Epoch,
     },
     TransactionEpochNoLongerValid {
-        valid_until: u32,
-        current_epoch: u32,
+        valid_until: Epoch,
+        current_epoch: Epoch,
     },
 }
 
@@ -409,6 +412,12 @@ pub enum ApplicationError {
     EventError(Box<EventError>),
 
     MetadataError(MetadataPanicError),
+
+    OneResourcePoolError(OneResourcePoolError),
+
+    TwoResourcePoolError(TwoResourcePoolError),
+
+    MultiResourcePoolError(MultiResourcePoolError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

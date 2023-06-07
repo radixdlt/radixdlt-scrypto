@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::EntityType;
-use radix_engine::utils::extract_schema;
+use radix_engine::utils::extract_definition;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::wasm::InstrumentedCode;
 use radix_engine::vm::wasm::WasmEngine;
@@ -11,10 +11,10 @@ use sbor::rust::sync::Arc;
 
 fn bench_wasm_validation(c: &mut Criterion) {
     let code = include_bytes!("../../assets/faucet.wasm");
-    let abi = extract_schema(code).unwrap();
+    let definition = extract_definition(code).unwrap();
 
     c.bench_function("WASM::validate_wasm", |b| {
-        b.iter(|| WasmValidator::default().validate(code, &abi))
+        b.iter(|| WasmValidator::default().validate(code, &definition.schema))
     });
 }
 

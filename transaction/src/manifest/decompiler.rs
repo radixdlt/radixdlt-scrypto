@@ -9,7 +9,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_ID
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -25,7 +25,7 @@ use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -34,6 +34,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+    VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT, VAULT_UNFREEZE_IDENT,
 };
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
@@ -355,13 +356,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                 // Nb - For Main method call, we also check the address type to avoid name clashing.
 
                 /* Package */
-                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                (address, PACKAGE_SET_ROYALTY_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     fields.push(to_manifest_value(address));
                     "SET_PACKAGE_ROYALTY_CONFIG"
                 }
-                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                (address, PACKAGE_CLAIM_ROYALTIES_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     fields.push(to_manifest_value(address));
@@ -424,11 +425,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Component royalty */
-                (address, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => {
+                (address, COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => {
                     fields.push(to_manifest_value(address));
                     "SET_COMPONENT_ROYALTY_CONFIG"
                 }
-                (address, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => {
+                (address, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => {
                     fields.push(to_manifest_value(address));
                     "CLAIM_COMPONENT_ROYALTY"
                 }
@@ -514,8 +515,41 @@ pub fn decompile_instruction<F: fmt::Write>(
             let parameters = Value::Tuple { fields };
             (name, parameters)
         }
-        InstructionV1::RecallResource { vault_id, amount } => {
-            ("RECALL_RESOURCE", to_manifest_value(&(vault_id, amount)))
+        InstructionV1::CallDirectVaultMethod {
+            vault_id,
+            method_name,
+            args,
+        } => {
+            let mut fields = Vec::new();
+            let name = match method_name.as_str() {
+                VAULT_RECALL_IDENT => {
+                    fields.push(to_manifest_value(vault_id));
+                    "RECALL_VAULT"
+                }
+                VAULT_FREEZE_IDENT => {
+                    fields.push(to_manifest_value(vault_id));
+                    "FREEZE_VAULT"
+                }
+                VAULT_UNFREEZE_IDENT => {
+                    fields.push(to_manifest_value(vault_id));
+                    "UNFREEZE_VAULT"
+                }
+                /* Default */
+                _ => {
+                    fields.push(to_manifest_value(vault_id));
+                    fields.push(to_manifest_value(method_name));
+                    "CALL_DIRECT_VAULT_METHOD"
+                }
+            };
+
+            if let Value::Tuple { fields: arg_fields } = args {
+                fields.extend(arg_fields.clone());
+            } else {
+                return Err(DecompileError::InvalidArguments);
+            }
+
+            let parameters = Value::Tuple { fields };
+            (name, parameters)
         }
 
         InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())),

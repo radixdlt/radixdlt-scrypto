@@ -110,9 +110,7 @@ pub fn package_of_direct_caller(package: PackageAddress) -> ResourceOrNonFungibl
 /// * The main module of the given global component (pass a `ComponentAddress` or `GlobalAddress`)
 /// * A package function on the given blueprint (pass `(PackageAddress, String)` or `Blueprint`)
 pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFungible {
-    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::global_caller_badge(
-        global_caller.into(),
-    ))
+    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::global_caller_badge(global_caller))
 }
 
 pub fn require<T>(required: T) -> AccessRuleNode

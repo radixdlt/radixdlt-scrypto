@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod royalty_test {
-    define_static_auth! {
+    enable_method_auth! {
         methods {
             paid_method => PUBLIC;
             paid_method_usd => PUBLIC;

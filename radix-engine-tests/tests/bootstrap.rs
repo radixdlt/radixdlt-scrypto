@@ -8,7 +8,7 @@ use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
@@ -47,7 +47,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
-            1u64,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
         )
@@ -103,7 +103,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
-            1u64,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
         )
@@ -162,7 +162,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
-            1u64,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
         )
@@ -205,7 +205,10 @@ fn test_genesis_resource_with_initial_allocation() {
     let genesis_resource = GenesisResource {
         address_bytes_without_entity_id,
         initial_supply: allocation_amount,
-        metadata: vec![("symbol".to_string(), "TST".to_string())],
+        metadata: vec![(
+            "symbol".to_string(),
+            MetadataValue::String("TST".to_string()),
+        )],
         owner: Some(resource_owner),
     };
     let resource_allocation = GenesisResourceAllocation {
@@ -228,7 +231,7 @@ fn test_genesis_resource_with_initial_allocation() {
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
-            1u64,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
         )
@@ -343,7 +346,7 @@ fn test_genesis_stake_allocation() {
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
-            1u64,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
         )
@@ -383,6 +386,39 @@ fn test_genesis_stake_allocation() {
             .values()
             .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
     }
+
+    let create_validators_receipt = data_ingestion_receipts.pop().unwrap();
+    {
+        let new_validators: Vec<ComponentAddress> = create_validators_receipt
+            .expect_commit_success()
+            .state_update_summary
+            .new_components
+            .iter()
+            .filter(|c| c.as_node_id().entity_type() == Some(EntityType::GlobalValidator))
+            .cloned()
+            .collect();
+
+        for (index, validator_key) in vec![validator_0_key, validator_1_key]
+            .into_iter()
+            .enumerate()
+        {
+            let validator_url_entry = substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+                    &new_validators[index].as_node_id(),
+                    METADATA_KV_STORE_PARTITION,
+                    &SubstateKey::Map(scrypto_encode("url").unwrap()),
+                )
+                .unwrap();
+            if let Some(MetadataValue::Url(url)) = validator_url_entry {
+                assert_eq!(
+                    url,
+                    Url(format!("http://test.local?validator={:?}", validator_key))
+                );
+            } else {
+                panic!("Validator url was not a Url");
+            }
+        }
+    }
 }
 
 #[test]
@@ -395,7 +431,7 @@ fn test_genesis_time() {
     let _ = bootstrapper
         .bootstrap_with_genesis_data(
             vec![],
-            1u64,
+            Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
         )

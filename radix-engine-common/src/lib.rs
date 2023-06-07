@@ -66,4 +66,5 @@ pub mod prelude {
     pub use super::network::*;
     pub use super::time::*;
     pub use super::types::*;
+    pub use crate::define_wrapped_hash;
 }
