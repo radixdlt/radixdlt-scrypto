@@ -1,5 +1,4 @@
 use crate::data::*;
-use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
@@ -51,7 +50,6 @@ pub enum DecompileError {
     InvalidArguments,
     EncodeError(EncodeError),
     DecodeError(DecodeError),
-    IdAllocationError(ManifestIdAllocationError),
     FormattingError(fmt::Error),
 }
 
@@ -109,20 +107,14 @@ impl<'a> DecompilationContext<'a> {
     }
 
     pub fn new_bucket(&mut self) -> Result<ManifestBucket, DecompileError> {
-        let bucket = self
-            .id_allocator
-            .new_bucket_id()
-            .map_err(DecompileError::IdAllocationError)?;
+        let bucket = self.id_allocator.new_bucket_id();
         let name = format!("bucket{}", self.bucket_names.len() + 1);
         self.bucket_names.insert(bucket, name.clone());
         Ok(bucket)
     }
 
     pub fn new_proof(&mut self) -> Result<ManifestProof, DecompileError> {
-        let proof = self
-            .id_allocator
-            .new_proof_id()
-            .map_err(DecompileError::IdAllocationError)?;
+        let proof = self.id_allocator.new_proof_id();
         let name = format!("proof{}", self.proof_names.len() + 1);
         self.proof_names.insert(proof, name.clone());
         Ok(proof)
@@ -516,7 +508,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             (name, parameters)
         }
         InstructionV1::CallDirectVaultMethod {
-            vault_id,
+            address: vault_id,
             method_name,
             args,
         } => {

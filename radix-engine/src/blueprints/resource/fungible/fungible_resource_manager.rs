@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::{FungibleResourceManagerField, NodeId};
+use radix_engine_interface::types::FungibleResourceManagerField;
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
@@ -83,10 +83,12 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
-        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
+        let resource_address = ResourceAddress::new_or_panic(address.into());
+        globalize_resource_manager(object_id, address_reservation, access_rules, metadata, api)?;
 
         Ok(resource_address)
     }
@@ -101,16 +103,17 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
 
         Self::create_with_initial_supply_and_address(
             divisibility,
             metadata,
             access_rules,
             initial_supply,
-            resource_address.into(),
+            address_reservation,
             api,
         )
     }
@@ -120,7 +123,7 @@ impl FungibleResourceManagerBlueprint {
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
-        resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
+        resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
@@ -136,12 +139,11 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
-        let resource_address = ResourceAddress::new_or_panic(resource_address);
         check_new_amount(divisibility, initial_supply)?;
 
-        let bucket = globalize_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_fungible_with_initial_supply(
             object_id,
-            resource_address,
+            resource_address_reservation,
             access_rules,
             metadata,
             initial_supply,

@@ -75,13 +75,21 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
             .borrow_mut()
             .get_node_type_info(&node_id)?;
         let mapped = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                TypeInfoForValidation::Object {
-                    package: blueprint.package_address,
-                    blueprint: blueprint.blueprint_name,
-                }
-            }
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint: blueprint_id,
+                ..
+            }) => TypeInfoForValidation::Object {
+                package: blueprint_id.package_address,
+                blueprint: blueprint_id.blueprint_name,
+            },
             TypeInfoSubstate::KeyValueStore(_) => TypeInfoForValidation::KeyValueStore,
+            TypeInfoSubstate::GlobalAddressReservation(_) => {
+                TypeInfoForValidation::GlobalAddressReservation
+            }
+            TypeInfoSubstate::GlobalAddressPhantom(info) => TypeInfoForValidation::Object {
+                package: info.blueprint_id.package_address,
+                blueprint: info.blueprint_id.blueprint_name,
+            },
         };
         Some(mapped)
     }
@@ -98,6 +106,7 @@ pub enum TypeInfoForValidation {
         blueprint: String,
     },
     KeyValueStore,
+    GlobalAddressReservation,
 }
 
 impl TypeInfoForValidation {
@@ -227,6 +236,9 @@ fn apply_custom_validation_to_custom_value(
                 }
                 OwnValidation::IsVault => node_id.is_internal_vault(),
                 OwnValidation::IsKeyValueStore => node_id.is_internal_kv_store(),
+                OwnValidation::IsGlobalAddressReservation => {
+                    matches!(type_info, TypeInfoForValidation::GlobalAddressReservation)
+                }
                 OwnValidation::IsTypedObject(expected_package, expected_blueprint) => type_info
                     .matches_with_origin(
                         expected_package,

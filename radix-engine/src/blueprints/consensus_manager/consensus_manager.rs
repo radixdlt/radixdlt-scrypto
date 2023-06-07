@@ -178,8 +178,8 @@ pub struct ConsensusManagerBlueprint;
 
 impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
-        validator_token_address: [u8; NodeId::LENGTH], // TODO: Clean this up
-        component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
+        validator_token_address_reservation: GlobalAddressReservation,
+        component_address_reservation: GlobalAddressReservation,
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
@@ -188,8 +188,6 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ComponentAddress::new_or_panic(component_address);
-
         {
             let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
             let mut access_rules = BTreeMap::new();
@@ -207,7 +205,7 @@ impl ConsensusManagerBlueprint {
                 NonFungibleIdType::UUID,
                 metadata,
                 access_rules,
-                validator_token_address,
+                validator_token_address_reservation,
                 api,
             )?;
         };
@@ -265,7 +263,7 @@ impl ConsensusManagerBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address.into(),
+            component_address_reservation,
         )?;
 
         Ok(())
