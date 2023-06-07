@@ -3,7 +3,9 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::ModuleInit;
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::NativeNonFungibleBucket;
@@ -85,12 +87,12 @@ macro_rules! handle_call_method {
 }
 
 impl TransactionProcessorBlueprint {
-    pub(crate) fn run<Y>(
+    pub(crate) fn run<Y, L: Default>(
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -508,35 +510,42 @@ impl TransactionProcessor {
         Ok(new_id)
     }
 
-    fn handle_call_return_data<Y>(
+    fn handle_call_return_data<Y, L: Default>(
         &mut self,
         value: &IndexedScryptoValue,
         worktop: &Worktop,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for node_id in value.owned_nodes() {
-            let info = api.get_object_info(node_id)?;
-            match (
-                info.blueprint.package_address,
-                info.blueprint.blueprint_name.as_str(),
-            ) {
-                (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
-                | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
-                    let bucket = Bucket(Own(node_id.clone()));
-                    worktop.put(bucket, api)?;
-                }
-                (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
-                | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                    let proof = Proof(Own(node_id.clone()));
-                    LocalAuthZone::push(proof, api)?;
-                }
-                _ => {
+            let info = TypeInfoBlueprint::get_type(node_id, api)?;
+            match info {
+                TypeInfoSubstate::Object(info) => match (
+                    info.blueprint.package_address,
+                    info.blueprint.blueprint_name.as_str(),
+                ) {
+                    (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
+                    | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
+                        let bucket = Bucket(Own(node_id.clone()));
+                        worktop.put(bucket, api)?;
+                    }
+                    (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
+                    | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                        let proof = Proof(Own(node_id.clone()));
+                        LocalAuthZone::push(proof, api)?;
+                    }
+                    _ => {
+                        self.create_manifest_own(node_id.clone())?;
+                    }
+                },
+                TypeInfoSubstate::KeyValueStore(_)
+                | TypeInfoSubstate::GlobalAddressOwnership(_) => {
                     self.create_manifest_own(node_id.clone())?;
                 }
+                TypeInfoSubstate::GlobalAddressPhantom(_) => unreachable!(),
             }
         }
 

@@ -93,11 +93,17 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         xrd_amount: Decimal::one(),
     };
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
-        GenesisDataChunk::Stakes {
-            accounts: vec![staker_address],
-            allocations: vec![(validator_key, vec![stake])],
-        },
+        (
+            vec![],
+            GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        ),
+        (
+            vec![],
+            GenesisDataChunk::Stakes {
+                accounts: vec![staker_address],
+                allocations: vec![(validator_key, vec![stake])],
+            },
+        ),
     ];
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
@@ -275,12 +281,14 @@ fn test_genesis_resource_with_initial_allocation() {
     let allocation_receipt = data_ingestion_receipts.pop().unwrap();
     let resource_creation_receipt = data_ingestion_receipts.pop().unwrap();
 
+    println!("{:?}", resource_creation_receipt);
+
     let created_owner_badge = resource_creation_receipt
         .expect_commit_success()
-        .new_resource_addresses()[0];
+        .new_resource_addresses()[1];
     let created_resource = resource_creation_receipt
         .expect_commit_success()
-        .new_resource_addresses()[1];
+        .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
     assert_eq!(
         resource_creation_receipt
             .expect_commit_success()

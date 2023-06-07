@@ -1,3 +1,5 @@
+use scrypto::api::ClientObjectApi;
+use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -10,6 +12,11 @@ mod apa {
         pub fn create_and_return() -> (Owned<AnyComponent>, ComponentAddress) {
             let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
             (own, address)
+        }
+
+        pub fn create_and_drop() {
+            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            ScryptoEnv.drop_object(own.0.handle().as_node_id()).unwrap();
         }
 
         pub fn create_and_call() {
