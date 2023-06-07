@@ -88,13 +88,7 @@ impl FungibleResourceManagerBlueprint {
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
         let resource_address = ResourceAddress::new_or_panic(address.into());
-        globalize_resource_manager(
-            object_id,
-            Own(address_reservation),
-            access_rules,
-            metadata,
-            api,
-        )?;
+        globalize_resource_manager(object_id, address_reservation, access_rules, metadata, api)?;
 
         Ok(resource_address)
     }
@@ -119,7 +113,7 @@ impl FungibleResourceManagerBlueprint {
             metadata,
             access_rules,
             initial_supply,
-            Own(address_reservation),
+            address_reservation,
             api,
         )
     }
@@ -129,7 +123,7 @@ impl FungibleResourceManagerBlueprint {
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
-        resource_address_reservation: Own,
+        resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where

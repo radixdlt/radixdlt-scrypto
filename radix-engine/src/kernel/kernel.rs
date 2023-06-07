@@ -129,7 +129,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             let mut system = SystemService::new(&mut kernel);
             let global_address_reservation =
                 system.prepare_global_address(blueprint_id.clone(), address.clone())?;
-            global_address_reservations.push(Own(global_address_reservation));
+            global_address_reservations.push(global_address_reservation);
         }
 
         let mut system = SystemService::new(&mut kernel);

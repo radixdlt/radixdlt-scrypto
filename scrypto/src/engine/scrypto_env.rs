@@ -1,4 +1,5 @@
 use crate::engine::wasm_api::*;
+use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
@@ -97,7 +98,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn allocate_global_address(
         &mut self,
         blueprint_id: BlueprintId,
-    ) -> Result<(NodeId, GlobalAddress), ClientApiError> {
+    ) -> Result<(GlobalAddressReservation, GlobalAddress), ClientApiError> {
         let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
         let bytes = copy_buffer(unsafe {
             allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
@@ -126,7 +127,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: NodeId,
+        address_reservation: GlobalAddressReservation,
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
         let address_reservation = scrypto_encode(&address_reservation).unwrap();
@@ -145,7 +146,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         _modules: BTreeMap<ObjectModuleId, NodeId>,
-        _address_reservation: NodeId,
+        _address_reservation: GlobalAddressReservation,
         _inner_object_blueprint: &str,
         _inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
@@ -195,7 +196,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _blueprint_id: BlueprintId,
         _global_address: GlobalAddress,
-    ) -> Result<NodeId, ClientApiError> {
+    ) -> Result<GlobalAddressReservation, ClientApiError> {
         unimplemented!()
     }
 }

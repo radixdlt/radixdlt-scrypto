@@ -112,7 +112,7 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungible_schema,
             metadata,
             access_rules,
-            Own(address_reservation),
+            address_reservation,
             api,
         )
     }
@@ -122,7 +122,7 @@ impl NonFungibleResourceManagerBlueprint {
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        resource_address_reservation: Own,
+        resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -226,7 +226,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            Own(address_reservation),
+            address_reservation,
             access_rules,
             metadata,
             ids,
@@ -285,7 +285,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            Own(address_reservation),
+            address_reservation,
             access_rules,
             metadata,
             ids,

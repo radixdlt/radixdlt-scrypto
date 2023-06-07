@@ -41,6 +41,7 @@ pub enum OwnValidation {
     IsProof,
     IsVault,
     IsKeyValueStore,
+    IsGlobalAddressReservation,
     IsTypedObject(Option<PackageAddress>, String),
 }
 
@@ -51,6 +52,7 @@ impl OwnValidation {
             OwnValidation::IsProof => false,
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsGlobalAddressReservation => false,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
         }
@@ -62,6 +64,7 @@ impl OwnValidation {
             OwnValidation::IsProof => true,
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsGlobalAddressReservation => false,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
         }
@@ -73,6 +76,7 @@ impl OwnValidation {
             OwnValidation::IsProof => false,
             OwnValidation::IsVault => true,
             OwnValidation::IsKeyValueStore => true,
+            OwnValidation::IsGlobalAddressReservation => true,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
         }

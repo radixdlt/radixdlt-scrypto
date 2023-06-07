@@ -111,6 +111,7 @@ pub enum WasmRuntimeError {
     InvalidString,
     /// Invalid RE node ID
     InvalidNodeId,
+    InvalidGlobalAddressReservation,
     /// Invalid reference type
     InvalidReferenceType(u32),
     /// Invalid RE module ID

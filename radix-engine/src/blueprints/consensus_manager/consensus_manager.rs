@@ -178,8 +178,8 @@ pub struct ConsensusManagerBlueprint;
 
 impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
-        validator_token_address_reservation: Own,
-        component_address_reservation: Own,
+        validator_token_address_reservation: GlobalAddressReservation,
+        component_address_reservation: GlobalAddressReservation,
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
@@ -263,7 +263,7 @@ impl ConsensusManagerBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            component_address_reservation.0,
+            component_address_reservation,
         )?;
 
         Ok(())

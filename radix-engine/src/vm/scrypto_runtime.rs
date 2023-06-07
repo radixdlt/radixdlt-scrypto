@@ -199,8 +199,8 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
-        let address_reservation = scrypto_decode::<NodeId>(&address_reservation)
-            .map_err(|_| WasmRuntimeError::InvalidNodeId)?;
+        let address_reservation = scrypto_decode::<GlobalAddressReservation>(&address_reservation)
+            .map_err(|_| WasmRuntimeError::InvalidGlobalAddressReservation)?;
 
         let address = self
             .api

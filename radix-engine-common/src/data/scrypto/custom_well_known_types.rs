@@ -189,6 +189,18 @@ pub mod well_known_scrypto_custom_types {
             )),
         )
     }
+    pub const OWN_GLOBAL_ADDRESS_RESERVATION_ID: u8 = VALUE_KIND_OWN + 11;
+    pub fn own_global_address_reservation_type_data<L: SchemaTypeLink>(
+    ) -> TypeData<ScryptoCustomTypeKind, L> {
+        // Record the type name, despite information available from node id.
+        named_type_kind(
+            "GlobalAddressReservation",
+            ScryptoCustomTypeKind::Own,
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsGlobalAddressReservation,
+            )),
+        )
+    }
 
     pub const DECIMAL_ID: u8 = VALUE_KIND_DECIMAL;
     pub fn decimal_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {

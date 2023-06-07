@@ -133,7 +133,7 @@ where
         &mut self,
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
-    ) -> Result<NodeId, RuntimeError> {
+    ) -> Result<GlobalAddressReservation, RuntimeError> {
         // Create global address phantom
         self.api.kernel_create_node(
             global_address.as_node_id().clone(),
@@ -159,7 +159,7 @@ where
             ),
         )?;
 
-        Ok(global_address_reservation)
+        Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
 
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
@@ -644,7 +644,7 @@ where
     fn globalize_with_address_internal(
         &mut self,
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
-        global_address_reservation: NodeId,
+        global_address_reservation: GlobalAddressReservation,
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check module configuration
         let module_ids = modules
@@ -665,7 +665,7 @@ where
 
         // Check global address reservation
         let global_address = {
-            let substates = self.kernel_drop_node(&global_address_reservation)?;
+            let substates = self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
 
             let type_info: Option<TypeInfoSubstate> = substates
                 .get(&TYPE_INFO_FIELD_PARTITION)
@@ -941,7 +941,7 @@ where
     fn allocate_global_address(
         &mut self,
         blueprint_id: BlueprintId,
-    ) -> Result<(NodeId, GlobalAddress), RuntimeError> {
+    ) -> Result<(GlobalAddressReservation, GlobalAddress), RuntimeError> {
         let global_address_node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
                 blueprint_id: blueprint_id.clone(),
@@ -967,7 +967,7 @@ where
         &mut self,
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
-    ) -> Result<NodeId, RuntimeError> {
+    ) -> Result<GlobalAddressReservation, RuntimeError> {
         let global_address_reservation =
             self.prepare_global_address(blueprint_id, global_address)?;
 
@@ -996,7 +996,7 @@ where
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: NodeId,
+        address_reservation: GlobalAddressReservation,
     ) -> Result<GlobalAddress, RuntimeError> {
         self.globalize_with_address_internal(modules, address_reservation)
     }
@@ -1005,7 +1005,7 @@ where
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: NodeId,
+        address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {

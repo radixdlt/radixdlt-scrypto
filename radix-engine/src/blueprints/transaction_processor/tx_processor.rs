@@ -22,23 +22,23 @@ use transaction::data::TransformHandler;
 use transaction::model::*;
 use transaction::validation::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {
     pub transaction_hash: Hash,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
     pub manifest_encoded_instructions: Vec<u8>,
-    pub global_address_reservations: Vec<Own>,
+    pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
     pub blobs: IndexMap<Hash, Vec<u8>>,
 }
 
 // This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoEncode)]
+#[derive(Debug, Eq, PartialEq, ScryptoEncode)]
 pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
     pub transaction_hash: &'a Hash,
     pub runtime_validations: &'a [RuntimeValidationRequest],
     pub manifest_encoded_instructions: &'a [u8],
-    pub global_address_reservations: Vec<Own>,
+    pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: &'a IndexSet<Reference>,
     pub blobs: &'a IndexMap<Hash, Vec<u8>>,
 }
@@ -408,7 +408,10 @@ struct TransactionProcessor {
 }
 
 impl TransactionProcessor {
-    fn new(blobs_by_hash: IndexMap<Hash, Vec<u8>>, global_address_reservations: Vec<Own>) -> Self {
+    fn new(
+        blobs_by_hash: IndexMap<Hash, Vec<u8>>,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+    ) -> Self {
         let mut processor = Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
@@ -416,8 +419,8 @@ impl TransactionProcessor {
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
         };
-        for o in global_address_reservations {
-            processor.create_manifest_own(o.into()).unwrap();
+        for reservation in global_address_reservations {
+            processor.create_manifest_own(reservation.0 .0).unwrap();
         }
         processor
     }

@@ -102,7 +102,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        address_reservation: Own,
+        address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<Self, E>
     where

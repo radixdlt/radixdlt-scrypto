@@ -60,13 +60,13 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
     "create_non_fungible_with_address";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub resource_address: Own,
+    pub resource_address: GlobalAddressReservation,
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
