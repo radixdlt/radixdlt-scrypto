@@ -12,6 +12,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::{FungibleResourceManagerField, NodeId};
 use radix_engine_interface::*;
+use sbor::rust::vec::Vec;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
