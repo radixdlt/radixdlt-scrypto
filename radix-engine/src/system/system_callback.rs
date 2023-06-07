@@ -9,7 +9,7 @@ use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system::SystemService;
+use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::track::interface::StoreAccessInfo;
@@ -412,12 +412,19 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let schema = system.get_blueprint_definition(&blueprint)?.schema;
 
             // Make dependent resources/components visible
-
-            let handle = system.kernel_lock_substate(
+            // TODO: Remove and combine with above
+            let handle = system.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &PackageField::Info.into(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+                &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: None::<()>,
+                        mutability: SubstateMutability::Mutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
                 SystemLockData::default(),
             )?;
             system.kernel_drop_lock(handle)?;

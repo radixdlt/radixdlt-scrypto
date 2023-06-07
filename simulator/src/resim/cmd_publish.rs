@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, PackageInfoSubstate};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -69,36 +69,33 @@ impl Publish {
                 .bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let db_partition_key =
+            let fields_partition_key =
                 SpreadPrefixKeyMapper::to_db_partition_key(&node_id, MAIN_BASE_PARTITION);
             let code_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Code.into());
             let package_code = PackageCodeSubstate { code };
 
-            let info_db_sort_key =
-                SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Info.into());
-            let package_info = PackageInfoSubstate {
-                blueprints: package_definition
-                    .blueprints
-                    .into_iter()
-                    .map(|(b, s)| {
-                        let def = BlueprintDefinition {
-                            schema: s.schema.into(),
-                            template: s.template,
-                        };
-                        (b, def)
-                    })
-                    .collect(),
-            };
+            let blueprints_partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap());
+            let mut blueprint_updates = index_map_new();
+
+            for (b, s) in package_definition.blueprints {
+                let def = BlueprintDefinition {
+                    schema: s.schema.into(),
+                    template: s.template,
+                };
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
+                let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
+                blueprint_updates.insert(key, update);
+            }
+
             let database_updates = indexmap!(
-                db_partition_key => indexmap!(
+                fields_partition_key => indexmap!(
                     code_db_sort_key => DatabaseUpdate::Set(
                         scrypto_encode(&package_code).unwrap()
                     ),
-                    info_db_sort_key => DatabaseUpdate::Set(
-                        scrypto_encode(&package_info).unwrap()
-                    )
-                )
+                ),
+                blueprints_partition_key => blueprint_updates,
             );
 
             substate_db.commit(&database_updates);

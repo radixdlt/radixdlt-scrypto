@@ -250,7 +250,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             let fn_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
             let handle = api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(2u8)).unwrap(),
                 &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {

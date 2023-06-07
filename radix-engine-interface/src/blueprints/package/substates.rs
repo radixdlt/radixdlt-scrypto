@@ -40,11 +40,6 @@ impl Debug for PackageCodeSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct PackageInfoSubstate {
-    pub blueprints: BTreeMap<String, BlueprintDefinition>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyAccumulatorSubstate {
     /// The vault for collecting package royalties.
     ///

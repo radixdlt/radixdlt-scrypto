@@ -515,7 +515,9 @@ impl<L: Clone> CallFrame<L> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
-            .ok_or(UnlockSubstateError::LockNotFound(lock_handle))?;
+            .ok_or_else(|| {
+                UnlockSubstateError::LockNotFound(lock_handle)
+            })?;
 
         let node_id = &substate_lock.node_id;
         let partition_num = substate_lock.partition_num;

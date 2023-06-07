@@ -41,7 +41,6 @@ pub enum ComponentField {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum PackageField {
-    Info,
     CodeType,
     Code,
     Royalty,
@@ -58,6 +57,7 @@ pub enum FungibleResourceManagerField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum PackagePartitionOffset {
     Fields,
+    Blueprints,
     FnRoyalty,
     FunctionAccessRules,
 }

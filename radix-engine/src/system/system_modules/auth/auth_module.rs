@@ -88,7 +88,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION.at_offset(PartitionOffset(2u8)).unwrap(), // TODO: Cleanup
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(3u8)).unwrap(), // TODO: Cleanup
                 &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {

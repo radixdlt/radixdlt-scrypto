@@ -101,6 +101,7 @@ pub enum TypedAccessRulesSubstateKey {
 pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
+    PackageBlueprintKey(String),
     PackageFnRoyaltyKey(FnKey),
     PackageFunctionAccessRulesKey(FnKey),
     FungibleResourceField(FungibleResourceManagerField),
@@ -225,6 +226,12 @@ fn to_typed_object_substate_key_internal(
             match partition_offset {
                 PackagePartitionOffset::Fields => {
                     TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
+                }
+                PackagePartitionOffset::Blueprints => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageBlueprintKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
                 }
                 PackagePartitionOffset::FnRoyalty => {
                     let key = substate_key.for_map().ok_or(())?;
@@ -379,6 +386,7 @@ pub enum TypedRoyaltyModuleFieldValue {
 pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
+    PackageBlueprint(Option<BlueprintDefinition>),
     PackageFunctionAccessRule(Option<AccessRule>),
     PackageFnRoyalty(Option<RoyaltyAmount>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
@@ -404,7 +412,6 @@ pub enum TypedMainModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedPackageFieldValue {
-    Info(PackageInfoSubstate),
     CodeType(PackageCodeTypeSubstate),
     Code(PackageCodeSubstate),
     Royalty(PackageRoyaltyAccumulatorSubstate),
@@ -544,11 +551,14 @@ fn to_typed_object_substate_value(
     let substate_value = match substate_key {
         TypedMainModuleSubstateKey::PackageField(offset) => {
             TypedMainModuleSubstateValue::Package(match offset {
-                PackageField::Info => TypedPackageFieldValue::Info(scrypto_decode(data)?),
                 PackageField::CodeType => TypedPackageFieldValue::CodeType(scrypto_decode(data)?),
                 PackageField::Code => TypedPackageFieldValue::Code(scrypto_decode(data)?),
                 PackageField::Royalty => TypedPackageFieldValue::Royalty(scrypto_decode(data)?),
             })
+        }
+        TypedMainModuleSubstateKey::PackageBlueprintKey(_key) => {
+            let value: SubstateWrapper<Option<BlueprintDefinition>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageBlueprint(value.value)
         }
         TypedMainModuleSubstateKey::PackageFnRoyaltyKey(_fn_key) => {
             let value: SubstateWrapper<Option<RoyaltyAmount>> = scrypto_decode(data)?;

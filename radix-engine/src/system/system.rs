@@ -310,29 +310,36 @@ where
         if let Some(schema) = def {
             return Ok(schema.clone());
         } else {
-            let handle = self.api.kernel_lock_substate(
+            let handle = self.api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &PackageField::Info.into(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+                &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: None::<()>,
+                        mutability: SubstateMutability::Mutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
                 SystemLockData::default(),
             )?;
 
-            // TODO: We really need to split up PackageInfo into multiple substates
-            let mut package: PackageInfoSubstate =
+            let substate: SubstateWrapper<Option<BlueprintDefinition>> =
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let schema = package
-                .blueprints
-                .remove(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(
+            self.api.kernel_drop_lock(handle)?;
+
+            let definition = substate.value.ok_or_else(|| {
+                RuntimeError::SystemError(
                     SystemError::BlueprintDoesNotExist(blueprint.clone()),
-                ))?;
+                )
+            })?;
+
             self.api
                 .kernel_get_system_state()
                 .system
                 .blueprint_cache
-                .insert(blueprint.clone(), schema);
-            self.api.kernel_drop_lock(handle)?;
+                .insert(blueprint.clone(), definition);
             let schema = self
                 .api
                 .kernel_get_system_state()
