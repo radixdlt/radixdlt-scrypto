@@ -17,3 +17,6 @@ mod read;
 
 #[cfg(test)]
 mod write;
+
+#[cfg(test)]
+mod delete;

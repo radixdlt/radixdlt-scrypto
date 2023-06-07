@@ -187,13 +187,13 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
             DatabaseUpdate::Delete => {
                 let exists = self.commit_delete_metrics.borrow().get(&delete_value_len).is_some();
                 if exists {
-                    self.commit_set_metrics
+                    self.commit_delete_metrics
                         .borrow_mut()
                         .get_mut(&delete_value_len)
                         .unwrap()
                         .push(duration / database_updates.len() as u32);
                 } else {
-                    self.commit_set_metrics
+                    self.commit_delete_metrics
                         .borrow_mut()
                         .insert(delete_value_len, vec![duration / database_updates.len() as u32]);
                 }
