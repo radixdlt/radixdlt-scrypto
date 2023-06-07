@@ -16,7 +16,6 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
     pub definition: PackageDefinition,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -24,7 +23,6 @@ pub struct PackagePublishWasmInput {
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
     pub definition: PackageDefinition,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -37,7 +35,6 @@ pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub definition: PackageDefinition,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -47,7 +44,6 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub code: ManifestBlobRef,
     pub definition: PackageDefinition,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -92,4 +88,5 @@ pub type PackageClaimRoyaltiesOutput = Bucket;
 pub struct PackageDefinition {
     pub schema: PackageSchema,
     pub function_access_rules: BTreeMap<String, BTreeMap<String, AccessRule>>,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }

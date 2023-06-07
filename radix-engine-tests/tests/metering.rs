@@ -96,16 +96,6 @@ fn test_radiswap() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
-        btreemap!(
-            "Radiswap".to_owned() => {
-                let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_pool", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("add_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("remove_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("swap", RoyaltyAmount::Xrd(2.into()));
-                config
-            }
-        ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -208,7 +198,7 @@ fn test_radiswap() {
         + 14689 /* DropLock */
         + 3780 /* DropNode */
         + 3803738 /* Invoke */
-        + 2677214 /* LockSubstate */
+        + 2677141 /* LockSubstate */
         + 20608 /* ReadSubstate */
         + 137500 /* RunNative */
         + 20000 /* RunSystem */
@@ -221,7 +211,7 @@ fn test_radiswap() {
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7476314"),
+        dec!("0.7476241"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -241,14 +231,6 @@ fn test_flash_loan() {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
-        btreemap!(
-            "BasicFlashLoan".to_owned() => {
-                let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_default", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("take_loan", RoyaltyAmount::Xrd(2.into()));
-                config
-            }
-        ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -327,7 +309,7 @@ fn test_flash_loan() {
         + 23199 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 4429180 /* LockSubstate */
+        + 4429715 /* LockSubstate */
         + 32928 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
@@ -360,7 +342,6 @@ fn test_publish_large_package() {
         .publish_package_advanced(
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )

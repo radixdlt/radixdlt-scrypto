@@ -17,7 +17,6 @@ fn cannot_set_package_metadata_with_no_owner() {
             code,
             single_function_package_definition("Test", "f"),
             BTreeMap::new(),
-            BTreeMap::new(),
             OwnerRole::None,
         )
         .build();
