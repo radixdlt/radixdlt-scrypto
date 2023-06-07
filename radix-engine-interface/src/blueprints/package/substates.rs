@@ -41,7 +41,7 @@ impl Debug for PackageCodeSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
-    pub schema: IndexedPackageSchema,
+    pub blueprints: BTreeMap<String, BlueprintDefinition>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -55,11 +55,6 @@ pub struct PackageRoyaltySubstate {
     /// Royalty configuration per blueprint
     ///   TODO: replace with KVStore
     pub blueprint_royalty_configs: BTreeMap<String, RoyaltyConfig>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedPackageSchema {
-    pub blueprints: BTreeMap<String, BlueprintDefinition>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

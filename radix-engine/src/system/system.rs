@@ -322,7 +322,6 @@ where
             let mut package: PackageInfoSubstate =
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
             let schema = package
-                .schema
                 .blueprints
                 .remove(blueprint.blueprint_name.as_str())
                 .ok_or(RuntimeError::SystemError(

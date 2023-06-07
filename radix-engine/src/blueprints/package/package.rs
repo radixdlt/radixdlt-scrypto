@@ -506,7 +506,7 @@ impl PackageNativePackage {
             (
                 FunctionAccessRulesSubstate { access_rules },
                 PackageInfoSubstate {
-                    schema: IndexedPackageSchema { blueprints },
+                    blueprints,
                 },
             )
         };
@@ -672,7 +672,7 @@ impl PackageNativePackage {
             (
                 FunctionAccessRulesSubstate { access_rules },
                 PackageInfoSubstate {
-                    schema: IndexedPackageSchema { blueprints },
+                    blueprints,
                 },
                 PackageRoyaltySubstate {
                     royalty_vault: None,

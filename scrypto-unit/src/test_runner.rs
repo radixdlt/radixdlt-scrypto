@@ -1576,7 +1576,6 @@ impl TestRunner {
                     &PackageField::Info.into(),
                 )
                 .unwrap()
-                .schema
                 .blueprints
                 .remove(&blueprint_name)
                 .unwrap()

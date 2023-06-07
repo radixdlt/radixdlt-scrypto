@@ -78,19 +78,17 @@ impl Publish {
             let info_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Info.into());
             let package_info = PackageInfoSubstate {
-                schema: IndexedPackageSchema {
-                    blueprints: package_definition
-                        .blueprints
-                        .into_iter()
-                        .map(|(b, s)| {
-                            let def = BlueprintDefinition {
-                                schema: s.schema.into(),
-                                template: s.template,
-                            };
-                            (b, def)
-                        })
-                        .collect(),
-                },
+                blueprints: package_definition
+                    .blueprints
+                    .into_iter()
+                    .map(|(b, s)| {
+                        let def = BlueprintDefinition {
+                            schema: s.schema.into(),
+                            template: s.template,
+                        };
+                        (b, def)
+                    })
+                    .collect(),
             };
             let database_updates = indexmap!(
                 db_partition_key => indexmap!(
