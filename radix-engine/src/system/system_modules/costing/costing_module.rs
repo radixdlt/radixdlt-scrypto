@@ -4,7 +4,7 @@ use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
-use crate::system::system::{SubstateMutability, SubstateWrapper, SubstateWrapper2, SystemService};
+use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{StoreAccess, StoreAccessInfo};
@@ -292,10 +292,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 LockFlags::read_only(),
                 Some(|| {
                     let wrapper = SubstateWrapper {
-                        value: ScryptoValue::Enum {
-                            discriminator: 0u8,
-                            fields: vec![],
-                        },
+                        value: None::<()>,
                         mutability: SubstateMutability::Mutable,
                     };
                     IndexedScryptoValue::from_typed(&wrapper)
@@ -303,7 +300,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 SystemLockData::default(),
             )?;
 
-            let substate: SubstateWrapper2<Option<RoyaltyAmount>> =
+            let substate: SubstateWrapper<Option<RoyaltyAmount>> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
 

@@ -14,7 +14,7 @@ pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
-use radix_engine::system::system::SubstateWrapper2;
+use radix_engine::system::system::SubstateWrapper;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 
 //=========================================================================
@@ -482,7 +482,7 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::MetadataModuleEntryKey(_) => {
-            let value: SubstateWrapper2<Option<MetadataValue>> = scrypto_decode(data)?;
+            let value: SubstateWrapper<Option<MetadataValue>> = scrypto_decode(data)?;
             TypedSubstateValue::MetadataModuleEntryValue(value.value)
         }
         TypedSubstateKey::MainModule(object_substate_key) => TypedSubstateValue::MainModule(
@@ -532,7 +532,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            let value: SubstateWrapper2<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
+            let value: SubstateWrapper<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
 
             TypedMainModuleSubstateValue::NonFungibleResourceData(value.value)
         }
@@ -599,7 +599,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
-            let value: SubstateWrapper2<Option<Own>> = scrypto_decode(data)?;
+            let value: SubstateWrapper<Option<Own>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::AccountVaultIndex(value.value)
         }
         TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
@@ -622,7 +622,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            let value: SubstateWrapper2<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
+            let value: SubstateWrapper<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
 
             TypedMainModuleSubstateValue::GenericKeyValueStore(value.value)
         }

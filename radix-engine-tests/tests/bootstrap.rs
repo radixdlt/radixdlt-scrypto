@@ -4,7 +4,7 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
-use radix_engine::system::system::SubstateWrapper2;
+use radix_engine::system::system::SubstateWrapper;
 use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -249,7 +249,7 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper2<Option<MetadataValue>>>(
+        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<MetadataValue>>>(
             &resource_address.as_node_id(),
             METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
@@ -405,7 +405,7 @@ fn test_genesis_stake_allocation() {
             .enumerate()
         {
             let validator_url_entry = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper2<Option<MetadataValue>>>(
+                .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<MetadataValue>>>(
                     &new_validators[index].as_node_id(),
                     METADATA_KV_STORE_PARTITION,
                     &SubstateKey::Map(scrypto_encode("url").unwrap()),
