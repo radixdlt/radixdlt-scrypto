@@ -22,7 +22,10 @@ mod preallocated {
     }
 
     impl Preallocated {
-        pub fn new(preallocated_address: Owned<AnyComponent>, secret: String) -> Global<Preallocated> {
+        pub fn new(
+            preallocated_address: Owned<AnyComponent>,
+            secret: String,
+        ) -> Global<Preallocated> {
             Self { secret }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)

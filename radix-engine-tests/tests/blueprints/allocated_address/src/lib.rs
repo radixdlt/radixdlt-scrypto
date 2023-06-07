@@ -7,28 +7,28 @@ mod apa {
     }
 
     impl AllocatedAddressTest {
-        pub fn create_and_return() -> ComponentAddress {
+        pub fn create_and_return() -> (Owned<AnyComponent>, ComponentAddress) {
             let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
-            address
+            (own, address)
         }
 
         pub fn create_and_call() {
-            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (_own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
             Runtime::call_method(address, "hi", scrypto_args!())
         }
 
         pub fn create_and_consume_within_frame() {
-            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
-            Self::globalize_with_preallocated_address(address);
+            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            Self::globalize_with_preallocated_address(own);
         }
 
         pub fn create_and_consume_in_another_frame() {
-            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
             Runtime::call_function(
                 Runtime::package_address(),
                 "AllocatedAddressTest",
                 "globalize_with_preallocated_address",
-                scrypto_args!(address),
+                scrypto_args!(own),
             )
         }
 
@@ -39,7 +39,7 @@ mod apa {
             Self { store: Some(store) }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .with_address(address)
+                .with_address(own)
                 .globalize();
         }
 
@@ -51,15 +51,15 @@ mod apa {
                 .metadata(metadata!(
                     "key" => GlobalAddress::from(address),
                 ))
-                .with_address(address)
+                .with_address(own)
                 .globalize();
         }
 
-        pub fn globalize_with_preallocated_address(address: ComponentAddress) {
+        pub fn globalize_with_preallocated_address(own: Owned<AnyComponent>) {
             Self { store: None }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .with_address(address)
+                .with_address(own)
                 .globalize();
         }
     }
