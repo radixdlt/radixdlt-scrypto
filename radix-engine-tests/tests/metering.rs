@@ -227,7 +227,11 @@ fn test_radiswap() {
 }
 
 #[test]
+fn test_flash_loan() {
+    let mut test_runner = TestRunner::builder().build();
+
     // Scrypto developer
+    let (pk1, _, _) = test_runner.new_allocated_account();
     // Flash loan operator
     let (pk2, _, account2) = test_runner.new_allocated_account();
     // Flash loan user

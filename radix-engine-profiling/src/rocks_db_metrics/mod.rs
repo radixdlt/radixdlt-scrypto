@@ -19,7 +19,8 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
 {
     db: S,
-    pub commit_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
+    pub commit_set_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
+    pub commit_delete_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
     pub read_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
     pub read_not_found_metrics: RefCell<Vec<Duration>>,
 }
@@ -37,7 +38,8 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
 
         Self {
             db: RocksdbSubstateStore::with_options(&opt, path),
-            commit_metrics: RefCell::new(BTreeMap::new()),
+            commit_set_metrics: RefCell::new(BTreeMap::new()),
+            commit_delete_metrics: RefCell::new(BTreeMap::new()),
             read_metrics: RefCell::new(BTreeMap::new()),
             read_not_found_metrics: RefCell::new(Vec::new()),
         }
@@ -57,7 +59,8 @@ impl SubstateStoreWithMetrics<RocksDBWithMerkleTreeSubstateStore> {
 
         Self {
             db: RocksDBWithMerkleTreeSubstateStore::with_options(&opt, path),
-            commit_metrics: RefCell::new(BTreeMap::new()),
+            commit_set_metrics: RefCell::new(BTreeMap::new()),
+            commit_delete_metrics: RefCell::new(BTreeMap::new()),
             read_metrics: RefCell::new(BTreeMap::new()),
             read_not_found_metrics: RefCell::new(Vec::new()),
         }
@@ -68,7 +71,8 @@ impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
     pub fn new_inmem() -> Self {
         Self {
             db: InMemorySubstateDatabase::standard(),
-            commit_metrics: RefCell::new(BTreeMap::new()),
+            commit_set_metrics: RefCell::new(BTreeMap::new()),
+            commit_delete_metrics: RefCell::new(BTreeMap::new()),
             read_metrics: RefCell::new(BTreeMap::new()),
             read_not_found_metrics: RefCell::new(Vec::new()),
         }
@@ -119,30 +123,81 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
     for SubstateStoreWithMetrics<S>
 {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
+        // Validate if commit call with database_updates parameter fulfills test framework requirements
+        assert!(!database_updates.is_empty());
+        let mut set_found = false;
+        let mut delete_found = false;
+        let multiple_updates = database_updates.len() > 1;
+        let mut old_value_len: Option<usize> = None;
+        let mut delete_value_len: usize = 0;
+        for partition_update in database_updates {
+            for db_update in partition_update.1 {
+                match db_update.1 {
+                    DatabaseUpdate::Set(value) => if delete_found { 
+                            panic!("Mixed DatabaseUpdate (Set & Delete) not supported while profiling")
+                        } else {
+                            set_found = true;
+                            if multiple_updates {
+                                if old_value_len.is_some() {
+                                    if old_value_len.unwrap() != value.len() {
+                                        panic!("For multiple DatabaseUpdate value size must be the same");
+                                    }
+                                } else {
+                                    old_value_len = Some(value.len());
+                                }
+                            }
+                        },
+                    DatabaseUpdate::Delete => if set_found { 
+                        panic!("Mixed DatabaseUpdate (Set & Delete) not supported while profiling")
+                    } else {
+                        delete_found = true;
+                        if let Some(value) = self.get_substate(&partition_update.0, &db_update.0) {
+                            delete_value_len = value.len();
+                        }
+                    },
+                }
+            }
+        }
+
+        // call commit on database and measure execution time
         let start = std::time::Instant::now();
         self.db.commit(database_updates);
         let duration = start.elapsed();
 
-        assert!(!database_updates.is_empty());
+        // Commit profiling tests are divided to two types:
+        // - per size - test invokes only database_update per commit (that is why we can use 1st item only here)
+        // - per partition - test invokes commits for particular partition size, so value length is not important here (still it is safe to use 1st item only) 
         let partition_update = &database_updates[0];
-        assert!(!partition_update.is_empty());
         let db_update = &partition_update[0];
         match db_update {
             DatabaseUpdate::Set(value) => {
-                let exists = self.commit_metrics.borrow().get(&value.len()).is_some();
+                let exists = self.commit_set_metrics.borrow().get(&value.len()).is_some();
                 if exists {
-                    self.commit_metrics
+                    self.commit_set_metrics
                         .borrow_mut()
                         .get_mut(&value.len())
                         .unwrap()
-                        .push(duration);
+                        .push(duration / database_updates.len() as u32);
                 } else {
-                    self.commit_metrics
+                    self.commit_set_metrics
                         .borrow_mut()
-                        .insert(value.len(), vec![duration]);
+                        .insert(value.len(), vec![duration / database_updates.len() as u32]);
                 }
             }
-            DatabaseUpdate::Delete => (), // todo
+            DatabaseUpdate::Delete => {
+                let exists = self.commit_delete_metrics.borrow().get(&delete_value_len).is_some();
+                if exists {
+                    self.commit_set_metrics
+                        .borrow_mut()
+                        .get_mut(&delete_value_len)
+                        .unwrap()
+                        .push(duration / database_updates.len() as u32);
+                } else {
+                    self.commit_set_metrics
+                        .borrow_mut()
+                        .insert(delete_value_len, vec![duration / database_updates.len() as u32]);
+                }
+            }
         }
     }
 }

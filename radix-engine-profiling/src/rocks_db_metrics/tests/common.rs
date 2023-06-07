@@ -35,8 +35,8 @@ pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDa
             }
         }
     }
-    if substate_store.commit_metrics.borrow().len() > 2 * count {
-        for (_, v) in substate_store.commit_metrics.borrow_mut().iter_mut() {
+    if substate_store.commit_set_metrics.borrow().len() > 2 * count {
+        for (_, v) in substate_store.commit_set_metrics.borrow_mut().iter_mut() {
             v.sort();
             for _ in 0..count {
                 v.pop();

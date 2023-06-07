@@ -248,7 +248,7 @@ where
         }
 
         // prepare intermediate data
-        for (_k, v) in substate_db.commit_metrics.borrow().iter() {
+        for (_k, v) in substate_db.commit_set_metrics.borrow().iter() {
             for (i, val) in v.iter().enumerate() {
                 let exists = rocksdb_data_intermediate.get(&(i + 1)).is_some();
                 if exists {
@@ -262,7 +262,7 @@ where
             }
         }
 
-        substate_db.commit_metrics.borrow_mut().clear();
+        substate_db.commit_set_metrics.borrow_mut().clear();
     }
 
     println!("");
@@ -345,16 +345,16 @@ where
 
     drop_highest_and_lowest_value(&substate_db, 3);
     let rocksdb_output_data =
-        calculate_percent_to_max_points(&mut substate_db.commit_metrics.borrow_mut(), 95f32);
+        calculate_percent_to_max_points(&mut substate_db.commit_set_metrics.borrow_mut(), 95f32);
 
     // prepare data for plot
     let mut rocksdb_data = Vec::with_capacity(100000);
-    for (k, v) in substate_db.commit_metrics.borrow().iter() {
+    for (k, v) in substate_db.commit_set_metrics.borrow().iter() {
         for i in v {
             rocksdb_data.push((*k as f32, i.as_micros() as f32));
         }
     }
-    let original_data = substate_db.commit_metrics.borrow().clone();
+    let original_data = substate_db.commit_set_metrics.borrow().clone();
 
     (rocksdb_data, rocksdb_output_data, original_data)
 }
