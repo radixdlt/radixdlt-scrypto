@@ -1,4 +1,5 @@
 use clap::Parser;
+use radix_engine::utils::validate_call_arguments_to_native_components;
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
@@ -57,6 +58,10 @@ impl Run {
             BlobProvider::new_with_blobs(blobs),
         )
         .map_err(Error::CompileError)?;
+
+        validate_call_arguments_to_native_components(&compiled_manifest.instructions)
+            .map_err(Error::ValidationError)?;
+
         handle_manifest(
             compiled_manifest,
             &self.signing_keys,
