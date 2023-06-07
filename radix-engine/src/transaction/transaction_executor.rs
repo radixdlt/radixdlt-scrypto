@@ -1,6 +1,4 @@
-use crate::blueprints::transaction_processor::{
-    TransactionProcessorError, TransactionProcessorRunInputEfficientEncodable,
-};
+use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
@@ -17,9 +15,6 @@ use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::blueprints::transaction_processor::{
-    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
-};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::*,
@@ -196,7 +191,10 @@ where
             println!("Transaction hash: {}", executable.transaction_hash());
             println!("Payload size: {}", executable.payload_size());
             println!("Fee payment: {:?}", executable.fee_payment());
-            println!("Pre-allocated IDs: {:?}", executable.pre_allocated_ids());
+            println!(
+                "Pre-allocated addresses: {:?}",
+                executable.pre_allocated_addresses()
+            );
             println!("Blobs: {:?}", executable.blobs().keys());
             println!("References: {:?}", executable.references());
 
@@ -210,14 +208,7 @@ where
 
         // Prepare
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
-        let mut id_allocator = IdAllocator::new(
-            executable.transaction_hash().clone(),
-            executable
-                .pre_allocated_ids()
-                .into_iter()
-                .cloned()
-                .collect(),
-        );
+        let mut id_allocator = IdAllocator::new(executable.transaction_hash().clone());
         let mut system = SystemConfig {
             blueprint_cache: NonIterMap::new(),
             callback_obj: Vm {
@@ -242,19 +233,13 @@ where
         };
 
         let invoke_result = kernel_boot
-            .call_boot_function(
-                TRANSACTION_PROCESSOR_PACKAGE,
-                TRANSACTION_PROCESSOR_BLUEPRINT,
-                TRANSACTION_PROCESSOR_RUN_IDENT,
+            .call_transaction_processor(
+                executable.transaction_hash(),
+                executable.runtime_validations(),
+                executable.encoded_instructions(),
+                executable.pre_allocated_addresses(),
                 executable.references(),
-                scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                    transaction_hash: executable.transaction_hash(),
-                    runtime_validations: executable.runtime_validations(),
-                    manifest_encoded_instructions: executable.encoded_instructions(),
-                    references: executable.references(),
-                    blobs: executable.blobs(),
-                })
-                .unwrap(),
+                executable.blobs(),
             )
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();

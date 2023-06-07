@@ -1,6 +1,7 @@
 use crate::modules::{AccessRules, Attachable, Metadata};
 use crate::prelude::Attached;
 use radix_engine_common::math::Decimal;
+use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -50,7 +51,7 @@ impl Runtime {
     }
 
     /// Returns the running entity.
-    pub fn blueprint() -> BlueprintId {
+    pub fn blueprint_id() -> BlueprintId {
         ScryptoEnv.actor_get_blueprint().unwrap()
     }
 
@@ -65,7 +66,7 @@ impl Runtime {
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        Self::blueprint().package_address
+        Self::blueprint_id().package_address
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
@@ -124,10 +125,14 @@ impl Runtime {
         env.assert_access_rule(access_rule).unwrap();
     }
 
-    pub fn preallocate_global_component_address() -> ComponentAddress {
+    pub fn allocate_component_address(
+        blueprint_id: BlueprintId,
+    ) -> (GlobalAddressReservation, ComponentAddress) {
         let mut env = ScryptoEnv;
-        let global_address = env.preallocate_global_address().unwrap();
-        unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
+        let (ownership, global_address) = env.allocate_global_address(blueprint_id).unwrap();
+        (ownership, unsafe {
+            ComponentAddress::new_unchecked(global_address.as_node_id().0)
+        })
     }
 
     pub fn cost_unit_limit() -> u32 {

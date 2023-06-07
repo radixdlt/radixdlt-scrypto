@@ -5,9 +5,7 @@ use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
+use sbor::rust::prelude::*;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
 
@@ -18,6 +16,11 @@ pub struct ObjectInfo {
     pub outer_object: Option<GlobalAddress>,
     pub instance_schema: Option<InstanceSchema>,
     pub features: BTreeSet<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct GlobalAddressPhantom {
+    pub blueprint_id: BlueprintId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

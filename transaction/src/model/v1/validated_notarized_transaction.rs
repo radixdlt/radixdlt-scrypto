@@ -62,7 +62,7 @@ impl ValidatedNotarizedTransactionV1 {
                     }
                     .enforced(),
                 ],
-                pre_allocated_ids: index_set_new(),
+                pre_allocated_addresses: vec![],
             },
         )
     }

@@ -395,6 +395,9 @@ pub fn format_custom_value<F: fmt::Write>(
                 write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
             }
         }
+        ManifestCustomValue::Own(value) => {
+            write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
+        }
         ManifestCustomValue::Expression(value) => {
             write_with_indent!(
                 f,
@@ -479,6 +482,7 @@ pub fn format_value_kind(value_kind: &ManifestValueKind) -> &str {
             ManifestCustomValueKind::Decimal => "Decimal",
             ManifestCustomValueKind::PreciseDecimal => "PreciseDecimal",
             ManifestCustomValueKind::NonFungibleLocalId => "NonFungibleLocalId",
+            ManifestCustomValueKind::Own => "Owned",
         },
     }
 }

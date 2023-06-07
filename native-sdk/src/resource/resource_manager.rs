@@ -109,7 +109,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        address: [u8; NodeId::LENGTH], // TODO: Clean this up
+        address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -125,7 +125,7 @@ impl ResourceManager {
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
                 metadata,
                 access_rules,
-                resource_address: address,
+                resource_address: address_reservation,
             })
             .unwrap(),
         )?;

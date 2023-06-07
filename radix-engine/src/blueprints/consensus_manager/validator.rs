@@ -2,7 +2,6 @@ use crate::blueprints::consensus_manager::*;
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -1018,11 +1017,12 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let address = GlobalAddress::new_or_panic(
-            api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
-        );
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: CONSENSUS_MANAGER_PACKAGE,
+            blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+        })?;
 
         let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;
         let pending_xrd_withdraw_vault = Vault::create(RADIX_TOKEN, api)?;
@@ -1064,7 +1064,7 @@ impl ValidatorCreator {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address,
+            address_reservation,
         )?;
 
         Ok((

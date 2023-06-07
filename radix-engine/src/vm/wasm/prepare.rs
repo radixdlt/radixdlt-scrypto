@@ -645,19 +645,19 @@ impl WasmModule {
                             }
                         }
 
-                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
+                        ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![],
+                                    vec![ValueType::I32, ValueType::I32],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
+                                        ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -690,7 +690,7 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                     ],
-                                    vec![],
+                                    vec![ValueType::I64],
                                 ) {
                                     continue;
                                 }

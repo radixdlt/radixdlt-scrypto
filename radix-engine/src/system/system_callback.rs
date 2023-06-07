@@ -521,7 +521,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         }
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(_) => {}
+                _ => {}
             }
         }
 
@@ -591,14 +591,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         VirtualizationModule::on_substate_lock_fault(node_id, partition_num, offset, api)
     }
 
-    fn on_allocate_node_id<Y>(
-        entity_type: Option<EntityType>,
-        virtual_node: bool,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_allocate_node_id(api, entity_type, virtual_node)
+        SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
 }

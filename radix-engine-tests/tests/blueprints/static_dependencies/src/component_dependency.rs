@@ -45,11 +45,14 @@ mod preallocated {
     }
 
     impl Preallocated {
-        pub fn new(preallocated_address_bytes: [u8; 30], secret: String) -> Global<Preallocated> {
+        pub fn new(
+            preallocated_address: GlobalAddressReservation,
+            secret: String,
+        ) -> Global<Preallocated> {
             Self { secret }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+                .with_address(preallocated_address)
                 .globalize()
         }
 

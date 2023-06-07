@@ -1,9 +1,7 @@
+use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use crate::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
-use crate::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError,
@@ -33,10 +31,6 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -135,6 +129,39 @@ where
         Ok(())
     }
 
+    pub fn prepare_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+        global_address: GlobalAddress,
+    ) -> Result<GlobalAddressReservation, RuntimeError> {
+        // Create global address phantom
+        self.api.kernel_create_node(
+            global_address.as_node_id().clone(),
+            btreemap!(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom {
+                        blueprint_id,
+                    })
+                ).to_substates()
+            ),
+        )?;
+
+        // Create global address reservation
+        let global_address_reservation = self
+            .api
+            .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        self.api.kernel_create_node(
+            global_address_reservation,
+            btreemap!(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::GlobalAddressReservation(global_address.clone())
+                ).to_substates()
+            ),
+        )?;
+
+        Ok(GlobalAddressReservation(Own(global_address_reservation)))
+    }
+
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
         // This is to solve the bootstrapping problem.
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
@@ -224,18 +251,13 @@ where
             None
         };
 
-        let node_id = {
-            let entity_type = match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                (RESOURCE_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => EntityType::InternalFungibleVault,
-                (RESOURCE_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
-                    EntityType::InternalNonFungibleVault
-                }
-                (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
-                _ => EntityType::InternalGenericComponent,
-            };
-
-            self.api.kernel_allocate_node_id(entity_type)?
-        };
+        let node_id = self.api.kernel_allocate_node_id(
+            IDAllocation::Object {
+                blueprint_id: blueprint.clone(),
+                global: false,
+            }
+            .entity_type(),
+        )?;
 
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
@@ -670,8 +692,8 @@ where
     fn globalize_with_address_internal(
         &mut self,
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
-        global_address: GlobalAddress,
-    ) -> Result<(), RuntimeError> {
+        global_address_reservation: GlobalAddressReservation,
+    ) -> Result<GlobalAddress, RuntimeError> {
         // Check module configuration
         let module_ids = modules
             .keys()
@@ -688,6 +710,45 @@ where
                 Box::new(InvalidModuleSet(module_ids)),
             )));
         }
+
+        // Check global address reservation
+        let global_address = {
+            let substates = self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
+
+            let type_info: Option<TypeInfoSubstate> = substates
+                .get(&TYPE_INFO_FIELD_PARTITION)
+                .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
+                .and_then(|x| x.as_typed().ok());
+
+            match type_info {
+                Some(TypeInfoSubstate::GlobalAddressReservation(x)) => x,
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidGlobalAddressReservation,
+                    ));
+                }
+            }
+        };
+
+        // Check blueprint id
+        let reserved_blueprint_id = {
+            let lock_handle = self.kernel_lock_substate(
+                global_address.as_node_id(),
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+                LockFlags::MUTABLE, // This is to ensure the substate is lock free!
+                SystemLockData::Default,
+            )?;
+            let type_info: TypeInfoSubstate =
+                self.kernel_read_substate(lock_handle)?.as_typed().unwrap();
+            self.kernel_drop_lock(lock_handle)?;
+            match type_info {
+                TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom { blueprint_id }) => {
+                    blueprint_id
+                }
+                _ => unreachable!(),
+            }
+        };
 
         // Read the type info
         let node_id = modules
@@ -718,13 +779,27 @@ where
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
 
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
-                *global = true;
+        match &mut type_info {
+            TypeInfoSubstate::Object(ObjectInfo {
+                global, blueprint, ..
+            }) => {
+                if *global {
+                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                        CannotGlobalizeError::AlreadyGlobalized,
+                    )));
+                } else if blueprint.package_address != reserved_blueprint_id.package_address
+                    || blueprint.blueprint_name != reserved_blueprint_id.blueprint_name
+                {
+                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                        CannotGlobalizeError::InvalidBlueprintId,
+                    )));
+                } else {
+                    *global = true;
+                }
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                    Box::new(CannotGlobalizeError::NotAnObject),
+                    CannotGlobalizeError::NotAnObject,
                 )))
             }
         };
@@ -790,7 +865,7 @@ where
             }
         }
 
-        Ok(())
+        Ok(global_address)
     }
 
     pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
@@ -919,27 +994,56 @@ where
     }
 
     #[trace_resources]
-    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        let allocated_node_id = self
-            .api
-            .kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
-        Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
+    fn allocate_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+    ) -> Result<(GlobalAddressReservation, GlobalAddress), RuntimeError> {
+        let global_address_node_id = self.api.kernel_allocate_node_id(
+            IDAllocation::Object {
+                blueprint_id: blueprint_id.clone(),
+                global: true,
+            }
+            .entity_type(),
+        )?;
+        let global_address = GlobalAddress::try_from(global_address_node_id.0).unwrap();
+
+        // Create global address reservation
+        let global_address_reservation =
+            self.prepare_global_address(blueprint_id, global_address)?;
+
+        // NOTE: Because allocated global address is represented as an owned object and nobody is allowed
+        // to drop it except the system during globalization, we don't track the lifecycle of
+        // allocated addresses.
+
+        Ok((global_address_reservation, global_address))
     }
+
+    #[trace_resources]
+    fn allocate_virtual_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+        global_address: GlobalAddress,
+    ) -> Result<GlobalAddressReservation, RuntimeError> {
+        let global_address_reservation =
+            self.prepare_global_address(blueprint_id, global_address)?;
+
+        Ok(global_address_reservation)
+    }
+
+    // FIXME ensure that only the package actor can globalize its own blueprints
 
     #[trace_resources]
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, RuntimeError> {
-        // FIXME ensure that only the package actor can globalize its own blueprints
+        let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
 
-        let blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        let entity_type = get_entity_type_for_blueprint(&blueprint);
+        // TODO: optimize by skipping address allocation
+        let (global_address_reservation, global_address) =
+            self.allocate_global_address(blueprint_id)?;
 
-        let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let global_address = GlobalAddress::new_or_panic(global_node_id.into());
-
-        self.globalize_with_address_internal(modules, global_address)?;
+        self.globalize_with_address_internal(modules, global_address_reservation)?;
 
         Ok(global_address)
     }
@@ -948,42 +1052,38 @@ where
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
-    ) -> Result<(), RuntimeError> {
-        // FIXME ensure that only the package actor can globalize its own blueprints
-
-        let blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        check_address_allowed_for_blueprint(&address, &blueprint)?;
-
-        self.globalize_with_address_internal(modules, address)
+        address_reservation: GlobalAddressReservation,
+    ) -> Result<GlobalAddress, RuntimeError> {
+        self.globalize_with_address_internal(modules, address_reservation)
     }
 
     #[trace_resources]
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
+        address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
-    ) -> Result<NodeId, RuntimeError> {
+    ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        check_address_allowed_for_blueprint(&address, &actor_blueprint)?;
 
-        self.globalize_with_address_internal(modules, address)?;
+        let global_address = self.globalize_with_address_internal(modules, address_reservation)?;
 
         let blueprint = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
 
-        self.new_object_internal(
+        let inner_object = self.new_object_internal(
             &blueprint,
             vec![],
             Some(InstanceContext {
-                outer_object: address,
+                outer_object: global_address,
                 outer_blueprint: actor_blueprint.blueprint_name,
             }),
             None,
             inner_object_fields,
             btreemap!(),
-        )
+        )?;
+
+        Ok((global_address, inner_object))
     }
 
     #[trace_resources]
@@ -1092,9 +1192,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..) => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
-            }
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
         };
 
         Ok(object_info)
@@ -1241,8 +1339,9 @@ where
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
-        let entity_type = EntityType::InternalKeyValueStore;
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
+        let node_id = self
+            .api
+            .kernel_allocate_node_id(IDAllocation::KeyValueStore.entity_type())?;
 
         self.api.kernel_create_node(
             node_id,
@@ -1266,10 +1365,8 @@ where
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let info = match type_info {
-            TypeInfoSubstate::Object { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-            }
             TypeInfoSubstate::KeyValueStore(info) => info,
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
         };
 
         Ok(info.schema)
@@ -1289,9 +1386,7 @@ where
 
         let info = match type_info {
             TypeInfoSubstate::KeyValueStore(info) => info,
-            TypeInfoSubstate::Object(..) => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-            }
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
         };
 
         self.validate_payload(
@@ -2045,12 +2140,8 @@ where
         self.api.kernel_drop_node(node_id)
     }
 
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        self.api.kernel_allocate_virtual_node_id(node_id)
-    }
-
-    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError> {
-        self.api.kernel_allocate_node_id(node_type)
+    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
+        self.api.kernel_allocate_node_id(entity_type)
     }
 
     fn kernel_create_node(
@@ -2209,63 +2300,5 @@ where
 
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         self.api.kernel_read_proof(proof_id)
-    }
-}
-
-pub fn check_address_allowed_for_blueprint(
-    address: &GlobalAddress,
-    blueprint: &BlueprintId,
-) -> Result<(), RuntimeError> {
-    let entity_type = address.as_node_id().entity_type();
-
-    let valid_entity_types: IndexSet<EntityType> =
-        match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-            // Note - you can't manually preallocate key-originated addresses - so these must be from assigned from the virtualization process
-            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => indexset!(
-                EntityType::GlobalAccount,
-                EntityType::GlobalVirtualEd25519Account,
-                EntityType::GlobalVirtualSecp256k1Account
-            ),
-            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => indexset!(
-                EntityType::GlobalIdentity,
-                EntityType::GlobalVirtualEd25519Identity,
-                EntityType::GlobalVirtualSecp256k1Identity
-            ),
-            _ => indexset!(get_entity_type_for_blueprint(blueprint)),
-        };
-    if entity_type.is_some() && !valid_entity_types.contains(&entity_type.unwrap()) {
-        return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-            Box::new(CannotGlobalizeError::InvalidAddressEntityType {
-                expected: valid_entity_types.into_iter().collect::<Vec<_>>(),
-                actual: entity_type,
-            }),
-        )));
-    }
-    Ok(())
-}
-
-pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
-    // FIXME check completeness of modules
-    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-        (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
-        (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalFungibleResourceManager
-        }
-        (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalNonFungibleResourceManager
-        }
-        (CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalConsensusManager
-        }
-        (CONSENSUS_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
-        (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
-            EntityType::GlobalAccessController
-        }
-        (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
-        (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
-        (POOL_PACKAGE, ONE_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalOneResourcePool,
-        (POOL_PACKAGE, TWO_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalTwoResourcePool,
-        (POOL_PACKAGE, MULTI_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalMultiResourcePool,
-        _ => EntityType::GlobalGenericComponent,
     }
 }

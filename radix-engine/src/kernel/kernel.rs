@@ -6,6 +6,7 @@ use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
 };
 use crate::blueprints::resource::*;
+use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::Message;
@@ -21,6 +22,9 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::{
+    RuntimeValidationRequest, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -33,13 +37,14 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     /// Executes a transaction
-    pub fn call_boot_function(
+    pub fn call_transaction_processor<'a>(
         self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        references: &IndexSet<Reference>,
-        args: Vec<u8>,
+        transaction_hash: &'a Hash,
+        runtime_validations: &'a [RuntimeValidationRequest],
+        manifest_encoded_instructions: &'a [u8],
+        pre_allocated_addresses: &'a Vec<(BlueprintId, GlobalAddress)>,
+        references: &'a IndexSet<Reference>,
+        blobs: &'a IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
@@ -57,6 +62,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         SystemConfig::on_init(&mut kernel)?;
 
+        // Reference management
         for reference in references.iter() {
             let node_id = &reference.0;
             if node_id.is_global_virtual() {
@@ -111,20 +117,41 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..) => {
+                _ => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
         }
 
+        // Allocate global addresses
+        let mut global_address_reservations = Vec::new();
+        for (blueprint_id, address) in pre_allocated_addresses {
+            let mut system = SystemService::new(&mut kernel);
+            let global_address_reservation =
+                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
+            global_address_reservations.push(global_address_reservation);
+        }
+
         let mut system = SystemService::new(&mut kernel);
 
-        let rtn = system.call_function(package_address, blueprint_name, function_name, args)?;
+        let rtn = system.call_function(
+            TRANSACTION_PROCESSOR_PACKAGE,
+            TRANSACTION_PROCESSOR_BLUEPRINT,
+            TRANSACTION_PROCESSOR_RUN_IDENT,
+            scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                transaction_hash,
+                runtime_validations,
+                manifest_encoded_instructions,
+                global_address_reservations,
+                references,
+                blobs,
+            })
+            .unwrap(),
+        )?;
 
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
-        kernel.id_allocator.on_teardown()?;
         SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)
@@ -197,8 +224,6 @@ where
 
         // Push call frame
         {
-            self.id_allocator.push();
-
             let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
                 .map_err(CallFrameError::CreateFrameError)
                 .map_err(KernelError::CallFrameError)?;
@@ -260,8 +285,6 @@ where
 
             let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
 
-            self.id_allocator.pop()?;
-
             M::after_pop_frame(self, dropped_frame.actor())?;
         }
 
@@ -291,20 +314,9 @@ where
 
     #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
-        M::on_allocate_node_id(Some(entity_type), false, self)?;
+        M::on_allocate_node_id(entity_type, self)?;
 
-        let node_id = self.id_allocator.allocate_node_id(entity_type)?;
-
-        Ok(node_id)
-    }
-
-    #[trace_resources(log=node_id.entity_type())]
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        M::on_allocate_node_id(node_id.entity_type(), true, self)?;
-
-        self.id_allocator.allocate_virtual_node_id(node_id);
-
-        Ok(())
+        self.id_allocator.allocate_node_id(entity_type)
     }
 
     #[trace_resources(log=node_id.entity_type())]
@@ -315,10 +327,15 @@ where
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &node_substates, self)?;
 
-        self.id_allocator.take_node_id(node_id)?;
         let store_access = self
             .current_frame
-            .create_node(node_id, node_substates, &mut self.heap, self.store)
+            .create_node(
+                node_id,
+                node_substates,
+                &mut self.heap,
+                self.store,
+                node_id.is_global(),
+            )
             .map_err(CallFrameError::CreateNodeError)
             .map_err(KernelError::CallFrameError)?;
 

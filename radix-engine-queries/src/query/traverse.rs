@@ -215,6 +215,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
+            _ => {}
         }
     }
 
