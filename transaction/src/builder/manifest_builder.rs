@@ -106,7 +106,7 @@ impl ManifestBuilder {
             InstructionV1::TakeAllFromWorktop { .. }
             | InstructionV1::TakeFromWorktop { .. }
             | InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
+                new_bucket_id = Some(self.id_allocator.new_bucket_id());
             }
             InstructionV1::PopFromAuthZone { .. }
             | InstructionV1::CreateProofFromAuthZone { .. }
@@ -118,7 +118,7 @@ impl ManifestBuilder {
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
             | InstructionV1::CloneProof { .. } => {
-                new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
+                new_proof_id = Some(self.id_allocator.new_proof_id());
             }
             _ => {}
         }

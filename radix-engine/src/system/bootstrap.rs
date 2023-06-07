@@ -21,8 +21,8 @@ use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
-    CONSENSUS_MANAGER_CREATE_IDENT,
+    ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
+    CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -885,34 +885,37 @@ pub fn create_system_bootstrap_transaction(
 
     // Create ConsensusManager
     {
-        let consensus_manager_component_address =
-            Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER);
-        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE);
-        pre_allocated_addresses.push((
-            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-            GlobalAddress::from(CONSENSUS_MANAGER),
-        ));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+        ));
+        pre_allocated_addresses.push((
+            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE,
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: manifest_args!(
-                validator_owner_token,
-                consensus_manager_component_address,
+            args: to_manifest_value(&ConsensusManagerCreateManifestInput {
+                validator_owner_token_address: ManifestOwn({
+                    own_id += 1;
+                    own_id - 1
+                }),
+                component_address: ManifestOwn({
+                    own_id += 1;
+                    own_id - 1
+                }),
                 initial_epoch,
                 initial_config,
-                initial_time_ms
-            ),
+                initial_time_ms,
+            }),
         });
     }
 
     // Create GenesisHelper
     {
-        let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
+        let whole_lotta_xrd = id_allocator.new_bucket_id();
         instructions.push(
             InstructionV1::TakeAllFromWorktop {
                 resource_address: RADIX_TOKEN,
@@ -923,13 +926,15 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&GENESIS_HELPER_PACKAGE, GENESIS_HELPER_BLUEPRINT),
             GlobalAddress::from(GENESIS_HELPER),
         ));
-        let address_bytes = GENESIS_HELPER.as_node_id().0;
         instructions.push(InstructionV1::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
             blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: manifest_args!(
-                address_bytes,
+                ManifestOwn({
+                    own_id += 1;
+                    own_id - 1
+                }),
                 whole_lotta_xrd,
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
@@ -1000,14 +1005,13 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
         .into(),
     );
 
-    let bucket = id_allocator.new_bucket_id().unwrap();
-    let address_bytes = FAUCET.as_node_id().0;
+    let bucket = id_allocator.new_bucket_id();
 
     instructions.push(InstructionV1::CallFunction {
         package_address: FAUCET_PACKAGE,
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
-        args: manifest_args!(address_bytes, bucket),
+        args: manifest_args!(ManifestOwn(0), bucket),
     });
 
     SystemTransactionV1 {

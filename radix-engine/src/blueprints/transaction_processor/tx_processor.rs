@@ -17,7 +17,6 @@ use radix_engine_interface::blueprints::transaction_processor::*;
 use sbor::rust::prelude::*;
 use transaction::data::transform;
 use transaction::data::TransformHandler;
-use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
@@ -56,7 +55,6 @@ pub enum TransactionProcessorError {
     ProofNotFound(u32),
     OwnedNotFound(u32),
     BlobNotFound(Hash),
-    IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
     InvalidPackageSchema(DecodeError),
 }
@@ -401,7 +399,7 @@ impl TransactionProcessorBlueprint {
 struct TransactionProcessor {
     proof_id_mapping: IndexMap<ManifestProof, NodeId>,
     bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
-    owned_nodes: NonIterMap<u32, NodeId>,
+    own_id_mapping: NonIterMap<ManifestOwn, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
@@ -411,33 +409,23 @@ impl TransactionProcessor {
         let mut processor = Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
-            owned_nodes: NonIterMap::new(),
+            own_id_mapping: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
         };
         for o in global_address_ownerships {
-            processor.add_own(o.into()).unwrap();
+            processor.create_manifest_own(o.into()).unwrap();
         }
         processor
     }
 
-    fn add_own(&mut self, node_id: NodeId) -> Result<u32, RuntimeError> {
-        let new_id = self.id_allocator.new_own_id().map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::IdAllocationError(e),
-            ))
-        })?;
-        self.owned_nodes.insert(new_id, node_id);
-        Ok(new_id)
-    }
-
-    fn take_own(&mut self, own_id: &u32) -> Result<Own, RuntimeError> {
+    fn take_own(&mut self, own_id: &ManifestOwn) -> Result<Own, RuntimeError> {
         let real_id = self
-            .owned_nodes
+            .own_id_mapping
             .remove(own_id)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::OwnedNotFound(*own_id),
+                    TransactionProcessorError::OwnedNotFound(own_id.0),
                 ),
             ))?;
         Ok(Own(real_id))
@@ -502,23 +490,21 @@ impl TransactionProcessor {
     }
 
     fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
-        let new_id = self.id_allocator.new_bucket_id().map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::IdAllocationError(e),
-            ))
-        })?;
+        let new_id = self.id_allocator.new_bucket_id();
         self.bucket_id_mapping
             .insert(new_id.clone(), bucket.0.into());
         Ok(new_id)
     }
 
     fn create_manifest_proof(&mut self, proof: Proof) -> Result<ManifestProof, RuntimeError> {
-        let new_id = self.id_allocator.new_proof_id().map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::IdAllocationError(e),
-            ))
-        })?;
+        let new_id = self.id_allocator.new_proof_id();
         self.proof_id_mapping.insert(new_id.clone(), proof.0.into());
+        Ok(new_id)
+    }
+
+    fn create_manifest_own(&mut self, node_id: NodeId) -> Result<ManifestOwn, RuntimeError> {
+        let new_id = self.id_allocator.new_own_id();
+        self.own_id_mapping.insert(new_id, node_id);
         Ok(new_id)
     }
 
@@ -549,7 +535,7 @@ impl TransactionProcessor {
                     LocalAuthZone::push(proof, api)?;
                 }
                 _ => {
-                    self.add_own(node_id.clone())?;
+                    self.create_manifest_own(node_id.clone())?;
                 }
             }
         }
@@ -624,7 +610,7 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     }
 
     fn replace_own(&mut self, p: ManifestOwn) -> Result<Own, RuntimeError> {
-        self.processor.take_own(&p.0)
+        self.processor.take_own(&p)
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
