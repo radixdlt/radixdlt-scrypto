@@ -4,6 +4,7 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
+use radix_engine::system::system::SubstateWrapper;
 use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -240,7 +241,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let total_supply = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
         .unwrap();
@@ -248,12 +249,13 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<MetadataValue>>>(
             &resource_address.as_node_id(),
             METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
-        .unwrap();
+        .unwrap()
+        .value;
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -403,13 +405,13 @@ fn test_genesis_stake_allocation() {
             .enumerate()
         {
             let validator_url_entry = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+                .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<MetadataValue>>>(
                     &new_validators[index].as_node_id(),
                     METADATA_KV_STORE_PARTITION,
                     &SubstateKey::Map(scrypto_encode("url").unwrap()),
                 )
                 .unwrap();
-            if let Some(MetadataValue::Url(url)) = validator_url_entry {
+            if let Some(MetadataValue::Url(url)) = validator_url_entry.value {
                 assert_eq!(
                     url,
                     Url(format!("http://test.local?validator={:?}", validator_key))
@@ -440,7 +442,7 @@ fn test_genesis_time() {
     let proposer_minute_timestamp = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, ProposerMinuteTimestampSubstate>(
             CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         )
         .unwrap();

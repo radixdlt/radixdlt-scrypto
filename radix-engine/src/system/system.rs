@@ -12,7 +12,7 @@ use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
-use crate::system::node_init::ModuleInit;
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
@@ -46,6 +46,19 @@ use radix_engine_interface::schema::{
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SubstateMutability {
+    Mutable,
+    Immutable,
+}
+
+// TODO: Extend this use into substate fields
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct SubstateWrapper<V> {
+    pub value: V,
+    pub mutability: SubstateMutability,
+}
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -238,7 +251,7 @@ where
         };
 
         let mut node_substates = btreemap!(
-            TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+            TYPE_INFO_FIELD_PARTITION => type_info_partition(
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: blueprint.clone(),
                     global:false,
@@ -246,11 +259,11 @@ where
                     instance_schema,
                     features,
                 })
-            ).to_substates(),
+            ),
         );
 
         for (offset, partition) in user_substates.into_iter() {
-            let partition_num = OBJECT_BASE_PARTITION
+            let partition_num = MAIN_BASE_PARTITION
                 .at_offset(offset)
                 .expect("Module number overflow");
             node_substates.insert(partition_num, partition);
@@ -276,7 +289,7 @@ where
         } else {
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -447,7 +460,12 @@ where
                                 })?;
 
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let value = IndexedScryptoValue::from_typed(&Some(value));
+                                let wrapped_value = SubstateWrapper {
+                                    value: Some(value),
+                                    mutability: SubstateMutability::Mutable,
+                                };
+
+                                let value = IndexedScryptoValue::from_typed(&wrapped_value);
 
                                 if !blueprint_kv_schema.can_own {
                                     if !value.owned_nodes().is_empty() {
@@ -495,11 +513,16 @@ where
             .api
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
-        self.kernel_write_substate(
-            handle,
-            IndexedScryptoValue::from_typed(&None::<ScryptoValue>),
-        )?;
+
+        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+            scrypto_decode(&current_value).unwrap();
+        let value = wrapper.value.take();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+
         self.kernel_drop_lock(handle)?;
+
+        let current_value = scrypto_encode(&value).unwrap();
+
         Ok(current_value)
     }
 
@@ -516,7 +539,7 @@ where
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
                 let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
-                Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
+                Ok((address.into_node_id(), MAIN_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
@@ -672,21 +695,24 @@ where
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
         global_address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
-        // Check module configuration
-        let module_ids = modules
-            .keys()
-            .cloned()
-            .collect::<BTreeSet<ObjectModuleId>>();
-        let standard_object = btreeset!(
-            ObjectModuleId::Main,
-            ObjectModuleId::Metadata,
-            ObjectModuleId::Royalty,
-            ObjectModuleId::AccessRules
-        );
-        if module_ids != standard_object {
-            return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                Box::new(InvalidModuleSet(module_ids)),
-            )));
+        if !global_address.as_node_id().eq(RADIX_TOKEN.as_node_id()) {
+            // Check module configuration
+            let module_ids = modules
+                .keys()
+                .cloned()
+                .collect::<BTreeSet<ObjectModuleId>>();
+
+            let standard_object = btreeset!(
+                ObjectModuleId::Main,
+                ObjectModuleId::Metadata,
+                ObjectModuleId::Royalty,
+                ObjectModuleId::AccessRules
+            );
+            if module_ids != standard_object {
+                return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
+                    Box::new(InvalidModuleSet(module_ids)),
+                )));
+            }
         }
 
         // Read the type info
@@ -718,9 +744,14 @@ where
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
 
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
+        let blueprint_id = match type_info {
+            TypeInfoSubstate::Object(ObjectInfo {
+                ref mut global,
+                ref blueprint,
+                ..
+            }) if !*global => {
                 *global = true;
+                blueprint
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -729,18 +760,22 @@ where
             }
         };
 
+        let schema = self.get_blueprint_definition(blueprint_id)?.schema;
+        let num_main_partitions = schema.num_partitions();
+
         // Create a global node
         self.kernel_create_node(
             global_address.into(),
             btreemap!(
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(type_info).to_substates()
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(type_info)
             ),
         )?;
 
         // Move self modules to the newly created global node, and drop
-        let mut partition_numbers = self.kernel_list_modules(&node_id)?;
-        partition_numbers.remove(&TYPE_INFO_FIELD_PARTITION);
-        for partition_number in partition_numbers {
+        for offset in 0u8..num_main_partitions {
+            let partition_number = MAIN_BASE_PARTITION
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
             self.kernel_move_module(
                 &node_id,
                 partition_number,
@@ -748,6 +783,7 @@ where
                 partition_number,
             )?;
         }
+
         self.kernel_drop_node(&node_id)?;
 
         // Move other modules, and drop
@@ -757,13 +793,13 @@ where
                 ObjectModuleId::AccessRules
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
-                    let blueprint = self.get_object_info(&node_id)?.blueprint;
+                    let blueprint_id = self.get_object_info(&node_id)?.blueprint;
                     let expected_blueprint = module_id.static_blueprint().unwrap();
-                    if !blueprint.eq(&expected_blueprint) {
+                    if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
                                 expected_blueprint,
-                                actual_blueprint: blueprint,
+                                actual_blueprint: blueprint_id,
                             }),
                         )));
                     }
@@ -779,12 +815,19 @@ where
                         );
 
                     // Move and drop
-                    self.kernel_move_module(
-                        &node_id,
-                        OBJECT_BASE_PARTITION,
-                        global_address.as_node_id(),
-                        module_id.base_partition_num(),
-                    )?;
+                    let schema = self.get_blueprint_definition(&blueprint_id)?.schema;
+                    let module_base_partition = module_id.base_partition_num();
+                    for offset in 0u8..schema.num_partitions {
+                        let src = MAIN_BASE_PARTITION
+                            .at_offset(PartitionOffset(offset))
+                            .unwrap();
+                        let dest = module_base_partition
+                            .at_offset(PartitionOffset(offset))
+                            .unwrap();
+
+                        self.kernel_move_module(&node_id, src, global_address.as_node_id(), dest)?;
+                    }
+
                     self.kernel_drop_node(&node_id)?;
                 }
             }
@@ -907,12 +950,20 @@ where
         node_id: &NodeId,
         access_rules_node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        self.kernel_move_module(
-            access_rules_node_id,
-            OBJECT_BASE_PARTITION,
-            node_id,
-            ObjectModuleId::AccessRules.base_partition_num(),
-        )?;
+        // Move and drop
+        let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint;
+        let schema = self.get_blueprint_definition(&blueprint_id)?.schema;
+        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
+        for offset in 0u8..schema.num_partitions {
+            let src = MAIN_BASE_PARTITION
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+            let dest = module_base_partition
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+
+            self.kernel_move_module(access_rules_node_id, src, node_id, dest)?;
+        }
         self.kernel_drop_node(access_rules_node_id)?;
 
         Ok(())
@@ -1134,7 +1185,7 @@ where
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let user_substates = node_substates.remove(&OBJECT_BASE_PARTITION).unwrap();
+        let user_substates = node_substates.remove(&MAIN_BASE_PARTITION).unwrap();
         let fields = user_substates
             .into_iter()
             .map(|(_key, v)| v.into())
@@ -1162,9 +1213,49 @@ where
             }
         }
 
-        self.api
+        self.api.kernel_read_substate(handle).map(|v| {
+            let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
+            scrypto_encode(&wrapper.value).unwrap()
+        })
+    }
+
+    // TODO: Should this release lock or continue allow to mutate entry until lock released?
+    fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        match data {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write { .. }) => {}
+            _ => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::NotAKeyValueWriteLock,
+                ));
+            }
+        };
+
+        let v = self.api.kernel_read_substate(handle)?;
+        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
+        wrapper.mutability = SubstateMutability::Immutable;
+        let indexed = IndexedScryptoValue::from_typed(&wrapper);
+        self.api.kernel_write_substate(handle, indexed)?;
+        Ok(())
+    }
+
+    fn key_value_entry_remove(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let current_value = self
+            .api
             .kernel_read_substate(handle)
-            .map(|v| v.as_slice().to_vec())
+            .map(|v| v.as_slice().to_vec())?;
+
+        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+            scrypto_decode(&current_value).unwrap();
+        let value = wrapper.value.take();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+
+        let current_value = scrypto_encode(&value).unwrap();
+
+        Ok(current_value)
     }
 
     #[trace_resources]
@@ -1211,8 +1302,11 @@ where
         };
 
         let value = substate.as_scrypto_value().clone();
-        let indexed =
-            IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
+        let wrapper = SubstateWrapper {
+            value: Some(value),
+            mutability: SubstateMutability::Mutable,
+        };
+        let indexed = IndexedScryptoValue::from_vec(scrypto_encode(&wrapper).unwrap()).unwrap();
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -1247,12 +1341,12 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                MAIN_BASE_PARTITION => btreemap!(),
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
                         schema,
                     })
-                ).to_substates(),
+                ),
             ),
         )?;
 
@@ -1317,14 +1411,35 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
         };
 
-        self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_lock_substate_with_default(
             &node_id,
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
             flags,
-            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: None::<()>,
+                    mutability: SubstateMutability::Mutable,
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
             lock_data,
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
+                wrapper.mutability
+            })?;
+
+            if let SubstateMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableSubstate,
+                ));
+            }
+        }
+
+        Ok(handle)
     }
 
     fn key_value_store_remove_entry(
@@ -1782,14 +1897,35 @@ where
             KeyValueEntryLockData::Read
         };
 
-        self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_lock_substate_with_default(
             &node_id,
             partition_num,
             &SubstateKey::Map(key.to_vec()),
             flags,
-            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: None::<()>,
+                    mutability: SubstateMutability::Mutable,
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
             SystemLockData::KeyValueEntry(lock_data),
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
+                wrapper.mutability
+            })?;
+
+            if let SubstateMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableSubstate,
+                ));
+            }
+        }
+
+        Ok(handle)
     }
 
     fn actor_remove_key_value_entry(
@@ -2074,13 +2210,6 @@ where
             dest_node_id,
             dest_partition_number,
         )
-    }
-
-    fn kernel_list_modules(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
-        self.api.kernel_list_modules(node_id)
     }
 }
 

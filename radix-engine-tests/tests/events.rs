@@ -408,7 +408,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager create vault, vault fungible deposit
+        assert_eq!(events.len(), 4); // Four events: vault lock fee, create vault resource manager create vault, vault fungible deposit
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -419,7 +419,7 @@ fn resource_manager_new_vault_emits_correct_events() {
                 true,
             _ => false,
         });
-        assert!(match events.get(1) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(_node_id, ObjectModuleId::Main),
@@ -429,7 +429,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),

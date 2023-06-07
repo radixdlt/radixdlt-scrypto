@@ -203,8 +203,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
 pub struct PartitionNumber(pub u8);
 
 impl PartitionNumber {
-    pub fn at_offset(self, offset: PartitionOffset) -> Option<Self> {
-        self.0.checked_add(offset.0).map(|n| Self(n))
+    pub const fn at_offset(self, offset: PartitionOffset) -> Option<Self> {
+        match self.0.checked_add(offset.0) {
+            Some(n) => Some(Self(n)),
+            None => None,
+        }
     }
 }
 

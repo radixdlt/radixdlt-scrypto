@@ -680,11 +680,17 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                api.actor_remove_key_value_entry(
+                let handle = api.actor_lock_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
                     &id.to_key(),
+                    LockFlags::MUTABLE,
                 )?;
+                api.key_value_entry_remove(handle)?;
+                // Tombstone the non fungible
+                // TODO: UUID non fungibles with no data don't need to go through this process
+                api.key_value_entry_freeze(handle)?;
+                api.key_value_entry_release(handle)?;
             }
         }
 

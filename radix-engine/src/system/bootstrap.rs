@@ -317,24 +317,6 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Royalty Package
-    {
-        pre_allocated_ids.insert(ROYALTY_MODULE_PACKAGE.into());
-        let package_address = ROYALTY_MODULE_PACKAGE.into();
-
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                native_package_code_id: ROYALTY_CODE_ID,
-                definition: RoyaltyNativePackage::definition(),
-                metadata: BTreeMap::new(),
-            }),
-        });
-    }
-
     // Access Rules Package
     {
         pre_allocated_ids.insert(ACCESS_RULES_MODULE_PACKAGE.into());
@@ -364,6 +346,24 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 definition: ResourceManagerNativePackage::definition(),
+                metadata: BTreeMap::new(),
+            }),
+        });
+    }
+
+    // Royalty Package
+    {
+        pre_allocated_ids.insert(ROYALTY_MODULE_PACKAGE.into());
+        let package_address = ROYALTY_MODULE_PACKAGE.into();
+
+        instructions.push(InstructionV1::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: ROYALTY_CODE_ID,
+                definition: RoyaltyNativePackage::definition(),
                 metadata: BTreeMap::new(),
             }),
         });

@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::node_init::ModuleInit;
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::NativeNonFungibleBucket;
@@ -107,10 +107,10 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
                     WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
                 ),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
@@ -118,7 +118,7 @@ impl TransactionProcessorBlueprint {
                         instance_schema: None,
                         features: btreeset!(),
                     })
-                ).to_substates()
+                )
             ),
         )?;
         let worktop = Worktop(Own(worktop_node_id));

@@ -62,21 +62,23 @@ fn test_balance_changes_when_success() {
     );
 
     let result = receipt.expect_commit(true);
+
+    assert_eq!(result.balance_changes().len(), 4usize);
     assert_eq!(
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
             ),
+            account.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(dec!("-1"))
+            ),
+            component_address.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(dec!("2")) // 1 for put another 1 for component royalties
+            ),
             package_address.into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(dec!("2"))
             ),
-            component_address.into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(dec!("2"))
-            ),
-            account.into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(dec!("-1"))
-            )
         )
     );
     assert!(result.direct_vault_updates().is_empty());

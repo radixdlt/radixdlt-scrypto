@@ -415,7 +415,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let handle = system.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -539,7 +539,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         {
             let handle = api.kernel_lock_substate(
                 &auth_zone_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
                 LockFlags::MUTABLE,
                 SystemLockData::Default,

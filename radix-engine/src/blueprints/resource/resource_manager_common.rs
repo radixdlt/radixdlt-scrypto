@@ -224,15 +224,20 @@ where
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+
+    let mut modules = btreemap!(
+        ObjectModuleId::Main => object_id,
+        ObjectModuleId::AccessRules => resman_access_rules.0,
+        ObjectModuleId::Metadata => metadata.0,
+    );
+
+    if !resource_address.eq(&RADIX_TOKEN) {
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        modules.insert(ObjectModuleId::Royalty, royalty.0);
+    }
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
-        btreemap!(
-            ObjectModuleId::Main => object_id,
-            ObjectModuleId::AccessRules => resman_access_rules.0,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
-        ),
+        modules,
         resource_address.into(),
         FUNGIBLE_BUCKET_BLUEPRINT,
         vec![

@@ -1,4 +1,3 @@
-use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientFieldLockApi;
 use radix_engine_interface::api::{ClientActorApi, OBJECT_HANDLE_SELF};
@@ -83,10 +82,7 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
                     Option::Some(scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap());
                 scrypto_encode(&substate).unwrap()
             }
-            OriginalData::ComponentAppState(_) => scrypto_encode(&ComponentStateSubstate(
-                scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap(),
-            ))
-            .unwrap(),
+            OriginalData::ComponentAppState(_) => scrypto_encode(&self.value).unwrap(),
         };
         env.field_lock_write(self.lock_handle, substate).unwrap();
         env.field_lock_release(self.lock_handle).unwrap();

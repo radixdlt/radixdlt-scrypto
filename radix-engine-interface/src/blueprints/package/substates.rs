@@ -89,6 +89,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             schema: schema.schema,
             fields,
             collections,
+            num_partitions: partition_offset,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
@@ -105,6 +106,7 @@ pub struct IndexedBlueprintSchema {
     pub schema: ScryptoSchema,
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
+    pub num_partitions: u8,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -117,6 +119,10 @@ pub struct IndexedBlueprintSchema {
 }
 
 impl IndexedBlueprintSchema {
+    pub fn num_partitions(&self) -> u8 {
+        self.num_partitions
+    }
+
     pub fn num_fields(&self) -> usize {
         match &self.fields {
             Some((_, indices)) => indices.len(),

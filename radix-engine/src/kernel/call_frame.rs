@@ -877,23 +877,6 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn list_modules(
-        &mut self,
-        node_id: &NodeId,
-        heap: &mut Heap,
-    ) -> Result<BTreeSet<PartitionNumber>, ListNodeModuleError> {
-        // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(ListNodeModuleError::NodeNotVisible(node_id.clone()));
-        }
-
-        if let Some(modules) = heap.list_modules(node_id) {
-            Ok(modules)
-        } else {
-            return Err(ListNodeModuleError::NodeNotInHeap(node_id.clone()));
-        }
-    }
-
     pub fn add_global_reference(&mut self, address: GlobalAddress) {
         self.stable_references
             .insert(address.into_node_id(), StableReferenceType::Global);

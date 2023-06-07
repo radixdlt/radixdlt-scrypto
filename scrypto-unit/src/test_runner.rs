@@ -11,6 +11,7 @@ use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::SubstateWrapper;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
@@ -392,41 +393,35 @@ impl TestRunner {
 
         let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+            .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<MetadataValue>>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
-            )?;
+            )?
+            .value;
 
         metadata_value
     }
 
-    pub fn inspect_component_royalty(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Option<Decimal> {
-        if let Some(output) = self
+    pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
+        let accumulator = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
-                ROYALTY_FIELD_PARTITION,
+                ROYALTY_BASE_PARTITION
+                    .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                    .unwrap(),
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
-        {
-            output
-                .royalty_vault
-                .and_then(|vault| {
-                    self.substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                            vault.as_node_id(),
-                            OBJECT_BASE_PARTITION,
-                            &FungibleVaultField::LiquidFungible.into(),
-                        )
-                })
-                .map(|r| r.amount())
-        } else {
-            None
-        }
+            .unwrap();
+        self.substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                accumulator.royalty_vault.0.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
+            )
+            .map(|r| r.amount())
+            .unwrap()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
@@ -434,7 +429,7 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
             )
         {
@@ -444,7 +439,7 @@ impl TestRunner {
                     self.substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            OBJECT_BASE_PARTITION,
+                            MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
                         )
                 })
@@ -460,8 +455,14 @@ impl TestRunner {
         resource_address: ResourceAddress,
     ) -> Option<Decimal> {
         let vaults = self.get_component_vaults(account_address, resource_address);
+        let index = if resource_address.eq(&RADIX_TOKEN) {
+            // To account for royalty vault
+            1usize
+        } else {
+            0usize
+        };
         vaults
-            .get(0)
+            .get(index)
             .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
     }
 
@@ -490,7 +491,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                 &vault_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
             .map(|output| output.amount())
@@ -504,7 +505,7 @@ impl TestRunner {
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &NonFungibleVaultField::LiquidNonFungible.into(),
             )
             .map(|vault| vault.amount);
@@ -513,9 +514,7 @@ impl TestRunner {
             .substate_db()
             .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                 &vault_id,
-                OBJECT_BASE_PARTITION
-                    .at_offset(PartitionOffset(1u8))
-                    .unwrap(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
             );
         let id = substate_iter.next().map(|(_key, id)| id);
 
@@ -599,7 +598,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ValidatorField::Validator.into(),
             )
             .unwrap()
@@ -610,7 +609,7 @@ impl TestRunner {
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentValidatorSet.into(),
             )
             .unwrap();
@@ -1352,14 +1351,14 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
                 &CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();
         substate.epoch = epoch;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
             &substate,
         );
@@ -1492,7 +1491,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ProposerMilliTimestampSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentTime.into(),
             )
             .unwrap()
@@ -1624,7 +1623,7 @@ impl TestRunner {
             self.substate_db()
                 .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &PackageField::Info.into(),
                 )
                 .unwrap()

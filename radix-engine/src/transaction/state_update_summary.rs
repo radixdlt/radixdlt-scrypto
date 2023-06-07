@@ -277,14 +277,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                     node_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                         node_id,
-                        OBJECT_BASE_PARTITION,
+                        MAIN_BASE_PARTITION,
                         &FungibleVaultField::LiquidFungible.into(),
                     );
 
@@ -303,11 +303,8 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             // If there is an update to the liquid resource
 
             let vault_updates = self.tracked.get(node_id).and_then(|n| {
-                n.tracked_partitions.get(
-                    &OBJECT_BASE_PARTITION
-                        .at_offset(PartitionOffset(1u8))
-                        .unwrap(),
-                )
+                n.tracked_partitions
+                    .get(&MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap())
             });
 
             if let Some(tracked_module) = vault_updates {

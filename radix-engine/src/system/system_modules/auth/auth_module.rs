@@ -5,9 +5,9 @@ use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
-use crate::system::node_init::ModuleInit;
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
+    AccessRulesNativePackage, FunctionAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -88,7 +88,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::FunctionAccessRules.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -173,17 +173,6 @@ impl AuthModule {
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let handle = api.kernel_lock_substate(
-            access_rules_of,
-            ACCESS_RULES_FIELD_PARTITION,
-            &AccessRulesField::AccessRules.into(),
-            LockFlags::read_only(),
-            SystemLockData::default(),
-        )?;
-        let access_rules: MethodAccessRulesSubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
-
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
@@ -244,7 +233,6 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             access_rules_of,
-            &access_rules.roles,
             &role_list,
             api,
         )?;
@@ -260,7 +248,6 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules_of: &NodeId,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
         role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
@@ -268,7 +255,6 @@ impl AuthModule {
             acting_location,
             *auth_zone_id,
             access_rules_of,
-            access_rules,
             role_list,
             api,
         )?;
@@ -391,16 +377,16 @@ impl AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,
                     instance_schema: None,
                     features: btreeset!(),
-                })).to_substates()
+                }))
             ),
         )?;
 

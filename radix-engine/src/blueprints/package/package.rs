@@ -1,10 +1,8 @@
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
-};
+use crate::system::node_init::type_info_partition;
+use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::track::interface::NodeSubstates;
@@ -13,14 +11,11 @@ use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -147,8 +142,10 @@ where
     // Use kernel API to commit substates directly.
     // Can't use the ClientApi because of chicken-and-egg issue.
 
+    let mut partitions: NodeSubstates = BTreeMap::new();
+
     // Prepare node init.
-    let node_init = btreemap!(
+    let main_partition = btreemap!(
         PackageField::Info.into() => IndexedScryptoValue::from_typed(&info),
         PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
         PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
@@ -156,11 +153,10 @@ where
         PackageField::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
     );
 
-    // Prepare node modules.
-    let mut node_modules = BTreeMap::new();
-    node_modules.insert(
+    partitions.insert(MAIN_BASE_PARTITION, main_partition);
+    partitions.insert(
         TYPE_INFO_FIELD_PARTITION,
-        ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+        type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
             outer_object: None,
@@ -168,50 +164,17 @@ where
             features: btreeset!(),
         })),
     );
-    let mut metadata_init = BTreeMap::new();
-    for (key, value) in metadata {
-        metadata_init.insert(
-            SubstateKey::Map(scrypto_encode(&key).unwrap()),
-            IndexedScryptoValue::from_typed(&Some(value)),
-        );
-    }
-    node_modules.insert(
-        METADATA_KV_STORE_PARTITION,
-        ModuleInit::Metadata(metadata_init),
-    );
-    node_modules.insert(
-        ROYALTY_FIELD_PARTITION,
-        ModuleInit::Royalty(
-            ComponentRoyaltyConfigSubstate {
-                royalty_config: RoyaltyConfig::default(),
-            },
-            ComponentRoyaltyAccumulatorSubstate {
-                royalty_vault: None,
-            },
-        ),
-    );
-
-    if let Some(access_rules) = access_rules {
-        let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
-        let access_rules = node_substates
-            .remove(&OBJECT_BASE_PARTITION)
-            .unwrap()
-            .remove(&AccessRulesField::AccessRules.into())
-            .unwrap();
-        let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
-        node_modules.insert(
-            ACCESS_RULES_FIELD_PARTITION,
-            ModuleInit::AccessRules(access_rules),
-        );
-    } else {
-        node_modules.insert(
-            ACCESS_RULES_FIELD_PARTITION,
-            ModuleInit::AccessRules(MethodAccessRulesSubstate {
-                roles: BTreeMap::new(),
-                role_mutability: BTreeMap::new(),
-            }),
-        );
-    }
+    let metadata_partition = {
+        let mut metadata_partition = BTreeMap::new();
+        for (key, value) in metadata {
+            metadata_partition.insert(
+                SubstateKey::Map(scrypto_encode(&key).unwrap()),
+                IndexedScryptoValue::from_typed(&Some(value)),
+            );
+        }
+        metadata_partition
+    };
+    partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
 
     let node_id = if let Some(address) = package_address {
         NodeId(address)
@@ -219,13 +182,31 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    let mut modules: NodeSubstates = node_modules
-        .into_iter()
-        .map(|(k, v)| (k, v.to_substates()))
-        .collect();
-    modules.insert(OBJECT_BASE_PARTITION, node_init);
+    api.kernel_create_node(node_id, partitions)?;
 
-    api.kernel_create_node(node_id, modules)?;
+    if let Some(access_rules) = access_rules {
+        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
+        for offset in 0u8..2u8 {
+            let src = MAIN_BASE_PARTITION
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+            let dest = module_base_partition
+                .at_offset(PartitionOffset(offset))
+                .unwrap();
+
+            api.kernel_move_module(access_rules.0.as_node_id(), src, &node_id, dest)?;
+        }
+
+        api.kernel_drop_node(access_rules.0.as_node_id())?;
+        /*
+        for (partition, substates) in node_substates {
+            // TODO: Cleanup
+            let offset = partition.0 - MAIN_BASE_PARTITION.0;
+            let partition_num = ACCESS_RULES_BASE_PARTITION.at_offset(PartitionOffset(offset)).unwrap();
+            partitions.insert(partition_num, substates);
+        }
+         */
+    }
 
     let package_address = PackageAddress::new_or_panic(node_id.into());
     Ok(package_address)

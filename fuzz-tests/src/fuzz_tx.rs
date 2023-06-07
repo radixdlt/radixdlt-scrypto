@@ -135,7 +135,7 @@ impl TxFuzzer {
                 .substate_db()
                 .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                     &vault,
-                    OBJECT_BASE_PARTITION
+                    MAIN_BASE_PARTITION
                         .at_offset(PartitionOffset(1u8))
                         .unwrap(),
                 );

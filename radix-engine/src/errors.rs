@@ -212,6 +212,7 @@ pub enum SystemError {
     IndexDoesNotExist(BlueprintId, u8),
     MissingRequiredAuthority(BlueprintId, RoleKey),
     AuthorityMustBeEmpty(BlueprintId, String),
+    MutatingImmutableSubstate,
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,

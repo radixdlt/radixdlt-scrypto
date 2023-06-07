@@ -241,7 +241,7 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxSubstateWriteSizeExceeded(x),
-        )) => *x == SIZE as usize + 8, /* SBOR prefix */
+        )) => *x == SIZE as usize + 13, /* SBOR prefix + Substate wrapper */
         _ => false,
     })
 }

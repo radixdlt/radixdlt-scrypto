@@ -8,15 +8,17 @@ use sbor::rust::prelude::*;
 
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
 pub const METADATA_KV_STORE_PARTITION: PartitionNumber = PartitionNumber(1u8);
-pub const ROYALTY_FIELD_PARTITION: PartitionNumber = PartitionNumber(2u8);
-pub const ACCESS_RULES_FIELD_PARTITION: PartitionNumber = PartitionNumber(3u8);
-pub const OBJECT_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccessRulesField {
-    AccessRules,
-}
+pub const ROYALTY_BASE_PARTITION: PartitionNumber = PartitionNumber(2u8);
+pub const ROYALTY_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
+pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+
+pub const ACCESS_RULES_BASE_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ACCESS_RULES_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+
+pub const ACCESS_RULES_MUTABILITY_PARTITION: PartitionNumber = PartitionNumber(5u8);
+
+pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -27,7 +29,6 @@ pub enum TypeInfoField {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum RoyaltyField {
-    RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
@@ -257,7 +258,6 @@ macro_rules! substate_key {
     };
 }
 
-substate_key!(AccessRulesField);
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(ComponentField);

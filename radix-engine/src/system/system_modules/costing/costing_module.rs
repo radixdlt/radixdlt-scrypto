@@ -4,7 +4,7 @@ use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
-use crate::system::system::SystemService;
+use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{StoreAccess, StoreAccessInfo};
@@ -14,9 +14,7 @@ use crate::{
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-};
+use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -250,7 +248,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &PackageField::Royalty.into(),
             LockFlags::MUTABLE,
             SystemLockData::default(),
@@ -285,36 +283,44 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Apply component royalty
         //===========================
         if let Some(component_address) = optional_component {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_lock_substate_with_default(
                 component_address.as_node_id(),
-                ROYALTY_FIELD_PARTITION,
-                &RoyaltyField::RoyaltyConfig.into(),
+                ROYALTY_BASE_PARTITION
+                    .at_offset(ROYALTY_CONFIG_PARTITION_OFFSET)
+                    .unwrap(),
+                &SubstateKey::Map(scrypto_encode(ident).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: None::<()>,
+                        mutability: SubstateMutability::Mutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
                 SystemLockData::default(),
             )?;
-            let substate: ComponentRoyaltyConfigSubstate =
+
+            let substate: SubstateWrapper<Option<RoyaltyAmount>> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
+
+            let royalty_charge = substate.value.unwrap_or(RoyaltyAmount::Free);
 
             if royalty_charge.is_non_zero() {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    ROYALTY_FIELD_PARTITION,
+                    ROYALTY_BASE_PARTITION
+                        .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                        .unwrap(),
                     &RoyaltyField::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                     SystemLockData::default(),
                 )?;
-                let mut substate: ComponentRoyaltyAccumulatorSubstate =
+                let substate: ComponentRoyaltyAccumulatorSubstate =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
-                let vault_id = if let Some(vault) = substate.royalty_vault {
-                    vault
-                } else {
-                    let mut system = SystemService::new(api);
-                    let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
-                    substate.royalty_vault = Some(new_vault);
-                    new_vault
-                };
+
+                let vault_id = substate.royalty_vault.0;
+
                 apply_royalty_cost(
                     api,
                     royalty_charge,

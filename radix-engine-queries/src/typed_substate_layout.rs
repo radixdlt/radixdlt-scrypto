@@ -14,6 +14,8 @@ pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
+use radix_engine::system::system::SubstateWrapper;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -65,7 +67,7 @@ pub use radix_engine::system::node_modules::type_info::*;
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
     TypeInfoModuleField(TypeInfoField),
-    AccessRulesModuleField(AccessRulesField),
+    AccessRulesModule(TypedAccessRulesSubstateKey),
     RoyaltyModuleField(RoyaltyField),
     MetadataModuleEntryKey(String),
     MainModule(TypedMainModuleSubstateKey),
@@ -86,6 +88,12 @@ impl TypedSubstateKey {
             _ => true,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedAccessRulesSubstateKey {
+    Rule(RoleKey),
+    Mutability(RoleKey),
 }
 
 /// Doesn't include non-object modules, nor transient nodes.
@@ -154,16 +162,29 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        ROYALTY_FIELD_PARTITION => TypedSubstateKey::RoyaltyModuleField(
+        ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModuleField(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
-        ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModuleField(
-            AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
-        ),
-        partition_num @ _ if partition_num >= OBJECT_BASE_PARTITION => {
+        ACCESS_RULES_BASE_PARTITION => {
+            let key = substate_key
+                .for_map()
+                .ok_or_else(|| error("Access Rules key"))?;
+            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
+                scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
+            ))
+        }
+        ACCESS_RULES_MUTABILITY_PARTITION => {
+            let key = substate_key
+                .for_map()
+                .ok_or_else(|| error("Access Rules Mutability key"))?;
+            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(
+                scrypto_decode(&key).map_err(|_| error("Access Rules Mutability key"))?,
+            ))
+        }
+        partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
             TypedSubstateKey::MainModule(to_typed_object_module_substate_key(
                 entity_type,
-                partition_num.0 - OBJECT_BASE_PARTITION.0,
+                partition_num.0 - MAIN_BASE_PARTITION.0,
                 substate_key,
             )?)
         }
@@ -312,7 +333,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug, Clone)]
 pub enum TypedSubstateValue {
     TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue),
-    AccessRulesModuleFieldValue(TypedAccessRulesModuleFieldValue),
+    AccessRulesModule(TypedAccessRulesModule),
     RoyaltyModuleFieldValue(TypedRoyaltyModuleFieldValue),
     MetadataModuleEntryValue(MetadataValueSubstate),
     MainModule(TypedMainModuleSubstateValue),
@@ -324,13 +345,13 @@ pub enum TypedTypeInfoModuleFieldValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesModuleFieldValue {
-    MethodAccessRules(MethodAccessRulesSubstate),
+pub enum TypedAccessRulesModule {
+    Rule(Option<AccessRule>),
+    Mutability(Option<(RoleList, bool)>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleFieldValue {
-    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
 }
 
@@ -466,25 +487,28 @@ fn to_typed_substate_value_internal(
                 }
             })
         }
-        TypedSubstateKey::AccessRulesModuleField(access_rules_offset) => {
-            TypedSubstateValue::AccessRulesModuleFieldValue(match access_rules_offset {
-                AccessRulesField::AccessRules => {
-                    TypedAccessRulesModuleFieldValue::MethodAccessRules(scrypto_decode(data)?)
-                }
-            })
-        }
+        TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
+            TypedAccessRulesSubstateKey::Rule(_) => {
+                let value: SubstateWrapper<Option<AccessRule>> = scrypto_decode(data)?;
+                TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Rule(value.value))
+            }
+            TypedAccessRulesSubstateKey::Mutability(_) => {
+                let value: SubstateWrapper<Option<(RoleList, bool)>> = scrypto_decode(data)?;
+                TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Mutability(
+                    value.value,
+                ))
+            }
+        },
         TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {
             TypedSubstateValue::RoyaltyModuleFieldValue(match royalty_offset {
-                RoyaltyField::RoyaltyConfig => {
-                    TypedRoyaltyModuleFieldValue::ComponentRoyaltyConfig(scrypto_decode(data)?)
-                }
                 RoyaltyField::RoyaltyAccumulator => {
                     TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(scrypto_decode(data)?)
                 }
             })
         }
         TypedSubstateKey::MetadataModuleEntryKey(_) => {
-            TypedSubstateValue::MetadataModuleEntryValue(scrypto_decode(data)?)
+            let value: SubstateWrapper<Option<MetadataValue>> = scrypto_decode(data)?;
+            TypedSubstateValue::MetadataModuleEntryValue(value.value)
         }
         TypedSubstateKey::MainModule(object_substate_key) => TypedSubstateValue::MainModule(
             to_typed_object_substate_value(object_substate_key, data)?,
@@ -533,7 +557,9 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
+            let value: SubstateWrapper<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
+
+            TypedMainModuleSubstateValue::NonFungibleResourceData(value.value)
         }
         TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
             TypedMainModuleSubstateValue::FungibleVault(match offset {
@@ -598,7 +624,8 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
-            TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+            let value: SubstateWrapper<Option<Own>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::AccountVaultIndex(value.value)
         }
         TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
@@ -620,7 +647,9 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
+            let value: SubstateWrapper<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
+
+            TypedMainModuleSubstateValue::GenericKeyValueStore(value.value)
         }
         TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
             TypedMainModuleSubstateValue::OneResourcePool(match offset {
