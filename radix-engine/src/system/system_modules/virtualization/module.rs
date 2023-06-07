@@ -57,7 +57,7 @@ impl VirtualizationModule {
 
                 let invocation = KernelInvocation {
                     actor: Actor::VirtualLazyLoad {
-                        blueprint,
+                        blueprint: blueprint.clone(),
                         ident: virtual_func_id,
                     },
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
@@ -67,11 +67,12 @@ impl VirtualizationModule {
 
                 let modules: BTreeMap<ObjectModuleId, Own> = scrypto_decode(&rtn).unwrap();
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-                api.kernel_allocate_virtual_node_id(node_id)?;
+                let address = GlobalAddress::new_or_panic(node_id.into());
 
                 let mut system = SystemService::new(api);
-                system
-                    .globalize_with_address(modules, GlobalAddress::new_or_panic(node_id.into()))?;
+                let address_reservation =
+                    system.allocate_virtual_global_address(blueprint, address)?;
+                system.globalize_with_address(modules, address_reservation)?;
 
                 Ok(true)
             }

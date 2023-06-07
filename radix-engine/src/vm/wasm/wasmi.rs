@@ -253,12 +253,21 @@ fn new_key_value_store(
         .map(|buffer| buffer.0)
 }
 
-fn preallocate_global_address(
-    caller: Caller<'_, HostState>,
+fn allocate_global_address(
+    mut caller: Caller<'_, HostState>,
+    blueprint_id_ptr: u32,
+    blueprint_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.preallocate_global_address().map(|buffer| buffer.0)
+    runtime
+        .allocate_global_address(read_memory(
+            caller.as_context_mut(),
+            memory,
+            blueprint_id_ptr,
+            blueprint_id_len,
+        )?)
+        .map(|buffer| buffer.0)
 }
 
 fn cost_unit_limit(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
@@ -308,13 +317,15 @@ fn globalize_object_with_address(
     modules_len: u32,
     address_ptr: u32,
     address_len: u32,
-) -> Result<(), InvokeError<WasmRuntimeError>> {
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.globalize_object_with_address(
-        read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
-        read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
-    )
+    runtime
+        .globalize_object_with_address(
+            read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
+            read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
+        )
+        .map(|buffer| buffer.0)
 }
 
 fn get_object_info(
@@ -700,10 +711,14 @@ impl WasmiModule {
             },
         );
 
-        let host_preallocate_global_address = Func::wrap(
+        let host_allocate_global_address = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                preallocate_global_address(caller).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>,
+             blueprint_id_ptr: u32,
+             blueprint_id_len: u32|
+             -> Result<u64, Trap> {
+                allocate_global_address(caller, blueprint_id_ptr, blueprint_id_len)
+                    .map_err(|e| e.into())
             },
         );
 
@@ -752,7 +767,7 @@ impl WasmiModule {
              modules_len: u32,
              address_ptr: u32,
              address_len: u32|
-             -> Result<(), Trap> {
+             -> Result<u64, Trap> {
                 globalize_object_with_address(
                     caller,
                     modules_ptr,
@@ -975,8 +990,8 @@ impl WasmiModule {
 
         linker_define!(
             linker,
-            PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
-            host_preallocate_global_address
+            ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
+            host_allocate_global_address
         );
         linker_define!(linker, COST_UNIT_LIMIT_FUNCTION_NAME, host_cost_unit_limit);
         linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);

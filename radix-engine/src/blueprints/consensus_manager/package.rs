@@ -370,7 +370,7 @@ impl ConsensusManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::create(
-                    input.validator_owner_token,
+                    input.validator_owner_token_address,
                     input.component_address,
                     input.initial_epoch,
                     input.initial_config,

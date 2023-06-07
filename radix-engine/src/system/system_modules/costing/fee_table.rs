@@ -24,9 +24,7 @@ pub enum CostingEntry<'a> {
         node_id: &'a NodeId,
     },
     DropNode,
-    AllocateNodeId {
-        virtual_node: bool,
-    },
+    AllocateNodeId,
 
     /* substate */
     LockSubstate {
@@ -99,13 +97,7 @@ impl FeeTable {
     /// and transformed (classified and groupped) using convert.py script.
     fn kernel_api_cost_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         ((match entry {
-            CostingEntry::AllocateNodeId { virtual_node } => {
-                if *virtual_node {
-                    113
-                } else {
-                    212
-                }
-            }
+            CostingEntry::AllocateNodeId => 212,
             CostingEntry::CreateNode { node_id } => match node_id.entity_type() {
                 Some(EntityType::GlobalAccessController) => 1736,
                 Some(EntityType::GlobalAccount) => 1640,

@@ -26,14 +26,8 @@ impl From<EncodeError> for SignatureValidationError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum ManifestIdAllocationError {
-    OutOfID,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestIdValidationError {
-    IdAllocationError(ManifestIdAllocationError),
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
     BucketLocked(ManifestBucket),

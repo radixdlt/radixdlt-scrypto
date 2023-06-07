@@ -41,27 +41,42 @@ pub enum OwnValidation {
     IsProof,
     IsVault,
     IsKeyValueStore,
+    IsGlobalAddressReservation,
     IsTypedObject(Option<PackageAddress>, String),
 }
 
 impl OwnValidation {
-    pub fn could_match_bucket(&self) -> bool {
+    pub fn could_match_manifest_bucket(&self) -> bool {
         match self {
             OwnValidation::IsBucket => true,
             OwnValidation::IsProof => false,
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsGlobalAddressReservation => false,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
         }
     }
 
-    pub fn could_match_proof(&self) -> bool {
+    pub fn could_match_manifest_proof(&self) -> bool {
         match self {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => true,
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsGlobalAddressReservation => false,
+            // Hard to validate without knowing package addresses from engine, assume fine
+            OwnValidation::IsTypedObject(_, _) => true,
+        }
+    }
+
+    pub fn could_match_manifest_own(&self) -> bool {
+        match self {
+            OwnValidation::IsBucket => false,
+            OwnValidation::IsProof => false,
+            OwnValidation::IsVault => true,
+            OwnValidation::IsKeyValueStore => true,
+            OwnValidation::IsGlobalAddressReservation => true,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
         }

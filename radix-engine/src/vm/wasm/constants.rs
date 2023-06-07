@@ -13,8 +13,8 @@ pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
 pub const FEE_BALANCE_FUNCTION_ID: usize = 0x15;
 pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 
-pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_ID: usize = 0x20;
-pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "preallocate_global_address";
+pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_ID: usize = 0x20;
+pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
 
 pub const NEW_OBJECT_FUNCTION_ID: usize = 0x30;
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
