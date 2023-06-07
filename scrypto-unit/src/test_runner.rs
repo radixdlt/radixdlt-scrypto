@@ -31,7 +31,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageInfoSubstate,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate, PackageSetup,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -426,7 +426,7 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorSubstate>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),

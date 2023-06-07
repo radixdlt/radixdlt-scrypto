@@ -71,7 +71,9 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, IndexedBlueprintSchema, PackageInfoSubstate};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, IndexedBlueprintSchema, PackageInfoSubstate,
+};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;

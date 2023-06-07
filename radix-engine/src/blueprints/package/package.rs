@@ -17,16 +17,19 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema,
+    FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef,
+};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
 use crate::method_auth_template;
-pub use radix_engine_interface::blueprints::package::{
-    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
-};
 use crate::system::system::{SubstateMutability, SubstateWrapper};
+pub use radix_engine_interface::blueprints::package::{
+    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
+};
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -126,7 +129,8 @@ fn globalize_package<Y, L: Default>(
     info: PackageInfoSubstate,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
-    royalty: PackageRoyaltySubstate,
+    royalty: PackageRoyaltyAccumulatorSubstate,
+    fn_royalty: BTreeMap<FnKey, RoyaltyAmount>,
     function_access_rules: BTreeMap<FnKey, AccessRule>,
     metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
@@ -150,9 +154,30 @@ where
 
     partitions.insert(MAIN_BASE_PARTITION, main_partition);
 
+    let fn_royalty_partition = {
+        fn_royalty
+            .into_iter()
+            .map(|(k, royalty)| {
+                let value = SubstateWrapper {
+                    value: Some(royalty),
+                    mutability: SubstateMutability::Mutable,
+                };
+                (
+                    SubstateKey::Map(scrypto_encode(&k).unwrap()),
+                    IndexedScryptoValue::from_typed(&value),
+                )
+            })
+            .collect()
+    };
+
+    partitions.insert(
+        MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+        fn_royalty_partition,
+    );
 
     let function_access_rules_partition = {
-        function_access_rules.into_iter()
+        function_access_rules
+            .into_iter()
             .map(|(k, rule)| {
                 let value = SubstateWrapper {
                     value: Some(rule),
@@ -166,7 +191,10 @@ where
             .collect()
     };
 
-    partitions.insert(MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(), function_access_rules_partition);
+    partitions.insert(
+        MAIN_BASE_PARTITION.at_offset(PartitionOffset(2u8)).unwrap(),
+        function_access_rules_partition,
+    );
 
     partitions.insert(
         TYPE_INFO_FIELD_PARTITION,
@@ -183,7 +211,7 @@ where
         for (key, value) in metadata {
             let value = SubstateWrapper {
                 value: Some(value),
-                mutability: SubstateMutability::Immutable,
+                mutability: SubstateMutability::Mutable,
             };
             metadata_partition.insert(
                 SubstateKey::Map(scrypto_encode(&key).unwrap()),
@@ -296,10 +324,19 @@ impl PackageNativePackage {
             aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
         ));
         fields.push(FieldSchema::normal(
-            aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>(),
+            aggregator.add_child_type_and_descendents::<PackageRoyaltyAccumulatorSubstate>(),
         ));
 
         let mut collections = Vec::new();
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<FnKey>()),
+                value: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<RoyaltyAmount>(),
+                ),
+                can_own: false,
+            },
+        ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
                 key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<FnKey>()),
@@ -529,21 +566,15 @@ impl PackageNativePackage {
                 blueprints.insert(blueprint.clone(), definition);
             }
 
-            (
-                access_rules,
-                PackageInfoSubstate {
-                    blueprints,
-                },
-            )
+            (access_rules, PackageInfoSubstate { blueprints })
         };
 
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
             code: vec![native_package_code_id],
         };
-        let royalty = PackageRoyaltySubstate {
+        let royalty = PackageRoyaltyAccumulatorSubstate {
             royalty_vault: None,
-            blueprint_royalty_configs: BTreeMap::new(),
         };
 
         globalize_package(
@@ -552,6 +583,7 @@ impl PackageNativePackage {
             code_type,
             code,
             royalty,
+            btreemap!(),
             function_access_rules,
             metadata,
             None,
@@ -677,7 +709,7 @@ impl PackageNativePackage {
             })?;
 
         // Build node init
-        let (function_access_rules, info, royalty) = {
+        let (function_access_rules, info, royalty_accumulator, fn_royalty) = {
             let mut access_rules = BTreeMap::new();
             let mut blueprints = BTreeMap::new();
             let mut royalties = BTreeMap::new();
@@ -692,18 +724,18 @@ impl PackageNativePackage {
                     template: setup.template,
                 };
                 blueprints.insert(blueprint.clone(), definition);
-                royalties.insert(blueprint.clone(), setup.royalty_config);
+                for (ident, amount) in setup.royalty_config.rules {
+                    royalties.insert(FnKey::new(blueprint.clone(), ident), amount);
+                }
             }
 
             (
                 access_rules,
-                PackageInfoSubstate {
-                    blueprints,
-                },
-                PackageRoyaltySubstate {
+                PackageInfoSubstate { blueprints },
+                PackageRoyaltyAccumulatorSubstate {
                     royalty_vault: None,
-                    blueprint_royalty_configs: royalties,
                 },
+                royalties,
             )
         };
 
@@ -715,7 +747,8 @@ impl PackageNativePackage {
             info,
             code_type,
             code,
-            royalty,
+            royalty_accumulator,
+            fn_royalty,
             function_access_rules,
             metadata,
             Some(access_rules),
@@ -726,7 +759,7 @@ impl PackageNativePackage {
     pub(crate) fn set_royalty<Y>(
         blueprint: String,
         fn_name: String,
-        royalty: RoyaltyAmount,
+        amount: RoyaltyAmount,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -734,20 +767,15 @@ impl PackageNativePackage {
     {
         // FIXME: double check if auth is set up for any package
 
-        let handle = api.actor_lock_field(
+        let handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            PackageField::Royalty.into(),
+            0u8,
+            &scrypto_encode(&FnKey::new(blueprint, fn_name)).unwrap(),
             LockFlags::MUTABLE,
         )?;
+        api.key_value_entry_set_typed(handle, amount)?;
+        api.key_value_entry_release(handle)?;
 
-        let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
-        let royalty_config = substate
-            .blueprint_royalty_configs
-            .entry(blueprint)
-            .or_insert(RoyaltyConfig::default());
-        royalty_config.rules.insert(fn_name, royalty);
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
         Ok(())
     }
 
@@ -761,7 +789,7 @@ impl PackageNativePackage {
             LockFlags::read_only(),
         )?;
 
-        let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
+        let substate: PackageRoyaltyAccumulatorSubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
             Some(vault) => Vault(vault).take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,

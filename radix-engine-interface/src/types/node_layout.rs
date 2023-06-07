@@ -58,6 +58,7 @@ pub enum FungibleResourceManagerField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum PackagePartitionOffset {
     Fields,
+    FnRoyalty,
     FunctionAccessRules,
 }
 

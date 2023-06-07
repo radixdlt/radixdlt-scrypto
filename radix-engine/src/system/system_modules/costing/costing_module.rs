@@ -16,7 +16,7 @@ use crate::{
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
+use radix_engine_interface::blueprints::package::PackageRoyaltyAccumulatorSubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 
@@ -246,38 +246,59 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         // Apply package royalty
         //===========================
-        let handle = api.kernel_lock_substate(
-            blueprint.package_address.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &PackageField::Royalty.into(),
-            LockFlags::MUTABLE,
-            SystemLockData::default(),
-        )?;
-        let mut substate: PackageRoyaltySubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let royalty_charge = substate
-            .blueprint_royalty_configs
-            .get(blueprint.blueprint_name.as_str())
-            .map(|x| x.get_rule(ident).clone())
-            .unwrap_or(RoyaltyAmount::Free);
-        if royalty_charge.is_non_zero() {
-            let vault_id = if let Some(vault) = substate.royalty_vault {
-                vault
-            } else {
-                let mut system = SystemService::new(api);
-                let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
-                substate.royalty_vault = Some(new_vault);
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
-                new_vault
-            };
-            apply_royalty_cost(
-                api,
-                royalty_charge,
-                RoyaltyRecipient::Package(blueprint.package_address),
-                vault_id.0,
+        {
+            let fn_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
+            let handle = api.kernel_lock_substate_with_default(
+                blueprint.package_address.as_node_id(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+                &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
+                LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: None::<()>,
+                        mutability: SubstateMutability::Mutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
+                SystemLockData::default(),
             )?;
+
+            let substate: SubstateWrapper<Option<RoyaltyAmount>> =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_drop_lock(handle)?;
+
+            let royalty_charge = substate.value.unwrap_or(RoyaltyAmount::Free);
+            if royalty_charge.is_non_zero() {
+                let handle = api.kernel_lock_substate(
+                    blueprint.package_address.as_node_id(),
+                    MAIN_BASE_PARTITION,
+                    &PackageField::Royalty.into(),
+                    LockFlags::MUTABLE,
+                    SystemLockData::default(),
+                )?;
+
+                let mut substate: PackageRoyaltyAccumulatorSubstate =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
+
+                let vault_id = if let Some(vault) = substate.royalty_vault {
+                    vault
+                } else {
+                    let mut system = SystemService::new(api);
+                    let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
+                    substate.royalty_vault = Some(new_vault);
+                    api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
+                    new_vault
+                };
+                apply_royalty_cost(
+                    api,
+                    royalty_charge,
+                    RoyaltyRecipient::Package(blueprint.package_address),
+                    vault_id.0,
+                )?;
+
+                api.kernel_drop_lock(handle)?;
+            }
         }
-        api.kernel_drop_lock(handle)?;
 
         //===========================
         // Apply component royalty
