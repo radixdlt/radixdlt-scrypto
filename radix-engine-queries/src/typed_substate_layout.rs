@@ -6,7 +6,8 @@ pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-pub use radix_engine::blueprints::pool::single_resource_pool::*;
+use radix_engine::blueprints::pool::multi_resource_pool::*;
+pub use radix_engine::blueprints::pool::one_resource_pool::*;
 pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::system::node_modules::access_rules::*;
@@ -107,8 +108,9 @@ pub enum TypedMainModuleSubstateKey {
     AccountField(AccountField),
     AccountVaultIndexKey(ResourceAddress),
     AccountResourceDepositRuleIndexKey(ResourceAddress),
-    SingleResourcePoolField(SingleResourcePoolField),
+    OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
+    MultiResourcePoolField(MultiResourcePoolField),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -291,13 +293,14 @@ fn to_typed_object_substate_key_internal(
                 }
             }
         }
-        EntityType::GlobalSingleResourcePool => {
-            TypedMainModuleSubstateKey::SingleResourcePoolField(SingleResourcePoolField::try_from(
-                substate_key,
-            )?)
-        }
+        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePoolField(
+            OneResourcePoolField::try_from(substate_key)?,
+        ),
         EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePoolField(
             TwoResourcePoolField::try_from(substate_key)?,
+        ),
+        EntityType::GlobalMultiResourcePool => TypedMainModuleSubstateKey::MultiResourcePoolField(
+            MultiResourcePoolField::try_from(substate_key)?,
         ),
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
@@ -351,8 +354,9 @@ pub enum TypedMainModuleSubstateValue {
     Account(TypedAccountFieldValue),
     AccountVaultIndex(AccountVaultIndexEntry),
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
-    SingleResourcePool(TypedSingleResourcePoolFieldValue),
+    OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
+    MultiResourcePool(TypedMultiResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
@@ -421,13 +425,18 @@ pub enum TypedAccountFieldValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedSingleResourcePoolFieldValue {
-    SingleResourcePool(SingleResourcePoolSubstate),
+pub enum TypedOneResourcePoolFieldValue {
+    OneResourcePool(OneResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedTwoResourcePoolFieldValue {
     TwoResourcePool(TwoResourcePoolSubstate),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedMultiResourcePoolFieldValue {
+    MultiResourcePool(MultiResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -621,10 +630,10 @@ fn to_typed_object_substate_value(
 
             TypedMainModuleSubstateValue::GenericKeyValueStore(value.value)
         }
-        TypedMainModuleSubstateKey::SingleResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::SingleResourcePool(match offset {
-                SingleResourcePoolField::SingleResourcePool => {
-                    TypedSingleResourcePoolFieldValue::SingleResourcePool(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
+            TypedMainModuleSubstateValue::OneResourcePool(match offset {
+                OneResourcePoolField::OneResourcePool => {
+                    TypedOneResourcePoolFieldValue::OneResourcePool(scrypto_decode(data)?)
                 }
             })
         }
@@ -632,6 +641,13 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::TwoResourcePool(match offset {
                 TwoResourcePoolField::TwoResourcePool => {
                     TypedTwoResourcePoolFieldValue::TwoResourcePool(scrypto_decode(data)?)
+                }
+            })
+        }
+        TypedMainModuleSubstateKey::MultiResourcePoolField(offset) => {
+            TypedMainModuleSubstateValue::MultiResourcePool(match offset {
+                MultiResourcePoolField::MultiResourcePool => {
+                    TypedMultiResourcePoolFieldValue::MultiResourcePool(scrypto_decode(data)?)
                 }
             })
         }
