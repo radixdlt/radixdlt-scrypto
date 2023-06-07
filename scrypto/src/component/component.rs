@@ -4,7 +4,7 @@ use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
-    component_address_type_data, COMPONENT_ADDRESS_ID,
+    component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
 };
 use radix_engine_common::prelude::{
     OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
@@ -83,7 +83,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct AnyComponent(ObjectStubHandle);
+pub struct AnyComponent(pub(crate) ObjectStubHandle);
 
 impl HasStub for AnyComponent {
     type Stub = Self;
@@ -181,7 +181,7 @@ impl<C: HasStub + HasMethods> Owned<C> {
             metadata: None,
             royalty: RoyaltyConfig::default(),
             roles,
-            address: None,
+            address_reservation: None,
         }
     }
 }
@@ -262,7 +262,7 @@ pub struct Globalizing<C: HasStub> {
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub roles: Roles,
-    pub address: Option<ComponentAddress>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -296,8 +296,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn with_address(mut self, address: ComponentAddress) -> Self {
-        self.address = Some(address);
+    pub fn with_address(mut self, address_reservation: GlobalAddressReservation) -> Self {
+        self.address_reservation = Some(address_reservation);
         self
     }
 
@@ -314,10 +314,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
         );
 
-        let address = if let Some(address) = self.address {
-            let address: GlobalAddress = address.into();
-            ScryptoEnv.globalize_with_address(modules, address).unwrap();
-            address
+        let address = if let Some(address_reservation) = self.address_reservation {
+            ScryptoEnv
+                .globalize_with_address(modules, address_reservation)
+                .unwrap()
         } else {
             ScryptoEnv.globalize(modules).unwrap()
         };
@@ -453,6 +453,16 @@ impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         component_address_type_data()
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}
+
+impl Describe<ScryptoCustomTypeKind> for Owned<AnyComponent> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        own_type_data()
     }
 
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}

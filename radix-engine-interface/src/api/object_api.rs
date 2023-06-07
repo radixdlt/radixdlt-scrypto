@@ -102,6 +102,8 @@ pub trait ClientObjectApi<E> {
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
+    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
+
     // TODO: Combine this with globalization process and/or find the right abstraction
     fn attach_access_rules(
         &mut self,
@@ -110,7 +112,16 @@ pub trait ClientObjectApi<E> {
     ) -> Result<(), E>;
 
     /// Pre-allocates a global address, for a future globalization.
-    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, E>;
+    fn allocate_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+    ) -> Result<(GlobalAddressReservation, GlobalAddress), E>;
+
+    fn allocate_virtual_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+        global_address: GlobalAddress,
+    ) -> Result<GlobalAddressReservation, E>;
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all. A global address is automatically created and returned.
@@ -121,16 +132,16 @@ pub trait ClientObjectApi<E> {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
-    ) -> Result<(), E>;
+        address_reservation: GlobalAddressReservation,
+    ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
+        address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
-    ) -> Result<NodeId, E>;
+    ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object
     fn call_method(

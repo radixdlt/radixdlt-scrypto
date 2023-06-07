@@ -11,7 +11,6 @@ use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
-use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 
 /// Represents an error when accessing a bucket.
@@ -105,16 +104,17 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
         Self::create_with_address(
             features,
             id_type,
             non_fungible_schema,
             metadata,
             access_rules,
-            resource_address.into(),
+            address_reservation,
             api,
         )
     }
@@ -125,7 +125,7 @@ impl NonFungibleResourceManagerBlueprint {
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
+        resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -152,10 +152,13 @@ impl NonFungibleResourceManagerBlueprint {
             btreemap!(),
         )?;
 
-        let resource_address = ResourceAddress::new_or_panic(resource_address);
-        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
-
-        Ok(resource_address)
+        globalize_resource_manager(
+            object_id,
+            resource_address_reservation,
+            access_rules,
+            metadata,
+            api,
+        )
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
@@ -183,9 +186,10 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
 
         let supply: Decimal = Decimal::from(entries.len());
 
@@ -226,9 +230,9 @@ impl NonFungibleResourceManagerBlueprint {
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            resource_address,
+            address_reservation,
             access_rules,
             metadata,
             ids,
@@ -266,9 +270,10 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
 
         let instance_schema = InstanceSchema {
             schema: non_fungible_schema.schema,
@@ -286,9 +291,9 @@ impl NonFungibleResourceManagerBlueprint {
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            resource_address,
+            address_reservation,
             access_rules,
             metadata,
             ids,

@@ -35,10 +35,7 @@ impl ManifestValidator {
     }
 
     pub fn new_bucket(&mut self) -> Result<ManifestBucket, ManifestIdValidationError> {
-        let bucket_id = self
-            .id_allocator
-            .new_bucket_id()
-            .map_err(ManifestIdValidationError::IdAllocationError)?;
+        let bucket_id = self.id_allocator.new_bucket_id();
         self.bucket_ids.insert(bucket_id.clone(), 0);
         Ok(bucket_id)
     }
@@ -74,10 +71,7 @@ impl ManifestValidator {
             ProofKind::AuthZoneProof | ProofKind::VirtualProof => {}
         }
 
-        let proof_id = self
-            .id_allocator
-            .new_proof_id()
-            .map_err(ManifestIdValidationError::IdAllocationError)?;
+        let proof_id = self.id_allocator.new_proof_id();
         self.proof_ids.insert(proof_id.clone(), kind);
         Ok(proof_id)
     }
@@ -94,10 +88,7 @@ impl ManifestValidator {
                     panic!("Illegal state");
                 }
             }
-            let proof_id = self
-                .id_allocator
-                .new_proof_id()
-                .map_err(ManifestIdValidationError::IdAllocationError)?;
+            let proof_id = self.id_allocator.new_proof_id();
             self.proof_ids.insert(proof_id.clone(), kind);
             Ok(proof_id)
         } else {
@@ -144,6 +135,10 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
 
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, ManifestIdValidationError> {
         self.drop_proof(&p)?;
+        Ok(Own(NodeId([0u8; NodeId::LENGTH])))
+    }
+
+    fn replace_own(&mut self, _p: ManifestOwn) -> Result<Own, ManifestIdValidationError> {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 

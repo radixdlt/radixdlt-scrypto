@@ -32,7 +32,6 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
     NodeIdWasNotAllocated(NodeId),
-    AllocatedIDsNotEmpty(BTreeSet<NodeId>),
     OutOfID,
 }
 
@@ -201,6 +200,7 @@ pub enum SystemError {
     NodeIdNotExist,
     GlobalAddressDoesNotExist,
     NoParent,
+    NotAnAddressReservation,
     NotAnObject,
     NotAMethod,
     OuterObjectDoesNotExist,
@@ -223,9 +223,10 @@ pub enum SystemError {
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
-    CannotGlobalize(Box<CannotGlobalizeError>),
+    CannotGlobalize(CannotGlobalizeError),
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
+    InvalidGlobalAddressReservation,
     InvalidModule,
     InvalidGlobalEntityType,
     InvalidChildObjectCreation,
@@ -291,10 +292,7 @@ pub struct InvalidModuleType {
 pub enum CannotGlobalizeError {
     NotAnObject,
     AlreadyGlobalized,
-    InvalidAddressEntityType {
-        expected: Vec<EntityType>,
-        actual: Option<EntityType>,
-    },
+    InvalidBlueprintId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

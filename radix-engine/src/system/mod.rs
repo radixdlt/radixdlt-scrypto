@@ -1,4 +1,5 @@
 pub mod bootstrap;
+pub mod id_allocation;
 pub mod module;
 pub mod module_mixer;
 pub mod node_init;
