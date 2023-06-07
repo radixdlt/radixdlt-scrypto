@@ -6,6 +6,7 @@ use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 
