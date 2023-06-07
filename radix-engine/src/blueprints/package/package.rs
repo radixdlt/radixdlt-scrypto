@@ -1,6 +1,6 @@
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
-use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -121,8 +121,8 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     }
 }
 
-fn globalize_package<Y>(
-    package_address: Option<[u8; NodeId::LENGTH]>,
+fn globalize_package<Y, L: Default>(
+    package_address_reservation: Option<GlobalAddressReservation>,
     info: PackageInfoSubstate,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
@@ -133,7 +133,7 @@ fn globalize_package<Y>(
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
-    Y: KernelNodeApi + ClientApi<RuntimeError>,
+    Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
 {
     // Use kernel API to commit substates directly.
     // Can't use the ClientApi because of chicken-and-egg issue.
@@ -171,8 +171,57 @@ where
     };
     partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
 
-    let node_id = if let Some(address) = package_address {
-        NodeId(address)
+    let node_id = if let Some(reservation) = package_address_reservation {
+        // TODO: Can we use `global_object` API?
+
+        // Check global address reservation
+        let global_address = {
+            let substates = api.kernel_drop_node(reservation.0.as_node_id())?;
+
+            let type_info: Option<TypeInfoSubstate> = substates
+                .get(&TYPE_INFO_FIELD_PARTITION)
+                .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
+                .and_then(|x| x.as_typed().ok());
+
+            match type_info {
+                Some(TypeInfoSubstate::GlobalAddressReservation(x)) => x,
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidGlobalAddressReservation,
+                    ));
+                }
+            }
+        };
+
+        // Check blueprint id
+        let reserved_blueprint_id = {
+            let lock_handle = api.kernel_lock_substate(
+                global_address.as_node_id(),
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+                LockFlags::MUTABLE, // This is to ensure the substate is lock free!
+                L::default(),
+            )?;
+            let type_info: TypeInfoSubstate =
+                api.kernel_read_substate(lock_handle)?.as_typed().unwrap();
+            api.kernel_drop_lock(lock_handle)?;
+            match type_info {
+                TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom { blueprint_id }) => {
+                    blueprint_id
+                }
+                _ => unreachable!(),
+            }
+        };
+
+        if reserved_blueprint_id.package_address != PACKAGE_PACKAGE
+            || reserved_blueprint_id.blueprint_name != PACKAGE_BLUEPRINT
+        {
+            return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                CannotGlobalizeError::InvalidBlueprintId,
+            )));
+        }
+
+        global_address.as_node_id().clone()
     } else {
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
@@ -315,14 +364,14 @@ impl PackageNativePackage {
     }
 
     #[trace_resources(log=export_name)]
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y, L: Default>(
         export_name: &str,
         receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
@@ -411,15 +460,15 @@ impl PackageNativePackage {
         }
     }
 
-    pub(crate) fn publish_native<Y>(
-        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+    pub(crate) fn publish_native<Y, L: Default>(
+        package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u8,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&definition.schema)
@@ -454,14 +503,14 @@ impl PackageNativePackage {
         )
     }
 
-    pub(crate) fn publish_wasm<Y>(
+    pub(crate) fn publish_wasm<Y, L: Default>(
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
         let address =
@@ -470,8 +519,8 @@ impl PackageNativePackage {
         Ok((address, bucket))
     }
 
-    pub(crate) fn publish_wasm_advanced<Y>(
-        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+    pub(crate) fn publish_wasm_advanced<Y, L: Default>(
+        package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
@@ -479,7 +528,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
         let address = Self::publish_wasm_internal(
@@ -494,8 +543,8 @@ impl PackageNativePackage {
         Ok(address)
     }
 
-    fn publish_wasm_internal<Y>(
-        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+    fn publish_wasm_internal<Y, L: Default>(
+        package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
@@ -503,7 +552,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&definition.schema)

@@ -89,19 +89,20 @@ const PRE_ALLOCATED_PACKAGE: [u8; NodeId::LENGTH] = [
 fn static_component_should_be_callable() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    test_runner.compile_and_publish_at_address(
-        "./tests/blueprints/static_dependencies",
-        PRE_ALLOCATED_PACKAGE,
-    );
     let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
-    let receipt = test_runner.execute_system_transaction_with_preallocated_ids(
+    test_runner
+        .compile_and_publish_at_address("./tests/blueprints/static_dependencies", package_address);
+    let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![InstructionV1::CallFunction {
             package_address,
             blueprint_name: "Preallocated".to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(PRE_ALLOCATED, "my_secret".to_string()),
+            args: manifest_args!(ManifestOwn(0), "my_secret".to_string()),
         }],
-        indexset!(NodeId::from(PRE_ALLOCATED)),
+        vec![(
+            BlueprintId::new(&package_address, "Preallocated"),
+            GlobalAddress::new_or_panic(PRE_ALLOCATED),
+        )],
         btreeset!(),
     );
     receipt.expect_commit_success();
@@ -137,7 +138,7 @@ fn static_resource_should_be_callable() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (key, _priv, account) = test_runner.new_account(false);
-    let receipt = test_runner.execute_system_transaction_with_preallocated_ids(
+    let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
@@ -145,12 +146,12 @@ fn static_resource_should_be_callable() {
                 function_name: "create_with_initial_supply_and_address".to_string(),
                 args: manifest_decode(
                     &manifest_encode(
-                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                             divisibility: 0u8,
                             metadata: btreemap!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
-                            resource_address: PRE_ALLOCATED_RESOURCE,
+                            resource_address: ManifestOwn(0),
                         },
                     )
                     .unwrap(),
@@ -163,7 +164,10 @@ fn static_resource_should_be_callable() {
                 args: manifest_args!(ManifestExpression::EntireWorktop),
             },
         ],
-        indexset!(NodeId::from(PRE_ALLOCATED_RESOURCE)),
+        vec![(
+            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
+        )],
         btreeset!(NonFungibleGlobalId::from_public_key(&key)),
     );
     receipt.expect_commit_success();
@@ -196,7 +200,7 @@ fn static_package_should_be_callable() {
     let mut test_runner = TestRunner::builder().build();
     test_runner.compile_and_publish_at_address(
         "./tests/blueprints/static_dependencies",
-        PRE_ALLOCATED_PACKAGE,
+        PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE),
     );
 
     // Act

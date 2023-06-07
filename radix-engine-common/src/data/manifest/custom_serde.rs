@@ -44,6 +44,9 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                     (SerializableType::String(value.0.to_string()), true)
                 }
             }
+            ManifestCustomValue::Own(value) => {
+                (SerializableType::String(value.0.to_string()), true)
+            }
             ManifestCustomValue::Expression(value) => {
                 let text = match value {
                     ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
