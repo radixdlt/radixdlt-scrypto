@@ -132,6 +132,7 @@ pub struct CustomGenesis {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub faucet_supply: Decimal,
 }
 
 impl CustomGenesis {
@@ -194,6 +195,7 @@ impl CustomGenesis {
             initial_epoch,
             initial_config,
             initial_time_ms: 0,
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
         }
     }
 }
@@ -238,6 +240,7 @@ impl TestRunnerBuilder {
                     custom_genesis.initial_epoch,
                     custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
+                    custom_genesis.faucet_supply,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),

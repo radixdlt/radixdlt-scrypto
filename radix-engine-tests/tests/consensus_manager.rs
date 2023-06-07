@@ -81,6 +81,7 @@ fn genesis_epoch_has_correct_initial_validators() {
         initial_config: CustomGenesis::default_consensus_manager_config()
             .with_max_validators(max_validators),
         initial_time_ms: 1,
+        faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
     };
 
     // Act
@@ -585,6 +586,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
             })
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd),
         initial_time_ms: 1,
+        faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
     };
 
     // Act
@@ -1135,6 +1137,7 @@ fn create_custom_genesis(
                 target_duration_millis: 0,
             }),
         initial_time_ms: 1,
+        faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
     };
 
     (genesis, pub_key_accounts)
