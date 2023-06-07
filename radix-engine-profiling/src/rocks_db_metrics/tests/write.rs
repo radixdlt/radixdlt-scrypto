@@ -1,6 +1,3 @@
-// To run tests use command:
-// cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit
-
 use super::super::*;
 use super::*;
 use super::common::*;
