@@ -240,25 +240,25 @@ CALL_FUNCTION
             apply_address_replacements(
                 r##"
 CALL_METHOD
-    Address("${component_address}")
+    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
     "complicated_method"
     Decimal("1")
     PreciseDecimal("2")
 ;
-CALL_ROYALTY_METHOD
-    Address("${component_address}")
-    "some_method_1"
-    Decimal("1")
+SET_COMPONENT_ROYALTY_CONFIG
+    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
+    "my_method"
+    Enum<0u8>()
 ;
 CALL_METADATA_METHOD
-    Address("${component_address}")
-    "some_method_2"
-    Decimal("2")
+    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
+    "get"
+    "HelloWorld"
 ;
 CALL_ACCESS_RULES_METHOD
-    Address("${component_address}")
-    "some_method_3"
-    Decimal("3")
+    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
+    "get_role"
+    "hello"
 ;
 "##,
             ),
@@ -389,28 +389,21 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 SET_PACKAGE_ROYALTY_CONFIG
-    Address("${package_address}")
-    Map<String, Tuple>(
-        "Blueprint" => Tuple(
-            Map<String, U32>(
-                "method" => 1u32
-            )
-        )
-    )
+    Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+    "my_blueprint"
+    "my_function"
+    Enum<0u8>()
 ;
 SET_COMPONENT_ROYALTY_CONFIG
-    Address("${account_address}")
-    Tuple(
-        Map<String, U32>(
-            "method" => 1u32
-        )
-    )
+    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
+    "my_method"
+    Enum<0u8>()
 ;
 CLAIM_PACKAGE_ROYALTY
-    Address("${package_address}")
+    Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
 ;
 CLAIM_COMPONENT_ROYALTY
-    Address("${account_address}")
+    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
 ;
 "##,
             ),
@@ -594,12 +587,9 @@ REMOVE_METADATA
             apply_address_replacements(
                 r##"
 UPDATE_ROLE
-    Address("${resource_address}")
+    Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
+    "hello"
     Enum<0u8>()
-    "auth"
-    Enum<1u8>(
-        Enum<0u8>()
-    )
     Enum<0u8>()
 ;
 "##,
@@ -916,7 +906,7 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Map<String, Tuple>()
+    Enum<0u8>()
 ;
 CREATE_ACCOUNT;
 "##,
@@ -951,7 +941,7 @@ CREATE_VALIDATOR
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Map<String, Tuple>()
+    Enum<0u8>()
 ;
 CREATE_IDENTITY;
 "##,
