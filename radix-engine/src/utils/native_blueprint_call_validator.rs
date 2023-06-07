@@ -34,7 +34,7 @@ pub fn validate_call_arguments_to_native_components(
 ) -> Result<(), ValidationError> {
     let mut package_definitions = LazyPackageDefinitions::new();
 
-    for instruction in instructions.iter() {
+    for (index, instruction) in instructions.iter().enumerate() {
         let (invocation, args) = match instruction {
             InstructionV1::CallFunction {
                 package_address,
@@ -88,7 +88,7 @@ pub fn validate_call_arguments_to_native_components(
             _ => continue,
         };
 
-        let schema = get_arguments_schema(invocation, &mut package_definitions)?;
+        let schema = get_arguments_schema(invocation, &mut package_definitions, index)?;
         if let Some((local_type_index, schema)) = schema {
             validate_payload_against_schema::<ManifestCustomExtension, _>(
                 &manifest_encode(&args).unwrap(),
@@ -96,7 +96,7 @@ pub fn validate_call_arguments_to_native_components(
                 local_type_index,
                 &(),
             )
-            .map_err(|error| ValidationError::SchemaValidationError(format!("{:?}", error)))
+            .map_err(|error| ValidationError::SchemaValidationError(index, format!("{:?}", error)))
         } else {
             Ok(())
         }?;
@@ -162,9 +162,11 @@ fn get_blueprint_schema<'p>(
     package_definition: &'p PackageDefinition,
     package_address: PackageAddress,
     blueprint: &str,
+    instruction_index: usize,
 ) -> Result<&'p BlueprintSchema, ValidationError> {
     package_definition.schema.blueprints.get(blueprint).map_or(
         Err(ValidationError::InvalidBlueprint(
+            instruction_index,
             package_address,
             blueprint.to_owned(),
         )),
@@ -179,12 +181,16 @@ fn get_blueprint_schema<'p>(
 fn get_arguments_schema<'s>(
     invocation: Invocation,
     package_definitions: &'s mut LazyPackageDefinitions,
+    instruction_index: usize,
 ) -> Result<Option<(LocalTypeIndex, &'s Schema<ScryptoCustomSchema>)>, ValidationError> {
     let entity_type =
         if let Some(entity_type) = invocation.global_address().as_node_id().entity_type() {
             entity_type
         } else {
-            return Err(ValidationError::InvalidAddress(invocation.global_address()));
+            return Err(ValidationError::InvalidAddress(
+                instruction_index,
+                invocation.global_address(),
+            ));
         };
 
     let blueprint_schema = match invocation {
@@ -193,6 +199,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.package_package(),
                 package_address,
                 &blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -201,6 +208,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.resource_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -209,6 +217,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.account_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -217,6 +226,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.identity_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -225,6 +235,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.consensus_manager_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -233,6 +244,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.access_controller_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -241,6 +253,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.pool_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -249,6 +262,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.transaction_processor_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -257,6 +271,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.metadata_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -265,6 +280,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.royalties_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -273,6 +289,7 @@ fn get_arguments_schema<'s>(
                 package_definitions.access_rules_package(),
                 package_address,
                 blueprint,
+                instruction_index,
             )
             .map(Some)?
         }
@@ -383,10 +400,11 @@ fn get_arguments_schema<'s>(
             {
                 Ok(Some((function_schema.input, &blueprint_schema.schema)))
             } else {
-                Err(ValidationError::InvalidReceiver)
+                Err(ValidationError::InvalidReceiver(instruction_index))
             }
         } else {
             Err(ValidationError::MethodNotFound(
+                instruction_index,
                 invocation.method().to_owned(),
             ))
         }
@@ -430,11 +448,13 @@ impl Invocation {
     }
 }
 
+// `usize` here is the index of the instruction has has an error.
+#[derive(Clone, Debug)]
 pub enum ValidationError {
-    MethodNotFound(String),
-    SchemaValidationError(String),
+    MethodNotFound(usize, String),
+    SchemaValidationError(usize, String),
 
-    InvalidAddress(GlobalAddress),
-    InvalidBlueprint(PackageAddress, String),
-    InvalidReceiver,
+    InvalidAddress(usize, GlobalAddress),
+    InvalidBlueprint(usize, PackageAddress, String),
+    InvalidReceiver(usize),
 }

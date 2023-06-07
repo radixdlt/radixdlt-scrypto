@@ -1,3 +1,4 @@
 CREATE_ACCOUNT_ADVANCED
-    Map<String, Tuple>();                  # Authority Rules
+    Enum<0u8>();
+
 CREATE_ACCOUNT;
