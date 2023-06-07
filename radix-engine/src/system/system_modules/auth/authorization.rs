@@ -1,7 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::system::{SubstateMutability, SubstateWrapper, SubstateWrapper2};
+use crate::system::system::{SubstateMutability, SubstateWrapper};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
@@ -359,17 +359,14 @@ impl Authorization {
                 LockFlags::read_only(),
                 Some(|| {
                     let wrapper = SubstateWrapper {
-                        value: ScryptoValue::Enum {
-                            discriminator: 0u8,
-                            fields: vec![],
-                        },
+                        value: None::<()>,
                         mutability: SubstateMutability::Mutable,
                     };
                     IndexedScryptoValue::from_typed(&wrapper)
                 }),
                 SystemLockData::default(),
             )?;
-            let substate: SubstateWrapper2<Option<AccessRule>> =
+            let substate: SubstateWrapper<Option<AccessRule>> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
 
