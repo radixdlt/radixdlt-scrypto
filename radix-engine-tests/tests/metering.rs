@@ -208,7 +208,7 @@ fn test_radiswap() {
         + 13986 /* DropLock */
         + 3780 /* DropNode */
         + 3803738 /* Invoke */
-        + 2550497 /* LockSubstate */
+        + 2579693 /* LockSubstate */
         + 19600 /* ReadSubstate */
         + 137500 /* RunNative */
         + 20000 /* RunSystem */
@@ -221,7 +221,7 @@ fn test_radiswap() {
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7312309"),
+        dec!("0.7341505"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
