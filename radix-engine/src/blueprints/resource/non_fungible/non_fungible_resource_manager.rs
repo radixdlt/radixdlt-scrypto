@@ -660,6 +660,8 @@ impl NonFungibleResourceManagerBlueprint {
                     LockFlags::MUTABLE,
                 )?;
                 api.key_value_entry_remove(handle)?;
+                // Tombstone the non fungible
+                // TODO: UUID non fungibles with no data don't need to go through this process
                 api.key_value_entry_freeze(handle)?;
                 api.key_value_entry_release(handle)?;
             }
