@@ -33,7 +33,15 @@ test_crates_features() {
     cargo $test_runner $crates $args
 
     if [ $doc_test_separately -eq 1 ] ; then
-        cargo test $crates --doc $args
+        tmpfile=$(mktemp)
+        # this is to skip error in case of bin target
+        #   https://github.com/rust-lang/rust/issues/50784
+        if ! cargo test $crates --doc $args 2>$tmpfile ; then
+            if ! grep -q 'error: no library targets found in package' $tmpfile ; then
+                cat $tmpfile
+                exit 1
+            fi
+        fi
     fi
 }
 
