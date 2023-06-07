@@ -1,5 +1,5 @@
 use radix_engine::{
-    errors::{KernelError, RuntimeError, SystemError},
+    errors::{CannotGlobalizeError, KernelError, RuntimeError, SystemError},
     types::*,
 };
 use scrypto_unit::*;
@@ -122,6 +122,35 @@ fn test_create_and_consume_within_frame() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn test_create_and_consume_with_mismatching_blueprint() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package,
+            "AllocatedAddressTest",
+            "create_and_consume_with_mismatching_blueprint",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::CannotGlobalize(
+                CannotGlobalizeError::InvalidBlueprintId
+            ))
+        )
+    });
 }
 
 #[test]

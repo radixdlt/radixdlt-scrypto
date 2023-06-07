@@ -3,6 +3,13 @@ use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 #[blueprint]
+mod another {
+    struct AnotherBlueprint {}
+
+    impl AnotherBlueprint {}
+}
+
+#[blueprint]
 mod apa {
     struct AllocatedAddressTest {
         store: Option<KeyValueStore<u32, ComponentAddress>>,
@@ -38,6 +45,15 @@ mod apa {
         pub fn create_and_consume_within_frame() {
             let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
             Self::globalize_with_preallocated_address(own);
+        }
+
+        pub fn create_and_consume_with_mismatching_blueprint() {
+            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            crate::another::AnotherBlueprint {}
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .with_address(own)
+                .globalize();
         }
 
         pub fn create_and_consume_in_another_frame() {

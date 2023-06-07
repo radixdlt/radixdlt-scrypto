@@ -221,7 +221,7 @@ pub enum SystemError {
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
-    CannotGlobalize(Box<CannotGlobalizeError>),
+    CannotGlobalize(CannotGlobalizeError),
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidGlobalAddressOwnership,
@@ -289,10 +289,7 @@ pub struct InvalidModuleType {
 pub enum CannotGlobalizeError {
     NotAnObject,
     AlreadyGlobalized,
-    InvalidAddressEntityType {
-        expected: Vec<EntityType>,
-        actual: Option<EntityType>,
-    },
+    InvalidBlueprintId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

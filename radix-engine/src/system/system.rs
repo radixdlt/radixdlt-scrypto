@@ -682,6 +682,27 @@ where
             }
         };
 
+        // Check blueprint id
+        let expected_blueprint_id = {
+            // Check global address phantom
+            let lock_handle = self.kernel_lock_substate(
+                global_address.as_node_id(),
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+                LockFlags::MUTABLE, // This is to ensure the substate is lock free!
+                SystemLockData::Default,
+            )?;
+            let type_info: TypeInfoSubstate =
+                self.kernel_read_substate(lock_handle)?.as_typed().unwrap();
+            self.kernel_drop_lock(lock_handle)?;
+            match type_info {
+                TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom { blueprint_id }) => {
+                    blueprint_id
+                }
+                _ => unreachable!(),
+            }
+        };
+
         // Read the type info
         let node_id = modules
             .remove(&ObjectModuleId::Main)
@@ -711,13 +732,27 @@ where
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
 
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
-                *global = true;
+        match &mut type_info {
+            TypeInfoSubstate::Object(ObjectInfo {
+                global, blueprint, ..
+            }) => {
+                if *global {
+                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                        CannotGlobalizeError::AlreadyGlobalized,
+                    )));
+                } else if blueprint.package_address != expected_blueprint_id.package_address
+                    || blueprint.blueprint_name != expected_blueprint_id.blueprint_name
+                {
+                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                        CannotGlobalizeError::InvalidBlueprintId,
+                    )));
+                } else {
+                    *global = true;
+                }
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                    Box::new(CannotGlobalizeError::NotAnObject),
+                    CannotGlobalizeError::NotAnObject,
                 )))
             }
         };
