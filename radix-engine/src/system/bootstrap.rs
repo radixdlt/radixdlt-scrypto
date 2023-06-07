@@ -19,7 +19,7 @@ use crate::vm::ScryptoVm;
 use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
     CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
@@ -49,7 +49,7 @@ pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
 
@@ -61,7 +61,10 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
             key,
             accept_delegated_stake: true,
             is_registered: true,
-            metadata: vec![],
+            metadata: vec![(
+                "url".to_string(),
+                MetadataValue::Url(Url(format!("http://test.local?validator={:?}", key))),
+            )],
             owner: default_owner_address,
         }
     }
@@ -77,7 +80,7 @@ pub struct GenesisStakeAllocation {
 pub struct GenesisResource {
     pub address_ownership: ManifestOwn,
     pub initial_supply: Decimal,
-    pub metadata: Vec<(String, String)>,
+    pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
 
@@ -300,10 +303,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: PACKAGE_CODE_ID,
-                schema: PackageNativePackage::schema(),
+                definition: PackageNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: PackageNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -321,10 +322,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: METADATA_CODE_ID,
-                schema: MetadataNativePackage::schema(),
+                definition: MetadataNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: MetadataNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -342,10 +341,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: ROYALTY_CODE_ID,
-                schema: RoyaltyNativePackage::schema(),
+                definition: RoyaltyNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: RoyaltyNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -363,10 +360,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: ACCESS_RULES_CODE_ID,
-                schema: AccessRulesNativePackage::schema(),
+                definition: AccessRulesNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: AccessRulesNativePackage::function_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -384,10 +379,8 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
-                schema: ResourceManagerNativePackage::schema(),
+                definition: ResourceManagerNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -559,11 +552,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
-                schema: IdentityNativePackage::schema(),
+                definition: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -580,11 +571,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
-                schema: ConsensusManagerNativePackage::schema(),
+                definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
-                package_access_rules: ConsensusManagerNativePackage::package_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
             }),
         });
     }
@@ -628,11 +617,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
-                schema: AccountNativePackage::schema(),
+                definition: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -649,11 +636,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
-                schema: AccessControllerNativePackage::schema(),
+                definition: AccessControllerNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -670,11 +655,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
-                schema: PoolNativePackage::schema(),
+                definition: PoolNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: POOL_ID,
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -691,11 +674,9 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
-                schema: TransactionProcessorNativePackage::schema(),
+                definition: TransactionProcessorNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
             }),
         });
     }
@@ -786,7 +767,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
                 code: ManifestBlobRef(faucet_code_hash.0),
-                schema: manifest_decode(&faucet_abi).unwrap(),
+                definition: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,
@@ -813,7 +794,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_own_id()),
                 code: ManifestBlobRef(genesis_helper_code_hash.0),
-                schema: manifest_decode(&genesis_helper_abi).unwrap(),
+                definition: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,

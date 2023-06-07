@@ -10,7 +10,8 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
+use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
     PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
@@ -27,7 +28,7 @@ pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
 pub struct ConsensusManagerNativePackage;
 
 impl ConsensusManagerNativePackage {
-    pub fn schema() -> PackageSchema {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -326,24 +327,23 @@ impl ConsensusManagerNativePackage {
             outer_method_auth_template: btreemap!(),
         };
 
-        PackageSchema {
+        let schema = PackageSchema {
             blueprints: btreemap!(
                 CONSENSUS_MANAGER_BLUEPRINT.to_string() => consensus_manager_schema,
                 VALIDATOR_BLUEPRINT.to_string() => validator_schema
             ),
-        }
-    }
+        };
 
-    pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            FnKey::new(
-                CONSENSUS_MANAGER_BLUEPRINT.to_string(),
-                CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            ),
-            rule!(require(AuthAddresses::system_role())),
+        let function_access_rules = btreemap!(
+            CONSENSUS_MANAGER_BLUEPRINT.to_string() => btreemap!(
+                CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+            )
         );
-        access_rules
+
+        PackageDefinition {
+            schema,
+            function_access_rules,
+        }
     }
 
     #[trace_resources(log=export_name)]

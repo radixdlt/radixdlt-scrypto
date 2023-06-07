@@ -76,7 +76,7 @@ impl TwoResourcePoolBlueprint {
         // Creating the pool nodes
         let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
         // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
-        // able to update them later on.
+        // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
             btreemap!(
                 "pool_vault_number".into() => MetadataValue::U8(2),
@@ -268,7 +268,7 @@ impl TwoResourcePoolBlueprint {
                 bucket1.resource_address(api)? => bucket1.amount(api)?,
                 bucket2.resource_address(api)? => bucket2.amount(api)?,
             },
-            pool_unit_tokens_minted: pool_units_to_mint,
+            pool_units_minted: pool_units_to_mint,
         };
 
         // Minting the pool unit tokens

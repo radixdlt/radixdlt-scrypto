@@ -1,4 +1,4 @@
-use radix_engine::blueprints::pool::single_resource_pool::*;
+use radix_engine::blueprints::pool::one_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine_interface::blueprints::pool::*;
@@ -7,7 +7,7 @@ use scrypto_unit::*;
 use transaction::builder::*;
 
 #[test]
-fn single_resource_pool_can_be_instantiated() {
+fn one_resource_pool_can_be_instantiated() {
     TestEnvironment::new(18);
 }
 
@@ -268,9 +268,9 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let manifest = ManifestBuilder::new()
         .call_function(
             POOL_PACKAGE,
-            SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
-            SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT,
-            to_manifest_value(&SingleResourcePoolInstantiateManifestInput {
+            ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
+            ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
+            to_manifest_value(&OneResourcePoolInstantiateManifestInput {
                 resource_address: non_fungible_resource,
                 pool_manager_rule: rule!(allow_all),
             }),
@@ -279,9 +279,8 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(
-        is_single_resource_pool_does_non_fungible_resources_are_not_accepted,
-    )
+    receipt
+        .expect_specific_failure(is_one_resource_pool_does_non_fungible_resources_are_not_accepted)
 }
 
 #[test]
@@ -295,7 +294,7 @@ fn contribution_emits_expected_event() {
     // Assert
     let ContributionEvent {
         amount_of_resources_contributed,
-        pool_unit_tokens_minted,
+        pool_units_minted,
     } = receipt
         .expect_commit_success()
         .application_events
@@ -309,7 +308,7 @@ fn contribution_emits_expected_event() {
         })
         .unwrap();
     assert_eq!(amount_of_resources_contributed, dec!("2.22"));
-    assert_eq!(pool_unit_tokens_minted, dec!("2.22"));
+    assert_eq!(pool_units_minted, dec!("2.22"));
 }
 
 #[test]
@@ -462,9 +461,9 @@ impl TestEnvironment {
             let manifest = ManifestBuilder::new()
                 .call_function(
                     POOL_PACKAGE,
-                    SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                    SINGLE_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    to_manifest_value(&SingleResourcePoolInstantiateManifestInput {
+                    ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
+                    ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
+                    to_manifest_value(&OneResourcePoolInstantiateManifestInput {
                         resource_address,
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                     }),
@@ -503,8 +502,8 @@ impl TestEnvironment {
             .take_all_from_worktop(self.resource_address, |builder, bucket| {
                 builder.call_method(
                     self.pool_component_address,
-                    SINGLE_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                    to_manifest_value(&SingleResourcePoolContributeManifestInput { bucket }),
+                    ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                    to_manifest_value(&OneResourcePoolContributeManifestInput { bucket }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -522,8 +521,8 @@ impl TestEnvironment {
             .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
                 builder.call_method(
                     self.pool_component_address,
-                    SINGLE_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value(&SingleResourcePoolRedeemManifestInput { bucket }),
+                    ONE_RESOURCE_POOL_REDEEM_IDENT,
+                    to_manifest_value(&OneResourcePoolRedeemManifestInput { bucket }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -537,8 +536,8 @@ impl TestEnvironment {
             .take_all_from_worktop(self.resource_address, |builder, bucket| {
                 builder.call_method(
                     self.pool_component_address,
-                    SINGLE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    to_manifest_value(&SingleResourcePoolProtectedDepositManifestInput { bucket }),
+                    ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
+                    to_manifest_value(&OneResourcePoolProtectedDepositManifestInput { bucket }),
                 )
             })
             .build();
@@ -553,8 +552,8 @@ impl TestEnvironment {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
-                SINGLE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                to_manifest_value(&SingleResourcePoolProtectedWithdrawManifestInput {
+                ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                to_manifest_value(&OneResourcePoolProtectedWithdrawManifestInput {
                     amount: amount.into(),
                 }),
             )
@@ -571,8 +570,8 @@ impl TestEnvironment {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
-                SINGLE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
-                to_manifest_value(&SingleResourcePoolGetRedemptionValueManifestInput {
+                ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
+                to_manifest_value(&OneResourcePoolGetRedemptionValueManifestInput {
                     amount_of_pool_units: amount_of_pool_units.into(),
                 }),
             )
@@ -586,8 +585,8 @@ impl TestEnvironment {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
-                SINGLE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
-                to_manifest_value(&SingleResourcePoolGetVaultAmountManifestInput),
+                ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
+                to_manifest_value(&OneResourcePoolGetVaultAmountManifestInput),
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);
@@ -616,13 +615,13 @@ impl TestEnvironment {
     }
 }
 
-fn is_single_resource_pool_does_non_fungible_resources_are_not_accepted(
+fn is_one_resource_pool_does_non_fungible_resources_are_not_accepted(
     runtime_error: &RuntimeError,
 ) -> bool {
     matches!(
         runtime_error,
-        RuntimeError::ApplicationError(ApplicationError::SingleResourcePoolError(
-            SingleResourcePoolError::NonFungibleResourcesAreNotAccepted { .. }
+        RuntimeError::ApplicationError(ApplicationError::OneResourcePoolError(
+            OneResourcePoolError::NonFungibleResourcesAreNotAccepted { .. }
         ))
     )
 }

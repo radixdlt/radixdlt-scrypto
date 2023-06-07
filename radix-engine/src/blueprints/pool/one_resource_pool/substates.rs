@@ -4,7 +4,7 @@ use radix_engine_common::*;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct SingleResourcePoolSubstate {
+pub struct OneResourcePoolSubstate {
     /// The vault of the resources of the pool.
     pub vault: Vault,
 
@@ -12,7 +12,7 @@ pub struct SingleResourcePoolSubstate {
     pub pool_unit_resource_manager: ResourceManager,
 }
 
-impl Clone for SingleResourcePoolSubstate {
+impl Clone for OneResourcePoolSubstate {
     fn clone(&self) -> Self {
         Self {
             vault: Vault(self.vault.0.clone()),

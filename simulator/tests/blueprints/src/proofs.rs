@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod proofs {
-    define_static_auth! {
+    enable_method_auth! {
         roles {
             auth
         },

@@ -130,7 +130,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
     );
     let package_address = test_runner.publish_package(
         code,
-        single_function_package_schema("Test", "f"),
+        single_function_package_definition("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         OwnerRole::None,

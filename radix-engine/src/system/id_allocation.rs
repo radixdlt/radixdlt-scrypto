@@ -1,4 +1,5 @@
-use crate::blueprints::pool::single_resource_pool::SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT;
+use crate::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
+use crate::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
 use crate::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine_common::types::EntityType;
 use radix_engine_common::{native_addresses::*, ScryptoSbor};
@@ -87,10 +88,9 @@ pub fn get_global_entity_type(blueprint_id: &BlueprintId) -> EntityType {
         }
         (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
         (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
-        (POOL_PACKAGE, SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT) => {
-            EntityType::GlobalSingleResourcePool
-        }
+        (POOL_PACKAGE, ONE_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalOneResourcePool,
         (POOL_PACKAGE, TWO_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalTwoResourcePool,
+        (POOL_PACKAGE, MULTI_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalMultiResourcePool,
         _ => EntityType::GlobalGenericComponent,
     }
 }

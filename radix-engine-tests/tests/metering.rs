@@ -1,7 +1,7 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::*;
 use utils::ContextualDisplay;
@@ -218,9 +218,10 @@ fn test_radiswap() {
         + 100000 /* TxSignatureVerification */
         + 2123 /* WriteSubstate */
     );
+
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.743768"),
+        dec!("0.7476314"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -358,7 +359,7 @@ fn test_publish_large_package() {
         .lock_fee(test_runner.faucet_component(), 100.into())
         .publish_package_advanced(
             code,
-            PackageSchema::default(),
+            PackageDefinition::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,

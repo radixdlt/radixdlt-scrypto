@@ -29,6 +29,10 @@ pub trait ScryptoVault {
 
     fn resource_address(&self) -> ResourceAddress;
 
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn is_empty(&self) -> bool;
 
     fn create_proof(&self) -> Self::ProofType;
