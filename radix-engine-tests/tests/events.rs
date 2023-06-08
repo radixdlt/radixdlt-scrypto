@@ -55,7 +55,7 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::EventError(err)) => {
+        RuntimeError::SystemModuleError(SystemModuleError::EventError(err)) => {
             if let EventError::SchemaNotFoundError { .. } = **err {
                 return true;
             } else {

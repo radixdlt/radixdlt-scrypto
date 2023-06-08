@@ -4,7 +4,7 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
-    InvalidModuleType, RuntimeError,
+    InvalidModuleType, RuntimeError, SystemModuleError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -1951,9 +1951,9 @@ where
                     ..
                 }) => Ok(object_info.blueprint.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
-                _ => Err(RuntimeError::SystemError(SystemError::EventError(
-                    Box::new(EventError::InvalidActor),
-                ))),
+                _ => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
+                )),
             }?;
 
             let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
@@ -1964,12 +1964,12 @@ where
                 if let Some(index) = blueprint_schema.event_schema.get(&event_name).cloned() {
                     index
                 } else {
-                    return Err(RuntimeError::SystemError(SystemError::EventError(
-                        Box::new(EventError::SchemaNotFoundError {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::EventError(Box::new(EventError::SchemaNotFoundError {
                             blueprint: blueprint_id.clone(),
                             event_name,
-                        }),
-                    )));
+                        })),
+                    ));
                 };
 
             (blueprint_id, blueprint_schema, local_type_index)
@@ -1992,9 +1992,9 @@ where
                 ),
                 local_type_index,
             )),
-            _ => Err(RuntimeError::SystemError(SystemError::EventError(
-                Box::new(EventError::InvalidActor),
-            ))),
+            _ => Err(RuntimeError::SystemModuleError(
+                SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
+            )),
         }?;
         self.validate_payload(
             &event_data,
@@ -2003,7 +2003,7 @@ where
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
-            RuntimeError::SystemError(SystemError::EventError(Box::new(
+            RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
                 EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
             )))
         })?;

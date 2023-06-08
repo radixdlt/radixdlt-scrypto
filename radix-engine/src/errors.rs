@@ -69,9 +69,11 @@ pub enum RuntimeError {
     SystemError(SystemError),
 
     /// An error occurred within a specific system module, like auth, costing and royalty.
+    /// TODO: merge into SystemError?
     SystemModuleError(SystemModuleError),
 
     /// An error issued by the system when invoking upstream (such as blueprints, node modules).
+    /// TODO: merge into SystemError?
     SystemUpstreamError(SystemUpstreamError),
 
     /// An error occurred in the vm layer
@@ -196,7 +198,6 @@ pub enum SystemError {
     InvalidObjectHandle,
     NodeIdNotExist,
     GlobalAddressDoesNotExist,
-    NoParent,
     NotAnObject,
     NotAMethod,
     OuterObjectDoesNotExist,
@@ -206,11 +207,7 @@ pub enum SystemError {
     KeyValueStoreDoesNotExist(BlueprintId, u8),
     SortedIndexDoesNotExist(BlueprintId, u8),
     IndexDoesNotExist(BlueprintId, u8),
-    MissingRequiredAuthority(BlueprintId, RoleKey),
-    AuthorityMustBeEmpty(BlueprintId, String),
     NotAKeyValueStore,
-    NotASortedStore,
-    NotAnIterableStore,
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
@@ -222,16 +219,12 @@ pub enum SystemError {
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidGlobalAddressReservation,
-    InvalidModule,
-    InvalidGlobalEntityType,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
     InvalidInstanceSchema,
     AssertAccessRuleFailed,
-    CallMethodOnKeyValueStore,
     BlueprintDoesNotExist(BlueprintId),
-    EventError(Box<EventError>),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
 }
 
@@ -281,6 +274,7 @@ pub enum SystemModuleError {
     AuthError(AuthError),
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
+    EventError(Box<EventError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
