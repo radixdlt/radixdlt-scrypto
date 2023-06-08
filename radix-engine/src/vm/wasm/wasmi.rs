@@ -1310,48 +1310,130 @@ impl WasmEngine for WasmiEngine {
     }
 }
 
-#[cfg(feature = "radix_engine_tests")]
-pub fn run_module_with_mutable_global(
-    code: &[u8],
-    func_name: &str,
-    global_name: &str,
-    initial_value: i32,
-    step: i32,
-) -> i32 {
-    let engine = Engine::default();
-    let mut store = Store::new(&engine, WasmiInstanceEnv::new());
+// Below tests verify WASM "mutable-global" feature, which allows importing/exporting mutable globals.
+// more details:
+// - https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md
 
-    let module = Module::new(&engine, code).unwrap();
+// NOTE!
+//  We test only WASM code, because Rust currently does not use the WASM "global" construct for globals
+//  (it places them into the linear memory instead).
+//  more details:
+//  - https://github.com/rust-lang/rust/issues/60825
+//  - https://github.com/rust-lang/rust/issues/65987
+#[cfg(not(feature = "wasmer"))]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wabt::{wat2wasm, wat2wasm_with_features, ErrorKind, Features};
 
-    let mut linker = <Linker<HostState>>::new();
+    static MODULE_MUTABLE_GLOBALS: &str = r#"
+            (module
+                ;; below line is invalid if feature 'Import/Export mutable globals' is disabled
+                ;; see: https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md
+                (global $g (import "env" "global_mutable_value") (mut i32))
 
-    let global_value = Global::new(
-        store.as_context_mut(),
-        Value::I32(initial_value),
-        Mutability::Var,
-    );
-    linker_define!(linker, global_name, global_value);
+                ;; Simple function that always returns `0`
+                (func $increase_global_value (param $step i32) (result i32)
 
-    let instance = linker
-        .instantiate(store.as_context_mut(), &module)
-        .unwrap()
-        .ensure_no_start(store.as_context_mut())
-        .unwrap();
+                    (global.set $g
+                        (i32.add
+                            (global.get $g)
+                            (local.get $step)))
 
-    let func = instance
-        .get_export(store.as_context_mut(), func_name)
-        .and_then(Extern::into_func)
-        .unwrap();
+                    (i32.const 0)
+                )
+                (memory $0 1)
+                (export "memory" (memory $0))
+                (export "increase_global_value" (func $increase_global_value))
+            )
+        "#;
 
-    let input = [Value::I32(step)];
-    let mut ret = [Value::I32(0)];
+    // This test is not wasmi-specific, but decided to put it here along with next one
+    #[test]
+    fn test_wasm_non_mvp_mutable_globals_build_with_feature_disabled() {
+        let mut features = Features::new();
+        features.disable_mutable_globals();
 
-    let _ = func.call(store.as_context_mut(), &input, &mut ret);
+        assert!(
+            match wat2wasm_with_features(MODULE_MUTABLE_GLOBALS, features) {
+                Err(err) => {
+                    match err.kind() {
+                        ErrorKind::Validate(msg) => {
+                            msg.contains("mutable globals cannot be imported")
+                        }
+                        _ => false,
+                    }
+                }
+                Ok(_) => false,
+            }
+        )
+    }
+    pub fn run_module_with_mutable_global(
+        engine: &Engine,
+        mut store: StoreContextMut<WasmiInstanceEnv>,
+        code: &[u8],
+        func_name: &str,
+        global_name: &str,
+        global_value: &Global,
+        step: i32,
+    ) {
+        let module = Module::new(&engine, code).unwrap();
 
-    let global = instance
-        .get_global(store.as_context_mut(), global_name)
-        .unwrap();
+        let mut linker = <Linker<HostState>>::new();
+        linker_define!(linker, global_name, *global_value);
 
-    // return global value
-    i32::try_from(global.get(store.as_context())).unwrap()
+        let instance = linker
+            .instantiate(store.as_context_mut(), &module)
+            .unwrap()
+            .ensure_no_start(store.as_context_mut())
+            .unwrap();
+
+        let func = instance
+            .get_export(store.as_context_mut(), func_name)
+            .and_then(Extern::into_func)
+            .unwrap();
+
+        let input = [Value::I32(step)];
+        let mut ret = [Value::I32(0)];
+
+        let _ = func.call(store.as_context_mut(), &input, &mut ret);
+    }
+
+    #[test]
+    fn test_wasm_non_mvp_mutable_globals_execute_code() {
+        // wat2wasm has "mutable-globals" enabled by default
+        let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
+
+        let engine = Engine::default();
+        let mut store = Store::new(&engine, WasmiInstanceEnv::new());
+
+        // Value of this Global shall be updated by the below WASM module calls
+        let global_value = Global::new(store.as_context_mut(), Value::I32(100), Mutability::Var);
+
+        run_module_with_mutable_global(
+            &engine,
+            store.as_context_mut(),
+            &code,
+            "increase_global_value",
+            "global_mutable_value",
+            &global_value,
+            1000,
+        );
+        let updated_value = global_value.get(store.as_context());
+        let val = i32::try_from(updated_value).unwrap();
+        assert_eq!(val, 1100);
+
+        run_module_with_mutable_global(
+            &engine,
+            store.as_context_mut(),
+            &code,
+            "increase_global_value",
+            "global_mutable_value",
+            &global_value,
+            10000,
+        );
+        let updated_value = global_value.get(store.as_context());
+        let val = i32::try_from(updated_value).unwrap();
+        assert_eq!(val, 11100);
+    }
 }
