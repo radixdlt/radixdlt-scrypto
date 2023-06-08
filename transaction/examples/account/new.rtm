@@ -1,4 +1,5 @@
 CREATE_ACCOUNT_ADVANCED
-    Enum<0u8>();
+    Enum<OwnerRole::None>() # Account has no owner
+;
 
 CREATE_ACCOUNT;

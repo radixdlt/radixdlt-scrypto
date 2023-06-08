@@ -2,12 +2,12 @@ SET_PACKAGE_ROYALTY_CONFIG
     Address("${package_address}")
     "my_blueprint"
     "my_function"
-    Enum<0u8>();
+    Enum<RoyaltyAmount::Free>();
 
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
     "my_method"
-    Enum<0u8>();
+    Enum<RoyaltyAmount::Free>();
 
 CLAIM_PACKAGE_ROYALTY
     Address("${package_address}");

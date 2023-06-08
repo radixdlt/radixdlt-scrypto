@@ -1,2 +1,12 @@
-TAKE_ALL_FROM_WORKTOP Address("${badge_resource_address}") Bucket("some_xrd");
-CREATE_ACCESS_CONTROLLER Bucket("some_xrd") Tuple(Enum<0u8>(), Enum<0u8>(), Enum<0u8>()) Enum<0u8>();
+TAKE_ALL_FROM_WORKTOP 
+    Address("${badge_resource_address}") 
+    Bucket("some_xrd");
+
+CREATE_ACCESS_CONTROLLER 
+    Bucket("some_xrd") 
+    Tuple(
+        Enum<AccessRule::DenyAll>(), 
+        Enum<AccessRule::DenyAll>(), 
+        Enum<AccessRule::DenyAll>()
+    ) 
+    None;
