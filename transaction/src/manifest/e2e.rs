@@ -241,23 +241,23 @@ CALL_FUNCTION
             apply_address_replacements(
                 r##"
 CALL_METHOD
-    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
+    Address("${component_address}")
     "complicated_method"
     Decimal("1")
     PreciseDecimal("2")
 ;
 SET_COMPONENT_ROYALTY_CONFIG
-    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
+    Address("${component_address}")
     "my_method"
     Enum<0u8>()
 ;
 CALL_METADATA_METHOD
-    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
+    Address("${component_address}")
     "get"
     "HelloWorld"
 ;
 CALL_ACCESS_RULES_METHOD
-    Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")
+    Address("${component_address}")
     "get_role"
     "hello"
 ;
@@ -390,21 +390,21 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 SET_PACKAGE_ROYALTY_CONFIG
-    Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+    Address("${package_address}")
     "my_blueprint"
     "my_function"
     Enum<0u8>()
 ;
 SET_COMPONENT_ROYALTY_CONFIG
-    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
+    Address("${account_address}")
     "my_method"
     Enum<0u8>()
 ;
 CLAIM_PACKAGE_ROYALTY
-    Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+    Address("${package_address}")
 ;
 CLAIM_COMPONENT_ROYALTY
-    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
+    Address("${account_address}")
 ;
 "##,
             ),
@@ -588,7 +588,7 @@ REMOVE_METADATA
             apply_address_replacements(
                 r##"
 UPDATE_ROLE
-    Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
+    Address("${resource_address}")
     "hello"
     Enum<0u8>()
     Enum<0u8>()
@@ -966,9 +966,9 @@ TAKE_ALL_FROM_WORKTOP
 CREATE_ACCESS_CONTROLLER
     Bucket("bucket1")
     Tuple(
-        Enum<0u8>(),
-        Enum<0u8>(),
-        Enum<0u8>()
+        Enum<1u8>(),
+        Enum<1u8>(),
+        Enum<1u8>()
     )
     Enum<0u8>()
 ;
