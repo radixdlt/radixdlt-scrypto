@@ -1,4 +1,5 @@
 use radix_engine_common::crypto::Hash;
+use sbor::prelude::*;
 
 pub trait ClientTransactionRuntimeApi<E> {
     fn get_transaction_hash(&mut self) -> Result<Hash, E>;
