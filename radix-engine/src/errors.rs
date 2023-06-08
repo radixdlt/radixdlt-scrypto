@@ -237,7 +237,6 @@ pub enum SystemUpstreamError {
     InputSchemaNotMatch(String, String),
     OutputSchemaNotMatch(String, String),
 
-    ExportDoesNotExist(String),
     InputDecodeError(DecodeError),
     OutputDecodeError(DecodeError),
 }
@@ -369,9 +368,21 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
+    //============================
+    // Generic errors
+    //============================
+    // TODO: this should never happy because of schema check?
+    ExportDoesNotExist(String),
+
+    InputDecodeError(DecodeError),
+
+    OutputDecodeError(DecodeError),
+
     Panic(String),
 
-    // Native blueprints below
+    //============================
+    // Blueprint specific errors
+    //============================
     TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),

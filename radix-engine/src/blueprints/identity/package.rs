@@ -1,7 +1,7 @@
 use crate::blueprints::util::{
     PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
 };
-use crate::errors::RuntimeError;
+use crate::errors::{RuntimeError, ApplicationError};
 use crate::errors::SystemUpstreamError;
 use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
@@ -191,8 +191,8 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::ExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
