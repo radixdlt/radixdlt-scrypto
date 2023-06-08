@@ -333,7 +333,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                 added.insert(id);
                             }
                             Write::Delete => {
-                                panic!("Should never occur");
+                                // This may occur if a non fungible is added then removed from the same vault
                             }
                         },
                         TrackedKey::ReadOnly(..) | TrackedKey::Garbage => {}
