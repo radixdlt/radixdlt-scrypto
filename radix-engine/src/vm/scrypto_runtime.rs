@@ -153,7 +153,7 @@ where
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let object_states = scrypto_decode::<Vec<Vec<u8>>>(&object_states)
-            .map_err(WasmRuntimeError::InvalidAppStates)?;
+            .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self
             .api

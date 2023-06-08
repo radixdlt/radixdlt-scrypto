@@ -740,7 +740,7 @@ impl From<RuntimeError> for InvokeError<WasmRuntimeError> {
         let e_str = format!("{:?}", error);
         match error.downcast::<InvokeError<WasmRuntimeError>>() {
             Ok(e) => e,
-            _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::Trap(e_str)),
         }
     }
 }

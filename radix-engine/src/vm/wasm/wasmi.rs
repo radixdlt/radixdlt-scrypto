@@ -1188,7 +1188,7 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
                     InvokeError::SelfError(WasmRuntimeError::Trap(format!("{:?}", trap)))
                 }
             }
-            _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::Trap(e_str)),
         }
     }
 }

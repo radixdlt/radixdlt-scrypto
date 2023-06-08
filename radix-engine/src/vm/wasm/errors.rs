@@ -83,18 +83,13 @@ pub enum WasmRuntimeError {
     /// Error when reading wasm memory.
     MemoryAccessError,
 
-    /// WASM attempted to call undefined host function, addressed by offset.
-    UnknownHostFunction(usize),
-
     /// Host attempted to call unknown WASM function, addressed by name.
     UnknownWasmFunction(String),
-
-    /// WASM interpreter error, such as traps.
-    InterpreterError(String),
 
     /// WASM function return is not a `u64` fat pointer which points to a valid memory range.
     InvalidWasmPointer,
 
+    /// WASM trap
     Trap(String),
 
     //=================
@@ -116,30 +111,13 @@ pub enum WasmRuntimeError {
     InvalidReferenceType(u32),
     /// Invalid RE module ID
     InvalidModuleId(u32),
-    /// Invalid substate offset
-    InvalidSubstateKey,
     /// Invalid initial app states
-    InvalidAppStates(DecodeError),
+    InvalidObjectStates(DecodeError),
     /// Invalid access rules
     InvalidAccessRules(DecodeError),
-    /// Invalid access rules
-    InvalidSchema(DecodeError),
     /// Invalid modules
     InvalidModules(DecodeError),
-    /// Invalid address
-    InvalidAddress(DecodeError),
-    /// Invalid entity type
-    InvalidEntityType(DecodeError),
-    /// Invalid royalty config
-    InvalidRoyaltyConfig(DecodeError),
-    /// Invalid metadata
-    InvalidMetadata(DecodeError),
-    /// Invalid component id
-    InvalidComponentId(DecodeError),
     InvalidKeyValueStoreSchema(DecodeError),
-    InvalidValue(DecodeError),
-    // Invalid EventSchema
-    InvalidEventSchema(DecodeError),
     /// Invalid component address
     InvalidLockFlags,
     /// Invalid log level

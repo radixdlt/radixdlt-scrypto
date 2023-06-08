@@ -375,7 +375,7 @@ where
 
         self.current_frame
             .list_modules(node_id, &mut self.heap)
-            .map_err(CallFrameError::ListSystemModuleError)
+            .map_err(CallFrameError::ListModuleError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
