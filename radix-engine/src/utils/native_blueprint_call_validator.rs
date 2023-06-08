@@ -22,7 +22,7 @@ use transaction::prelude::InstructionV1;
 
 pub fn validate_call_arguments_to_native_components(
     instructions: &[InstructionV1],
-) -> Result<(), ValidationError> {
+) -> Result<(), LocatedInstructionSchemaValidationError> {
     for (index, instruction) in instructions.iter().enumerate() {
         let (invocation, args) = match instruction {
             InstructionV1::CallFunction {
@@ -77,7 +77,12 @@ pub fn validate_call_arguments_to_native_components(
             _ => continue,
         };
 
-        let schema = get_arguments_schema(invocation, index)?;
+        let schema = get_arguments_schema(invocation).map_err(|cause| {
+            LocatedInstructionSchemaValidationError {
+                instruction_index: index,
+                cause,
+            }
+        })?;
         if let Some((local_type_index, schema)) = schema {
             validate_payload_against_schema::<ManifestCustomExtension, _>(
                 &manifest_encode(&args).unwrap(),
@@ -85,7 +90,13 @@ pub fn validate_call_arguments_to_native_components(
                 local_type_index,
                 &(),
             )
-            .map_err(|error| ValidationError::SchemaValidationError(index, format!("{:?}", error)))
+            .map_err(|error| LocatedInstructionSchemaValidationError {
+                instruction_index: index,
+                cause: InstructionSchemaValidationError::SchemaValidationError(format!(
+                    "{:?}",
+                    error
+                )),
+            })
         } else {
             Ok(())
         }?;
@@ -98,17 +109,10 @@ fn get_blueprint_schema<'p>(
     package_definition: &'p PackageDefinition,
     package_address: PackageAddress,
     blueprint: &str,
-    instruction_index: usize,
-) -> Result<&'p BlueprintSchema, ValidationError> {
-    package_definition
-        .schema
-        .blueprints
-        .get(blueprint)
-        .ok_or(ValidationError::InvalidBlueprint(
-            instruction_index,
-            package_address,
-            blueprint.to_owned(),
-        ))
+) -> Result<&'p BlueprintSchema, InstructionSchemaValidationError> {
+    package_definition.schema.blueprints.get(blueprint).ok_or(
+        InstructionSchemaValidationError::InvalidBlueprint(package_address, blueprint.to_owned()),
+    )
 }
 
 /// * An `Err` is returned if something is invalid about the arguments given to this method. As an
@@ -117,61 +121,41 @@ fn get_blueprint_schema<'p>(
 /// packages.
 fn get_arguments_schema<'s>(
     invocation: Invocation,
-    instruction_index: usize,
-) -> Result<Option<(LocalTypeIndex, &'s Schema<ScryptoCustomSchema>)>, ValidationError> {
+) -> Result<
+    Option<(LocalTypeIndex, &'s Schema<ScryptoCustomSchema>)>,
+    InstructionSchemaValidationError,
+> {
     let entity_type =
         if let Some(entity_type) = invocation.global_address().as_node_id().entity_type() {
             entity_type
         } else {
-            return Err(ValidationError::InvalidAddress(
-                instruction_index,
+            return Err(InstructionSchemaValidationError::InvalidAddress(
                 invocation.global_address(),
             ));
         };
 
     let blueprint_schema = match invocation {
         Invocation::Function(package_address @ PACKAGE_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &PACKAGE_PACKAGE_DEFINITION,
-                package_address,
-                &blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&PACKAGE_PACKAGE_DEFINITION, package_address, &blueprint)
+                .map(Some)?
         }
         Invocation::Function(package_address @ RESOURCE_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &RESOURCE_PACKAGE_DEFINITION,
-                package_address,
-                blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&RESOURCE_PACKAGE_DEFINITION, package_address, blueprint)
+                .map(Some)?
         }
         Invocation::Function(package_address @ ACCOUNT_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &ACCOUNT_PACKAGE_DEFINITION,
-                package_address,
-                blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&ACCOUNT_PACKAGE_DEFINITION, package_address, blueprint)
+                .map(Some)?
         }
         Invocation::Function(package_address @ IDENTITY_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &IDENTITY_PACKAGE_DEFINITION,
-                package_address,
-                blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&IDENTITY_PACKAGE_DEFINITION, package_address, blueprint)
+                .map(Some)?
         }
         Invocation::Function(package_address @ CONSENSUS_MANAGER_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
                 &CONSENSUS_MANAGER_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
-                instruction_index,
             )
             .map(Some)?
         }
@@ -180,54 +164,31 @@ fn get_arguments_schema<'s>(
                 &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
-                instruction_index,
             )
             .map(Some)?
         }
         Invocation::Function(package_address @ POOL_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &POOL_PACKAGE_DEFINITION,
-                package_address,
-                blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&POOL_PACKAGE_DEFINITION, package_address, blueprint).map(Some)?
         }
         Invocation::Function(package_address @ TRANSACTION_PROCESSOR_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
                 &TRANSACTION_PROCESSOR_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
-                instruction_index,
             )
             .map(Some)?
         }
         Invocation::Function(package_address @ METADATA_MODULE_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &METADATA_PACKAGE_DEFINITION,
-                package_address,
-                blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&METADATA_PACKAGE_DEFINITION, package_address, blueprint)
+                .map(Some)?
         }
         Invocation::Function(package_address @ ROYALTY_MODULE_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &ROYALTIES_PACKAGE_DEFINITION,
-                package_address,
-                blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&ROYALTIES_PACKAGE_DEFINITION, package_address, blueprint)
+                .map(Some)?
         }
         Invocation::Function(package_address @ ACCESS_RULES_MODULE_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(
-                &ACCESS_RULES_PACKAGE_DEFINITION,
-                package_address,
-                blueprint,
-                instruction_index,
-            )
-            .map(Some)?
+            get_blueprint_schema(&ACCESS_RULES_PACKAGE_DEFINITION, package_address, blueprint)
+                .map(Some)?
         }
         Invocation::Function(..) => None,
         Invocation::Method(_, ObjectModuleId::Main, _) => match entity_type {
@@ -320,11 +281,10 @@ fn get_arguments_schema<'s>(
             {
                 Ok(Some((function_schema.input, &blueprint_schema.schema)))
             } else {
-                Err(ValidationError::InvalidReceiver(instruction_index))
+                Err(InstructionSchemaValidationError::InvalidReceiver)
             }
         } else {
-            Err(ValidationError::MethodNotFound(
-                instruction_index,
+            Err(InstructionSchemaValidationError::MethodNotFound(
                 invocation.method().to_owned(),
             ))
         }
@@ -368,13 +328,18 @@ impl Invocation {
     }
 }
 
-// `usize` here is the index of the instruction has has an error.
 #[derive(Clone, Debug)]
-pub enum ValidationError {
-    MethodNotFound(usize, String),
-    SchemaValidationError(usize, String),
+pub struct LocatedInstructionSchemaValidationError {
+    pub instruction_index: usize,
+    pub cause: InstructionSchemaValidationError,
+}
 
-    InvalidAddress(usize, GlobalAddress),
-    InvalidBlueprint(usize, PackageAddress, String),
-    InvalidReceiver(usize),
+#[derive(Clone, Debug)]
+pub enum InstructionSchemaValidationError {
+    MethodNotFound(String),
+    SchemaValidationError(String),
+
+    InvalidAddress(GlobalAddress),
+    InvalidBlueprint(PackageAddress, String),
+    InvalidReceiver,
 }

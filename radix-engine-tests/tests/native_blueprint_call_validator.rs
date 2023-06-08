@@ -1,4 +1,7 @@
-use radix_engine::utils::{validate_call_arguments_to_native_components, ValidationError};
+use radix_engine::utils::{
+    validate_call_arguments_to_native_components, InstructionSchemaValidationError,
+    LocatedInstructionSchemaValidationError,
+};
 use radix_engine_common::prelude::NetworkDefinition;
 use scrypto::prelude::*;
 use transaction::{
@@ -89,17 +92,25 @@ fn common_manifests_are_all_valid() {
     }
 }
 
-fn is_schema_validation_error<T>(result: Result<T, ValidationError>) -> bool {
+fn is_schema_validation_error<T>(
+    result: Result<T, LocatedInstructionSchemaValidationError>,
+) -> bool {
     if let Err(error) = result {
-        matches!(error, ValidationError::SchemaValidationError(..))
+        matches!(
+            error.cause,
+            InstructionSchemaValidationError::SchemaValidationError(..)
+        )
     } else {
         false
     }
 }
 
-fn is_method_not_found<T>(result: Result<T, ValidationError>) -> bool {
+fn is_method_not_found<T>(result: Result<T, LocatedInstructionSchemaValidationError>) -> bool {
     if let Err(error) = result {
-        matches!(error, ValidationError::MethodNotFound(..))
+        matches!(
+            error.cause,
+            InstructionSchemaValidationError::MethodNotFound(..)
+        )
     } else {
         false
     }
