@@ -628,7 +628,7 @@ impl WasmerModule {
             runtime.emit_event(event_name, event_data)
         }
 
-        fn log(
+        fn log_message(
             env: &WasmerInstanceEnv,
             level_ptr: u32,
             level_len: u32,
@@ -640,7 +640,7 @@ impl WasmerModule {
             let level = read_memory(&instance, level_ptr, level_len)?;
             let message = read_memory(&instance, message_ptr, message_len)?;
 
-            runtime.log(level, message)
+            runtime.log_message(level, message)
         }
 
         fn panic(
@@ -717,7 +717,7 @@ impl WasmerModule {
                 ASSERT_ACCESS_RULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), assert_access_rule),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
-                LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log),
+                LOG_MESSAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
                 PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), panic),
                 GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_transaction_hash),
                 GENERATE_UUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_uuid),

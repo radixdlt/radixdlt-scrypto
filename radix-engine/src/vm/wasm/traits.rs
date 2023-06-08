@@ -153,7 +153,7 @@ pub trait WasmRuntime {
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn log(
+    fn log_message(
         &mut self,
         level: Vec<u8>,
         message: Vec<u8>,

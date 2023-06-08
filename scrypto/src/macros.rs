@@ -9,7 +9,7 @@
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log($crate::types::Level::Error, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -24,7 +24,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log($crate::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -39,7 +39,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log($crate::types::Level::Info, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -54,7 +54,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log($crate::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -69,7 +69,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log($crate::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 

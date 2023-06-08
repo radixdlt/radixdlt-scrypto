@@ -2022,14 +2022,14 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
             .kernel_get_system()
             .modules
             .logger
-            .add_log(level, message);
+            .add(level, message);
         Ok(())
     }
 }

@@ -7,11 +7,11 @@ mod logger {
     }
 
     impl Logger {
-        pub fn no_panic_log(message: String) {
+        pub fn no_panic_log_message(message: String) {
             info!("{}", message)
         }
 
-        pub fn panic_log(message: String) {
+        pub fn panic_log_message(message: String) {
             info!("{}", message);
             panic!("I'm panicking!")
         }

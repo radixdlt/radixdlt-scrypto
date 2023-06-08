@@ -22,7 +22,7 @@ impl Log for ConsoleLogger {
         metadata.level() <= Level::Trace
     }
 
-    fn log(&self, record: &Record) {
+    fn log_message(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             //println!("{} - {}", record.level(), record.args());
             println!("{}", record.args());

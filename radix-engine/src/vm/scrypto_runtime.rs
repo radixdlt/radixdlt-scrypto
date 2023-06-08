@@ -409,12 +409,12 @@ where
         Ok(())
     }
 
-    fn log(
+    fn log_message(
         &mut self,
         level: Vec<u8>,
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.log(
+        self.api.log_message(
             scrypto_decode::<Level>(&level).map_err(WasmRuntimeError::InvalidLogLevel)?,
             String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?,
         )?;
@@ -673,7 +673,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn log(
+    fn log_message(
         &mut self,
         level: Vec<u8>,
         message: Vec<u8>,

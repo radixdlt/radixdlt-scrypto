@@ -430,9 +430,9 @@ impl ClientEventApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientLoggerApi<ClientApiError> for ScryptoEnv {
-    fn log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
+    fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
-        unsafe { log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
+        unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
 }

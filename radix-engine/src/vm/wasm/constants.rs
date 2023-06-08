@@ -61,8 +61,8 @@ pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 
 pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
-pub const LOG_FUNCTION_ID: usize = 0x51;
-pub const LOG_FUNCTION_NAME: &str = "log";
+pub const LOG_MESSAGE_FUNCTION_ID: usize = 0x51;
+pub const LOG_MESSAGE_FUNCTION_NAME: &str = "log_message";
 pub const GET_TRANSACTION_HASH_FUNCTION_ID: usize = 0x52;
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_UUID_FUNCTION_ID: usize = 0x53;
