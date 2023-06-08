@@ -415,7 +415,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // TODO: Remove and combine with above
             let handle = system.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+                MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
                 &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {

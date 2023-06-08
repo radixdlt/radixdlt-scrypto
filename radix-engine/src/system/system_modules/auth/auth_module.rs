@@ -16,9 +16,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
-};
+use radix_engine_interface::blueprints::package::{PACKAGE_BLUEPRINT, PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
@@ -88,7 +86,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION.at_offset(PartitionOffset(3u8)).unwrap(), // TODO: Cleanup
+                MAIN_BASE_PARTITION.at_offset(PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET).unwrap(),
                 &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {

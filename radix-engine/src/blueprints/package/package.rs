@@ -145,13 +145,14 @@ where
     let mut partitions: NodeSubstates = BTreeMap::new();
 
     // Prepare node init.
-    let main_partition = btreemap!(
-        PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
-        PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
-        PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
-    );
-
-    partitions.insert(MAIN_BASE_PARTITION, main_partition);
+    {
+        let main_partition = btreemap!(
+            PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
+            PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
+            PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
+        );
+        partitions.insert(MAIN_BASE_PARTITION.at_offset(PACKAGE_FIELDS_PARTITION_OFFSET).unwrap(), main_partition);
+    }
 
     {
         let blueprints_partition = blueprints
@@ -169,7 +170,7 @@ where
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+            MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
             blueprints_partition,
         );
     };
@@ -190,7 +191,7 @@ where
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION.at_offset(PartitionOffset(2u8)).unwrap(),
+            MAIN_BASE_PARTITION.at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET).unwrap(),
             fn_royalty_partition,
         );
     };
@@ -211,7 +212,7 @@ where
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION.at_offset(PartitionOffset(3u8)).unwrap(),
+            MAIN_BASE_PARTITION.at_offset(PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET).unwrap(),
             function_access_rules_partition,
         );
     }

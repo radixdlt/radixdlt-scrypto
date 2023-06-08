@@ -21,6 +21,11 @@ pub const ROYALTY_CODE_ID: u8 = 11u8;
 pub const ACCESS_RULES_CODE_ID: u8 = 12u8;
 pub const POOL_ID: u8 = 13u8;
 
+pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
+pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
+
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
 pub struct PackageCodeSubstate {
@@ -91,6 +96,7 @@ pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
 
     pub schema: ScryptoSchema,
+
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
     pub num_partitions: u8,

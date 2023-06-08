@@ -29,11 +29,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintSetup, BlueprintTemplate,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintSetup, BlueprintTemplate, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -1572,7 +1568,7 @@ impl TestRunner {
             self.substate_db()
                 .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<BlueprintDefinition>>>(
                     package_address.as_node_id(),
-                    MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+                    MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
                     &SubstateKey::Map(scrypto_encode(&blueprint_name).unwrap()),
                 )
                 .unwrap()
