@@ -28,7 +28,7 @@ fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
 fn test_log_message() {
     // Arrange
     let function_name = "log_message";
-    let message = "Hello World";
+    let message = "Hello";
 
     // Act
     let receipt = call(function_name, message);
@@ -48,7 +48,7 @@ fn test_log_message() {
 fn test_rust_panic() {
     // Arrange
     let function_name = "rust_panic";
-    let message = "Hey Hey World";
+    let message = "Hey";
 
     // Act
     let receipt = call(function_name, message);
@@ -56,12 +56,14 @@ fn test_rust_panic() {
     // Assert
     {
         let logs = receipt.expect_commit(false).application_logs.clone();
-        let expected_logs = vec![(
-            Level::Error,
-            "Panicked at 'I'm panicking!', logger/src/lib.rs:15:13".to_owned(),
-        )];
+        assert!(logs.is_empty());
 
-        assert_eq!(expected_logs, logs)
+        receipt.expect_specific_failure(|e| match e {
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => {
+                e.eq("Panicked at 'Hey', logger/src/lib.rs:15:13")
+            }
+            _ => false,
+        })
     }
 }
 
@@ -80,7 +82,7 @@ fn test_scrypto_panic() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) if e.eq(message) => true,
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq(message),
             _ => false,
         })
     }
@@ -90,7 +92,7 @@ fn test_scrypto_panic() {
 fn test_assert_length_5() {
     // Arrange
     let function_name = "assert_length_5";
-    let message = "Message not of length 5";
+    let message = "!5";
 
     // Act
     let receipt = call(function_name, message);
@@ -98,13 +100,11 @@ fn test_assert_length_5() {
     // Assert
     {
         let logs = receipt.expect_commit(false).application_logs.clone();
-        let expected_logs = vec![
-            (
-                Level::Error,
-                "Panicked at 'assertion failed: `(left == right)`\n  left: `23`,\n right: `5`', logger/src/lib.rs:23:13".to_owned(),
-            ),
-        ];
+        assert!(logs.is_empty());
 
-        assert_eq!(expected_logs, logs)
+        receipt.expect_specific_failure(|e| match e {
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq("Panicked at 'assertion failed: `(left == right)`\n  left: `2`,\n right: `5`', logger/src/lib.rs:23:13"),
+            _ => false,
+        })
     }
 }

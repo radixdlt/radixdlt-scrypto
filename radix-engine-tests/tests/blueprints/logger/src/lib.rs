@@ -12,11 +12,11 @@ mod logger {
         }
 
         pub fn rust_panic(message: String) {
-            panic!("I'm panicking!")
+            panic!("{}", message)
         }
 
         pub fn scrypto_panic(message: String) {
-            Runtime::panic(&message)
+            Runtime::panic(message)
         }
 
         pub fn assert_length_5(message: String) {

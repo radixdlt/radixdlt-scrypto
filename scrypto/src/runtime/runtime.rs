@@ -151,8 +151,8 @@ impl Runtime {
         ScryptoEnv.fee_balance().unwrap()
     }
 
-    pub fn panic(message: &str) -> ! {
-        ScryptoEnv.panic(message.to_owned()).unwrap();
+    pub fn panic(message: String) -> ! {
+        ScryptoEnv.panic(message).unwrap();
         loop {}
     }
 }
