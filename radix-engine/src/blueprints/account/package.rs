@@ -1,6 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::types::*;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
@@ -432,13 +433,11 @@ impl AccountNativePackage {
             ACCOUNT_SECURIFY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: AccountSecurifyInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::securify(receiver, api)?;
+                let rtn = AccountBlueprint::securify(&receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

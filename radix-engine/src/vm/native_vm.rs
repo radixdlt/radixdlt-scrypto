@@ -6,7 +6,7 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{NativeRuntimeError, RuntimeError, SystemUpstreamError, VmError};
+use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -85,9 +85,11 @@ impl VmInvoke for NativeVmInstance {
                 AccessRulesNativePackage::invoke_export(export_name, receiver, input, api)
             }
             POOL_ID => PoolNativePackage::invoke_export(export_name, receiver, input, api),
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeInvalidCodeId(self.native_package_code_id),
-            )),
+            _ => {
+                return Err(RuntimeError::VmError(VmError::Native(
+                    NativeRuntimeError::InvalidCodeId,
+                )));
+            }
         }
     }
 }

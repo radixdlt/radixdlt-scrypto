@@ -232,9 +232,7 @@ pub enum SystemError {
 pub enum SystemUpstreamError {
     SystemFunctionCallNotAllowed,
 
-    NativeExpectedReceiver(String),
     NativeExportDoesNotExist(String),
-    NativeInvalidCodeId(u8),
 
     BlueprintNotFound(BlueprintId),
     FunctionNotFound(String),
