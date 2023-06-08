@@ -1390,9 +1390,8 @@ where
 
         let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
@@ -1481,9 +1480,8 @@ where
         let (node_id, partition_num) =
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(

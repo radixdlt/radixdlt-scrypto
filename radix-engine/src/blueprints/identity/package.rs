@@ -1,8 +1,7 @@
 use crate::blueprints::util::{
     PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
 };
-use crate::errors::{RuntimeError, ApplicationError};
-use crate::errors::SystemUpstreamError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
@@ -139,7 +138,7 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: IdentityCreateAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_advanced(input.owner_rule, api)?;
@@ -150,7 +149,7 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create(api)?;
@@ -162,7 +161,7 @@ impl IdentityNativePackage {
 
                 let receiver = Runtime::get_node_id(api)?;
                 let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::securify(&receiver, api)?;
@@ -173,7 +172,7 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_virtual_secp256k1(input, api)?;
@@ -184,7 +183,7 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_virtual_ed25519(input, api)?;

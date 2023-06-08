@@ -395,7 +395,7 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_native(
@@ -412,7 +412,7 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm(input.code, input.definition, input.metadata, api)?;
@@ -423,7 +423,7 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm_advanced(
@@ -442,7 +442,7 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: PackageSetRoyaltyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = Self::set_royalty(input.blueprint, input.fn_name, input.royalty, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -450,7 +450,7 @@ impl PackageNativePackage {
             PACKAGE_CLAIM_ROYALTIES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = Self::claim_royalty(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

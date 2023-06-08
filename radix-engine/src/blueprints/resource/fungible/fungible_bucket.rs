@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
+use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::{
@@ -179,9 +179,9 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: BucketTakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: BucketTakeInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Check amount
         {
@@ -209,9 +209,9 @@ impl FungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: BucketPutInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: BucketPutInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Drop other bucket
         let other_bucket = drop_fungible_bucket(input.bucket.0.as_node_id(), api)?;
@@ -236,9 +236,9 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let _input: BucketGetResourceAddressInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
@@ -300,9 +300,9 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: FungibleBucketLockAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: FungibleBucketLockAmountInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         FungibleBucket::lock_amount(receiver, input.amount, api)?;
 
@@ -316,9 +316,9 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: FungibleBucketUnlockAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: FungibleBucketUnlockAmountInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         FungibleBucket::unlock_amount(input.amount, api)?;
 

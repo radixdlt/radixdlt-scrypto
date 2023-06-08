@@ -226,6 +226,7 @@ pub enum SystemError {
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(BlueprintId),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+    InvalidScryptoValue(DecodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -234,11 +235,12 @@ pub enum SystemUpstreamError {
 
     FnNotFound(String),
     ReceiverNotMatch(String),
-    InputSchemaNotMatch(String, String),
-    OutputSchemaNotMatch(String, String),
 
     InputDecodeError(DecodeError),
+    InputSchemaNotMatch(String, String),
+
     OutputDecodeError(DecodeError),
+    OutputSchemaNotMatch(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -371,12 +373,11 @@ pub enum ApplicationError {
     //============================
     // Generic errors
     //============================
-    // TODO: this should never happy because of schema check?
+    // TODO: this should never happen because of schema check?
     ExportDoesNotExist(String),
 
+    // TODO: this should never happen because of schema check?
     InputDecodeError(DecodeError),
-
-    OutputDecodeError(DecodeError),
 
     Panic(String),
 

@@ -500,7 +500,7 @@ impl PoolNativePackage {
                     resource_address,
                     pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::instantiate(
                     resource_address,
@@ -515,7 +515,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let OneResourcePoolContributeInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::contribute(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -525,7 +525,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let OneResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::redeem(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -536,7 +536,7 @@ impl PoolNativePackage {
 
                 let OneResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = OneResourcePoolBlueprint::protected_deposit(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -547,7 +547,7 @@ impl PoolNativePackage {
 
                 let OneResourcePoolProtectedWithdrawInput { amount } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = OneResourcePoolBlueprint::protected_withdraw(amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -559,7 +559,7 @@ impl PoolNativePackage {
                 let OneResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     OneResourcePoolBlueprint::get_redemption_value(amount_of_pool_units, api)?;
@@ -570,7 +570,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let OneResourcePoolGetVaultAmountInput {} = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::get_vault_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -583,7 +583,7 @@ impl PoolNativePackage {
                     resource_addresses,
                     pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::instantiate(
                     resource_addresses,
@@ -598,7 +598,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let TwoResourcePoolContributeInput { buckets } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::contribute(buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -608,7 +608,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let TwoResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::redeem(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -619,7 +619,7 @@ impl PoolNativePackage {
 
                 let TwoResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = TwoResourcePoolBlueprint::protected_deposit(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -632,7 +632,7 @@ impl PoolNativePackage {
                     amount,
                     resource_address,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     TwoResourcePoolBlueprint::protected_withdraw(resource_address, amount, api)?;
@@ -645,7 +645,7 @@ impl PoolNativePackage {
                 let TwoResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     TwoResourcePoolBlueprint::get_redemption_value(amount_of_pool_units, api)?;
@@ -656,7 +656,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let TwoResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::get_vault_amounts(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -669,7 +669,7 @@ impl PoolNativePackage {
                     resource_addresses,
                     pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = MultiResourcePoolBlueprint::instantiate(
                     resource_addresses,
@@ -685,7 +685,7 @@ impl PoolNativePackage {
 
                 let MultiResourcePoolContributeInput { buckets } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = MultiResourcePoolBlueprint::contribute(buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -695,7 +695,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let MultiResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = MultiResourcePoolBlueprint::redeem(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -706,7 +706,7 @@ impl PoolNativePackage {
 
                 let MultiResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = MultiResourcePoolBlueprint::protected_deposit(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -719,7 +719,7 @@ impl PoolNativePackage {
                     amount,
                     resource_address,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     MultiResourcePoolBlueprint::protected_withdraw(resource_address, amount, api)?;
@@ -732,7 +732,7 @@ impl PoolNativePackage {
                 let MultiResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     MultiResourcePoolBlueprint::get_redemption_value(amount_of_pool_units, api)?;
@@ -743,7 +743,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let MultiResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = MultiResourcePoolBlueprint::get_vault_amounts(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
