@@ -1935,7 +1935,7 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        // Costing event emission.
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
@@ -2023,6 +2023,7 @@ where
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
@@ -2064,6 +2065,7 @@ where
     }
 
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         Err(RuntimeError::ApplicationError(ApplicationError::Panic(
