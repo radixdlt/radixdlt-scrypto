@@ -143,11 +143,10 @@ fn local_type_index_with_misleading_name_fails() {
     let mut test_runner = TestRunner::builder().without_trace().build();
 
     let (code, mut definition) = Compile::compile("./tests/blueprints/events");
-    let blueprint_schema = definition.blueprints.get_mut("ScryptoEvents").unwrap();
-    blueprint_schema.blueprint.event_schema.insert(
+    let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
+    blueprint_setup.event_schema.insert(
         "HelloHelloEvent".to_string(),
-        blueprint_schema
-            .blueprint
+        blueprint_setup
             .event_schema
             .get("RegisteredEvent")
             .unwrap()

@@ -8,6 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use sbor::LocalTypeIndex;
 use scrypto_schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
@@ -102,7 +103,7 @@ pub struct PackageSetup {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSetup {
     pub blueprint: BlueprintSchema,
-
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub function_auth: BTreeMap<String, AccessRule>,
     pub royalty_config: RoyaltyConfig,
 
@@ -114,6 +115,7 @@ impl Default for BlueprintSetup {
     fn default() -> Self {
         Self {
             blueprint: BlueprintSchema::default(),
+            event_schema: BTreeMap::default(),
             function_auth: BTreeMap::default(),
             royalty_config: RoyaltyConfig::default(),
             schema: ScryptoSchema {

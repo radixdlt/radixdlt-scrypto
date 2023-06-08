@@ -102,6 +102,7 @@ pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
     PackageBlueprintKey(String),
+    PackageBlueprintEventKey((String, String)),
     PackageFnRoyaltyKey(FnKey),
     PackageFunctionAccessRulesKey(FnKey),
     FungibleResourceField(FungibleResourceManagerField),
@@ -230,6 +231,12 @@ fn to_typed_object_substate_key_internal(
                 PackagePartitionOffset::Blueprints => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageBlueprintKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                PackagePartitionOffset::BlueprintEvents => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageBlueprintEventKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -387,6 +394,7 @@ pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
+    PackageBlueprintEvent(Option<LocalTypeIndex>),
     PackageFunctionAccessRule(Option<AccessRule>),
     PackageFnRoyalty(Option<RoyaltyAmount>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
@@ -559,6 +567,10 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::PackageBlueprintKey(_key) => {
             let value: SubstateWrapper<Option<BlueprintDefinition>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageBlueprint(value.value)
+        }
+        TypedMainModuleSubstateKey::PackageBlueprintEventKey(..) => {
+            let value: SubstateWrapper<Option<LocalTypeIndex>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageBlueprintEvent(value.value)
         }
         TypedMainModuleSubstateKey::PackageFnRoyaltyKey(_fn_key) => {
             let value: SubstateWrapper<Option<RoyaltyAmount>> = scrypto_decode(data)?;

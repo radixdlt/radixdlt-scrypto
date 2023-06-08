@@ -1,4 +1,5 @@
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
+use sbor::LocalTypeIndex;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
@@ -73,10 +74,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintSetup>>(
 ) -> Result<(), PackageError> {
     for BlueprintSetup {
         schema,
-        blueprint: BlueprintSchema {
-            event_schema,
-            ..
-        },
+        event_schema,
         ..
     } in blueprints
     {
@@ -130,6 +128,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 fn globalize_package<Y, L: Default>(
     package_address_reservation: Option<GlobalAddressReservation>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
+    blueprint_events: BTreeMap<(String, String), LocalTypeIndex>,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
     royalty: PackageRoyaltyAccumulatorSubstate,
@@ -175,6 +174,27 @@ where
         partitions.insert(
             MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
             blueprints_partition,
+        );
+    };
+
+    {
+        let blueprint_events_partition = blueprint_events
+            .into_iter()
+            .map(|(blueprint_event, type_index)| {
+                let value = SubstateWrapper {
+                    value: Some(type_index),
+                    mutability: SubstateMutability::Immutable,
+                };
+                (
+                    SubstateKey::Map(scrypto_encode(&blueprint_event).unwrap()),
+                    IndexedScryptoValue::from_typed(&value),
+                )
+            })
+            .collect();
+
+        partitions.insert(
+            MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET).unwrap(),
+            blueprint_events_partition,
         );
     };
 
@@ -360,6 +380,15 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<(String, String)>()),
+                value: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<LocalTypeIndex>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
                 key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<FnKey>()),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<RoyaltyAmount>(),
@@ -436,13 +465,13 @@ impl PackageNativePackage {
                     collections,
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
-                    event_schema: [].into(),
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                         PACKAGE_OWNER_BADGE.into(),
                     ),
                     features: btreeset!(),
                 },
+                event_schema: [].into(),
                 function_auth: btreemap!(
                     PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
                     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
@@ -566,7 +595,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_native<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u8,
-        definition: PackageSetup,
+        setup: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -574,19 +603,24 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(definition.blueprints.values())
+        validate_package_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(definition.blueprints.values())
+        validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let (function_access_rules, blueprints) = {
+        let (function_access_rules, blueprints, blueprint_events) = {
             let mut access_rules = BTreeMap::new();
             let mut blueprints = BTreeMap::new();
+            let mut blueprint_events = BTreeMap::new();
 
-            for (blueprint, setup) in definition.blueprints {
+            for (blueprint, setup) in setup.blueprints {
                 for (ident, rule) in setup.function_auth {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
+                }
+
+                for (ident, type_index) in setup.event_schema {
+                    blueprint_events.insert((blueprint.clone(), ident), type_index);
                 }
 
                 let definition = BlueprintDefinition {
@@ -597,7 +631,8 @@ impl PackageNativePackage {
                 blueprints.insert(blueprint.clone(), definition);
             }
 
-            (access_rules, blueprints)
+
+            (access_rules, blueprints, blueprint_events)
         };
 
         let code_type = PackageCodeTypeSubstate::Native;
@@ -611,6 +646,7 @@ impl PackageNativePackage {
         globalize_package(
             package_address,
             blueprints,
+            blueprint_events,
             code_type,
             code,
             royalty,
@@ -740,14 +776,19 @@ impl PackageNativePackage {
             })?;
 
         // Build node init
-        let (function_access_rules, blueprints, royalty_accumulator, fn_royalty) = {
+        let (function_access_rules, blueprints, blueprint_events, royalty_accumulator, fn_royalty) = {
             let mut access_rules = BTreeMap::new();
             let mut blueprints = BTreeMap::new();
             let mut royalties = BTreeMap::new();
+            let mut blueprint_events = BTreeMap::new();
 
             for (blueprint, setup) in setup.blueprints {
                 for (ident, rule) in setup.function_auth {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
+                }
+
+                for (ident, type_index) in setup.event_schema {
+                    blueprint_events.insert((blueprint.clone(), ident), type_index);
                 }
 
                 let definition = BlueprintDefinition {
@@ -764,6 +805,7 @@ impl PackageNativePackage {
             (
                 access_rules,
                 blueprints,
+                blueprint_events,
                 PackageRoyaltyAccumulatorSubstate {
                     royalty_vault: None,
                 },
@@ -777,6 +819,7 @@ impl PackageNativePackage {
         globalize_package(
             package_address,
             blueprints,
+            blueprint_events,
             code_type,
             code,
             royalty_accumulator,
@@ -801,7 +844,7 @@ impl PackageNativePackage {
 
         let handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            1u8,
+            PACKAGE_ROYALTY_COLLECTION_INDEX,
             &scrypto_encode(&FnKey::new(blueprint, fn_name)).unwrap(),
             LockFlags::MUTABLE,
         )?;

@@ -340,7 +340,6 @@ impl AccountNativePackage {
                     collections,
                     functions,
                     virtual_lazy_load_functions,
-                    event_schema: [].into(),
                     dependencies: btreeset!(
                         ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                         EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -349,6 +348,7 @@ impl AccountNativePackage {
                     ),
                     features: btreeset!(),
                 },
+                event_schema: [].into(),
                 function_auth: btreemap!(
                     ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
                     ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),

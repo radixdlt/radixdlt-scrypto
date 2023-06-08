@@ -50,7 +50,6 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
-        event_schema: [].into(),
         dependencies: btreeset!(),
         features: btreeset!(),
     };
@@ -62,6 +61,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintSetup {
         blueprint,
         schema,
+        event_schema: [].into(),
         function_auth,
         royalty_config: RoyaltyConfig::default(),
         template: scrypto::blueprints::package::BlueprintTemplate {
@@ -95,14 +95,12 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         },
     );
 
-    let schema = BlueprintSchema {
+    let blueprint = BlueprintSchema {
         outer_blueprint: None,
-        schema: generate_full_schema(aggregator),
         fields,
         collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
-        event_schema: [].into(),
         dependencies: btreeset!(),
         features: btreeset!(),
     };
@@ -112,7 +110,9 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintSetup {
-        schema,
+        blueprint,
+        schema: generate_full_schema(aggregator),
+        event_schema: [].into(),
         function_auth,
         royalty_config: RoyaltyConfig::default(),
         template: scrypto::blueprints::package::BlueprintTemplate {
@@ -146,14 +146,12 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         },
     );
 
-    let schema = BlueprintSchema {
+    let blueprint = BlueprintSchema {
         outer_blueprint: None,
-        schema: generate_full_schema(aggregator),
         fields,
         collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
-        event_schema: [].into(),
         dependencies: btreeset!(),
         features: btreeset!(),
     };
@@ -163,7 +161,9 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintSetup {
-        schema,
+        schema: generate_full_schema(aggregator),
+        blueprint,
+        event_schema: [].into(),
         function_auth,
         royalty_config: RoyaltyConfig::default(),
         template: scrypto::blueprints::package::BlueprintTemplate {

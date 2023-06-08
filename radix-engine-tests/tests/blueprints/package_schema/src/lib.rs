@@ -187,7 +187,6 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
-        event_schema: [].into(),
         dependencies: btreeset!(),
         features: btreeset!(),
     };
@@ -214,6 +213,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintSetup {
         schema,
         blueprint,
+        event_schema: [].into(),
         function_auth,
         royalty_config: RoyaltyConfig::default(),
         template: scrypto::blueprints::package::BlueprintTemplate {

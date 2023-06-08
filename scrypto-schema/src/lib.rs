@@ -97,8 +97,6 @@ pub struct BlueprintSchema {
     /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
 
-    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub dependencies: BTreeSet<GlobalAddress>,
     pub features: BTreeSet<String>,
 }
@@ -203,7 +201,7 @@ impl Default for BlueprintSchema {
             collections: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
-            event_schema: BTreeMap::default(),
+            //event_schema: BTreeMap::default(),
             dependencies: BTreeSet::default(),
             features: BTreeSet::default(),
         }

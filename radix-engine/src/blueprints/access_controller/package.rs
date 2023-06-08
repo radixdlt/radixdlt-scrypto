@@ -449,12 +449,12 @@ impl AccessControllerNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
-                    event_schema,
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
                     features: btreeset!(),
                 },
+                event_schema,
                 function_auth: btreemap!(
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                 ),

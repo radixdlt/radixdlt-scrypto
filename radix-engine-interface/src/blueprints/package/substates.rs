@@ -4,10 +4,10 @@ use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::prelude::ScryptoSchema;
+use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
-use sbor::LocalTypeIndex;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -23,8 +23,12 @@ pub const POOL_ID: u8 = 13u8;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
+pub const PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
+pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+
+
+pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
@@ -84,7 +88,6 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             num_partitions: partition_offset,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
-            event_schema: schema.event_schema,
             dependencies: schema.dependencies,
             features: schema.features,
         }
@@ -94,9 +97,12 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
+    
+    pub features: BTreeSet<String>,
 
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
+
     pub num_partitions: u8,
 
     /// For each function, there is a [`FunctionSchema`]
@@ -104,9 +110,8 @@ pub struct IndexedBlueprintSchema {
     /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    //pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub dependencies: BTreeSet<GlobalAddress>,
-    pub features: BTreeSet<String>,
 }
 
 impl IndexedBlueprintSchema {

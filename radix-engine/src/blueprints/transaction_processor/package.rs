@@ -45,10 +45,10 @@ impl TransactionProcessorNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
-                    event_schema: [].into(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
+                event_schema: [].into(),
                 schema,
                 function_auth: btreemap!(
                     TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?

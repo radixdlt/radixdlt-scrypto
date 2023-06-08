@@ -133,7 +133,7 @@ impl ConsensusManagerNativePackage {
             },
         );
 
-        let event_schema = event_schema! {
+        let consensus_manager_event_schema = event_schema! {
             aggregator,
             [
                 RoundChangeEvent,
@@ -148,7 +148,6 @@ impl ConsensusManagerNativePackage {
             collections,
             functions,
             virtual_lazy_load_functions: btreemap!(),
-            event_schema,
             dependencies: btreeset!(
                 RADIX_TOKEN.into(),
                 PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
@@ -283,7 +282,7 @@ impl ConsensusManagerNativePackage {
             },
         );
 
-        let event_schema = event_schema! {
+        let validator_event_schema = event_schema! {
             aggregator,
             [
                 RegisterValidatorEvent,
@@ -304,7 +303,6 @@ impl ConsensusManagerNativePackage {
             collections: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
-            event_schema,
             dependencies: btreeset!(),
             features: btreeset!(),
         };
@@ -313,6 +311,7 @@ impl ConsensusManagerNativePackage {
             CONSENSUS_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: consensus_manager_schema,
                 blueprint: consensus_manager_blueprint,
+                event_schema: consensus_manager_event_schema,
                 function_auth: btreemap!(
                     CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                 ),
@@ -333,6 +332,7 @@ impl ConsensusManagerNativePackage {
             VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: validator_schema,
                 blueprint: validator_blueprint,
+                event_schema: validator_event_schema,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {

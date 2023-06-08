@@ -297,6 +297,33 @@ where
         Ok(node_id.into())
     }
 
+    pub fn get_event(
+        &mut self,
+        blueprint: &BlueprintId,
+        event_name: &str,
+    ) -> Result<Option<LocalTypeIndex>, RuntimeError> {
+        let handle = self.api.kernel_lock_substate_with_default(
+            blueprint.package_address.as_node_id(),
+            MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET).unwrap(),
+            &SubstateKey::Map(scrypto_encode(&(blueprint.blueprint_name.to_string(), event_name.to_string())).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: None::<()>,
+                    mutability: SubstateMutability::Mutable,
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
+            SystemLockData::default(),
+        )?;
+
+        let substate: SubstateWrapper<Option<LocalTypeIndex>> =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        self.api.kernel_drop_lock(handle)?;
+
+        Ok(substate.value)
+    }
+
     pub fn get_blueprint_definition(
         &mut self,
         blueprint: &BlueprintId,
@@ -2155,7 +2182,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
-        let (blueprint_id, blueprint_definition, local_type_index) = {
+        let (blueprint_id, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint_id = match actor {
                 Actor::Method(MethodActor {
@@ -2168,12 +2195,13 @@ where
                 )),
             }?;
 
-            let blueprint_definition = self.get_blueprint_definition(&blueprint_id)?;
+            let type_index = self.get_event(&blueprint_id, event_name.as_str())?;
+
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
             let local_type_index =
-                if let Some(index) = blueprint_definition.blueprint.event_schema.get(&event_name).cloned() {
+                if let Some(index) = type_index {
                     index
                 } else {
                     return Err(RuntimeError::ApplicationError(
@@ -2184,10 +2212,11 @@ where
                     ));
                 };
 
-            (blueprint_id, blueprint_definition, local_type_index)
+            (blueprint_id, local_type_index)
         };
 
         // Construct the event type identifier based on the current actor
+        let blueprint_definition = self.get_blueprint_definition(&blueprint_id)?;
         let actor = self.api.kernel_get_system_state().current;
         let event_type_identifier = match actor {
             Actor::Method(MethodActor {

@@ -1734,10 +1734,10 @@ pub fn single_function_package_definition(
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
                 dependencies: btreeset!(),
                 features: btreeset!(),
             },
+            event_schema: [].into(),
             function_auth: btreemap!(
                 function_name.to_string() => rule!(allow_all),
             ),

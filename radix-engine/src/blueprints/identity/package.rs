@@ -98,7 +98,6 @@ impl IdentityNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions,
-                    event_schema: [].into(),
                     dependencies: btreeset!(
                         ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                         EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -107,6 +106,7 @@ impl IdentityNativePackage {
                     ),
                     features: btreeset!(),
                 },
+                event_schema: [].into(),
                 function_auth: btreemap!(
                     IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                     IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),

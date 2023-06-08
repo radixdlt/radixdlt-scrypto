@@ -595,7 +595,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     collections: Vec::new(),
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
-                    event_schema,
                     dependencies,
                     features: BTreeSet::new(),
                 };
@@ -611,6 +610,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let return_data = scrypto::blueprints::package::BlueprintSetup {
                     blueprint,
                     schema,
+                    event_schema,
                     function_auth,
                     royalty_config,
                     template,
@@ -1476,7 +1476,6 @@ mod tests {
                             collections: Vec::new(),
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
-                            event_schema,
                             dependencies,
                             features: BTreeSet::new(),
                         };
@@ -1492,6 +1491,7 @@ mod tests {
                         let return_data = scrypto::blueprints::package::BlueprintSetup {
                             blueprint,
                             schema,
+                            event_schema,
                             function_auth,
                             royalty_config,
                             template,
