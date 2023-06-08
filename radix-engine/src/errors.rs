@@ -14,7 +14,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
-    CreateNodeError, DropNodeError, ListModuleError, LockSubstateError, MoveModuleError,
+    CreateNodeError, DropNodeError, ListNodeModuleError, LockSubstateError, MoveModuleError,
     PassMessageError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
@@ -178,7 +178,7 @@ pub enum CallFrameError {
     CreateNodeError(CreateNodeError),
     DropNodeError(DropNodeError),
 
-    ListModuleError(ListModuleError),
+    ListNodeModuleError(ListNodeModuleError),
     MoveModuleError(MoveModuleError),
 
     LockSubstateError(LockSubstateError),

@@ -204,7 +204,7 @@ pub enum TakeNodeError {
 
 /// Represents an error when listing the node modules of a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ListModuleError {
+pub enum ListNodeModuleError {
     NodeNotVisible(NodeId),
     NodeNotInHeap(NodeId),
 }
@@ -880,16 +880,16 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         node_id: &NodeId,
         heap: &mut Heap,
-    ) -> Result<BTreeSet<PartitionNumber>, ListModuleError> {
+    ) -> Result<BTreeSet<PartitionNumber>, ListNodeModuleError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(ListModuleError::NodeNotVisible(node_id.clone()));
+            return Err(ListNodeModuleError::NodeNotVisible(node_id.clone()));
         }
 
         if let Some(modules) = heap.list_modules(node_id) {
             Ok(modules)
         } else {
-            return Err(ListModuleError::NodeNotInHeap(node_id.clone()));
+            return Err(ListNodeModuleError::NodeNotInHeap(node_id.clone()));
         }
     }
 
