@@ -773,7 +773,7 @@ impl PackageNativePackage {
 
         // Validate WASM
         WasmValidator::default()
-            .validate(&code, setup.blueprints.values().map(|s| &s.blueprint))
+            .validate(&code, setup.blueprints.values())
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),

@@ -1,3 +1,4 @@
+use radix_engine_interface::blueprints::package::BlueprintSetup;
 use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::schema::BlueprintSchema;
@@ -25,7 +26,7 @@ impl Default for WasmValidator {
 }
 
 impl WasmValidator {
-    pub fn validate<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+    pub fn validate<'a, I: Iterator<Item = &'a BlueprintSetup>>(
         &self,
         code: &[u8],
         blueprints: I,

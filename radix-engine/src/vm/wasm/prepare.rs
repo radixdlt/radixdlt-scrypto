@@ -9,6 +9,7 @@ use wasm_instrument::{
     inject_stack_limiter,
 };
 use wasmi_validation::{validate_module, PlainValidator};
+use radix_engine_interface::blueprints::package::BlueprintSetup;
 
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
@@ -924,7 +925,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSetup>>(
         self,
         blueprints: I,
     ) -> Result<Self, PrepareError> {
@@ -932,8 +933,8 @@ impl WasmModule {
             .module
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
-        for blueprint_schema in blueprints {
-            for func in blueprint_schema.functions.values() {
+        for blueprint_setup in blueprints {
+            for func in blueprint_setup.blueprint.functions.values() {
                 let export_mapping = &func.export;
                 match export_mapping {
                     FeaturedSchema::Conditional {
