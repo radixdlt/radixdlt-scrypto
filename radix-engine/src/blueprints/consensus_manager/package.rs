@@ -573,7 +573,7 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+                SystemUpstreamError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

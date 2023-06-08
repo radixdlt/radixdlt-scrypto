@@ -232,16 +232,14 @@ pub enum SystemError {
 pub enum SystemUpstreamError {
     SystemFunctionCallNotAllowed,
 
-    NativeExportDoesNotExist(String),
-
-    BlueprintNotFound(BlueprintId),
-    FunctionNotFound(String),
+    FnNotFound(String),
     ReceiverNotMatch(String),
     InputSchemaNotMatch(String, String),
-    InputDecodeError(DecodeError),
-
-    OutputDecodeError(DecodeError),
     OutputSchemaNotMatch(String, String),
+
+    ExportDoesNotExist(String),
+    InputDecodeError(DecodeError),
+    OutputDecodeError(DecodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

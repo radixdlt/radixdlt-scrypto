@@ -36,7 +36,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             .functions
             .get(fn_ident)
             .ok_or(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
+                SystemUpstreamError::FnNotFound(fn_ident.to_string()),
             ))?;
 
     match (&function_schema.receiver, with_receiver.as_ref()) {
