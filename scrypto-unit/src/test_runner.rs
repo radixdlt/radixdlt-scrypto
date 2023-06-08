@@ -6,15 +6,8 @@ use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
-use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system_callback::SystemConfig;
-use radix_engine::system::system_modules::costing::FeeTable;
-use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
-use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
     PreviewError, TransactionReceipt, TransactionResult,
@@ -22,7 +15,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine::vm::{ScryptoVm, Vm};
+use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -36,7 +29,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageDefinition, PackageInfoSubstate, PackageRoyaltySubstate,
+    PackageDefinition, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput,
+    PackageRoyaltySubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
@@ -63,10 +57,10 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
-    AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
-    SystemTransactionV1, TestTransaction, TransactionPayload,
+    AttachmentsV1, BlobV1, Executable, InstructionV1, IntentV1, PreviewFlags, PreviewIntentV1,
+    SystemTransactionV1, TestTransaction, TransactionHeaderV1, TransactionPayload,
 };
-use transaction::prelude::{AttachmentsV1, BlobV1, IntentV1, PreviewFlags, TransactionHeaderV1};
+use transaction::prelude::{BlobsV1, InstructionsV1};
 
 pub struct Compile;
 
@@ -133,7 +127,7 @@ impl Compile {
 }
 
 pub struct CustomGenesis {
-    pub genesis_data_chunks: Vec<GenesisDataChunk>,
+    pub genesis_data_chunks: Vec<(Vec<(BlueprintId, GlobalAddress)>, GenesisDataChunk)>,
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
@@ -178,17 +172,23 @@ impl CustomGenesis {
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator]),
-            GenesisDataChunk::Stakes {
-                accounts: vec![staker_account],
-                allocations: vec![(
-                    validator_public_key,
-                    vec![GenesisStakeAllocation {
-                        account_index: 0,
-                        xrd_amount: stake_xrd_amount,
-                    }],
-                )],
-            },
+            (
+                vec![],
+                GenesisDataChunk::Validators(vec![genesis_validator]),
+            ),
+            (
+                vec![],
+                GenesisDataChunk::Stakes {
+                    accounts: vec![staker_account],
+                    allocations: vec![(
+                        validator_public_key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount,
+                        }],
+                    )],
+                },
+            ),
         ];
         CustomGenesis {
             genesis_data_chunks,
@@ -704,17 +704,56 @@ impl TestRunner {
         address
     }
 
+    pub fn publish_package_at_address(
+        &mut self,
+        code: Vec<u8>,
+        definition: PackageDefinition,
+        address: PackageAddress,
+    ) {
+        let code_hash = hash(&code);
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransactionV1 {
+                instructions: InstructionsV1(vec![InstructionV1::CallFunction {
+                    package_address: PACKAGE_PACKAGE,
+                    blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                    function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+                    args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                        code: ManifestBlobRef(code_hash.0),
+                        definition,
+                        metadata: btreemap!(),
+                        package_address: Some(ManifestOwn(0)),
+                        owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
+                    }),
+                }]),
+                blobs: BlobsV1 {
+                    blobs: vec![BlobV1(code)],
+                },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_addresses: vec![(
+                    BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                    address.into(),
+                )],
+            }
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(btreeset!(AuthAddresses::system_role())),
+        );
+
+        receipt.expect_commit_success();
+    }
+
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
         definition: PackageDefinition,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, definition, royalty_config, metadata, owner_rule)
+            .publish_package_advanced(code, definition, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -738,13 +777,16 @@ impl TestRunner {
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
         let (code, definition) = Compile::compile(package_dir);
-        self.publish_package(
-            code,
-            definition,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
+    }
+
+    pub fn compile_and_publish_at_address<P: AsRef<Path>>(
+        &mut self,
+        package_dir: P,
+        address: PackageAddress,
+    ) {
+        let (code, definition) = Compile::compile(package_dir);
+        self.publish_package_at_address(code, definition, address);
     }
 
     pub fn compile_and_publish_retain_blueprints<
@@ -757,13 +799,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let (code, mut definition) = Compile::compile(package_dir);
         definition.schema.blueprints.retain(retain);
-        self.publish_package(
-            code,
-            definition,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
+        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
@@ -1320,7 +1356,7 @@ impl TestRunner {
         &mut self,
         instructions: Vec<InstructionV1>,
         proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_ids: IndexSet<NodeId>,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
 
@@ -1329,7 +1365,7 @@ impl TestRunner {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_ids,
+                pre_allocated_addresses,
             }
             .prepare()
             .expect("expected transaction to be preparable")
@@ -1344,10 +1380,10 @@ impl TestRunner {
         self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
     }
 
-    pub fn execute_system_transaction_with_preallocated_ids(
+    pub fn execute_system_transaction_with_preallocated_addresses(
         &mut self,
         instructions: Vec<InstructionV1>,
-        pre_allocated_ids: IndexSet<NodeId>,
+        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
         mut proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
@@ -1357,7 +1393,7 @@ impl TestRunner {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_ids,
+                pre_allocated_addresses,
             }
             .prepare()
             .expect("expected transaction to be preparable")
@@ -1377,7 +1413,7 @@ impl TestRunner {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_ids: index_set_new(),
+                pre_allocated_addresses: vec![],
             }
             .prepare()
             .expect("expected transaction to be preparable")
@@ -1443,59 +1479,6 @@ impl TestRunner {
         receipt.expect_commit(true).output(0)
     }
 
-    pub fn kernel_invoke_function(
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: &Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        // Prepare data for creating kernel
-        let substate_db = InMemorySubstateDatabase::standard();
-        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(&substate_db);
-        let transaction_hash = hash(vec![0]);
-        let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
-        let execution_config = ExecutionConfig::default();
-        let scrypto_interpreter = ScryptoVm {
-            wasm_metering_config: WasmMeteringConfig::V0,
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-        };
-
-        let mut system = SystemConfig {
-            blueprint_schema_cache: NonIterMap::new(),
-            callback_obj: Vm {
-                scrypto_vm: &scrypto_interpreter,
-            },
-            modules: SystemModuleMixer::new(
-                EnabledModules::for_notarized_transaction(),
-                transaction_hash,
-                AuthZoneParams {
-                    initial_proofs: btreeset![],
-                    virtual_resources: BTreeSet::new(),
-                },
-                SystemLoanFeeReserve::default(),
-                FeeTable::new(),
-                0,
-                0,
-                &execution_config,
-            ),
-        };
-
-        let kernel_boot = KernelBoot {
-            id_allocator: &mut id_allocator,
-            callback: &mut system,
-            store: &mut track,
-        };
-
-        kernel_boot.call_boot_function(
-            package_address,
-            blueprint_name,
-            function_name,
-            &indexset!(),
-            scrypto_args!(&args),
-        )
-    }
-
     pub fn event_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
@@ -1534,7 +1517,7 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::KeyValueStore(..) => {
+                            _ => {
                                 panic!("No event schema.")
                             }
                         }
@@ -1734,6 +1717,7 @@ pub fn single_function_package_definition(
         function_access_rules: btreemap!(
             blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))
         ),
+        royalty_config: btreemap!(),
     }
 }
 

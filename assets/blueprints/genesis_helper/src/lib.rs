@@ -24,7 +24,7 @@ pub struct GenesisStakeAllocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
-    pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
+    pub address_reservation: GlobalAddressReservation,
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
@@ -76,7 +76,7 @@ mod genesis_helper {
 
     impl GenesisHelper {
         pub fn new(
-            preallocated_address_bytes: [u8; 30],
+            address_reservation: GlobalAddressReservation,
             whole_lotta_xrd: Bucket,
             consensus_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
@@ -92,7 +92,7 @@ mod genesis_helper {
             .roles(roles! {
                 system => rule!(require(system_role.clone())), mutable_by: system;
             })
-            .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .with_address(address_reservation)
             .globalize()
         }
 
@@ -188,12 +188,6 @@ mod genesis_helper {
         fn create_resource(resource: GenesisResource) -> (ResourceAddress, Bucket) {
             let metadata: BTreeMap<String, MetadataValue> = resource.metadata.into_iter().collect();
 
-            let address_bytes = NodeId::new(
-                EntityType::GlobalFungibleResourceManager as u8,
-                &resource.address_bytes_without_entity_id,
-            )
-            .0;
-            let resource_address = ResourceAddress::new_or_panic(address_bytes.clone());
             let mut access_rules = BTreeMap::new();
             access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
@@ -244,21 +238,22 @@ mod genesis_helper {
                     .unwrap();
             }
 
-            let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
-                scrypto_encode(
-                    &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
-                        divisibility: 18,
-                        metadata,
-                        access_rules,
-                        initial_supply: resource.initial_supply,
-                        resource_address: address_bytes,
-                    },
-                )
-                .unwrap(),
-            );
+            let (resource_address, initial_supply_bucket): (ResourceAddress, Bucket) =
+                Runtime::call_function(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
+                    scrypto_encode(
+                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                            divisibility: 18,
+                            metadata,
+                            access_rules,
+                            initial_supply: resource.initial_supply,
+                            resource_address: resource.address_reservation,
+                        },
+                    )
+                    .unwrap(),
+                );
 
             (resource_address, initial_supply_bucket)
         }

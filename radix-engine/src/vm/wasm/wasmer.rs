@@ -286,11 +286,19 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn preallocate_global_address(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
+        pub fn allocate_global_address(
+            env: &WasmerInstanceEnv,
+            blueprint_ident_ptr: u32,
+            blueprint_ident_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .preallocate_global_address()
+                .allocate_global_address(read_memory(
+                    &instance,
+                    blueprint_ident_ptr,
+                    blueprint_ident_len,
+                )?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -352,17 +360,17 @@ impl WasmerModule {
             modules_len: u32,
             address_ptr: u32,
             address_len: u32,
-        ) -> Result<(), RuntimeError> {
+        ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            runtime
+            let buffer = runtime
                 .globalize_object_with_address(
                     read_memory(&instance, modules_ptr, modules_len)?,
                     read_memory(&instance, address_ptr, address_len)?,
                 )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(())
+            Ok(buffer.0)
         }
 
         pub fn get_type_info(
@@ -670,7 +678,7 @@ impl WasmerModule {
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 NEW_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
-                PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), preallocate_global_address),
+                ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), allocate_global_address),
                 COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), cost_unit_limit),
                 COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), cost_unit_price),
                 TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),

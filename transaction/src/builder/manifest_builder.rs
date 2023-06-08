@@ -105,7 +105,7 @@ impl ManifestBuilder {
             InstructionV1::TakeAllFromWorktop { .. }
             | InstructionV1::TakeFromWorktop { .. }
             | InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
+                new_bucket_id = Some(self.id_allocator.new_bucket_id());
             }
             InstructionV1::PopFromAuthZone { .. }
             | InstructionV1::CreateProofFromAuthZone { .. }
@@ -117,7 +117,7 @@ impl ManifestBuilder {
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
             | InstructionV1::CloneProof { .. } => {
-                new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
+                new_proof_id = Some(self.id_allocator.new_proof_id());
             }
             _ => {}
         }
@@ -703,7 +703,6 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         definition: PackageDefinition,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> &mut Self {
@@ -717,7 +716,6 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config,
                 metadata,
                 package_address: None,
                 owner_rule,
@@ -738,7 +736,6 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
             }),
         });
@@ -763,7 +760,6 @@ impl ManifestBuilder {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 definition,
-                royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
@@ -933,7 +929,7 @@ impl ManifestBuilder {
 
     pub fn recall(&mut self, vault_id: InternalAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
-            vault_id,
+            address: vault_id,
             method_name: VAULT_RECALL_IDENT.to_string(),
             args: to_manifest_value(&VaultRecallInput { amount }),
         });
@@ -942,7 +938,7 @@ impl ManifestBuilder {
 
     pub fn freeze(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
-            vault_id,
+            address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultFreezeInput {}),
         });
@@ -951,7 +947,7 @@ impl ManifestBuilder {
 
     pub fn unfreeze(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
-            vault_id,
+            address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultUnfreezeInput {}),
         });

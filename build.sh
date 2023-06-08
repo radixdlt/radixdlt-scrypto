@@ -17,7 +17,7 @@ echo "Building the simulator packages..."
 
 echo "Building the engine in different configurations..."
 
-(set -x; cd radix-engine; cargo build --no-default-features --features alloc)
+(set -x; cd radix-engine; cargo build --no-default-features --features alloc,moka)
 (set -x; cd radix-engine; cargo build --features wasmer,resource_tracker)
 
 # We use a globally loaded scrypto CLI so that this script works even if the code doesn't compile at present

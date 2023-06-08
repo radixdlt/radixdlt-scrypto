@@ -72,7 +72,7 @@ impl ValidatedPreviewIntent {
                     }
                     .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
                 ],
-                pre_allocated_ids: index_set_new(),
+                pre_allocated_addresses: vec![],
             },
         )
     }

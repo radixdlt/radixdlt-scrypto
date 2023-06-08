@@ -9,6 +9,13 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod radiswap {
+    enable_package_royalties! {
+        new => Xrd(5.into()),
+        add_liquidity => Xrd(1.into()),
+        remove_liquidity => Xrd(1.into()),
+        swap => Xrd(2.into()),
+    }
+
     struct Radiswap {
         // TODO: We need a stub for native blueprints so that we're not using `AnyComponent`.
         /// The liquidity pool used by Radiswap and that manages all of the pool unit tokens.
@@ -20,7 +27,8 @@ mod radiswap {
             resource_address1: ResourceAddress,
             resource_address2: ResourceAddress,
         ) -> Global<Radiswap> {
-            let component_address = Runtime::preallocate_global_component_address();
+            let (address_reservation, component_address) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(component_address);
 
@@ -41,7 +49,7 @@ mod radiswap {
             Self { pool_component }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .with_address(component_address)
+                .with_address(address_reservation)
                 .globalize()
         }
 

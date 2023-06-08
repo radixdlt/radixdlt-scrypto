@@ -34,6 +34,9 @@ impl CustomExtension for ManifestCustomExtension {
             ManifestCustomValueKind::Proof => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Own))
             }
+            ManifestCustomValueKind::Own => {
+                matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Own))
+            }
             // An Expression can only be a Vec<Proof> or Vec<Manifest> at the moment
             // - in other words they're both a Vec<Own> at the TypeKind level
             ManifestCustomValueKind::Expression => matches!(

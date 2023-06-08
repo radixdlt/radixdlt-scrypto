@@ -50,21 +50,26 @@ impl Parse for BlueprintMod {
             }
             use_statements
         };
-        let const_statements = {
+        let (const_statements, macro_statements) = {
             let mut const_statements = Vec::new();
-            while content.peek(Token![const]) {
-                const_statements.push(content.call(ItemConst::parse)?)
+            let mut macro_statements = Vec::new();
+            loop {
+                let is_const = content.peek(Token![const]);
+                let is_macro = content.peek2(Token![!]);
+                if !is_const && !is_macro {
+                    break;
+                }
+                if is_const {
+                    const_statements.push(content.call(ItemConst::parse)?)
+                }
+                if is_macro {
+                    macro_statements.push(content.call(ItemMacro::parse)?)
+                }
             }
-            const_statements
+
+            (const_statements, macro_statements)
         };
 
-        let macro_statements = {
-            let mut macro_statements = Vec::new();
-            while content.peek2(Token![!]) {
-                macro_statements.push(content.call(ItemMacro::parse)?)
-            }
-            macro_statements
-        };
         let structure = content.parse()?;
         let implementation = content.parse()?;
         let semi = input.parse()?;

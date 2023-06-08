@@ -465,6 +465,7 @@ impl AccessControllerNativePackage {
         PackageDefinition {
             schema,
             function_access_rules,
+            royalty_config: btreemap!(),
         }
     }
 
@@ -610,7 +611,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerCreateGlobalInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -618,8 +619,10 @@ impl AccessControllerNativePackage {
 
         // Allocating the address of the access controller - this will be needed for the metadata
         // and access rules of the recovery badge
-        let node_id = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
-        let address = GlobalAddress::new_or_panic(node_id.0);
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: ACCESS_CONTROLLER_PACKAGE,
+            blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+        })?;
 
         // Creating a new vault and putting in it the controlled asset
         let vault = {
@@ -731,12 +734,12 @@ impl AccessControllerNativePackage {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address,
+            address_reservation,
         )?;
 
         // Invoking the post-initialization method on the component
         api.call_method(
-            &node_id,
+            address.as_node_id(),
             ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
             scrypto_encode(&AccessControllerPostInstantiationInput).unwrap(),
         )?;

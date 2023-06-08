@@ -35,13 +35,8 @@ fn test_static_package_address() {
     let start = find_subsequence(&code, &PACKAGE_ADDRESS_PLACE_HOLDER).unwrap();
     code[start..start + PACKAGE_ADDRESS_PLACE_HOLDER.len()]
         .copy_from_slice(package_address1.as_ref());
-    let package_address2 = test_runner.publish_package(
-        code,
-        definition,
-        BTreeMap::new(),
-        BTreeMap::new(),
-        OwnerRole::None,
-    );
+    let package_address2 =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -86,19 +81,28 @@ const PRE_ALLOCATED: [u8; NodeId::LENGTH] = [
     192, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
 ];
 
+const PRE_ALLOCATED_PACKAGE: [u8; NodeId::LENGTH] = [
+    13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+];
+
 #[test]
 fn static_component_should_be_callable() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
-    let receipt = test_runner.execute_system_transaction_with_preallocated_ids(
+    let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
+    test_runner
+        .compile_and_publish_at_address("./tests/blueprints/static_dependencies", package_address);
+    let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![InstructionV1::CallFunction {
             package_address,
             blueprint_name: "Preallocated".to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(PRE_ALLOCATED, "my_secret".to_string()),
+            args: manifest_args!(ManifestOwn(0), "my_secret".to_string()),
         }],
-        indexset!(NodeId::from(PRE_ALLOCATED)),
+        vec![(
+            BlueprintId::new(&package_address, "Preallocated"),
+            GlobalAddress::new_or_panic(PRE_ALLOCATED),
+        )],
         btreeset!(),
     );
     receipt.expect_commit_success();
@@ -134,7 +138,7 @@ fn static_resource_should_be_callable() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (key, _priv, account) = test_runner.new_account(false);
-    let receipt = test_runner.execute_system_transaction_with_preallocated_ids(
+    let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
@@ -142,12 +146,12 @@ fn static_resource_should_be_callable() {
                 function_name: "create_with_initial_supply_and_address".to_string(),
                 args: manifest_decode(
                     &manifest_encode(
-                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                             divisibility: 0u8,
                             metadata: btreemap!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
-                            resource_address: PRE_ALLOCATED_RESOURCE,
+                            resource_address: ManifestOwn(0),
                         },
                     )
                     .unwrap(),
@@ -160,7 +164,10 @@ fn static_resource_should_be_callable() {
                 args: manifest_args!(ManifestExpression::EntireWorktop),
             },
         ],
-        indexset!(NodeId::from(PRE_ALLOCATED_RESOURCE)),
+        vec![(
+            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
+        )],
         btreeset!(NonFungibleGlobalId::from_public_key(&key)),
     );
     receipt.expect_commit_success();
@@ -185,4 +192,33 @@ fn static_resource_should_be_callable() {
     let result = receipt.expect_commit_success();
     let output = result.outcome.expect_success();
     output[1].expect_return_value(&Decimal::from(10));
+}
+
+#[test]
+fn static_package_should_be_callable() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    test_runner.compile_and_publish_at_address(
+        "./tests/blueprints/static_dependencies",
+        PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE),
+    );
+
+    // Act
+    let package_address2 = test_runner.compile_and_publish_retain_blueprints(
+        "./tests/blueprints/static_dependencies2",
+        |blueprint, _| blueprint.eq("SomePackage"),
+    );
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address2,
+            "SomePackage",
+            "set_package_metadata",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
 }
