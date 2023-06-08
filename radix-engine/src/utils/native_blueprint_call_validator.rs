@@ -1,17 +1,8 @@
-use crate::blueprints::access_controller::*;
-use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
-use crate::blueprints::identity::*;
+use crate::blueprints::native_schema::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::multi_resource_pool::*;
 use crate::blueprints::pool::one_resource_pool::*;
 use crate::blueprints::pool::two_resource_pool::*;
-use crate::blueprints::pool::PoolNativePackage;
-use crate::blueprints::resource::*;
-use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::system::node_modules::access_rules::*;
-use crate::system::node_modules::metadata::*;
-use crate::system::node_modules::royalty::*;
 use radix_engine_common::data::manifest::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -32,8 +23,6 @@ use transaction::prelude::InstructionV1;
 pub fn validate_call_arguments_to_native_components(
     instructions: &[InstructionV1],
 ) -> Result<(), ValidationError> {
-    let mut package_definitions = LazyPackageDefinitions::new();
-
     for (index, instruction) in instructions.iter().enumerate() {
         let (invocation, args) = match instruction {
             InstructionV1::CallFunction {
@@ -88,7 +77,7 @@ pub fn validate_call_arguments_to_native_components(
             _ => continue,
         };
 
-        let schema = get_arguments_schema(invocation, &mut package_definitions, index)?;
+        let schema = get_arguments_schema(invocation, index)?;
         if let Some((local_type_index, schema)) = schema {
             validate_payload_against_schema::<ManifestCustomExtension, _>(
                 &manifest_encode(&args).unwrap(),
@@ -103,59 +92,6 @@ pub fn validate_call_arguments_to_native_components(
     }
 
     Ok(())
-}
-
-macro_rules! define_lazy_package_definitions {
-    (
-        struct $ident: ident {
-            $(
-                $field: ident = $value: expr
-            ),* $(,)?
-        }
-    ) => {
-        struct $ident {
-            $(
-                $field: Option<PackageDefinition>,
-            )*
-        }
-
-        impl $ident {
-            fn new() -> Self {
-                Self {
-                    $(
-                        $field: None,
-                    )*
-                }
-            }
-
-            $(
-                fn $field(&mut self) -> &PackageDefinition {
-                    if let Some(ref schema) = self.$field {
-                        schema
-                    } else {
-                        self.$field = Some($value);
-                        self.$field()
-                    }
-                }
-            )*
-        }
-    };
-}
-
-define_lazy_package_definitions! {
-    struct LazyPackageDefinitions {
-        consensus_manager_package = ConsensusManagerNativePackage::definition(),
-        account_package = AccountNativePackage::definition(),
-        identity_package = IdentityNativePackage::definition(),
-        access_controller_package = AccessControllerNativePackage::definition(),
-        pool_package = PoolNativePackage::definition(),
-        resource_package = ResourceManagerNativePackage::definition(),
-        package_package = PackageNativePackage::definition(),
-        transaction_processor_package = TransactionProcessorNativePackage::definition(),
-        metadata_package = MetadataNativePackage::definition(),
-        royalties_package = RoyaltyNativePackage::definition(),
-        access_rules_package = AccessRulesNativePackage::definition(),
-    }
 }
 
 fn get_blueprint_schema<'p>(
@@ -181,7 +117,6 @@ fn get_blueprint_schema<'p>(
 /// packages.
 fn get_arguments_schema<'s>(
     invocation: Invocation,
-    package_definitions: &'s mut LazyPackageDefinitions,
     instruction_index: usize,
 ) -> Result<Option<(LocalTypeIndex, &'s Schema<ScryptoCustomSchema>)>, ValidationError> {
     let entity_type =
@@ -197,7 +132,7 @@ fn get_arguments_schema<'s>(
     let blueprint_schema = match invocation {
         Invocation::Function(package_address @ PACKAGE_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.package_package(),
+                &PACKAGE_PACKAGE_DEFINITION,
                 package_address,
                 &blueprint,
                 instruction_index,
@@ -206,7 +141,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ RESOURCE_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.resource_package(),
+                &RESOURCE_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -215,7 +150,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ ACCOUNT_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.account_package(),
+                &ACCOUNT_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -224,7 +159,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ IDENTITY_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.identity_package(),
+                &IDENTITY_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -233,7 +168,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ CONSENSUS_MANAGER_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.consensus_manager_package(),
+                &CONSENSUS_MANAGER_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -242,7 +177,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ ACCESS_CONTROLLER_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.access_controller_package(),
+                &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -251,7 +186,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ POOL_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.pool_package(),
+                &POOL_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -260,7 +195,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ TRANSACTION_PROCESSOR_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.transaction_processor_package(),
+                &TRANSACTION_PROCESSOR_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -269,7 +204,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ METADATA_MODULE_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.metadata_package(),
+                &METADATA_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -278,7 +213,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ ROYALTY_MODULE_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.royalties_package(),
+                &ROYALTIES_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -287,7 +222,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ ACCESS_RULES_MODULE_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                package_definitions.access_rules_package(),
+                &ACCESS_RULES_PACKAGE_DEFINITION,
                 package_address,
                 blueprint,
                 instruction_index,
@@ -296,19 +231,16 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(..) => None,
         Invocation::Method(_, ObjectModuleId::Main, _) => match entity_type {
-            EntityType::GlobalPackage => package_definitions
-                .package_package()
+            EntityType::GlobalPackage => PACKAGE_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(PACKAGE_BLUEPRINT),
 
-            EntityType::GlobalConsensusManager => package_definitions
-                .consensus_manager_package()
+            EntityType::GlobalConsensusManager => CONSENSUS_MANAGER_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(CONSENSUS_MANAGER_BLUEPRINT),
-            EntityType::GlobalValidator => package_definitions
-                .consensus_manager_package()
+            EntityType::GlobalValidator => CONSENSUS_MANAGER_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(VALIDATOR_BLUEPRINT),
@@ -316,59 +248,49 @@ fn get_arguments_schema<'s>(
             EntityType::GlobalAccount
             | EntityType::InternalAccount
             | EntityType::GlobalVirtualEd25519Account
-            | EntityType::GlobalVirtualSecp256k1Account => package_definitions
-                .account_package()
+            | EntityType::GlobalVirtualSecp256k1Account => ACCOUNT_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(ACCOUNT_BLUEPRINT),
 
             EntityType::GlobalIdentity
             | EntityType::GlobalVirtualEd25519Identity
-            | EntityType::GlobalVirtualSecp256k1Identity => package_definitions
-                .identity_package()
+            | EntityType::GlobalVirtualSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(IDENTITY_BLUEPRINT),
 
-            EntityType::GlobalAccessController => package_definitions
-                .access_controller_package()
+            EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(ACCESS_CONTROLLER_BLUEPRINT),
 
-            EntityType::GlobalOneResourcePool => package_definitions
-                .pool_package()
+            EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(ONE_RESOURCE_POOL_BLUEPRINT_IDENT),
-            EntityType::GlobalTwoResourcePool => package_definitions
-                .pool_package()
+            EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(TWO_RESOURCE_POOL_BLUEPRINT_IDENT),
-            EntityType::GlobalMultiResourcePool => package_definitions
-                .pool_package()
+            EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT),
 
-            EntityType::GlobalFungibleResourceManager => package_definitions
-                .resource_package()
+            EntityType::GlobalFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            EntityType::GlobalNonFungibleResourceManager => package_definitions
-                .resource_package()
+            EntityType::GlobalNonFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            EntityType::InternalFungibleVault => package_definitions
-                .resource_package()
+            EntityType::InternalFungibleVault => RESOURCE_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(FUNGIBLE_VAULT_BLUEPRINT),
-            EntityType::InternalNonFungibleVault => package_definitions
-                .resource_package()
+            EntityType::InternalNonFungibleVault => RESOURCE_PACKAGE_DEFINITION
                 .schema
                 .blueprints
                 .get(NON_FUNGIBLE_VAULT_BLUEPRINT),
@@ -377,18 +299,15 @@ fn get_arguments_schema<'s>(
             | EntityType::InternalGenericComponent
             | EntityType::InternalKeyValueStore => None,
         },
-        Invocation::Method(_, ObjectModuleId::Metadata, _) => package_definitions
-            .metadata_package()
+        Invocation::Method(_, ObjectModuleId::Metadata, _) => METADATA_PACKAGE_DEFINITION
             .schema
             .blueprints
             .get(METADATA_BLUEPRINT),
-        Invocation::Method(_, ObjectModuleId::AccessRules, _) => package_definitions
-            .access_rules_package()
+        Invocation::Method(_, ObjectModuleId::AccessRules, _) => ACCESS_RULES_PACKAGE_DEFINITION
             .schema
             .blueprints
             .get(ACCESS_RULES_BLUEPRINT),
-        Invocation::Method(_, ObjectModuleId::Royalty, _) => package_definitions
-            .royalties_package()
+        Invocation::Method(_, ObjectModuleId::Royalty, _) => ROYALTIES_PACKAGE_DEFINITION
             .schema
             .blueprints
             .get(COMPONENT_ROYALTY_BLUEPRINT),
