@@ -11,7 +11,7 @@ pub struct GenerateKeyPair {}
 impl GenerateKeyPair {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
-        let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&secret).unwrap();
+        let private_key = Secp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
         writeln!(out, "Public key: {}", public_key.to_string().green()).map_err(Error::IOError)?;
         writeln!(

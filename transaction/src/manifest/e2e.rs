@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
     use crate::internal_prelude::*;
     use crate::manifest::*;
+    use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::blueprints::resource::AccessRule;
     use scrypto_derive::NonFungibleData;
 
@@ -1057,7 +1057,7 @@ CREATE_ACCESS_CONTROLLER
     fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> Result<IntentV1, CompileError> {
         let blob_provider = BlobProvider::new_with_blobs(blobs);
 
-        let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+        let sk_notary = Ed25519PrivateKey::from_u64(3).unwrap();
 
         let network = NetworkDefinition::simulator();
         let (instructions, blobs) = compile(manifest, &network, blob_provider)?.for_intent();

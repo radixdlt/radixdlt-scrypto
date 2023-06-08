@@ -4,8 +4,8 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::builder::TransactionManifestV1;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::*;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::{TransactionValidator, ValidationConfig};
 
@@ -53,7 +53,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
 
-    let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
+    let public_key = Secp256k1PrivateKey::from_u64(99).unwrap().public_key();
     let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
     let account = test_runner.new_account_advanced(OwnerRole::Fixed(withdraw_auth.clone()));
     let (_, _, other_account) = test_runner.new_allocated_account();
@@ -96,8 +96,8 @@ fn prepare_matching_test_tx_and_preview_intent(
     manifest: TransactionManifestV1,
     flags: &PreviewFlags,
 ) -> (NotarizedTransactionV1, PreviewIntentV1) {
-    let notary_priv_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
-    let tx_signer_priv_key = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
+    let notary_priv_key = Secp256k1PrivateKey::from_u64(2).unwrap();
+    let tx_signer_priv_key = Secp256k1PrivateKey::from_u64(3).unwrap();
 
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
