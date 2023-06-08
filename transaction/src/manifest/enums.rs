@@ -168,6 +168,24 @@ lazy_static! {
             }
         );
 
+        known_enum!(
+            m,
+            enum RoyaltyAmount {
+                Free = 0;
+                Xrd = 1;
+                Usd = 2;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum OwnerRole {
+                None = 0;
+                Fixed = 1;
+                Updateable = 2;
+            }
+        );
+
         m
     };
 }
