@@ -1,4 +1,4 @@
-use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::errors::{NodeModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -71,7 +71,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::ModuleError(ModuleError::AuthError(AuthError::NoFunction(
+        if let RuntimeError::NodeModuleError(NodeModuleError::AuthError(AuthError::NoFunction(
             FnIdentifier { blueprint, .. },
         ))) = e
         {

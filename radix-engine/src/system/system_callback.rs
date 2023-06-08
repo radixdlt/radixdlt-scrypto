@@ -335,7 +335,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
@@ -362,7 +362,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
@@ -418,7 +418,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         sys_func.export_name.to_string()
                     } else {
                         return Err(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::InvalidSystemCall,
+                            SystemUpstreamError::SystemFunctionCallNotAllowed,
                         ));
                     }
                 }

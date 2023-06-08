@@ -6,7 +6,7 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{RuntimeError, SystemUpstreamError, VmError};
+use crate::errors::{NativeRuntimeError, RuntimeError, SystemUpstreamError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -25,7 +25,9 @@ impl NativeVm {
         code: &[u8],
     ) -> Result<NativeVmInstance, RuntimeError> {
         if code.len() != 1 {
-            return Err(RuntimeError::VmError(VmError::InvalidCode));
+            return Err(RuntimeError::VmError(VmError::Native(
+                NativeRuntimeError::InvalidCodeId,
+            )));
         }
 
         let instance = NativeVmInstance {

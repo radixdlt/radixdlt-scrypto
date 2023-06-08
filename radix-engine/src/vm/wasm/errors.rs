@@ -1,4 +1,4 @@
-use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
+use crate::errors::{CanBeAbortion, InvokeError, RuntimeError, SelfError, VmError};
 use crate::system::system_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
@@ -154,7 +154,7 @@ pub enum WasmRuntimeError {
 
 impl SelfError for WasmRuntimeError {
     fn into_runtime_error(self) -> RuntimeError {
-        RuntimeError::KernelError(KernelError::WasmRuntimeError(self))
+        RuntimeError::VmError(VmError::Wasm(self))
     }
 }
 

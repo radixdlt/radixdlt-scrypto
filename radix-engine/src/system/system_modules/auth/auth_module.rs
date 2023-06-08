@@ -101,7 +101,7 @@ impl AuthModule {
             if let Some(access_rule) = access_rule {
                 access_rule.clone()
             } else {
-                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                return Err(RuntimeError::NodeModuleError(NodeModuleError::AuthError(
                     AuthError::NoFunction(FnIdentifier {
                         blueprint: blueprint.clone(),
                         ident: FnIdent::Application(ident.to_string()),
@@ -224,7 +224,7 @@ impl AuthModule {
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                            return Err(RuntimeError::NodeModuleError(NodeModuleError::AuthError(
                                 AuthError::NoMethod(callee.fn_identifier()),
                             )));
                         }
@@ -275,7 +275,7 @@ impl AuthModule {
         match result {
             AuthorityListAuthorizationResult::Authorized => Ok(()),
             AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
-                Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                Err(RuntimeError::NodeModuleError(NodeModuleError::AuthError(
                     AuthError::Unauthorized(Box::new(Unauthorized {
                         failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
                         fn_identifier,
@@ -320,7 +320,7 @@ impl AuthModule {
                     match auth_result {
                         AuthorizationCheckResult::Authorized => {}
                         AuthorizationCheckResult::Failed(access_rule_stack) => {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                            return Err(RuntimeError::NodeModuleError(NodeModuleError::AuthError(
                                 AuthError::Unauthorized(Box::new(Unauthorized {
                                     failed_access_rules: FailedAccessRules::AccessRule(
                                         access_rule_stack,

@@ -1,4 +1,4 @@
-use radix_engine::errors::ModuleError;
+use radix_engine::errors::NodeModuleError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::{
     blueprints::transaction_processor::TransactionProcessorError,
@@ -91,7 +91,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::NodeModuleError(NodeModuleError::AuthError(AuthError::Unauthorized(..)))
         )
     })
 }

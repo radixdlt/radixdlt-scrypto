@@ -1,5 +1,5 @@
 use crate::blueprints::resource::ProofMoveableSubstate;
-use crate::errors::{ModuleError, RuntimeError};
+use crate::errors::{NodeModuleError, RuntimeError};
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
@@ -60,9 +60,11 @@ impl NodeMoveModule {
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.restricted {
-                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                            NodeMoveError::CantMoveDownstream(node_id),
-                        )));
+                        return Err(RuntimeError::NodeModuleError(
+                            NodeModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
+                                node_id,
+                            )),
+                        ));
                     }
 
                     proof.change_to_restricted();
@@ -80,9 +82,11 @@ impl NodeMoveModule {
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.restricted {
-                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                            NodeMoveError::CantMoveDownstream(node_id),
-                        )));
+                        return Err(RuntimeError::NodeModuleError(
+                            NodeModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
+                                node_id,
+                            )),
+                        ));
                     }
                     api.kernel_drop_lock(handle)?;
                 }
@@ -116,9 +120,11 @@ impl NodeMoveModule {
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.restricted {
-                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                            NodeMoveError::CantMoveDownstream(node_id),
-                        )));
+                        return Err(RuntimeError::NodeModuleError(
+                            NodeModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
+                                node_id,
+                            )),
+                        ));
                     }
 
                     proof.change_to_restricted();
@@ -136,9 +142,11 @@ impl NodeMoveModule {
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.restricted {
-                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                            NodeMoveError::CantMoveDownstream(node_id),
-                        )));
+                        return Err(RuntimeError::NodeModuleError(
+                            NodeModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
+                                node_id,
+                            )),
+                        ));
                     }
                     api.kernel_drop_lock(handle)?;
                 }

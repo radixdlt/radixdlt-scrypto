@@ -4,7 +4,7 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
-    InvalidModuleType, KernelError, RuntimeError,
+    InvalidModuleType, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -1164,8 +1164,8 @@ where
         }
 
         if !is_drop_allowed {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                     node_id: node_id.clone(),
                     package_address: info.blueprint.package_address,
                     blueprint_name: info.blueprint.blueprint_name,

@@ -1,4 +1,4 @@
-use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
+use radix_engine::errors::{NodeModuleError, RuntimeError, SystemError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -46,7 +46,7 @@ fn cannot_call_protected_function_without_auth() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::NodeModuleError(NodeModuleError::AuthError(AuthError::Unauthorized(..)))
         )
     });
 }
@@ -99,7 +99,10 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::NodeModuleError(NodeModuleError::AuthError(..))
+        )
     });
 }
 
@@ -119,7 +122,10 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::NodeModuleError(NodeModuleError::AuthError(..))
+        )
     });
 }
 
@@ -138,7 +144,10 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::NodeModuleError(NodeModuleError::AuthError(..))
+        )
     });
 }
 
@@ -184,7 +193,10 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::NodeModuleError(NodeModuleError::AuthError(..))
+        )
     });
 }
 
@@ -213,7 +225,10 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     receipt.expect_commit_success();
     let receipt = test_runner.borrow_funds();
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::NodeModuleError(NodeModuleError::AuthError(..))
+        )
     });
 }
 

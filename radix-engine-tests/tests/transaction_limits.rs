@@ -1,5 +1,5 @@
 use radix_engine::{
-    errors::{ModuleError, RejectionError, RuntimeError},
+    errors::{NodeModuleError, RejectionError, RuntimeError},
     system::system_modules::transaction_limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
@@ -34,7 +34,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
     // Assert, exceeded memory should be larger by 1 memory page than the limit
     let expected_mem = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME + WASM_MEMORY_PAGE_SIZE as usize;
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+        RuntimeError::NodeModuleError(NodeModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxWasmInstanceMemoryExceeded(x),
         )) => *x == expected_mem,
         _ => false,
@@ -80,7 +80,7 @@ fn transaction_limit_memory_exceeded() {
     assert!((DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / call_frame_mem + 1) < DEFAULT_MAX_CALL_DEPTH);
 
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+        RuntimeError::NodeModuleError(NodeModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxWasmMemoryExceeded(x),
         )) => *x == expected_mem,
         _ => false,
@@ -120,7 +120,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            RuntimeError::NodeModuleError(NodeModuleError::TransactionLimitsError(
                 TransactionLimitsError::MaxSubstateReadCountExceeded
             ))
         )
@@ -160,7 +160,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            RuntimeError::NodeModuleError(NodeModuleError::TransactionLimitsError(
                 TransactionLimitsError::MaxSubstateWriteCountExceeded
             ))
         )
@@ -198,8 +198,8 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
 
     // Assert
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-            ModuleError::TransactionLimitsError(
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::NodeModuleError(
+            NodeModuleError::TransactionLimitsError(
                 TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
             ),
         )) => *size > execution_config.max_substate_size,
@@ -239,7 +239,7 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+        RuntimeError::NodeModuleError(NodeModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxSubstateWriteSizeExceeded(x),
         )) => *x == SIZE as usize + 8, /* SBOR prefix */
         _ => false,
@@ -278,8 +278,8 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::NodeModuleError(
+                NodeModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxInvokePayloadSizeExceeded(_)
                 )
             ))

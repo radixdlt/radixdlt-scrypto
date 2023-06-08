@@ -1631,18 +1631,21 @@ impl StateHashSupport {
 }
 
 pub fn is_auth_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(_)))
+    matches!(
+        e,
+        RuntimeError::NodeModuleError(NodeModuleError::AuthError(_))
+    )
 }
 
 pub fn is_costing_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::ModuleError(ModuleError::CostingError(_)))
+    matches!(
+        e,
+        RuntimeError::NodeModuleError(NodeModuleError::CostingError(_))
+    )
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(
-        e,
-        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
-    )
+    matches!(e, RuntimeError::VmError(VmError::Wasm(..)))
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {

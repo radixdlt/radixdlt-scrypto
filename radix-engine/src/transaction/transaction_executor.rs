@@ -468,9 +468,9 @@ fn determine_result_type(
     // Do another `repay` try during finalization to remedy it.
     if let Err(err) = fee_reserve.repay_all() {
         if invoke_result.is_ok() {
-            invoke_result = Err(RuntimeError::ModuleError(ModuleError::CostingError(
-                CostingError::FeeReserveError(err),
-            )));
+            invoke_result = Err(RuntimeError::NodeModuleError(
+                NodeModuleError::CostingError(CostingError::FeeReserveError(err)),
+            ));
         }
     }
 

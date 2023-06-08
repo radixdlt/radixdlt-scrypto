@@ -1,7 +1,7 @@
 use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::ApplicationError;
-use radix_engine::errors::ModuleError;
+use radix_engine::errors::NodeModuleError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
@@ -1545,7 +1545,7 @@ type ErrorCheckFunction = fn(&RuntimeError) -> bool;
 fn is_auth_unauthorized_error(error: &RuntimeError) -> bool {
     matches!(
         error,
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+        RuntimeError::NodeModuleError(NodeModuleError::AuthError(AuthError::Unauthorized { .. }))
     )
 }
 
