@@ -81,11 +81,6 @@ impl TransactionProcessorNativePackage {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 TransactionProcessorBlueprint::run(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(

@@ -497,12 +497,6 @@ impl PoolNativePackage {
             ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let OneResourcePoolInstantiateInput {
                     resource_address,
                     pool_manager_rule,
@@ -585,12 +579,6 @@ impl PoolNativePackage {
 
             TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
 
                 let TwoResourcePoolInstantiateInput {
                     resource_addresses,
@@ -677,12 +665,6 @@ impl PoolNativePackage {
 
             MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
 
                 let MultiResourcePoolInstantiateInput {
                     resource_addresses,

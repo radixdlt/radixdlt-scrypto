@@ -483,11 +483,6 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 Self::create_global(input, api)
             }
             ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => {
