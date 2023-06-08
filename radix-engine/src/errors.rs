@@ -370,9 +370,9 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
-    //============================
-    // Generic errors
-    //============================
+    //===================
+    // General errors
+    //===================
     // TODO: this should never happen because of schema check?
     ExportDoesNotExist(String),
 
@@ -381,9 +381,16 @@ pub enum ApplicationError {
 
     Panic(String),
 
-    //============================
-    // Blueprint specific errors
-    //============================
+    //===================
+    // Node module errors
+    //===================
+    AccessRulesError(AccessRulesError),
+
+    MetadataError(MetadataPanicError),
+
+    //===================
+    // Blueprint errors
+    //===================
     TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),
@@ -395,8 +402,6 @@ pub enum ApplicationError {
     ResourceManagerError(FungibleResourceManagerError),
 
     NonFungibleResourceManagerError(NonFungibleResourceManagerError),
-
-    AccessRulesError(AccessRulesError),
 
     BucketError(BucketError),
 
@@ -413,8 +418,6 @@ pub enum ApplicationError {
     AccountError(AccountError),
 
     AccessControllerError(AccessControllerError),
-
-    MetadataError(MetadataPanicError),
 
     OneResourcePoolError(OneResourcePoolError),
 

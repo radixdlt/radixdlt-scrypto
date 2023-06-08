@@ -423,7 +423,7 @@ where
 
     fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
-            .panic( String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?)?;
+            .panic(String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?)?;
         Ok(())
     }
 

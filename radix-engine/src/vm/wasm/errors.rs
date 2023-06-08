@@ -92,41 +92,49 @@ pub enum WasmRuntimeError {
     /// WASM trap
     Trap(String),
 
-    //=================
-    // Scrypto Runtime
-    //=================
     /// Not implemented, no-op wasm runtime
     NotImplemented,
+
     /// Buffer not found
     BufferNotFound(BufferId),
+
     /// Invalid package address
     InvalidPackageAddress(DecodeError),
+
     InvalidBlueprintId(DecodeError),
+
     /// Invalid method ident
     InvalidString,
+
     /// Invalid RE node ID
     InvalidNodeId,
+
     InvalidGlobalAddressReservation,
+
     /// Invalid reference type
     InvalidReferenceType(u32),
+
     /// Invalid RE module ID
     InvalidModuleId(u32),
+
     /// Invalid initial app states
     InvalidObjectStates(DecodeError),
+
     /// Invalid access rules
     InvalidAccessRules(DecodeError),
+
     /// Invalid modules
     InvalidModules(DecodeError),
+
     InvalidKeyValueStoreSchema(DecodeError),
+
     /// Invalid component address
     InvalidLockFlags,
+
     /// Invalid log level
     InvalidLogLevel(DecodeError),
 
-    //=============
-    // No-op Runtime
-    //=============
-    /// Costing error
+    /// Costing error (no-op runtime only!)
     FeeReserveError(FeeReserveError),
 }
 

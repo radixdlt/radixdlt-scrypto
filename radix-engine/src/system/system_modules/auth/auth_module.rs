@@ -30,7 +30,6 @@ use transaction::model::AuthZoneParams;
 pub enum AuthError {
     NoFunction(FnIdentifier),
     NoMethod(FnIdentifier),
-    UsedReservedRole(String),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
