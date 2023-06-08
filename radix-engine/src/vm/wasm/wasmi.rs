@@ -983,6 +983,7 @@ impl WasmiModule {
         );
 
         let mut linker = <Linker<HostState>>::new();
+
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
@@ -1076,6 +1077,9 @@ impl WasmiModule {
             host_get_transaction_hash
         );
         linker_define!(linker, GENERATE_UUID_FUNCTION_NAME, host_generate_uuid);
+
+        let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);
+        linker_define!(linker, "test_global_mutable_value", global_value);
 
         linker.instantiate(store.as_context_mut(), &module)
     }
@@ -1304,4 +1308,50 @@ impl WasmEngine for WasmiEngine {
 
         instance
     }
+}
+
+#[cfg(feature = "radix_engine_tests")]
+pub fn run_module_with_mutable_global(
+    code: &[u8],
+    func_name: &str,
+    global_name: &str,
+    initial_value: i32,
+    step: i32,
+) -> i32 {
+    let engine = Engine::default();
+    let mut store = Store::new(&engine, WasmiInstanceEnv::new());
+
+    let module = Module::new(&engine, code).unwrap();
+
+    let mut linker = <Linker<HostState>>::new();
+
+    let global_value = Global::new(
+        store.as_context_mut(),
+        Value::I32(initial_value),
+        Mutability::Var,
+    );
+    linker_define!(linker, global_name, global_value);
+
+    let instance = linker
+        .instantiate(store.as_context_mut(), &module)
+        .unwrap()
+        .ensure_no_start(store.as_context_mut())
+        .unwrap();
+
+    let func = instance
+        .get_export(store.as_context_mut(), func_name)
+        .and_then(Extern::into_func)
+        .unwrap();
+
+    let input = [Value::I32(step)];
+    let mut ret = [Value::I32(0)];
+
+    let _ = func.call(store.as_context_mut(), &input, &mut ret);
+
+    let global = instance
+        .get_global(store.as_context_mut(), global_name)
+        .unwrap();
+
+    // return global value
+    i32::try_from(global.get(store.as_context())).unwrap()
 }

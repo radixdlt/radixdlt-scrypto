@@ -1,8 +1,11 @@
 use paste::paste;
 use radix_engine::types::*;
+#[cfg(not(feature = "wasmer"))]
+use radix_engine::vm::wasm::run_module_with_mutable_global;
 use radix_engine::vm::wasm::WasmModule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use wabt::{wat2wasm_with_features, ErrorKind, Features};
 
 // Verify WASM sign-extensions, which were enabled by default to the wasm32 target
 // since rust 1.70.0
@@ -62,4 +65,60 @@ fn test_wasm_non_mvp_expect_sign_ext_from_rust_code() {
     let (code, _) = Compile::compile("./tests/blueprints/wasm_non_mvp");
 
     assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops())
+}
+
+// Below tests verify WASM "mutable-global" feature, which allows importing/exporting mutable globals.
+// more details:
+// - https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md
+
+// NOTE!
+//  We test only WASM code, because Rust currently does not use the WASM "global" construct for globals
+//  (it places them into the linear memory instead).
+//  more details:
+//  - https://github.com/rust-lang/rust/issues/60825
+//  - https://github.com/rust-lang/rust/issues/65987
+#[test]
+fn test_wasm_non_mvp_mutable_globals_build_with_feature_disabled() {
+    let mut features = Features::new();
+    features.disable_mutable_globals();
+
+    assert!(
+        match wat2wasm_with_features(include_str!("./wasm/mutable_globals.wat"), features) {
+            Err(err) => {
+                match err.kind() {
+                    ErrorKind::Validate(msg) => {
+                        println!("err = {:?}", msg);
+                        msg.contains("mutable globals cannot be imported")
+                    }
+                    _ => false,
+                }
+            }
+            Ok(_) => false,
+        }
+    )
+}
+
+#[cfg(not(feature = "wasmer"))]
+#[test]
+fn test_wasm_non_mvp_mutable_globals_execute_code() {
+    // wat2wasm has "mutable-globals" enabled by default
+    let code = wat2wasm(include_str!("./wasm/mutable_globals.wat"));
+
+    let val = run_module_with_mutable_global(
+        &code,
+        "increase_global_value",
+        "global_mutable_value",
+        100,
+        1000,
+    );
+    assert_eq!(val, 1100);
+
+    let val = run_module_with_mutable_global(
+        &code,
+        "increase_global_value",
+        "global_mutable_value",
+        val,
+        10000,
+    );
+    assert_eq!(val, 11100);
 }
