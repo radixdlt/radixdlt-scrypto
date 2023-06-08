@@ -2363,8 +2363,8 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value(&ConsensusManagerCreateManifestInput {
-                validator_owner_token_address: ManifestOwn(0),
-                component_address: ManifestOwn(1),
+                validator_owner_token_address: ManifestReservation(0),
+                component_address: ManifestReservation(1),
                 initial_epoch: Epoch::of(1),
                 initial_config: CustomGenesis::default_consensus_manager_config(),
                 initial_time_ms: 120000i64,

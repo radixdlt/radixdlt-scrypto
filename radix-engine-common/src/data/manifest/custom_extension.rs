@@ -34,8 +34,14 @@ impl CustomExtension for ManifestCustomExtension {
             ManifestCustomValueKind::Proof => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Own))
             }
-            ManifestCustomValueKind::Own => {
+            ManifestCustomValueKind::Reservation => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Own))
+            }
+            ManifestCustomValueKind::AllocatedAddress => {
+                matches!(
+                    type_kind,
+                    TypeKind::Custom(ScryptoCustomTypeKind::Reference)
+                )
             }
             // An Expression can only be a Vec<Proof> or Vec<Manifest> at the moment
             // - in other words they're both a Vec<Own> at the TypeKind level

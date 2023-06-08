@@ -1,6 +1,6 @@
 use radix_engine_interface::{
     data::manifest::model::{ManifestBucket, ManifestProof},
-    prelude::ManifestOwn,
+    prelude::ManifestReservation,
 };
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
@@ -29,9 +29,9 @@ impl ManifestIdAllocator {
         ManifestProof(id)
     }
 
-    pub fn new_own_id(&mut self) -> ManifestOwn {
+    pub fn new_own_id(&mut self) -> ManifestReservation {
         let id = self.next_own_id;
         self.next_own_id += 1;
-        ManifestOwn(id)
+        ManifestReservation(id)
     }
 }

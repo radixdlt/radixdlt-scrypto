@@ -2,7 +2,7 @@ use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
-use radix_engine_common::data::manifest::model::ManifestOwn;
+use radix_engine_common::data::manifest::model::ManifestReservation;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
@@ -42,7 +42,7 @@ pub struct PackagePublishWasmAdvancedInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmAdvancedManifestInput {
-    pub package_address: Option<ManifestOwn>,
+    pub package_address: Option<ManifestReservation>,
     pub code: ManifestBlobRef,
     pub definition: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -63,7 +63,7 @@ pub struct PackagePublishNativeInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishNativeManifestInput {
-    pub package_address: Option<ManifestOwn>,
+    pub package_address: Option<ManifestReservation>,
     pub native_package_code_id: u8,
     pub definition: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,

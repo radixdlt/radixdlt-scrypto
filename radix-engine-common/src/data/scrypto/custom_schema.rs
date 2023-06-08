@@ -70,15 +70,29 @@ impl OwnValidation {
         }
     }
 
-    pub fn could_match_manifest_own(&self) -> bool {
+    pub fn could_match_manifest_reservation(&self) -> bool {
         match self {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => false,
             OwnValidation::IsVault => true,
-            OwnValidation::IsKeyValueStore => true,
+            OwnValidation::IsKeyValueStore => false,
             OwnValidation::IsGlobalAddressReservation => true,
             // Hard to validate without knowing package addresses from engine, assume fine
-            OwnValidation::IsTypedObject(_, _) => true,
+            OwnValidation::IsTypedObject(_, _) => false,
+        }
+    }
+}
+
+impl ReferenceValidation {
+    pub fn could_match_manifest_allocated_address(&self) -> bool {
+        match self {
+            ReferenceValidation::IsGlobal => true,
+            ReferenceValidation::IsGlobalPackage => true,
+            ReferenceValidation::IsGlobalComponent => true,
+            ReferenceValidation::IsGlobalResourceManager => true,
+            ReferenceValidation::IsGlobalTyped(_, _) => true,
+            ReferenceValidation::IsInternal => false,
+            ReferenceValidation::IsInternalTyped(_, _) => false,
         }
     }
 }

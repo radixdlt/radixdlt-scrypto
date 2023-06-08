@@ -97,7 +97,7 @@ fn static_component_should_be_callable() {
             package_address,
             blueprint_name: "Preallocated".to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(ManifestOwn(0), "my_secret".to_string()),
+            args: manifest_args!(ManifestReservation(0), "my_secret".to_string()),
         }],
         vec![(
             BlueprintId::new(&package_address, "Preallocated"),
@@ -151,7 +151,7 @@ fn static_resource_should_be_callable() {
                             metadata: btreemap!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
-                            resource_address: ManifestOwn(0),
+                            resource_address: ManifestReservation(0),
                         },
                     )
                     .unwrap(),

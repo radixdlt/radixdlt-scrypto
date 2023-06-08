@@ -151,7 +151,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                         if !own_validation.could_match_manifest_bucket() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
-                                    "Expected Own<{:?}>, but found bucket",
+                                    "Expected Own<{:?}>, but found manifest bucket",
                                     own_validation
                                 )),
                             ));
@@ -171,7 +171,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                         if !own_validation.could_match_manifest_proof() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
-                                    "Expected Own<{:?}>, but found proof",
+                                    "Expected Own<{:?}>, but found manifest proof",
                                     own_validation
                                 )),
                             ));
@@ -180,7 +180,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                     _ => return Err(PayloadValidationError::SchemaInconsistency),
                 };
             }
-            ManifestCustomValue::Own(_) => {
+            ManifestCustomValue::Reservation(_) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Own
                 let validation = schema
                     .resolve_type_validation(type_index)
@@ -188,11 +188,33 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 match validation {
                     TypeValidation::None => {}
                     TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
-                        if !own_validation.could_match_manifest_own() {
+                        if !own_validation.could_match_manifest_reservation() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
-                                    "Expected Own<{:?}>, but found owned",
+                                    "Expected Own<{:?}>, but found manifest reservation",
                                     own_validation
+                                )),
+                            ));
+                        }
+                    }
+                    _ => return Err(PayloadValidationError::SchemaInconsistency),
+                };
+            }
+            ManifestCustomValue::AllocatedAddress(_) => {
+                // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Reference
+                let validation = schema
+                    .resolve_type_validation(type_index)
+                    .ok_or(PayloadValidationError::SchemaInconsistency)?;
+                match validation {
+                    TypeValidation::None => {}
+                    TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                        reference_validation,
+                    )) => {
+                        if !reference_validation.could_match_manifest_allocated_address() {
+                            return Err(PayloadValidationError::ValidationError(
+                                ValidationError::CustomError(format!(
+                                    "Expected Reference<{:?}>, but found manifest allocated address",
+                                    reference_validation
                                 )),
                             ));
                         }

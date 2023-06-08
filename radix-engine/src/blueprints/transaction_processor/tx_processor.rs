@@ -401,7 +401,7 @@ impl TransactionProcessorBlueprint {
 struct TransactionProcessor {
     proof_id_mapping: IndexMap<ManifestProof, NodeId>,
     bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
-    own_id_mapping: NonIterMap<ManifestOwn, NodeId>,
+    own_id_mapping: NonIterMap<ManifestReservation, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
@@ -424,7 +424,7 @@ impl TransactionProcessor {
         processor
     }
 
-    fn take_own(&mut self, own_id: &ManifestOwn) -> Result<Own, RuntimeError> {
+    fn take_own(&mut self, own_id: &ManifestReservation) -> Result<Own, RuntimeError> {
         let real_id = self
             .own_id_mapping
             .remove(own_id)
@@ -507,7 +507,10 @@ impl TransactionProcessor {
         Ok(new_id)
     }
 
-    fn create_manifest_own(&mut self, node_id: NodeId) -> Result<ManifestOwn, RuntimeError> {
+    fn create_manifest_own(
+        &mut self,
+        node_id: NodeId,
+    ) -> Result<ManifestReservation, RuntimeError> {
         let new_id = self.id_allocator.new_own_id();
         self.own_id_mapping.insert(new_id, node_id);
         Ok(new_id)
@@ -621,8 +624,15 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         self.processor.take_proof(&p).map(|x| x.0)
     }
 
-    fn replace_own(&mut self, p: ManifestOwn) -> Result<Own, RuntimeError> {
+    fn replace_reservation(&mut self, p: ManifestReservation) -> Result<Own, RuntimeError> {
         self.processor.take_own(&p)
+    }
+
+    fn replace_allocated_address(
+        &mut self,
+        p: ManifestAllocatedAddress,
+    ) -> Result<Reference, RuntimeError> {
+        todo!()
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {

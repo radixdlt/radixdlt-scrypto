@@ -78,7 +78,7 @@ pub struct GenesisStakeAllocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisResource {
-    pub address_reservation: ManifestOwn,
+    pub address_reservation: ManifestReservation,
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
@@ -903,7 +903,7 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
         package_address: FAUCET_PACKAGE,
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
-        args: manifest_args!(ManifestOwn(0), bucket),
+        args: manifest_args!(ManifestReservation(0), bucket),
     });
 
     SystemTransactionV1 {

@@ -138,8 +138,18 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    fn replace_own(&mut self, _p: ManifestOwn) -> Result<Own, ManifestIdValidationError> {
+    fn replace_reservation(
+        &mut self,
+        _p: ManifestReservation,
+    ) -> Result<Own, ManifestIdValidationError> {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
+    }
+
+    fn replace_allocated_address(
+        &mut self,
+        p: ManifestAllocatedAddress,
+    ) -> Result<prelude::Reference, ManifestIdValidationError> {
+        todo!()
     }
 
     // TODO: validate expression and blob as well
