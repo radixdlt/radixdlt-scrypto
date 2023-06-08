@@ -344,14 +344,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance =
                 { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
@@ -375,14 +368,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else {
@@ -425,15 +411,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             };
 
             // Execute
-            let output = {
-                C::invoke(
-                    &blueprint.package_address,
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output =
+                { C::invoke(&blueprint.package_address, &export_name, args, &mut system)? };
 
             // Validate output
             match ident {

@@ -8,7 +8,6 @@ use crate::method_auth_template;
 use crate::system::system_callback::*;
 use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
-use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
@@ -486,7 +485,7 @@ impl PoolNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
+
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

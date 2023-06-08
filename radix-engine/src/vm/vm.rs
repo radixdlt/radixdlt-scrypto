@@ -17,7 +17,7 @@ pub struct Vm<'g, W: WasmEngine> {
 impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
     fn invoke<Y>(
         address: &PackageAddress,
-        receiver: Option<&NodeId>,
+
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -60,7 +60,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         let output = match code_type {
             PackageCodeTypeSubstate::Native => {
                 let mut vm_instance = { NativeVm::create_instance(address, &package_code.code)? };
-                let output = { vm_instance.invoke(receiver, &export_name, input, api)? };
+                let output = { vm_instance.invoke(&export_name, input, api)? };
 
                 output
             }
@@ -72,7 +72,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .create_instance(address, &package_code.code)
                 };
 
-                let output = { scrypto_vm_instance.invoke(receiver, &export_name, input, api)? };
+                let output = { scrypto_vm_instance.invoke(&export_name, input, api)? };
 
                 output
             }
@@ -86,7 +86,7 @@ pub trait VmInvoke {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api
     fn invoke<Y>(
         &mut self,
-        receiver: Option<&NodeId>,
+
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,

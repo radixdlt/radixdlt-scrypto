@@ -45,7 +45,7 @@ pub struct NativeVmInstance {
 impl VmInvoke for NativeVmInstance {
     fn invoke<Y>(
         &mut self,
-        receiver: Option<&NodeId>,
+
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -54,37 +54,27 @@ impl VmInvoke for NativeVmInstance {
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
         match self.native_package_code_id {
-            PACKAGE_CODE_ID => {
-                PackageNativePackage::invoke_export(export_name, receiver, input, api)
-            }
+            PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
             RESOURCE_MANAGER_CODE_ID => {
-                ResourceManagerNativePackage::invoke_export(export_name, receiver, input, api)
+                ResourceManagerNativePackage::invoke_export(export_name, input, api)
             }
             CONSENSUS_MANAGER_CODE_ID => {
-                ConsensusManagerNativePackage::invoke_export(export_name, receiver, input, api)
+                ConsensusManagerNativePackage::invoke_export(export_name, input, api)
             }
-            IDENTITY_CODE_ID => {
-                IdentityNativePackage::invoke_export(export_name, receiver, input, api)
-            }
-            ACCOUNT_CODE_ID => {
-                AccountNativePackage::invoke_export(export_name, receiver, input, api)
-            }
+            IDENTITY_CODE_ID => IdentityNativePackage::invoke_export(export_name, input, api),
+            ACCOUNT_CODE_ID => AccountNativePackage::invoke_export(export_name, input, api),
             ACCESS_CONTROLLER_CODE_ID => {
-                AccessControllerNativePackage::invoke_export(export_name, receiver, input, api)
+                AccessControllerNativePackage::invoke_export(export_name, input, api)
             }
             TRANSACTION_PROCESSOR_CODE_ID => {
-                TransactionProcessorNativePackage::invoke_export(export_name, receiver, input, api)
+                TransactionProcessorNativePackage::invoke_export(export_name, input, api)
             }
-            METADATA_CODE_ID => {
-                MetadataNativePackage::invoke_export(export_name, receiver, input, api)
-            }
-            ROYALTY_CODE_ID => {
-                RoyaltyNativePackage::invoke_export(export_name, receiver, input, api)
-            }
+            METADATA_CODE_ID => MetadataNativePackage::invoke_export(export_name, input, api),
+            ROYALTY_CODE_ID => RoyaltyNativePackage::invoke_export(export_name, input, api),
             ACCESS_RULES_CODE_ID => {
-                AccessRulesNativePackage::invoke_export(export_name, receiver, input, api)
+                AccessRulesNativePackage::invoke_export(export_name, input, api)
             }
-            POOL_ID => PoolNativePackage::invoke_export(export_name, receiver, input, api),
+            POOL_ID => PoolNativePackage::invoke_export(export_name, input, api),
             _ => {
                 return Err(RuntimeError::VmError(VmError::Native(
                     NativeRuntimeError::InvalidCodeId,
