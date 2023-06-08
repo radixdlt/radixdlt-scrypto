@@ -1207,7 +1207,7 @@ fn generate_schema(
                     if receiver.is_none() {
                         function_idents.push(m.sig.ident.clone());
                         fn_schemas.push(parse_quote! {
-                            ::scrypto::schema::FunctionSchema {
+                            ::scrypto::blueprints::package::FunctionSetup {
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
@@ -1217,7 +1217,7 @@ fn generate_schema(
                     } else {
                         method_idents.push(m.sig.ident.clone());
                         fn_schemas.push(parse_quote! {
-                            ::scrypto::schema::FunctionSchema {
+                            ::scrypto::blueprints::package::FunctionSetup {
                                 receiver: Option::Some(#receiver),
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
@@ -1442,7 +1442,7 @@ mod tests {
                         let mut functions = BTreeMap::new();
                         functions.insert(
                             "x".to_string(),
-                            ::scrypto::schema::FunctionSchema {
+                            ::scrypto::blueprints::package::FunctionSetup {
                                 receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
                                 input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
                                 output: aggregator.add_child_type_and_descendents::<u32>(),
@@ -1451,7 +1451,7 @@ mod tests {
                         );
                         functions.insert(
                             "y".to_string(),
-                            ::scrypto::schema::FunctionSchema {
+                            ::scrypto::blueprints::package::FunctionSetup {
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
                                 output: aggregator.add_child_type_and_descendents::<u32>(),

@@ -16,7 +16,9 @@ use crate::{
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::blueprints::package::{PACKAGE_ROYALTY_PARTITION_OFFSET, PackageRoyaltyAccumulatorSubstate};
+use radix_engine_interface::blueprints::package::{
+    PackageRoyaltyAccumulatorSubstate, PACKAGE_ROYALTY_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 
@@ -250,7 +252,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             let fn_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
             let handle = api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION.at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET).unwrap(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
+                    .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {

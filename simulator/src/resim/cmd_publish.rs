@@ -2,7 +2,9 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, PACKAGE_BLUEPRINTS_PARTITION_OFFSET};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -77,7 +79,9 @@ impl Publish {
 
             let blueprints_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
-                MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                    .unwrap(),
             );
             let mut blueprint_updates = index_map_new();
 

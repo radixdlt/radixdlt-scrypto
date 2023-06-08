@@ -17,11 +17,12 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::{BlueprintSetup, BlueprintTemplate, PackageSetup, VirtualLazyLoadExport};
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup, VirtualLazyLoadExport,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FeaturedSchema, ReceiverInfo};
-use radix_engine_interface::schema::{FunctionSchema};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
@@ -38,7 +39,7 @@ impl IdentityNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
@@ -47,7 +48,7 @@ impl IdentityNativePackage {
         );
         functions.insert(
             IDENTITY_CREATE_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
@@ -56,7 +57,7 @@ impl IdentityNativePackage {
         );
         functions.insert(
             IDENTITY_SECURIFY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),

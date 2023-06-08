@@ -1,3 +1,4 @@
+use crate::blueprints::package::VirtualLazyLoadExport;
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
@@ -9,8 +10,9 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::LocalTypeIndex;
-use scrypto_schema::{BlueprintSchema, FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
-use crate::blueprints::package::VirtualLazyLoadExport;
+use scrypto_schema::{
+    BlueprintSchema, ExportSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
+};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -101,12 +103,20 @@ pub struct PackageSetup {
     pub blueprints: BTreeMap<String, BlueprintSetup>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct FunctionSetup {
+    pub receiver: Option<ReceiverInfo>,
+    pub input: LocalTypeIndex,
+    pub output: LocalTypeIndex,
+    pub export: ExportSchema,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSetup {
     pub blueprint: BlueprintSchema,
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub function_auth: BTreeMap<String, AccessRule>,
-    pub functions: BTreeMap<String, FunctionSchema>,
+    pub functions: BTreeMap<String, FunctionSetup>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub royalty_config: RoyaltyConfig,
 
@@ -132,7 +142,6 @@ impl Default for BlueprintSetup {
         }
     }
 }
-
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintTemplate {

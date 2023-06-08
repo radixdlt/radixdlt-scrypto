@@ -6,10 +6,9 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
+    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema};
 use resources_tracker_macro::trace_resources;
 
@@ -27,7 +26,7 @@ impl TransactionProcessorNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<TransactionProcessorRunInput>(),
                 output: aggregator

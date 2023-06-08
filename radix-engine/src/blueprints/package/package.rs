@@ -1,5 +1,4 @@
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
-use sbor::LocalTypeIndex;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
@@ -20,9 +19,10 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema,
-    FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef,
+    FieldSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
+use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
@@ -153,7 +153,12 @@ where
             PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
             PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
         );
-        partitions.insert(MAIN_BASE_PARTITION.at_offset(PACKAGE_FIELDS_PARTITION_OFFSET).unwrap(), main_partition);
+        partitions.insert(
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_FIELDS_PARTITION_OFFSET)
+                .unwrap(),
+            main_partition,
+        );
     }
 
     {
@@ -172,7 +177,9 @@ where
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                .unwrap(),
             blueprints_partition,
         );
     };
@@ -193,7 +200,9 @@ where
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET).unwrap(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET)
+                .unwrap(),
             blueprint_events_partition,
         );
     };
@@ -214,7 +223,9 @@ where
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION.at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET).unwrap(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
+                .unwrap(),
             fn_royalty_partition,
         );
     };
@@ -235,7 +246,9 @@ where
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION.at_offset(PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET).unwrap(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET)
+                .unwrap(),
             function_access_rules_partition,
         );
     }
@@ -380,7 +393,9 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<(String, String)>()),
+                key: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<(String, String)>(),
+                ),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<LocalTypeIndex>(),
                 ),
@@ -409,7 +424,7 @@ impl PackageNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
@@ -418,7 +433,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
@@ -429,7 +444,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
@@ -438,7 +453,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_SET_ROYALTY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyOutput>(),
@@ -447,7 +462,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSetup {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
@@ -633,7 +648,6 @@ impl PackageNativePackage {
                 blueprints.insert(blueprint.clone(), definition);
             }
 
-
             (access_rules, blueprints, blueprint_events)
         };
 
@@ -717,13 +731,13 @@ impl PackageNativePackage {
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSetup {
-            blueprint: BlueprintSchema
-            {
-                collections,
-                outer_blueprint: parent,
-                features,
-                ..
-            },
+            blueprint:
+                BlueprintSchema {
+                    collections,
+                    outer_blueprint: parent,
+                    features,
+                    ..
+                },
             virtual_lazy_load_functions,
             functions,
             ..

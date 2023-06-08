@@ -1,4 +1,4 @@
-use crate::blueprints::package::BlueprintTemplate;
+use crate::blueprints::package::{BlueprintTemplate, FunctionSetup};
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -26,7 +26,6 @@ pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset
 pub const PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
 pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-
 
 pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
 
@@ -67,14 +66,14 @@ pub struct VirtualLazyLoadExport {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinition {
     pub blueprint: IndexedBlueprintSchema,
-    pub functions: BTreeMap<String, FunctionSchema>,
+    pub functions: BTreeMap<String, FunctionSetup>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub template: BlueprintTemplate,
     pub schema: ScryptoSchema,
 }
 
 impl BlueprintDefinition {
-    pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
+    pub fn find_function(&self, ident: &str) -> Option<FunctionSetup> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {
                 return Some(x.clone());
@@ -83,7 +82,7 @@ impl BlueprintDefinition {
         None
     }
 
-    pub fn find_method(&self, ident: &str) -> Option<FunctionSchema> {
+    pub fn find_method(&self, ident: &str) -> Option<FunctionSetup> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_some() {
                 return Some(x.clone());
@@ -168,9 +167,7 @@ impl IndexedBlueprintSchema {
         }
 
         match self.collections.swap_remove(index) {
-            (offset, BlueprintCollectionSchema::KeyValueStore(schema)) => {
-                Some((offset, schema))
-            }
+            (offset, BlueprintCollectionSchema::KeyValueStore(schema)) => Some((offset, schema)),
             _ => None,
         }
     }
@@ -198,7 +195,6 @@ impl IndexedBlueprintSchema {
             _ => None,
         }
     }
-
 
     pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
         for (_, partition) in &self.collections {

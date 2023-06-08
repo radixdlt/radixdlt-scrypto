@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
+    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
 };
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::rule;
@@ -43,7 +43,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
@@ -55,7 +55,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
@@ -67,7 +67,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
@@ -79,7 +79,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
@@ -91,7 +91,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
@@ -105,7 +105,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>(),
@@ -120,7 +120,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
@@ -141,14 +141,13 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            let blueprint =
-                BlueprintSchema {
-                    outer_blueprint: None,
-                    fields,
-                    collections,
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
-                };
+            let blueprint = BlueprintSchema {
+                outer_blueprint: None,
+                fields,
+                collections,
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
 
             BlueprintSetup {
                 schema,
@@ -200,7 +199,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
@@ -212,7 +211,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
@@ -224,7 +223,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
@@ -236,7 +235,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
@@ -248,7 +247,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
@@ -262,7 +261,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueInput>(),
@@ -277,7 +276,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
@@ -298,13 +297,13 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-                let blueprint = BlueprintSchema {
-                    outer_blueprint: None,
-                    fields,
-                    collections,
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
-                };
+            let blueprint = BlueprintSchema {
+                outer_blueprint: None,
+                fields,
+                collections,
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
 
             BlueprintSetup {
                 schema,
@@ -355,7 +354,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
@@ -367,7 +366,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
@@ -379,7 +378,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
@@ -391,7 +390,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>(),
@@ -406,7 +405,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawInput>(
@@ -422,7 +421,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueInput>(
@@ -436,7 +435,7 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>(),
@@ -459,14 +458,13 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            let blueprint =
-                BlueprintSchema {
-                    outer_blueprint: None,
-                    fields,
-                    collections,
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
-                };
+            let blueprint = BlueprintSchema {
+                outer_blueprint: None,
+                fields,
+                collections,
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
 
             BlueprintSetup {
                 schema,

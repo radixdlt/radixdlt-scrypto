@@ -304,8 +304,13 @@ where
     ) -> Result<Option<LocalTypeIndex>, RuntimeError> {
         let handle = self.api.kernel_lock_substate_with_default(
             blueprint.package_address.as_node_id(),
-            MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET).unwrap(),
-            &SubstateKey::Map(scrypto_encode(&(blueprint.blueprint_name.to_string(), event_name.to_string())).unwrap()),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(
+                scrypto_encode(&(blueprint.blueprint_name.to_string(), event_name.to_string()))
+                    .unwrap(),
+            ),
             LockFlags::read_only(),
             Some(|| {
                 let wrapper = SubstateWrapper {
@@ -339,7 +344,9 @@ where
         } else {
             let handle = self.api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                    .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
@@ -409,7 +416,10 @@ where
                 validate_schema(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
             }
-            if !blueprint_definition.blueprint.validate_instance_schema(instance_schema) {
+            if !blueprint_definition
+                .blueprint
+                .validate_instance_schema(instance_schema)
+            {
                 return Err(RuntimeError::SystemError(
                     SystemError::InvalidInstanceSchema,
                 ));
@@ -473,8 +483,11 @@ where
 
         // Collections
         {
-            for (index, (offset, blueprint_partition_schema)) in
-                blueprint_definition.blueprint.collections.iter().enumerate()
+            for (index, (offset, blueprint_partition_schema)) in blueprint_definition
+                .blueprint
+                .collections
+                .iter()
+                .enumerate()
             {
                 let index = index as u8;
                 let mut partition = BTreeMap::new();
@@ -619,14 +632,16 @@ where
         ),
         RuntimeError,
     > {
-        let (node_id, base_partition, info, definition) = self.get_actor_schema(actor_object_type)?;
+        let (node_id, base_partition, info, definition) =
+            self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, field_schema) = definition.blueprint.field(field_index).ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                info.blueprint.clone(),
-                field_index,
-            ))
-        })?;
+        let (partition_offset, field_schema) =
+            definition.blueprint.field(field_index).ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                    info.blueprint.clone(),
+                    field_index,
+                ))
+            })?;
 
         let type_index = match field_schema {
             FieldSchema::Normal { value } => value,
@@ -663,7 +678,8 @@ where
         ),
         RuntimeError,
     > {
-        let (node_id, base_partition, info, definition) = self.get_actor_schema(actor_object_type)?;
+        let (node_id, base_partition, info, definition) =
+            self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, kv_schema) = definition
             .blueprint
@@ -690,12 +706,15 @@ where
         let (node_id, base_partition, object_info, definition) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, _) = definition.blueprint.index_partition(collection_index).ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                object_info.blueprint,
-                collection_index,
-            ))
-        })?;
+        let (partition_offset, _) = definition
+            .blueprint
+            .index_partition(collection_index)
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    object_info.blueprint,
+                    collection_index,
+                ))
+            })?;
 
         let partition_num = base_partition
             .at_offset(partition_offset)
@@ -712,16 +731,15 @@ where
         let (node_id, base_partition, object_info, definition) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, _) =
-            definition
-                .blueprint
-                .sorted_index_partition(collection_index)
-                .ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
-                        object_info.blueprint,
-                        collection_index,
-                    ))
-                })?;
+        let (partition_offset, _) = definition
+            .blueprint
+            .sorted_index_partition(collection_index)
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
+                    object_info.blueprint,
+                    collection_index,
+                ))
+            })?;
 
         let partition_num = base_partition
             .at_offset(partition_offset)
@@ -2197,20 +2215,18 @@ where
 
             let type_index = self.get_event(&blueprint_id, event_name.as_str())?;
 
-
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
-            let local_type_index =
-                if let Some(index) = type_index {
-                    index
-                } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
-                            blueprint: blueprint_id.clone(),
-                            event_name,
-                        })),
-                    ));
-                };
+            let local_type_index = if let Some(index) = type_index {
+                index
+            } else {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
+                        blueprint: blueprint_id.clone(),
+                        event_name,
+                    })),
+                ));
+            };
 
             (blueprint_id, local_type_index)
         };

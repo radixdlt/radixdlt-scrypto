@@ -3,13 +3,13 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
+use radix_engine_interface::blueprints::package::BlueprintSetup;
 use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema};
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
 };
 use wasmi_validation::{validate_module, PlainValidator};
-use radix_engine_interface::blueprints::package::BlueprintSetup;
 
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
@@ -1085,9 +1085,8 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::schema::{
-        BlueprintSchema, ExportSchema, FieldSchema, FunctionSchema,
-    };
+    use radix_engine_interface::blueprints::package::FunctionSetup;
+    use radix_engine_interface::schema::{BlueprintSchema, ExportSchema, FieldSchema};
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
@@ -1258,7 +1257,7 @@ mod tests {
                 event_schema: Default::default(),
                 function_auth: Default::default(),
                 functions: btreemap!(
-                    "f".to_string() => FunctionSchema {
+                    "f".to_string() => FunctionSetup {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(UNIT_ID),
@@ -1273,7 +1272,7 @@ mod tests {
                     type_validations: vec![],
                 },
                 template: Default::default(),
-            }
+            },
         );
 
         assert_invalid_wasm!(

@@ -29,15 +29,17 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintSetup, BlueprintTemplate, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintSetup, BlueprintTemplate, FunctionSetup,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
+    PACKAGE_BLUEPRINT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{
-    BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema,
-};
+use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -1568,13 +1570,15 @@ impl TestRunner {
             self.substate_db()
                 .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<BlueprintDefinition>>>(
                     package_address.as_node_id(),
-                    MAIN_BASE_PARTITION.at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET).unwrap(),
+                    MAIN_BASE_PARTITION
+                        .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                        .unwrap(),
                     &SubstateKey::Map(scrypto_encode(&blueprint_name).unwrap()),
                 )
                 .unwrap()
                 .value
                 .unwrap()
-                .schema
+                .schema,
         )
     }
 
@@ -1740,13 +1744,13 @@ pub fn single_function_package_definition(
             },
             virtual_lazy_load_functions: btreemap!(),
             functions: btreemap!(
-                function_name.to_string() => FunctionSchema {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: FeaturedSchema::normal(format!("{}_{}", blueprint_name, function_name)),
-                    }
-                ),
+            function_name.to_string() => FunctionSetup {
+                    receiver: Option::None,
+                    input: LocalTypeIndex::WellKnown(ANY_ID),
+                    output: LocalTypeIndex::WellKnown(ANY_ID),
+                    export: FeaturedSchema::normal(format!("{}_{}", blueprint_name, function_name)),
+                }
+            ),
         },
     );
     PackageSetup { blueprints }

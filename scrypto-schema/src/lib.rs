@@ -140,15 +140,6 @@ impl<V> FeaturedSchema<V> {
 pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;
 pub type ExportSchema = FeaturedSchema<String>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct FunctionSchema {
-    pub receiver: Option<ReceiverInfo>,
-    pub input: LocalTypeIndex,
-    pub output: LocalTypeIndex,
-    pub export: ExportSchema,
-}
-
-
 bitflags! {
     #[derive(Sbor)]
     pub struct RefTypes: u32 {

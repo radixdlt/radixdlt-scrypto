@@ -3,11 +3,9 @@ use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
+    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
 };
-use radix_engine_interface::schema::{
-    BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema,
-};
+use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -168,13 +166,13 @@ fn test_basic_package_missing_export() {
             },
             virtual_lazy_load_functions: btreemap!(),
             functions: btreemap!(
-                    "f".to_string() => FunctionSchema {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: FeaturedSchema::normal("not_exist"),
-                    }
-                ),
+                "f".to_string() => FunctionSetup {
+                    receiver: Option::None,
+                    input: LocalTypeIndex::WellKnown(ANY_ID),
+                    output: LocalTypeIndex::WellKnown(ANY_ID),
+                    export: FeaturedSchema::normal("not_exist"),
+                }
+            ),
         },
     );
     // Act

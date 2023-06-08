@@ -10,11 +10,13 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintSetup, BlueprintTemplate, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FeaturedSchema,
-    FieldSchema, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
+    FieldSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -60,16 +62,18 @@ impl ConsensusManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: None,
-                    input: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
                     export: FeaturedSchema::normal(CONSENSUS_MANAGER_CREATE_IDENT),
                 },
             );
             functions.insert(
                 CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>(),
@@ -80,16 +84,18 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_START_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerStartInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
                     export: FeaturedSchema::normal(CONSENSUS_MANAGER_START_IDENT),
                 },
             );
             functions.insert(
                 CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
@@ -100,18 +106,20 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(),
+                        .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(
+                        ),
                     output: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(),
+                        .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(
+                        ),
                     export: FeaturedSchema::normal(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT),
                 },
             );
             functions.insert(
                 CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
@@ -122,7 +130,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>(),
@@ -190,7 +198,7 @@ impl ConsensusManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 VALIDATOR_REGISTER_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
@@ -199,16 +207,17 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UNREGISTER_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
                     export: FeaturedSchema::normal(VALIDATOR_UNREGISTER_IDENT),
                 },
             );
             functions.insert(
                 VALIDATOR_STAKE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
@@ -217,7 +226,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UNSTAKE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
@@ -226,7 +235,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_CLAIM_XRD_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
@@ -235,7 +244,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UPDATE_KEY_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
@@ -244,7 +253,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UPDATE_FEE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
@@ -253,7 +262,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>(),
@@ -264,7 +273,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
@@ -275,7 +284,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>(),
@@ -286,7 +295,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>(),
@@ -297,10 +306,12 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSetup {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
                     export: FeaturedSchema::normal(VALIDATOR_APPLY_EMISSION_IDENT),
                 },
             );
@@ -336,23 +347,23 @@ impl ConsensusManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
                     method_auth_template: method_auth_template! {
-                            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
 
-                            SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
-                            SchemaMethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => SchemaMethodPermission::Public;
-                            SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
-                            SchemaMethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
-                        },
+                        SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+                    },
                     outer_method_auth_template: btreemap!(),
                 },
                 virtual_lazy_load_functions: btreemap!(),
