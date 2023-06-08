@@ -638,8 +638,20 @@ impl PackageNativePackage {
                     blueprint_events.insert((blueprint.clone(), ident), type_index);
                 }
 
+                let mut functions = BTreeMap::new();
+                let mut function_exports = BTreeMap::new();
+                for (function, setup) in setup.functions {
+                    functions.insert(function.clone(), FunctionSchema {
+                        receiver: setup.receiver,
+                        input: setup.input,
+                        output: setup.output,
+                    });
+                    function_exports.insert(function, setup.export);
+                }
+
                 let definition = BlueprintDefinition {
-                    functions: setup.functions,
+                    functions,
+                    function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     blueprint: setup.blueprint.into(),
@@ -811,8 +823,20 @@ impl PackageNativePackage {
                     blueprint_events.insert((blueprint.clone(), ident), type_index);
                 }
 
+                let mut functions = BTreeMap::new();
+                let mut function_exports = BTreeMap::new();
+                for (function, setup) in setup.functions {
+                    functions.insert(function.clone(), FunctionSchema {
+                        receiver: setup.receiver,
+                        input: setup.input,
+                        output: setup.output,
+                    });
+                    function_exports.insert(function, setup.export);
+                }
+
                 let definition = BlueprintDefinition {
-                    functions: setup.functions,
+                    functions,
+                    function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     blueprint: setup.blueprint.into(),

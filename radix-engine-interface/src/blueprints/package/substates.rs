@@ -5,6 +5,7 @@ use crate::types::*;
 use crate::*;
 use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::api::CollectionIndex;
+use sbor::LocalTypeIndex;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
@@ -63,17 +64,28 @@ pub struct VirtualLazyLoadExport {
     pub export_name: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct FunctionSchema {
+    pub receiver: Option<ReceiverInfo>,
+    pub input: LocalTypeIndex,
+    pub output: LocalTypeIndex,
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintDefinition {
     pub blueprint: IndexedBlueprintSchema,
-    pub functions: BTreeMap<String, FunctionSetup>,
+    pub functions: BTreeMap<String, FunctionSchema>,
+
+    pub function_exports: BTreeMap<String, ExportSchema>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
+
     pub template: BlueprintTemplate,
     pub schema: ScryptoSchema,
 }
 
 impl BlueprintDefinition {
-    pub fn find_function(&self, ident: &str) -> Option<FunctionSetup> {
+    pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {
                 return Some(x.clone());
@@ -82,7 +94,7 @@ impl BlueprintDefinition {
         None
     }
 
-    pub fn find_method(&self, ident: &str) -> Option<FunctionSetup> {
+    pub fn find_method(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_some() {
                 return Some(x.clone());

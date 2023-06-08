@@ -69,7 +69,15 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    let export_name = match &function_schema.export {
+    let export_schema =
+        blueprint_definition
+            .function_exports
+            .get(fn_ident)
+            .ok_or(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
+            ))?;
+
+    let export_name = match export_schema {
         FeaturedSchema::Normal { value: export_name } => export_name.clone(),
         FeaturedSchema::Conditional {
             feature: cfg,

@@ -2,9 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -86,8 +84,20 @@ impl Publish {
             let mut blueprint_updates = index_map_new();
 
             for (b, s) in package_definition.blueprints {
+                let mut functions = BTreeMap::new();
+                let mut function_exports = BTreeMap::new();
+                for (function, setup) in s.functions {
+                    functions.insert(function.clone(), FunctionSchema {
+                        receiver: setup.receiver,
+                        input: setup.input,
+                        output: setup.output,
+                    });
+                    function_exports.insert(function, setup.export);
+                }
+
                 let def = BlueprintDefinition {
-                    functions: s.functions,
+                    functions,
+                    function_exports,
                     virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                     schema: s.schema,
                     blueprint: s.blueprint.into(),
