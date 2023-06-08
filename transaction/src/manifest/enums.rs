@@ -176,7 +176,7 @@ lazy_static! {
                 Usd = 2;
             }
         );
-        
+
         known_enum!(
             m,
             enum OwnerRole {
