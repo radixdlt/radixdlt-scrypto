@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition};
+use radix_engine_interface::blueprints::package::BlueprintDefinition;
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -75,8 +75,10 @@ impl Publish {
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Code.into());
             let package_code = PackageCodeSubstate { code };
 
-            let blueprints_partition_key =
-                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap());
+            let blueprints_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+            );
             let mut blueprint_updates = index_map_new();
 
             for (b, s) in package_definition.blueprints {

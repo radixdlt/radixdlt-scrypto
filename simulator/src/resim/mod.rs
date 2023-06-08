@@ -58,6 +58,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::SubstateWrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -71,9 +72,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, IndexedBlueprintSchema, PackageInfoSubstate,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, IndexedBlueprintSchema};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
@@ -335,15 +334,23 @@ pub fn export_package_schema(
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
-    let package_info = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
+    let entries = substate_db
+        .list_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<BlueprintDefinition>>, MapKey>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &PackageField::Info.into(),
-        )
-        .ok_or(Error::PackageNotFound(package_address))?;
+            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+        );
 
-    Ok(package_info.blueprints)
+    let mut blueprints = BTreeMap::new();
+    for (key, blueprint_definition) in entries {
+        let blueprint: String = match key {
+            SubstateKey::Map(v) => scrypto_decode(&v).unwrap(),
+            _ => panic!("Unexpected"),
+        };
+
+        blueprints.insert(blueprint, blueprint_definition.value.unwrap());
+    }
+
+    Ok(blueprints)
 }
 
 pub fn export_blueprint_schema(
@@ -428,24 +435,20 @@ pub fn get_event_schema<S: SubstateDatabase>(
         ),
     };
 
-    let package_info = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
+    let schema = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<BlueprintDefinition>>>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &PackageField::Info.into(),
+            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+            &SubstateKey::Map(scrypto_encode(&blueprint_name).unwrap()),
         )
-        .unwrap();
+        .unwrap()
+        .value
+        .unwrap()
+        .schema
+        .schema
+        .clone();
 
-    Some((
-        local_type_index,
-        package_info
-            .blueprints
-            .get(&blueprint_name)
-            .unwrap()
-            .schema
-            .schema
-            .clone(),
-    ))
+    Some((local_type_index, schema))
 }
 
 pub fn db_upsert_timestamps(

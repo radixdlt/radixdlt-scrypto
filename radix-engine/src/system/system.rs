@@ -330,9 +330,7 @@ where
             self.api.kernel_drop_lock(handle)?;
 
             let definition = substate.value.ok_or_else(|| {
-                RuntimeError::SystemError(
-                    SystemError::BlueprintDoesNotExist(blueprint.clone()),
-                )
+                RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint.clone()))
             })?;
 
             self.api
