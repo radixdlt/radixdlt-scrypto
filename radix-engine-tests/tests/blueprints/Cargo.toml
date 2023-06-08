@@ -47,7 +47,8 @@ members = [
     "transaction_runtime",
     "events",
     "events_invalid",
-    "logger"
+    "logger",
+    "wasm_non_mvp"
 ]
 
 [profile.release]

@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-radix-engine = { path = "../radix-engine", default-features = false, features = ["moka"] }
+radix-engine = { path = "../radix-engine", default-features = false, features = ["moka", "radix_engine_tests"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
