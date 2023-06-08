@@ -133,7 +133,7 @@ impl ResourceManagerNativePackage {
     pub fn definition() -> PackageSetup {
         //====================================================================================
 
-        let fungible_resource_manager_schema = {
+        let (fungible_resource_manager_blueprint, fungible_resource_manager_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -283,22 +283,24 @@ impl ResourceManagerNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: None,
+            (
+                BlueprintSchema {
+                    outer_blueprint: None,
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema,
+                    dependencies: btreeset!(),
+                    features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
+                },
                 schema,
-                fields,
-                collections: vec![],
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema,
-                dependencies: btreeset!(),
-                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
-            }
+            )
         };
 
         //====================================================================================
 
-        let non_fungible_resource_manager_schema = {
+        let (non_fungible_resource_manager_blueprint, non_fungible_resource_manager_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -540,22 +542,24 @@ impl ResourceManagerNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: None,
+            (
+                BlueprintSchema {
+                    outer_blueprint: None,
+                    fields,
+                    collections,
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema,
+                    dependencies: btreeset!(),
+                    features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
+                },
                 schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema,
-                dependencies: btreeset!(),
-                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
-            }
+            )
         };
 
         //====================================================================================
 
-        let fungible_vault_schema = {
+        let (fungible_vault_blueprint, fungible_vault_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
             fields.push(FieldSchema::normal(
@@ -697,22 +701,24 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            BlueprintSchema {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+            (
+                BlueprintSchema {
+                    outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema,
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections: vec![],
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema,
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
         //====================================================================================
 
-        let non_fungible_vault_schema = {
+        let (non_fungible_vault_blueprint, non_fungible_vault_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
             fields.push(FieldSchema::normal(
@@ -901,22 +907,24 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            BlueprintSchema {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+            (
+                BlueprintSchema {
+                    outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                    fields,
+                    collections,
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema,
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema,
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
         //====================================================================================
 
-        let fungible_bucket_schema = {
+        let (fungible_bucket_blueprint, fungible_bucket_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1025,22 +1033,24 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+            (
+                BlueprintSchema {
+                    outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema: [].into(),
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections: vec![],
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
         //====================================================================================
 
-        let non_fungible_bucket_schema = {
+        let (non_fungible_bucket_blueprint, non_fungible_bucket_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1190,20 +1200,22 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+            (
+                BlueprintSchema {
+                    outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema: [].into(),
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections: vec![],
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
-        let fungible_proof_schema = {
+        let (fungible_proof_blueprint, fungible_proof_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1255,20 +1267,22 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
-                schema,
-                fields,
-                collections: vec![],
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            (
+                BlueprintSchema {
+                    outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema: [].into(),
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
+                schema
+            )
         };
 
-        let non_fungible_proof_schema = {
+        let (non_fungible_proof_blueprint, non_fungible_proof_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1334,17 +1348,19 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+            (
+                BlueprintSchema {
+                    outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                    fields,
+                    collections: vec![],
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                    event_schema: [].into(),
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections: vec![],
-                functions,
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -1441,10 +1457,9 @@ impl ResourceManagerNativePackage {
                 export: FeaturedSchema::normal(WORKTOP_DRAIN_IDENT),
             },
         );
-        let schema = generate_full_schema(aggregator);
-        let worktop_schema = BlueprintSchema {
+        let worktop_schema = generate_full_schema(aggregator);
+        let worktop_blueprint = BlueprintSchema {
             outer_blueprint: None,
-            schema,
             fields,
             collections: vec![],
             functions,
@@ -1560,10 +1575,9 @@ impl ResourceManagerNativePackage {
             },
         );
 
-        let schema = generate_full_schema(aggregator);
-        let auth_zone_schema = BlueprintSchema {
+        let auth_zone_schema = generate_full_schema(aggregator);
+        let auth_zone_blueprint = BlueprintSchema {
             outer_blueprint: None,
-            schema,
             fields,
             collections: vec![],
             functions,
@@ -1576,6 +1590,7 @@ impl ResourceManagerNativePackage {
         let blueprints = btreemap!(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_resource_manager_schema,
+                blueprint: fungible_resource_manager_blueprint,
                 function_auth: btreemap!(
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
@@ -1601,6 +1616,7 @@ impl ResourceManagerNativePackage {
             },
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_resource_manager_schema,
+                blueprint: non_fungible_resource_manager_blueprint,
                 function_auth: btreemap!(
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
@@ -1632,6 +1648,7 @@ impl ResourceManagerNativePackage {
             },
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_vault_schema,
+                blueprint: fungible_vault_blueprint,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
@@ -1668,6 +1685,7 @@ impl ResourceManagerNativePackage {
             },
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_vault_schema,
+                blueprint: non_fungible_vault_blueprint,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
@@ -1710,6 +1728,7 @@ impl ResourceManagerNativePackage {
             },
             FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_bucket_schema,
+                blueprint: fungible_bucket_blueprint,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
@@ -1730,6 +1749,7 @@ impl ResourceManagerNativePackage {
             },
             NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_bucket_schema,
+                blueprint: non_fungible_bucket_blueprint,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
@@ -1752,6 +1772,7 @@ impl ResourceManagerNativePackage {
             },
             FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_proof_schema,
+                blueprint: fungible_proof_blueprint,
                 function_auth: btreemap!(
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -1768,6 +1789,7 @@ impl ResourceManagerNativePackage {
             },
             NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_proof_schema,
+                blueprint: non_fungible_proof_blueprint,
                 function_auth: btreemap!(
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -1785,6 +1807,7 @@ impl ResourceManagerNativePackage {
             },
             WORKTOP_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: worktop_schema,
+                blueprint: worktop_blueprint,
                 function_auth: btreemap!(
                     WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -1796,6 +1819,7 @@ impl ResourceManagerNativePackage {
             },
             AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: auth_zone_schema,
+                blueprint: auth_zone_blueprint,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {

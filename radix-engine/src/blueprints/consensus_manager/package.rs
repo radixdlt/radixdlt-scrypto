@@ -141,10 +141,9 @@ impl ConsensusManagerNativePackage {
             ]
         };
 
-        let schema = generate_full_schema(aggregator);
-        let consensus_manager_schema = BlueprintSchema {
+        let consensus_manager_schema = generate_full_schema(aggregator);
+        let consensus_manager_blueprint = BlueprintSchema {
             outer_blueprint: None,
-            schema,
             fields,
             collections,
             functions,
@@ -297,11 +296,10 @@ impl ConsensusManagerNativePackage {
             ]
         };
 
-        let schema = generate_full_schema(aggregator);
+        let validator_schema = generate_full_schema(aggregator);
 
-        let validator_schema = BlueprintSchema {
+        let validator_blueprint = BlueprintSchema {
             outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
-            schema,
             fields,
             collections: vec![],
             functions,
@@ -314,6 +312,7 @@ impl ConsensusManagerNativePackage {
         let blueprints = btreemap!(
             CONSENSUS_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: consensus_manager_schema,
+                blueprint: consensus_manager_blueprint,
                 function_auth: btreemap!(
                     CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                 ),
@@ -333,6 +332,7 @@ impl ConsensusManagerNativePackage {
             },
             VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: validator_schema,
+                blueprint: validator_blueprint,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {

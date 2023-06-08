@@ -442,9 +442,9 @@ impl AccessControllerNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: BlueprintSchema {
+                schema,
+                blueprint: BlueprintSchema {
                     outer_blueprint: None,
-                    schema,
                     fields,
                     collections: vec![],
                     functions,

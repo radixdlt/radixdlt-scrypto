@@ -83,7 +83,8 @@ impl Publish {
 
             for (b, s) in package_definition.blueprints {
                 let def = BlueprintDefinition {
-                    schema: s.schema.into(),
+                    schema: s.schema,
+                    blueprint: s.blueprint.into(),
                     template: s.template,
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());

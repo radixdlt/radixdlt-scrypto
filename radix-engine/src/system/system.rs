@@ -363,12 +363,12 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_schema = self.get_blueprint_definition(blueprint)?.schema;
+        let blueprint_definition = self.get_blueprint_definition(blueprint)?;
 
         // Validate features
         {
             for feature in features {
-                if !blueprint_schema.features.contains(feature) {
+                if !blueprint_definition.blueprint.features.contains(feature) {
                     return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
                         feature.to_string(),
                     )));
@@ -382,7 +382,7 @@ where
                 validate_schema(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
             }
-            if !blueprint_schema.validate_instance_schema(instance_schema) {
+            if !blueprint_definition.blueprint.validate_instance_schema(instance_schema) {
                 return Err(RuntimeError::SystemError(
                     SystemError::InvalidInstanceSchema,
                 ));
@@ -393,7 +393,7 @@ where
 
         // Fields
         {
-            let expected_num_fields = blueprint_schema.num_fields();
+            let expected_num_fields = blueprint_definition.blueprint.num_fields();
             if expected_num_fields != fields.len() {
                 return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                     Box::new(CreateObjectError::WrongNumberOfSubstates(
@@ -404,7 +404,7 @@ where
                 )));
             }
 
-            if let Some((offset, field_schemas)) = blueprint_schema.fields {
+            if let Some((offset, field_schemas)) = blueprint_definition.blueprint.fields {
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
@@ -421,14 +421,14 @@ where
 
                     self.validate_payload(
                         &field,
-                        &blueprint_schema.schema,
+                        &blueprint_definition.schema,
                         field_type_index,
                         SchemaOrigin::Blueprint(blueprint.clone()),
                     )
                     .map_err(|err| {
                         RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
                             CreateObjectError::InvalidSubstateWrite(
-                                err.error_message(&blueprint_schema.schema),
+                                err.error_message(&blueprint_definition.schema),
                             ),
                         )))
                     })?;
@@ -447,7 +447,7 @@ where
         // Collections
         {
             for (index, (offset, blueprint_partition_schema)) in
-                blueprint_schema.collections.iter().enumerate()
+                blueprint_definition.blueprint.collections.iter().enumerate()
             {
                 let index = index as u8;
                 let mut partition = BTreeMap::new();
@@ -459,14 +459,14 @@ where
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &key,
                                     &blueprint_kv_schema.key,
-                                    &blueprint_schema.schema,
+                                    &blueprint_definition.schema,
                                     blueprint.clone(),
                                     instance_schema,
                                 )
                                 .map_err(|err| {
                                     RuntimeError::SystemError(SystemError::CreateObjectError(
                                         Box::new(CreateObjectError::InvalidSubstateWrite(
-                                            err.error_message(&blueprint_schema.schema),
+                                            err.error_message(&blueprint_definition.schema),
                                         )),
                                     ))
                                 })?;
@@ -474,14 +474,14 @@ where
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &value,
                                     &blueprint_kv_schema.value,
-                                    &blueprint_schema.schema,
+                                    &blueprint_definition.schema,
                                     blueprint.clone(),
                                     instance_schema,
                                 )
                                 .map_err(|err| {
                                     RuntimeError::SystemError(SystemError::CreateObjectError(
                                         Box::new(CreateObjectError::InvalidSubstateWrite(
-                                            err.error_message(&blueprint_schema.schema),
+                                            err.error_message(&blueprint_definition.schema),
                                         )),
                                     ))
                                 })?;
@@ -526,7 +526,7 @@ where
             }
         }
 
-        let parent_blueprint = blueprint_schema.outer_blueprint.clone();
+        let parent_blueprint = blueprint_definition.blueprint.outer_blueprint.clone();
 
         Ok((parent_blueprint, partitions))
     }
@@ -556,7 +556,7 @@ where
     fn get_actor_schema(
         &mut self,
         actor_object_type: ActorObjectType,
-    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, IndexedBlueprintSchema), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, BlueprintDefinition), RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let method = actor
             .try_as_method()
@@ -565,14 +565,14 @@ where
             ActorObjectType::OuterObject => {
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
-                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
+                let schema = self.get_blueprint_definition(&info.blueprint)?;
                 Ok((address.into_node_id(), MAIN_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
-                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
+                let schema = self.get_blueprint_definition(&info.blueprint)?;
                 Ok((node_id, object_module_id.base_partition_num(), info, schema))
             }
         }
@@ -592,9 +592,9 @@ where
         ),
         RuntimeError,
     > {
-        let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
+        let (node_id, base_partition, info, definition) = self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, field_schema) = schema.field(field_index).ok_or_else(|| {
+        let (partition_offset, field_schema) = definition.blueprint.field(field_index).ok_or_else(|| {
             RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                 info.blueprint.clone(),
                 field_index,
@@ -619,7 +619,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, schema.schema, type_index, info))
+        Ok((node_id, partition_num, definition.schema, type_index, info))
     }
 
     fn get_actor_kv_partition(
@@ -636,9 +636,10 @@ where
         ),
         RuntimeError,
     > {
-        let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
+        let (node_id, base_partition, info, definition) = self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, schema, kv_schema) = schema
+        let (partition_offset, kv_schema) = definition
+            .blueprint
             .key_value_store_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
@@ -651,7 +652,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, schema, kv_schema, info))
+        Ok((node_id, partition_num, definition.schema, kv_schema, info))
     }
 
     fn get_actor_index(
@@ -659,10 +660,10 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, object_info, schema) =
+        let (node_id, base_partition, object_info, definition) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, _) = schema.index_partition(collection_index).ok_or_else(|| {
+        let (partition_offset, _) = definition.blueprint.index_partition(collection_index).ok_or_else(|| {
             RuntimeError::SystemError(SystemError::IndexDoesNotExist(
                 object_info.blueprint,
                 collection_index,
@@ -681,11 +682,12 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, object_info, schema) =
+        let (node_id, base_partition, object_info, definition) =
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) =
-            schema
+            definition
+                .blueprint
                 .sorted_index_partition(collection_index)
                 .ok_or_else(|| {
                     RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
@@ -836,7 +838,7 @@ where
             }
         };
 
-        let schema = self.get_blueprint_definition(blueprint_id)?.schema;
+        let schema = self.get_blueprint_definition(blueprint_id)?.blueprint;
         let num_main_partitions = schema.num_partitions();
 
         // Create a global node
@@ -891,7 +893,7 @@ where
                         );
 
                     // Move and drop
-                    let schema = self.get_blueprint_definition(&blueprint_id)?.schema;
+                    let schema = self.get_blueprint_definition(&blueprint_id)?.blueprint;
                     let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..schema.num_partitions {
                         let src = MAIN_BASE_PARTITION
@@ -1028,7 +1030,7 @@ where
     ) -> Result<(), RuntimeError> {
         // Move and drop
         let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint;
-        let schema = self.get_blueprint_definition(&blueprint_id)?.schema;
+        let schema = self.get_blueprint_definition(&blueprint_id)?.blueprint;
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
         for offset in 0u8..schema.num_partitions {
             let src = MAIN_BASE_PARTITION
@@ -2153,7 +2155,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
-        let (blueprint_id, blueprint_schema, local_type_index) = {
+        let (blueprint_id, blueprint_definition, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint_id = match actor {
                 Actor::Method(MethodActor {
@@ -2166,12 +2168,12 @@ where
                 )),
             }?;
 
-            let blueprint_schema = self.get_blueprint_definition(&blueprint_id)?.schema;
+            let blueprint_definition = self.get_blueprint_definition(&blueprint_id)?;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
             let local_type_index =
-                if let Some(index) = blueprint_schema.event_schema.get(&event_name).cloned() {
+                if let Some(index) = blueprint_definition.blueprint.event_schema.get(&event_name).cloned() {
                     index
                 } else {
                     return Err(RuntimeError::ApplicationError(
@@ -2182,7 +2184,7 @@ where
                     ));
                 };
 
-            (blueprint_id, blueprint_schema, local_type_index)
+            (blueprint_id, blueprint_definition, local_type_index)
         };
 
         // Construct the event type identifier based on the current actor
@@ -2208,13 +2210,13 @@ where
         }?;
         self.validate_payload(
             &event_data,
-            &blueprint_schema.schema,
+            &blueprint_definition.schema,
             event_type_identifier.1,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
-                EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
+                EventError::EventSchemaNotMatch(err.error_message(&blueprint_definition.schema)),
             )))
         })?;
 

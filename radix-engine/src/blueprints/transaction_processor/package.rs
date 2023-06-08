@@ -39,9 +39,8 @@ impl TransactionProcessorNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: BlueprintSchema {
+                blueprint: BlueprintSchema {
                     outer_blueprint: None,
-                    schema,
                     fields,
                     collections: vec![],
                     functions,
@@ -50,6 +49,7 @@ impl TransactionProcessorNativePackage {
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
+                schema,
                 function_auth: btreemap!(
                     TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?
                 ),

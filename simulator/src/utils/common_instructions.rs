@@ -4,7 +4,7 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::IndexedBlueprintSchema;
+use radix_engine_interface::blueprints::package::BlueprintDefinition;
 use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::model::InstructionV1;
@@ -81,9 +81,10 @@ pub fn add_call_function_instruction_with_schema<'a>(
     function: &str,
     args: Vec<String>,
     account: Option<ComponentAddress>,
-    blueprint_schema: &IndexedBlueprintSchema,
+    blueprint_schema: &BlueprintDefinition,
 ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
     let function_schema = blueprint_schema
+        .blueprint
         .find_function(function)
         .ok_or_else(|| BuildCallInstructionError::FunctionNotFound(function.to_owned()))?;
 
@@ -119,9 +120,10 @@ pub fn add_call_method_instruction_with_schema<'a>(
     method_name: &str,
     args: Vec<String>,
     account: Option<ComponentAddress>,
-    blueprint_schema: &IndexedBlueprintSchema,
+    blueprint_schema: &BlueprintDefinition,
 ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
     let function_schema = blueprint_schema
+        .blueprint
         .find_method(method_name)
         .ok_or_else(|| BuildCallInstructionError::MethodNotFound(method_name.to_owned()))?;
 

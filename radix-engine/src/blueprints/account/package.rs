@@ -333,9 +333,9 @@ impl AccountNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: BlueprintSchema {
+                schema,
+                blueprint: BlueprintSchema {
                     outer_blueprint: None,
-                    schema,
                     fields,
                     collections,
                     functions,

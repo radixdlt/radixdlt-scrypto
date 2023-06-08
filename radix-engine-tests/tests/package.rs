@@ -145,13 +145,9 @@ fn test_basic_package_missing_export() {
     blueprints.insert(
         "Test".to_string(),
         BlueprintSetup {
-            schema: BlueprintSchema {
+            blueprint: BlueprintSchema {
                 outer_blueprint: None,
-                schema: ScryptoSchema {
-                    type_kinds: vec![],
-                    type_metadata: vec![],
-                    type_validations: vec![],
-                },
+
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
                 functions: btreemap!(
@@ -166,6 +162,11 @@ fn test_basic_package_missing_export() {
                 event_schema: [].into(),
                 dependencies: btreeset!(),
                 features: btreeset!(),
+            },
+            schema: ScryptoSchema {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
             },
             function_auth: btreemap!(),
             royalty_config: RoyaltyConfig::default(),

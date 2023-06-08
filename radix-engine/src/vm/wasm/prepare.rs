@@ -1246,11 +1246,6 @@ mod tests {
             "Test".to_string(),
             BlueprintSchema {
                 outer_blueprint: None,
-                schema: ScryptoSchema {
-                    type_kinds: vec![],
-                    type_metadata: vec![],
-                    type_validations: vec![],
-                },
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
                 functions: btreemap!(

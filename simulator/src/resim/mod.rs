@@ -72,7 +72,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, IndexedBlueprintSchema};
+use radix_engine_interface::blueprints::package::BlueprintDefinition;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
@@ -356,16 +356,15 @@ pub fn export_package_schema(
 pub fn export_blueprint_schema(
     package_address: PackageAddress,
     blueprint_name: &str,
-) -> Result<IndexedBlueprintSchema, Error> {
-    let schema = export_package_schema(package_address)?
+) -> Result<BlueprintDefinition, Error> {
+    let definition = export_package_schema(package_address)?
         .get(blueprint_name)
         .cloned()
         .ok_or(Error::BlueprintNotFound(
             package_address,
             blueprint_name.to_string(),
-        ))?
-        .schema;
-    Ok(schema)
+        ))?;
+    Ok(definition)
 }
 
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
@@ -444,7 +443,6 @@ pub fn get_event_schema<S: SubstateDatabase>(
         .unwrap()
         .value
         .unwrap()
-        .schema
         .schema
         .clone();
 

@@ -29,7 +29,7 @@ pub struct PoolNativePackage;
 impl PoolNativePackage {
     pub fn definition() -> PackageSetup {
         // One Resource Pool
-        let one_resource_pool_blueprint_schema = {
+        let (one_resource_pool_blueprint, one_resource_pool_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -143,21 +143,23 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: None,
+            (
+                BlueprintSchema {
+                    outer_blueprint: None,
+                    fields,
+                    collections,
+                    functions,
+                    virtual_lazy_load_functions,
+                    event_schema,
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions,
-                event_schema,
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
         // Two Resource Pool
-        let two_resource_pool_blueprint_schema = {
+        let (two_resource_pool_blueprint, two_resource_pool_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -271,21 +273,23 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: None,
+            (
+                BlueprintSchema {
+                    outer_blueprint: None,
+                    fields,
+                    collections,
+                    functions,
+                    virtual_lazy_load_functions,
+                    event_schema,
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions,
-                event_schema,
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
         // Multi Resource Pool
-        let multi_resource_pool_blueprint_schema = {
+        let (multi_resource_pool_blueprint, multi_resource_pool_schema) = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -405,22 +409,25 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
-                outer_blueprint: None,
+            (
+                BlueprintSchema {
+                    outer_blueprint: None,
+                    fields,
+                    collections,
+                    functions,
+                    virtual_lazy_load_functions,
+                    event_schema,
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
                 schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions,
-                event_schema,
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            }
+            )
         };
 
         let blueprints = btreemap!(
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: one_resource_pool_blueprint_schema,
+                schema: one_resource_pool_schema,
+                blueprint: one_resource_pool_blueprint,
                 function_auth: btreemap!(
                     ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -449,7 +456,8 @@ impl PoolNativePackage {
                 }
             },
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: two_resource_pool_blueprint_schema,
+                schema: two_resource_pool_schema,
+                blueprint: two_resource_pool_blueprint,
                 function_auth: btreemap!(
                     TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -477,7 +485,8 @@ impl PoolNativePackage {
                 }
             },
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: multi_resource_pool_blueprint_schema,
+                schema: multi_resource_pool_schema,
+                blueprint: multi_resource_pool_blueprint,
                 function_auth: btreemap!(
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),

@@ -26,13 +26,14 @@ use radix_engine_interface::schema::{FeaturedSchema, RefTypes};
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
-    blueprint_schema: &IndexedBlueprintSchema,
+    blueprint_definition: &BlueprintDefinition,
     fn_ident: &str,
     with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
 ) -> Result<String, RuntimeError> {
     let function_schema =
-        blueprint_schema
+        blueprint_definition
+            .blueprint
             .functions
             .get(fn_ident)
             .ok_or(RuntimeError::SystemUpstreamError(
@@ -58,14 +59,14 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service
         .validate_payload(
             input.as_slice(),
-            &blueprint_schema.schema,
+            &blueprint_definition.schema,
             function_schema.input,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
                 fn_ident.to_string(),
-                err.error_message(&blueprint_schema.schema),
+                err.error_message(&blueprint_definition.schema),
             ))
         })?;
 
@@ -98,11 +99,12 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
-    blueprint_schema: &IndexedBlueprintSchema,
+    blueprint_definition: &BlueprintDefinition,
     fn_ident: &str,
     output: &IndexedScryptoValue,
 ) -> Result<(), RuntimeError> {
-    let function_schema = blueprint_schema
+    let function_schema = blueprint_definition
+        .blueprint
         .functions
         .get(fn_ident)
         .expect("Checked by `validate_input`");
@@ -110,14 +112,14 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service
         .validate_payload(
             output.as_slice(),
-            &blueprint_schema.schema,
+            &blueprint_definition.schema,
             function_schema.output,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
                 fn_ident.to_string(),
-                err.error_message(&blueprint_schema.schema),
+                err.error_message(&blueprint_definition.schema),
             ))
         })?;
 
@@ -409,7 +411,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             output
         } else {
-            let schema = system.get_blueprint_definition(&blueprint)?.schema;
+            let definition = system.get_blueprint_definition(&blueprint)?;
 
             // Make dependent resources/components visible
             // TODO: Remove and combine with above
@@ -435,7 +437,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     let export_name = validate_input(
                         &mut system,
                         blueprint.clone(),
-                        &schema,
+                        &definition,
                         &ident,
                         receiver,
                         &args,
@@ -443,7 +445,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
-                    if let Some(sys_func) = schema.virtual_lazy_load_functions.get(&system_func_id)
+                    if let Some(sys_func) = definition.blueprint.virtual_lazy_load_functions.get(&system_func_id)
                     {
                         sys_func.export_name.to_string()
                     } else {
@@ -468,7 +470,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Validate output
             match ident {
                 FnIdent::Application(ident) => {
-                    validate_output(&mut system, blueprint, &schema, &ident, &output)?
+                    validate_output(&mut system, blueprint, &definition, &ident, &output)?
                 }
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema

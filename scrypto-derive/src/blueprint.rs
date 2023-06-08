@@ -588,9 +588,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
                 }
 
-                let schema = BlueprintSchema {
+                let schema = generate_full_schema(aggregator);
+                let blueprint = BlueprintSchema {
                     outer_blueprint: None,
-                    schema: generate_full_schema(aggregator),
                     fields,
                     collections: Vec::new(),
                     functions,
@@ -609,6 +609,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let royalty_config = package_royalty_config();
 
                 let return_data = scrypto::blueprints::package::BlueprintSetup {
+                    blueprint,
                     schema,
                     function_auth,
                     royalty_config,
@@ -1467,9 +1468,10 @@ mod tests {
                             method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
                         }
 
-                        let schema = BlueprintSchema {
+                        let schema = generate_full_schema(aggregator);
+
+                        let blueprint = BlueprintSchema {
                             outer_blueprint: None,
-                            schema: generate_full_schema(aggregator),
                             fields,
                             collections: Vec::new(),
                             functions,
@@ -1488,6 +1490,7 @@ mod tests {
                         let royalty_config = package_royalty_config();
 
                         let return_data = scrypto::blueprints::package::BlueprintSetup {
+                            blueprint,
                             schema,
                             function_auth,
                             royalty_config,

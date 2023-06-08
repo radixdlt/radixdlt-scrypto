@@ -3,6 +3,7 @@ use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_common::data::manifest::model::ManifestOwn;
+use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
@@ -98,15 +99,33 @@ pub struct PackageSetup {
     pub blueprints: BTreeMap<String, BlueprintSetup>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSetup {
-    pub schema: BlueprintSchema,
+    pub blueprint: BlueprintSchema,
 
     pub function_auth: BTreeMap<String, AccessRule>,
     pub royalty_config: RoyaltyConfig,
 
+    pub schema: ScryptoSchema,
     pub template: BlueprintTemplate,
 }
+
+impl Default for BlueprintSetup {
+    fn default() -> Self {
+        Self {
+            blueprint: BlueprintSchema::default(),
+            function_auth: BTreeMap::default(),
+            royalty_config: RoyaltyConfig::default(),
+            schema: ScryptoSchema {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
+            },
+            template: BlueprintTemplate::default(),
+        }
+    }
+}
+
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintTemplate {

@@ -91,9 +91,9 @@ impl IdentityNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: BlueprintSchema {
+                schema,
+                blueprint: BlueprintSchema {
                     outer_blueprint: None,
-                    schema,
                     fields,
                     collections: vec![],
                     functions,

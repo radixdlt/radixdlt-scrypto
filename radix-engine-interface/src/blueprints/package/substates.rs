@@ -56,8 +56,9 @@ pub struct PackageRoyaltyAccumulatorSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinition {
-    pub schema: IndexedBlueprintSchema,
+    pub blueprint: IndexedBlueprintSchema,
     pub template: BlueprintTemplate,
+    pub schema: ScryptoSchema,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -78,7 +79,6 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
 
         Self {
             outer_blueprint: schema.outer_blueprint,
-            schema: schema.schema,
             fields,
             collections,
             num_partitions: partition_offset,
@@ -94,8 +94,6 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
-
-    pub schema: ScryptoSchema,
 
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
@@ -139,7 +137,7 @@ impl IndexedBlueprintSchema {
     pub fn key_value_store_partition(
         mut self,
         collection_index: u8,
-    ) -> Option<(PartitionOffset, ScryptoSchema, BlueprintKeyValueStoreSchema)> {
+    ) -> Option<(PartitionOffset, BlueprintKeyValueStoreSchema)> {
         let index = collection_index as usize;
         if index >= self.collections.len() {
             return None;
@@ -147,7 +145,7 @@ impl IndexedBlueprintSchema {
 
         match self.collections.swap_remove(index) {
             (offset, BlueprintCollectionSchema::KeyValueStore(schema)) => {
-                Some((offset, self.schema, schema))
+                Some((offset, schema))
             }
             _ => None,
         }

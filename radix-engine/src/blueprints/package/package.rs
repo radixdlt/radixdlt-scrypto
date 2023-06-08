@@ -55,25 +55,28 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 }
 
-fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSetup>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
-    for blueprint in blueprints {
-        validate_schema(&blueprint.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
+    for setup in blueprints {
+        validate_schema(&setup.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
-        if blueprint.fields.len() > 0xff {
+        if setup.blueprint.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
     }
     Ok(())
 }
 
-fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintSetup>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
-    for BlueprintSchema {
+    for BlueprintSetup {
         schema,
-        event_schema,
+        blueprint: BlueprintSchema {
+            event_schema,
+            ..
+        },
         ..
     } in blueprints
     {
@@ -426,9 +429,9 @@ impl PackageNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: BlueprintSchema {
+                schema,
+                blueprint: BlueprintSchema {
                     outer_blueprint: None,
-                    schema,
                     fields,
                     collections,
                     functions,
@@ -571,9 +574,9 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
+        validate_package_schema(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(definition.blueprints.values().map(|s| &s.schema))
+        validate_package_event_schema(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
@@ -587,7 +590,8 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
-                    schema: setup.schema.into(),
+                    schema: setup.schema,
+                    blueprint: setup.blueprint.into(),
                     template: setup.template,
                 };
                 blueprints.insert(blueprint.clone(), definition);
@@ -670,9 +674,9 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(setup.blueprints.values().map(|s| &s.schema))
+        validate_package_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(setup.blueprints.values().map(|s| &s.schema))
+        validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
             collections,
@@ -681,7 +685,7 @@ impl PackageNativePackage {
             functions,
             features,
             ..
-        } in setup.blueprints.values().map(|s| &s.schema)
+        } in setup.blueprints.values().map(|s| &s.blueprint)
         {
             if parent.is_some() {
                 return Err(RuntimeError::ApplicationError(
@@ -728,7 +732,7 @@ impl PackageNativePackage {
 
         // Validate WASM
         WasmValidator::default()
-            .validate(&code, setup.blueprints.values().map(|s| &s.schema))
+            .validate(&code, setup.blueprints.values().map(|s| &s.blueprint))
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -747,7 +751,8 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
-                    schema: setup.schema.into(),
+                    schema: setup.schema,
+                    blueprint: setup.blueprint.into(),
                     template: setup.template,
                 };
                 blueprints.insert(blueprint.clone(), definition);

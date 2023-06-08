@@ -1575,7 +1575,6 @@ impl TestRunner {
                 .value
                 .unwrap()
                 .schema
-                .schema,
         )
     }
 
@@ -1717,13 +1716,13 @@ pub fn single_function_package_definition(
     blueprints.insert(
         blueprint_name.to_string(),
         BlueprintSetup {
-            schema: BlueprintSchema {
+            schema: ScryptoSchema {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
+            },
+            blueprint: BlueprintSchema {
                 outer_blueprint: None,
-                schema: ScryptoSchema {
-                    type_kinds: vec![],
-                    type_metadata: vec![],
-                    type_validations: vec![],
-                },
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
                 functions: btreemap!(

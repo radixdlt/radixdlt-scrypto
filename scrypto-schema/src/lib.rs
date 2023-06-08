@@ -88,7 +88,7 @@ impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
-    pub schema: ScryptoSchema,
+
     /// State Schema
     pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema>,
@@ -199,11 +199,6 @@ impl Default for BlueprintSchema {
     fn default() -> Self {
         Self {
             outer_blueprint: None,
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
             fields: Vec::default(),
             collections: Vec::default(),
             functions: BTreeMap::default(),

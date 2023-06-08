@@ -42,9 +42,10 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         },
     );
 
-    let schema = BlueprintSchema {
+    let schema = generate_full_schema(aggregator);
+
+    let blueprint = BlueprintSchema {
         outer_blueprint: None,
-        schema: generate_full_schema(aggregator),
         fields,
         collections: vec![],
         functions,
@@ -59,6 +60,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintSetup {
+        blueprint,
         schema,
         function_auth,
         royalty_config: RoyaltyConfig::default(),
