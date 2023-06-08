@@ -540,7 +540,7 @@ fn generate_uuid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmR
     runtime.generate_uuid().map(|buffer| buffer.0)
 }
 
-fn log_message(
+fn log(
     mut caller: Caller<'_, HostState>,
     level_ptr: u32,
     level_len: u32,
@@ -552,7 +552,19 @@ fn log_message(
     let level = read_memory(caller.as_context_mut(), memory, level_ptr, level_len)?;
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
-    runtime.log_message(level, message)
+    runtime.log(level, message)
+}
+
+fn panic(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+
+    runtime.panic(message)
 }
 // native functions ends
 
@@ -963,8 +975,17 @@ impl WasmiModule {
              message_ptr: u32,
              message_len: u32|
              -> Result<(), Trap> {
-                log_message(caller, level_ptr, level_len, message_ptr, message_len)
-                    .map_err(|e| e.into())
+                log(caller, level_ptr, level_len, message_ptr, message_len).map_err(|e| e.into())
+            },
+        );
+
+        let host_panic = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32|
+             -> Result<(), Trap> {
+                panic(caller, message_ptr, message_len).map_err(|e| e.into())
             },
         );
 
@@ -1070,6 +1091,7 @@ impl WasmiModule {
         );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, LOG_FUNCTION_NAME, host_log);
+        linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,
             GET_TRANSACTION_HASH_FUNCTION_NAME,

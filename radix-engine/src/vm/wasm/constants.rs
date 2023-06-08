@@ -62,7 +62,7 @@ pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
 pub const LOG_FUNCTION_ID: usize = 0x51;
-pub const LOG_FUNCTION_NAME: &str = "log_message";
+pub const LOG_FUNCTION_NAME: &str = "log";
 pub const GET_TRANSACTION_HASH_FUNCTION_ID: usize = 0x52;
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_UUID_FUNCTION_ID: usize = 0x53;
@@ -77,6 +77,8 @@ pub const ASSERT_ACCESS_RULE_FUNCTION_ID: usize = 0x57;
 pub const ASSERT_ACCESS_RULE_FUNCTION_NAME: &str = "assert_access_rule";
 pub const GET_NODE_ID_FUNCTION_ID: usize = 0x58;
 pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
+pub const PANIC_FUNCTION_ID: usize = 0x59;
+pub const PANIC_FUNCTION_NAME: &str = "panic";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

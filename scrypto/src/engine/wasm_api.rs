@@ -180,12 +180,9 @@ extern "C" {
         event_data_len: usize,
     );
 
-    pub fn log_message(
-        level_ptr: *const u8,
-        level_len: usize,
-        message_ptr: *const u8,
-        message_len: usize,
-    );
+    pub fn log(level_ptr: *const u8, level_len: usize, message_ptr: *const u8, message_len: usize);
+
+    pub fn panic(message_ptr: *const u8, message_len: usize);
 
     pub fn get_transaction_hash() -> Buffer;
 
@@ -407,12 +404,17 @@ pub unsafe fn emit_event(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn log_message(
+pub unsafe fn log(
     _level_ptr: *const u8,
     _level_len: usize,
     _message_ptr: *const u8,
     _message_len: usize,
 ) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn panic(_message_ptr: *const u8, _message_len: usize) {
     unreachable!()
 }
 

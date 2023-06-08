@@ -2024,7 +2024,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+    fn log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
@@ -2063,6 +2063,10 @@ where
             .modules
             .transaction_runtime
             .generate_uuid())
+    }
+
+    fn panic(&mut self, message: &str) -> Result<(), RuntimeError> {
+        todo!()
     }
 }
 

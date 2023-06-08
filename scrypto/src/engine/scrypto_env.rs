@@ -430,9 +430,9 @@ impl ClientEventApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientLoggerApi<ClientApiError> for ScryptoEnv {
-    fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
+    fn log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
-        unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
+        unsafe { log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
 }
@@ -448,6 +448,13 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         let actor = copy_buffer(unsafe { generate_uuid() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+    }
+
+    fn panic(&mut self, message: &str) -> Result<(), ClientApiError> {
+        unsafe {
+            panic(message.as_ptr(), message.len());
+        };
+        Ok(())
     }
 }
 

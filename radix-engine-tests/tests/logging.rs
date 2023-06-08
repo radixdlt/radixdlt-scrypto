@@ -3,7 +3,7 @@ use radix_engine_interface::types::Level;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-fn log_message<S: AsRef<str>>(message: S, panic_log: bool) -> TransactionReceipt {
+fn log<S: AsRef<str>>(message: S, panic_log: bool) -> TransactionReceipt {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/logger");
 
@@ -26,13 +26,13 @@ fn log_message<S: AsRef<str>>(message: S, panic_log: bool) -> TransactionReceipt
 }
 
 #[test]
-fn log_messages_from_transaction_with_no_panic_shows_up_in_receipts() {
+fn log_from_transaction_with_no_panic_shows_up_in_receipts() {
     // Arrange
     let message = "Hello World";
     let panic = false;
 
     // Act
-    let receipt = log_message(message, panic);
+    let receipt = log(message, panic);
 
     // Assert
     {
@@ -46,13 +46,13 @@ fn log_messages_from_transaction_with_no_panic_shows_up_in_receipts() {
 }
 
 #[test]
-fn log_messages_from_transaction_with_panic_shows_up_in_receipts() {
+fn log_from_transaction_with_panic_shows_up_in_receipts() {
     // Arrange
     let message = "Hey Hey World";
     let panic = true;
 
     // Act
-    let receipt = log_message(message, panic);
+    let receipt = log(message, panic);
 
     // Assert
     {
