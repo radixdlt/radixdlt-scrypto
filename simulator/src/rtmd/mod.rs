@@ -35,7 +35,7 @@ pub enum Error {
     DecodeError(sbor::DecodeError),
     DecompileError(transaction::manifest::DecompileError),
     ParseNetworkError(ParseNetworkError),
-    ValidationError(radix_engine::utils::ValidationError),
+    InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
 pub fn run() -> Result<(), Error> {
@@ -49,7 +49,7 @@ pub fn run() -> Result<(), Error> {
     let manifest =
         manifest_decode::<TransactionManifestV1>(&content).map_err(Error::DecodeError)?;
     validate_call_arguments_to_native_components(&manifest.instructions)
-        .map_err(Error::ValidationError)?;
+        .map_err(Error::InstructionSchemaValidationError)?;
 
     let result = decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
     std::fs::write(&args.output, &result).map_err(Error::IoError)?;

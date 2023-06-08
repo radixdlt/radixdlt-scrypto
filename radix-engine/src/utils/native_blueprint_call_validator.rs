@@ -14,11 +14,9 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintSchema;
-use sbor::validate_payload_against_schema;
-use sbor::LocalTypeIndex;
-use sbor::Schema;
-use transaction::prelude::InstructionV1;
+use radix_engine_interface::schema::*;
+use sbor::*;
+use transaction::prelude::*;
 
 pub fn validate_call_arguments_to_native_components(
     instructions: &[InstructionV1],
@@ -74,6 +72,14 @@ pub fn validate_call_arguments_to_native_components(
                 ),
                 args,
             ),
+            InstructionV1::CallDirectVaultMethod {
+                vault_id,
+                method_name,
+                args,
+            } => (
+                Invocation::DirectMethod(*vault_id, method_name.to_owned()),
+                args,
+            ),
             _ => continue,
         };
 
@@ -83,6 +89,7 @@ pub fn validate_call_arguments_to_native_components(
                 cause,
             }
         })?;
+
         if let Some((local_type_index, schema)) = schema {
             validate_payload_against_schema::<ManifestCustomExtension, _>(
                 &manifest_encode(&args).unwrap(),
@@ -125,14 +132,7 @@ fn get_arguments_schema<'s>(
     Option<(LocalTypeIndex, &'s Schema<ScryptoCustomSchema>)>,
     InstructionSchemaValidationError,
 > {
-    let entity_type =
-        if let Some(entity_type) = invocation.global_address().as_node_id().entity_type() {
-            entity_type
-        } else {
-            return Err(InstructionSchemaValidationError::InvalidAddress(
-                invocation.global_address(),
-            ));
-        };
+    let entity_type = invocation.entity_type();
 
     let blueprint_schema = match invocation {
         Invocation::Function(package_address @ PACKAGE_PACKAGE, ref blueprint, _) => {
@@ -191,75 +191,77 @@ fn get_arguments_schema<'s>(
                 .map(Some)?
         }
         Invocation::Function(..) => None,
-        Invocation::Method(_, ObjectModuleId::Main, _) => match entity_type {
-            EntityType::GlobalPackage => PACKAGE_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(PACKAGE_BLUEPRINT),
+        Invocation::Method(_, ObjectModuleId::Main, _) | Invocation::DirectMethod(..) => {
+            match entity_type {
+                EntityType::GlobalPackage => PACKAGE_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(PACKAGE_BLUEPRINT),
 
-            EntityType::GlobalConsensusManager => CONSENSUS_MANAGER_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(CONSENSUS_MANAGER_BLUEPRINT),
-            EntityType::GlobalValidator => CONSENSUS_MANAGER_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(VALIDATOR_BLUEPRINT),
+                EntityType::GlobalConsensusManager => CONSENSUS_MANAGER_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(CONSENSUS_MANAGER_BLUEPRINT),
+                EntityType::GlobalValidator => CONSENSUS_MANAGER_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(VALIDATOR_BLUEPRINT),
 
-            EntityType::GlobalAccount
-            | EntityType::InternalAccount
-            | EntityType::GlobalVirtualEd25519Account
-            | EntityType::GlobalVirtualSecp256k1Account => ACCOUNT_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(ACCOUNT_BLUEPRINT),
+                EntityType::GlobalAccount
+                | EntityType::InternalAccount
+                | EntityType::GlobalVirtualEd25519Account
+                | EntityType::GlobalVirtualSecp256k1Account => ACCOUNT_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(ACCOUNT_BLUEPRINT),
 
-            EntityType::GlobalIdentity
-            | EntityType::GlobalVirtualEd25519Identity
-            | EntityType::GlobalVirtualSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(IDENTITY_BLUEPRINT),
+                EntityType::GlobalIdentity
+                | EntityType::GlobalVirtualEd25519Identity
+                | EntityType::GlobalVirtualSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(IDENTITY_BLUEPRINT),
 
-            EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(ACCESS_CONTROLLER_BLUEPRINT),
+                EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(ACCESS_CONTROLLER_BLUEPRINT),
 
-            EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(ONE_RESOURCE_POOL_BLUEPRINT_IDENT),
-            EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(TWO_RESOURCE_POOL_BLUEPRINT_IDENT),
-            EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT),
+                EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(ONE_RESOURCE_POOL_BLUEPRINT_IDENT),
+                EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(TWO_RESOURCE_POOL_BLUEPRINT_IDENT),
+                EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT),
 
-            EntityType::GlobalFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            EntityType::GlobalNonFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            EntityType::InternalFungibleVault => RESOURCE_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(FUNGIBLE_VAULT_BLUEPRINT),
-            EntityType::InternalNonFungibleVault => RESOURCE_PACKAGE_DEFINITION
-                .schema
-                .blueprints
-                .get(NON_FUNGIBLE_VAULT_BLUEPRINT),
+                EntityType::GlobalFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+                EntityType::GlobalNonFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+                EntityType::InternalFungibleVault => RESOURCE_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(FUNGIBLE_VAULT_BLUEPRINT),
+                EntityType::InternalNonFungibleVault => RESOURCE_PACKAGE_DEFINITION
+                    .schema
+                    .blueprints
+                    .get(NON_FUNGIBLE_VAULT_BLUEPRINT),
 
-            EntityType::GlobalGenericComponent
-            | EntityType::InternalGenericComponent
-            | EntityType::InternalKeyValueStore => None,
-        },
+                EntityType::GlobalGenericComponent
+                | EntityType::InternalGenericComponent
+                | EntityType::InternalKeyValueStore => None,
+            }
+        }
         Invocation::Method(_, ObjectModuleId::Metadata, _) => METADATA_PACKAGE_DEFINITION
             .schema
             .blueprints
@@ -276,8 +278,10 @@ fn get_arguments_schema<'s>(
 
     if let Some(blueprint_schema) = blueprint_schema {
         if let Some(function_schema) = blueprint_schema.functions.get(invocation.method()) {
-            if function_schema.receiver.is_none() && invocation.is_function()
-                || function_schema.receiver.is_some() && invocation.is_method()
+            if is_self_or_mut_self_receiver(&function_schema.receiver) && invocation.is_method()
+                || is_direct_access_receiver(&function_schema.receiver)
+                    && invocation.is_direct_access_method()
+                || is_function_receiver(&function_schema.receiver) && invocation.is_function()
             {
                 Ok(Some((function_schema.input, &blueprint_schema.schema)))
             } else {
@@ -293,7 +297,35 @@ fn get_arguments_schema<'s>(
     }
 }
 
+fn is_self_or_mut_self_receiver(receiver: &Option<ReceiverInfo>) -> bool {
+    if let Some(ref receiver) = receiver {
+        match (&receiver.receiver, receiver.ref_types) {
+            (Receiver::SelfRef | Receiver::SelfRefMut, RefTypes::NORMAL) => true,
+            _ => false,
+        }
+    } else {
+        false
+    }
+}
+
+fn is_direct_access_receiver(receiver: &Option<ReceiverInfo>) -> bool {
+    if let Some(ref receiver) = receiver {
+        match (&receiver.receiver, receiver.ref_types) {
+            (Receiver::SelfRef | Receiver::SelfRefMut, RefTypes::DIRECT_ACCESS) => true,
+            _ => false,
+        }
+    } else {
+        false
+    }
+}
+
+fn is_function_receiver(receiver: &Option<ReceiverInfo>) -> bool {
+    receiver.is_none()
+}
+
+#[derive(Clone, Debug)]
 enum Invocation {
+    DirectMethod(InternalAddress, String),
     Method(GlobalAddress, ObjectModuleId, String),
     Function(PackageAddress, String, String),
 }
@@ -301,29 +333,38 @@ enum Invocation {
 impl Invocation {
     fn method(&self) -> &str {
         match self {
+            Self::DirectMethod(_, method) => method,
             Self::Method(_, _, method) => method,
             Self::Function(_, _, method) => method,
         }
     }
 
-    fn global_address(&self) -> GlobalAddress {
+    fn entity_type(&self) -> EntityType {
         match self {
-            Self::Method(global_address, ..) => *global_address,
-            Self::Function(package_address, ..) => (*package_address).into(),
+            Self::DirectMethod(address, ..) => address.as_node_id().entity_type().unwrap(),
+            Self::Method(address, ..) => address.as_node_id().entity_type().unwrap(),
+            Self::Function(address, ..) => address.as_node_id().entity_type().unwrap(),
         }
     }
 
     fn is_function(&self) -> bool {
         match self {
             Self::Function(..) => true,
-            Self::Method(..) => false,
+            Self::Method(..) | Self::DirectMethod(..) => false,
         }
     }
 
     fn is_method(&self) -> bool {
         match self {
-            Self::Method(..) => true,
+            Self::Method(..) | Self::DirectMethod(..) => true,
             Self::Function(..) => false,
+        }
+    }
+
+    fn is_direct_access_method(&self) -> bool {
+        match self {
+            Self::DirectMethod(..) => true,
+            Self::Function(..) | Self::Method(..) => false,
         }
     }
 }

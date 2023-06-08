@@ -72,5 +72,5 @@ pub enum Error {
 
     OwnerBadgeNotSpecified,
 
-    ValidationError(radix_engine::utils::ValidationError),
+    InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }

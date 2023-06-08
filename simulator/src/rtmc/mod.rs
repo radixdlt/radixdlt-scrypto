@@ -31,7 +31,7 @@ pub enum Error {
     EncodeError(sbor::EncodeError),
     CompileError(transaction::manifest::CompileError),
     ParseNetworkError(ParseNetworkError),
-    ValidationError(radix_engine::utils::ValidationError),
+    InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
 pub fn run() -> Result<(), Error> {
@@ -51,7 +51,7 @@ pub fn run() -> Result<(), Error> {
     let transaction = compile(&content, &network, BlobProvider::new_with_blobs(blobs))
         .map_err(Error::CompileError)?;
     validate_call_arguments_to_native_components(&transaction.instructions)
-        .map_err(Error::ValidationError)?;
+        .map_err(Error::InstructionSchemaValidationError)?;
     std::fs::write(
         args.output,
         manifest_encode(&transaction).map_err(Error::EncodeError)?,

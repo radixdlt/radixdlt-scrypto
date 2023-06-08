@@ -60,7 +60,7 @@ impl Run {
         .map_err(Error::CompileError)?;
 
         validate_call_arguments_to_native_components(&compiled_manifest.instructions)
-            .map_err(Error::ValidationError)?;
+            .map_err(Error::InstructionSchemaValidationError)?;
 
         handle_manifest(
             compiled_manifest,
