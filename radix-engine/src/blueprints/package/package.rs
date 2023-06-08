@@ -464,7 +464,6 @@ impl PackageNativePackage {
                     fields,
                     collections,
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                         PACKAGE_OWNER_BADGE.into(),
@@ -488,7 +487,8 @@ impl PackageNativePackage {
                         SchemaMethodKey::main(PACKAGE_SET_ROYALTY_IDENT) => [OWNER_ROLE];
                     },
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             }
         );
 
@@ -624,6 +624,7 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     blueprint: setup.blueprint.into(),
                     template: setup.template,
@@ -714,14 +715,18 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        for BlueprintSchema {
-            collections,
-            outer_blueprint: parent,
+        for BlueprintSetup {
+            blueprint: BlueprintSchema
+            {
+                collections,
+                outer_blueprint: parent,
+                functions,
+                features,
+                ..
+            },
             virtual_lazy_load_functions,
-            functions,
-            features,
             ..
-        } in setup.blueprints.values().map(|s| &s.blueprint)
+        } in setup.blueprints.values()
         {
             if parent.is_some() {
                 return Err(RuntimeError::ApplicationError(
@@ -792,6 +797,7 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     blueprint: setup.blueprint.into(),
                     template: setup.template,

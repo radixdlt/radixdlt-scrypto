@@ -445,7 +445,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
-                    if let Some(sys_func) = definition.blueprint.virtual_lazy_load_functions.get(&system_func_id)
+                    if let Some(sys_func) = definition.virtual_lazy_load_functions.get(&system_func_id)
                     {
                         sys_func.export_name.to_string()
                     } else {

@@ -186,7 +186,6 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         fields,
         collections: vec![],
         functions,
-        virtual_lazy_load_functions: BTreeMap::new(),
         dependencies: btreeset!(),
         features: btreeset!(),
     };
@@ -220,6 +219,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         },
+        virtual_lazy_load_functions: BTreeMap::new(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(

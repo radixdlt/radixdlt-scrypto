@@ -7,13 +7,10 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
-};
+use radix_engine_interface::blueprints::package::{BlueprintSetup, BlueprintTemplate, PackageSetup, VirtualLazyLoadExport};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema,
     FieldSchema, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission, TypeRef,
-    VirtualLazyLoadSchema,
 };
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
@@ -296,10 +293,10 @@ impl AccountNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadExport {
                 export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
             },
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadSchema {
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadExport {
                 export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
             }
         );
@@ -339,7 +336,6 @@ impl AccountNativePackage {
                     fields,
                     collections,
                     functions,
-                    virtual_lazy_load_functions,
                     dependencies: btreeset!(
                         ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                         EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -358,7 +354,8 @@ impl AccountNativePackage {
                 template: BlueprintTemplate {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                virtual_lazy_load_functions,
             }
         );
 

@@ -147,7 +147,6 @@ impl ConsensusManagerNativePackage {
             fields,
             collections,
             functions,
-            virtual_lazy_load_functions: btreemap!(),
             dependencies: btreeset!(
                 RADIX_TOKEN.into(),
                 PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
@@ -302,7 +301,6 @@ impl ConsensusManagerNativePackage {
             fields,
             collections: vec![],
             functions,
-            virtual_lazy_load_functions: btreemap!(),
             dependencies: btreeset!(),
             features: btreeset!(),
         };
@@ -328,6 +326,7 @@ impl ConsensusManagerNativePackage {
                     ),
                     outer_method_auth_template: btreemap!(),
                 },
+                virtual_lazy_load_functions: btreemap!(),
             },
             VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: validator_schema,
@@ -356,6 +355,7 @@ impl ConsensusManagerNativePackage {
                     },
                     outer_method_auth_template: btreemap!(),
                 },
+                virtual_lazy_load_functions: btreemap!(),
             }
         );
 

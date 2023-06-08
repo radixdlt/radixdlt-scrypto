@@ -1256,7 +1256,6 @@ mod tests {
                         export: ExportSchema::normal("Test_f"),
                     }
                 ),
-                virtual_lazy_load_functions: btreemap!(),
                 dependencies: btreeset!(),
                 features: btreeset!(),
             },

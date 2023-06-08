@@ -130,8 +130,6 @@ impl PoolNativePackage {
                 },
             );
 
-            let virtual_lazy_load_functions = BTreeMap::new();
-
             let event_schema = event_schema! {
                 aggregator,
                 [
@@ -149,7 +147,6 @@ impl PoolNativePackage {
                     fields,
                     collections,
                     functions,
-                    virtual_lazy_load_functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -260,8 +257,6 @@ impl PoolNativePackage {
                 },
             );
 
-            let virtual_lazy_load_functions = BTreeMap::new();
-
             let event_schema = event_schema! {
                 aggregator,
                 [
@@ -279,7 +274,6 @@ impl PoolNativePackage {
                     fields,
                     collections,
                     functions,
-                    virtual_lazy_load_functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -396,8 +390,6 @@ impl PoolNativePackage {
                 },
             );
 
-            let virtual_lazy_load_functions = BTreeMap::new();
-
             let event_schema = event_schema! {
                 aggregator,
                 [
@@ -415,7 +407,6 @@ impl PoolNativePackage {
                     fields,
                     collections,
                     functions,
-                    virtual_lazy_load_functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -454,7 +445,8 @@ impl PoolNativePackage {
                         SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
                         SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
                     },
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
                 schema: two_resource_pool_schema,
@@ -484,7 +476,8 @@ impl PoolNativePackage {
                         SchemaMethodKey::main(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
                     },
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
                 schema: multi_resource_pool_schema,
@@ -514,7 +507,8 @@ impl PoolNativePackage {
                         SchemaMethodKey::main(MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
                     },
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             }
         );
 

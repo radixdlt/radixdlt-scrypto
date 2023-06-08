@@ -58,9 +58,16 @@ pub struct PackageRoyaltyAccumulatorSubstate {
     pub royalty_vault: Option<Own>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[sbor(transparent)]
+pub struct VirtualLazyLoadExport {
+    pub export_name: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinition {
     pub blueprint: IndexedBlueprintSchema,
+    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub template: BlueprintTemplate,
     pub schema: ScryptoSchema,
 }
@@ -87,7 +94,6 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             collections,
             num_partitions: partition_offset,
             functions: schema.functions,
-            virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             dependencies: schema.dependencies,
             features: schema.features,
         }
@@ -97,7 +103,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
-    
+
     pub features: BTreeSet<String>,
 
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
@@ -107,10 +113,7 @@ pub struct IndexedBlueprintSchema {
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
-    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
-    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
-    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
-    //pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
     pub dependencies: BTreeSet<GlobalAddress>,
 }
 

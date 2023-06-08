@@ -10,6 +10,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::LocalTypeIndex;
 use scrypto_schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
+use crate::blueprints::package::VirtualLazyLoadExport;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -105,6 +106,7 @@ pub struct BlueprintSetup {
     pub blueprint: BlueprintSchema,
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub function_auth: BTreeMap<String, AccessRule>,
+    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub royalty_config: RoyaltyConfig,
 
     pub schema: ScryptoSchema,
@@ -117,6 +119,7 @@ impl Default for BlueprintSetup {
             blueprint: BlueprintSchema::default(),
             event_schema: BTreeMap::default(),
             function_auth: BTreeMap::default(),
+            virtual_lazy_load_functions: BTreeMap::default(),
             royalty_config: RoyaltyConfig::default(),
             schema: ScryptoSchema {
                 type_kinds: vec![],

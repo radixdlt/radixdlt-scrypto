@@ -1733,7 +1733,6 @@ pub fn single_function_package_definition(
                         export: FeaturedSchema::normal(format!("{}_{}", blueprint_name, function_name)),
                     }
                 ),
-                virtual_lazy_load_functions: btreemap!(),
                 dependencies: btreeset!(),
                 features: btreeset!(),
             },
@@ -1746,6 +1745,7 @@ pub fn single_function_package_definition(
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },
+            virtual_lazy_load_functions: btreemap!(),
         },
     );
     PackageSetup { blueprints }

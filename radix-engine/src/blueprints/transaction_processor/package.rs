@@ -44,10 +44,10 @@ impl TransactionProcessorNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
+                virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 schema,
                 function_auth: btreemap!(

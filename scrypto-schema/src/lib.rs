@@ -94,8 +94,6 @@ pub struct BlueprintSchema {
     pub collections: Vec<BlueprintCollectionSchema>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
-    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
-    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
 
     pub dependencies: BTreeSet<GlobalAddress>,
     pub features: BTreeSet<String>,
@@ -152,10 +150,6 @@ pub struct FunctionSchema {
     pub export: ExportSchema,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct VirtualLazyLoadSchema {
-    pub export_name: String,
-}
 
 bitflags! {
     #[derive(Sbor)]
@@ -200,8 +194,6 @@ impl Default for BlueprintSchema {
             fields: Vec::default(),
             collections: Vec::default(),
             functions: BTreeMap::default(),
-            virtual_lazy_load_functions: BTreeMap::default(),
-            //event_schema: BTreeMap::default(),
             dependencies: BTreeSet::default(),
             features: BTreeSet::default(),
         }

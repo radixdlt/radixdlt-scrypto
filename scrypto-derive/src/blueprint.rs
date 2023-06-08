@@ -594,7 +594,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     fields,
                     collections: Vec::new(),
                     functions,
-                    virtual_lazy_load_functions: BTreeMap::new(),
                     dependencies,
                     features: BTreeSet::new(),
                 };
@@ -614,6 +613,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     function_auth,
                     royalty_config,
                     template,
+                    virtual_lazy_load_functions: BTreeMap::new(),
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -1475,7 +1475,6 @@ mod tests {
                             fields,
                             collections: Vec::new(),
                             functions,
-                            virtual_lazy_load_functions: BTreeMap::new(),
                             dependencies,
                             features: BTreeSet::new(),
                         };
@@ -1495,6 +1494,7 @@ mod tests {
                             function_auth,
                             royalty_config,
                             template,
+                            virtual_lazy_load_functions: BTreeMap::new(),
                         };
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

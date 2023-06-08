@@ -289,7 +289,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 },
@@ -548,7 +547,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections,
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 },
@@ -707,7 +705,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -913,7 +910,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections,
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -1039,7 +1035,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -1205,7 +1200,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -1271,7 +1265,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -1351,7 +1344,6 @@ impl ResourceManagerNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions: btreemap!(),
                     dependencies: btreeset!(),
                     features: btreeset!(),
                 },
@@ -1459,7 +1451,6 @@ impl ResourceManagerNativePackage {
             fields,
             collections: vec![],
             functions,
-            virtual_lazy_load_functions: btreemap!(),
             dependencies: btreeset!(),
             features: btreeset!(),
         };
@@ -1576,7 +1567,6 @@ impl ResourceManagerNativePackage {
             fields,
             collections: vec![],
             functions,
-            virtual_lazy_load_functions: btreemap!(),
             dependencies: btreeset!(),
             features: btreeset!(),
         };
@@ -1607,7 +1597,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
                     },
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_resource_manager_schema,
@@ -1640,7 +1631,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => SchemaMethodPermission::Public;
                     },
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_vault_schema,
@@ -1678,7 +1670,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
                         SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
                     },
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_vault_schema,
@@ -1722,7 +1715,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
                         SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
                     },
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_bucket_schema,
@@ -1744,7 +1738,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"];
                         SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"];
                     }
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_bucket_schema,
@@ -1768,7 +1763,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
                         SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
                     }
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: fungible_proof_schema,
@@ -1786,7 +1782,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                     )
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: non_fungible_proof_schema,
@@ -1805,7 +1802,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
                     )
-                }
+                },
+                virtual_lazy_load_functions: btreemap!(),
             },
             WORKTOP_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: worktop_schema,
@@ -1819,6 +1817,7 @@ impl ResourceManagerNativePackage {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },
+                virtual_lazy_load_functions: btreemap!(),
             },
             AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSetup {
                 schema: auth_zone_schema,
@@ -1830,6 +1829,7 @@ impl ResourceManagerNativePackage {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },
+                virtual_lazy_load_functions: btreemap!(),
             }
         );
 

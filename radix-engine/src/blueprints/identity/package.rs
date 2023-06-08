@@ -17,13 +17,11 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
-};
+use radix_engine_interface::blueprints::package::{BlueprintSetup, BlueprintTemplate, PackageSetup, VirtualLazyLoadExport};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FeaturedSchema, ReceiverInfo};
-use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
+use radix_engine_interface::schema::{FunctionSchema};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
@@ -69,10 +67,10 @@ impl IdentityNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
+            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadExport {
                 export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
             },
-            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadSchema {
+            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadExport {
                 export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
             }
         );
@@ -97,7 +95,6 @@ impl IdentityNativePackage {
                     fields,
                     collections: vec![],
                     functions,
-                    virtual_lazy_load_functions,
                     dependencies: btreeset!(
                         ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                         EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -115,7 +112,8 @@ impl IdentityNativePackage {
                 template: BlueprintTemplate {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
-                }
+                },
+                virtual_lazy_load_functions,
             }
         );
 

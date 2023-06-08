@@ -158,7 +158,6 @@ fn test_basic_package_missing_export() {
                         export: FeaturedSchema::normal("not_exist"),
                     }
                 ),
-                virtual_lazy_load_functions: btreemap!(),
                 dependencies: btreeset!(),
                 features: btreeset!(),
             },
@@ -174,6 +173,7 @@ fn test_basic_package_missing_export() {
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },
+            virtual_lazy_load_functions: btreemap!(),
         },
     );
     // Act
