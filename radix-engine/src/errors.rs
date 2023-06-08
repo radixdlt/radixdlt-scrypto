@@ -234,6 +234,7 @@ pub enum SystemError {
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
     BlueprintDoesNotExist(BlueprintId),
+    EventError(Box<EventError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -406,8 +407,6 @@ pub enum ApplicationError {
 
     AccessControllerError(AccessControllerError),
 
-    EventError(Box<EventError>),
-
     MetadataError(MetadataPanicError),
 
     OneResourcePoolError(OneResourcePoolError),
@@ -415,6 +414,8 @@ pub enum ApplicationError {
     TwoResourcePoolError(TwoResourcePoolError),
 
     MultiResourcePoolError(MultiResourcePoolError),
+
+    Panic(String),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {
