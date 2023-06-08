@@ -1072,7 +1072,6 @@ impl WasmModule {
 
     #[cfg(feature = "radix_engine_tests")]
     pub fn contains_sign_ext_ops(self) -> bool {
-        // Function local value types and floating-point related instructions
         if let Some(code) = self.module.code_section() {
             for func_body in code.bodies() {
                 for op in func_body.code().elements() {

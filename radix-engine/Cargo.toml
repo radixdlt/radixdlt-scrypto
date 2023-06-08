@@ -73,7 +73,7 @@ resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resou
 # to prevent non-determinism when fuzzing
 radix_engine_fuzzing = []
 
-# This flag enables code parts use only for testing. Using "test" config option is not enough in cases,
+# This flag enables code parts used only for testing. Using "test" config option is not enough in cases,
 # when external crate is used for tests (eg. radix-engine-tests)
 radix_engine_tests = []
 
