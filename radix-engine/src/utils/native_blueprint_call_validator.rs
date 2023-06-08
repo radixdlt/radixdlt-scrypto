@@ -73,11 +73,11 @@ pub fn validate_call_arguments_to_native_components(
                 args,
             ),
             InstructionV1::CallDirectVaultMethod {
-                vault_id,
+                address,
                 method_name,
                 args,
             } => (
-                Invocation::DirectMethod(*vault_id, method_name.to_owned()),
+                Invocation::DirectMethod(*address, method_name.to_owned()),
                 args,
             ),
             _ => continue,
