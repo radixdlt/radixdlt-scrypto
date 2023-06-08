@@ -4,7 +4,7 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
-    InvalidModuleType, RuntimeError, SystemModuleError,
+    InvalidModuleType, RuntimeError, SystemModuleError, ApplicationError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -2063,8 +2063,12 @@ where
             .generate_uuid())
     }
 
-    fn panic(&mut self, message: &str) -> Result<(), RuntimeError> {
-        todo!()
+    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+            message.to_string(),
+        )))
     }
 }
 

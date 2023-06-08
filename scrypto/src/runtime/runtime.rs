@@ -150,4 +150,9 @@ impl Runtime {
     pub fn fee_balance() -> Decimal {
         ScryptoEnv.fee_balance().unwrap()
     }
+
+    pub fn panic(message: &str) -> ! {
+        ScryptoEnv.panic(message.to_owned()).unwrap();
+        loop {}
+    }
 }

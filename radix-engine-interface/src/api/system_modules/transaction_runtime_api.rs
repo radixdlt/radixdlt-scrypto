@@ -5,5 +5,5 @@ pub trait ClientTransactionRuntimeApi<E> {
 
     fn generate_uuid(&mut self) -> Result<u128, E>;
 
-    fn panic(&mut self, message: &str) -> Result<(), E>;
+    fn panic(&mut self, message: String) -> Result<(), E>;
 }

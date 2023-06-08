@@ -450,7 +450,7 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn panic(&mut self, message: &str) -> Result<(), ClientApiError> {
+    fn panic(&mut self, message: String) -> Result<(), ClientApiError> {
         unsafe {
             panic(message.as_ptr(), message.len());
         };
