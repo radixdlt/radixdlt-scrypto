@@ -1,5 +1,5 @@
 use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
-use std::iter;
+use sbor::rust::iter;
 
 use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
