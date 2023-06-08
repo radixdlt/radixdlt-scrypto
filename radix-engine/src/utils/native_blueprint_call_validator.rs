@@ -164,14 +164,15 @@ fn get_blueprint_schema<'p>(
     blueprint: &str,
     instruction_index: usize,
 ) -> Result<&'p BlueprintSchema, ValidationError> {
-    package_definition.schema.blueprints.get(blueprint).map_or(
-        Err(ValidationError::InvalidBlueprint(
+    package_definition
+        .schema
+        .blueprints
+        .get(blueprint)
+        .ok_or(ValidationError::InvalidBlueprint(
             instruction_index,
             package_address,
             blueprint.to_owned(),
-        )),
-        Ok,
-    )
+        ))
 }
 
 /// * An `Err` is returned if something is invalid about the arguments given to this method. As an
