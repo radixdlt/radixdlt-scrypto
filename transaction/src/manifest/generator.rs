@@ -88,10 +88,10 @@ pub enum GeneratorError {
     InvalidBucket(String),
     InvalidProof(String),
     InvalidVault(String),
-    InvalidEcdsaSecp256k1PublicKey(String),
-    InvalidEcdsaSecp256k1Signature(String),
-    InvalidEddsaEd25519PublicKey(String),
-    InvalidEddsaEd25519Signature(String),
+    InvalidSecp256k1PublicKey(String),
+    InvalidSecp256k1Signature(String),
+    InvalidEd25519PublicKey(String),
+    InvalidEd25519Signature(String),
     InvalidBlobHash,
     BlobNotFound(String),
     InvalidBytesHex(String),
@@ -1204,9 +1204,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
+    use crate::signing::secp256k1::Secp256k1PrivateKey;
     use radix_engine_common::manifest_args;
     use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::ComponentAddress;
@@ -1785,9 +1785,7 @@ mod tests {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 args: to_manifest_value(&ConsensusManagerCreateValidatorInput {
-                    key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
-                        .unwrap()
-                        .public_key(),
+                    key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
                 }),
             },
         );

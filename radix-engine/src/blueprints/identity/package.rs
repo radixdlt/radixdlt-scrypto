@@ -24,8 +24,8 @@ use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
 
-const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
-const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_eddsa_ed25519";
+const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
+const IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
 
 pub struct IdentityNativePackage;
 
@@ -67,11 +67,11 @@ impl IdentityNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
+            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => VirtualLazyLoadSchema {
+                export_name: IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
             },
-            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
+            IDENTITY_CREATE_VIRTUAL_ED25519_ID => VirtualLazyLoadSchema {
+                export_name: IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
             }
         );
 
@@ -98,8 +98,8 @@ impl IdentityNativePackage {
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
                     dependencies: btreeset!(
-                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                        SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                        ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
                         IDENTITY_OWNER_BADGE.into(),
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
@@ -180,7 +180,7 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME => {
+            IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -196,7 +196,7 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME => {
+            IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -271,7 +271,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
         Self::create_virtual(public_key_hash, api)
     }
 
@@ -282,7 +282,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
         Self::create_virtual(public_key_hash, api)
     }
 

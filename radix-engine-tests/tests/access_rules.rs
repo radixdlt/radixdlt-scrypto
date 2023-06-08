@@ -8,7 +8,7 @@ use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::*;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn can_call_public_function() {
@@ -106,7 +106,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
 #[test]
 fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present() {
     // Arrange
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
     let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
@@ -126,7 +126,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 #[test]
 fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present() {
     // Arrange
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
     let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
@@ -145,7 +145,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
 #[test]
 fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Arrange
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
     let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
@@ -164,7 +164,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
 #[test]
 fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     // Arrange
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
     let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
@@ -190,7 +190,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
 
 fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Arrange
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
     let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(

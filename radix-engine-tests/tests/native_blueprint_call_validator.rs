@@ -7,7 +7,7 @@ use scrypto::prelude::*;
 use transaction::{
     manifest::{compile, MockBlobProvider},
     prelude::ManifestBuilder,
-    validation::EcdsaSecp256k1PrivateKey,
+    signing::secp256k1::Secp256k1PrivateKey,
 };
 use walkdir::WalkDir;
 
@@ -120,12 +120,12 @@ fn is_method_not_found<T>(result: Result<T, LocatedInstructionSchemaValidationEr
     }
 }
 
-fn private_key1() -> EcdsaSecp256k1PrivateKey {
-    EcdsaSecp256k1PrivateKey::from_u64(1).unwrap()
+fn private_key1() -> Secp256k1PrivateKey {
+    Secp256k1PrivateKey::from_u64(1).unwrap()
 }
 
-fn private_key2() -> EcdsaSecp256k1PrivateKey {
-    EcdsaSecp256k1PrivateKey::from_u64(2).unwrap()
+fn private_key2() -> Secp256k1PrivateKey {
+    Secp256k1PrivateKey::from_u64(2).unwrap()
 }
 
 fn account1() -> ComponentAddress {
