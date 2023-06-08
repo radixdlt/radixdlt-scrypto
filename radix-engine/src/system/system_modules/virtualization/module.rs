@@ -5,8 +5,8 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,

@@ -2,7 +2,7 @@ use crate::modules::{AccessRules, Attachable, Metadata};
 use crate::prelude::Attached;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,

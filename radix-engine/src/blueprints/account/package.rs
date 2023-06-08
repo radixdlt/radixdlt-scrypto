@@ -1,10 +1,10 @@
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::types::*;
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
+use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
