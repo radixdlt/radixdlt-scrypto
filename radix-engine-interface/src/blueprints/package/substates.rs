@@ -67,9 +67,30 @@ pub struct VirtualLazyLoadExport {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinition {
     pub blueprint: IndexedBlueprintSchema,
+    pub functions: BTreeMap<String, FunctionSchema>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub template: BlueprintTemplate,
     pub schema: ScryptoSchema,
+}
+
+impl BlueprintDefinition {
+    pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
+        if let Some(x) = self.functions.get(ident) {
+            if x.receiver.is_none() {
+                return Some(x.clone());
+            }
+        }
+        None
+    }
+
+    pub fn find_method(&self, ident: &str) -> Option<FunctionSchema> {
+        if let Some(x) = self.functions.get(ident) {
+            if x.receiver.is_some() {
+                return Some(x.clone());
+            }
+        }
+        None
+    }
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -93,7 +114,6 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             fields,
             collections,
             num_partitions: partition_offset,
-            functions: schema.functions,
             dependencies: schema.dependencies,
             features: schema.features,
         }
@@ -108,11 +128,7 @@ pub struct IndexedBlueprintSchema {
 
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
-
     pub num_partitions: u8,
-
-    /// For each function, there is a [`FunctionSchema`]
-    pub functions: BTreeMap<String, FunctionSchema>,
 
     pub dependencies: BTreeSet<GlobalAddress>,
 }
@@ -183,23 +199,6 @@ impl IndexedBlueprintSchema {
         }
     }
 
-    pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
-        if let Some(x) = self.functions.get(ident) {
-            if x.receiver.is_none() {
-                return Some(x.clone());
-            }
-        }
-        None
-    }
-
-    pub fn find_method(&self, ident: &str) -> Option<FunctionSchema> {
-        if let Some(x) = self.functions.get(ident) {
-            if x.receiver.is_some() {
-                return Some(x.clone());
-            }
-        }
-        None
-    }
 
     pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
         for (_, partition) in &self.collections {

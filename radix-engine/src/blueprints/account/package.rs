@@ -335,7 +335,6 @@ impl AccountNativePackage {
                     outer_blueprint: None,
                     fields,
                     collections,
-                    functions,
                     dependencies: btreeset!(
                         ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                         EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -356,6 +355,7 @@ impl AccountNativePackage {
                     outer_method_auth_template: btreemap!(),
                 },
                 virtual_lazy_load_functions,
+                functions,
             }
         );
 

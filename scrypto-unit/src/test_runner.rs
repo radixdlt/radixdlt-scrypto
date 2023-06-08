@@ -1725,14 +1725,7 @@ pub fn single_function_package_definition(
                 outer_blueprint: None,
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
-                functions: btreemap!(
-                function_name.to_string() => FunctionSchema {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: FeaturedSchema::normal(format!("{}_{}", blueprint_name, function_name)),
-                    }
-                ),
+
                 dependencies: btreeset!(),
                 features: btreeset!(),
             },
@@ -1746,6 +1739,14 @@ pub fn single_function_package_definition(
                 outer_method_auth_template: btreemap!(),
             },
             virtual_lazy_load_functions: btreemap!(),
+            functions: btreemap!(
+                function_name.to_string() => FunctionSchema {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export: FeaturedSchema::normal(format!("{}_{}", blueprint_name, function_name)),
+                    }
+                ),
         },
     );
     PackageSetup { blueprints }

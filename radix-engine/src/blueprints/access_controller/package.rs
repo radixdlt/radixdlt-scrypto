@@ -447,7 +447,6 @@ impl AccessControllerNativePackage {
                     outer_blueprint: None,
                     fields,
                     collections: vec![],
-                    functions,
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
@@ -463,6 +462,7 @@ impl AccessControllerNativePackage {
                     outer_method_auth_template: btreemap!(),
                 },
                 virtual_lazy_load_functions: btreemap!(),
+                functions,
             }
         );
 

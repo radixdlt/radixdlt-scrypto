@@ -150,14 +150,7 @@ fn test_basic_package_missing_export() {
 
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
-                functions: btreemap!(
-                    "f".to_string() => FunctionSchema {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: FeaturedSchema::normal("not_exist"),
-                    }
-                ),
+
                 dependencies: btreeset!(),
                 features: btreeset!(),
             },
@@ -174,6 +167,14 @@ fn test_basic_package_missing_export() {
                 outer_method_auth_template: btreemap!(),
             },
             virtual_lazy_load_functions: btreemap!(),
+            functions: btreemap!(
+                    "f".to_string() => FunctionSchema {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export: FeaturedSchema::normal("not_exist"),
+                    }
+                ),
         },
     );
     // Act

@@ -593,7 +593,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     outer_blueprint: None,
                     fields,
                     collections: Vec::new(),
-                    functions,
                     dependencies,
                     features: BTreeSet::new(),
                 };
@@ -614,6 +613,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     royalty_config,
                     template,
                     virtual_lazy_load_functions: BTreeMap::new(),
+                    functions,
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -1474,7 +1474,6 @@ mod tests {
                             outer_blueprint: None,
                             fields,
                             collections: Vec::new(),
-                            functions,
                             dependencies,
                             features: BTreeSet::new(),
                         };
@@ -1495,6 +1494,7 @@ mod tests {
                             royalty_config,
                             template,
                             virtual_lazy_load_functions: BTreeMap::new(),
+                            functions,
                         };
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

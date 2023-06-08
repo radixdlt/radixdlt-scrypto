@@ -84,7 +84,6 @@ pub fn add_call_function_instruction_with_schema<'a>(
     blueprint_schema: &BlueprintDefinition,
 ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
     let function_schema = blueprint_schema
-        .blueprint
         .find_function(function)
         .ok_or_else(|| BuildCallInstructionError::FunctionNotFound(function.to_owned()))?;
 
@@ -123,7 +122,6 @@ pub fn add_call_method_instruction_with_schema<'a>(
     blueprint_schema: &BlueprintDefinition,
 ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
     let function_schema = blueprint_schema
-        .blueprint
         .find_method(method_name)
         .ok_or_else(|| BuildCallInstructionError::MethodNotFound(method_name.to_owned()))?;
 

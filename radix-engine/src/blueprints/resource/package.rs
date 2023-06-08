@@ -133,7 +133,7 @@ impl ResourceManagerNativePackage {
     pub fn definition() -> PackageSetup {
         //====================================================================================
 
-        let (fungible_resource_manager_blueprint, fungible_resource_manager_schema, fungible_resource_manager_events) = {
+        let fungible_resource_manager_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -283,23 +283,48 @@ impl ResourceManagerNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            (
-                BlueprintSchema {
+                let blueprint = BlueprintSchema {
                     outer_blueprint: None,
                     fields,
                     collections: vec![],
-                    functions,
                     dependencies: btreeset!(),
                     features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
-                },
+                };
+
+            BlueprintSetup {
                 schema,
+                blueprint,
                 event_schema,
-            )
+                function_auth: btreemap!(
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+
+                        SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
+                    },
+                    outer_method_auth_template: btreemap!(),
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
         //====================================================================================
 
-        let (non_fungible_resource_manager_blueprint, non_fungible_resource_manager_schema, non_fungible_resource_manager_events) = {
+        let non_fungible_resource_manager_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -541,23 +566,54 @@ impl ResourceManagerNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            (
-                BlueprintSchema {
+                let blueprint = BlueprintSchema {
                     outer_blueprint: None,
                     fields,
                     collections,
-                    functions,
                     dependencies: btreeset!(),
                     features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
-                },
+                };
+
+            BlueprintSetup {
                 schema,
+                blueprint,
                 event_schema,
-            )
+                function_auth: btreemap!(
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => SchemaMethodPermission::Public;
+                    },
+                    outer_method_auth_template: btreemap!(),
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
         //====================================================================================
 
-        let (fungible_vault_blueprint, fungible_vault_schema, fungible_vault_events) = {
+        let fungible_vault_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
             fields.push(FieldSchema::normal(
@@ -699,23 +755,59 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            (
-                BlueprintSchema {
-                    outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
-                    fields,
-                    collections: vec![],
-                    functions,
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
-                },
+            let blueprint = BlueprintSchema {
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                fields,
+                collections: vec![],
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
+
+            BlueprintSetup {
                 schema,
+                blueprint,
                 event_schema,
-            )
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                    },
+                    outer_method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+                    },
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
         //====================================================================================
 
-        let (non_fungible_vault_blueprint, non_fungible_vault_schema, non_fungible_vault_events) = {
+        let non_fungible_vault_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
             fields.push(FieldSchema::normal(
@@ -904,23 +996,65 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            (
-                BlueprintSchema {
-                    outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
-                    fields,
-                    collections,
-                    functions,
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
-                },
+            let blueprint = BlueprintSchema {
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                fields,
+                collections,
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
+
+            BlueprintSetup {
                 schema,
+                blueprint,
                 event_schema,
-            )
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
+                    },
+                    outer_method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                    },
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
         //====================================================================================
 
-        let (fungible_bucket_blueprint, fungible_bucket_schema) = {
+        let fungible_bucket_blueprint  = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1029,22 +1163,44 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            (
+            let blueprint =
                 BlueprintSchema {
                     outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                     fields,
                     collections: vec![],
-                    functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
-                },
+                };
+
+            BlueprintSetup {
                 schema,
-            )
+                blueprint,
+                event_schema: [].into(),
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"];
+                        SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"];
+                    }
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
         //====================================================================================
 
-        let (non_fungible_bucket_blueprint, non_fungible_bucket_schema) = {
+        let non_fungible_bucket_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1194,20 +1350,44 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            (
+            let blueprint =
                 BlueprintSchema {
                     outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                     fields,
                     collections: vec![],
-                    functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
-                },
+                };
+
+            BlueprintSetup {
                 schema,
-            )
+                blueprint,
+                event_schema: [].into(),
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                    }
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
-        let (fungible_proof_blueprint, fungible_proof_schema) = {
+        let fungible_proof_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1259,20 +1439,37 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            (
-                BlueprintSchema {
-                    outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
-                    fields,
-                    collections: vec![],
-                    functions,
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
+            let blueprint = BlueprintSchema {
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                fields,
+                collections: vec![],
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
+
+            BlueprintSetup {
+                schema,
+                blueprint,
+                event_schema: [].into(),
+                function_auth: btreemap!(
+                    PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: method_auth_template!(
+                        SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                    )
                 },
-                schema
-            )
+                functions,
+                virtual_lazy_load_functions: btreemap!(),
+            }
         };
 
-        let (non_fungible_proof_blueprint, non_fungible_proof_schema) = {
+        let non_fungible_proof_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -1338,456 +1535,17 @@ impl ResourceManagerNativePackage {
             );
 
             let schema = generate_full_schema(aggregator);
-            (
-                BlueprintSchema {
-                    outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
-                    fields,
-                    collections: vec![],
-                    functions,
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
-                },
+            let blueprint = BlueprintSchema {
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                fields,
+                collections: vec![],
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
+
+            BlueprintSetup {
                 schema,
-            )
-        };
-
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-
-        let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(
-            aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
-        ));
-
-        let mut functions = BTreeMap::new();
-        functions.insert(
-            WORKTOP_DROP_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
-                output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_DROP_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_PUT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
-                output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_PUT_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_TAKE_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
-                output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_TAKE_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_TAKE_NON_FUNGIBLES_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_TAKE_ALL_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
-                output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_TAKE_ALL_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
-                output: aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT),
-            },
-        );
-        functions.insert(
-            WORKTOP_DRAIN_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
-                output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
-                export: FeaturedSchema::normal(WORKTOP_DRAIN_IDENT),
-            },
-        );
-        let worktop_schema = generate_full_schema(aggregator);
-        let worktop_blueprint = BlueprintSchema {
-            outer_blueprint: None,
-            fields,
-            collections: vec![],
-            functions,
-            dependencies: btreeset!(),
-            features: btreeset!(),
-        };
-
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-
-        let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(
-            aggregator.add_child_type_and_descendents::<AuthZone>(),
-        ));
-
-        let mut functions = BTreeMap::new();
-        functions.insert(
-            AUTH_ZONE_POP_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
-                output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_POP_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_PUSH_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
-                output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_PUSH_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
-                output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_CLEAR_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
-                output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_CLEAR_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_DRAIN_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
-                output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_DRAIN_EXPORT_NAME),
-            },
-        );
-        functions.insert(
-            AUTH_ZONE_DROP_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
-                output: aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
-                export: FeaturedSchema::normal(AUTH_ZONE_DROP_EXPORT_NAME),
-            },
-        );
-
-        let auth_zone_schema = generate_full_schema(aggregator);
-        let auth_zone_blueprint = BlueprintSchema {
-            outer_blueprint: None,
-            fields,
-            collections: vec![],
-            functions,
-            dependencies: btreeset!(),
-            features: btreeset!(),
-        };
-
-        let blueprints = btreemap!(
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: fungible_resource_manager_schema,
-                blueprint: fungible_resource_manager_blueprint,
-                event_schema: fungible_resource_manager_events,
-                function_auth: btreemap!(
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: method_auth_template! {
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
-
-                        SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
-                    },
-                    outer_method_auth_template: btreemap!(),
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: non_fungible_resource_manager_schema,
-                blueprint: non_fungible_resource_manager_blueprint,
-                event_schema: non_fungible_resource_manager_events,
-                function_auth: btreemap!(
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: method_auth_template! {
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
-
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => SchemaMethodPermission::Public;
-                    },
-                    outer_method_auth_template: btreemap!(),
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: fungible_vault_schema,
-                blueprint: fungible_vault_blueprint,
-                event_schema: fungible_vault_events,
-                function_auth: btreemap!(),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                    },
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
-                    },
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: non_fungible_vault_schema,
-                blueprint: non_fungible_vault_blueprint,
-                event_schema: non_fungible_vault_events,
-                function_auth: btreemap!(),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
-                    },
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                    },
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: fungible_bucket_schema,
-                blueprint: fungible_bucket_blueprint,
-                event_schema: [].into(),
-                function_auth: btreemap!(),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: btreemap!(),
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"];
-                    }
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: non_fungible_bucket_schema,
-                blueprint: non_fungible_bucket_blueprint,
-                event_schema: [].into(),
-                function_auth: btreemap!(),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: btreemap!(),
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                    }
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: fungible_proof_schema,
-                blueprint: fungible_proof_blueprint,
-                event_schema: [].into(),
-                function_auth: btreemap!(
-                    PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: btreemap!(),
-                    outer_method_auth_template: method_auth_template!(
-                        SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                    )
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: non_fungible_proof_schema,
-                blueprint: non_fungible_proof_blueprint,
+                blueprint,
                 event_schema: [].into(),
                 function_auth: btreemap!(
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
@@ -1804,8 +1562,115 @@ impl ResourceManagerNativePackage {
                     )
                 },
                 virtual_lazy_load_functions: btreemap!(),
-            },
-            WORKTOP_BLUEPRINT.to_string() => BlueprintSetup {
+                functions,
+            }
+        };
+
+        let worktop_blueprint = {
+            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+            let mut fields = Vec::new();
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
+            ));
+
+            let mut worktop_functions = BTreeMap::new();
+            worktop_functions.insert(
+                WORKTOP_DROP_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: None,
+                    input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
+                    output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_DROP_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_PUT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
+                    output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_PUT_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_TAKE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_TAKE_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_TAKE_NON_FUNGIBLES_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_TAKE_ALL_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
+                    output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_TAKE_ALL_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
+                    output: aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT),
+                },
+            );
+            worktop_functions.insert(
+                WORKTOP_DRAIN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
+                    output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
+                    export: FeaturedSchema::normal(WORKTOP_DRAIN_IDENT),
+                },
+            );
+            let worktop_schema = generate_full_schema(aggregator);
+            let worktop_blueprint = BlueprintSchema {
+                outer_blueprint: None,
+                fields,
+                collections: vec![],
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
+
+            BlueprintSetup {
                 schema: worktop_schema,
                 blueprint: worktop_blueprint,
                 event_schema: [].into(),
@@ -1817,9 +1682,129 @@ impl ResourceManagerNativePackage {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },
+                functions: worktop_functions,
                 virtual_lazy_load_functions: btreemap!(),
-            },
-            AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSetup {
+            }
+        };
+
+
+        let auth_zone_blueprint = {
+            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+            let mut fields = Vec::new();
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<AuthZone>(),
+            ));
+
+            let mut auth_zone_functions = BTreeMap::new();
+            auth_zone_functions.insert(
+                AUTH_ZONE_POP_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
+                    output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_POP_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_PUSH_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
+                    output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_PUSH_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
+                    output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_CLEAR_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
+                    output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_CLEAR_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_DRAIN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
+                    output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_DRAIN_EXPORT_NAME),
+                },
+            );
+            auth_zone_functions.insert(
+                AUTH_ZONE_DROP_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: None,
+                    input: aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
+                    output: aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
+                    export: FeaturedSchema::normal(AUTH_ZONE_DROP_EXPORT_NAME),
+                },
+            );
+
+            let auth_zone_schema = generate_full_schema(aggregator);
+            let auth_zone_blueprint = BlueprintSchema {
+                outer_blueprint: None,
+                fields,
+                collections: vec![],
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            };
+
+            BlueprintSetup {
                 schema: auth_zone_schema,
                 blueprint: auth_zone_blueprint,
                 event_schema: btreemap!(),
@@ -1829,8 +1814,22 @@ impl ResourceManagerNativePackage {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },
+                functions: auth_zone_functions,
                 virtual_lazy_load_functions: btreemap!(),
             }
+        };
+
+        let blueprints = btreemap!(
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_blueprint,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_blueprint,
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_blueprint,
+            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => non_fungible_vault_blueprint,
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => fungible_bucket_blueprint,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => non_fungible_bucket_blueprint,
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => fungible_proof_blueprint,
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => non_fungible_proof_blueprint,
+            WORKTOP_BLUEPRINT.to_string() => worktop_blueprint,
+            AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_blueprint,
         );
 
         PackageSetup { blueprints }

@@ -463,7 +463,6 @@ impl PackageNativePackage {
                     outer_blueprint: None,
                     fields,
                     collections,
-                    functions,
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                         PACKAGE_OWNER_BADGE.into(),
@@ -489,6 +488,7 @@ impl PackageNativePackage {
                     outer_method_auth_template: btreemap!(),
                 },
                 virtual_lazy_load_functions: btreemap!(),
+                functions,
             }
         );
 
@@ -624,6 +624,7 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
+                    functions: setup.functions,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     blueprint: setup.blueprint.into(),
@@ -720,11 +721,11 @@ impl PackageNativePackage {
             {
                 collections,
                 outer_blueprint: parent,
-                functions,
                 features,
                 ..
             },
             virtual_lazy_load_functions,
+            functions,
             ..
         } in setup.blueprints.values()
         {
@@ -797,6 +798,7 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
+                    functions: setup.functions,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     blueprint: setup.blueprint.into(),

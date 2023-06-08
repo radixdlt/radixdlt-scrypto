@@ -934,7 +934,7 @@ impl WasmModule {
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
         for blueprint_setup in blueprints {
-            for func in blueprint_setup.blueprint.functions.values() {
+            for func in blueprint_setup.functions.values() {
                 let export_mapping = &func.export;
                 match export_mapping {
                     FeaturedSchema::Conditional {
@@ -1245,10 +1245,18 @@ mod tests {
         let mut blueprints = BTreeMap::new();
         blueprints.insert(
             "Test".to_string(),
-            BlueprintSchema {
-                outer_blueprint: None,
-                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
-                collections: vec![],
+            BlueprintSetup {
+                blueprint: BlueprintSchema {
+                    outer_blueprint: None,
+                    fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                    collections: vec![],
+
+                    dependencies: btreeset!(),
+                    features: btreeset!(),
+                },
+
+                event_schema: Default::default(),
+                function_auth: Default::default(),
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,
@@ -1257,9 +1265,15 @@ mod tests {
                         export: ExportSchema::normal("Test_f"),
                     }
                 ),
-                dependencies: btreeset!(),
-                features: btreeset!(),
-            },
+                virtual_lazy_load_functions: btreemap!(),
+                royalty_config: Default::default(),
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                template: Default::default(),
+            }
         );
 
         assert_invalid_wasm!(

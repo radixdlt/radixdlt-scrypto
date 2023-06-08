@@ -92,8 +92,6 @@ pub struct BlueprintSchema {
     /// State Schema
     pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema>,
-    /// For each function, there is a [`FunctionSchema`]
-    pub functions: BTreeMap<String, FunctionSchema>,
 
     pub dependencies: BTreeSet<GlobalAddress>,
     pub features: BTreeSet<String>,
@@ -193,7 +191,6 @@ impl Default for BlueprintSchema {
             outer_blueprint: None,
             fields: Vec::default(),
             collections: Vec::default(),
-            functions: BTreeMap::default(),
             dependencies: BTreeSet::default(),
             features: BTreeSet::default(),
         }

@@ -83,6 +83,7 @@ impl Publish {
 
             for (b, s) in package_definition.blueprints {
                 let def = BlueprintDefinition {
+                    functions: s.functions,
                     virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                     schema: s.schema,
                     blueprint: s.blueprint.into(),

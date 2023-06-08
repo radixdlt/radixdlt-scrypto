@@ -29,7 +29,7 @@ pub struct PoolNativePackage;
 impl PoolNativePackage {
     pub fn definition() -> PackageSetup {
         // One Resource Pool
-        let (one_resource_pool_blueprint, one_resource_pool_schema, one_resource_pool_events) = {
+        let one_resource_pool_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -141,22 +141,52 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            (
+            let blueprint =
                 BlueprintSchema {
                     outer_blueprint: None,
                     fields,
                     collections,
-                    functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
-                },
+                };
+
+            BlueprintSetup {
                 schema,
+                blueprint,
                 event_schema,
-            )
+                function_auth: btreemap!(
+                    ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    outer_method_auth_template: btreemap!(),
+
+                    method_auth_template: method_auth_template! {
+                        // Metadata Module rules
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+                        // Royalty Module rules
+                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
+                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
+
+                        // Main Module rules
+                        SchemaMethodKey::main(ONE_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(ONE_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                    },
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
         // Two Resource Pool
-        let (two_resource_pool_blueprint, two_resource_pool_schema, two_resource_pool_events) = {
+        let two_resource_pool_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -268,22 +298,50 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            (
-                BlueprintSchema {
+                let blueprint = BlueprintSchema {
                     outer_blueprint: None,
                     fields,
                     collections,
-                    functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
-                },
+                };
+
+            BlueprintSetup {
                 schema,
+                blueprint,
                 event_schema,
-            )
+                function_auth: btreemap!(
+                    TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        // Metadata Module rules
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+                        // Royalty Module rules
+                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
+                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
+
+                        // Main Module rules
+                        SchemaMethodKey::main(TWO_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(TWO_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::main(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
+                        SchemaMethodKey::main(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                    },
+                    outer_method_auth_template: btreemap!(),
+                },
+                virtual_lazy_load_functions: btreemap!(),
+                functions,
+            }
         };
 
         // Multi Resource Pool
-        let (multi_resource_pool_blueprint, multi_resource_pool_schema, multi_resource_pool_events) = {
+        let multi_resource_pool_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
@@ -401,88 +459,19 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            (
+            let blueprint =
                 BlueprintSchema {
                     outer_blueprint: None,
                     fields,
                     collections,
-                    functions,
                     dependencies: btreeset!(),
                     features: btreeset!(),
-                },
+                };
+
+            BlueprintSetup {
                 schema,
+                blueprint,
                 event_schema,
-            )
-        };
-
-        let blueprints = btreemap!(
-            ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: one_resource_pool_schema,
-                blueprint: one_resource_pool_blueprint,
-                event_schema: one_resource_pool_events,
-                function_auth: btreemap!(
-                    ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    outer_method_auth_template: btreemap!(),
-
-                    method_auth_template: method_auth_template! {
-                        // Metadata Module rules
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-                        // Royalty Module rules
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-
-                        // Main Module rules
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
-                    },
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: two_resource_pool_schema,
-                blueprint: two_resource_pool_blueprint,
-                event_schema: two_resource_pool_events,
-                function_auth: btreemap!(
-                    TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: method_auth_template! {
-                        // Metadata Module rules
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-                        // Royalty Module rules
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-
-                        // Main Module rules
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
-                    },
-                    outer_method_auth_template: btreemap!(),
-                },
-                virtual_lazy_load_functions: btreemap!(),
-            },
-            MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: multi_resource_pool_schema,
-                blueprint: multi_resource_pool_blueprint,
-                event_schema: multi_resource_pool_events,
                 function_auth: btreemap!(
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -509,7 +498,14 @@ impl PoolNativePackage {
                     outer_method_auth_template: btreemap!(),
                 },
                 virtual_lazy_load_functions: btreemap!(),
+                functions,
             }
+        };
+
+        let blueprints = btreemap!(
+            ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => one_resource_pool_blueprint,
+            TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => two_resource_pool_blueprint,
+            MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => multi_resource_pool_blueprint,
         );
 
         PackageSetup { blueprints }
