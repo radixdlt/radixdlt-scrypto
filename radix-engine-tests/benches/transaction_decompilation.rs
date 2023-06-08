@@ -16,7 +16,6 @@ use transaction::model::{
     TransactionPayloadPreparable,
 };
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let compiled_transaction = compiled_notarized_transaction();

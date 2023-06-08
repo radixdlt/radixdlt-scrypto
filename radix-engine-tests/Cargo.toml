@@ -18,6 +18,7 @@ radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, 
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 
 [dev-dependencies]
+transaction = { path = "../transaction", default-features = false }
 wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
 scrypto = { path = "../scrypto", default-features = false }
@@ -29,6 +30,7 @@ rayon = "1.5.3"
 serde = { version = "1.0.144", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
 crossbeam = { version = "0.8.2" }
+walkdir = { version = "2.3.3" }
 
 
 [[bench]]
