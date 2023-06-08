@@ -1,4 +1,4 @@
-use radix_engine::errors::{NodeModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
@@ -61,7 +61,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::NodeModuleError(NodeModuleError::AuthError(
+                RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                     AuthError::Unauthorized { .. }
                 ))
             )

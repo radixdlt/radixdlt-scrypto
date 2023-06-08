@@ -1,4 +1,4 @@
-use radix_engine::errors::{NodeModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -38,7 +38,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError(
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                 AuthError::Unauthorized { .. }
             ))
         )

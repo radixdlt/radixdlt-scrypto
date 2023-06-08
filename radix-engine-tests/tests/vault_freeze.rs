@@ -1,4 +1,4 @@
-use radix_engine::errors::{NodeModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
@@ -33,7 +33,9 @@ fn cannot_withdraw_from_frozen_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
         )
     });
 }

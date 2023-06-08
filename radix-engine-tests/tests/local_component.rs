@@ -1,4 +1,4 @@
-use radix_engine::errors::{NodeModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::costing::CostingError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -140,7 +140,7 @@ fn recursion_bomb_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::CostingError(
+            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
                 CostingError::MaxCallDepthLimitReached
             ))
         )
@@ -216,7 +216,7 @@ fn recursion_bomb_2_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::CostingError(
+            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
                 CostingError::MaxCallDepthLimitReached
             ))
         )

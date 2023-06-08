@@ -1,4 +1,4 @@
-use radix_engine::errors::{ApplicationError, NodeModuleError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine_interface::blueprints::account::*;
@@ -651,7 +651,7 @@ enum DepositMethod {
 fn is_auth_unauthorized_error(runtime_error: &RuntimeError) -> bool {
     matches!(
         runtime_error,
-        RuntimeError::NodeModuleError(NodeModuleError::AuthError(AuthError::Unauthorized(..)))
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))
     )
 }
 

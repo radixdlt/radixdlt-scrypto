@@ -60,7 +60,7 @@ fn test_error_enum_sizes() {
     print_size!(CallFrameError);
     print_size!(SystemError);
     print_size!(SystemUpstreamError);
-    print_size!(NodeModuleError);
+    print_size!(SystemModuleError);
     print_size!(ApplicationError);
     print_size!(AuthError);
     print_size!(AccessControllerError);
@@ -71,7 +71,7 @@ fn test_error_enum_sizes() {
     check_size!(CallFrameError, 100);
     check_size!(SystemError, 100);
     check_size!(SystemUpstreamError, 100);
-    check_size!(NodeModuleError, 100);
+    check_size!(SystemModuleError, 100);
     check_size!(ApplicationError, 100);
     check_size!(AuthError, 100);
     check_size!(AccessControllerError, 100);

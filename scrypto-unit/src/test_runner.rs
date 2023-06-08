@@ -1633,14 +1633,14 @@ impl StateHashSupport {
 pub fn is_auth_error(e: &RuntimeError) -> bool {
     matches!(
         e,
-        RuntimeError::NodeModuleError(NodeModuleError::AuthError(_))
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(_))
     )
 }
 
 pub fn is_costing_error(e: &RuntimeError) -> bool {
     matches!(
         e,
-        RuntimeError::NodeModuleError(NodeModuleError::CostingError(_))
+        RuntimeError::SystemModuleError(SystemModuleError::CostingError(_))
     )
 }
 

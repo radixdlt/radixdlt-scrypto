@@ -1,4 +1,4 @@
-use radix_engine::errors::{NodeModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -48,7 +48,7 @@ fn cannot_call_package_protected_function_without_package_token() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError(
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                 AuthError::Unauthorized { .. }
             ))
         )

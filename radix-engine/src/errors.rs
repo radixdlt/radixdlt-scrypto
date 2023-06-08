@@ -14,7 +14,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
-    CreateNodeError, DropNodeError, ListNodeModuleError, LockSubstateError, MoveModuleError,
+    CreateNodeError, DropNodeError, ListSystemModuleError, LockSubstateError, MoveModuleError,
     PassMessageError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
@@ -68,14 +68,14 @@ pub enum RuntimeError {
     /// An error occurred within the system, notably the ClientApi implementation.
     SystemError(SystemError),
 
-    /// TODO: merge with `ModuleError`/`ApplicationError`
+    /// An error occurred within a specific system module, like auth, costing and royalty.
+    SystemModuleError(SystemModuleError),
+
+    /// An error issued by the system when invoking upstream (such as blueprints, node modules).
     SystemUpstreamError(SystemUpstreamError),
 
     /// An error occurred in the vm layer
     VmError(VmError),
-
-    /// An error occurred within a kernel module.
-    NodeModuleError(NodeModuleError),
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
@@ -101,9 +101,9 @@ impl From<SystemUpstreamError> for RuntimeError {
     }
 }
 
-impl From<NodeModuleError> for RuntimeError {
-    fn from(error: NodeModuleError) -> Self {
-        RuntimeError::NodeModuleError(error.into())
+impl From<SystemModuleError> for RuntimeError {
+    fn from(error: SystemModuleError) -> Self {
+        RuntimeError::SystemModuleError(error.into())
     }
 }
 
@@ -120,7 +120,7 @@ impl CanBeAbortion for RuntimeError {
             RuntimeError::VmError(_) => None,
             RuntimeError::SystemError(_) => None,
             RuntimeError::SystemUpstreamError(_) => None,
-            RuntimeError::NodeModuleError(err) => err.abortion(),
+            RuntimeError::SystemModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
     }
@@ -176,7 +176,7 @@ pub enum CallFrameError {
     CreateNodeError(CreateNodeError),
     DropNodeError(DropNodeError),
 
-    ListNodeModuleError(ListNodeModuleError),
+    ListSystemModuleError(ListSystemModuleError),
     MoveModuleError(MoveModuleError),
 
     LockSubstateError(LockSubstateError),
@@ -276,7 +276,7 @@ pub enum CreateObjectError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum NodeModuleError {
+pub enum SystemModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
@@ -299,7 +299,7 @@ pub enum CannotGlobalizeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidModuleSet(pub BTreeSet<ObjectModuleId>);
 
-impl CanBeAbortion for NodeModuleError {
+impl CanBeAbortion for SystemModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             Self::CostingError(err) => err.abortion(),
@@ -308,19 +308,19 @@ impl CanBeAbortion for NodeModuleError {
     }
 }
 
-impl From<NodeMoveError> for NodeModuleError {
+impl From<NodeMoveError> for SystemModuleError {
     fn from(error: NodeMoveError) -> Self {
         Self::NodeMoveError(error)
     }
 }
 
-impl From<AuthError> for NodeModuleError {
+impl From<AuthError> for SystemModuleError {
     fn from(error: AuthError) -> Self {
         Self::AuthError(error)
     }
 }
 
-impl From<CostingError> for NodeModuleError {
+impl From<CostingError> for SystemModuleError {
     fn from(error: CostingError) -> Self {
         Self::CostingError(error)
     }

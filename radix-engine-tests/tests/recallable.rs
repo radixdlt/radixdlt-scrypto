@@ -1,4 +1,4 @@
-use radix_engine::errors::{KernelError, NodeModuleError, RejectionError, RuntimeError};
+use radix_engine::errors::{KernelError, RejectionError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
@@ -65,7 +65,7 @@ fn cannot_take_on_non_recallable_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError(
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                 AuthError::Unauthorized { .. },
             ))
         )

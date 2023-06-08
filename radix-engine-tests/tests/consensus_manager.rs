@@ -1,7 +1,7 @@
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
 };
-use radix_engine::errors::{ApplicationError, NodeModuleError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
@@ -173,7 +173,7 @@ fn next_round_without_supervisor_auth_fails() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError { .. })
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError { .. })
         )
     });
 }
@@ -348,7 +348,7 @@ fn register_validator_without_auth_fails() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError(..))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
         )
     });
 }
@@ -415,7 +415,7 @@ fn unregister_validator_without_auth_fails() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError(..))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
         )
     });
 }
@@ -482,7 +482,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::NodeModuleError(NodeModuleError::AuthError(
+                RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                     AuthError::Unauthorized { .. }
                 ))
             )
@@ -2337,7 +2337,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::NodeModuleError(NodeModuleError::AuthError { .. })
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError { .. })
         )
     });
 }
