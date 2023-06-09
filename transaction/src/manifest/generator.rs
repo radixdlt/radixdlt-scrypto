@@ -123,7 +123,7 @@ pub struct NameResolver {
     named_buckets: BTreeMap<String, ManifestBucket>,
     named_proofs: BTreeMap<String, ManifestProof>,
     named_reservations: BTreeMap<String, ManifestReservation>,
-    named_addresses: BTreeMap<String, ManifestNamedAddress>,
+    named_address_names: BTreeMap<String, ManifestNamedAddress>,
 }
 
 impl NameResolver {
@@ -175,10 +175,10 @@ impl NameResolver {
         name: String,
         named_address_id: ManifestNamedAddress,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_addresses.contains_key(&name) {
+        if self.named_buckets.contains_key(&name) || self.named_address_names.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
-            self.named_addresses.insert(name, named_address_id);
+            self.named_address_names.insert(name, named_address_id);
             Ok(())
         }
     }
@@ -211,7 +211,7 @@ impl NameResolver {
         &mut self,
         name: &str,
     ) -> Result<ManifestNamedAddress, NameResolverError> {
-        match self.named_addresses.get(name).cloned() {
+        match self.named_address_names.get(name).cloned() {
             Some(named_address_id) => Ok(named_address_id),
             None => Err(NameResolverError::UndefinedNamedAddress(name.into())),
         }
@@ -475,7 +475,8 @@ where
             function_name,
             args,
         } => {
-            let package_address = generate_dynamic_global_address(package_address, bech32_decoder)?;
+            let package_address =
+                generate_dynamic_global_address(package_address, bech32_decoder, resolver)?;
             let blueprint_name = generate_string(&blueprint_name)?;
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
@@ -495,7 +496,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -512,7 +513,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -529,7 +530,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -546,7 +547,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -679,57 +680,57 @@ where
 
         /* call non-main method aliases */
         ast::Instruction::SetMetadata { address, args } => InstructionV1::CallMetadataMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: METADATA_SET_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::RemoveMetadata { address, args } => InstructionV1::CallMetadataMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: METADATA_REMOVE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetComponentRoyaltyConfig { address, args } => {
             InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(address, bech32_decoder)?,
+                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
                 method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::ClaimComponentRoyalty { address, args } => {
             InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(address, bech32_decoder)?,
+                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
                 method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::UpdateRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintNonFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintUuidNonFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetPackageRoyaltyConfig { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
@@ -843,25 +844,35 @@ fn generate_resource_address(
 fn generate_dynamic_global_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
+    resolver: &mut NameResolver,
 ) -> Result<DynamicGlobalAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
-                        return Ok(DynamicGlobalAddress::Static(address));
+                        return Ok(address.into());
                     }
                 }
                 return Err(GeneratorError::InvalidGlobalAddress(s.into()));
             }
             v => return invalid_type!(v, ast::ValueKind::String),
         },
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(ManifestNamedAddress(*n).into()),
+            ast::Value::String(s) => resolver
+                .resolve_named_address(&s)
+                .map(Into::into)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
         v => invalid_type!(
             v,
             ast::ValueKind::Address,
             ast::ValueKind::PackageAddress,
             ast::ValueKind::ResourceAddress,
-            ast::ValueKind::ComponentAddress
+            ast::ValueKind::ComponentAddress,
+            ast::ValueKind::NamedAddress
         ),
     }
 }

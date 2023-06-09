@@ -9,22 +9,19 @@ pub struct ManifestValueDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
+    pub reservation_names: Option<&'a NonIterMap<ManifestReservation, String>>,
+    pub named_address_names: Option<&'a NonIterMap<ManifestNamedAddress, String>>,
 }
 
 impl<'a> ManifestValueDisplayContext<'a> {
     pub fn no_context() -> Self {
-        Self {
-            bech32_encoder: None,
-            bucket_names: None,
-            proof_names: None,
-        }
+        Self::default()
     }
 
     pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
             bech32_encoder,
-            bucket_names: None,
-            proof_names: None,
+            ..Default::default()
         }
     }
 
@@ -32,11 +29,15 @@ impl<'a> ManifestValueDisplayContext<'a> {
         bech32_encoder: Option<&'a Bech32Encoder>,
         bucket_names: &'a NonIterMap<ManifestBucket, String>,
         proof_names: &'a NonIterMap<ManifestProof, String>,
+        reservation_names: &'a NonIterMap<ManifestReservation, String>,
+        named_address_names: &'a NonIterMap<ManifestNamedAddress, String>,
     ) -> Self {
         Self {
             bech32_encoder,
             bucket_names: Some(bucket_names),
             proof_names: Some(proof_names),
+            reservation_names: Some(reservation_names),
+            named_address_names: Some(named_address_names),
         }
     }
 
@@ -48,6 +49,16 @@ impl<'a> ManifestValueDisplayContext<'a> {
     pub fn get_proof_name(&self, proof_id: &ManifestProof) -> Option<&str> {
         self.proof_names
             .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_reservation_name(&self, reservation_id: &ManifestReservation) -> Option<&str> {
+        self.reservation_names
+            .and_then(|names| names.get(reservation_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_named_address_name(&self, named_address_id: &ManifestNamedAddress) -> Option<&str> {
+        self.named_address_names
+            .and_then(|names| names.get(named_address_id).map(|s| s.as_str()))
     }
 }
 

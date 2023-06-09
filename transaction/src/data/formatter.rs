@@ -15,30 +15,25 @@ pub struct MultiLine {
     indent: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct ManifestDecompilationDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
+    pub reservation_names: Option<&'a NonIterMap<ManifestReservation, String>>,
+    pub named_address_names: Option<&'a NonIterMap<ManifestNamedAddress, String>>,
     pub multi_line: Option<MultiLine>,
 }
 
 impl<'a> ManifestDecompilationDisplayContext<'a> {
     pub fn no_context() -> Self {
-        Self {
-            bech32_encoder: None,
-            bucket_names: None,
-            proof_names: None,
-            multi_line: None,
-        }
+        Self::default()
     }
 
     pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
             bech32_encoder,
-            bucket_names: None,
-            proof_names: None,
-            multi_line: None,
+            ..Default::default()
         }
     }
 
@@ -46,12 +41,16 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
         bech32_encoder: Option<&'a Bech32Encoder>,
         bucket_names: &'a NonIterMap<ManifestBucket, String>,
         proof_names: &'a NonIterMap<ManifestProof, String>,
+        reservation_names: &'a NonIterMap<ManifestReservation, String>,
+        named_address_names: &'a NonIterMap<ManifestNamedAddress, String>,
     ) -> Self {
         Self {
             bech32_encoder,
             bucket_names: Some(bucket_names),
             proof_names: Some(proof_names),
-            multi_line: None,
+            reservation_names: Some(reservation_names),
+            named_address_names: Some(named_address_names),
+            ..Default::default()
         }
     }
 
@@ -68,6 +67,16 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
     pub fn get_proof_name(&self, proof_id: &ManifestProof) -> Option<&str> {
         self.proof_names
             .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_reservation_name(&self, reservation_id: &ManifestReservation) -> Option<&str> {
+        self.reservation_names
+            .and_then(|names| names.get(reservation_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_named_address_name(&self, named_address_id: &ManifestNamedAddress) -> Option<&str> {
+        self.named_address_names
+            .and_then(|names| names.get(named_address_id).map(|s| s.as_str()))
     }
 
     pub fn get_indent(&self, depth: usize) -> String {
@@ -395,26 +404,40 @@ pub fn format_custom_value<F: fmt::Write>(
                 write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
             }
         }
-        // TODO: fix name
         ManifestCustomValue::Reservation(value) => {
-            write_with_indent!(
-                f,
-                context,
-                indent_start,
-                depth,
-                "Reservation({}u32)",
-                value.0
-            )?;
+            if let Some(name) = context.get_reservation_name(&value) {
+                write_with_indent!(f, context, indent_start, depth, "Reservation(\"{}\")", name)?;
+            } else {
+                write_with_indent!(
+                    f,
+                    context,
+                    indent_start,
+                    depth,
+                    "Reservation({}u32)",
+                    value.0
+                )?;
+            }
         }
         ManifestCustomValue::NamedAddress(value) => {
-            write_with_indent!(
-                f,
-                context,
-                indent_start,
-                depth,
-                "NamedAddress({}u32)",
-                value.0
-            )?;
+            if let Some(name) = context.get_named_address_name(&value) {
+                write_with_indent!(
+                    f,
+                    context,
+                    indent_start,
+                    depth,
+                    "NamedAddress(\"{}\")",
+                    name
+                )?;
+            } else {
+                write_with_indent!(
+                    f,
+                    context,
+                    indent_start,
+                    depth,
+                    "NamedAddress({}u32)",
+                    value.0
+                )?;
+            }
         }
         ManifestCustomValue::Expression(value) => {
             write_with_indent!(

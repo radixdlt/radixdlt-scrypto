@@ -101,6 +101,8 @@ impl<'a> DecompilationContext<'a> {
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,
+            &self.reservation_names,
+            &self.named_address_names,
         )
         .with_multi_line(4, 4)
     }

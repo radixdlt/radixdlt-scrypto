@@ -46,10 +46,18 @@ impl SerializableCustomExtension for ManifestCustomExtension {
             }
             // TODO: add name support
             ManifestCustomValue::Reservation(value) => {
-                (SerializableType::String(value.0.to_string()), true)
+                if let Some(name) = context.custom_context.get_reservation_name(&value) {
+                    (SerializableType::String(name.to_string()), true)
+                } else {
+                    (SerializableType::String(value.0.to_string()), true)
+                }
             }
             ManifestCustomValue::NamedAddress(value) => {
-                (SerializableType::String(value.0.to_string()), true)
+                if let Some(name) = context.custom_context.get_named_address_name(&value) {
+                    (SerializableType::String(name.to_string()), true)
+                } else {
+                    (SerializableType::String(value.0.to_string()), true)
+                }
             }
             ManifestCustomValue::Expression(value) => {
                 let text = match value {
