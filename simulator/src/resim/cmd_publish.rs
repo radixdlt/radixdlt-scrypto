@@ -3,10 +3,7 @@ use colored::*;
 use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-    PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET, VmType};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -77,7 +74,10 @@ impl Publish {
                 SpreadPrefixKeyMapper::to_db_partition_key(&node_id, MAIN_BASE_PARTITION);
             let code_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Code.into());
-            let package_code = PackageCodeSubstate { code };
+            let package_code = PackageCodeSubstate {
+                vm_type: VmType::ScryptoV1,
+                code,
+            };
 
             let blueprints_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,

@@ -31,9 +31,17 @@ pub const PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET: PartitionOffset = Parti
 
 pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
 
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum VmType {
+    Native,
+    ScryptoV1,
+}
+
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
 pub struct PackageCodeSubstate {
+    pub vm_type: VmType,
     pub code: Vec<u8>,
 }
 

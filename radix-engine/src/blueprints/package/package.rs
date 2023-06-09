@@ -25,7 +25,6 @@ use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
-pub use super::substates::PackageCodeTypeSubstate;
 use crate::method_auth_template;
 use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -132,10 +131,7 @@ fn globalize_package<Y, L: Default>(
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_config: BTreeMap<String, BlueprintDependencies>,
 
-    code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
-
-    royalty: PackageRoyaltyAccumulatorSubstate,
 
     package_royalties: BTreeMap<String, RoyaltyConfig>,
     blueprint_auth_template: BTreeMap<String, MethodAuthTemplate>,
@@ -153,10 +149,13 @@ where
 
     let mut partitions: NodeSubstates = BTreeMap::new();
 
+    let royalty = PackageRoyaltyAccumulatorSubstate {
+        royalty_vault: None,
+    };
+
     // Prepare node init.
     {
         let main_partition = btreemap!(
-            PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
             PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
             PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
         );
@@ -427,7 +426,7 @@ impl PackageNativePackage {
 
         let mut fields = Vec::new();
         fields.push(FieldSchema::normal(
-            aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>(),
+            aggregator.add_child_type_and_descendents::<VmType>(),
         ));
         fields.push(FieldSchema::normal(
             aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
@@ -676,7 +675,7 @@ impl PackageNativePackage {
         let mut function_auth = BTreeMap::new();
         let mut blueprint_auth_templates = BTreeMap::new();
         let mut blueprints = BTreeMap::new();
-        let mut blueprint_config = BTreeMap::new();
+        let mut blueprint_dependencies = BTreeMap::new();
 
         {
             for (blueprint, setup) in setup.blueprints {
@@ -718,25 +717,20 @@ impl PackageNativePackage {
                 let minor_version_config = BlueprintDependencies {
                     dependencies: setup.dependencies,
                 };
-                blueprint_config.insert(blueprint.clone(), minor_version_config);
+                blueprint_dependencies.insert(blueprint.clone(), minor_version_config);
             }
         };
 
-        let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
+            vm_type: VmType::Native,
             code: vec![native_package_code_id],
-        };
-        let royalty = PackageRoyaltyAccumulatorSubstate {
-            royalty_vault: None,
         };
 
         globalize_package(
             package_address,
             blueprints,
-            blueprint_config,
-            code_type,
+            blueprint_dependencies,
             code,
-            royalty,
             btreemap!(),
             blueprint_auth_templates,
             function_auth,
@@ -863,26 +857,23 @@ impl PackageNativePackage {
                 ))
             })?;
 
-        let mut function_auth = BTreeMap::new();
-        let mut blueprint_auth_templates = BTreeMap::new();
+        let mut function_auth_templates = BTreeMap::new();
+        let mut method_auth_templates = BTreeMap::new();
 
         let mut blueprints = BTreeMap::new();
         let mut royalties = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
-        let royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
-            royalty_vault: None,
-        };
 
         // Build node init
         {
             for (blueprint, setup) in setup.blueprints {
-                function_auth.insert(
+                function_auth_templates.insert(
                     blueprint.clone(),
                     FunctionAuthTemplate {
                         rules: setup.function_auth,
                     },
                 );
-                blueprint_auth_templates.insert(blueprint.clone(), setup.template);
+                method_auth_templates.insert(blueprint.clone(), setup.template);
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
@@ -909,7 +900,6 @@ impl PackageNativePackage {
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                 };
                 blueprints.insert(blueprint.clone(), definition);
-
                 royalties.insert(blueprint.clone(), setup.royalty_config);
 
                 let dependencies = BlueprintDependencies {
@@ -919,19 +909,19 @@ impl PackageNativePackage {
             }
         }
 
-        let code_type = PackageCodeTypeSubstate::Wasm;
-        let code = PackageCodeSubstate { code };
+        let code = PackageCodeSubstate {
+            vm_type: VmType::ScryptoV1,
+            code,
+        };
 
         globalize_package(
             package_address,
             blueprints,
             blueprint_dependencies,
-            code_type,
             code,
-            royalty_accumulator,
             royalties,
-            blueprint_auth_templates,
-            function_auth,
+            method_auth_templates,
+            function_auth_templates,
             metadata,
             Some(access_rules),
             api,
