@@ -143,14 +143,12 @@ fn test_basic_package_missing_export() {
     blueprints.insert(
         "Test".to_string(),
         BlueprintSetup {
+            outer_blueprint: None,
+            dependencies: btreeset!(),
+            features: btreeset!(),
             blueprint: BlueprintSchema {
-                outer_blueprint: None,
-
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
-
-                dependencies: btreeset!(),
-                features: btreeset!(),
             },
             event_schema: [].into(),
             schema: ScryptoSchema {

@@ -1,5 +1,6 @@
 use sbor::basic_well_known_types::*;
 use sbor::*;
+use scrypto::blueprints::package::*;
 use scrypto::prelude::*;
 use scrypto::schema::*;
 
@@ -34,7 +35,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let mut functions = BTreeMap::new();
     functions.insert(
         "f".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -45,12 +46,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let schema = generate_full_schema(aggregator);
 
     let blueprint = BlueprintSchema {
-        outer_blueprint: None,
         fields,
         collections: vec![],
-        functions,
-        dependencies: btreeset!(),
-        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
@@ -58,6 +55,10 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintSetup {
+        outer_blueprint: None,
+        functions,
+        dependencies: btreeset!(),
+        features: btreeset!(),
         blueprint,
         schema,
         event_schema: [].into(),
@@ -87,7 +88,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     let mut functions = BTreeMap::new();
     functions.insert(
         "f".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -96,12 +97,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     );
 
     let blueprint = BlueprintSchema {
-        outer_blueprint: None,
         fields,
         collections: vec![],
-        functions,
-        dependencies: btreeset!(),
-        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
@@ -109,6 +106,10 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintSetup {
+        functions,
+        outer_blueprint: None,
+        dependencies: btreeset!(),
+        features: btreeset!(),
         blueprint,
         schema: generate_full_schema(aggregator),
         event_schema: [].into(),
@@ -138,7 +139,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     let mut functions = BTreeMap::new();
     functions.insert(
         "f".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -147,12 +148,8 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     let blueprint = BlueprintSchema {
-        outer_blueprint: None,
         fields,
         collections: vec![],
-        functions,
-        dependencies: btreeset!(),
-        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
@@ -160,6 +157,9 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintSetup {
+        outer_blueprint: None,
+        dependencies: btreeset!(),
+        features: btreeset!(),
         schema: generate_full_schema(aggregator),
         blueprint,
         event_schema: [].into(),
@@ -170,6 +170,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
             outer_method_auth_template: btreemap!(),
         },
         virtual_lazy_load_functions: BTreeMap::new(),
+        functions,
     };
 
     ::scrypto::engine::wasm_api::forget_vec(

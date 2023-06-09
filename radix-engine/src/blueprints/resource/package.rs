@@ -569,7 +569,6 @@ impl ResourceManagerNativePackage {
             let blueprint = BlueprintSchema {
                 fields,
                 collections,
-
             };
 
             BlueprintSetup {
@@ -1003,7 +1002,7 @@ impl ResourceManagerNativePackage {
             };
 
             BlueprintSetup {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 dependencies: btreeset!(),
                 features: btreeset!(),
                 schema,
@@ -1353,7 +1352,6 @@ impl ResourceManagerNativePackage {
             let blueprint = BlueprintSchema {
                 fields,
                 collections: vec![],
-
             };
 
             BlueprintSetup {
@@ -1669,7 +1667,6 @@ impl ResourceManagerNativePackage {
             let worktop_blueprint = BlueprintSchema {
                 fields,
                 collections: vec![],
-
             };
 
             BlueprintSetup {

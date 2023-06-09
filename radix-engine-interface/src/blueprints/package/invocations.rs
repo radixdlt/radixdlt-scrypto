@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use crate::blueprints::package::VirtualLazyLoadExport;
 use crate::blueprints::resource::*;
 use crate::types::*;
@@ -14,6 +13,7 @@ use sbor::LocalTypeIndex;
 use scrypto_schema::{
     BlueprintSchema, ExportSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
 };
+use std::collections::BTreeSet;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 

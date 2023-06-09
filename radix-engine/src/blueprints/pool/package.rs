@@ -300,7 +300,6 @@ impl PoolNativePackage {
             let blueprint = BlueprintSchema {
                 fields,
                 collections,
-
             };
 
             BlueprintSetup {
@@ -462,7 +461,6 @@ impl PoolNativePackage {
             let blueprint = BlueprintSchema {
                 fields,
                 collections,
-
             };
 
             BlueprintSetup {

@@ -128,7 +128,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 fn globalize_package<Y, L: Default>(
     package_address_reservation: Option<GlobalAddressReservation>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
-    //blueprint_events: BTreeMap<(String, String), LocalTypeIndex>,
+    blueprint_config: BTreeMap<String, BlueprintMinorVersionConfig>,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
     royalty: PackageRoyaltyAccumulatorSubstate,
@@ -184,17 +184,16 @@ where
         );
     };
 
-    /*
     {
-        let blueprint_events_partition = blueprint_events
+        let minor_version_configs = blueprint_config
             .into_iter()
-            .map(|(blueprint_event, type_index)| {
+            .map(|(blueprint, minor_version_config)| {
                 let value = SubstateWrapper {
-                    value: Some(type_index),
+                    value: Some(minor_version_config),
                     mutability: SubstateMutability::Immutable,
                 };
                 (
-                    SubstateKey::Map(scrypto_encode(&blueprint_event).unwrap()),
+                    SubstateKey::Map(scrypto_encode(&blueprint).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
                 )
             })
@@ -202,12 +201,11 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET)
+                .at_offset(PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET)
                 .unwrap(),
-            blueprint_events_partition,
+            minor_version_configs,
         );
     };
-     */
 
     {
         let fn_royalty_partition = fn_royalty
@@ -389,6 +387,15 @@ impl PackageNativePackage {
                 key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<String>()),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<BlueprintDefinition>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<String>()),
+                value: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<BlueprintMinorVersionConfig>(),
                 ),
                 can_own: false,
             },
@@ -615,10 +622,10 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let (function_access_rules, blueprints) = {
+        let (function_access_rules, blueprints, blueprint_config) = {
             let mut access_rules = BTreeMap::new();
             let mut blueprints = BTreeMap::new();
-            //let mut blueprint_events = BTreeMap::new();
+            let mut blueprint_config = BTreeMap::new();
 
             for (blueprint, setup) in setup.blueprints {
                 for (ident, rule) in setup.function_auth {
@@ -628,30 +635,37 @@ impl PackageNativePackage {
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
                 for (function, setup) in setup.functions {
-                    functions.insert(function.clone(), FunctionSchema {
-                        receiver: setup.receiver,
-                        input: setup.input,
-                        output: setup.output,
-                    });
+                    functions.insert(
+                        function.clone(),
+                        FunctionSchema {
+                            receiver: setup.receiver,
+                            input: setup.input,
+                            output: setup.output,
+                        },
+                    );
                     function_exports.insert(function, setup.export);
                 }
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
-                    dependencies: setup.dependencies,
                     functions,
-                    function_exports,
                     events: setup.event_schema,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
-                    blueprint: setup.blueprint.into(),
+                    state_schema: setup.blueprint.into(),
                     template: setup.template,
                 };
                 blueprints.insert(blueprint.clone(), definition);
+
+                let minor_version_config = BlueprintMinorVersionConfig {
+                    dependencies: setup.dependencies,
+                    function_exports,
+                };
+                blueprint_config.insert(blueprint.clone(), minor_version_config);
             }
 
-            (access_rules, blueprints)
+            (access_rules, blueprints, blueprint_config)
         };
 
         let code_type = PackageCodeTypeSubstate::Native;
@@ -665,6 +679,7 @@ impl PackageNativePackage {
         globalize_package(
             package_address,
             blueprints,
+            blueprint_config,
             code_type,
             code,
             royalty,
@@ -735,12 +750,7 @@ impl PackageNativePackage {
         for BlueprintSetup {
             outer_blueprint: parent,
             features,
-            blueprint:
-                BlueprintSchema {
-                    collections,
-
-                    ..
-                },
+            blueprint: BlueprintSchema { collections, .. },
             virtual_lazy_load_functions,
             functions,
             ..
@@ -799,11 +809,11 @@ impl PackageNativePackage {
             })?;
 
         // Build node init
-        let (function_access_rules, blueprints, royalty_accumulator, fn_royalty) = {
+        let (function_access_rules, blueprints, blueprint_config, royalty_accumulator, fn_royalty) = {
             let mut access_rules = BTreeMap::new();
             let mut blueprints = BTreeMap::new();
             let mut royalties = BTreeMap::new();
-            //let mut blueprint_events = BTreeMap::new();
+            let mut blueprint_config = BTreeMap::new();
 
             for (blueprint, setup) in setup.blueprints {
                 for (ident, rule) in setup.function_auth {
@@ -819,36 +829,43 @@ impl PackageNativePackage {
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
                 for (function, setup) in setup.functions {
-                    functions.insert(function.clone(), FunctionSchema {
-                        receiver: setup.receiver,
-                        input: setup.input,
-                        output: setup.output,
-                    });
+                    functions.insert(
+                        function.clone(),
+                        FunctionSchema {
+                            receiver: setup.receiver,
+                            input: setup.input,
+                            output: setup.output,
+                        },
+                    );
                     function_exports.insert(function, setup.export);
                 }
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
-                    dependencies: setup.dependencies,
                     functions,
-                    function_exports,
                     events: setup.event_schema,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
-                    blueprint: setup.blueprint.into(),
+                    state_schema: setup.blueprint.into(),
                     template: setup.template,
                 };
                 blueprints.insert(blueprint.clone(), definition);
                 for (ident, amount) in setup.royalty_config.rules {
                     royalties.insert(FnKey::new(blueprint.clone(), ident), amount);
                 }
+
+                let minor_version_config = BlueprintMinorVersionConfig {
+                    dependencies: setup.dependencies,
+                    function_exports,
+                };
+                blueprint_config.insert(blueprint.clone(), minor_version_config);
             }
 
             (
                 access_rules,
                 blueprints,
-                //blueprint_events,
+                blueprint_config,
                 PackageRoyaltyAccumulatorSubstate {
                     royalty_vault: None,
                 },
@@ -862,7 +879,7 @@ impl PackageNativePackage {
         globalize_package(
             package_address,
             blueprints,
-            //blueprint_events,
+            blueprint_config,
             code_type,
             code,
             royalty_accumulator,

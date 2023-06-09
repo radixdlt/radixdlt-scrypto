@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::blueprints::package::*;
 use scrypto::prelude::*;
 use scrypto::schema::*;
 
@@ -36,7 +37,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
 
     functions.insert(
         "invalid_output".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<()>(),
             output: aggregator.add_child_type_and_descendents::<u8>(),
@@ -45,7 +46,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "unit".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<()>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -54,7 +55,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "bool".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<bool>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -63,7 +64,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "i8".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i8>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -72,7 +73,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "i16".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i16>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -81,7 +82,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "i32".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i32>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -90,7 +91,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "i64".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i64>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -99,7 +100,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "i128".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i128>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -108,7 +109,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "u8".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u8>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -117,7 +118,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "u16".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u16>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -126,7 +127,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "u32".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u32>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -135,7 +136,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "u64".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u64>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -144,7 +145,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "u128".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u128>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -153,7 +154,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "result".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<Result<(), ()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -162,7 +163,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "tree_map".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<BTreeMap<(), ()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -171,7 +172,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
     functions.insert(
         "hash_set".to_string(),
-        FunctionSchema {
+        FunctionSetup {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<HashSet<()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -182,11 +183,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let schema = generate_full_schema(aggregator);
 
     let blueprint = BlueprintSchema {
-        outer_blueprint: None,
         fields,
         collections: vec![],
-        dependencies: btreeset!(),
-        features: btreeset!(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
@@ -209,6 +207,9 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintSetup {
+        outer_blueprint: None,
+        dependencies: btreeset!(),
+        features: btreeset!(),
         schema,
         blueprint,
         event_schema: [].into(),

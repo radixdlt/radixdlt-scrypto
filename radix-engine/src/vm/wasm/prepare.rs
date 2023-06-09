@@ -4,7 +4,7 @@ use parity_wasm::elements::{
     Internal, Module, Type, ValueType,
 };
 use radix_engine_interface::blueprints::package::BlueprintSetup;
-use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema};
+use radix_engine_interface::schema::FeaturedSchema;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -1245,13 +1245,13 @@ mod tests {
         blueprints.insert(
             "Test".to_string(),
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(),
+
                 blueprint: BlueprintSchema {
-                    outer_blueprint: None,
                     fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                     collections: vec![],
-
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
                 },
 
                 event_schema: Default::default(),

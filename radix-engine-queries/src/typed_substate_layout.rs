@@ -102,7 +102,7 @@ pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
     PackageBlueprintKey(String),
-    PackageBlueprintEventKey((String, String)),
+    PackageBlueprintMinorVersionKey(String),
     PackageFnRoyaltyKey(FnKey),
     PackageFunctionAccessRulesKey(FnKey),
     FungibleResourceField(FungibleResourceManagerField),
@@ -234,9 +234,9 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                PackagePartitionOffset::BlueprintEvents => {
+                PackagePartitionOffset::BlueprintMinorVersionConfigs => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageBlueprintEventKey(
+                    TypedMainModuleSubstateKey::PackageBlueprintMinorVersionKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -394,7 +394,7 @@ pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
-    PackageBlueprintEvent(Option<LocalTypeIndex>),
+    PackageBlueprintMinorVersionConfig(Option<BlueprintMinorVersionConfig>),
     PackageFunctionAccessRule(Option<AccessRule>),
     PackageFnRoyalty(Option<RoyaltyAmount>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
@@ -568,9 +568,9 @@ fn to_typed_object_substate_value(
             let value: SubstateWrapper<Option<BlueprintDefinition>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageBlueprint(value.value)
         }
-        TypedMainModuleSubstateKey::PackageBlueprintEventKey(..) => {
-            let value: SubstateWrapper<Option<LocalTypeIndex>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::PackageBlueprintEvent(value.value)
+        TypedMainModuleSubstateKey::PackageBlueprintMinorVersionKey(..) => {
+            let value: SubstateWrapper<Option<BlueprintMinorVersionConfig>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageBlueprintMinorVersionConfig(value.value)
         }
         TypedMainModuleSubstateKey::PackageFnRoyaltyKey(_fn_key) => {
             let value: SubstateWrapper<Option<RoyaltyAmount>> = scrypto_decode(data)?;

@@ -1,8 +1,12 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintMinorVersionConfig, FunctionSchema,
+    PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET,
+};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -81,35 +85,57 @@ impl Publish {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
             );
+            let blueprints_config_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET)
+                    .unwrap(),
+            );
             let mut blueprint_updates = index_map_new();
+            let mut blueprint_config_updates = index_map_new();
 
             for (b, s) in package_definition.blueprints {
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
                 for (function, setup) in s.functions {
-                    functions.insert(function.clone(), FunctionSchema {
-                        receiver: setup.receiver,
-                        input: setup.input,
-                        output: setup.output,
-                    });
+                    functions.insert(
+                        function.clone(),
+                        FunctionSchema {
+                            receiver: setup.receiver,
+                            input: setup.input,
+                            output: setup.output,
+                        },
+                    );
                     function_exports.insert(function, setup.export);
                 }
 
                 let def = BlueprintDefinition {
                     outer_blueprint: s.outer_blueprint,
                     features: s.features,
-                    dependencies: s.dependencies,
                     functions,
-                    function_exports,
                     events: s.event_schema,
                     virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                     schema: s.schema,
-                    blueprint: s.blueprint.into(),
+                    state_schema: s.blueprint.into(),
                     template: s.template,
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
                 blueprint_updates.insert(key, update);
+
+                let config = BlueprintMinorVersionConfig {
+                    dependencies: s.dependencies,
+                    function_exports,
+                };
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
+                let update = DatabaseUpdate::Set(
+                    scrypto_encode(&SubstateWrapper {
+                        value: config,
+                        mutability: SubstateMutability::Mutable,
+                    })
+                    .unwrap(),
+                );
+                blueprint_config_updates.insert(key, update);
             }
 
             let database_updates = indexmap!(
@@ -119,6 +145,7 @@ impl Publish {
                     ),
                 ),
                 blueprints_partition_key => blueprint_updates,
+                blueprints_config_partition_key => blueprint_config_updates,
             );
 
             substate_db.commit(&database_updates);

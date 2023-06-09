@@ -8,7 +8,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use radix_engine_common::prelude::replace_self_package_address;
-use radix_engine_common::types::{GlobalAddress, PackageAddress};
+use radix_engine_common::types::PackageAddress;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -87,11 +87,9 @@ impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
-
     /// State Schema
     pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema>,
-
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -178,7 +176,6 @@ impl Default for BlueprintSchema {
         Self {
             fields: Vec::default(),
             collections: Vec::default(),
-
         }
     }
 }

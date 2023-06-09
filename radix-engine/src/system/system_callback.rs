@@ -27,6 +27,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
     blueprint_definition: &BlueprintDefinition,
+    minor_version_config: &BlueprintMinorVersionConfig,
     fn_ident: &str,
     with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
@@ -69,13 +70,11 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    let export_schema =
-        blueprint_definition
-            .function_exports
-            .get(fn_ident)
-            .ok_or(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
-            ))?;
+    let export_schema = minor_version_config.function_exports.get(fn_ident).ok_or(
+        RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(
+            fn_ident.to_string(),
+        )),
+    )?;
 
     let export_name = match export_schema {
         FeaturedSchema::Normal { value: export_name } => export_name.clone(),
@@ -424,7 +423,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let handle = system.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                    .at_offset(PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
                 LockFlags::read_only(),
@@ -437,6 +436,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }),
                 SystemLockData::default(),
             )?;
+
+            let config: SubstateWrapper<Option<BlueprintMinorVersionConfig>> =
+                system.kernel_read_substate(handle)?.as_typed().unwrap();
+            let minor_version_config = config.value.unwrap();
             system.kernel_drop_lock(handle)?;
 
             //  Validate input
@@ -446,6 +449,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         &mut system,
                         blueprint.clone(),
                         &definition,
+                        &minor_version_config,
                         &ident,
                         receiver,
                         &args,

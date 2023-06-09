@@ -58,7 +58,7 @@ pub enum FungibleResourceManagerField {
 pub enum PackagePartitionOffset {
     Fields,
     Blueprints,
-    BlueprintEvents,
+    BlueprintMinorVersionConfigs,
     FnRoyalty,
     FunctionAccessRules,
 }

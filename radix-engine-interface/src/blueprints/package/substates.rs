@@ -1,14 +1,14 @@
-use crate::blueprints::package::{BlueprintTemplate, FunctionSetup};
+use crate::blueprints::package::BlueprintTemplate;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::api::CollectionIndex;
-use sbor::LocalTypeIndex;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
+use sbor::LocalTypeIndex;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -24,10 +24,11 @@ pub const POOL_ID: u8 = 13u8;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
+pub const PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
+pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
 
-pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 1u8;
+pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
@@ -70,21 +71,24 @@ pub struct FunctionSchema {
     pub output: LocalTypeIndex,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintDefinition {
     pub outer_blueprint: Option<String>,
     pub features: BTreeSet<String>,
-    pub dependencies: BTreeSet<GlobalAddress>,
+    pub template: BlueprintTemplate,
 
-    pub blueprint: IndexedBlueprintSchema,
+    pub state_schema: IndexedBlueprintStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
-    pub function_exports: BTreeMap<String, ExportSchema>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub events: BTreeMap<String, LocalTypeIndex>,
 
-    pub template: BlueprintTemplate,
     pub schema: ScryptoSchema,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BlueprintMinorVersionConfig {
+    pub function_exports: BTreeMap<String, ExportSchema>,
+    pub dependencies: BTreeSet<GlobalAddress>,
 }
 
 impl BlueprintDefinition {
@@ -107,7 +111,7 @@ impl BlueprintDefinition {
     }
 }
 
-impl From<BlueprintSchema> for IndexedBlueprintSchema {
+impl From<BlueprintSchema> for IndexedBlueprintStateSchema {
     fn from(schema: BlueprintSchema) -> Self {
         let mut partition_offset = 0u8;
 
@@ -132,14 +136,13 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedBlueprintSchema {
-
+pub struct IndexedBlueprintStateSchema {
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
     pub num_partitions: u8,
 }
 
-impl IndexedBlueprintSchema {
+impl IndexedBlueprintStateSchema {
     pub fn num_partitions(&self) -> u8 {
         self.num_partitions
     }

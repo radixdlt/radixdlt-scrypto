@@ -1,7 +1,6 @@
 use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::blueprints::package::BlueprintSetup;
-use radix_engine_interface::schema::BlueprintSchema;
 
 pub struct WasmValidator {
     pub max_initial_memory_size_pages: u32,

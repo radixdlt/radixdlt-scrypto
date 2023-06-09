@@ -26,12 +26,9 @@ fn test_static_package_address() {
     let place_holder: GlobalAddress =
         PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER).into();
     for (_, blueprint) in &mut definition.blueprints {
-        if blueprint.blueprint.dependencies.contains(&place_holder) {
-            blueprint.blueprint.dependencies.remove(&place_holder);
-            blueprint
-                .blueprint
-                .dependencies
-                .insert(package_address1.into());
+        if blueprint.dependencies.contains(&place_holder) {
+            blueprint.dependencies.remove(&place_holder);
+            blueprint.dependencies.insert(package_address1.into());
         }
     }
 
