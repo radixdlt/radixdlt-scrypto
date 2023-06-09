@@ -131,8 +131,10 @@ fn globalize_package<Y, L: Default>(
     package_address_reservation: Option<GlobalAddressReservation>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_config: BTreeMap<String, BlueprintDependencies>,
+
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
+
     royalty: PackageRoyaltyAccumulatorSubstate,
 
     package_royalties: BTreeMap<String, RoyaltyConfig>,

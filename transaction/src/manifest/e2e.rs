@@ -384,16 +384,6 @@ CALL_METHOD
             vec![],
             apply_address_replacements(
                 r##"
-SET_PACKAGE_ROYALTY_CONFIG
-    Address("${package_address}")
-    Map<String, Tuple>(
-        "Blueprint" => Tuple(
-            Map<String, U32>(
-                "method" => 1u32
-            )
-        )
-    )
-;
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
     Tuple(

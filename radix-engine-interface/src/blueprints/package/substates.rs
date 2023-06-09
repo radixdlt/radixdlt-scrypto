@@ -112,6 +112,7 @@ pub struct BlueprintDependencies {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintDefinition {
+    // TODO: Move these into separate struct
     pub outer_blueprint: Option<String>,
     pub features: BTreeSet<String>,
     pub state_schema: IndexedBlueprintStateSchema,
