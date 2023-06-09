@@ -22,12 +22,12 @@ mod tests {
             apply_address_replacements(
                 r##"
 CALL_METHOD
-    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
+    Address("${account_address}")
     "lock_fee"
     Decimal("10")
 ;
 ALLOCATE_GLOBAL_ADDRESS
-    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    Address("${package_package_address}")
     "Package"
     Reservation("reservation1")
     NamedAddress("address1")
@@ -36,7 +36,7 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
         Reservation("reservation1")
     )
-    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+    Blob("${code_blob_hash}")
     Tuple(
         Tuple(
             Map<String, Tuple>()
