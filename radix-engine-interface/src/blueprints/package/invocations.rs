@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use crate::blueprints::package::VirtualLazyLoadExport;
 use crate::blueprints::resource::*;
 use crate::types::*;
@@ -113,13 +114,15 @@ pub struct FunctionSetup {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSetup {
+    pub outer_blueprint: Option<String>,
+    pub dependencies: BTreeSet<GlobalAddress>,
+    pub features: BTreeSet<String>,
     pub blueprint: BlueprintSchema,
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub function_auth: BTreeMap<String, AccessRule>,
     pub functions: BTreeMap<String, FunctionSetup>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub royalty_config: RoyaltyConfig,
-
     pub schema: ScryptoSchema,
     pub template: BlueprintTemplate,
 }
@@ -127,6 +130,9 @@ pub struct BlueprintSetup {
 impl Default for BlueprintSetup {
     fn default() -> Self {
         Self {
+            outer_blueprint: None,
+            dependencies: BTreeSet::default(),
+            features: BTreeSet::default(),
             blueprint: BlueprintSchema::default(),
             event_schema: BTreeMap::default(),
             function_auth: BTreeMap::default(),

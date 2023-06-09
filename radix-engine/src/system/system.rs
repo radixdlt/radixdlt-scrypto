@@ -370,7 +370,7 @@ where
         // Validate features
         {
             for feature in features {
-                if !blueprint_definition.blueprint.features.contains(feature) {
+                if !blueprint_definition.features.contains(feature) {
                     return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
                         feature.to_string(),
                     )));
@@ -534,7 +534,7 @@ where
             }
         }
 
-        let parent_blueprint = blueprint_definition.blueprint.outer_blueprint.clone();
+        let parent_blueprint = blueprint_definition.outer_blueprint.clone();
 
         Ok((parent_blueprint, partitions))
     }

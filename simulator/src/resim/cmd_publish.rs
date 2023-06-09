@@ -96,6 +96,9 @@ impl Publish {
                 }
 
                 let def = BlueprintDefinition {
+                    outer_blueprint: s.outer_blueprint,
+                    features: s.features,
+                    dependencies: s.dependencies,
                     functions,
                     function_exports,
                     events: s.event_schema,

@@ -150,9 +150,12 @@ impl ConsensusManagerNativePackage {
 
             let consensus_manager_schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections,
+            };
+
+            BlueprintSetup {
+                outer_blueprint: None,
                 dependencies: btreeset!(
                     RADIX_TOKEN.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
@@ -160,9 +163,6 @@ impl ConsensusManagerNativePackage {
                     VALIDATOR_OWNER_BADGE.into(),
                 ),
                 features: btreeset!(),
-            };
-
-            BlueprintSetup {
                 schema: consensus_manager_schema,
                 blueprint,
                 event_schema: consensus_manager_event_schema,
@@ -332,14 +332,14 @@ impl ConsensusManagerNativePackage {
             let validator_schema = generate_full_schema(aggregator);
 
             let validator_blueprint = BlueprintSchema {
-                outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema: validator_schema,
                 blueprint: validator_blueprint,
                 event_schema: validator_event_schema,

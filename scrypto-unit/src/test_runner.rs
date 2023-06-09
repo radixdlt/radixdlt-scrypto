@@ -1720,18 +1720,17 @@ pub fn single_function_package_definition(
     blueprints.insert(
         blueprint_name.to_string(),
         BlueprintSetup {
+            outer_blueprint: None,
+            dependencies: btreeset!(),
+            features: btreeset!(),
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],
                 type_validations: vec![],
             },
             blueprint: BlueprintSchema {
-                outer_blueprint: None,
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
-
-                dependencies: btreeset!(),
-                features: btreeset!(),
             },
             event_schema: [].into(),
             function_auth: btreemap!(

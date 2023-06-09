@@ -590,11 +590,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let schema = generate_full_schema(aggregator);
                 let blueprint = BlueprintSchema {
-                    outer_blueprint: None,
                     fields,
                     collections: Vec::new(),
-                    dependencies,
-                    features: BTreeSet::new(),
+
                 };
 
                 let template = scrypto::blueprints::package::BlueprintTemplate {
@@ -606,6 +604,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let royalty_config = package_royalty_config();
 
                 let return_data = scrypto::blueprints::package::BlueprintSetup {
+                    outer_blueprint: None,
+                    dependencies,
+                    features: BTreeSet::new(),
                     blueprint,
                     schema,
                     event_schema,
@@ -1471,11 +1472,9 @@ mod tests {
                         let schema = generate_full_schema(aggregator);
 
                         let blueprint = BlueprintSchema {
-                            outer_blueprint: None,
                             fields,
                             collections: Vec::new(),
-                            dependencies,
-                            features: BTreeSet::new(),
+
                         };
 
                         let template = scrypto::blueprints::package::BlueprintTemplate {
@@ -1487,6 +1486,9 @@ mod tests {
                         let royalty_config = package_royalty_config();
 
                         let return_data = scrypto::blueprints::package::BlueprintSetup {
+                            outer_blueprint: None,
+                            dependencies,
+                            features: BTreeSet::new(),
                             blueprint,
                             schema,
                             event_schema,

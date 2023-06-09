@@ -24,7 +24,6 @@ pub const POOL_ID: u8 = 13u8;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-//pub const PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
 
@@ -74,6 +73,10 @@ pub struct FunctionSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintDefinition {
+    pub outer_blueprint: Option<String>,
+    pub features: BTreeSet<String>,
+    pub dependencies: BTreeSet<GlobalAddress>,
+
     pub blueprint: IndexedBlueprintSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
     pub function_exports: BTreeMap<String, ExportSchema>,
@@ -121,27 +124,19 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
         }
 
         Self {
-            outer_blueprint: schema.outer_blueprint,
             fields,
             collections,
             num_partitions: partition_offset,
-            dependencies: schema.dependencies,
-            features: schema.features,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedBlueprintSchema {
-    pub outer_blueprint: Option<String>,
-
-    pub features: BTreeSet<String>,
 
     pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
     pub num_partitions: u8,
-
-    pub dependencies: BTreeSet<GlobalAddress>,
 }
 
 impl IndexedBlueprintSchema {

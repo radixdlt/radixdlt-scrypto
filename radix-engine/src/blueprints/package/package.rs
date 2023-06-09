@@ -393,19 +393,6 @@ impl PackageNativePackage {
                 can_own: false,
             },
         ));
-        /*
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<(String, String)>(),
-                ),
-                value: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<LocalTypeIndex>(),
-                ),
-                can_own: false,
-            },
-        ));
-         */
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
                 key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<FnKey>()),
@@ -477,16 +464,16 @@ impl PackageNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    PACKAGE_OWNER_BADGE.into(),
+                ),
+                features: btreeset!(),
                 schema,
                 blueprint: BlueprintSchema {
-                    outer_blueprint: None,
                     fields,
                     collections,
-                    dependencies: btreeset!(
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                        PACKAGE_OWNER_BADGE.into(),
-                    ),
-                    features: btreeset!(),
                 },
                 event_schema: [].into(),
                 function_auth: btreemap!(
@@ -638,12 +625,6 @@ impl PackageNativePackage {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
                 }
 
-                /*
-                for (ident, type_index) in setup.event_schema {
-                    blueprint_events.insert((blueprint.clone(), ident), type_index);
-                }
-                 */
-
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
                 for (function, setup) in setup.functions {
@@ -656,6 +637,9 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
+                    outer_blueprint: setup.outer_blueprint,
+                    features: setup.features,
+                    dependencies: setup.dependencies,
                     functions,
                     function_exports,
                     events: setup.event_schema,
@@ -749,11 +733,12 @@ impl PackageNativePackage {
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSetup {
+            outer_blueprint: parent,
+            features,
             blueprint:
                 BlueprintSchema {
                     collections,
-                    outer_blueprint: parent,
-                    features,
+
                     ..
                 },
             virtual_lazy_load_functions,
@@ -843,6 +828,9 @@ impl PackageNativePackage {
                 }
 
                 let definition = BlueprintDefinition {
+                    outer_blueprint: setup.outer_blueprint,
+                    features: setup.features,
+                    dependencies: setup.dependencies,
                     functions,
                     function_exports,
                     events: setup.event_schema,

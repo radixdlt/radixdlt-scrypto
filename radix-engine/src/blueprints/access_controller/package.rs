@@ -442,15 +442,15 @@ impl AccessControllerNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                ),
+                features: btreeset!(),
                 schema,
                 blueprint: BlueprintSchema {
-                    outer_blueprint: None,
                     fields,
                     collections: vec![],
-                    dependencies: btreeset!(
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                    ),
-                    features: btreeset!(),
                 },
                 event_schema,
                 function_auth: btreemap!(

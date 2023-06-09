@@ -38,12 +38,12 @@ impl TransactionProcessorNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 blueprint: BlueprintSchema {
-                    outer_blueprint: None,
                     fields,
                     collections: vec![],
-                    dependencies: btreeset!(),
-                    features: btreeset!(),
                 },
                 functions,
                 virtual_lazy_load_functions: btreemap!(),

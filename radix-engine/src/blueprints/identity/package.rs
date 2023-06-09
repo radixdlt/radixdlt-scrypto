@@ -90,18 +90,18 @@ impl IdentityNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(
+                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                    IDENTITY_OWNER_BADGE.into(),
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                ),
+                features: btreeset!(),
                 schema,
                 blueprint: BlueprintSchema {
-                    outer_blueprint: None,
                     fields,
                     collections: vec![],
-                    dependencies: btreeset!(
-                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-                        IDENTITY_OWNER_BADGE.into(),
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                    ),
-                    features: btreeset!(),
                 },
                 event_schema: [].into(),
                 function_auth: btreemap!(

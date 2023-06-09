@@ -284,14 +284,14 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
             };
 
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema,
                 blueprint,
                 event_schema,
@@ -567,14 +567,15 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections,
-                dependencies: btreeset!(),
-                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
+
             };
 
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema,
                 blueprint,
                 event_schema,
@@ -756,14 +757,14 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             let blueprint = BlueprintSchema {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema,
@@ -997,14 +998,14 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             let blueprint = BlueprintSchema {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 fields,
                 collections,
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema,
@@ -1164,14 +1165,14 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema: [].into(),
@@ -1350,14 +1351,15 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
+
             };
 
             BlueprintSetup {
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema: [].into(),
@@ -1438,14 +1440,14 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema: [].into(),
@@ -1534,14 +1536,14 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema: [].into(),
@@ -1665,14 +1667,15 @@ impl ResourceManagerNativePackage {
             );
             let worktop_schema = generate_full_schema(aggregator);
             let worktop_blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
+
             };
 
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema: worktop_schema,
                 blueprint: worktop_blueprint,
                 event_schema: [].into(),
@@ -1803,14 +1806,14 @@ impl ResourceManagerNativePackage {
 
             let auth_zone_schema = generate_full_schema(aggregator);
             let auth_zone_blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections: vec![],
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema: auth_zone_schema,
                 blueprint: auth_zone_blueprint,
                 event_schema: btreemap!(),

@@ -142,14 +142,14 @@ impl PoolNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections,
-                dependencies: btreeset!(),
-                features: btreeset!(),
             };
 
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema,
@@ -298,14 +298,15 @@ impl PoolNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections,
-                dependencies: btreeset!(),
-                features: btreeset!(),
+
             };
 
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema,
@@ -459,14 +460,15 @@ impl PoolNativePackage {
 
             let schema = generate_full_schema(aggregator);
             let blueprint = BlueprintSchema {
-                outer_blueprint: None,
                 fields,
                 collections,
-                dependencies: btreeset!(),
-                features: btreeset!(),
+
             };
 
             BlueprintSetup {
+                outer_blueprint: None,
+                dependencies: btreeset!(),
+                features: btreeset!(),
                 schema,
                 blueprint,
                 event_schema,

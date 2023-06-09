@@ -87,14 +87,11 @@ impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
-    pub outer_blueprint: Option<String>,
 
     /// State Schema
     pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema>,
 
-    pub dependencies: BTreeSet<GlobalAddress>,
-    pub features: BTreeSet<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -179,11 +176,9 @@ pub enum Receiver {
 impl Default for BlueprintSchema {
     fn default() -> Self {
         Self {
-            outer_blueprint: None,
             fields: Vec::default(),
             collections: Vec::default(),
-            dependencies: BTreeSet::default(),
-            features: BTreeSet::default(),
+
         }
     }
 }
