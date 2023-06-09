@@ -213,7 +213,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                         if !reference_validation.could_match_manifest_allocated_address() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
-                                    "Expected Reference<{:?}>, but found manifest allocated address",
+                                    "Expected Reference<{:?}>, but found manifest named address",
                                     reference_validation
                                 )),
                             ));

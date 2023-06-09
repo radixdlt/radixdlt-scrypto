@@ -388,6 +388,10 @@ impl TransactionProcessorBlueprint {
                     LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
+                InstructionV1::AllocateGlobalAddress {
+                    package_address,
+                    blueprint_name,
+                } => todo!(),
             };
             outputs.push(result);
         }
@@ -419,7 +423,9 @@ impl TransactionProcessor {
             blobs_by_hash,
         };
         for reservation in global_address_reservations {
-            processor.create_manifest_own(reservation.0 .0).unwrap();
+            processor
+                .create_manifest_reservation(reservation.0 .0)
+                .unwrap();
         }
         processor
     }
@@ -507,11 +513,11 @@ impl TransactionProcessor {
         Ok(new_id)
     }
 
-    fn create_manifest_own(
+    fn create_manifest_reservation(
         &mut self,
         node_id: NodeId,
     ) -> Result<ManifestReservation, RuntimeError> {
-        let new_id = self.id_allocator.new_own_id();
+        let new_id = self.id_allocator.new_reservation_id();
         self.own_id_mapping.insert(new_id, node_id);
         Ok(new_id)
     }
@@ -544,12 +550,12 @@ impl TransactionProcessor {
                         LocalAuthZone::push(proof, api)?;
                     }
                     _ => {
-                        self.create_manifest_own(node_id.clone())?;
+                        self.create_manifest_reservation(node_id.clone())?;
                     }
                 },
                 TypeInfoSubstate::KeyValueStore(_)
                 | TypeInfoSubstate::GlobalAddressReservation(_) => {
-                    self.create_manifest_own(node_id.clone())?;
+                    self.create_manifest_reservation(node_id.clone())?;
                 }
                 TypeInfoSubstate::GlobalAddressPhantom(_) => unreachable!(),
             }
@@ -628,9 +634,9 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         self.processor.take_own(&p)
     }
 
-    fn replace_allocated_address(
+    fn replace_named_address(
         &mut self,
-        p: ManifestNamedAddress,
+        a: ManifestNamedAddress,
     ) -> Result<Reference, RuntimeError> {
         todo!()
     }
