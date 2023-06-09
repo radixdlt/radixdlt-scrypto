@@ -200,7 +200,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                     _ => return Err(PayloadValidationError::SchemaInconsistency),
                 };
             }
-            ManifestCustomValue::AllocatedAddress(_) => {
+            ManifestCustomValue::NamedAddress(_) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Reference
                 let validation = schema
                     .resolve_type_validation(type_index)

@@ -47,7 +47,7 @@ impl FormattableCustomExtension for ManifestCustomExtension {
             ManifestCustomValue::Reservation(value) => {
                 write!(f, "\"{}\"", value.0)?;
             }
-            ManifestCustomValue::AllocatedAddress(value) => {
+            ManifestCustomValue::NamedAddress(value) => {
                 write!(f, "\"{}\"", value.0)?;
             }
             ManifestCustomValue::Expression(value) => {

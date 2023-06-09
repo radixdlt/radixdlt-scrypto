@@ -78,7 +78,7 @@ pub struct DecompilationContext<'a> {
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,
     pub reservation_names: NonIterMap<ManifestReservation, String>,
-    pub allocated_address_names: NonIterMap<ManifestAllocatedAddress, String>,
+    pub named_address_names: NonIterMap<ManifestNamedAddress, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
@@ -126,18 +126,17 @@ impl<'a> DecompilationContext<'a> {
         reservation
     }
 
-    pub fn new_allocated_address(&mut self) -> ManifestAllocatedAddress {
-        let allocated_address = self.id_allocator.new_allocated_address_id();
-        let name = format!("address{}", self.allocated_address_names.len() + 1);
-        self.allocated_address_names
-            .insert(allocated_address, name.clone());
-        allocated_address
+    pub fn new_named_address(&mut self) -> ManifestNamedAddress {
+        let named_address = self.id_allocator.new_named_address_id();
+        let name = format!("address{}", self.named_address_names.len() + 1);
+        self.named_address_names.insert(named_address, name.clone());
+        named_address
     }
 
     /// Allocate addresses before transaction, for system transactions only.
     pub fn preallocate_addresses(&mut self, n: u32) {
         for _ in 0..n {
-            self.new_allocated_address();
+            self.new_named_address();
         }
     }
 }
@@ -571,15 +570,10 @@ pub fn decompile_instruction<F: fmt::Write>(
             blueprint_name,
         } => {
             let reservation = context.new_reservation();
-            let allocated_address = context.new_allocated_address();
+            let named_address = context.new_named_address();
             (
                 "ALLOCATE_GLOBAL_ADDRESS",
-                to_manifest_value(&(
-                    package_address,
-                    blueprint_name,
-                    reservation,
-                    allocated_address,
-                )),
+                to_manifest_value(&(package_address, blueprint_name, reservation, named_address)),
             )
         }
     };

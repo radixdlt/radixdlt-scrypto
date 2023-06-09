@@ -630,7 +630,7 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
 
     fn replace_allocated_address(
         &mut self,
-        p: ManifestAllocatedAddress,
+        p: ManifestNamedAddress,
     ) -> Result<Reference, RuntimeError> {
         todo!()
     }

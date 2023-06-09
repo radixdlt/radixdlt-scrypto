@@ -29,8 +29,8 @@ pub struct ManifestValidator {
     proof_ids: NonIterMap<ManifestProof, ProofKind>,
     /// Set of active allocated global address reservation ids
     reservation_ids: IndexSet<ManifestReservation>,
-    /// Set of allocated global address ids
-    allocated_address_ids: IndexSet<ManifestAllocatedAddress>,
+    /// Set of named global address ids
+    named_address_ids: IndexSet<ManifestNamedAddress>,
 }
 
 impl ManifestValidator {
@@ -142,22 +142,21 @@ impl ManifestValidator {
         }
     }
 
-    pub fn new_allocated_address(&mut self) -> ManifestAllocatedAddress {
-        let allocated_address_id = self.id_allocator.new_allocated_address_id();
-        self.allocated_address_ids
-            .insert(allocated_address_id.clone());
-        allocated_address_id
+    pub fn new_named_address(&mut self) -> ManifestNamedAddress {
+        let named_address_id = self.id_allocator.new_named_address_id();
+        self.named_address_ids.insert(named_address_id.clone());
+        named_address_id
     }
 
-    pub fn copy_allocated_address(
+    pub fn copy_named_address(
         &mut self,
-        allocated_address_id: &ManifestAllocatedAddress,
+        named_address_id: &ManifestNamedAddress,
     ) -> Result<(), ManifestIdValidationError> {
-        if self.allocated_address_ids.contains(allocated_address_id) {
+        if self.named_address_ids.contains(named_address_id) {
             Ok(())
         } else {
-            Err(ManifestIdValidationError::AllocatedAddressNotFound(
-                allocated_address_id.clone(),
+            Err(ManifestIdValidationError::NamedAddressNotFound(
+                named_address_id.clone(),
             ))
         }
     }
@@ -189,11 +188,11 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    fn replace_allocated_address(
+    fn replace_named_address(
         &mut self,
-        a: ManifestAllocatedAddress,
+        a: ManifestNamedAddress,
     ) -> Result<Reference, ManifestIdValidationError> {
-        self.copy_allocated_address(&a)?;
+        self.copy_named_address(&a)?;
         Ok(Reference(NodeId([0u8; NodeId::LENGTH])))
     }
 

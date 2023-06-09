@@ -48,7 +48,7 @@ impl SerializableCustomExtension for ManifestCustomExtension {
             ManifestCustomValue::Reservation(value) => {
                 (SerializableType::String(value.0.to_string()), true)
             }
-            ManifestCustomValue::AllocatedAddress(value) => {
+            ManifestCustomValue::NamedAddress(value) => {
                 (SerializableType::String(value.0.to_string()), true)
             }
             ManifestCustomValue::Expression(value) => {

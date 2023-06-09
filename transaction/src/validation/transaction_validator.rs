@@ -249,7 +249,7 @@ impl NotarizedTransactionValidator {
                 InstructionV1::CallDirectVaultMethod { .. } => {}
                 InstructionV1::AllocateGlobalAddress { .. } => {
                     id_validator.new_reservation();
-                    id_validator.new_allocated_address();
+                    id_validator.new_named_address();
                 }
             }
         }

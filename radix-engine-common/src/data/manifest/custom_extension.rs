@@ -37,7 +37,7 @@ impl CustomExtension for ManifestCustomExtension {
             ManifestCustomValueKind::Reservation => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Own))
             }
-            ManifestCustomValueKind::AllocatedAddress => {
+            ManifestCustomValueKind::NamedAddress => {
                 matches!(
                     type_kind,
                     TypeKind::Custom(ScryptoCustomTypeKind::Reference)

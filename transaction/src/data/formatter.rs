@@ -406,13 +406,13 @@ pub fn format_custom_value<F: fmt::Write>(
                 value.0
             )?;
         }
-        ManifestCustomValue::AllocatedAddress(value) => {
+        ManifestCustomValue::NamedAddress(value) => {
             write_with_indent!(
                 f,
                 context,
                 indent_start,
                 depth,
-                "AllocatedAddress({}u32)",
+                "NamedAddress({}u32)",
                 value.0
             )?;
         }
@@ -501,7 +501,7 @@ pub fn format_value_kind(value_kind: &ManifestValueKind) -> &str {
             ManifestCustomValueKind::PreciseDecimal => "PreciseDecimal",
             ManifestCustomValueKind::NonFungibleLocalId => "NonFungibleLocalId",
             ManifestCustomValueKind::Reservation => "Reservation",
-            ManifestCustomValueKind::AllocatedAddress => "AllocatedAddress",
+            ManifestCustomValueKind::NamedAddress => "NamedAddress",
         },
     }
 }

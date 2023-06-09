@@ -9,14 +9,14 @@ use radix_engine_interface::data::scrypto::model::{Own, Reference};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
-use radix_engine_interface::prelude::{ManifestAllocatedAddress, ManifestReservation};
+use radix_engine_interface::prelude::{ManifestNamedAddress, ManifestReservation};
 use sbor::rust::vec::Vec;
 
 pub trait TransformHandler<E> {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, E>;
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, E>;
     fn replace_reservation(&mut self, p: ManifestReservation) -> Result<Own, E>;
-    fn replace_allocated_address(&mut self, p: ManifestAllocatedAddress) -> Result<Reference, E>;
+    fn replace_named_address(&mut self, p: ManifestNamedAddress) -> Result<Reference, E>;
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, E>;
     fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, E>;
 }
@@ -102,8 +102,8 @@ pub fn transform<T: TransformHandler<E>, E>(
             ManifestCustomValue::Reservation(p) => Ok(ScryptoValue::Custom {
                 value: ScryptoCustomValue::Own(handler.replace_reservation(p)?),
             }),
-            ManifestCustomValue::AllocatedAddress(p) => Ok(ScryptoValue::Custom {
-                value: ScryptoCustomValue::Reference(handler.replace_allocated_address(p)?),
+            ManifestCustomValue::NamedAddress(p) => Ok(ScryptoValue::Custom {
+                value: ScryptoCustomValue::Reference(handler.replace_named_address(p)?),
             }),
             ManifestCustomValue::Expression(e) => Ok(ScryptoValue::Array {
                 element_value_kind: ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
@@ -176,7 +176,7 @@ pub fn transform_value_kind(kind: ManifestValueKind) -> ScryptoValueKind {
             ManifestCustomValueKind::Reservation => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::Own)
             }
-            ManifestCustomValueKind::AllocatedAddress => {
+            ManifestCustomValueKind::NamedAddress => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::Reference)
             }
         },
