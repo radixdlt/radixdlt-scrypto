@@ -2,6 +2,14 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod royalty_test {
+    enable_package_royalties! {
+        paid_method => Xrd(2.into()),
+        paid_method_usd => Free,
+        paid_method_panic => Xrd(2.into()),
+        free_method => Free,
+        create_component_with_royalty_enabled => Free,
+    }
+
     enable_method_auth! {
         methods {
             paid_method => PUBLIC;
