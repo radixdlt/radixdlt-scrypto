@@ -132,18 +132,6 @@ fn set_up_package_and_component() -> (
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "paid_method",
-                RoyaltyAmount::Xrd(2.into()),
-            )
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "paid_method_panic",
-                RoyaltyAmount::Xrd(2.into()),
-            )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

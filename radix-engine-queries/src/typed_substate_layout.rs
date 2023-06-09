@@ -104,8 +104,8 @@ pub enum TypedMainModuleSubstateKey {
     PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintImplKey(BlueprintVersionKey),
     PackageFnRoyaltyKey(FnKey),
-    PackageFunctionAuthTemplateKey(BlueprintVersionKey),
-    PackageMethodAuthTemplateKey(BlueprintVersionKey),
+    PackageAuthFunctionTemplateKey(BlueprintVersionKey),
+    PackageAuthMethodTemplateKey(BlueprintVersionKey),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
     NonFungibleResourceData(NonFungibleLocalId),
@@ -249,13 +249,13 @@ fn to_typed_object_substate_key_internal(
                 }
                 PackagePartitionOffset::FunctionAccessRules => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageFunctionAuthTemplateKey(
+                    TypedMainModuleSubstateKey::PackageAuthFunctionTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
                 PackagePartitionOffset::BlueprintMethodAuthTemplates => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageMethodAuthTemplateKey(
+                    TypedMainModuleSubstateKey::PackageAuthMethodTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -584,11 +584,11 @@ fn to_typed_object_substate_value(
             let value: SubstateWrapper<Option<RoyaltyAmount>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageFnRoyalty(value.value)
         }
-        TypedMainModuleSubstateKey::PackageFunctionAuthTemplateKey(_fn_key) => {
+        TypedMainModuleSubstateKey::PackageAuthFunctionTemplateKey(_fn_key) => {
             let value: SubstateWrapper<Option<FunctionAuthTemplate>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageFunctionAuthTemplate(value.value)
         }
-        TypedMainModuleSubstateKey::PackageMethodAuthTemplateKey(_fn_key) => {
+        TypedMainModuleSubstateKey::PackageAuthMethodTemplateKey(_fn_key) => {
             let value: SubstateWrapper<Option<MethodAuthTemplate>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageMethodAuthTemplate(value.value)
         }

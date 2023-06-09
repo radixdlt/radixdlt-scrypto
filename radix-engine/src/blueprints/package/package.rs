@@ -514,15 +514,6 @@ impl PackageNativePackage {
             },
         );
         functions.insert(
-            PACKAGE_SET_ROYALTY_IDENT.to_string(),
-            FunctionSetup {
-                receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyInput>(),
-                output: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_SET_ROYALTY_IDENT),
-            },
-        );
-        functions.insert(
             PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             FunctionSetup {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
@@ -560,7 +551,6 @@ impl PackageNativePackage {
                         SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
 
                         SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(PACKAGE_SET_ROYALTY_IDENT) => [OWNER_ROLE];
                     },
                     outer_method_auth_template: btreemap!(),
                 },
@@ -646,15 +636,6 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
-            PACKAGE_SET_ROYALTY_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let input: PackageSetRoyaltyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = Self::set_royalty(input.blueprint, input.fn_name, input.royalty, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             PACKAGE_CLAIM_ROYALTIES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
@@ -950,29 +931,6 @@ impl PackageNativePackage {
             Some(access_rules),
             api,
         )
-    }
-
-    pub(crate) fn set_royalty<Y>(
-        blueprint: String,
-        fn_name: String,
-        amount: RoyaltyAmount,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // FIXME: double check if auth is set up for any package
-
-        let handle = api.actor_lock_key_value_entry(
-            OBJECT_HANDLE_SELF,
-            PACKAGE_ROYALTY_COLLECTION_INDEX,
-            &scrypto_encode(&FnKey::new(blueprint, fn_name)).unwrap(),
-            LockFlags::MUTABLE,
-        )?;
-        api.key_value_entry_set_typed(handle, amount)?;
-        api.key_value_entry_release(handle)?;
-
-        Ok(())
     }
 
     pub(crate) fn claim_royalty<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>

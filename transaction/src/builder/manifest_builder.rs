@@ -22,9 +22,8 @@ use radix_engine_interface::blueprints::identity::{
 };
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PackageSetup, PACKAGE_BLUEPRINT,
+    PackagePublishWasmManifestInput, PackageSetup, PACKAGE_BLUEPRINT,
     PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
-    PACKAGE_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -598,25 +597,6 @@ impl ManifestBuilder {
             args: args,
         });
         self
-    }
-
-    pub fn set_package_royalty<S: ToString>(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint: S,
-        fn_name: S,
-        royalty: RoyaltyAmount,
-    ) -> &mut Self {
-        self.add_instruction(InstructionV1::CallMethod {
-            address: package_address.into(),
-            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&PackageSetRoyaltyInput {
-                blueprint: blueprint.to_string(),
-                fn_name: fn_name.to_string(),
-                royalty,
-            }),
-        })
-        .0
     }
 
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {

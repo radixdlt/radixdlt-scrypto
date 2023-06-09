@@ -77,19 +77,6 @@ pub struct PackagePublishNativeManifestInput {
 
 pub type PackagePublishNativeOutput = PackageAddress;
 
-pub const PACKAGE_SET_ROYALTY_IDENT: &str = "PackageRoyalty_set_royalty";
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
-pub struct PackageSetRoyaltyInput {
-    pub blueprint: String,
-    pub fn_name: String,
-    pub royalty: RoyaltyAmount,
-}
-
-pub type PackageSetRoyaltyOutput = ();
-
 pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties";
 
 #[derive(

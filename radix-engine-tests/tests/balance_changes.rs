@@ -23,18 +23,6 @@ fn test_balance_changes_when_success() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "put",
-                RoyaltyAmount::Xrd(2.into()),
-            )
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "boom",
-                RoyaltyAmount::Xrd(2.into()),
-            )
             .call_function(
                 package_address,
                 "BalanceChangesTest",
@@ -103,18 +91,6 @@ fn test_balance_changes_when_failure() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "put",
-                RoyaltyAmount::Xrd(2.into()),
-            )
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "boom",
-                RoyaltyAmount::Xrd(2.into()),
-            )
             .call_function(
                 package_address,
                 "BalanceChangesTest",
