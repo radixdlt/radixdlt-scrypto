@@ -246,7 +246,7 @@ impl TxFuzzer {
                     let input = AccessRulesCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallAccessRulesMethod {
-                        address,
+                        address: address.into(),
                         method_name: ACCESS_RULES_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
@@ -312,7 +312,7 @@ impl TxFuzzer {
                         <Option<u32>>::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                         function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
                         args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes),
@@ -324,7 +324,7 @@ impl TxFuzzer {
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         function_name: ACCOUNT_CREATE_IDENT.to_string(),
                         args: to_manifest_value(
@@ -339,7 +339,7 @@ impl TxFuzzer {
                     let input = AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -353,7 +353,7 @@ impl TxFuzzer {
                         FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -369,7 +369,7 @@ impl TxFuzzer {
                     .unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                             .to_string(),
@@ -383,7 +383,7 @@ impl TxFuzzer {
                     let input = IdentityCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                         function_name: IDENTITY_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -396,7 +396,7 @@ impl TxFuzzer {
                     let input = IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                         function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -410,7 +410,7 @@ impl TxFuzzer {
                         .unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -428,7 +428,7 @@ impl TxFuzzer {
                         .unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name:
                             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -601,7 +601,7 @@ impl TxFuzzer {
                     let key = String::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMetadataMethod {
-                        address,
+                        address: address.into(),
                         method_name: METADATA_REMOVE_IDENT.to_string(),
                         args: manifest_args!(key),
                     })
@@ -631,7 +631,7 @@ impl TxFuzzer {
                     let value = MetadataValue::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMetadataMethod {
-                        address,
+                        address: address.into(),
                         method_name: METADATA_SET_IDENT.to_string(),
                         args: manifest_args!(key, value),
                     })
@@ -694,7 +694,7 @@ impl TxFuzzer {
                     let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallAccessRulesMethod {
-                        address,
+                        address: address.into(),
                         method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })

@@ -110,6 +110,14 @@ impl TryFrom<&[u8]> for ResourceAddress {
     }
 }
 
+impl TryFrom<GlobalAddress> for ResourceAddress {
+    type Error = ParseResourceAddressError;
+
+    fn try_from(address: GlobalAddress) -> Result<Self, Self::Error> {
+        ResourceAddress::try_from(Into::<[u8; NodeId::LENGTH]>::into(address))
+    }
+}
+
 impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()

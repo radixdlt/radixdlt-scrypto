@@ -297,7 +297,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(PACKAGE_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -316,7 +316,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(METADATA_MODULE_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -335,7 +335,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(ROYALTY_MODULE_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -354,7 +354,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(ACCESS_RULES_MODULE_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -373,7 +373,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(RESOURCE_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -421,7 +421,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(RADIX_TOKEN),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
@@ -447,7 +447,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -470,7 +470,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(GLOBAL_CALLER_VIRTUAL_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -500,7 +500,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(PACKAGE_OWNER_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -530,7 +530,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(IDENTITY_OWNER_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -547,7 +547,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(IDENTITY_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -566,7 +566,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(CONSENSUS_MANAGER_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -595,7 +595,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(ACCOUNT_OWNER_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -612,7 +612,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(ACCOUNT_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -631,7 +631,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(ACCESS_CONTROLLER_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -650,7 +650,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(POOL_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -669,7 +669,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(TRANSACTION_PROCESSOR_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
@@ -691,7 +691,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -714,7 +714,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -737,7 +737,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(SYSTEM_TRANSACTION_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
@@ -761,7 +761,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(FAUCET_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
@@ -787,7 +787,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(GENESIS_HELPER_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
@@ -811,7 +811,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(CONSENSUS_MANAGER),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE,
+            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value(&ConsensusManagerCreateManifestInput {
@@ -838,7 +838,7 @@ pub fn create_system_bootstrap_transaction(
             GlobalAddress::from(GENESIS_HELPER),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: GENESIS_HELPER_PACKAGE,
+            package_address: GENESIS_HELPER_PACKAGE.into(),
             blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: manifest_args!(
@@ -900,7 +900,7 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     let bucket = id_allocator.new_bucket_id();
 
     instructions.push(InstructionV1::CallFunction {
-        package_address: FAUCET_PACKAGE,
+        package_address: FAUCET_PACKAGE.into(),
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
         args: manifest_args!(ManifestReservation(0), bucket),

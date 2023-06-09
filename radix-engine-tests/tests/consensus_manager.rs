@@ -2317,7 +2317,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     ));
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE,
+            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             args: manifest_args!(
@@ -2359,7 +2359,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     ));
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE,
+            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value(&ConsensusManagerCreateManifestInput {

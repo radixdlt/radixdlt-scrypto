@@ -107,6 +107,14 @@ impl TryFrom<&[u8]> for PackageAddress {
     }
 }
 
+impl TryFrom<GlobalAddress> for PackageAddress {
+    type Error = ParsePackageAddressError;
+
+    fn try_from(address: GlobalAddress) -> Result<Self, Self::Error> {
+        PackageAddress::try_from(Into::<[u8; NodeId::LENGTH]>::into(address))
+    }
+}
+
 impl Into<[u8; NodeId::LENGTH]> for PackageAddress {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()

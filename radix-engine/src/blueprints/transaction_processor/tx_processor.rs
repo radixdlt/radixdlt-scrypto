@@ -58,6 +58,7 @@ pub enum TransactionProcessorError {
     BlobNotFound(Hash),
     InvalidCallData(DecodeError),
     InvalidPackageSchema(DecodeError),
+    NotPackageAddress(GlobalAddress),
 }
 
 pub struct TransactionProcessorBlueprint;
@@ -286,6 +287,19 @@ impl TransactionProcessorBlueprint {
                     let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
+                    // TODO: add named address support
+                    let package_address = match package_address {
+                        DynamicGlobalAddress::Static(x) => PackageAddress::try_from(x.clone())
+                            .map_err(|_| {
+                                RuntimeError::ApplicationError(
+                                    ApplicationError::TransactionProcessorError(
+                                        TransactionProcessorError::NotPackageAddress(x),
+                                    ),
+                                )
+                            })?,
+                        DynamicGlobalAddress::Named(_) => todo!(),
+                    };
+
                     let rtn = api.call_function(
                         package_address,
                         &blueprint_name,
@@ -302,9 +316,14 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
+                    // TODO: add named address support
+                    let node_id = match address {
+                        DynamicGlobalAddress::Static(x) => x.into(),
+                        DynamicGlobalAddress::Named(_) => todo!(),
+                    };
                     handle_call_method!(
                         ObjectModuleId::Main,
-                        address.as_node_id(),
+                        &node_id,
                         false,
                         method_name,
                         args,
@@ -318,9 +337,14 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
+                    // TODO: add named address support
+                    let node_id = match address {
+                        DynamicGlobalAddress::Static(x) => x.into(),
+                        DynamicGlobalAddress::Named(_) => todo!(),
+                    };
                     handle_call_method!(
                         ObjectModuleId::Royalty,
-                        address.as_node_id(),
+                        &node_id,
                         false,
                         method_name,
                         args,
@@ -334,9 +358,14 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
+                    // TODO: add named address support
+                    let node_id = match address {
+                        DynamicGlobalAddress::Static(x) => x.into(),
+                        DynamicGlobalAddress::Named(_) => todo!(),
+                    };
                     handle_call_method!(
                         ObjectModuleId::Metadata,
-                        address.as_node_id(),
+                        &node_id,
                         false,
                         method_name,
                         args,
@@ -350,9 +379,14 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
+                    // TODO: add named address support
+                    let node_id = match address {
+                        DynamicGlobalAddress::Static(x) => x.into(),
+                        DynamicGlobalAddress::Named(_) => todo!(),
+                    };
                     handle_call_method!(
                         ObjectModuleId::AccessRules,
-                        address.as_node_id(),
+                        &node_id,
                         false,
                         method_name,
                         args,
@@ -405,7 +439,7 @@ impl TransactionProcessorBlueprint {
 struct TransactionProcessor {
     proof_id_mapping: IndexMap<ManifestProof, NodeId>,
     bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
-    own_id_mapping: NonIterMap<ManifestReservation, NodeId>,
+    reservation_id_mapping: NonIterMap<ManifestReservation, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
@@ -418,7 +452,7 @@ impl TransactionProcessor {
         let mut processor = Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
-            own_id_mapping: NonIterMap::new(),
+            reservation_id_mapping: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
         };
@@ -430,15 +464,15 @@ impl TransactionProcessor {
         processor
     }
 
-    fn take_own(&mut self, own_id: &ManifestReservation) -> Result<Own, RuntimeError> {
-        let real_id = self
-            .own_id_mapping
-            .remove(own_id)
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::OwnedNotFound(own_id.0),
-                ),
-            ))?;
+    fn take_reservation(
+        &mut self,
+        reservation_id: &ManifestReservation,
+    ) -> Result<Own, RuntimeError> {
+        let real_id = self.reservation_id_mapping.remove(reservation_id).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::OwnedNotFound(reservation_id.0),
+            )),
+        )?;
         Ok(Own(real_id))
     }
 
@@ -518,7 +552,7 @@ impl TransactionProcessor {
         node_id: NodeId,
     ) -> Result<ManifestReservation, RuntimeError> {
         let new_id = self.id_allocator.new_reservation_id();
-        self.own_id_mapping.insert(new_id, node_id);
+        self.reservation_id_mapping.insert(new_id, node_id);
         Ok(new_id)
     }
 
@@ -630,8 +664,8 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         self.processor.take_proof(&p).map(|x| x.0)
     }
 
-    fn replace_reservation(&mut self, p: ManifestReservation) -> Result<Own, RuntimeError> {
-        self.processor.take_own(&p)
+    fn replace_reservation(&mut self, r: ManifestReservation) -> Result<Own, RuntimeError> {
+        self.processor.take_reservation(&r)
     }
 
     fn replace_named_address(

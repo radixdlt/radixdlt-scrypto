@@ -24,20 +24,20 @@ pub fn validate_call_arguments_to_native_components(
     for (index, instruction) in instructions.iter().enumerate() {
         let (invocation, args) = match instruction {
             InstructionV1::CallFunction {
-                package_address,
+                package_address: DynamicGlobalAddress::Static(address),
                 blueprint_name,
                 function_name,
                 args,
-            } => (
+            } if address.as_node_id().is_global_package() => (
                 Invocation::Function(
-                    *package_address,
+                    PackageAddress::new_or_panic(address.clone().into()),
                     blueprint_name.to_owned(),
                     function_name.to_owned(),
                 ),
                 args,
             ),
             InstructionV1::CallMethod {
-                address,
+                address: DynamicGlobalAddress::Static(address),
                 method_name,
                 args,
             } => (
@@ -45,7 +45,7 @@ pub fn validate_call_arguments_to_native_components(
                 args,
             ),
             InstructionV1::CallMetadataMethod {
-                address,
+                address: DynamicGlobalAddress::Static(address),
                 method_name,
                 args,
             } => (
@@ -53,7 +53,7 @@ pub fn validate_call_arguments_to_native_components(
                 args,
             ),
             InstructionV1::CallRoyaltyMethod {
-                address,
+                address: DynamicGlobalAddress::Static(address),
                 method_name,
                 args,
             } => (
@@ -61,7 +61,7 @@ pub fn validate_call_arguments_to_native_components(
                 args,
             ),
             InstructionV1::CallAccessRulesMethod {
-                address,
+                address: DynamicGlobalAddress::Static(address),
                 method_name,
                 args,
             } => (

@@ -122,6 +122,14 @@ impl TryFrom<&[u8]> for ComponentAddress {
     }
 }
 
+impl TryFrom<GlobalAddress> for ComponentAddress {
+    type Error = ParseComponentAddressError;
+
+    fn try_from(address: GlobalAddress) -> Result<Self, Self::Error> {
+        ComponentAddress::try_from(Into::<[u8; NodeId::LENGTH]>::into(address))
+    }
+}
+
 impl Into<[u8; NodeId::LENGTH]> for ComponentAddress {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()
