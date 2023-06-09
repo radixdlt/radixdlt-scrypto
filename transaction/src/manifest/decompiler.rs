@@ -123,10 +123,7 @@ impl<'a> DecompilationContext<'a> {
 
     pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
         let address_reservation = self.id_allocator.new_address_reservation_id();
-        let name = format!(
-            "address_reservation{}",
-            self.address_reservation_names.len() + 1
-        );
+        let name = format!("reservation{}", self.address_reservation_names.len() + 1);
         self.address_reservation_names
             .insert(address_reservation, name.clone());
         address_reservation

@@ -29,12 +29,12 @@ CALL_METHOD
 ALLOCATE_GLOBAL_ADDRESS
     Address("${package_package_address}")
     "Package"
-    AddressReservation("address_reservation1")
+    AddressReservation("reservation1")
     NamedAddress("address1")
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
-        AddressReservation("address_reservation1")
+        AddressReservation("reservation1")
     )
     Blob("${code_blob_hash}")
     Tuple(
