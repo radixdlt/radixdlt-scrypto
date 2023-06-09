@@ -1,6 +1,8 @@
 pub mod ast;
 pub mod compiler;
 pub mod decompiler;
+#[cfg(feature = "std")]
+pub mod dumper;
 pub mod e2e;
 pub mod enums;
 pub mod generator;
