@@ -21,6 +21,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
+use crate::blueprints::package::PackageNativePackage;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -82,28 +83,8 @@ impl AuthModule {
                 AccessRule::AllowAll
             }
         } else {
-            let handle = api.kernel_lock_substate_with_default(
-                blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET)
-                    .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
-                LockFlags::read_only(),
-                Some(|| {
-                    let wrapper = SubstateWrapper {
-                        value: None::<()>,
-                        mutability: SubstateMutability::Mutable,
-                    };
-                    IndexedScryptoValue::from_typed(&wrapper)
-                }),
-                SystemLockData::default(),
-            )?;
-
-            let auth_template: SubstateWrapper<Option<FunctionAuthTemplate>> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-
-            let access_rule = auth_template.value.and_then(|mut auth| auth.rules.remove(ident));
-
+            let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, api)?;
+            let access_rule = auth_template.rules.remove(ident);
             if let Some(access_rule) = access_rule {
                 access_rule
             } else {

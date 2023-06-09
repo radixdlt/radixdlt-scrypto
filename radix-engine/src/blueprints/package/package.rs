@@ -1038,4 +1038,34 @@ impl PackageNativePackage {
 
         Ok(template)
     }
+
+
+    pub fn get_bp_function_auth_template<Y>(blueprint: &BlueprintId, api: &mut Y) -> Result<FunctionAuthTemplate, RuntimeError> where Y: KernelSubstateApi<SystemLockData> {
+        let handle = api.kernel_lock_substate_with_default(
+            blueprint.package_address.as_node_id(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: None::<()>,
+                    mutability: SubstateMutability::Mutable,
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
+            SystemLockData::default(),
+        )?;
+
+        let auth_template: SubstateWrapper<Option<FunctionAuthTemplate>> =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        api.kernel_drop_lock(handle)?;
+
+        let template = auth_template.value.ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(blueprint.clone()))
+        })?;
+
+        Ok(template)
+    }
 }
