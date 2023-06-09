@@ -16,9 +16,7 @@ use crate::{
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::blueprints::package::{
-    PackageRoyaltyAccumulatorSubstate, PACKAGE_ROYALTY_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{PackageRoyaltyAccumulatorSubstate, PACKAGE_ROYALTY_PARTITION_OFFSET, BlueprintVersionKey};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
@@ -250,9 +248,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         // Apply package royalty
         //===========================
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.as_str());
         PackageRoyaltyNativeBlueprint::charge_package_royalty(
             blueprint.package_address.as_node_id(),
-            blueprint.blueprint_name.as_str(),
+            &bp_version_key,
             ident,
             api,
         )?;

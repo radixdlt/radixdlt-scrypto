@@ -135,8 +135,7 @@ fn globalize_package<Y, L: Default>(
     code: PackageCodeSubstate,
     royalty: PackageRoyaltyAccumulatorSubstate,
 
-    fn_royalty: BTreeMap<FnKey, RoyaltyAmount>,
-
+    package_royalties: BTreeMap<String, RoyaltyConfig>,
     blueprint_auth_template: BTreeMap<String, MethodAuthTemplate>,
     function_auth: BTreeMap<String, FunctionAuthTemplate>,
 
@@ -224,15 +223,19 @@ where
     };
 
     {
-        let fn_royalty_partition = fn_royalty
+        let royalty_partition = package_royalties
             .into_iter()
-            .map(|(k, royalty)| {
+            .map(|(blueprint, royalty)| {
+                let key = BlueprintVersionKey {
+                    blueprint,
+                    version: BlueprintVersion::default(),
+                };
                 let value = SubstateWrapper {
                     value: Some(royalty),
                     mutability: SubstateMutability::Mutable,
                 };
                 (
-                    SubstateKey::Map(scrypto_encode(&k).unwrap()),
+                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
                 )
             })
@@ -242,7 +245,7 @@ where
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
                 .unwrap(),
-            fn_royalty_partition,
+            royalty_partition,
         );
     };
 
@@ -456,9 +459,9 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<FnKey>()),
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<BlueprintVersionKey>()),
                 value: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<RoyaltyAmount>(),
+                    aggregator.add_child_type_and_descendents::<RoyaltyConfig>(),
                 ),
                 can_own: false,
             },
@@ -902,9 +905,8 @@ impl PackageNativePackage {
                     state_schema: setup.blueprint.into(),
                 };
                 blueprints.insert(blueprint.clone(), definition);
-                for (ident, amount) in setup.royalty_config.rules {
-                    royalties.insert(FnKey::new(blueprint.clone(), ident), amount);
-                }
+
+                royalties.insert(blueprint.clone(), setup.royalty_config);
 
                 let minor_version_config = BlueprintImpl {
                     dependencies: setup.dependencies,
@@ -980,7 +982,7 @@ pub struct PackageRoyaltyNativeBlueprint;
 impl PackageRoyaltyNativeBlueprint {
     pub fn charge_package_royalty<Y, V>(
         receiver: &NodeId,
-        blueprint: &str,
+        bp_version_key: &BlueprintVersionKey,
         ident: &str,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -988,13 +990,12 @@ impl PackageRoyaltyNativeBlueprint {
             V: SystemCallbackObject,
             Y: KernelApi<SystemConfig<V>>,
     {
-        let fn_key = FnKey::new(blueprint.to_string(), ident.to_string());
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
                 .unwrap(),
-            &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
+            &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let wrapper = SubstateWrapper {
@@ -1006,11 +1007,13 @@ impl PackageRoyaltyNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let substate: SubstateWrapper<Option<RoyaltyAmount>> =
+        let substate: SubstateWrapper<Option<RoyaltyConfig>> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
-        let royalty_charge = substate.value.unwrap_or(RoyaltyAmount::Free);
+        let royalty_charge = substate.value
+            .and_then(|c| c.rules.get(ident).cloned())
+            .unwrap_or(RoyaltyAmount::Free);
 
         if royalty_charge.is_non_zero() {
             let handle = api.kernel_lock_substate(

@@ -38,7 +38,7 @@ fn test_component_royalty() {
     );
 
     let commit_result = receipt.expect_commit(true);
-    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("1"));
+    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("3"));
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
@@ -48,7 +48,7 @@ fn test_component_royalty() {
     );
     assert_eq!(
         component_royalty,
-        commit_result.fee_summary.total_royalty_cost_xrd
+        commit_result.fee_summary.total_royalty_cost_xrd - dec!("2"),
     );
 }
 

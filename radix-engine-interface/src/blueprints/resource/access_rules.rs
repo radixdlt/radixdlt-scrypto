@@ -17,18 +17,6 @@ use super::AccessRule;
 pub const SELF_ROLE: &'static str = "_self_";
 pub const OWNER_ROLE: &'static str = "_owner_";
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct FnKey {
-    pub blueprint: String,
-    pub ident: String,
-}
-
-impl FnKey {
-    pub fn new(blueprint: String, ident: String) -> Self {
-        Self { blueprint, ident }
-    }
-}
-
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ObjectKey {

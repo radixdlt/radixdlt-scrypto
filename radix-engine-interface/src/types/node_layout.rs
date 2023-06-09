@@ -59,7 +59,7 @@ pub enum PackagePartitionOffset {
     Fields,
     Blueprints,
     BlueprintMinorVersionConfigs,
-    FnRoyalty,
+    Royalty,
     FunctionAccessRules,
     BlueprintMethodAuthTemplates,
 }
