@@ -70,15 +70,5 @@ fn invalid_blueprint_name_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        if let RuntimeError::ModuleError(ModuleError::AuthError(AuthError::NoFunction(
-            FnIdentifier { blueprint, .. },
-        ))) = e
-        {
-            package_addr.eq(&blueprint.package_address)
-                && blueprint.blueprint_name.eq("NonExistentBlueprint")
-        } else {
-            false
-        }
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(..)));
 }

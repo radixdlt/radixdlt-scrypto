@@ -71,33 +71,18 @@ impl AuthModule {
         ident: &str,
         api: &mut SystemService<Y, V>,
     ) -> Result<AccessRule, RuntimeError> {
-        let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-            // TODO: remove
-            if blueprint.blueprint_name.eq(PACKAGE_BLUEPRINT)
-                && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
-            {
-                AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
-                    ResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
-                )))
-            } else {
-                AccessRule::AllowAll
-            }
+        let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, api)?;
+        let access_rule = auth_template.rules.remove(ident);
+        if let Some(access_rule) = access_rule {
+            Ok(access_rule)
         } else {
-            let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, api)?;
-            let access_rule = auth_template.rules.remove(ident);
-            if let Some(access_rule) = access_rule {
-                access_rule
-            } else {
-                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::NoFunction(FnIdentifier {
-                        blueprint: blueprint.clone(),
-                        ident: FnIdent::Application(ident.to_string()),
-                    }),
-                )));
-            }
-        };
-
-        Ok(auth)
+            Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                AuthError::NoFunction(FnIdentifier {
+                    blueprint: blueprint.clone(),
+                    ident: FnIdent::Application(ident.to_string()),
+                }),
+            )))
+        }
     }
 
     fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
