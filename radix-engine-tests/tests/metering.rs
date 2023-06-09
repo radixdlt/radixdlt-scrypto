@@ -195,11 +195,11 @@ fn test_radiswap() {
         commit_result.fee_summary.execution_cost_sum,
         2553 /* AllocateNodeId */
         + 4044 /* CreateNode */
-        + 15207 /* DropLock */
+        + 14245 /* DropLock */
         + 3780 /* DropNode */
         + 3803738 /* Invoke */
-        + 2376680 /* LockSubstate */
-        + 23184 /* ReadSubstate */
+        + 2377095 /* LockSubstate */
+        + 21728 /* ReadSubstate */
         + 137500 /* RunNative */
         + 20000 /* RunSystem */
         + 602865 /* RunWasm */
@@ -306,14 +306,14 @@ fn test_flash_loan() {
         commit_result.fee_summary.execution_cost_sum,
         4002 /* AllocateNodeId */
         + 6322 /* CreateNode */
-        + 23754 /* DropLock */
+        + 22274 /* DropLock */
         + 6090 /* DropNode */
         + 4768533 /* Invoke */
-        + 4394214 /* LockSubstate */
-        + 36792 /* ReadSubstate */
+        + 4402084 /* LockSubstate */
+        + 34552 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1170200 /* RunWasm */
+        + 1184420 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

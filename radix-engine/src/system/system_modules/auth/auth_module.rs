@@ -182,11 +182,11 @@ impl AuthModule {
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
-                let template = api.get_blueprint_method_template(&callee.node_object_info.blueprint_id)?;
+                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?;
                 template.method_auth_template
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
-                let template = api.get_blueprint_method_template(&callee.node_object_info.blueprint_id)?;
+                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?;
                 template.outer_method_auth_template
             }
         };

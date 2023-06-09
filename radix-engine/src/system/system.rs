@@ -307,12 +307,27 @@ where
         Ok(node_id.into())
     }
 
-    // TODO: Add cache
-    pub fn get_blueprint_method_template(&mut self, blueprint: &BlueprintId) -> Result<MethodAuthTemplate, RuntimeError> {
-        let method_auth_template = PackageNativePackage::get_blueprint_method_template(
+    pub fn get_bp_method_auth_template(&mut self, blueprint: &BlueprintId) -> Result<MethodAuthTemplate, RuntimeError> {
+        let method_auth = self
+            .api
+            .kernel_get_system_state()
+            .system
+            .method_auth_cache
+            .get(blueprint);
+        if let Some(method_auth) = method_auth {
+            return Ok(method_auth.clone());
+        }
+
+        let method_auth_template = PackageNativePackage::get_bp_method_auth_template(
             blueprint,
             self.api,
         )?;
+
+        self.api
+            .kernel_get_system_state()
+            .system
+            .method_auth_cache
+            .insert(blueprint.clone(), method_auth_template.clone());
 
         Ok(method_auth_template)
     }
@@ -329,22 +344,21 @@ where
             .get(blueprint);
         if let Some(definition) = def {
             return Ok(definition.clone());
-        } else {
-            let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
-            let definition = PackageNativePackage::get_blueprint_definition(
-                blueprint.package_address.as_node_id(),
-                &bp_version_key,
-                self.api,
-            )?;
-
-            self.api
-                .kernel_get_system_state()
-                .system
-                .blueprint_cache
-                .insert(blueprint.clone(), definition.clone());
-
-            Ok(definition)
         }
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
+        let definition = PackageNativePackage::get_blueprint_definition(
+            blueprint.package_address.as_node_id(),
+            &bp_version_key,
+            self.api,
+        )?;
+
+        self.api
+            .kernel_get_system_state()
+            .system
+            .blueprint_cache
+            .insert(blueprint.clone(), definition.clone());
+
+        Ok(definition)
     }
 
     fn verify_instance_schema_and_state(

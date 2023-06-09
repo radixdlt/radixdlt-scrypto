@@ -1011,8 +1011,7 @@ impl PackageNativePackage {
         Ok(definition)
     }
 
-    // TODO: Add cache
-    pub fn get_blueprint_method_template<Y>(blueprint: &BlueprintId, api: &mut Y) -> Result<MethodAuthTemplate, RuntimeError> where Y: KernelSubstateApi<SystemLockData> {
+    pub fn get_bp_method_auth_template<Y>(blueprint: &BlueprintId, api: &mut Y) -> Result<MethodAuthTemplate, RuntimeError> where Y: KernelSubstateApi<SystemLockData> {
         let handle = api.kernel_lock_substate_with_default(
             blueprint.package_address.as_node_id(),
             MAIN_BASE_PARTITION
