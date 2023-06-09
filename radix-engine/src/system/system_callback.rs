@@ -419,13 +419,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let definition = system.get_blueprint_definition(&blueprint)?;
 
             // Make dependent resources/components visible
-            // TODO: Remove and combine with above
+            let key = BlueprintMinorVersionConfigKey {
+                blueprint: blueprint.blueprint_name.clone(),
+                version: BlueprintMinorVersion::default(),
+            };
+
             let handle = system.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
+                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let wrapper = SubstateWrapper {

@@ -188,12 +188,18 @@ where
         let minor_version_configs = blueprint_config
             .into_iter()
             .map(|(blueprint, minor_version_config)| {
+                let key = BlueprintMinorVersionConfigKey {
+                    blueprint,
+                    version: BlueprintMinorVersion::default(),
+                };
+
                 let value = SubstateWrapper {
                     value: Some(minor_version_config),
                     mutability: SubstateMutability::Immutable,
                 };
+
                 (
-                    SubstateKey::Map(scrypto_encode(&blueprint).unwrap()),
+                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
                 )
             })
@@ -393,7 +399,7 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<String>()),
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<BlueprintMinorVersionConfigKey>()),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<BlueprintMinorVersionConfig>(),
                 ),

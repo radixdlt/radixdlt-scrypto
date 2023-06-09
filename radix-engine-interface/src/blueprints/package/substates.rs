@@ -85,6 +85,18 @@ pub struct BlueprintDefinition {
     pub schema: ScryptoSchema,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct BlueprintMinorVersion {
+    pub version: u8,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BlueprintMinorVersionConfigKey {
+    pub blueprint: String,
+    pub version: BlueprintMinorVersion,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintMinorVersionConfig {
     pub function_exports: BTreeMap<String, ExportSchema>,

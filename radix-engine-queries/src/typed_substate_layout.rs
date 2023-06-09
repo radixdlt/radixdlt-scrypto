@@ -102,7 +102,7 @@ pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
     PackageBlueprintKey(String),
-    PackageBlueprintMinorVersionKey(String),
+    PackageBlueprintMinorVersionKey(BlueprintMinorVersionConfigKey),
     PackageFnRoyaltyKey(FnKey),
     PackageFunctionAccessRulesKey(FnKey),
     FungibleResourceField(FungibleResourceManagerField),
