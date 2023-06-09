@@ -305,7 +305,7 @@ where
     }
 
     // TODO: Move cache management into PackageNativePackage
-    pub fn get_bp_method_auth_template(&mut self, blueprint: &BlueprintId) -> Result<&MethodAuthTemplate, RuntimeError> {
+    pub fn get_bp_method_auth_template(&mut self, blueprint: &BlueprintId) -> Result<MethodAuthTemplate, RuntimeError> {
         let method_auth = self
             .api
             .kernel_get_system_state()
@@ -325,13 +325,7 @@ where
             .kernel_get_system_state()
             .system
             .method_auth_cache
-            .insert(blueprint.clone(), method_auth_template);
-
-        let method_auth_template = self.api
-            .kernel_get_system_state()
-            .system
-            .method_auth_cache
-            .get(blueprint).unwrap();
+            .insert(blueprint.clone(), method_auth_template.clone());
 
         Ok(method_auth_template)
     }
@@ -341,10 +335,31 @@ where
         blueprint: &BlueprintId,
         ident: &str,
     ) -> Result<AccessRule, RuntimeError> {
-        let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, self.api)?;
-        let access_rule = auth_template.rules.remove(ident);
+        let function_auth = self
+            .api
+            .kernel_get_system_state()
+            .system
+            .function_auth_cache
+            .get(blueprint);
+        let function_auth = if let Some(function_auth) = function_auth {
+            function_auth
+        } else {
+            let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, self.api)?;
+            self.api
+                .kernel_get_system_state()
+                .system
+                .function_auth_cache
+                .insert(blueprint.clone(), auth_template.clone());
+            self.api
+                .kernel_get_system_state()
+                .system
+                .function_auth_cache
+                .get(blueprint).unwrap()
+        };
+
+        let access_rule = function_auth.rules.get(ident);
         if let Some(access_rule) = access_rule {
-            Ok(access_rule)
+            Ok(access_rule.clone())
         } else {
             Err(RuntimeError::ModuleError(ModuleError::AuthError(
                 AuthError::NoFunction(FnIdentifier {

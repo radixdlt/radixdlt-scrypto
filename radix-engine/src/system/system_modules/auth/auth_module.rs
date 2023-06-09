@@ -246,7 +246,7 @@ impl AuthModule {
                     Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
                 }
                 Actor::Function { blueprint, ident } => {
-                    let access_rule = system.get_bp_function_access_rule(blueprint, ident.as_str())?;
+                    let access_rule = system.get_bp_function_access_rule(blueprint, ident.as_str())?.clone();
                     let acting_location = ActingLocation::AtBarrier;
 
                     // Verify authorization
