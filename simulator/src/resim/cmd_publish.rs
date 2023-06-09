@@ -98,6 +98,7 @@ impl Publish {
                 let def = BlueprintDefinition {
                     functions,
                     function_exports,
+                    events: s.event_schema,
                     virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                     schema: s.schema,
                     blueprint: s.blueprint.into(),

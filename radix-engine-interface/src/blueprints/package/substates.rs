@@ -24,11 +24,11 @@ pub const POOL_ID: u8 = 13u8;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-pub const PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+//pub const PACKAGE_BLUEPRINT_EVENTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
 
-pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
+pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 1u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
@@ -76,9 +76,9 @@ pub struct FunctionSchema {
 pub struct BlueprintDefinition {
     pub blueprint: IndexedBlueprintSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
-
     pub function_exports: BTreeMap<String, ExportSchema>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
+    pub events: BTreeMap<String, LocalTypeIndex>,
 
     pub template: BlueprintTemplate,
     pub schema: ScryptoSchema,
