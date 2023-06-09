@@ -657,7 +657,6 @@ impl PackageNativePackage {
                     features: setup.features,
                     functions,
                     events: setup.event_schema,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
                     template: setup.template,
@@ -667,6 +666,7 @@ impl PackageNativePackage {
                 let minor_version_config = BlueprintMinorVersionConfig {
                     dependencies: setup.dependencies,
                     function_exports,
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                 };
                 blueprint_config.insert(blueprint.clone(), minor_version_config);
             }
@@ -826,12 +826,6 @@ impl PackageNativePackage {
                     access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
                 }
 
-                /*
-                for (ident, type_index) in setup.event_schema {
-                    blueprint_events.insert((blueprint.clone(), ident), type_index);
-                }
-                 */
-
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
                 for (function, setup) in setup.functions {
@@ -851,7 +845,6 @@ impl PackageNativePackage {
                     features: setup.features,
                     functions,
                     events: setup.event_schema,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
                     template: setup.template,
@@ -864,6 +857,7 @@ impl PackageNativePackage {
                 let minor_version_config = BlueprintMinorVersionConfig {
                     dependencies: setup.dependencies,
                     function_exports,
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                 };
                 blueprint_config.insert(blueprint.clone(), minor_version_config);
             }

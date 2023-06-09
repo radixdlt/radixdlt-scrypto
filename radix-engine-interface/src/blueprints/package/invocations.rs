@@ -140,9 +140,9 @@ impl Default for BlueprintSetup {
             virtual_lazy_load_functions: BTreeMap::default(),
             royalty_config: RoyaltyConfig::default(),
             schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
+                type_kinds: Vec::new(),
+                type_metadata: Vec::new(),
+                type_validations: Vec::new(),
             },
             template: BlueprintTemplate::default(),
         }

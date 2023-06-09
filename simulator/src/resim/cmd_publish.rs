@@ -114,7 +114,6 @@ impl Publish {
                     features: s.features,
                     functions,
                     events: s.event_schema,
-                    virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                     schema: s.schema,
                     state_schema: s.blueprint.into(),
                     template: s.template,
@@ -126,6 +125,7 @@ impl Publish {
                 let config = BlueprintMinorVersionConfig {
                     dependencies: s.dependencies,
                     function_exports,
+                    virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(

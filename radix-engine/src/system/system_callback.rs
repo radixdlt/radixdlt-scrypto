@@ -462,7 +462,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }
                 FnIdent::System(system_func_id) => {
                     if let Some(sys_func) =
-                        definition.virtual_lazy_load_functions.get(&system_func_id)
+                        minor_version_config.virtual_lazy_load_functions.get(&system_func_id)
                     {
                         sys_func.export_name.to_string()
                     } else {

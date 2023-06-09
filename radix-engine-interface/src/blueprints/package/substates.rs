@@ -71,20 +71,6 @@ pub struct FunctionSchema {
     pub output: LocalTypeIndex,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct BlueprintDefinition {
-    pub outer_blueprint: Option<String>,
-    pub features: BTreeSet<String>,
-    pub template: BlueprintTemplate,
-
-    pub state_schema: IndexedBlueprintStateSchema,
-    pub functions: BTreeMap<String, FunctionSchema>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
-    pub events: BTreeMap<String, LocalTypeIndex>,
-
-    pub schema: ScryptoSchema,
-}
-
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct BlueprintMinorVersion {
@@ -100,7 +86,22 @@ pub struct BlueprintMinorVersionConfigKey {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintMinorVersionConfig {
     pub function_exports: BTreeMap<String, ExportSchema>,
+    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub dependencies: BTreeSet<GlobalAddress>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BlueprintDefinition {
+    pub outer_blueprint: Option<String>,
+    pub features: BTreeSet<String>,
+
+    pub template: BlueprintTemplate,
+
+    pub state_schema: IndexedBlueprintStateSchema,
+    pub functions: BTreeMap<String, FunctionSchema>,
+    pub events: BTreeMap<String, LocalTypeIndex>,
+
+    pub schema: ScryptoSchema,
 }
 
 impl BlueprintDefinition {
