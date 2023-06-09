@@ -54,7 +54,8 @@ pub enum TransactionProcessorError {
     },
     BucketNotFound(u32),
     ProofNotFound(u32),
-    OwnedNotFound(u32),
+    ReservationNotFound(u32),
+    NamedAddressNotFound(u32),
     BlobNotFound(Hash),
     InvalidCallData(DecodeError),
     InvalidPackageSchema(DecodeError),
@@ -415,7 +416,7 @@ impl TransactionProcessorBlueprint {
                     // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
                     // the former will drop all named proofs before clearing the auth zone.
 
-                    for (_, real_id) in processor.proof_id_mapping.drain(..) {
+                    for (_, real_id) in processor.proof_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
                         proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
@@ -425,7 +426,16 @@ impl TransactionProcessorBlueprint {
                 InstructionV1::AllocateGlobalAddress {
                     package_address,
                     blueprint_name,
-                } => todo!(),
+                } => {
+                    let (reservation, address) = api.allocate_global_address(BlueprintId::new(
+                        &package_address,
+                        blueprint_name,
+                    ))?;
+                    processor.create_manifest_reservation(reservation)?;
+                    processor.create_manifest_named_address(address)?;
+
+                    InstructionOutput::None
+                }
             };
             outputs.push(result);
         }
@@ -437,9 +447,10 @@ impl TransactionProcessorBlueprint {
 }
 
 struct TransactionProcessor {
-    proof_id_mapping: IndexMap<ManifestProof, NodeId>,
-    bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
-    reservation_id_mapping: NonIterMap<ManifestReservation, NodeId>,
+    bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
+    proof_mapping: IndexMap<ManifestProof, NodeId>,
+    reservation_mapping: NonIterMap<ManifestReservation, NodeId>,
+    named_address_mapping: NonIterMap<ManifestNamedAddress, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
@@ -450,44 +461,36 @@ impl TransactionProcessor {
         global_address_reservations: Vec<GlobalAddressReservation>,
     ) -> Self {
         let mut processor = Self {
-            proof_id_mapping: index_map_new(),
-            bucket_id_mapping: NonIterMap::new(),
-            reservation_id_mapping: NonIterMap::new(),
-            id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
+            proof_mapping: index_map_new(),
+            bucket_mapping: NonIterMap::new(),
+            reservation_mapping: NonIterMap::new(),
+            named_address_mapping: NonIterMap::new(),
+            id_allocator: ManifestIdAllocator::new(),
         };
+
         for reservation in global_address_reservations {
-            processor
-                .create_manifest_reservation(reservation.0 .0)
-                .unwrap();
+            processor.create_manifest_reservation(reservation).unwrap();
         }
         processor
     }
 
-    fn take_reservation(
-        &mut self,
-        reservation_id: &ManifestReservation,
-    ) -> Result<Own, RuntimeError> {
-        let real_id = self.reservation_id_mapping.remove(reservation_id).ok_or(
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::OwnedNotFound(reservation_id.0),
-            )),
-        )?;
-        Ok(Own(real_id))
-    }
-
     fn get_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<Bucket, RuntimeError> {
-        let real_id = self.bucket_id_mapping.get(bucket_id).cloned().ok_or(
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::BucketNotFound(bucket_id.0),
-            )),
-        )?;
+        let real_id =
+            self.bucket_mapping
+                .get(bucket_id)
+                .cloned()
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::BucketNotFound(bucket_id.0),
+                    ),
+                ))?;
         Ok(Bucket(Own(real_id)))
     }
 
     fn take_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<Bucket, RuntimeError> {
         let real_id =
-            self.bucket_id_mapping
+            self.bucket_mapping
                 .remove(bucket_id)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::TransactionProcessorError(
@@ -511,7 +514,7 @@ impl TransactionProcessor {
 
     fn get_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
         let real_id =
-            self.proof_id_mapping
+            self.proof_mapping
                 .get(proof_id)
                 .cloned()
                 .ok_or(RuntimeError::ApplicationError(
@@ -523,36 +526,69 @@ impl TransactionProcessor {
     }
 
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
-        let real_id =
-            self.proof_id_mapping
-                .remove(proof_id)
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::ProofNotFound(proof_id.0),
-                    ),
-                ))?;
+        let real_id = self
+            .proof_mapping
+            .remove(proof_id)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ProofNotFound(proof_id.0),
+                ),
+            ))?;
         Ok(Proof(Own(real_id)))
+    }
+
+    fn take_reservation(
+        &mut self,
+        reservation_id: &ManifestReservation,
+    ) -> Result<GlobalAddressReservation, RuntimeError> {
+        let real_id = self.reservation_mapping.remove(reservation_id).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::ReservationNotFound(reservation_id.0),
+            )),
+        )?;
+        Ok(GlobalAddressReservation(Own(real_id)))
+    }
+
+    fn copy_named_address(
+        &mut self,
+        named_address_id: &ManifestNamedAddress,
+    ) -> Result<GlobalAddress, RuntimeError> {
+        let real_id = self.named_address_mapping.remove(named_address_id).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::NamedAddressNotFound(named_address_id.0),
+            )),
+        )?;
+        Ok(GlobalAddress::new_or_panic(real_id.into()))
     }
 
     fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
         let new_id = self.id_allocator.new_bucket_id();
-        self.bucket_id_mapping
-            .insert(new_id.clone(), bucket.0.into());
+        self.bucket_mapping.insert(new_id.clone(), bucket.0.into());
         Ok(new_id)
     }
 
     fn create_manifest_proof(&mut self, proof: Proof) -> Result<ManifestProof, RuntimeError> {
         let new_id = self.id_allocator.new_proof_id();
-        self.proof_id_mapping.insert(new_id.clone(), proof.0.into());
+        self.proof_mapping.insert(new_id.clone(), proof.0.into());
         Ok(new_id)
     }
 
     fn create_manifest_reservation(
         &mut self,
-        node_id: NodeId,
+        reservation: GlobalAddressReservation,
     ) -> Result<ManifestReservation, RuntimeError> {
         let new_id = self.id_allocator.new_reservation_id();
-        self.reservation_id_mapping.insert(new_id, node_id);
+        self.reservation_mapping
+            .insert(new_id, reservation.0.into());
+        Ok(new_id)
+    }
+
+    fn create_manifest_named_address(
+        &mut self,
+        address: GlobalAddress,
+    ) -> Result<ManifestNamedAddress, RuntimeError> {
+        let new_id = self.id_allocator.new_named_address_id();
+        self.named_address_mapping.insert(new_id, address.into());
         Ok(new_id)
     }
 
@@ -584,14 +620,14 @@ impl TransactionProcessor {
                         LocalAuthZone::push(proof, api)?;
                     }
                     _ => {
-                        self.create_manifest_reservation(node_id.clone())?;
+                        // No-op, but can be extended
                     }
                 },
                 TypeInfoSubstate::KeyValueStore(_)
-                | TypeInfoSubstate::GlobalAddressReservation(_) => {
-                    self.create_manifest_reservation(node_id.clone())?;
+                | TypeInfoSubstate::GlobalAddressReservation(_)
+                | TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                    // No-op, but can be extended
                 }
-                TypeInfoSubstate::GlobalAddressPhantom(_) => unreachable!(),
             }
         }
 
@@ -665,14 +701,14 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     }
 
     fn replace_reservation(&mut self, r: ManifestReservation) -> Result<Own, RuntimeError> {
-        self.processor.take_reservation(&r)
+        self.processor.take_reservation(&r).map(|x| x.0)
     }
 
     fn replace_named_address(
         &mut self,
         a: ManifestNamedAddress,
     ) -> Result<Reference, RuntimeError> {
-        todo!()
+        self.processor.copy_named_address(&a).map(|x| x.into())
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {

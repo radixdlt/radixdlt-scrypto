@@ -44,7 +44,6 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                     (SerializableType::String(value.0.to_string()), true)
                 }
             }
-            // TODO: add name support
             ManifestCustomValue::Reservation(value) => {
                 if let Some(name) = context.custom_context.get_reservation_name(&value) {
                     (SerializableType::String(name.to_string()), true)

@@ -840,7 +840,6 @@ fn generate_resource_address(
     }
 }
 
-// TODO: add support for named address
 fn generate_dynamic_global_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
