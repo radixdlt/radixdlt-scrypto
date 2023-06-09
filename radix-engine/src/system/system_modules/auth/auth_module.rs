@@ -66,25 +66,6 @@ pub enum AuthorityListAuthorizationResult {
 }
 
 impl AuthModule {
-    fn function_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        blueprint: &BlueprintId,
-        ident: &str,
-        api: &mut SystemService<Y, V>,
-    ) -> Result<AccessRule, RuntimeError> {
-        let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, api)?;
-        let access_rule = auth_template.rules.remove(ident);
-        if let Some(access_rule) = access_rule {
-            Ok(access_rule)
-        } else {
-            Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::NoFunction(FnIdentifier {
-                    blueprint: blueprint.clone(),
-                    ident: FnIdent::Application(ident.to_string()),
-                }),
-            )))
-        }
-    }
-
     fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_zone_id: &NodeId,
         callee: &MethodActor,
@@ -148,11 +129,11 @@ impl AuthModule {
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
-                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?;
+                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?.clone();
                 template.method_auth_template
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
-                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?;
+                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?.clone();
                 template.outer_method_auth_template
             }
         };
@@ -265,7 +246,7 @@ impl AuthModule {
                     Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
                 }
                 Actor::Function { blueprint, ident } => {
-                    let access_rule = Self::function_auth(blueprint, ident.as_str(), &mut system)?;
+                    let access_rule = system.get_bp_function_access_rule(blueprint, ident.as_str())?;
                     let acting_location = ActingLocation::AtBarrier;
 
                     // Verify authorization

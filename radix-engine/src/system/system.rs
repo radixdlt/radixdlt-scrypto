@@ -2,10 +2,7 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::errors::{
-    ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError,
-};
+use crate::errors::{ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError, ModuleError, RuntimeError};
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
@@ -16,7 +13,7 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
+use crate::system::system_modules::auth::{ActingLocation, AuthError, AuthorizationCheckResult};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -307,7 +304,8 @@ where
         Ok(node_id.into())
     }
 
-    pub fn get_bp_method_auth_template(&mut self, blueprint: &BlueprintId) -> Result<MethodAuthTemplate, RuntimeError> {
+    // TODO: Move cache management into PackageNativePackage
+    pub fn get_bp_method_auth_template(&mut self, blueprint: &BlueprintId) -> Result<&MethodAuthTemplate, RuntimeError> {
         let method_auth = self
             .api
             .kernel_get_system_state()
@@ -327,11 +325,37 @@ where
             .kernel_get_system_state()
             .system
             .method_auth_cache
-            .insert(blueprint.clone(), method_auth_template.clone());
+            .insert(blueprint.clone(), method_auth_template);
+
+        let method_auth_template = self.api
+            .kernel_get_system_state()
+            .system
+            .method_auth_cache
+            .get(blueprint).unwrap();
 
         Ok(method_auth_template)
     }
 
+    pub fn get_bp_function_access_rule(
+        &mut self,
+        blueprint: &BlueprintId,
+        ident: &str,
+    ) -> Result<AccessRule, RuntimeError> {
+        let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, self.api)?;
+        let access_rule = auth_template.rules.remove(ident);
+        if let Some(access_rule) = access_rule {
+            Ok(access_rule)
+        } else {
+            Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                AuthError::NoFunction(FnIdentifier {
+                    blueprint: blueprint.clone(),
+                    ident: FnIdent::Application(ident.to_string()),
+                }),
+            )))
+        }
+    }
+
+    // TODO: Move cache management into PackageNativePackage
     pub fn get_blueprint_definition(
         &mut self,
         blueprint: &BlueprintId,
