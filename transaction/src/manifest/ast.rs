@@ -138,6 +138,13 @@ pub enum Instruction {
 
     DropAllProofs,
 
+    AllocateGlobalAddress {
+        package_address: Value,
+        blueprint_name: Value,
+        reservation: Value,
+        named_address: Value,
+    },
+
     /* Call direct vault method aliases */
     RecallVault {
         vault_id: Value,
@@ -281,6 +288,8 @@ pub enum ValueKind {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+    Reservation,
+    NamedAddress,
 }
 
 impl ValueKind {
@@ -340,6 +349,12 @@ impl ValueKind {
             ValueKind::NonFungibleLocalId => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
             }
+            ValueKind::Reservation => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::Reservation)
+            }
+            ValueKind::NamedAddress => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::NamedAddress)
+            }
         }
     }
 }
@@ -391,6 +406,8 @@ pub enum Value {
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
     NonFungibleLocalId(Box<Value>),
+    Reservation(Box<Value>),
+    NamedAddress(Box<Value>),
 }
 
 impl Value {
@@ -440,6 +457,12 @@ impl Value {
             }
             Value::NonFungibleLocalId(_) => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
+            }
+            Value::Reservation(_) => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::Reservation)
+            }
+            Value::NamedAddress(_) => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::NamedAddress)
             }
         }
     }

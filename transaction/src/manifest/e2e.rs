@@ -1,3 +1,6 @@
+use radix_engine_common::prelude::{Bech32Encoder, PACKAGE_PACKAGE};
+use utils::ContextualDisplay;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -6,6 +9,23 @@ mod tests {
     use crate::manifest::*;
     use radix_engine_interface::blueprints::resource::AccessRule;
     use scrypto_derive::NonFungibleData;
+
+    #[test]
+    fn test_address_allocation() {
+        compile_and_decompile_with_inversion_test(
+            "address_allocation",
+            apply_address_replacements(include_str!(
+                "../../examples/address_allocation/allocate_address.rtm"
+            )),
+            &NetworkDefinition::simulator(),
+            vec![include_bytes!("../../examples/package/code.wasm").to_vec()],
+            apply_address_replacements(
+                r##"
+
+"##,
+            ),
+        );
+    }
 
     #[test]
     fn test_publish_package() {
@@ -1121,6 +1141,7 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
     //     pseudo_random_bytes[0] = EntityType::GlobalGenericComponent as u8;
     //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     // };
+    let package_package_address = PACKAGE_PACKAGE.to_string(&Bech32Encoder::for_simulator());
     let replacement_vectors = sbor::prelude::BTreeMap::from([
         (
             "${xrd_resource_address}",
@@ -1230,6 +1251,10 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
         (
             "${second_resource_address}",
             "resource_sim1thcgx0f3rwaeetl67cmsssv4p748kd3sjhtge9l4m6ns7cucs97tjv",
+        ),
+        (
+            "${package_package_address}",
+            package_package_address.as_str(),
         ),
     ]);
     for (of, with) in replacement_vectors.into_iter() {

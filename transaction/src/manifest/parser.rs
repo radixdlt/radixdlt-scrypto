@@ -53,6 +53,7 @@ pub enum InstructionIdent {
     CallMetadataMethod,
     CallAccessRulesMethod,
     DropAllProofs,
+    AllocateGlobalAddress,
 
     // ==============
     // Call direct vault method aliases
@@ -142,6 +143,7 @@ impl InstructionIdent {
             "CALL_ACCESS_RULES_METHOD" => InstructionIdent::CallAccessRulesMethod,
 
             "DROP_ALL_PROOFS" => InstructionIdent::DropAllProofs,
+            "ALLOCATE_GLOBAL_ADDRESS" => InstructionIdent::AllocateGlobalAddress,
 
             // ==============
             // Call direct vault method aliases
@@ -223,6 +225,8 @@ pub enum SborValueIdent {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+    Reservation,
+    NamedAddress,
 }
 
 impl SborValueIdent {
@@ -255,6 +259,8 @@ impl SborValueIdent {
             "Decimal" => SborValueIdent::Decimal,
             "PreciseDecimal" => SborValueIdent::PreciseDecimal,
             "NonFungibleLocalId" => SborValueIdent::NonFungibleLocalId,
+            "Reservation" => SborValueIdent::Reservation,
+            "NamedAddress" => SborValueIdent::NamedAddress,
             _ => {
                 return None;
             }
@@ -302,6 +308,8 @@ pub enum SborValueKindIdent {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+    Reservation,
+    NamedAddress,
 }
 
 impl SborValueKindIdent {
@@ -345,6 +353,8 @@ impl SborValueKindIdent {
             "Decimal" => SborValueKindIdent::Decimal,
             "PreciseDecimal" => SborValueKindIdent::PreciseDecimal,
             "NonFungibleLocalId" => SborValueKindIdent::NonFungibleLocalId,
+            "Reservation" => SborValueKindIdent::Reservation,
+            "NamedAddress" => SborValueKindIdent::NamedAddress,
             _ => {
                 return None;
             }
@@ -560,6 +570,12 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
+            InstructionIdent::AllocateGlobalAddress => Instruction::AllocateGlobalAddress {
+                package_address: self.parse_value()?,
+                blueprint_name: self.parse_value()?,
+                reservation: self.parse_value()?,
+                named_address: self.parse_value()?,
+            },
 
             /* Call direct vault method aliases */
             InstructionIdent::RecallVault => Instruction::RecallVault {
@@ -723,6 +739,12 @@ impl Parser {
                     }
                     SborValueIdent::NonFungibleLocalId => {
                         Value::NonFungibleLocalId(self.parse_values_one()?.into())
+                    }
+                    SborValueIdent::Reservation => {
+                        Value::Reservation(self.parse_values_one()?.into())
+                    }
+                    SborValueIdent::NamedAddress => {
+                        Value::NamedAddress(self.parse_values_one()?.into())
                     }
                 }
             }
@@ -896,6 +918,8 @@ impl Parser {
                     SborValueKindIdent::Decimal => ValueKind::Decimal,
                     SborValueKindIdent::PreciseDecimal => ValueKind::PreciseDecimal,
                     SborValueKindIdent::NonFungibleLocalId => ValueKind::NonFungibleLocalId,
+                    SborValueKindIdent::Reservation => ValueKind::Reservation,
+                    SborValueKindIdent::NamedAddress => ValueKind::NamedAddress,
                 }
             }
             _ => {

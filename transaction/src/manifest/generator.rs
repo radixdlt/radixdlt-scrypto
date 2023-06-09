@@ -7,6 +7,7 @@ use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
+use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
@@ -112,20 +113,22 @@ pub enum GeneratorError {
 pub enum NameResolverError {
     UndefinedBucket(String),
     UndefinedProof(String),
+    UndefinedReservation(String),
+    UndefinedNamedAddress(String),
     NamedAlreadyDefined(String),
 }
 
+#[derive(Default)]
 pub struct NameResolver {
     named_buckets: BTreeMap<String, ManifestBucket>,
     named_proofs: BTreeMap<String, ManifestProof>,
+    named_reservations: BTreeMap<String, ManifestReservation>,
+    named_addresses: BTreeMap<String, ManifestNamedAddress>,
 }
 
 impl NameResolver {
     pub fn new() -> Self {
-        Self {
-            named_buckets: BTreeMap::new(),
-            named_proofs: BTreeMap::new(),
-        }
+        Self::default()
     }
 
     pub fn insert_bucket(
@@ -154,6 +157,32 @@ impl NameResolver {
         }
     }
 
+    pub fn insert_reservation(
+        &mut self,
+        name: String,
+        reservation_id: ManifestReservation,
+    ) -> Result<(), NameResolverError> {
+        if self.named_buckets.contains_key(&name) || self.named_reservations.contains_key(&name) {
+            Err(NameResolverError::NamedAlreadyDefined(name))
+        } else {
+            self.named_reservations.insert(name, reservation_id);
+            Ok(())
+        }
+    }
+
+    pub fn insert_named_address(
+        &mut self,
+        name: String,
+        named_address_id: ManifestNamedAddress,
+    ) -> Result<(), NameResolverError> {
+        if self.named_buckets.contains_key(&name) || self.named_addresses.contains_key(&name) {
+            Err(NameResolverError::NamedAlreadyDefined(name))
+        } else {
+            self.named_addresses.insert(name, named_address_id);
+            Ok(())
+        }
+    }
+
     pub fn resolve_bucket(&mut self, name: &str) -> Result<ManifestBucket, NameResolverError> {
         match self.named_buckets.get(name).cloned() {
             Some(bucket_id) => Ok(bucket_id),
@@ -165,6 +194,26 @@ impl NameResolver {
         match self.named_proofs.get(name).cloned() {
             Some(proof_id) => Ok(proof_id),
             None => Err(NameResolverError::UndefinedProof(name.into())),
+        }
+    }
+
+    pub fn resolve_reservation(
+        &mut self,
+        name: &str,
+    ) -> Result<ManifestReservation, NameResolverError> {
+        match self.named_reservations.get(name).cloned() {
+            Some(reservation_id) => Ok(reservation_id),
+            None => Err(NameResolverError::UndefinedReservation(name.into())),
+        }
+    }
+
+    pub fn resolve_named_address(
+        &mut self,
+        name: &str,
+    ) -> Result<ManifestNamedAddress, NameResolverError> {
+        match self.named_addresses.get(name).cloned() {
+            Some(named_address_id) => Ok(named_address_id),
+            None => Err(NameResolverError::UndefinedNamedAddress(name.into())),
         }
     }
 }
@@ -517,6 +566,24 @@ where
             InstructionV1::DropAllProofs
         }
 
+        ast::Instruction::AllocateGlobalAddress {
+            package_address,
+            blueprint_name,
+            reservation,
+            named_address,
+        } => {
+            let reservation_id = id_validator.new_reservation();
+            declare_reservation(reservation, resolver, reservation_id)?;
+
+            let named_address_id = id_validator.new_named_address();
+            declare_named_address(named_address, resolver, named_address_id)?;
+
+            InstructionV1::AllocateGlobalAddress {
+                package_address: generate_package_address(package_address, bech32_decoder)?,
+                blueprint_name: generate_string(&blueprint_name)?,
+            }
+        }
+
         /* direct vault method aliases */
         ast::Instruction::RecallVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
             address: generate_local_address(vault_id, bech32_decoder)?,
@@ -732,6 +799,26 @@ fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, Genera
     }
 }
 
+fn generate_package_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<PackageAddress, GeneratorError> {
+    match value {
+        ast::Value::Address(inner) => match inner.borrow() {
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+            }
+            v => invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::PackageAddress),
+    }
+}
+
 fn generate_resource_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
@@ -879,6 +966,38 @@ fn declare_proof(
     }
 }
 
+fn declare_reservation(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    reservation_id: ManifestReservation,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::Reservation(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_reservation(name.to_string(), reservation_id)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::Reservation),
+    }
+}
+
+fn declare_named_address(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    named_address_id: ManifestNamedAddress,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_named_address(name.to_string(), named_address_id)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::NamedAddress),
+    }
+}
+
 fn generate_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
@@ -892,6 +1011,38 @@ fn generate_proof(
             v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(v, ast::ValueKind::Proof),
+    }
+}
+
+fn generate_reservation(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+) -> Result<ManifestReservation, GeneratorError> {
+    match value {
+        ast::Value::Reservation(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(ManifestReservation(*n)),
+            ast::Value::String(s) => resolver
+                .resolve_reservation(&s)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::Reservation),
+    }
+}
+
+fn generate_named_address(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+) -> Result<ManifestNamedAddress, GeneratorError> {
+    match value {
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(ManifestNamedAddress(*n)),
+            ast::Value::String(s) => resolver
+                .resolve_named_address(&s)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::NamedAddress),
     }
 }
 
@@ -1141,6 +1292,16 @@ where
         ast::Value::NonFungibleLocalId(_) => {
             generate_non_fungible_local_id(value).map(|v| Value::Custom {
                 value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(v)),
+            })
+        }
+        ast::Value::Reservation(_) => {
+            generate_reservation(value, resolver).map(|v| Value::Custom {
+                value: ManifestCustomValue::Reservation(v),
+            })
+        }
+        ast::Value::NamedAddress(_) => {
+            generate_named_address(value, resolver).map(|v| Value::Custom {
+                value: ManifestCustomValue::NamedAddress(v),
             })
         }
     }
