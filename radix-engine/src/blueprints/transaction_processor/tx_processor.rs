@@ -288,19 +288,7 @@ impl TransactionProcessorBlueprint {
                     let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
-                    // TODO: add named address support
-                    let package_address = match package_address {
-                        DynamicGlobalAddress::Static(x) => PackageAddress::try_from(x.clone())
-                            .map_err(|_| {
-                                RuntimeError::ApplicationError(
-                                    ApplicationError::TransactionProcessorError(
-                                        TransactionProcessorError::NotPackageAddress(x),
-                                    ),
-                                )
-                            })?,
-                        DynamicGlobalAddress::Named(_) => todo!(),
-                    };
-
+                    let package_address = processor.resolve_package_address(package_address)?;
                     let rtn = api.call_function(
                         package_address,
                         &blueprint_name,
@@ -317,14 +305,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    // TODO: add named address support
-                    let node_id = match address {
-                        DynamicGlobalAddress::Static(x) => x.into(),
-                        DynamicGlobalAddress::Named(_) => todo!(),
-                    };
+                    let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
                         ObjectModuleId::Main,
-                        &node_id,
+                        address.as_node_id(),
                         false,
                         method_name,
                         args,
@@ -338,14 +322,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    // TODO: add named address support
-                    let node_id = match address {
-                        DynamicGlobalAddress::Static(x) => x.into(),
-                        DynamicGlobalAddress::Named(_) => todo!(),
-                    };
+                    let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
                         ObjectModuleId::Royalty,
-                        &node_id,
+                        address.as_node_id(),
                         false,
                         method_name,
                         args,
@@ -359,14 +339,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    // TODO: add named address support
-                    let node_id = match address {
-                        DynamicGlobalAddress::Static(x) => x.into(),
-                        DynamicGlobalAddress::Named(_) => todo!(),
-                    };
+                    let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
                         ObjectModuleId::Metadata,
-                        &node_id,
+                        address.as_node_id(),
                         false,
                         method_name,
                         args,
@@ -380,14 +356,10 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    // TODO: add named address support
-                    let node_id = match address {
-                        DynamicGlobalAddress::Static(x) => x.into(),
-                        DynamicGlobalAddress::Named(_) => todo!(),
-                    };
+                    let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
                         ObjectModuleId::AccessRules,
-                        &node_id,
+                        address.as_node_id(),
                         false,
                         method_name,
                         args,
@@ -525,6 +497,18 @@ impl TransactionProcessor {
         Ok(Proof(Own(real_id)))
     }
 
+    fn get_named_address(
+        &mut self,
+        named_address_id: &ManifestNamedAddress,
+    ) -> Result<GlobalAddress, RuntimeError> {
+        let real_id = self.named_address_mapping.remove(named_address_id).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::NamedAddressNotFound(named_address_id.0),
+            )),
+        )?;
+        Ok(GlobalAddress::new_or_panic(real_id.into()))
+    }
+
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
         let real_id = self
             .proof_mapping
@@ -547,18 +531,6 @@ impl TransactionProcessor {
             )),
         )?;
         Ok(GlobalAddressReservation(Own(real_id)))
-    }
-
-    fn copy_named_address(
-        &mut self,
-        named_address_id: &ManifestNamedAddress,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        let real_id = self.named_address_mapping.remove(named_address_id).ok_or(
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::NamedAddressNotFound(named_address_id.0),
-            )),
-        )?;
-        Ok(GlobalAddress::new_or_panic(real_id.into()))
     }
 
     fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
@@ -590,6 +562,29 @@ impl TransactionProcessor {
         let new_id = self.id_allocator.new_named_address_id();
         self.named_address_mapping.insert(new_id, address.into());
         Ok(new_id)
+    }
+
+    fn resolve_package_address(
+        &mut self,
+        address: DynamicGlobalAddress,
+    ) -> Result<PackageAddress, RuntimeError> {
+        let global_address = self.resolve_global_address(address)?;
+
+        PackageAddress::try_from(global_address).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::NotPackageAddress(global_address),
+            ))
+        })
+    }
+
+    fn resolve_global_address(
+        &mut self,
+        address: DynamicGlobalAddress,
+    ) -> Result<GlobalAddress, RuntimeError> {
+        match address {
+            DynamicGlobalAddress::Static(address) => Ok(address),
+            DynamicGlobalAddress::Named(name) => self.get_named_address(&name),
+        }
     }
 
     fn handle_call_return_data<Y, L: Default>(
@@ -708,7 +703,7 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         &mut self,
         a: ManifestNamedAddress,
     ) -> Result<Reference, RuntimeError> {
-        self.processor.copy_named_address(&a).map(|x| x.into())
+        self.processor.get_named_address(&a).map(|x| x.into())
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
