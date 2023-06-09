@@ -137,7 +137,7 @@ fn globalize_package<Y, L: Default>(
     fn_royalty: BTreeMap<FnKey, RoyaltyAmount>,
 
     blueprint_auth_template: BTreeMap<String, MethodAuthTemplate>,
-    function_access_rules: BTreeMap<FnKey, AccessRule>,
+    function_auth: BTreeMap<String, FunctionAuthTemplate>,
 
     metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
@@ -246,15 +246,15 @@ where
     };
 
     {
-        let function_access_rules_partition = function_access_rules
+        let function_access_rules_partition = function_auth
             .into_iter()
-            .map(|(k, rule)| {
+            .map(|(blueprint, auth_template)| {
                 let value = SubstateWrapper {
-                    value: Some(rule),
+                    value: Some(auth_template),
                     mutability: SubstateMutability::Immutable,
                 };
                 (
-                    SubstateKey::Map(scrypto_encode(&k).unwrap()),
+                    SubstateKey::Map(scrypto_encode(&blueprint).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
                 )
             })
@@ -262,7 +262,7 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET)
+                .at_offset(PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET)
                 .unwrap(),
             function_access_rules_partition,
         );
@@ -285,7 +285,7 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
+                .at_offset(PACKAGE_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
             blueprint_auth_templates,
         );
@@ -452,9 +452,9 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<FnKey>()),
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<String>()),
                 value: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<AccessRule>(),
+                    aggregator.add_child_type_and_descendents::<FunctionAuthTemplate>(),
                 ),
                 can_own: false,
             },
@@ -672,16 +672,17 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let mut function_access_rules = BTreeMap::new();
+        let mut function_auth = BTreeMap::new();
         let mut blueprint_auth_templates = BTreeMap::new();
         let mut blueprints = BTreeMap::new();
         let mut blueprint_config = BTreeMap::new();
 
         {
             for (blueprint, setup) in setup.blueprints {
-                for (ident, rule) in setup.function_auth {
-                    function_access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
-                }
+
+                function_auth.insert(blueprint.clone(), FunctionAuthTemplate {
+                    rules: setup.function_auth,
+                });
 
                 blueprint_auth_templates.insert(blueprint.clone(), setup.template);
 
@@ -735,7 +736,7 @@ impl PackageNativePackage {
             royalty,
             btreemap!(),
             blueprint_auth_templates,
-            function_access_rules,
+            function_auth,
             metadata,
             None,
             api,
@@ -859,7 +860,7 @@ impl PackageNativePackage {
                 ))
             })?;
 
-        let mut function_access_rules = BTreeMap::new();
+        let mut function_auth = BTreeMap::new();
         let mut blueprint_auth_templates = BTreeMap::new();
 
         let mut blueprints = BTreeMap::new();
@@ -872,10 +873,9 @@ impl PackageNativePackage {
         // Build node init
         {
             for (blueprint, setup) in setup.blueprints {
-                for (ident, rule) in setup.function_auth {
-                    function_access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
-                }
-
+                function_auth.insert(blueprint.clone(), FunctionAuthTemplate {
+                    rules: setup.function_auth,
+                });
                 blueprint_auth_templates.insert(blueprint.clone(), setup.template);
 
                 let mut functions = BTreeMap::new();
@@ -926,7 +926,7 @@ impl PackageNativePackage {
             royalty_accumulator,
             royalties,
             blueprint_auth_templates,
-            function_access_rules,
+            function_auth,
             metadata,
             Some(access_rules),
             api,
@@ -975,7 +975,6 @@ impl PackageNativePackage {
         Ok(bucket)
     }
 
-
     pub fn get_blueprint_definition<Y>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
@@ -1015,7 +1014,7 @@ impl PackageNativePackage {
         let handle = api.kernel_lock_substate_with_default(
             blueprint.package_address.as_node_id(),
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
+                .at_offset(PACKAGE_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
             &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
             LockFlags::read_only(),

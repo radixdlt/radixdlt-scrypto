@@ -8,6 +8,7 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
+use crate::blueprints::resource::AccessRule;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -25,8 +26,8 @@ pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-pub const PACKAGE_BLUEPRINT_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
+pub const PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+pub const PACKAGE_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
 
 pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
 
@@ -139,6 +140,12 @@ impl BlueprintDefinition {
         }
         None
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct FunctionAuthTemplate {
+    pub rules: BTreeMap<String, AccessRule>,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintStateSchema {

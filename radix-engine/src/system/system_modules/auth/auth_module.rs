@@ -16,7 +16,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{BlueprintVersion, PACKAGE_BLUEPRINT, PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT};
+use radix_engine_interface::blueprints::package::{BlueprintVersion, FunctionAuthTemplate, PACKAGE_BLUEPRINT, PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
@@ -82,14 +82,12 @@ impl AuthModule {
                 AccessRule::AllowAll
             }
         } else {
-            let fn_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
-
             let handle = api.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET)
+                    .at_offset(PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
+                &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let wrapper = SubstateWrapper {
@@ -101,10 +99,12 @@ impl AuthModule {
                 SystemLockData::default(),
             )?;
 
-            let access_rule: SubstateWrapper<Option<AccessRule>> =
+            let auth_template: SubstateWrapper<Option<FunctionAuthTemplate>> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            if let Some(access_rule) = access_rule.value {
+            let access_rule = auth_template.value.and_then(|mut auth| auth.rules.remove(ident));
+
+            if let Some(access_rule) = access_rule {
                 access_rule
             } else {
                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(

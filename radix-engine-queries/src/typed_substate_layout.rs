@@ -104,7 +104,7 @@ pub enum TypedMainModuleSubstateKey {
     PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintImplKey(BlueprintVersionKey),
     PackageFnRoyaltyKey(FnKey),
-    PackageFunctionAccessRulesKey(FnKey),
+    PackageFunctionAccessRulesKey(String),
     PackageBlueprintMethodAuthTemplateKey(String),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
@@ -402,7 +402,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
     PackageBlueprintMinorVersionConfig(Option<BlueprintImpl>),
-    PackageFunctionAccessRule(Option<AccessRule>),
+    PackageFunctionAccessRule(Option<FunctionAuthTemplate>),
     PackageBlueprintMethodAuthTemplate(Option<MethodAuthTemplate>),
     PackageFnRoyalty(Option<RoyaltyAmount>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
@@ -585,7 +585,7 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::PackageFnRoyalty(value.value)
         }
         TypedMainModuleSubstateKey::PackageFunctionAccessRulesKey(_fn_key) => {
-            let value: SubstateWrapper<Option<AccessRule>> = scrypto_decode(data)?;
+            let value: SubstateWrapper<Option<FunctionAuthTemplate>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageFunctionAccessRule(value.value)
         }
         TypedMainModuleSubstateKey::PackageBlueprintMethodAuthTemplateKey(_fn_key) => {
