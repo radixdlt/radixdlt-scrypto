@@ -19,7 +19,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, FunctionAuthTemplate, PACKAGE_BLUEPRINT,
-    PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT,
+    PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};

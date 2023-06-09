@@ -266,14 +266,14 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET)
+                .at_offset(PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
             function_auth_partition,
         );
     }
 
     {
-        let blueprint_auth_templates = blueprint_auth_template
+        let method_auth_partition = blueprint_auth_template
             .into_iter()
             .map(|(blueprint, method_auth_template)| {
                 let key = BlueprintVersionKey {
@@ -293,9 +293,9 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
+                .at_offset(PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
-            blueprint_auth_templates,
+            method_auth_partition,
         );
     }
 
@@ -989,19 +989,23 @@ impl PackageNativePackage {
 
         Ok(definition)
     }
+}
 
+pub struct PackageAuthNativePackage;
+
+impl PackageAuthNativePackage {
     pub fn get_bp_method_auth_template<Y>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<MethodAuthTemplate, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData>,
+        where
+            Y: KernelSubstateApi<SystemLockData>,
     {
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
+                .at_offset(PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
             &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
             LockFlags::read_only(),
@@ -1035,13 +1039,13 @@ impl PackageNativePackage {
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<FunctionAuthTemplate, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData>,
+        where
+            Y: KernelSubstateApi<SystemLockData>,
     {
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET)
+                .at_offset(PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
             &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             LockFlags::read_only(),
