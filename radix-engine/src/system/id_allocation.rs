@@ -72,7 +72,7 @@ pub fn get_global_entity_type(blueprint_id: &BlueprintId) -> EntityType {
         blueprint_id.package_address,
         blueprint_id.blueprint_name.as_str(),
     ) {
-        (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
+        (PACKAGE_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
         (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
             EntityType::GlobalFungibleResourceManager
         }

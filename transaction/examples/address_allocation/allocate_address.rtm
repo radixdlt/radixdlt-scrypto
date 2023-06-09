@@ -35,6 +35,6 @@ PUBLISH_PACKAGE_ADVANCED
 CALL_FUNCTION
     NamedAddress("my_package")
     "BlueprintName"
-    "function_name" 
+    "no_such_function" 
     Decimal("1.0")
 ;

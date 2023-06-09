@@ -50,7 +50,7 @@ PUBLISH_PACKAGE_ADVANCED
 CALL_FUNCTION
     NamedAddress("address1")
     "BlueprintName"
-    "function_name"
+    "no_such_function"
     Decimal("1")
 ;
 "##,

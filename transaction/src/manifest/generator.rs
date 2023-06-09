@@ -92,7 +92,7 @@ pub enum GeneratorError {
     InvalidEcdsaSecp256k1Signature(String),
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
-    InvalidBlobHash,
+    InvalidBlobHash(String),
     BlobNotFound(String),
     InvalidBytesHex(String),
     SborEncodeError(EncodeError),
@@ -1090,7 +1090,8 @@ where
     match value {
         ast::Value::Blob(inner) => match &**inner {
             ast::Value::String(s) => {
-                let hash = Hash::from_str(s).map_err(|_| GeneratorError::InvalidBlobHash)?;
+                let hash = Hash::from_str(s)
+                    .map_err(|_| GeneratorError::InvalidBlobHash(s.to_string()))?;
                 blobs
                     .get_blob(&hash)
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;

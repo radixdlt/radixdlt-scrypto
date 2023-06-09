@@ -206,7 +206,7 @@ where
         );
     }
 
-    let node_id = if let Some(reservation) = package_address_reservation {
+    let package_address = if let Some(reservation) = package_address_reservation {
         // TODO: Can we use `global_object` API?
 
         // Check global address reservation
@@ -255,10 +255,12 @@ where
                 CannotGlobalizeError::InvalidBlueprintId,
             )));
         }
-
-        global_address.as_node_id().clone()
+        PackageAddress::new_or_panic(global_address.into())
     } else {
-        api.kernel_allocate_node_id(EntityType::GlobalPackage)?
+        PackageAddress::new_or_panic(
+            api.kernel_allocate_node_id(EntityType::GlobalPackage)?
+                .into(),
+        )
     };
 
     let mut modules: NodeSubstates = node_modules
@@ -267,9 +269,8 @@ where
         .collect();
     modules.insert(OBJECT_BASE_PARTITION, node_init);
 
-    api.kernel_create_node(node_id, modules)?;
+    api.kernel_create_node(package_address.into_node_id(), modules)?;
 
-    let package_address = PackageAddress::new_or_panic(node_id.into());
     Ok(package_address)
 }
 

@@ -148,7 +148,7 @@ impl ManifestValidator {
         named_address_id
     }
 
-    pub fn copy_named_address(
+    pub fn get_named_address(
         &mut self,
         named_address_id: &ManifestNamedAddress,
     ) -> Result<(), ManifestIdValidationError> {
@@ -192,7 +192,7 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         &mut self,
         a: ManifestNamedAddress,
     ) -> Result<Reference, ManifestIdValidationError> {
-        self.copy_named_address(&a)?;
+        self.get_named_address(&a)?;
         Ok(Reference(NodeId([0u8; NodeId::LENGTH])))
     }
 
