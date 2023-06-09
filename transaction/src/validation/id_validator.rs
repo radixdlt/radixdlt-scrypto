@@ -28,7 +28,7 @@ pub struct ManifestValidator {
     /// Proof id to proof info
     proof_ids: NonIterMap<ManifestProof, ProofKind>,
     /// Set of active allocated global address reservation ids
-    reservation_ids: IndexSet<ManifestReservation>,
+    address_reservation_ids: IndexSet<ManifestAddressReservation>,
     /// Set of named global address ids
     named_address_ids: IndexSet<ManifestNamedAddress>,
 }
@@ -123,21 +123,22 @@ impl ManifestValidator {
         Ok(())
     }
 
-    pub fn new_reservation(&mut self) -> ManifestReservation {
-        let reservation_id = self.id_allocator.new_reservation_id();
-        self.reservation_ids.insert(reservation_id.clone());
-        reservation_id
+    pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
+        let address_reservation_id = self.id_allocator.new_address_reservation_id();
+        self.address_reservation_ids
+            .insert(address_reservation_id.clone());
+        address_reservation_id
     }
 
-    pub fn drop_reservation(
+    pub fn drop_address_reservation(
         &mut self,
-        reservation_id: &ManifestReservation,
+        address_reservation_id: &ManifestAddressReservation,
     ) -> Result<(), ManifestIdValidationError> {
-        if self.reservation_ids.remove(reservation_id) {
+        if self.address_reservation_ids.remove(address_reservation_id) {
             Ok(())
         } else {
-            Err(ManifestIdValidationError::ReservationNotFound(
-                reservation_id.clone(),
+            Err(ManifestIdValidationError::AddressReservationNotFound(
+                address_reservation_id.clone(),
             ))
         }
     }
@@ -180,11 +181,11 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    fn replace_reservation(
+    fn replace_address_reservation(
         &mut self,
-        r: ManifestReservation,
+        r: ManifestAddressReservation,
     ) -> Result<Own, ManifestIdValidationError> {
-        self.drop_reservation(&r)?;
+        self.drop_address_reservation(&r)?;
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 

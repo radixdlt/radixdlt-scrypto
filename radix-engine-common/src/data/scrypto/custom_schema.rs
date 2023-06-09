@@ -70,7 +70,7 @@ impl OwnValidation {
         }
     }
 
-    pub fn could_match_manifest_reservation(&self) -> bool {
+    pub fn could_match_manifest_address_reservation(&self) -> bool {
         match self {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => false,

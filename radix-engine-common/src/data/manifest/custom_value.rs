@@ -14,7 +14,7 @@ pub enum ManifestCustomValue {
     Decimal(ManifestDecimal),
     PreciseDecimal(ManifestPreciseDecimal),
     NonFungibleLocalId(ManifestNonFungibleLocalId),
-    Reservation(ManifestReservation),
+    AddressReservation(ManifestAddressReservation),
     NamedAddress(ManifestNamedAddress),
 }
 
@@ -31,7 +31,9 @@ impl CustomValue<ManifestCustomValueKind> for ManifestCustomValue {
             ManifestCustomValue::NonFungibleLocalId(_) => {
                 ManifestCustomValueKind::NonFungibleLocalId
             }
-            ManifestCustomValue::Reservation(_) => ManifestCustomValueKind::Reservation,
+            ManifestCustomValue::AddressReservation(_) => {
+                ManifestCustomValueKind::AddressReservation
+            }
             ManifestCustomValue::NamedAddress(_) => ManifestCustomValueKind::NamedAddress,
         }
     }
@@ -66,9 +68,9 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::NonFungibleLocalId(_) => encoder.write_value_kind(
                 ValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId),
             ),
-            ManifestCustomValue::Reservation(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ManifestCustomValueKind::Reservation))
-            }
+            ManifestCustomValue::AddressReservation(_) => encoder.write_value_kind(
+                ValueKind::Custom(ManifestCustomValueKind::AddressReservation),
+            ),
             ManifestCustomValue::NamedAddress(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ManifestCustomValueKind::NamedAddress))
             }
@@ -86,7 +88,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::Decimal(v) => v.encode_body(encoder),
             ManifestCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ManifestCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
-            ManifestCustomValue::Reservation(v) => v.encode_body(encoder),
+            ManifestCustomValue::AddressReservation(v) => v.encode_body(encoder),
             ManifestCustomValue::NamedAddress(v) => v.encode_body(encoder),
         }
     }
@@ -132,9 +134,9 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
                     ManifestNonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleLocalId)
                 }
-                ManifestCustomValueKind::Reservation => {
-                    ManifestReservation::decode_body_with_value_kind(decoder, value_kind)
-                        .map(Self::Reservation)
+                ManifestCustomValueKind::AddressReservation => {
+                    ManifestAddressReservation::decode_body_with_value_kind(decoder, value_kind)
+                        .map(Self::AddressReservation)
                 }
                 ManifestCustomValueKind::NamedAddress => {
                     ManifestNamedAddress::decode_body_with_value_kind(decoder, value_kind)

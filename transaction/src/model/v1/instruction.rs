@@ -19,7 +19,7 @@ Then, we can do more advanced stuff in manifest, such as
 ALLOCATE_GLOBAL_ADDRESS
     Address("{resource_package}")
     "FungibleResourceManager"
-    Reservation("reservation")
+    AddressReservation("address_reservation")
     NamedAddress("new_resource")
 ;
 CALL_FUNCTION
@@ -27,7 +27,7 @@ CALL_FUNCTION
     "FungibleResourceManager"
     "create_with_initial_supply_and_address"
     Decimal("10")
-    Reservation("reservation")
+    AddressReservation("address_reservation")
 ;
 TAKE_FROM_WORKTOP
     NamedAddress("new_resource")

@@ -225,7 +225,7 @@ pub enum SborValueIdent {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
-    Reservation,
+    AddressReservation,
     NamedAddress,
 }
 
@@ -259,7 +259,7 @@ impl SborValueIdent {
             "Decimal" => SborValueIdent::Decimal,
             "PreciseDecimal" => SborValueIdent::PreciseDecimal,
             "NonFungibleLocalId" => SborValueIdent::NonFungibleLocalId,
-            "Reservation" => SborValueIdent::Reservation,
+            "AddressReservation" => SborValueIdent::AddressReservation,
             "NamedAddress" => SborValueIdent::NamedAddress,
             _ => {
                 return None;
@@ -308,7 +308,7 @@ pub enum SborValueKindIdent {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
-    Reservation,
+    AddressReservation,
     NamedAddress,
 }
 
@@ -353,7 +353,7 @@ impl SborValueKindIdent {
             "Decimal" => SborValueKindIdent::Decimal,
             "PreciseDecimal" => SborValueKindIdent::PreciseDecimal,
             "NonFungibleLocalId" => SborValueKindIdent::NonFungibleLocalId,
-            "Reservation" => SborValueKindIdent::Reservation,
+            "AddressReservation" => SborValueKindIdent::AddressReservation,
             "NamedAddress" => SborValueKindIdent::NamedAddress,
             _ => {
                 return None;
@@ -573,7 +573,7 @@ impl Parser {
             InstructionIdent::AllocateGlobalAddress => Instruction::AllocateGlobalAddress {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
-                reservation: self.parse_value()?,
+                address_reservation: self.parse_value()?,
                 named_address: self.parse_value()?,
             },
 
@@ -740,8 +740,8 @@ impl Parser {
                     SborValueIdent::NonFungibleLocalId => {
                         Value::NonFungibleLocalId(self.parse_values_one()?.into())
                     }
-                    SborValueIdent::Reservation => {
-                        Value::Reservation(self.parse_values_one()?.into())
+                    SborValueIdent::AddressReservation => {
+                        Value::AddressReservation(self.parse_values_one()?.into())
                     }
                     SborValueIdent::NamedAddress => {
                         Value::NamedAddress(self.parse_values_one()?.into())
@@ -918,7 +918,7 @@ impl Parser {
                     SborValueKindIdent::Decimal => ValueKind::Decimal,
                     SborValueKindIdent::PreciseDecimal => ValueKind::PreciseDecimal,
                     SborValueKindIdent::NonFungibleLocalId => ValueKind::NonFungibleLocalId,
-                    SborValueKindIdent::Reservation => ValueKind::Reservation,
+                    SborValueKindIdent::AddressReservation => ValueKind::AddressReservation,
                     SborValueKindIdent::NamedAddress => ValueKind::NamedAddress,
                 }
             }

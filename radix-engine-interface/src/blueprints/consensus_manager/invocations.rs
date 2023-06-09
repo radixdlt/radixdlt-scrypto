@@ -1,7 +1,7 @@
 use crate::api::actor_sorted_index_api::SortedKey;
 use crate::blueprints::resource::*;
 use crate::*;
-use radix_engine_common::data::manifest::model::ManifestReservation;
+use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
@@ -25,8 +25,8 @@ pub struct ConsensusManagerCreateInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct ConsensusManagerCreateManifestInput {
-    pub validator_owner_token_address: ManifestReservation,
-    pub component_address: ManifestReservation,
+    pub validator_owner_token_address: ManifestAddressReservation,
+    pub component_address: ManifestAddressReservation,
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,

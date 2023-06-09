@@ -77,7 +77,7 @@ pub struct DecompilationContext<'a> {
     pub id_allocator: ManifestIdAllocator,
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,
-    pub reservation_names: NonIterMap<ManifestReservation, String>,
+    pub address_reservation_names: NonIterMap<ManifestAddressReservation, String>,
     pub named_address_names: NonIterMap<ManifestNamedAddress, String>,
 }
 
@@ -101,7 +101,7 @@ impl<'a> DecompilationContext<'a> {
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,
-            &self.reservation_names,
+            &self.address_reservation_names,
             &self.named_address_names,
         )
         .with_multi_line(4, 4)
@@ -121,11 +121,15 @@ impl<'a> DecompilationContext<'a> {
         proof
     }
 
-    pub fn new_reservation(&mut self) -> ManifestReservation {
-        let reservation = self.id_allocator.new_reservation_id();
-        let name = format!("reservation{}", self.reservation_names.len() + 1);
-        self.reservation_names.insert(reservation, name.clone());
-        reservation
+    pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
+        let address_reservation = self.id_allocator.new_address_reservation_id();
+        let name = format!(
+            "address_reservation{}",
+            self.address_reservation_names.len() + 1
+        );
+        self.address_reservation_names
+            .insert(address_reservation, name.clone());
+        address_reservation
     }
 
     pub fn new_named_address(&mut self) -> ManifestNamedAddress {
@@ -589,11 +593,16 @@ pub fn decompile_instruction<F: fmt::Write>(
             package_address,
             blueprint_name,
         } => {
-            let reservation = context.new_reservation();
+            let address_reservation = context.new_address_reservation();
             let named_address = context.new_named_address();
             (
                 "ALLOCATE_GLOBAL_ADDRESS",
-                to_manifest_value(&(package_address, blueprint_name, reservation, named_address)),
+                to_manifest_value(&(
+                    package_address,
+                    blueprint_name,
+                    address_reservation,
+                    named_address,
+                )),
             )
         }
     };

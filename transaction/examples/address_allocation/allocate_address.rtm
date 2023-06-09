@@ -14,12 +14,11 @@ CALL_METHOD
 ALLOCATE_GLOBAL_ADDRESS
     Address("${package_package_address}")
     "Package"
-    Reservation("my_reservation")
+    AddressReservation("my_reservation")
     NamedAddress("my_package")
 ;
-
 PUBLISH_PACKAGE_ADVANCED
-    Some(Reservation("my_reservation"))
+    Some(AddressReservation("my_reservation"))
     Blob("${code_blob_hash}")
     Tuple(
         Tuple(
@@ -31,7 +30,6 @@ PUBLISH_PACKAGE_ADVANCED
     Map<String, Enum>()
     Enum<0u8>()
 ;
-
 CALL_FUNCTION
     NamedAddress("my_package")
     "BlueprintName"

@@ -180,7 +180,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                     _ => return Err(PayloadValidationError::SchemaInconsistency),
                 };
             }
-            ManifestCustomValue::Reservation(_) => {
+            ManifestCustomValue::AddressReservation(_) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Own
                 let validation = schema
                     .resolve_type_validation(type_index)
@@ -188,10 +188,10 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 match validation {
                     TypeValidation::None => {}
                     TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_validation)) => {
-                        if !own_validation.could_match_manifest_reservation() {
+                        if !own_validation.could_match_manifest_address_reservation() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
-                                    "Expected Own<{:?}>, but found manifest reservation",
+                                    "Expected Own<{:?}>, but found manifest address_reservation",
                                     own_validation
                                 )),
                             ));

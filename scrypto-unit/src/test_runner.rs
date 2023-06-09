@@ -722,7 +722,7 @@ impl TestRunner {
                         code: ManifestBlobRef(code_hash.0),
                         definition,
                         metadata: btreemap!(),
-                        package_address: Some(ManifestReservation(0)),
+                        package_address: Some(ManifestAddressReservation(0)),
                         owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
                 }]),

@@ -20,7 +20,7 @@ pub struct ManifestDecompilationDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
-    pub reservation_names: Option<&'a NonIterMap<ManifestReservation, String>>,
+    pub address_reservation_names: Option<&'a NonIterMap<ManifestAddressReservation, String>>,
     pub named_address_names: Option<&'a NonIterMap<ManifestNamedAddress, String>>,
     pub multi_line: Option<MultiLine>,
 }
@@ -41,14 +41,14 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
         bech32_encoder: Option<&'a Bech32Encoder>,
         bucket_names: &'a NonIterMap<ManifestBucket, String>,
         proof_names: &'a NonIterMap<ManifestProof, String>,
-        reservation_names: &'a NonIterMap<ManifestReservation, String>,
+        address_reservation_names: &'a NonIterMap<ManifestAddressReservation, String>,
         named_address_names: &'a NonIterMap<ManifestNamedAddress, String>,
     ) -> Self {
         Self {
             bech32_encoder,
             bucket_names: Some(bucket_names),
             proof_names: Some(proof_names),
-            reservation_names: Some(reservation_names),
+            address_reservation_names: Some(address_reservation_names),
             named_address_names: Some(named_address_names),
             ..Default::default()
         }
@@ -69,9 +69,12 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
             .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
     }
 
-    pub fn get_reservation_name(&self, reservation_id: &ManifestReservation) -> Option<&str> {
-        self.reservation_names
-            .and_then(|names| names.get(reservation_id).map(|s| s.as_str()))
+    pub fn get_address_reservation_name(
+        &self,
+        address_reservation_id: &ManifestAddressReservation,
+    ) -> Option<&str> {
+        self.address_reservation_names
+            .and_then(|names| names.get(address_reservation_id).map(|s| s.as_str()))
     }
 
     pub fn get_named_address_name(&self, named_address_id: &ManifestNamedAddress) -> Option<&str> {
@@ -404,16 +407,23 @@ pub fn format_custom_value<F: fmt::Write>(
                 write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
             }
         }
-        ManifestCustomValue::Reservation(value) => {
-            if let Some(name) = context.get_reservation_name(&value) {
-                write_with_indent!(f, context, indent_start, depth, "Reservation(\"{}\")", name)?;
+        ManifestCustomValue::AddressReservation(value) => {
+            if let Some(name) = context.get_address_reservation_name(&value) {
+                write_with_indent!(
+                    f,
+                    context,
+                    indent_start,
+                    depth,
+                    "AddressReservation(\"{}\")",
+                    name
+                )?;
             } else {
                 write_with_indent!(
                     f,
                     context,
                     indent_start,
                     depth,
-                    "Reservation({}u32)",
+                    "AddressReservation({}u32)",
                     value.0
                 )?;
             }
@@ -523,7 +533,7 @@ pub fn format_value_kind(value_kind: &ManifestValueKind) -> &str {
             ManifestCustomValueKind::Decimal => "Decimal",
             ManifestCustomValueKind::PreciseDecimal => "PreciseDecimal",
             ManifestCustomValueKind::NonFungibleLocalId => "NonFungibleLocalId",
-            ManifestCustomValueKind::Reservation => "Reservation",
+            ManifestCustomValueKind::AddressReservation => "AddressReservation",
             ManifestCustomValueKind::NamedAddress => "NamedAddress",
         },
     }

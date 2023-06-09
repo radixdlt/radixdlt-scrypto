@@ -21,7 +21,7 @@ pub fn extract_references(
                         }
                         ManifestCustomValue::Bucket(_)
                         | ManifestCustomValue::Proof(_)
-                        | ManifestCustomValue::Reservation(_)
+                        | ManifestCustomValue::AddressReservation(_)
                         | ManifestCustomValue::NamedAddress(_)
                         | ManifestCustomValue::Expression(_)
                         | ManifestCustomValue::Blob(_)

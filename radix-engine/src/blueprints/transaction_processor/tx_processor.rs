@@ -54,7 +54,7 @@ pub enum TransactionProcessorError {
     },
     BucketNotFound(u32),
     ProofNotFound(u32),
-    ReservationNotFound(u32),
+    AddressReservationNotFound(u32),
     NamedAddressNotFound(u32),
     BlobNotFound(Hash),
     InvalidCallData(DecodeError),
@@ -399,11 +399,10 @@ impl TransactionProcessorBlueprint {
                     package_address,
                     blueprint_name,
                 } => {
-                    let (reservation, address) = api.allocate_global_address(BlueprintId::new(
-                        &package_address,
-                        blueprint_name,
-                    ))?;
-                    processor.create_manifest_reservation(reservation)?;
+                    let (address_reservation, address) = api.allocate_global_address(
+                        BlueprintId::new(&package_address, blueprint_name),
+                    )?;
+                    processor.create_manifest_address_reservation(address_reservation)?;
                     processor.create_manifest_named_address(address)?;
 
                     InstructionOutput::None
@@ -421,7 +420,7 @@ impl TransactionProcessorBlueprint {
 struct TransactionProcessor {
     bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
     proof_mapping: IndexMap<ManifestProof, NodeId>,
-    reservation_mapping: NonIterMap<ManifestReservation, NodeId>,
+    address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
     named_address_mapping: NonIterMap<ManifestNamedAddress, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
@@ -436,13 +435,15 @@ impl TransactionProcessor {
             blobs_by_hash,
             proof_mapping: index_map_new(),
             bucket_mapping: NonIterMap::new(),
-            reservation_mapping: NonIterMap::new(),
+            address_reservation_mapping: NonIterMap::new(),
             named_address_mapping: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
         };
 
-        for reservation in global_address_reservations {
-            processor.create_manifest_reservation(reservation).unwrap();
+        for address_reservation in global_address_reservations {
+            processor
+                .create_manifest_address_reservation(address_reservation)
+                .unwrap();
         }
         processor
     }
@@ -521,15 +522,18 @@ impl TransactionProcessor {
         Ok(Proof(Own(real_id)))
     }
 
-    fn take_reservation(
+    fn take_address_reservation(
         &mut self,
-        reservation_id: &ManifestReservation,
+        address_reservation_id: &ManifestAddressReservation,
     ) -> Result<GlobalAddressReservation, RuntimeError> {
-        let real_id = self.reservation_mapping.remove(reservation_id).ok_or(
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::ReservationNotFound(reservation_id.0),
-            )),
-        )?;
+        let real_id = self
+            .address_reservation_mapping
+            .remove(address_reservation_id)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::AddressReservationNotFound(address_reservation_id.0),
+                ),
+            ))?;
         Ok(GlobalAddressReservation(Own(real_id)))
     }
 
@@ -545,13 +549,13 @@ impl TransactionProcessor {
         Ok(new_id)
     }
 
-    fn create_manifest_reservation(
+    fn create_manifest_address_reservation(
         &mut self,
-        reservation: GlobalAddressReservation,
-    ) -> Result<ManifestReservation, RuntimeError> {
-        let new_id = self.id_allocator.new_reservation_id();
-        self.reservation_mapping
-            .insert(new_id, reservation.0.into());
+        address_reservation: GlobalAddressReservation,
+    ) -> Result<ManifestAddressReservation, RuntimeError> {
+        let new_id = self.id_allocator.new_address_reservation_id();
+        self.address_reservation_mapping
+            .insert(new_id, address_reservation.0.into());
         Ok(new_id)
     }
 
@@ -695,8 +699,11 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         self.processor.take_proof(&p).map(|x| x.0)
     }
 
-    fn replace_reservation(&mut self, r: ManifestReservation) -> Result<Own, RuntimeError> {
-        self.processor.take_reservation(&r).map(|x| x.0)
+    fn replace_address_reservation(
+        &mut self,
+        r: ManifestAddressReservation,
+    ) -> Result<Own, RuntimeError> {
+        self.processor.take_address_reservation(&r).map(|x| x.0)
     }
 
     fn replace_named_address(

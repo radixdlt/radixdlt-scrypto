@@ -11,23 +11,23 @@ use crate::*;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ManifestReservation(pub u32);
+pub struct ManifestAddressReservation(pub u32);
 
 //========
 // error
 //========
 
-/// Represents an error when parsing ManifestReservation.
+/// Represents an error when parsing ManifestAddressReservation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseManifestReservationError {
+pub enum ParseManifestAddressReservationError {
     InvalidLength,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseManifestReservationError {}
+impl std::error::Error for ParseManifestAddressReservationError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseManifestReservationError {
+impl fmt::Display for ParseManifestAddressReservationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -37,8 +37,8 @@ impl fmt::Display for ParseManifestReservationError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ManifestReservation {
-    type Error = ParseManifestReservationError;
+impl TryFrom<&[u8]> for ManifestAddressReservation {
+    type Error = ParseManifestAddressReservationError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 4 {
@@ -48,10 +48,14 @@ impl TryFrom<&[u8]> for ManifestReservation {
     }
 }
 
-impl ManifestReservation {
+impl ManifestAddressReservation {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
     }
 }
 
-manifest_type!(ManifestReservation, ManifestCustomValueKind::Reservation, 4);
+manifest_type!(
+    ManifestAddressReservation,
+    ManifestCustomValueKind::AddressReservation,
+    4
+);

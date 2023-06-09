@@ -206,12 +206,12 @@ where
         );
     }
 
-    let package_address = if let Some(reservation) = package_address_reservation {
+    let package_address = if let Some(address_reservation) = package_address_reservation {
         // TODO: Can we use `global_object` API?
 
         // Check global address reservation
         let global_address = {
-            let substates = api.kernel_drop_node(reservation.0.as_node_id())?;
+            let substates = api.kernel_drop_node(address_reservation.0.as_node_id())?;
 
             let type_info: Option<TypeInfoSubstate> = substates
                 .get(&TYPE_INFO_FIELD_PARTITION)

@@ -31,7 +31,7 @@ pub enum ManifestIdValidationError {
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
     BucketLocked(ManifestBucket),
-    ReservationNotFound(ManifestReservation),
+    AddressReservationNotFound(ManifestAddressReservation),
     NamedAddressNotFound(ManifestNamedAddress),
 }
 
