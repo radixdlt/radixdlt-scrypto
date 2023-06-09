@@ -102,7 +102,7 @@ pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
     PackageBlueprintKey(BlueprintVersionKey),
-    PackageBlueprintImplKey(BlueprintVersionKey),
+    PackageBlueprintDependenciesKey(BlueprintVersionKey),
     PackageRoyaltyKey(BlueprintVersionKey),
     PackageAuthFunctionTemplateKey(BlueprintVersionKey),
     PackageAuthMethodTemplateKey(BlueprintVersionKey),
@@ -235,9 +235,9 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                PackagePartitionOffset::BlueprintMinorVersionConfigs => {
+                PackagePartitionOffset::BlueprintDependencies => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageBlueprintImplKey(
+                    TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -247,13 +247,13 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                PackagePartitionOffset::FunctionAccessRules => {
+                PackagePartitionOffset::AuthFunctionTemplates => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageAuthFunctionTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                PackagePartitionOffset::BlueprintMethodAuthTemplates => {
+                PackagePartitionOffset::AuthMethodTemplates => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageAuthMethodTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,
@@ -401,7 +401,7 @@ pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
-    PackageBlueprintMinorVersionConfig(Option<BlueprintImpl>),
+    PackageBlueprintDependencies(Option<BlueprintDependencies>),
     PackageFunctionAuthTemplate(Option<FunctionAuthTemplate>),
     PackageMethodAuthTemplate(Option<MethodAuthTemplate>),
     PackageRoyalty(Option<RoyaltyConfig>),
@@ -576,9 +576,9 @@ fn to_typed_object_substate_value(
             let value: SubstateWrapper<Option<BlueprintDefinition>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageBlueprint(value.value)
         }
-        TypedMainModuleSubstateKey::PackageBlueprintImplKey(..) => {
-            let value: SubstateWrapper<Option<BlueprintImpl>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::PackageBlueprintMinorVersionConfig(value.value)
+        TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(..) => {
+            let value: SubstateWrapper<Option<BlueprintDependencies>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageBlueprintDependencies(value.value)
         }
         TypedMainModuleSubstateKey::PackageRoyaltyKey(_fn_key) => {
             let value: SubstateWrapper<Option<RoyaltyConfig>> = scrypto_decode(data)?;

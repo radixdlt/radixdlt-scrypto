@@ -4,8 +4,8 @@ use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintImpl, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-    PACKAGE_BLUEPRINT_IMPL_OFFSET,
+    BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET,
 };
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
@@ -88,7 +88,7 @@ impl Publish {
             let blueprints_config_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
                 MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINT_IMPL_OFFSET)
+                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET)
                     .unwrap(),
             );
             let mut blueprint_updates = index_map_new();
@@ -116,15 +116,15 @@ impl Publish {
                     events: s.event_schema,
                     schema: s.schema,
                     state_schema: s.blueprint.into(),
+                    function_exports,
+                    virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
                 blueprint_updates.insert(key, update);
 
-                let config = BlueprintImpl {
+                let config = BlueprintDependencies {
                     dependencies: s.dependencies,
-                    function_exports,
-                    virtual_lazy_load_functions: s.virtual_lazy_load_functions,
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(

@@ -27,7 +27,6 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
     blueprint_definition: &BlueprintDefinition,
-    minor_version_config: &BlueprintImpl,
     fn_ident: &str,
     with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
@@ -70,7 +69,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    let export_schema = minor_version_config.function_exports.get(fn_ident).ok_or(
+    let export_schema = blueprint_definition.function_exports.get(fn_ident).ok_or(
         RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(
             fn_ident.to_string(),
         )),
@@ -429,7 +428,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let handle = system.kernel_lock_substate_with_default(
                 blueprint.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINT_IMPL_OFFSET)
+                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
@@ -442,10 +441,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }),
                 SystemLockData::default(),
             )?;
-
-            let config: SubstateWrapper<Option<BlueprintImpl>> =
-                system.kernel_read_substate(handle)?.as_typed().unwrap();
-            let minor_version_config = config.value.unwrap();
+            system.kernel_read_substate(handle)?;
             system.kernel_drop_lock(handle)?;
 
             //  Validate input
@@ -455,7 +451,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         &mut system,
                         blueprint.clone(),
                         &definition,
-                        &minor_version_config,
                         &ident,
                         receiver,
                         &args,
@@ -463,7 +458,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
-                    if let Some(sys_func) = minor_version_config
+                    if let Some(sys_func) = definition
                         .virtual_lazy_load_functions
                         .get(&system_func_id)
                     {

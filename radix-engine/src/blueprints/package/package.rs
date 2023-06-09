@@ -130,7 +130,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 fn globalize_package<Y, L: Default>(
     package_address_reservation: Option<GlobalAddressReservation>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
-    blueprint_config: BTreeMap<String, BlueprintImpl>,
+    blueprint_config: BTreeMap<String, BlueprintDependencies>,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
     royalty: PackageRoyaltyAccumulatorSubstate,
@@ -216,7 +216,7 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_IMPL_OFFSET)
+                .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET)
                 .unwrap(),
             minor_version_configs,
         );
@@ -452,7 +452,7 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<BlueprintImpl>(),
+                    aggregator.add_child_type_and_descendents::<BlueprintDependencies>(),
                 ),
                 can_own: false,
             },
@@ -708,13 +708,13 @@ impl PackageNativePackage {
                     events: setup.event_schema,
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
+                    function_exports,
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                 };
                 blueprints.insert(blueprint.clone(), definition);
 
-                let minor_version_config = BlueprintImpl {
+                let minor_version_config = BlueprintDependencies {
                     dependencies: setup.dependencies,
-                    function_exports,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                 };
                 blueprint_config.insert(blueprint.clone(), minor_version_config);
             }
@@ -866,7 +866,7 @@ impl PackageNativePackage {
 
         let mut blueprints = BTreeMap::new();
         let mut royalties = BTreeMap::new();
-        let mut blueprint_config = BTreeMap::new();
+        let mut blueprint_dependencies = BTreeMap::new();
         let royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
             royalty_vault: None,
         };
@@ -903,17 +903,17 @@ impl PackageNativePackage {
                     events: setup.event_schema,
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
+                    function_exports,
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                 };
                 blueprints.insert(blueprint.clone(), definition);
 
                 royalties.insert(blueprint.clone(), setup.royalty_config);
 
-                let minor_version_config = BlueprintImpl {
+                let dependencies = BlueprintDependencies {
                     dependencies: setup.dependencies,
-                    function_exports,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
                 };
-                blueprint_config.insert(blueprint.clone(), minor_version_config);
+                blueprint_dependencies.insert(blueprint.clone(), dependencies);
             }
         }
 
@@ -923,7 +923,7 @@ impl PackageNativePackage {
         globalize_package(
             package_address,
             blueprints,
-            blueprint_config,
+            blueprint_dependencies,
             code_type,
             code,
             royalty_accumulator,

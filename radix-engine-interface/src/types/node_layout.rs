@@ -58,10 +58,10 @@ pub enum FungibleResourceManagerField {
 pub enum PackagePartitionOffset {
     Fields,
     Blueprints,
-    BlueprintMinorVersionConfigs,
+    BlueprintDependencies,
     Royalty,
-    FunctionAccessRules,
-    BlueprintMethodAuthTemplates,
+    AuthFunctionTemplates,
+    AuthMethodTemplates,
 }
 
 impl TryFrom<u8> for PackagePartitionOffset {
