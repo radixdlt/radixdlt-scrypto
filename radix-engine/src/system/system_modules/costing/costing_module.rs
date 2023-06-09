@@ -22,6 +22,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
+use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -260,53 +261,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Apply component royalty
         //===========================
         if let Some(component_address) = optional_component {
-            let handle = api.kernel_lock_substate_with_default(
+            ComponentRoyaltyBlueprint::charge_component_royalty(
                 component_address.as_node_id(),
-                ROYALTY_BASE_PARTITION
-                    .at_offset(ROYALTY_CONFIG_PARTITION_OFFSET)
-                    .unwrap(),
-                &SubstateKey::Map(scrypto_encode(ident).unwrap()),
-                LockFlags::read_only(),
-                Some(|| {
-                    let wrapper = SubstateWrapper {
-                        value: None::<()>,
-                        mutability: SubstateMutability::Mutable,
-                    };
-                    IndexedScryptoValue::from_typed(&wrapper)
-                }),
-                SystemLockData::default(),
+                ident,
+                api
             )?;
-
-            let substate: SubstateWrapper<Option<RoyaltyAmount>> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            api.kernel_drop_lock(handle)?;
-
-            let royalty_charge = substate.value.unwrap_or(RoyaltyAmount::Free);
-
-            if royalty_charge.is_non_zero() {
-                let handle = api.kernel_lock_substate(
-                    component_address.as_node_id(),
-                    ROYALTY_BASE_PARTITION
-                        .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
-                        .unwrap(),
-                    &RoyaltyField::RoyaltyAccumulator.into(),
-                    LockFlags::MUTABLE,
-                    SystemLockData::default(),
-                )?;
-                let substate: ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
-
-                let vault_id = substate.royalty_vault.0;
-
-                apply_royalty_cost(
-                    api,
-                    royalty_charge,
-                    RoyaltyRecipient::Component(component_address.clone()),
-                    vault_id.into(),
-                )?;
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
-                api.kernel_drop_lock(handle)?;
-            }
         }
 
         Ok(())
