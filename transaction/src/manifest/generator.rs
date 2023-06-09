@@ -214,9 +214,7 @@ where
             amount,
             new_bucket,
         } => {
-            let bucket_id = id_validator
-                .new_bucket()
-                .map_err(GeneratorError::IdValidationError)?;
+            let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             InstructionV1::TakeFromWorktop {
@@ -229,9 +227,7 @@ where
             ids,
             new_bucket,
         } => {
-            let bucket_id = id_validator
-                .new_bucket()
-                .map_err(GeneratorError::IdValidationError)?;
+            let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             InstructionV1::TakeNonFungiblesFromWorktop {
@@ -243,9 +239,7 @@ where
             resource_address,
             new_bucket,
         } => {
-            let bucket_id = id_validator
-                .new_bucket()
-                .map_err(GeneratorError::IdValidationError)?;
+            let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             InstructionV1::TakeAllFromWorktop {

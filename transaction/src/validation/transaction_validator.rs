@@ -150,19 +150,13 @@ impl NotarizedTransactionValidator {
         for inst in instructions {
             match inst {
                 InstructionV1::TakeAllFromWorktop { .. } => {
-                    id_validator
-                        .new_bucket()
-                        .map_err(TransactionValidationError::IdValidationError)?;
+                    id_validator.new_bucket();
                 }
                 InstructionV1::TakeFromWorktop { .. } => {
-                    id_validator
-                        .new_bucket()
-                        .map_err(TransactionValidationError::IdValidationError)?;
+                    id_validator.new_bucket();
                 }
                 InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                    id_validator
-                        .new_bucket()
-                        .map_err(TransactionValidationError::IdValidationError)?;
+                    id_validator.new_bucket();
                 }
                 InstructionV1::ReturnToWorktop { bucket_id } => {
                     id_validator
@@ -253,6 +247,10 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CallDirectVaultMethod { .. } => {}
+                InstructionV1::AllocateGlobalAddress { .. } => {
+                    id_validator.new_reservation();
+                    id_validator.new_allocated_address();
+                }
             }
         }
 

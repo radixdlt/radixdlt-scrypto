@@ -71,29 +71,28 @@ impl From<fmt::Error> for DecompileError {
     }
 }
 
+#[derive(Default)]
 pub struct DecompilationContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,
+    pub reservation_names: NonIterMap<ManifestReservation, String>,
+    pub allocated_address_names: NonIterMap<ManifestAllocatedAddress, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
     pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
         Self {
             bech32_encoder: Some(bech32_encoder),
-            id_allocator: ManifestIdAllocator::new(),
-            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
-            proof_names: NonIterMap::<ManifestProof, String>::new(),
+            ..Default::default()
         }
     }
 
     pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
             bech32_encoder,
-            id_allocator: ManifestIdAllocator::new(),
-            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
-            proof_names: NonIterMap::<ManifestProof, String>::new(),
+            ..Default::default()
         }
     }
 
@@ -106,18 +105,40 @@ impl<'a> DecompilationContext<'a> {
         .with_multi_line(4, 4)
     }
 
-    pub fn new_bucket(&mut self) -> Result<ManifestBucket, DecompileError> {
+    pub fn new_bucket(&mut self) -> ManifestBucket {
         let bucket = self.id_allocator.new_bucket_id();
         let name = format!("bucket{}", self.bucket_names.len() + 1);
         self.bucket_names.insert(bucket, name.clone());
-        Ok(bucket)
+        bucket
     }
 
-    pub fn new_proof(&mut self) -> Result<ManifestProof, DecompileError> {
+    pub fn new_proof(&mut self) -> ManifestProof {
         let proof = self.id_allocator.new_proof_id();
         let name = format!("proof{}", self.proof_names.len() + 1);
         self.proof_names.insert(proof, name.clone());
-        Ok(proof)
+        proof
+    }
+
+    pub fn new_reservation(&mut self) -> ManifestReservation {
+        let reservation = self.id_allocator.new_reservation_id();
+        let name = format!("reservation{}", self.reservation_names.len() + 1);
+        self.reservation_names.insert(reservation, name.clone());
+        reservation
+    }
+
+    pub fn new_allocated_address(&mut self) -> ManifestAllocatedAddress {
+        let allocated_address = self.id_allocator.new_allocated_address_id();
+        let name = format!("address{}", self.allocated_address_names.len() + 1);
+        self.allocated_address_names
+            .insert(allocated_address, name.clone());
+        allocated_address
+    }
+
+    /// Allocate addresses before transaction, for system transactions only.
+    pub fn preallocate_addresses(&mut self, n: u32) {
+        for _ in 0..n {
+            self.new_allocated_address();
+        }
     }
 }
 
@@ -147,7 +168,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
             amount,
         } => {
-            let bucket = context.new_bucket()?;
+            let bucket = context.new_bucket();
             (
                 "TAKE_FROM_WORKTOP",
                 to_manifest_value(&(resource_address, amount, bucket)),
@@ -157,14 +178,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             ids,
             resource_address,
         } => {
-            let bucket = context.new_bucket()?;
+            let bucket = context.new_bucket();
             (
                 "TAKE_NON_FUNGIBLES_FROM_WORKTOP",
                 to_manifest_value(&(resource_address, ids, bucket)),
             )
         }
         InstructionV1::TakeAllFromWorktop { resource_address } => {
-            let bucket = context.new_bucket()?;
+            let bucket = context.new_bucket();
             (
                 "TAKE_ALL_FROM_WORKTOP",
                 to_manifest_value(&(resource_address, bucket)),
@@ -188,7 +209,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             to_manifest_value(&(resource_address, ids)),
         ),
         InstructionV1::PopFromAuthZone => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             ("POP_FROM_AUTH_ZONE", to_manifest_value(&(proof,)))
         }
         InstructionV1::PushToAuthZone { proof_id } => {
@@ -196,7 +217,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value(&())),
         InstructionV1::CreateProofFromAuthZone { resource_address } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE",
                 to_manifest_value(&(resource_address, proof)),
@@ -206,7 +227,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
             amount,
         } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
 
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT",
@@ -217,14 +238,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
             ids,
         } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES",
                 to_manifest_value(&(resource_address, ids, proof)),
             )
         }
         InstructionV1::CreateProofFromAuthZoneOfAll { resource_address } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL",
                 to_manifest_value(&(resource_address, proof)),
@@ -234,7 +255,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())),
 
         InstructionV1::CreateProofFromBucket { bucket_id } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET",
                 to_manifest_value(&(bucket_id, proof)),
@@ -242,21 +263,21 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
 
         InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT",
                 to_manifest_value(&(bucket_id, amount, proof)),
             )
         }
         InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES",
                 to_manifest_value(&(bucket_id, ids, proof)),
             )
         }
         InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_ALL",
                 to_manifest_value(&(bucket_id, proof)),
@@ -266,7 +287,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             ("BURN_RESOURCE", to_manifest_value(&(bucket_id,)))
         }
         InstructionV1::CloneProof { proof_id } => {
-            let proof_id2 = context.new_proof()?;
+            let proof_id2 = context.new_proof();
             ("CLONE_PROOF", to_manifest_value(&(proof_id, proof_id2)))
         }
         InstructionV1::DropProof { proof_id } => ("DROP_PROOF", to_manifest_value(&(proof_id,))),
@@ -545,6 +566,22 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
 
         InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())),
+        InstructionV1::AllocateGlobalAddress {
+            package_address,
+            blueprint_name,
+        } => {
+            let reservation = context.new_reservation();
+            let allocated_address = context.new_allocated_address();
+            (
+                "ALLOCATE_GLOBAL_ADDRESS",
+                to_manifest_value(&(
+                    package_address,
+                    blueprint_name,
+                    reservation,
+                    allocated_address,
+                )),
+            )
+        }
     };
 
     write!(f, "{}", display_name)?;

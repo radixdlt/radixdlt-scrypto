@@ -175,6 +175,12 @@ pub enum InstructionV1 {
     /// Drops all proofs, both named proofs and auth zone proofs.
     #[sbor(discriminator(INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR))]
     DropAllProofs,
+
+    #[sbor(discriminator(INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR))]
+    AllocateGlobalAddress {
+        package_address: PackageAddress,
+        blueprint_name: String,
+    },
 }
 
 //===============================================================
