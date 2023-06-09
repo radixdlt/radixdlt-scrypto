@@ -9,6 +9,7 @@ use sbor::*;
 use crate::data::manifest::*;
 use crate::*;
 
+/// Named global address
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ManifestNamedAddress(pub u32);

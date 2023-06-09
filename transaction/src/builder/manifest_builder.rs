@@ -393,7 +393,7 @@ impl ManifestBuilder {
             .collect();
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -406,7 +406,7 @@ impl ManifestBuilder {
             });
         } else {
             self.add_instruction(InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
@@ -445,7 +445,7 @@ impl ManifestBuilder {
                 .collect();
 
             self.add_instruction(InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -461,7 +461,7 @@ impl ManifestBuilder {
             });
         } else {
             self.add_instruction(InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
@@ -478,7 +478,7 @@ impl ManifestBuilder {
 
     pub fn create_identity_advanced(&mut self, owner_rule: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
-            package_address: IDENTITY_PACKAGE,
+            package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&IdentityCreateAdvancedInput { owner_rule }),
@@ -488,7 +488,7 @@ impl ManifestBuilder {
 
     pub fn create_identity(&mut self) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
-            package_address: IDENTITY_PACKAGE,
+            package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
             args: to_manifest_value(&IdentityCreateInput {}),
@@ -571,7 +571,7 @@ impl ManifestBuilder {
         args: ManifestValue,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
-            package_address,
+            package_address: package_address.into(),
             blueprint_name: blueprint_name.to_string(),
             function_name: function_name.to_string(),
             args: to_manifest_value(&args),
@@ -587,7 +587,7 @@ impl ManifestBuilder {
         args: ManifestValue,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
+            address: address.into().into(),
             method_name: method_name.to_owned(),
             args: args,
         });
@@ -655,7 +655,7 @@ impl ManifestBuilder {
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
-            address,
+            address: address.into(),
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesUpdateRoleInput {
                 role_key,
@@ -673,7 +673,7 @@ impl ManifestBuilder {
         mutability: (RoleList, bool),
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
-            address,
+            address: address.into(),
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesUpdateRoleInput {
                 role_key,
@@ -691,7 +691,7 @@ impl ManifestBuilder {
         value: MetadataValue,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallMetadataMethod {
-            address,
+            address: address.into(),
             method_name: METADATA_SET_IDENT.to_string(),
             args: to_manifest_value(&MetadataSetInput { key, value }),
         })
@@ -710,7 +710,7 @@ impl ManifestBuilder {
         self.blobs.insert(code_hash, code);
 
         self.add_instruction(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
@@ -730,7 +730,7 @@ impl ManifestBuilder {
         self.blobs.insert(code_hash, code);
 
         self.add_instruction(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmManifestInput {
@@ -753,7 +753,7 @@ impl ManifestBuilder {
         self.blobs.insert(code_hash, code);
 
         self.add_instruction(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
@@ -971,7 +971,7 @@ impl ManifestBuilder {
     /// Creates an account.
     pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
+            package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&AccountCreateAdvancedInput { owner_role }),
@@ -1026,7 +1026,7 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountLockFeeInput { amount });
 
         self.add_instruction(InstructionV1::CallMethod {
-            address: account.into(),
+            address: account.into().into(),
             method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             args,
         })
@@ -1149,7 +1149,7 @@ impl ManifestBuilder {
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
-            package_address: ACCESS_CONTROLLER_PACKAGE,
+            package_address: ACCESS_CONTROLLER_PACKAGE.into(),
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             args: manifest_args!(

@@ -302,45 +302,71 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
-                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT) => {
+                (package_address, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT)
+                    if package_address.is_static_global_package_of(&PACKAGE_PACKAGE) =>
+                {
                     "PUBLISH_PACKAGE"
                 }
-                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT) => {
+                (package_address, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT)
+                    if package_address.is_static_global_package_of(&PACKAGE_PACKAGE) =>
+                {
                     "PUBLISH_PACKAGE_ADVANCED"
                 }
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT) => {
+                (package_address, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT)
+                    if package_address.is_static_global_package_of(&ACCOUNT_PACKAGE) =>
+                {
                     "CREATE_ACCOUNT_ADVANCED"
                 }
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT) => "CREATE_ACCOUNT",
-                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT) => {
+                (package_address, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT)
+                    if package_address.is_static_global_package_of(&ACCOUNT_PACKAGE) =>
+                {
+                    "CREATE_ACCOUNT"
+                }
+                (package_address, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT)
+                    if package_address.is_static_global_package_of(&IDENTITY_PACKAGE) =>
+                {
                     "CREATE_IDENTITY_ADVANCED"
                 }
-                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT) => "CREATE_IDENTITY",
+                (package_address, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT)
+                    if package_address.is_static_global_package_of(&IDENTITY_PACKAGE) =>
+                {
+                    "CREATE_IDENTITY"
+                }
                 (
-                    &ACCESS_CONTROLLER_PACKAGE,
+                    package_address,
                     ACCESS_CONTROLLER_BLUEPRINT,
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
-                ) => "CREATE_ACCESS_CONTROLLER",
+                ) if package_address.is_static_global_package_of(&ACCESS_CONTROLLER_PACKAGE) => {
+                    "CREATE_ACCESS_CONTROLLER"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                ) => "CREATE_FUNGIBLE_RESOURCE",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_FUNGIBLE_RESOURCE"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                ) => "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                ) => "CREATE_NON_FUNGIBLE_RESOURCE",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_NON_FUNGIBLE_RESOURCE"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                ) => "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY"
+                }
                 _ => {
                     fields.push(to_manifest_value(package_address));
                     fields.push(to_manifest_value(blueprint_name));
@@ -368,38 +394,30 @@ pub fn decompile_instruction<F: fmt::Write>(
                 // Nb - For Main method call, we also check the address type to avoid name clashing.
 
                 /* Package */
-                (address, PACKAGE_SET_ROYALTY_IDENT)
-                    if address.as_node_id().is_global_package() =>
-                {
+                (address, PACKAGE_SET_ROYALTY_IDENT) if address.is_static_global_package() => {
                     fields.push(to_manifest_value(address));
                     "SET_PACKAGE_ROYALTY_CONFIG"
                 }
-                (address, PACKAGE_CLAIM_ROYALTIES_IDENT)
-                    if address.as_node_id().is_global_package() =>
-                {
+                (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_static_global_package() => {
                     fields.push(to_manifest_value(address));
                     "CLAIM_PACKAGE_ROYALTY"
                 }
 
                 /* Resource manager */
                 (address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address.as_node_id().is_global_fungible_resource_manager() =>
+                    if address.is_static_global_fungible_resource_manager() =>
                 {
                     fields.push(to_manifest_value(address));
                     "MINT_FUNGIBLE"
                 }
                 (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address
-                        .as_node_id()
-                        .is_global_non_fungible_resource_manager() =>
+                    if address.is_static_global_non_fungible_resource_manager() =>
                 {
                     fields.push(to_manifest_value(address));
                     "MINT_NON_FUNGIBLE"
                 }
                 (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
-                    if address
-                        .as_node_id()
-                        .is_global_non_fungible_resource_manager() =>
+                    if address.is_static_global_non_fungible_resource_manager() =>
                 {
                     fields.push(to_manifest_value(address));
                     "MINT_UUID_NON_FUNGIBLE"
