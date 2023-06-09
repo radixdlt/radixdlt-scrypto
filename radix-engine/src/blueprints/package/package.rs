@@ -31,6 +31,7 @@ use crate::system::system::{SubstateMutability, SubstateWrapper};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
+use crate::system::system_callback::SystemLockData;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -969,5 +970,41 @@ impl PackageNativePackage {
         };
 
         Ok(bucket)
+    }
+
+
+    pub fn get_blueprint_definition<Y>(
+        receiver: &NodeId,
+        blueprint: &String,
+        api: &mut Y,
+    ) -> Result<BlueprintDefinition, RuntimeError> where Y: KernelSubstateApi<SystemLockData> {
+        let handle = api.kernel_lock_substate_with_default(
+            receiver,
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(blueprint).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: None::<()>,
+                    mutability: SubstateMutability::Mutable,
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
+            SystemLockData::default(),
+        )?;
+
+        let substate: SubstateWrapper<Option<BlueprintDefinition>> =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        api.kernel_drop_lock(handle)?;
+
+        let definition = substate.value.ok_or_else(|| {
+            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
+            let blueprint_id = BlueprintId::new(&package_address, blueprint);
+            RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint_id))
+        })?;
+
+        Ok(definition)
     }
 }

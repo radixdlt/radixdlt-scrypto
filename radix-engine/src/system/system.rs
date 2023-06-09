@@ -40,6 +40,7 @@ use radix_engine_interface::schema::{
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::blueprints::package::PackageNativePackage;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {
@@ -346,47 +347,22 @@ where
             .system
             .blueprint_cache
             .get(blueprint);
-        if let Some(schema) = def {
-            return Ok(schema.clone());
+        if let Some(definition) = def {
+            return Ok(definition.clone());
         } else {
-            let handle = self.api.kernel_lock_substate_with_default(
+            let definition = PackageNativePackage::get_blueprint_definition(
                 blueprint.package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                    .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
-                LockFlags::read_only(),
-                Some(|| {
-                    let wrapper = SubstateWrapper {
-                        value: None::<()>,
-                        mutability: SubstateMutability::Mutable,
-                    };
-                    IndexedScryptoValue::from_typed(&wrapper)
-                }),
-                SystemLockData::default(),
+                &blueprint.blueprint_name,
+                self.api,
             )?;
-
-            let substate: SubstateWrapper<Option<BlueprintDefinition>> =
-                self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-            self.api.kernel_drop_lock(handle)?;
-
-            let definition = substate.value.ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint.clone()))
-            })?;
 
             self.api
                 .kernel_get_system_state()
                 .system
                 .blueprint_cache
-                .insert(blueprint.clone(), definition);
-            let schema = self
-                .api
-                .kernel_get_system_state()
-                .system
-                .blueprint_cache
-                .get(blueprint)
-                .unwrap();
-            Ok(schema.clone())
+                .insert(blueprint.clone(), definition.clone());
+
+            Ok(definition)
         }
     }
 
