@@ -108,7 +108,8 @@ mod test {
 
     #[test]
     pub fn regenerate_all() {
-        let scenarios_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples");
+        let scenarios_dir =
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
         run_all_in_memory_and_dump_examples(NetworkDefinition::simulator(), scenarios_dir).unwrap()
     }
 }
