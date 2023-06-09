@@ -24,7 +24,7 @@ pub const POOL_ID: u8 = 13u8;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-pub const PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const PACKAGE_BLUEPRINT_IMPL_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
 pub const PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
 pub const PACKAGE_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);

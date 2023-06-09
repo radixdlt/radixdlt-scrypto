@@ -5,7 +5,7 @@ use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintImpl, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-    PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET,
+    PACKAGE_BLUEPRINT_IMPL_OFFSET,
 };
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
@@ -88,7 +88,7 @@ impl Publish {
             let blueprints_config_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
                 MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET)
+                    .at_offset(PACKAGE_BLUEPRINT_IMPL_OFFSET)
                     .unwrap(),
             );
             let mut blueprint_updates = index_map_new();

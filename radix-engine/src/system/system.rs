@@ -322,8 +322,13 @@ where
             return Ok(method_auth.clone());
         }
 
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
         let method_auth_template =
-            PackageNativePackage::get_bp_method_auth_template(blueprint, self.api)?;
+            PackageNativePackage::get_bp_method_auth_template(
+                blueprint.package_address.as_node_id(),
+                &bp_version_key,
+                self.api,
+            )?;
 
         self.api
             .kernel_get_system_state()

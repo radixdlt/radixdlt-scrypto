@@ -105,7 +105,7 @@ pub enum TypedMainModuleSubstateKey {
     PackageBlueprintImplKey(BlueprintVersionKey),
     PackageFnRoyaltyKey(FnKey),
     PackageFunctionAuthTemplateKey(BlueprintVersionKey),
-    PackageMethodAuthTemplateKey(String),
+    PackageMethodAuthTemplateKey(BlueprintVersionKey),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
     NonFungibleResourceData(NonFungibleLocalId),

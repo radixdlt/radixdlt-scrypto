@@ -216,7 +216,7 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET)
+                .at_offset(PACKAGE_BLUEPRINT_IMPL_OFFSET)
                 .unwrap(),
             minor_version_configs,
         );
@@ -276,12 +276,16 @@ where
         let blueprint_auth_templates = blueprint_auth_template
             .into_iter()
             .map(|(blueprint, method_auth_template)| {
+                let key = BlueprintVersionKey {
+                    blueprint,
+                    version: BlueprintVersion::default(),
+                };
                 let value = SubstateWrapper {
                     value: Some(method_auth_template),
                     mutability: SubstateMutability::Immutable,
                 };
                 (
-                    SubstateKey::Map(scrypto_encode(&blueprint).unwrap()),
+                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
                 )
             })
@@ -471,7 +475,7 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<String>()),
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<BlueprintVersionKey>()),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<MethodAuthTemplate>(),
                 ),
@@ -1029,18 +1033,19 @@ impl PackageNativePackage {
     }
 
     pub fn get_bp_method_auth_template<Y>(
-        blueprint: &BlueprintId,
+        receiver: &NodeId,
+        bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<MethodAuthTemplate, RuntimeError>
     where
         Y: KernelSubstateApi<SystemLockData>,
     {
         let handle = api.kernel_lock_substate_with_default(
-            blueprint.package_address.as_node_id(),
+            receiver,
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
-            &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
+            &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let wrapper = SubstateWrapper {
@@ -1057,8 +1062,10 @@ impl PackageNativePackage {
         api.kernel_drop_lock(handle)?;
 
         let template = substate.value.ok_or_else(|| {
+            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
+            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
             RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(
-                blueprint.clone(),
+                blueprint_id
             ))
         })?;
 
