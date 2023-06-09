@@ -116,7 +116,6 @@ impl Publish {
                     events: s.event_schema,
                     schema: s.schema,
                     state_schema: s.blueprint.into(),
-                    template: s.template,
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());

@@ -64,7 +64,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         event_schema: [].into(),
         function_auth,
         royalty_config: RoyaltyConfig::default(),
-        template: scrypto::blueprints::package::BlueprintTemplate {
+        template: scrypto::blueprints::package::MethodAuthTemplate {
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         },
@@ -115,7 +115,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         event_schema: [].into(),
         function_auth,
         royalty_config: RoyaltyConfig::default(),
-        template: scrypto::blueprints::package::BlueprintTemplate {
+        template: scrypto::blueprints::package::MethodAuthTemplate {
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         },
@@ -165,7 +165,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         event_schema: [].into(),
         function_auth,
         royalty_config: RoyaltyConfig::default(),
-        template: scrypto::blueprints::package::BlueprintTemplate {
+        template: scrypto::blueprints::package::MethodAuthTemplate {
             method_auth_template: btreemap!(),
             outer_method_auth_template: btreemap!(),
         },

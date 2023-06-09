@@ -1,4 +1,3 @@
-use crate::blueprints::package::MethodAuthTemplate;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -27,6 +26,7 @@ pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset
 pub const PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
 pub const PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+pub const PACKAGE_BLUEPRINT_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
 
 pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
 
@@ -71,16 +71,27 @@ pub struct FunctionSchema {
     pub output: LocalTypeIndex,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-#[sbor(transparent)]
-pub struct BlueprintMinorVersion {
-    pub version: u32,
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BlueprintVersion {
+    pub major: u32,
+    pub minor: u32,
+    pub patch: u32,
+}
+
+impl Default for BlueprintVersion {
+    fn default() -> Self {
+        Self {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct BlueprintMinorVersionConfigKey {
+pub struct BlueprintVersionKey {
     pub blueprint: String,
-    pub version: BlueprintMinorVersion,
+    pub version: BlueprintVersion,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -98,7 +109,6 @@ pub struct BlueprintDefinition {
     pub functions: BTreeMap<String, FunctionSchema>,
     pub events: BTreeMap<String, LocalTypeIndex>,
 
-    pub template: MethodAuthTemplate,
     pub schema: ScryptoSchema,
 }
 

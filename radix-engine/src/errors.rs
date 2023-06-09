@@ -237,6 +237,7 @@ pub enum SystemError {
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
     BlueprintDoesNotExist(BlueprintId),
+    BlueprintTemplateDoesNotExist(BlueprintId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -7,13 +7,13 @@ use radix_engine_common::data::manifest::model::ManifestOwn;
 use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::LocalTypeIndex;
 use scrypto_schema::{
     BlueprintSchema, ExportSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
 };
-use std::collections::BTreeSet;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 

@@ -26,13 +26,12 @@ use radix_engine_interface::schema::{FeaturedSchema, RefTypes};
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
-    //blueprint_definition: &BlueprintDefinition,
+    blueprint_definition: &BlueprintDefinition,
     minor_version_config: &BlueprintImpl,
     fn_ident: &str,
     with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
 ) -> Result<String, RuntimeError> {
-    /*
     let function_schema =
         blueprint_definition
             .functions
@@ -56,9 +55,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ));
         }
     }
-     */
 
-    /*
     service
         .validate_payload(
             input.as_slice(),
@@ -72,7 +69,6 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
                 err.error_message(&blueprint_definition.schema),
             ))
         })?;
-     */
 
     let export_schema = minor_version_config.function_exports.get(fn_ident).ok_or(
         RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(
@@ -109,11 +105,10 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_id: BlueprintId,
-    //blueprint_definition: &BlueprintDefinition,
+    blueprint_definition: &BlueprintDefinition,
     fn_ident: &str,
     output: &IndexedScryptoValue,
 ) -> Result<(), RuntimeError> {
-    /*
     let function_schema = blueprint_definition
         .functions
         .get(fn_ident)
@@ -132,7 +127,6 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
                 err.error_message(&blueprint_definition.schema),
             ))
         })?;
-     */
 
     Ok(())
 }
@@ -422,12 +416,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             output
         } else {
-            //let definition = system.get_blueprint_definition(&blueprint)?;
+            let definition = system.get_blueprint_definition(&blueprint)?;
 
             // Make dependent resources/components visible
-            let key = BlueprintMinorVersionConfigKey {
+            let key = BlueprintVersionKey {
                 blueprint: blueprint.blueprint_name.clone(),
-                version: BlueprintMinorVersion::default(),
+                version: BlueprintVersion::default(),
             };
 
             let handle = system.kernel_lock_substate_with_default(
@@ -458,7 +452,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     let export_name = validate_input(
                         &mut system,
                         blueprint.clone(),
-                        //&definition,
+                        &definition,
                         &minor_version_config,
                         &ident,
                         receiver,
@@ -493,7 +487,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Validate output
             match ident {
                 FnIdent::Application(ident) => {
-                    validate_output(&mut system, blueprint, /*&definition,*/ &ident, &output)?
+                    validate_output(&mut system, blueprint, &definition, &ident, &output)?
                 }
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema

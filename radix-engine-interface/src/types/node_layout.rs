@@ -61,6 +61,7 @@ pub enum PackagePartitionOffset {
     BlueprintMinorVersionConfigs,
     FnRoyalty,
     FunctionAccessRules,
+    BlueprintMethodAuthTemplates,
 }
 
 impl TryFrom<u8> for PackagePartitionOffset {
