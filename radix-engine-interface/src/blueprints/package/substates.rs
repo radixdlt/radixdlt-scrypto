@@ -94,6 +94,15 @@ pub struct BlueprintVersionKey {
     pub version: BlueprintVersion,
 }
 
+impl BlueprintVersionKey {
+    pub fn new_default(blueprint: String) -> Self {
+        Self {
+            blueprint,
+            version: BlueprintVersion::default(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintImpl {
     pub function_exports: BTreeMap<String, ExportSchema>,

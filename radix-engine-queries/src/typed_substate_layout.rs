@@ -101,7 +101,7 @@ pub enum TypedAccessRulesSubstateKey {
 pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
-    PackageBlueprintKey(String),
+    PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintImplKey(BlueprintVersionKey),
     PackageFnRoyaltyKey(FnKey),
     PackageFunctionAccessRulesKey(FnKey),

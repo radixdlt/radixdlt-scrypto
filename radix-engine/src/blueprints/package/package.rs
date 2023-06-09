@@ -170,7 +170,10 @@ where
         let blueprints_partition = blueprints
             .into_iter()
             .map(|(blueprint, definition)| {
-                let key = blueprint;
+                let key = BlueprintVersionKey {
+                    blueprint,
+                    version: BlueprintVersion::default(),
+                };
                 let value = SubstateWrapper {
                     value: Some(definition),
                     mutability: SubstateMutability::Immutable,
@@ -975,7 +978,7 @@ impl PackageNativePackage {
 
     pub fn get_blueprint_definition<Y>(
         receiver: &NodeId,
-        blueprint: &String,
+        bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<BlueprintDefinition, RuntimeError> where Y: KernelSubstateApi<SystemLockData> {
         let handle = api.kernel_lock_substate_with_default(
@@ -983,7 +986,7 @@ impl PackageNativePackage {
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                 .unwrap(),
-            &SubstateKey::Map(scrypto_encode(blueprint).unwrap()),
+            &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let wrapper = SubstateWrapper {
@@ -1001,7 +1004,7 @@ impl PackageNativePackage {
 
         let definition = substate.value.ok_or_else(|| {
             let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-            let blueprint_id = BlueprintId::new(&package_address, blueprint);
+            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
             RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint_id))
         })?;
 

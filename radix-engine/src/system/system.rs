@@ -350,9 +350,10 @@ where
         if let Some(definition) = def {
             return Ok(definition.clone());
         } else {
+            let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
             let definition = PackageNativePackage::get_blueprint_definition(
                 blueprint.package_address.as_node_id(),
-                &blueprint.blueprint_name,
+                &bp_version_key,
                 self.api,
             )?;
 
