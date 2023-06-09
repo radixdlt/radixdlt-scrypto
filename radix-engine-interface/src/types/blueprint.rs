@@ -8,11 +8,16 @@ use radix_engine_derive::ManifestSbor;
 use sbor::rust::prelude::*;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
+use crate::blueprints::package::BlueprintVersion;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
-    pub blueprint: BlueprintId,
     pub global: bool,
+
+    pub blueprint: BlueprintId,
+    pub version: BlueprintVersion,
+
+    // Blueprint parameters
     pub outer_object: Option<GlobalAddress>,
     pub instance_schema: Option<InstanceSchema>,
     pub features: BTreeSet<String>,

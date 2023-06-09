@@ -181,11 +181,14 @@ where
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
         if node_id.eq(RADIX_TOKEN.as_node_id()) {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
+                global: true,
+
                 blueprint: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
-                global: true,
+                version: BlueprintVersion::default(),
+
                 outer_object: None,
                 instance_schema: None,
                 features: btreeset!(),
@@ -201,11 +204,14 @@ where
             || node_id.eq(ACCOUNT_OWNER_BADGE.as_node_id())
         {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
+                global: true,
+
                 blueprint: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
-                global: true,
+                version: BlueprintVersion::default(),
+
                 outer_object: None,
                 instance_schema: None,
                 features: btreeset!(),
@@ -276,8 +282,11 @@ where
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => type_info_partition(
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: blueprint.clone(),
                     global:false,
+
+                    blueprint: blueprint.clone(),
+                    version: BlueprintVersion::default(),
+
                     outer_object,
                     instance_schema,
                     features,
@@ -1229,9 +1238,12 @@ where
             // TODO: Check if type has these object modules
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
                 ObjectInfo {
-                    blueprint: object_module_id.static_blueprint().unwrap(),
-                    outer_object: None,
                     global: receiver_info.global,
+
+                    blueprint: object_module_id.static_blueprint().unwrap(),
+                    version: BlueprintVersion::default(),
+
+                    outer_object: None,
                     instance_schema: None,
                     features: btreeset!(),
                 },

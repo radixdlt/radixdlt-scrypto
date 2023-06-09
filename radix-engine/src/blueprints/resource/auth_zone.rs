@@ -7,6 +7,7 @@ use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::NativeProof;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
@@ -97,8 +98,11 @@ impl AuthZoneBlueprint {
                     btreemap!(
                         MAIN_BASE_PARTITION => composed_proof.into(),
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                            blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                             global: false,
+
+                            blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                            version: BlueprintVersion::default(),
+
                             outer_object: Some(resource_address.into()),
                             instance_schema: None,
                             features: btreeset!(),
@@ -112,8 +116,11 @@ impl AuthZoneBlueprint {
                     btreemap!(
                     MAIN_BASE_PARTITION => composed_proof.into(),
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                         global: false,
+
+                        blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        version: BlueprintVersion::default(),
+
                         outer_object: Some(resource_address.into()),
                         instance_schema: None,
                         features: btreeset!(),
@@ -151,8 +158,11 @@ impl AuthZoneBlueprint {
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
+
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    version: BlueprintVersion::default(),
+
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
                     features: btreeset!(),
@@ -192,8 +202,11 @@ impl AuthZoneBlueprint {
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
                     global: false,
+
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                    version: BlueprintVersion::default(),
+
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
                     features: btreeset!(),

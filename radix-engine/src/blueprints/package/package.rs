@@ -290,8 +290,11 @@ where
     partitions.insert(
         TYPE_INFO_FIELD_PARTITION,
         type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-            blueprint: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
+
+            blueprint: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            version: BlueprintVersion::default(),
+
             outer_object: None,
             instance_schema: None,
             features: btreeset!(),

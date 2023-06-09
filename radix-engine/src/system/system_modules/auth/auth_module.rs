@@ -16,9 +16,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{
-    PACKAGE_BLUEPRINT, PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT,
-};
+use radix_engine_interface::blueprints::package::{BlueprintVersion, PACKAGE_BLUEPRINT, PACKAGE_FUNCTION_ACCESS_RULES_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
@@ -389,8 +387,11 @@ impl AuthModule {
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
+
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    version: BlueprintVersion::default(),
+
                     outer_object: None,
                     instance_schema: None,
                     features: btreeset!(),
