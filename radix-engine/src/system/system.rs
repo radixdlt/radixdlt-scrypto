@@ -2,7 +2,11 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::errors::{ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError, ModuleError, RuntimeError};
+use crate::blueprints::package::PackageNativePackage;
+use crate::errors::{
+    ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
+    InvalidModuleSet, InvalidModuleType, KernelError, ModuleError, RuntimeError,
+};
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
@@ -37,7 +41,6 @@ use radix_engine_interface::schema::{
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::blueprints::package::PackageNativePackage;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {
@@ -305,7 +308,10 @@ where
     }
 
     // TODO: Move cache management into PackageNativePackage
-    pub fn get_bp_method_auth_template(&mut self, blueprint: &BlueprintId) -> Result<MethodAuthTemplate, RuntimeError> {
+    pub fn get_bp_method_auth_template(
+        &mut self,
+        blueprint: &BlueprintId,
+    ) -> Result<MethodAuthTemplate, RuntimeError> {
         let method_auth = self
             .api
             .kernel_get_system_state()
@@ -316,10 +322,8 @@ where
             return Ok(method_auth.clone());
         }
 
-        let method_auth_template = PackageNativePackage::get_bp_method_auth_template(
-            blueprint,
-            self.api,
-        )?;
+        let method_auth_template =
+            PackageNativePackage::get_bp_method_auth_template(blueprint, self.api)?;
 
         self.api
             .kernel_get_system_state()
@@ -344,7 +348,12 @@ where
         let function_auth = if let Some(function_auth) = function_auth {
             function_auth
         } else {
-            let mut auth_template = PackageNativePackage::get_bp_function_auth_template(blueprint, self.api)?;
+            let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
+            let auth_template = PackageNativePackage::get_bp_function_auth_template(
+                blueprint.package_address.as_node_id(),
+                &bp_version_key,
+                self.api,
+            )?;
             self.api
                 .kernel_get_system_state()
                 .system
@@ -354,7 +363,8 @@ where
                 .kernel_get_system_state()
                 .system
                 .function_auth_cache
-                .get(blueprint).unwrap()
+                .get(blueprint)
+                .unwrap()
         };
 
         let access_rule = function_auth.rules.get(ident);
@@ -875,7 +885,9 @@ where
 
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {
-                global, blueprint_id: blueprint, ..
+                global,
+                blueprint_id: blueprint,
+                ..
             }) => {
                 if *global {
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -1936,7 +1948,10 @@ where
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(object_info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+            if !(object_info
+                .blueprint_id
+                .package_address
+                .eq(&RESOURCE_PACKAGE)
                 && object_info
                     .blueprint_id
                     .blueprint_name

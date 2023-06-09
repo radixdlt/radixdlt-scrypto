@@ -69,7 +69,10 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint_id: blueprint, .. }) => blueprint,
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint_id: blueprint,
+                ..
+            }) => blueprint,
             _ => {
                 panic!("Unexpected")
             }
@@ -143,7 +146,9 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         .ok_or(EntityDumpError::ResourceManagerNotFound)?;
 
     let info = match type_info {
-        TypeInfoSubstate::Object(info) if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) => {
+        TypeInfoSubstate::Object(info)
+            if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) =>
+        {
             info
         }
         _ => {

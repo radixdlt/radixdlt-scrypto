@@ -19,7 +19,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema, ReceiverInfo};

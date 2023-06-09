@@ -1,4 +1,5 @@
 use super::Authorization;
+use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::{AuthZone, VaultUtil};
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
@@ -16,12 +17,14 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{BlueprintVersion, FunctionAuthTemplate, PACKAGE_BLUEPRINT, PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT};
+use radix_engine_interface::blueprints::package::{
+    BlueprintVersion, FunctionAuthTemplate, PACKAGE_BLUEPRINT,
+    PACKAGE_FUNCTION_AUTH_PARTITION_OFFSET, PACKAGE_PUBLISH_NATIVE_IDENT,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
-use crate::blueprints::package::PackageNativePackage;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -129,11 +132,15 @@ impl AuthModule {
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
-                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?.clone();
+                let template = api
+                    .get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?
+                    .clone();
                 template.method_auth_template
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
-                let template = api.get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?.clone();
+                let template = api
+                    .get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?
+                    .clone();
                 template.outer_method_auth_template
             }
         };
@@ -246,7 +253,9 @@ impl AuthModule {
                     Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
                 }
                 Actor::Function { blueprint, ident } => {
-                    let access_rule = system.get_bp_function_access_rule(blueprint, ident.as_str())?.clone();
+                    let access_rule = system
+                        .get_bp_function_access_rule(blueprint, ident.as_str())?
+                        .clone();
                     let acting_location = ActingLocation::AtBarrier;
 
                     // Verify authorization

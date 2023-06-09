@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};

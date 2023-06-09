@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::rule;

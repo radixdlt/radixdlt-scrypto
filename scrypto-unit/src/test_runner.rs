@@ -29,7 +29,11 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup, PACKAGE_BLUEPRINT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, BlueprintVersionKey};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintSetup, BlueprintVersionKey, FunctionSetup, MethodAuthTemplate,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
+    PACKAGE_BLUEPRINT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -1539,7 +1543,10 @@ impl TestRunner {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo { blueprint_id: blueprint, .. }) => (
+                            TypeInfoSubstate::Object(ObjectInfo {
+                                blueprint_id: blueprint,
+                                ..
+                            }) => (
                                 blueprint.package_address,
                                 blueprint.blueprint_name,
                                 *local_type_index,

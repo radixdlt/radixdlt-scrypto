@@ -1,3 +1,4 @@
+use crate::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
 use crate::ScryptoSbor;
 use core::fmt;
 use core::fmt::Formatter;
@@ -8,7 +9,6 @@ use radix_engine_derive::ManifestSbor;
 use sbor::rust::prelude::*;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
-use crate::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
@@ -27,7 +27,7 @@ impl ObjectInfo {
     pub fn blueprint_version_key(&self) -> BlueprintVersionKey {
         BlueprintVersionKey {
             blueprint: self.blueprint_id.blueprint_name.clone(),
-            version: self.version
+            version: self.version,
         }
     }
 }

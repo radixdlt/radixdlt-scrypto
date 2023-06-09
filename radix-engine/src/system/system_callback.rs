@@ -463,8 +463,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
-                    if let Some(sys_func) =
-                        minor_version_config.virtual_lazy_load_functions.get(&system_func_id)
+                    if let Some(sys_func) = minor_version_config
+                        .virtual_lazy_load_functions
+                        .get(&system_func_id)
                     {
                         sys_func.export_name.to_string()
                     } else {
@@ -518,7 +519,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint_id: blueprint, .. }) => {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_id: blueprint,
+                    ..
+                }) => {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
                             let mut system = SystemService::new(api);

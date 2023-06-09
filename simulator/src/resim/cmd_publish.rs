@@ -4,8 +4,8 @@ use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintImpl, FunctionSchema,
-    PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET,
+    BlueprintDefinition, BlueprintImpl, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET,
 };
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{

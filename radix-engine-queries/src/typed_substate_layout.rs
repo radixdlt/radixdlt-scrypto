@@ -104,8 +104,8 @@ pub enum TypedMainModuleSubstateKey {
     PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintImplKey(BlueprintVersionKey),
     PackageFnRoyaltyKey(FnKey),
-    PackageFunctionAccessRulesKey(String),
-    PackageBlueprintMethodAuthTemplateKey(String),
+    PackageFunctionAuthTemplateKey(BlueprintVersionKey),
+    PackageMethodAuthTemplateKey(String),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
     NonFungibleResourceData(NonFungibleLocalId),
@@ -249,13 +249,13 @@ fn to_typed_object_substate_key_internal(
                 }
                 PackagePartitionOffset::FunctionAccessRules => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageFunctionAccessRulesKey(
+                    TypedMainModuleSubstateKey::PackageFunctionAuthTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
                 PackagePartitionOffset::BlueprintMethodAuthTemplates => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageBlueprintMethodAuthTemplateKey(
+                    TypedMainModuleSubstateKey::PackageMethodAuthTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -402,8 +402,8 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
     PackageBlueprintMinorVersionConfig(Option<BlueprintImpl>),
-    PackageFunctionAccessRule(Option<FunctionAuthTemplate>),
-    PackageBlueprintMethodAuthTemplate(Option<MethodAuthTemplate>),
+    PackageFunctionAuthTemplate(Option<FunctionAuthTemplate>),
+    PackageMethodAuthTemplate(Option<MethodAuthTemplate>),
     PackageFnRoyalty(Option<RoyaltyAmount>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
@@ -584,13 +584,13 @@ fn to_typed_object_substate_value(
             let value: SubstateWrapper<Option<RoyaltyAmount>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageFnRoyalty(value.value)
         }
-        TypedMainModuleSubstateKey::PackageFunctionAccessRulesKey(_fn_key) => {
+        TypedMainModuleSubstateKey::PackageFunctionAuthTemplateKey(_fn_key) => {
             let value: SubstateWrapper<Option<FunctionAuthTemplate>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::PackageFunctionAccessRule(value.value)
+            TypedMainModuleSubstateValue::PackageFunctionAuthTemplate(value.value)
         }
-        TypedMainModuleSubstateKey::PackageBlueprintMethodAuthTemplateKey(_fn_key) => {
+        TypedMainModuleSubstateKey::PackageMethodAuthTemplateKey(_fn_key) => {
             let value: SubstateWrapper<Option<MethodAuthTemplate>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::PackageBlueprintMethodAuthTemplate(value.value)
+            TypedMainModuleSubstateValue::PackageMethodAuthTemplate(value.value)
         }
         TypedMainModuleSubstateKey::FungibleResourceField(offset) => {
             TypedMainModuleSubstateValue::FungibleResource(match offset {
