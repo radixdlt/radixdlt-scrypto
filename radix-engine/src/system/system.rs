@@ -2,7 +2,7 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::blueprints::package::{PackageAuthNativePackage, PackageNativePackage};
+use crate::blueprints::package::{PackageAuthNativeBlueprint, PackageNativePackage};
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, KernelError, ModuleError, RuntimeError,
@@ -324,7 +324,7 @@ where
 
         let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
         let method_auth_template =
-            PackageAuthNativePackage::get_bp_method_auth_template(
+            PackageAuthNativeBlueprint::get_bp_method_auth_template(
                 blueprint.package_address.as_node_id(),
                 &bp_version_key,
                 self.api,
@@ -354,7 +354,7 @@ where
             function_auth
         } else {
             let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
-            let auth_template = PackageAuthNativePackage::get_bp_function_auth_template(
+            let auth_template = PackageAuthNativeBlueprint::get_bp_function_auth_template(
                 blueprint.package_address.as_node_id(),
                 &bp_version_key,
                 self.api,

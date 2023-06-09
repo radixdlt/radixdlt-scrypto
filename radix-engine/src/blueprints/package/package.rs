@@ -1,9 +1,9 @@
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
+use crate::system::system_modules::costing::{apply_royalty_cost, FIXED_HIGH_FEE, FIXED_MEDIUM_FEE, RoyaltyRecipient};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
@@ -27,11 +27,12 @@ use sbor::LocalTypeIndex;
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
 use crate::method_auth_template;
-use crate::system::system::{SubstateMutability, SubstateWrapper};
-use crate::system::system_callback::SystemLockData;
+use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
+use crate::system::system_callback_api::SystemCallbackObject;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -641,7 +642,7 @@ impl PackageNativePackage {
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = Self::claim_royalty(api)?;
+                let rtn = PackageRoyaltyNativeBlueprint::claim_royalty(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(
@@ -933,24 +934,6 @@ impl PackageNativePackage {
         )
     }
 
-    pub(crate) fn claim_royalty<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            PackageField::Royalty.into(),
-            LockFlags::read_only(),
-        )?;
-
-        let substate: PackageRoyaltyAccumulatorSubstate = api.field_lock_read_typed(handle)?;
-        let bucket = match substate.royalty_vault.clone() {
-            Some(vault) => Vault(vault).take_all(api)?,
-            None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
-        };
-
-        Ok(bucket)
-    }
 
     pub fn get_blueprint_definition<Y>(
         receiver: &NodeId,
@@ -991,9 +974,102 @@ impl PackageNativePackage {
     }
 }
 
-pub struct PackageAuthNativePackage;
 
-impl PackageAuthNativePackage {
+pub struct PackageRoyaltyNativeBlueprint;
+
+impl PackageRoyaltyNativeBlueprint {
+    pub fn charge_package_royalty<Y, V>(
+        receiver: &NodeId,
+        blueprint: &str,
+        ident: &str,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        let fn_key = FnKey::new(blueprint.to_string(), ident.to_string());
+        let handle = api.kernel_lock_substate_with_default(
+            receiver,
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(&fn_key).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: None::<()>,
+                    mutability: SubstateMutability::Mutable,
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
+            SystemLockData::default(),
+        )?;
+
+        let substate: SubstateWrapper<Option<RoyaltyAmount>> =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        api.kernel_drop_lock(handle)?;
+
+        let royalty_charge = substate.value.unwrap_or(RoyaltyAmount::Free);
+
+        if royalty_charge.is_non_zero() {
+            let handle = api.kernel_lock_substate(
+                receiver,
+                MAIN_BASE_PARTITION,
+                &PackageField::Royalty.into(),
+                LockFlags::MUTABLE,
+                SystemLockData::default(),
+            )?;
+
+            let mut substate: PackageRoyaltyAccumulatorSubstate =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
+
+            let vault_id = if let Some(vault) = substate.royalty_vault {
+                vault
+            } else {
+                let mut system = SystemService::new(api);
+                let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
+                substate.royalty_vault = Some(new_vault);
+                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
+                new_vault
+            };
+            let package_address = PackageAddress::new_or_panic(receiver.0);
+            apply_royalty_cost(
+                api,
+                royalty_charge,
+                RoyaltyRecipient::Package(package_address),
+                vault_id.0,
+            )?;
+
+            api.kernel_drop_lock(handle)?;
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn claim_royalty<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            PackageField::Royalty.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate: PackageRoyaltyAccumulatorSubstate = api.field_lock_read_typed(handle)?;
+        let bucket = match substate.royalty_vault.clone() {
+            Some(vault) => Vault(vault).take_all(api)?,
+            None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
+        };
+
+        Ok(bucket)
+    }
+}
+
+pub struct PackageAuthNativeBlueprint;
+
+impl PackageAuthNativeBlueprint {
     pub fn get_bp_method_auth_template<Y>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
