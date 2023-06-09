@@ -11,7 +11,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
@@ -170,7 +170,7 @@ impl ConsensusManagerNativePackage {
                     CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template!(
                         SchemaMethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
                         SchemaMethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
@@ -345,7 +345,7 @@ impl ConsensusManagerNativePackage {
                 event_schema: validator_event_schema,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template! {
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];

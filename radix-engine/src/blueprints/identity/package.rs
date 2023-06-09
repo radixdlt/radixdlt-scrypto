@@ -18,7 +18,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup, VirtualLazyLoadExport,
+    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup, VirtualLazyLoadExport,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
@@ -109,7 +109,7 @@ impl IdentityNativePackage {
                     IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 },

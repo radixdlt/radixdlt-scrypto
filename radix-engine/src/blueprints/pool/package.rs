@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
 };
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::rule;
@@ -157,7 +157,7 @@ impl PoolNativePackage {
                     ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     outer_method_auth_template: btreemap!(),
 
                     method_auth_template: method_auth_template! {
@@ -313,7 +313,7 @@ impl PoolNativePackage {
                     TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template! {
                         // Metadata Module rules
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
@@ -474,7 +474,7 @@ impl PoolNativePackage {
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template! {
                         // Metadata Module rules
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];

@@ -595,7 +595,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 };
 
-                let template = scrypto::blueprints::package::BlueprintTemplate {
+                let template = scrypto::blueprints::package::MethodAuthTemplate {
                     method_auth_template,
                     outer_method_auth_template: BTreeMap::new(),
                 };
@@ -1477,7 +1477,7 @@ mod tests {
 
                         };
 
-                        let template = scrypto::blueprints::package::BlueprintTemplate {
+                        let template = scrypto::blueprints::package::MethodAuthTemplate {
                             method_auth_template,
                             outer_method_auth_template: BTreeMap::new(),
                         };

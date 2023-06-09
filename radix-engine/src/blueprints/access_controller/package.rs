@@ -19,7 +19,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema, ReceiverInfo};
@@ -457,7 +457,7 @@ impl AccessControllerNativePackage {
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 },

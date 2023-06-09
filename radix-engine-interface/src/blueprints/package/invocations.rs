@@ -124,7 +124,7 @@ pub struct BlueprintSetup {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub royalty_config: RoyaltyConfig,
     pub schema: ScryptoSchema,
-    pub template: BlueprintTemplate,
+    pub template: MethodAuthTemplate,
 }
 
 impl Default for BlueprintSetup {
@@ -144,13 +144,13 @@ impl Default for BlueprintSetup {
                 type_metadata: Vec::new(),
                 type_validations: Vec::new(),
             },
-            template: BlueprintTemplate::default(),
+            template: MethodAuthTemplate::default(),
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintTemplate {
+pub struct MethodAuthTemplate {
     pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
     pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }

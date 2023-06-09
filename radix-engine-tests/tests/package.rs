@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
@@ -158,7 +158,7 @@ fn test_basic_package_missing_export() {
             },
             function_auth: btreemap!(),
             royalty_config: RoyaltyConfig::default(),
-            template: BlueprintTemplate {
+            template: MethodAuthTemplate {
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },

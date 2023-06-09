@@ -4,7 +4,7 @@ use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintMinorVersionConfig, FunctionSchema,
+    BlueprintDefinition, BlueprintImpl, FunctionSchema,
     PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_MINOR_VERSION_CONFIG_OFFSET,
 };
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
@@ -122,7 +122,7 @@ impl Publish {
                 let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
                 blueprint_updates.insert(key, update);
 
-                let config = BlueprintMinorVersionConfig {
+                let config = BlueprintImpl {
                     dependencies: s.dependencies,
                     function_exports,
                     virtual_lazy_load_functions: s.virtual_lazy_load_functions,

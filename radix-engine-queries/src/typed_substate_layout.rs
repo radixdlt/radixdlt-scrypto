@@ -394,7 +394,7 @@ pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
-    PackageBlueprintMinorVersionConfig(Option<BlueprintMinorVersionConfig>),
+    PackageBlueprintMinorVersionConfig(Option<BlueprintImpl>),
     PackageFunctionAccessRule(Option<AccessRule>),
     PackageFnRoyalty(Option<RoyaltyAmount>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
@@ -569,7 +569,7 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::PackageBlueprint(value.value)
         }
         TypedMainModuleSubstateKey::PackageBlueprintMinorVersionKey(..) => {
-            let value: SubstateWrapper<Option<BlueprintMinorVersionConfig>> = scrypto_decode(data)?;
+            let value: SubstateWrapper<Option<BlueprintImpl>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageBlueprintMinorVersionConfig(value.value)
         }
         TypedMainModuleSubstateKey::PackageFnRoyaltyKey(_fn_key) => {

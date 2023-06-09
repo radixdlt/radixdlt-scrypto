@@ -11,7 +11,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, FunctionSetup, PackageSetup,
+    BlueprintSetup, MethodAuthTemplate, FunctionSetup, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::BlueprintIndexSchema;
@@ -301,7 +301,7 @@ impl ResourceManagerNativePackage {
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template! {
                         SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
@@ -585,7 +585,7 @@ impl ResourceManagerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template! {
                         SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
@@ -769,7 +769,7 @@ impl ResourceManagerNativePackage {
                 event_schema,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -1010,7 +1010,7 @@ impl ResourceManagerNativePackage {
                 event_schema,
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -1177,7 +1177,7 @@ impl ResourceManagerNativePackage {
                 event_schema: [].into(),
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
@@ -1363,7 +1363,7 @@ impl ResourceManagerNativePackage {
                 event_schema: [].into(),
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
@@ -1453,7 +1453,7 @@ impl ResourceManagerNativePackage {
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: method_auth_template!(
                         SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
@@ -1549,7 +1549,7 @@ impl ResourceManagerNativePackage {
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: method_auth_template!(
                         SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
@@ -1680,7 +1680,7 @@ impl ResourceManagerNativePackage {
                     WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },
@@ -1816,7 +1816,7 @@ impl ResourceManagerNativePackage {
                 event_schema: btreemap!(),
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },

@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintSetup, BlueprintTemplate, FunctionSetup,
+    BlueprintDefinition, BlueprintSetup, MethodAuthTemplate, FunctionSetup,
     PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
     PACKAGE_BLUEPRINT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
@@ -1737,7 +1737,7 @@ pub fn single_function_package_definition(
                 function_name.to_string() => rule!(allow_all),
             ),
             royalty_config: RoyaltyConfig::default(),
-            template: BlueprintTemplate {
+            template: MethodAuthTemplate {
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },

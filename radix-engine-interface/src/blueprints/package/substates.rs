@@ -1,4 +1,4 @@
-use crate::blueprints::package::BlueprintTemplate;
+use crate::blueprints::package::MethodAuthTemplate;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -74,7 +74,7 @@ pub struct FunctionSchema {
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct BlueprintMinorVersion {
-    pub version: u8,
+    pub version: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -84,7 +84,7 @@ pub struct BlueprintMinorVersionConfigKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct BlueprintMinorVersionConfig {
+pub struct BlueprintImpl {
     pub function_exports: BTreeMap<String, ExportSchema>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
     pub dependencies: BTreeSet<GlobalAddress>,
@@ -94,13 +94,11 @@ pub struct BlueprintMinorVersionConfig {
 pub struct BlueprintDefinition {
     pub outer_blueprint: Option<String>,
     pub features: BTreeSet<String>,
-
-    pub template: BlueprintTemplate,
-
     pub state_schema: IndexedBlueprintStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
     pub events: BTreeMap<String, LocalTypeIndex>,
 
+    pub template: MethodAuthTemplate,
     pub schema: ScryptoSchema,
 }
 

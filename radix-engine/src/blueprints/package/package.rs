@@ -128,7 +128,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 fn globalize_package<Y, L: Default>(
     package_address_reservation: Option<GlobalAddressReservation>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
-    blueprint_config: BTreeMap<String, BlueprintMinorVersionConfig>,
+    blueprint_config: BTreeMap<String, BlueprintImpl>,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
     royalty: PackageRoyaltyAccumulatorSubstate,
@@ -401,7 +401,7 @@ impl PackageNativePackage {
             BlueprintKeyValueStoreSchema {
                 key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<BlueprintMinorVersionConfigKey>()),
                 value: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<BlueprintMinorVersionConfig>(),
+                    aggregator.add_child_type_and_descendents::<BlueprintImpl>(),
                 ),
                 can_own: false,
             },
@@ -495,7 +495,7 @@ impl PackageNativePackage {
                     PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                 ),
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
+                template: MethodAuthTemplate {
                     method_auth_template:  method_auth_template! {
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
@@ -663,7 +663,7 @@ impl PackageNativePackage {
                 };
                 blueprints.insert(blueprint.clone(), definition);
 
-                let minor_version_config = BlueprintMinorVersionConfig {
+                let minor_version_config = BlueprintImpl {
                     dependencies: setup.dependencies,
                     function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
@@ -854,7 +854,7 @@ impl PackageNativePackage {
                     royalties.insert(FnKey::new(blueprint.clone(), ident), amount);
                 }
 
-                let minor_version_config = BlueprintMinorVersionConfig {
+                let minor_version_config = BlueprintImpl {
                     dependencies: setup.dependencies,
                     function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
