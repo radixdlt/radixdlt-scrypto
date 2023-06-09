@@ -368,7 +368,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY"
                 }
                 _ => {
-                    fields.push(to_manifest_value(package_address));
+                    fields.push(package_address.to_instruction_argument());
                     fields.push(to_manifest_value(blueprint_name));
                     fields.push(to_manifest_value(function_name));
                     "CALL_FUNCTION"
@@ -395,11 +395,11 @@ pub fn decompile_instruction<F: fmt::Write>(
 
                 /* Package */
                 (address, PACKAGE_SET_ROYALTY_IDENT) if address.is_static_global_package() => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "SET_PACKAGE_ROYALTY_CONFIG"
                 }
                 (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_static_global_package() => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "CLAIM_PACKAGE_ROYALTY"
                 }
 
@@ -407,19 +407,19 @@ pub fn decompile_instruction<F: fmt::Write>(
                 (address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
                     if address.is_static_global_fungible_resource_manager() =>
                 {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "MINT_FUNGIBLE"
                 }
                 (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
                     if address.is_static_global_non_fungible_resource_manager() =>
                 {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "MINT_NON_FUNGIBLE"
                 }
                 (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
                     if address.is_static_global_non_fungible_resource_manager() =>
                 {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "MINT_UUID_NON_FUNGIBLE"
                 }
 
@@ -432,7 +432,7 @@ pub fn decompile_instruction<F: fmt::Write>(
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_METHOD"
                 }
@@ -456,17 +456,17 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = match (address, method_name.as_str()) {
                 /* Component royalty */
                 (address, COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "SET_COMPONENT_ROYALTY_CONFIG"
                 }
                 (address, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "CLAIM_COMPONENT_ROYALTY"
                 }
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_ROYALTY_METHOD"
                 }
@@ -490,17 +490,17 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = match (address, method_name.as_str()) {
                 /* Metadata */
                 (address, METADATA_SET_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "SET_METADATA"
                 }
                 (address, METADATA_REMOVE_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "REMOVE_METADATA"
                 }
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_METADATA_METHOD"
                 }
@@ -524,13 +524,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
                 (address, ACCESS_RULES_UPDATE_ROLE_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "UPDATE_ROLE"
                 }
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_ACCESS_RULES_METHOD"
                 }

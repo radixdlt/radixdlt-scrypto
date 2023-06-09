@@ -5,40 +5,42 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
-//=================================================================================
-// NOTE: For now, we only support "dynamic" addresses for CALL instructions.
-//=================================================================================
-// This is to reduce the scope of change and make manifest easier to reason about.
-//
-// In theory, we can apply it to all types of global addresses (`GlobalAddress`,
-// `PackageAddress`, `ResourceAddress` and `ComponentAddress`).
-//
-// Then, we can do more advanced stuff in manifest, such as
-// ```
-// ALLOCATE_GLOBAL_ADDRESS
-//     Address("{resource_package}")
-//     "FungibleResourceManager"
-//     Reservation("reservation")
-//     NamedAddress("new_resource")
-// ;
-// CALL_FUNCTION
-//     Address("{resource_package}")
-//     "FungibleResourceManager"
-//     "create_with_initial_supply_and_address"
-//     Decimal("10")
-//     Reservation("reservation")
-// ;
-// TAKE_FROM_WORKTOP
-//     NamedAddress("new_resource")
-//     Decimal("5.0")
-//     Bucket("bucket1")
-// ;
-// TAKE_FROM_WORKTOP
-//     NamedAddress("new_resource")
-//     Decimal("5.0")
-//     Bucket("bucket2")
-// ;
-// ```
+/*
+=================================================================================
+NOTE: For now, we only support "dynamic" addresses for CALL instructions.
+=================================================================================
+This is to reduce the scope of change and make manifest easier to reason about.
+
+In theory, we can apply it to all types of global addresses (`GlobalAddress`,
+`PackageAddress`, `ResourceAddress` and `ComponentAddress`).
+
+Then, we can do more advanced stuff in manifest, such as
+```
+ALLOCATE_GLOBAL_ADDRESS
+    Address("{resource_package}")
+    "FungibleResourceManager"
+    Reservation("reservation")
+    NamedAddress("new_resource")
+;
+CALL_FUNCTION
+    Address("{resource_package}")
+    "FungibleResourceManager"
+    "create_with_initial_supply_and_address"
+    Decimal("10")
+    Reservation("reservation")
+;
+TAKE_FROM_WORKTOP
+    NamedAddress("new_resource")
+    Decimal("5.0")
+    Bucket("bucket1")
+;
+TAKE_FROM_WORKTOP
+    NamedAddress("new_resource")
+    Decimal("5.0")
+    Bucket("bucket2")
+;
+```
+*/
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum DynamicGlobalAddress {
@@ -47,6 +49,15 @@ pub enum DynamicGlobalAddress {
 }
 
 impl DynamicGlobalAddress {
+    /// This is to support either `Address("static_address")` or `NamedAddress("abc")` in manifest instruction,
+    /// instead of `Enum<0u8>(Address("static_address"))`.
+    pub fn to_instruction_argument(&self) -> ManifestValue {
+        match self {
+            DynamicGlobalAddress::Static(address) => to_manifest_value(address),
+            DynamicGlobalAddress::Named(named_address) => to_manifest_value(named_address),
+        }
+    }
+
     pub fn is_static_global_package(&self) -> bool {
         match self {
             DynamicGlobalAddress::Static(address) => address.as_node_id().is_global_package(),
