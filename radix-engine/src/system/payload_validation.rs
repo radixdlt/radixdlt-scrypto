@@ -76,7 +76,7 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
             .get_node_type_info(&node_id)?;
         let mapped = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
-                blueprint: blueprint_id,
+                blueprint_id,
                 ..
             }) => TypeInfoForValidation::Object {
                 package: blueprint_id.package_address,

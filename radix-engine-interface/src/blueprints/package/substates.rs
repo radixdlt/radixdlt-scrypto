@@ -71,7 +71,7 @@ pub struct FunctionSchema {
     pub output: LocalTypeIndex,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintVersion {
     pub major: u32,
     pub minor: u32,

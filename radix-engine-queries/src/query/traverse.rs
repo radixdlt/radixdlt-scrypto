@@ -120,7 +120,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 }
             }
             TypeInfoSubstate::Object(ObjectInfo {
-                blueprint,
+                                         blueprint_id: blueprint,
                 version: _,
                 outer_object,
                 global: _,

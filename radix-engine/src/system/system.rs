@@ -183,7 +183,7 @@ where
             return Some(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
 
-                blueprint: BlueprintId {
+                blueprint_id: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
@@ -206,7 +206,7 @@ where
             return Some(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
 
-                blueprint: BlueprintId {
+                blueprint_id: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
@@ -284,7 +284,7 @@ where
                 TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
 
-                    blueprint: blueprint.clone(),
+                    blueprint_id: blueprint.clone(),
                     version: BlueprintVersion::default(),
 
                     outer_object,
@@ -612,14 +612,14 @@ where
             ActorObjectType::OuterObject => {
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
-                let schema = self.get_blueprint_definition(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint_id)?;
                 Ok((address.into_node_id(), MAIN_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
-                let schema = self.get_blueprint_definition(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint_id)?;
                 Ok((node_id, object_module_id.base_partition_num(), info, schema))
             }
         }
@@ -645,7 +645,7 @@ where
         let (partition_offset, field_schema) =
             definition.state_schema.field(field_index).ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    info.blueprint.clone(),
+                    info.blueprint_id.clone(),
                     field_index,
                 ))
             })?;
@@ -657,7 +657,7 @@ where
                     value
                 } else {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        info.blueprint.clone(),
+                        info.blueprint_id.clone(),
                         field_index,
                     )));
                 }
@@ -693,7 +693,7 @@ where
             .key_value_store_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    info.blueprint.clone(),
+                    info.blueprint_id.clone(),
                     collection_index,
                 ))
             })?;
@@ -718,7 +718,7 @@ where
             .index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    object_info.blueprint,
+                    object_info.blueprint_id,
                     collection_index,
                 ))
             })?;
@@ -743,7 +743,7 @@ where
             .sorted_index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
-                    object_info.blueprint,
+                    object_info.blueprint_id,
                     collection_index,
                 ))
             })?;
@@ -765,7 +765,7 @@ where
                 ObjectModuleId::Main,
             )))?;
 
-        Ok(self.get_object_info(node_id)?.blueprint)
+        Ok(self.get_object_info(node_id)?.blueprint_id)
     }
 
     /// ASSUMPTIONS:
@@ -865,7 +865,7 @@ where
 
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {
-                global, blueprint, ..
+                global, blueprint_id: blueprint, ..
             }) => {
                 if *global {
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -923,7 +923,7 @@ where
                 ObjectModuleId::AccessRules
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
-                    let blueprint_id = self.get_object_info(&node_id)?.blueprint;
+                    let blueprint_id = self.get_object_info(&node_id)?.blueprint_id;
                     let expected_blueprint = module_id.static_blueprint().unwrap();
                     if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -1081,7 +1081,7 @@ where
         access_rules_node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         // Move and drop
-        let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint;
+        let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
         let schema = self.get_blueprint_definition(&blueprint_id)?.state_schema;
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
         for offset in 0u8..schema.num_partitions {
@@ -1240,7 +1240,7 @@ where
                 ObjectInfo {
                     global: receiver_info.global,
 
-                    blueprint: object_module_id.static_blueprint().unwrap(),
+                    blueprint_id: object_module_id.static_blueprint().unwrap(),
                     version: BlueprintVersion::default(),
 
                     outer_object: None,
@@ -1260,7 +1260,7 @@ where
                 None => None,
                 Some(address) => Some(InstanceContext {
                     outer_object: address,
-                    outer_blueprint: object_info.blueprint.blueprint_name.clone(),
+                    outer_blueprint: object_info.blueprint_id.blueprint_name.clone(),
                 }),
             }
         } else {
@@ -1271,7 +1271,7 @@ where
                     let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
                     Some(InstanceContext {
                         outer_object: blueprint_parent.clone(),
-                        outer_blueprint: parent_info.blueprint.blueprint_name.clone(),
+                        outer_blueprint: parent_info.blueprint_id.blueprint_name.clone(),
                     })
                 }
             }
@@ -1340,7 +1340,7 @@ where
         }
         // If the actor is a function within the same blueprint
         if let Actor::Function { blueprint, .. } = actor {
-            if blueprint.eq(&info.blueprint) {
+            if blueprint.eq(&info.blueprint_id) {
                 is_drop_allowed = true;
             }
         }
@@ -1349,8 +1349,8 @@ where
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                     node_id: node_id.clone(),
-                    package_address: info.blueprint.package_address,
-                    blueprint_name: info.blueprint.blueprint_name,
+                    package_address: info.blueprint_id.package_address,
+                    blueprint_name: info.blueprint_id.blueprint_name,
                 })),
             ));
         }
@@ -1926,9 +1926,9 @@ where
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
+            if !(object_info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                 && object_info
-                    .blueprint
+                    .blueprint_id
                     .blueprint_name
                     .eq(FUNGIBLE_VAULT_BLUEPRINT))
             {
@@ -1938,7 +1938,7 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
-                schema_origin: SchemaOrigin::Blueprint(object_info.blueprint),
+                schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
                 schema,
                 index: type_index,
             }
@@ -2055,7 +2055,7 @@ where
                     }
                 }
                 TypeRef::Blueprint(index) => KeyValueEntryLockData::Write {
-                    schema_origin: SchemaOrigin::Blueprint(object_info.blueprint),
+                    schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
                     schema,
                     index,
                     can_own,
@@ -2216,7 +2216,7 @@ where
                 Actor::Method(MethodActor {
                     module_object_info: ref object_info,
                     ..
-                }) => Ok(object_info.blueprint.clone()),
+                }) => Ok(object_info.blueprint_id.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(Box::new(EventError::InvalidActor)),

@@ -100,7 +100,7 @@ impl AuthZoneBlueprint {
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                             global: false,
 
-                            blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                             version: BlueprintVersion::default(),
 
                             outer_object: Some(resource_address.into()),
@@ -118,7 +118,7 @@ impl AuthZoneBlueprint {
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
 
-                        blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                         version: BlueprintVersion::default(),
 
                         outer_object: Some(resource_address.into()),
@@ -160,7 +160,7 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     version: BlueprintVersion::default(),
 
                     outer_object: Some(resource_address.into()),
@@ -204,7 +204,7 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
                     version: BlueprintVersion::default(),
 
                     outer_object: Some(resource_address.into()),

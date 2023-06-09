@@ -1105,7 +1105,7 @@ impl<L: Clone> CallFrame<L> {
         } else {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint_id: blueprint, .. })
                         if blueprint.package_address == RESOURCE_PACKAGE
                             && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT

@@ -292,7 +292,7 @@ where
         type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
             global: true,
 
-            blueprint: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             version: BlueprintVersion::default(),
 
             outer_object: None,

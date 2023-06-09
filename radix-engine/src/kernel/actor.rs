@@ -27,7 +27,7 @@ pub struct MethodActor {
 impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
-            blueprint: self.module_object_info.blueprint.clone(),
+            blueprint: self.module_object_info.blueprint_id.clone(),
             ident: FnIdent::Application(self.ident.to_string()),
         }
     }
@@ -71,8 +71,8 @@ impl Actor {
                 module_object_info: object_info,
                 ..
             }) => {
-                object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
-                    && object_info.blueprint.blueprint_name.eq(AUTH_ZONE_BLUEPRINT)
+                object_info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                    && object_info.blueprint_id.blueprint_name.eq(AUTH_ZONE_BLUEPRINT)
             }
             Actor::Function { .. } => false,
             Actor::VirtualLazyLoad { .. } => false,
@@ -111,7 +111,7 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info: ObjectInfo { blueprint_id: blueprint, .. },
                 ..
             })
             | Actor::Function { blueprint, .. }
@@ -149,7 +149,7 @@ impl Actor {
     pub fn blueprint(&self) -> &BlueprintId {
         match self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info: ObjectInfo { blueprint_id: blueprint, .. },
                 ..
             })
             | Actor::Function { blueprint, .. }
@@ -177,7 +177,7 @@ impl Actor {
     pub fn package_address(&self) -> &PackageAddress {
         let blueprint = match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info: ObjectInfo { blueprint_id: blueprint, .. },
                 ..
             }) => blueprint,
             Actor::Function { blueprint, .. } => blueprint,
@@ -191,7 +191,7 @@ impl Actor {
     pub fn blueprint_name(&self) -> &str {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info: ObjectInfo { blueprint_id: blueprint, .. },
                 ..
             })
             | Actor::Function { blueprint, .. }

@@ -1543,7 +1543,7 @@ impl TestRunner {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
+                            TypeInfoSubstate::Object(ObjectInfo { blueprint_id: blueprint, .. }) => (
                                 blueprint.package_address,
                                 blueprint.blueprint_name,
                                 *local_type_index,

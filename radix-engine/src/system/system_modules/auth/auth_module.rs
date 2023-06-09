@@ -143,14 +143,14 @@ impl AuthModule {
                 auth_zone_id,
                 acting_location,
                 parent.as_node_id(),
-                ObjectKey::InnerBlueprint(info.blueprint.blueprint_name.clone()),
+                ObjectKey::InnerBlueprint(info.blueprint_id.blueprint_name.clone()),
                 method_key.clone(),
                 args,
                 api,
             )?;
         }
 
-        if info.global || VaultUtil::is_vault_blueprint(&info.blueprint) {
+        if info.global || VaultUtil::is_vault_blueprint(&info.blueprint_id) {
             Self::check_authorization_against_access_rules(
                 callee,
                 auth_zone_id,
@@ -182,11 +182,11 @@ impl AuthModule {
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
-                let template = api.get_blueprint_method_template(&callee.node_object_info.blueprint)?;
+                let template = api.get_blueprint_method_template(&callee.node_object_info.blueprint_id)?;
                 template.method_auth_template
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
-                let template = api.get_blueprint_method_template(&callee.node_object_info.blueprint)?;
+                let template = api.get_blueprint_method_template(&callee.node_object_info.blueprint_id)?;
                 template.outer_method_auth_template
             }
         };
@@ -389,7 +389,7 @@ impl AuthModule {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     version: BlueprintVersion::default(),
 
                     outer_object: None,

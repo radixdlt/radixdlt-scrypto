@@ -32,7 +32,7 @@ impl NodeMoveModule {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
         match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
-                blueprint,
+                                         blueprint_id: blueprint,
                 outer_object,
                 ..
             }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)
@@ -88,7 +88,7 @@ impl NodeMoveModule {
                 }
             }
             TypeInfoSubstate::Object(ObjectInfo {
-                blueprint,
+                                         blueprint_id: blueprint,
                 outer_object,
                 ..
             }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)

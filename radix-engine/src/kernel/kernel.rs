@@ -98,7 +98,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             kernel.store.release_lock(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint, global, ..
+                                             blueprint_id: blueprint, global, ..
                 }) => {
                     if global {
                         kernel
@@ -405,7 +405,7 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint,
+                                             blueprint_id: blueprint,
                     outer_object,
                     ..
                 }) if blueprint.package_address == RESOURCE_PACKAGE
@@ -467,7 +467,7 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
+                TypeInfoSubstate::Object(ObjectInfo { blueprint_id: blueprint, .. })
                     if blueprint.package_address == RESOURCE_PACKAGE
                         && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
                             || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>

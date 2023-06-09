@@ -516,7 +516,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                TypeInfoSubstate::Object(ObjectInfo { blueprint_id: blueprint, .. }) => {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
                             let mut system = SystemService::new(api);
@@ -585,7 +585,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let object_info = system.get_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
-                    &object_info.blueprint.blueprint_name,
+                    &object_info.blueprint_id.blueprint_name,
                     PROOF_DROP_IDENT,
                     scrypto_encode(&ProofDropInput { proof }).unwrap(),
                 )?;

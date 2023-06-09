@@ -116,7 +116,7 @@ impl TransactionProcessorBlueprint {
                     TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
 
-                        blueprint: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         version: BlueprintVersion::default(),
 
                         outer_object: None,
@@ -533,8 +533,8 @@ impl TransactionProcessor {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
             match info {
                 TypeInfoSubstate::Object(info) => match (
-                    info.blueprint.package_address,
-                    info.blueprint.blueprint_name.as_str(),
+                    info.blueprint_id.package_address,
+                    info.blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
