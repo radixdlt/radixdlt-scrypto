@@ -95,9 +95,9 @@ pub struct BlueprintVersionKey {
 }
 
 impl BlueprintVersionKey {
-    pub fn new_default(blueprint: String) -> Self {
+    pub fn new_default<S: ToString>(blueprint: S) -> Self {
         Self {
-            blueprint,
+            blueprint: blueprint.to_string(),
             version: BlueprintVersion::default(),
         }
     }

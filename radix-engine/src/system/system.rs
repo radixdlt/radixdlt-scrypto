@@ -309,32 +309,12 @@ where
 
     // TODO: Add cache
     pub fn get_blueprint_method_template(&mut self, blueprint: &BlueprintId) -> Result<MethodAuthTemplate, RuntimeError> {
-        let handle = self.api.kernel_lock_substate_with_default(
-            blueprint.package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_METHOD_AUTH_TEMPLATE_PARTITION_OFFSET)
-                .unwrap(),
-            &SubstateKey::Map(scrypto_encode(&blueprint.blueprint_name).unwrap()),
-            LockFlags::read_only(),
-            Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
-            }),
-            SystemLockData::default(),
+        let method_auth_template = PackageNativePackage::get_blueprint_method_template(
+            blueprint,
+            self.api,
         )?;
 
-        let substate: SubstateWrapper<Option<MethodAuthTemplate>> =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_drop_lock(handle)?;
-
-        let template = substate.value.ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(blueprint.clone()))
-        })?;
-
-        Ok(template)
+        Ok(method_auth_template)
     }
 
     pub fn get_blueprint_definition(
