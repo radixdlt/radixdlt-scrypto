@@ -215,16 +215,14 @@ impl IndexedBlueprintStateSchema {
         }
     }
 
-    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, FieldSchema)> {
+    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, IndexedFieldSchema)> {
         match &self.fields {
             Some((offset, fields)) => {
                 let field_index: usize = field_index.into();
                 fields
                     .get(field_index)
                     .cloned()
-                    .map(|f| (offset.clone(), f.map(|p| match p {
-                        SchemaPointer::Package(_, v) => v
-                    })))
+                    .map(|f| (offset.clone(), f))
             }
             _ => None,
         }

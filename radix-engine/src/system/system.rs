@@ -561,7 +561,7 @@ where
                     .map_err(|err| {
                         RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
                             CreateObjectError::InvalidSubstateWrite(
-                                err.error_message(&blueprint_definition.schema),
+                                err.error_message(schema),
                             ),
                         )))
                     })?;
@@ -614,7 +614,7 @@ where
                                 .map_err(|err| {
                                     RuntimeError::SystemError(SystemError::CreateObjectError(
                                         Box::new(CreateObjectError::InvalidSubstateWrite(
-                                            err.error_message(&blueprint_definition.schema),
+                                            err.error_message(&schema),
                                         )),
                                     ))
                                 })?;
@@ -633,7 +633,7 @@ where
                                 .map_err(|err| {
                                     RuntimeError::SystemError(SystemError::CreateObjectError(
                                         Box::new(CreateObjectError::InvalidSubstateWrite(
-                                            err.error_message(&blueprint_definition.schema),
+                                            err.error_message(&schema),
                                         )),
                                     ))
                                 })?;
@@ -755,9 +755,9 @@ where
                 ))
             })?;
 
-        let type_index = match field_schema {
-            FieldSchema::Normal { value } => value,
-            FieldSchema::Conditional { feature, value } => {
+        let pointer = match field_schema {
+            IndexedFieldSchema::Normal { value } => value,
+            IndexedFieldSchema::Conditional { feature, value } => {
                 if info.features.contains(&feature) {
                     value
                 } else {
@@ -773,7 +773,13 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, definition.schema, type_index, info))
+        match pointer {
+            SchemaPointer::Package(schema_hash, type_index) => {
+                let schema = self.get_schema(info.blueprint_id.package_address.as_node_id(), &schema_hash)?;
+
+                Ok((node_id, partition_num, schema, type_index, info))
+            }
+        }
     }
 
     fn get_actor_kv_partition(
