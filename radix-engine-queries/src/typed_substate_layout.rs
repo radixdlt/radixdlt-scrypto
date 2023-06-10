@@ -103,7 +103,7 @@ pub enum TypedMainModuleSubstateKey {
     PackageField(PackageField),
     PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintDependenciesKey(BlueprintVersionKey),
-    PackageCode(u32),
+    PackageCode(Hash),
     PackageRoyaltyKey(BlueprintVersionKey),
     PackageAuthFunctionTemplateKey(BlueprintVersionKey),
     PackageAuthMethodTemplateKey(BlueprintVersionKey),

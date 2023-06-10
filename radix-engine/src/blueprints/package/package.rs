@@ -225,12 +225,13 @@ where
 
 
     {
+        let hash = hash([0]);
         partitions.insert(
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
                 .unwrap(),
             btreemap! (
-                SubstateKey::Map(scrypto_encode(&0u32).unwrap()) => IndexedScryptoValue::from_typed(&code),
+                SubstateKey::Map(scrypto_encode(&hash).unwrap()) => IndexedScryptoValue::from_typed(&code),
             ),
         );
     };
@@ -473,7 +474,7 @@ impl PackageNativePackage {
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
                 key: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<u32>(),
+                    aggregator.add_child_type_and_descendents::<Hash>(),
                 ),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
