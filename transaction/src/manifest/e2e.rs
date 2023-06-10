@@ -612,7 +612,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
-    Array<String>()
+    false
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(
@@ -665,7 +665,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE
-    Array<String>()
+    false
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(
@@ -714,8 +714,8 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
-    Array<String>()
     Enum<1u8>()
+    false
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -784,8 +784,8 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
-    Array<String>()
     Enum<1u8>()
+    false
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -1074,8 +1074,8 @@ CREATE_ACCESS_CONTROLLER
         // Arrange
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
-                vec![],
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 BTreeMap::<_, (_, AccessRule)>::new(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),

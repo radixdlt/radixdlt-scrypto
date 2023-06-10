@@ -1775,7 +1775,7 @@ impl ResourceManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
-                    input.features,
+                    input.track_total_supply,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
@@ -1791,7 +1791,7 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
-                    input.features,
+                    input.track_total_supply,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
@@ -1808,7 +1808,7 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(
-                    input.features,
+                    input.track_total_supply,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
@@ -1893,8 +1893,8 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
-                    input.features,
                     input.id_type,
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
@@ -1910,8 +1910,8 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_address(
-                    input.features,
                     input.id_type,
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
@@ -1928,8 +1928,8 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_initial_supply(
-                    input.features,
                     input.id_type,
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
@@ -1947,7 +1947,7 @@ impl ResourceManagerNativePackage {
                     })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_uuid_with_initial_supply(
-                    input.features,
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,

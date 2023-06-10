@@ -66,7 +66,7 @@ pub struct FungibleResourceManagerBlueprint;
 
 impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
-        features: Vec<String>,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -77,9 +77,14 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.iter().map(|s| s.as_str()).collect(),
+            features,
             None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -99,7 +104,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
-        features: Vec<String>,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -115,7 +120,7 @@ impl FungibleResourceManagerBlueprint {
         })?;
 
         Self::create_with_initial_supply_and_address(
-            features,
+            track_total_supply,
             divisibility,
             metadata,
             access_rules,
@@ -126,7 +131,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply_and_address<Y>(
-        features: Vec<String>,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -139,9 +144,14 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.iter().map(|s| s.as_str()).collect(),
+            features,
             None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),

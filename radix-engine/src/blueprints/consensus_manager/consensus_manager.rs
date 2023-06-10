@@ -202,8 +202,8 @@ impl ConsensusManagerBlueprint {
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
             ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
-                vec![TRACK_TOTAL_SUPPLY_FEATURE],
                 NonFungibleIdType::UUID,
+                true,
                 metadata,
                 access_rules,
                 validator_token_address_reservation,

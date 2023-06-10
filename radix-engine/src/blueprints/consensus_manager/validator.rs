@@ -970,7 +970,7 @@ impl ValidatorCreator {
         stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let stake_unit_resman = ResourceManager::new_fungible(
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            true,
             18,
             BTreeMap::new(),
             stake_unit_resource_auth,
@@ -1001,8 +1001,8 @@ impl ValidatorCreator {
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
             NonFungibleIdType::UUID,
+            true,
             BTreeMap::new(),
             unstake_nft_auth,
             api,

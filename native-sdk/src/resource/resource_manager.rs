@@ -18,7 +18,7 @@ pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
     pub fn new_fungible<Y, E: Debug + ScryptoDecode>(
-        features: Vec<&str>,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -32,7 +32,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateInput {
-                features: features.into_iter().map(|s| s.to_string()).collect(),
+                track_total_supply,
                 metadata,
                 access_rules,
                 divisibility,
@@ -45,7 +45,7 @@ impl ResourceManager {
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
-        features: Vec<&str>,
+        track_total_supply: bool,
         divisibility: u8,
         amount: Decimal,
         metadata: BTreeMap<String, MetadataValue>,
@@ -60,7 +60,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                features: features.into_iter().map(|s| s.to_string()).collect(),
+                track_total_supply,
                 metadata,
                 access_rules,
                 divisibility,
@@ -74,8 +74,8 @@ impl ResourceManager {
     }
 
     pub fn new_non_fungible<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
-        features: Vec<&str>,
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
@@ -89,8 +89,8 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                features: features.into_iter().map(|s| s.to_string()).collect(),
                 id_type,
+                track_total_supply,
                 non_fungible_schema,
                 metadata,
                 access_rules,
@@ -102,8 +102,8 @@ impl ResourceManager {
     }
 
     pub fn new_non_fungible_with_address<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
-        features: Vec<&str>,
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         address_reservation: GlobalAddressReservation,
@@ -117,8 +117,8 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
-                features: features.into_iter().map(|s| s.to_string()).collect(),
                 id_type,
+                track_total_supply,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
                 metadata,
                 access_rules,

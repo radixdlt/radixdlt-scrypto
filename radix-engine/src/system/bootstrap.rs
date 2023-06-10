@@ -427,7 +427,7 @@ pub fn create_system_bootstrap_transaction(
                 .to_string(),
             args: to_manifest_value(
                 &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
-                    features: vec![],
+                    track_total_supply: false,
                     divisibility: 18,
                     metadata,
                     access_rules,
@@ -453,7 +453,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -477,7 +477,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -508,7 +508,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
@@ -539,7 +539,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
@@ -605,7 +605,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
@@ -702,7 +702,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -726,7 +726,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -750,7 +750,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
-                features: vec![],
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,

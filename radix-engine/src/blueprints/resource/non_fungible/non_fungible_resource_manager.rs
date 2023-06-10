@@ -94,8 +94,8 @@ pub struct NonFungibleResourceManagerBlueprint;
 
 impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
-        features: Vec<String>,
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -108,9 +108,10 @@ impl NonFungibleResourceManagerBlueprint {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
+
         Self::create_with_address(
-            features,
             id_type,
+            track_total_supply,
             non_fungible_schema,
             metadata,
             access_rules,
@@ -120,8 +121,8 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_address<Y>(
-        features: Vec<String>,
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -140,9 +141,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.iter().map(|s| s.as_str()).collect(),
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -162,8 +168,8 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
-        features: Vec<String>,
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -219,9 +225,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.iter().map(|s| s.as_str()).collect(),
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -243,7 +254,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_uuid_with_initial_supply<Y>(
-        features: Vec<String>,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -280,9 +291,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.iter().map(|s| s.as_str()).collect(),
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),

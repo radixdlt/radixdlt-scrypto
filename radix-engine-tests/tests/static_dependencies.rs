@@ -150,7 +150,7 @@ fn static_resource_should_be_callable() {
                 args: manifest_decode(
                     &manifest_encode(
                         &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
-                            features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
+                            track_total_supply: true,
                             divisibility: 0u8,
                             metadata: btreemap!(),
                             access_rules: btreemap!(),

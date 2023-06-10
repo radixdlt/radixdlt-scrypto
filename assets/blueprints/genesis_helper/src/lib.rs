@@ -245,7 +245,7 @@ mod genesis_helper {
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
                     scrypto_encode(
                         &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
-                            features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
+                            track_total_supply: true,
                             divisibility: 18,
                             metadata,
                             access_rules,

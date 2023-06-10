@@ -263,12 +263,12 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
-            .create_fungible_resource(vec![], divisibility, BTreeMap::new(), access_rules, None)
+            .create_fungible_resource(false, divisibility, BTreeMap::new(), access_rules, None)
             .build(),
         ResourceType::NonFungible { id_type } => ManifestBuilder::new()
             .create_non_fungible_resource(
-                vec![],
                 id_type,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,

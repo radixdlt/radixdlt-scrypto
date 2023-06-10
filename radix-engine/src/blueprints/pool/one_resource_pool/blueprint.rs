@@ -59,13 +59,7 @@ impl OneResourcePoolBlueprint {
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(
-                vec![TRACK_TOTAL_SUPPLY_FEATURE],
-                18,
-                Default::default(),
-                access_rules,
-                api,
-            )?
+            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
         };
 
         let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;

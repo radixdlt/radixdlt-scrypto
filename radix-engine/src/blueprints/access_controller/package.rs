@@ -681,8 +681,8 @@ impl AccessControllerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                        features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                         id_type: NonFungibleIdType::Integer,
+                        track_total_supply: true,
                         non_fungible_schema,
                         metadata: Default::default(),
                         access_rules: access_rules.into(),

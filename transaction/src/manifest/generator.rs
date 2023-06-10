@@ -1464,8 +1464,8 @@ mod tests {
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE
-                Array<String>()
                 Enum<NonFungibleIdType::Integer>()
+                false
                 Tuple(
                     Tuple(
                         Array<Enum>(),
@@ -1493,8 +1493,8 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
-                    features: vec![],
                     id_type: NonFungibleIdType::Integer,
+                    track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([(
                         "name".to_string(),
@@ -1538,7 +1538,7 @@ mod tests {
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
-                        features: vec![],
+                        track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
                         ),
@@ -1556,8 +1556,8 @@ mod tests {
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
-                Array<String>()
                 Enum<NonFungibleIdType::Integer>()
+                false
                 Tuple(
                     Tuple(
                         Array<Enum>(),
@@ -1596,7 +1596,7 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        features: vec![],
+                        track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: BTreeMap::from([(
@@ -1630,7 +1630,7 @@ mod tests {
     fn test_create_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE
-                Array<String>()
+                false
                 18u8
                 Map<String, Enum>(
                     "name" => Enum<Metadata::String>("Token")
@@ -1651,7 +1651,7 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
-                    features: vec![],
+                    track_total_supply: false,
                     divisibility: 18,
                     metadata: BTreeMap::from([(
                         "name".to_string(),
@@ -1676,7 +1676,7 @@ mod tests {
     fn test_create_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
-                Array<String>()
+                false
                 18u8
                 Map<String, Enum>(
                     "name" => Enum<Metadata::String>("Token")
@@ -1699,7 +1699,7 @@ mod tests {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    features: vec![],
+                    track_total_supply: false,
                     divisibility: 18,
                     metadata: BTreeMap::from([(
                         "name".to_string(),

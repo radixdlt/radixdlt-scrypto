@@ -149,7 +149,7 @@ fn create_fungible_too_high_granularity_should_fail() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_fungible_resource(
-            vec![],
+            false,
             23u8,
             BTreeMap::new(),
             access_rules,
