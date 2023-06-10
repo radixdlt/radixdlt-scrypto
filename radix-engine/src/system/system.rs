@@ -2332,7 +2332,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
-        let (blueprint_id, schema, local_type_index) = {
+        let (blueprint_id, schema_pointer) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint_id = match actor {
                 Actor::Method(MethodActor {
@@ -2349,9 +2349,9 @@ where
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
-            let (schema_hash, local_type_index) =
-                if let Some(SchemaPointer::Package(schema_hash, index)) = blueprint_definition.events.get(&event_name).cloned() {
-                    (schema_hash, index)
+            let pointer =
+                if let Some(pointer) = blueprint_definition.events.get(&event_name).cloned() {
+                    pointer
                 } else {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
@@ -2361,8 +2361,14 @@ where
                     ));
                 };
 
-            let schema = self.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
-            (blueprint_id, schema, local_type_index)
+            (blueprint_id, pointer)
+        };
+
+        let (schema, local_type_index) = match &schema_pointer {
+            SchemaPointer::Package(schema_hash, index) => {
+                let schema = self.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
+                (schema, index.clone())
+            },
         };
 
         // Construct the event type identifier based on the current actor
@@ -2372,7 +2378,7 @@ where
                 node_id, module_id, ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id.clone(), module_id.clone()),
-                local_type_index,
+                schema_pointer,
             )),
             Actor::Function { ref blueprint, .. } => Ok(EventTypeIdentifier(
                 Emitter::Function(
@@ -2380,7 +2386,7 @@ where
                     ObjectModuleId::Main,
                     blueprint.blueprint_name.to_string(),
                 ),
-                local_type_index,
+                schema_pointer,
             )),
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(Box::new(EventError::InvalidActor)),
@@ -2389,7 +2395,7 @@ where
         self.validate_payload(
             &event_data,
             &schema,
-            event_type_identifier.1,
+            local_type_index,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {

@@ -72,7 +72,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::BlueprintDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, PACKAGE_SCHEMAS_PARTITION_OFFSET, SchemaPointer};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
@@ -393,23 +393,23 @@ pub fn get_event_schema<S: SubstateDatabase>(
     substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
-    let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
-        EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
+    let (package_address, blueprint_name, schema_pointer) = match event_type_identifier {
+        EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
             match node_module {
                 ObjectModuleId::AccessRules => (
                     ACCESS_RULES_MODULE_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
-                    *local_type_index,
+                    *schema_pointer,
                 ),
                 ObjectModuleId::Royalty => (
                     ROYALTY_MODULE_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
-                    *local_type_index,
+                    *schema_pointer,
                 ),
                 ObjectModuleId::Metadata => (
                     METADATA_MODULE_PACKAGE,
                     METADATA_BLUEPRINT.into(),
-                    *local_type_index,
+                    *schema_pointer,
                 ),
                 ObjectModuleId::Main => {
                     let type_info = substate_db
@@ -426,33 +426,35 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         }) => (
                             blueprint.package_address,
                             blueprint.blueprint_name,
-                            *local_type_index,
+                            *schema_pointer,
                         ),
                         _ => return None,
                     }
                 }
             }
         }
-        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
+        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), schema_pointer) => (
             PackageAddress::new_or_panic(node_id.clone().into()),
             blueprint_name.to_owned(),
-            *local_type_index,
+            *schema_pointer,
         ),
     };
 
-    let schema = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<BlueprintDefinition>>>(
-            package_address.as_node_id(),
-            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
-            &SubstateKey::Map(scrypto_encode(&blueprint_name).unwrap()),
-        )
-        .unwrap()
-        .value
-        .unwrap()
-        .schema
-        .clone();
+    match schema_pointer {
+        SchemaPointer::Package(schema_hash, index) => {
+            let schema = substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<ScryptoSchema>>>(
+                    package_address.as_node_id(),
+                    MAIN_BASE_PARTITION.at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET).unwrap(),
+                    &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+                )
+                .unwrap()
+                .value
+                .unwrap();
 
-    Some((local_type_index, schema))
+            Some((index, schema))
+        },
+    }
 }
 
 pub fn db_upsert_timestamps(

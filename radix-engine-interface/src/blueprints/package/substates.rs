@@ -70,7 +70,7 @@ pub struct PackageRoyaltyAccumulatorSubstate {
     pub royalty_vault: Option<Own>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum SchemaPointer {
     Package(Hash, LocalTypeIndex),
 }
