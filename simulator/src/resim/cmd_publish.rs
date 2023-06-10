@@ -94,6 +94,8 @@ impl Publish {
             let mut blueprint_updates = index_map_new();
             let mut blueprint_config_updates = index_map_new();
 
+            let code_hash = hash(scrypto_encode(&package_code).unwrap());
+
             for (b, s) in package_definition.blueprints {
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
@@ -107,11 +109,13 @@ impl Publish {
                         },
                     );
                     let export = PackageExport {
-                        hash: hash([0]),
+                        code_hash,
                         export_name: setup.export.value().clone(),
                     };
                     function_exports.insert(function, export);
                 }
+
+
 
                 let def = BlueprintDefinition {
                     outer_blueprint: s.outer_blueprint,
@@ -121,7 +125,11 @@ impl Publish {
                     schema: s.schema,
                     state_schema: s.blueprint.into(),
                     function_exports,
-                    virtual_lazy_load_functions: s.virtual_lazy_load_functions,
+                    virtual_lazy_load_functions: s.virtual_lazy_load_functions.into_iter()
+                        .map(|(key, export_name)| (key, PackageExport {
+                            code_hash,
+                            export_name,
+                        })).collect(),
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());

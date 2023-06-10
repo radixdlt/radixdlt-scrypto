@@ -36,7 +36,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&export.hash).unwrap()),
+                &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let wrapper = SubstateWrapper {
@@ -50,7 +50,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
             let code = api.kernel_read_substate(handle)?;
             let package_code: SubstateWrapper<Option<PackageCodeSubstate>> = code.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
-            package_code.value.unwrap()
+            package_code.value.expect(&format!("Code not found: {:?}", export))
         };
 
         let output = match package_code.vm_type {

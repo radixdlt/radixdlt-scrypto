@@ -18,7 +18,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup, VirtualLazyLoadExport,
+    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
@@ -68,12 +68,8 @@ impl IdentityNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadExport {
-                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
-            },
-            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadExport {
-                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
-            }
+            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
+            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID => IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
         );
 
         let method_auth_template = method_auth_template! {

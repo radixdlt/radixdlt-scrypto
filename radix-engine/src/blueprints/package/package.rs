@@ -132,6 +132,7 @@ fn globalize_package<Y, L: Default>(
     blueprint_config: BTreeMap<String, BlueprintDependencies>,
 
     code: PackageCodeSubstate,
+    code_hash: Hash,
 
     package_royalties: BTreeMap<String, RoyaltyConfig>,
     blueprint_auth_template: BTreeMap<String, MethodAuthTemplate>,
@@ -225,7 +226,6 @@ where
 
 
     {
-        let hash = hash([0]);
         let value = SubstateWrapper {
             value: Some(code),
             mutability: SubstateMutability::Immutable,
@@ -235,7 +235,7 @@ where
                 .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
                 .unwrap(),
             btreemap! (
-                SubstateKey::Map(scrypto_encode(&hash).unwrap()) => IndexedScryptoValue::from_typed(&value),
+                SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => IndexedScryptoValue::from_typed(&value),
             ),
         );
     };
@@ -705,6 +705,13 @@ impl PackageNativePackage {
         let mut blueprints = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
 
+        let code = PackageCodeSubstate {
+            vm_type: VmType::Native,
+            code: vec![native_package_code_id],
+        };
+
+        let code_hash = hash(scrypto_encode(&code).unwrap());
+
         {
             for (blueprint, setup) in setup.blueprints {
                 function_auth.insert(
@@ -728,7 +735,7 @@ impl PackageNativePackage {
                         },
                     );
                     let export = PackageExport {
-                        hash: hash([0]),
+                        code_hash,
                         export_name: setup.export.value().clone(),
                     };
                     function_exports.insert(function, export);
@@ -742,7 +749,11 @@ impl PackageNativePackage {
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
                     function_exports,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()
+                        .map(|(key, export_name)| (key, PackageExport {
+                            code_hash,
+                            export_name,
+                        })).collect(),
                 };
                 blueprints.insert(blueprint.clone(), definition);
 
@@ -753,16 +764,13 @@ impl PackageNativePackage {
             }
         };
 
-        let code = PackageCodeSubstate {
-            vm_type: VmType::Native,
-            code: vec![native_package_code_id],
-        };
 
         globalize_package(
             package_address,
             blueprints,
             blueprint_dependencies,
             code,
+            code_hash,
             btreemap!(),
             blueprint_auth_templates,
             function_auth,
@@ -828,6 +836,9 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+
+
+
         for BlueprintSetup {
             outer_blueprint: parent,
             features,
@@ -889,6 +900,13 @@ impl PackageNativePackage {
                 ))
             })?;
 
+        let code = PackageCodeSubstate {
+            vm_type: VmType::ScryptoV1,
+            code,
+        };
+
+        let code_hash = hash(scrypto_encode(&code).unwrap());
+
         let mut function_auth_templates = BTreeMap::new();
         let mut method_auth_templates = BTreeMap::new();
 
@@ -919,7 +937,7 @@ impl PackageNativePackage {
                         },
                     );
                     let export = PackageExport {
-                        hash: hash([0]),
+                        code_hash,
                         export_name: setup.export.value().clone(),
                     };
                     function_exports.insert(function, export);
@@ -933,7 +951,11 @@ impl PackageNativePackage {
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
                     function_exports,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions,
+                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()
+                        .map(|(key, export_name)| (key, PackageExport {
+                            code_hash,
+                            export_name,
+                        })).collect(),
                 };
                 blueprints.insert(blueprint.clone(), definition);
                 royalties.insert(blueprint.clone(), setup.royalty_config);
@@ -945,16 +967,13 @@ impl PackageNativePackage {
             }
         }
 
-        let code = PackageCodeSubstate {
-            vm_type: VmType::ScryptoV1,
-            code,
-        };
 
         globalize_package(
             package_address,
             blueprints,
             blueprint_dependencies,
             code,
+            code_hash,
             royalties,
             method_auth_templates,
             function_auth_templates,

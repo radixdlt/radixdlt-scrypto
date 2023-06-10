@@ -1,4 +1,3 @@
-use crate::blueprints::package::VirtualLazyLoadExport;
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
@@ -108,7 +107,7 @@ pub struct BlueprintSetup {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub function_auth: BTreeMap<String, AccessRule>,
     pub functions: BTreeMap<String, FunctionSetup>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
+    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
     pub royalty_config: RoyaltyConfig,
     pub schema: ScryptoSchema,
     pub template: MethodAuthTemplate,

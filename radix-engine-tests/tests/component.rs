@@ -1,5 +1,4 @@
-use radix_engine::errors::{ModuleError, RuntimeError};
-use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;

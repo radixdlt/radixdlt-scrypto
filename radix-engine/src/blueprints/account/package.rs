@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup, VirtualLazyLoadExport,
+    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema,
@@ -295,12 +295,8 @@ impl AccountNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadExport {
-                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
-            },
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadExport {
-                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
-            }
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID => ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
         );
 
         let method_auth_template = method_auth_template!(

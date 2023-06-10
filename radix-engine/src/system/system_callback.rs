@@ -460,14 +460,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     export
                 }
                 FnIdent::System(system_func_id) => {
-                    if let Some(sys_func) = definition
+                    if let Some(package_export) = definition
                         .virtual_lazy_load_functions
                         .get(&system_func_id)
                     {
-                        PackageExport {
-                            hash: hash([0]),
-                            export_name: sys_func.export_name.to_string(),
-                        }
+                        package_export.clone()
                     } else {
                         return Err(RuntimeError::SystemUpstreamError(
                             SystemUpstreamError::InvalidSystemCall,

@@ -70,12 +70,6 @@ pub struct PackageRoyaltyAccumulatorSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-#[sbor(transparent)]
-pub struct VirtualLazyLoadExport {
-    pub export_name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
@@ -122,7 +116,7 @@ pub struct BlueprintDependencies {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageExport {
-    pub hash: Hash,
+    pub code_hash: Hash,
     pub export_name: String,
 }
 
@@ -136,7 +130,7 @@ pub struct BlueprintDefinition {
     pub events: BTreeMap<String, LocalTypeIndex>,
 
     pub function_exports: BTreeMap<String, PackageExport>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
+    pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,
 
     pub schema: ScryptoSchema,
 }
