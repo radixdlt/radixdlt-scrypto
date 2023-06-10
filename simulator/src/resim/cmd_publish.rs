@@ -133,7 +133,6 @@ impl Publish {
                     features: s.features,
                     functions,
                     events,
-                    schema: s.schema,
                     state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, s.blueprint),
                     function_exports,
                     virtual_lazy_load_functions: s.virtual_lazy_load_functions.into_iter()

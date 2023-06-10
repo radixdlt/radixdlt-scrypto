@@ -783,7 +783,6 @@ impl PackageNativePackage {
                     features: setup.features,
                     functions,
                     events,
-                    schema: setup.schema,
                     state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, setup.blueprint),
                     function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()
@@ -994,7 +993,6 @@ impl PackageNativePackage {
                     features: setup.features,
                     functions,
                     events,
-                    schema: setup.schema,
                     state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, setup.blueprint),
                     function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()

@@ -137,8 +137,6 @@ pub struct BlueprintDefinition {
 
     pub function_exports: BTreeMap<String, PackageExport>,
     pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,
-
-    pub schema: ScryptoSchema,
 }
 
 impl BlueprintDefinition {
