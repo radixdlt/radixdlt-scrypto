@@ -70,10 +70,6 @@ impl Publish {
                 .bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let fields_partition_key =
-                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, MAIN_BASE_PARTITION);
-            let code_db_sort_key =
-                SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Code.into());
             let package_code = PackageCodeSubstate {
                 vm_type: VmType::ScryptoV1,
                 code,
@@ -150,11 +146,6 @@ impl Publish {
             }
 
             let database_updates = indexmap!(
-                fields_partition_key => indexmap!(
-                    code_db_sort_key => DatabaseUpdate::Set(
-                        scrypto_encode(&package_code).unwrap()
-                    ),
-                ),
                 blueprints_partition_key => blueprint_updates,
                 blueprints_config_partition_key => blueprint_config_updates,
             );

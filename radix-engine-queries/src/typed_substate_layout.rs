@@ -574,7 +574,6 @@ fn to_typed_object_substate_value(
     let substate_value = match substate_key {
         TypedMainModuleSubstateKey::PackageField(offset) => {
             TypedMainModuleSubstateValue::Package(match offset {
-                PackageField::Code => TypedPackageFieldValue::Code(scrypto_decode(data)?),
                 PackageField::Royalty => TypedPackageFieldValue::Royalty(scrypto_decode(data)?),
             })
         }

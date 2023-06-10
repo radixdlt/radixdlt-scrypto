@@ -157,7 +157,6 @@ where
     // Prepare node init.
     {
         let main_partition = btreemap!(
-            PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
             PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
         );
         partitions.insert(
@@ -442,12 +441,6 @@ impl PackageNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(
-            aggregator.add_child_type_and_descendents::<VmType>(),
-        ));
-        fields.push(FieldSchema::normal(
-            aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
-        ));
         fields.push(FieldSchema::normal(
             aggregator.add_child_type_and_descendents::<PackageRoyaltyAccumulatorSubstate>(),
         ));
