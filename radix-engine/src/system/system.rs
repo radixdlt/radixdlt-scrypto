@@ -2332,7 +2332,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
-        let (blueprint_id, blueprint_definition, local_type_index) = {
+        let (blueprint_id, schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint_id = match actor {
                 Actor::Method(MethodActor {
@@ -2349,9 +2349,9 @@ where
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
-            let local_type_index =
-                if let Some(SchemaPointer::Package(_, index)) = blueprint_definition.events.get(&event_name).cloned() {
-                    index
+            let (schema_hash, local_type_index) =
+                if let Some(SchemaPointer::Package(schema_hash, index)) = blueprint_definition.events.get(&event_name).cloned() {
+                    (schema_hash, index)
                 } else {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
@@ -2361,7 +2361,8 @@ where
                     ));
                 };
 
-            (blueprint_id, blueprint_definition, local_type_index)
+            let schema = self.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
+            (blueprint_id, schema, local_type_index)
         };
 
         // Construct the event type identifier based on the current actor
@@ -2387,13 +2388,13 @@ where
         }?;
         self.validate_payload(
             &event_data,
-            &blueprint_definition.schema,
+            &schema,
             event_type_identifier.1,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
-                EventError::EventSchemaNotMatch(err.error_message(&blueprint_definition.schema)),
+                EventError::EventSchemaNotMatch(err.error_message(&schema)),
             )))
         })?;
 
