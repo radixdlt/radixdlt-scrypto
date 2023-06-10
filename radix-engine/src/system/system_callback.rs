@@ -36,7 +36,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             .functions
             .get(fn_ident)
             .ok_or(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
+                SystemUpstreamError::FnNotFound(fn_ident.to_string()),
             ))?;
 
     match (&function_schema.receiver, with_receiver.as_ref()) {
@@ -335,7 +335,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
@@ -344,14 +344,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance =
                 { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
@@ -362,7 +355,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
@@ -375,14 +368,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else {
@@ -418,22 +404,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         sys_func.export_name.to_string()
                     } else {
                         return Err(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::InvalidSystemCall,
+                            SystemUpstreamError::SystemFunctionCallNotAllowed,
                         ));
                     }
                 }
             };
 
             // Execute
-            let output = {
-                C::invoke(
-                    &blueprint.package_address,
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output =
+                { C::invoke(&blueprint.package_address, &export_name, args, &mut system)? };
 
             // Validate output
             match ident {

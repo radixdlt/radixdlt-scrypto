@@ -27,20 +27,19 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
-        let result = api
-            .call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                scrypto_encode(&FungibleResourceManagerCreateInput {
-                    features: features.into_iter().map(|s| s.to_string()).collect(),
-                    metadata,
-                    access_rules,
-                    divisibility,
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        let result = api.call_function(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateInput {
+                features: features.into_iter().map(|s| s.to_string()).collect(),
+                metadata,
+                access_rules,
+                divisibility,
+            })
+            .unwrap(),
+        )?;
+
         let resource_address = scrypto_decode(result.as_slice()).unwrap();
         Ok(ResourceManager(resource_address))
     }
@@ -56,21 +55,19 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
-        let result = api
-            .call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    features: features.into_iter().map(|s| s.to_string()).collect(),
-                    metadata,
-                    access_rules,
-                    divisibility,
-                    initial_supply: amount,
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        let result = api.call_function(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                features: features.into_iter().map(|s| s.to_string()).collect(),
+                metadata,
+                access_rules,
+                divisibility,
+                initial_supply: amount,
+            })
+            .unwrap(),
+        )?;
         let (resource_address, bucket): (ResourceAddress, Bucket) =
             scrypto_decode(result.as_slice()).unwrap();
         Ok((ResourceManager(resource_address), bucket))

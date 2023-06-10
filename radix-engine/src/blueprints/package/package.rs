@@ -13,13 +13,11 @@ use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
@@ -394,7 +392,6 @@ impl PackageNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y, L: Default>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -405,14 +402,8 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_native(
@@ -428,13 +419,8 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm(input.code, input.setup, input.metadata, api)?;
@@ -444,13 +430,8 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm_advanced(
@@ -469,7 +450,7 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: PackageSetRoyaltyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = Self::set_royalty(input.blueprint, input.fn_name, input.royalty, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -477,13 +458,13 @@ impl PackageNativePackage {
             PACKAGE_CLAIM_ROYALTIES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = Self::claim_royalty(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

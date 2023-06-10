@@ -7,13 +7,20 @@ mod logger {
     }
 
     impl Logger {
-        pub fn no_panic_log(message: String) {
+        pub fn log_message(message: String) {
             info!("{}", message)
         }
 
-        pub fn panic_log(message: String) {
-            info!("{}", message);
-            panic!("I'm panicking!")
+        pub fn rust_panic(message: String) {
+            panic!("{}", message)
+        }
+
+        pub fn scrypto_panic(message: String) {
+            Runtime::panic(message)
+        }
+
+        pub fn assert_length_5(message: String) {
+            assert_eq!(message.len(), 5);
         }
     }
 }

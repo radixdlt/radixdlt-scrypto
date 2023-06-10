@@ -1,6 +1,6 @@
 use super::events::*;
 use super::state_machine::*;
-use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
@@ -472,7 +472,6 @@ impl AccessControllerNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -483,11 +482,6 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 Self::create_global(input, api)
             }
             ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => {
@@ -513,26 +507,20 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::quick_confirm_primary_role_recovery_proposal(receiver, input, api)
+                let receiver = Runtime::get_node_id(api)?;
+                Self::quick_confirm_primary_role_recovery_proposal(&receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::quick_confirm_recovery_role_recovery_proposal(receiver, input, api)
+                let receiver = Runtime::get_node_id(api)?;
+                Self::quick_confirm_recovery_role_recovery_proposal(&receiver, input, api)
             }
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::timed_confirm_recovery(receiver, input, api)
+                let receiver = Runtime::get_node_id(api)?;
+                Self::timed_confirm_recovery(&receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -572,18 +560,14 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::quick_confirm_primary_role_badge_withdraw_attempt(receiver, input, api)
+                let receiver = Runtime::get_node_id(api)?;
+                Self::quick_confirm_primary_role_badge_withdraw_attempt(&receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::quick_confirm_recovery_role_badge_withdraw_attempt(receiver, input, api)
+                let receiver = Runtime::get_node_id(api)?;
+                Self::quick_confirm_recovery_role_badge_withdraw_attempt(&receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -600,8 +584,8 @@ impl AccessControllerNativePackage {
 
                 Self::mint_recovery_badges(input, api)
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -613,9 +597,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerCreateGlobalInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: AccessControllerCreateGlobalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Allocating the address of the access controller - this will be needed for the metadata
         // and access rules of the recovery badge
@@ -772,9 +756,7 @@ impl AccessControllerNativePackage {
     {
         input
             .as_typed::<AccessControllerPostInstantiationInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let access_controller = api.actor_get_global_address()?;
         let resource_address = {
@@ -809,9 +791,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let _input: AccessControllerCreateProofInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let proof = transition(api, AccessControllerCreateProofStateMachineInput)?;
 
@@ -825,10 +807,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerInitiateRecoveryAsPrimaryInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerInitiateRecoveryAsPrimaryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -859,10 +840,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerInitiateRecoveryAsRecoveryInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerInitiateRecoveryAsRecoveryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -895,9 +875,7 @@ impl AccessControllerNativePackage {
     {
         input
             .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(
             api,
@@ -923,9 +901,7 @@ impl AccessControllerNativePackage {
     {
         input
             .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(
             api,
@@ -950,10 +926,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -987,10 +962,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -1026,9 +1000,7 @@ impl AccessControllerNativePackage {
     {
         input
             .as_typed::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let bucket = transition_mut(
             api,
@@ -1057,9 +1029,7 @@ impl AccessControllerNativePackage {
     {
         input
             .as_typed::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let bucket = transition_mut(
             api,
@@ -1086,9 +1056,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerTimedConfirmRecoveryInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: AccessControllerTimedConfirmRecoveryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -1122,10 +1092,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+        let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(
             api,
@@ -1149,10 +1118,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+        let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(
             api,
@@ -1178,9 +1146,7 @@ impl AccessControllerNativePackage {
     {
         input
             .as_typed::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(
             api,
@@ -1206,9 +1172,7 @@ impl AccessControllerNativePackage {
     {
         input
             .as_typed::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(
             api,
@@ -1232,9 +1196,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerLockPrimaryRoleInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let _input: AccessControllerLockPrimaryRoleInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(api, AccessControllerLockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, LockPrimaryRoleEvent {})?;
@@ -1249,9 +1213,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerUnlockPrimaryRoleInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let _input: AccessControllerUnlockPrimaryRoleInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(api, AccessControllerUnlockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, UnlockPrimaryRoleEvent {})?;
@@ -1266,9 +1230,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerStopTimedRecoveryInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: AccessControllerStopTimedRecoveryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         transition_mut(
             api,
@@ -1293,9 +1257,9 @@ impl AccessControllerNativePackage {
     {
         let AccessControllerMintRecoveryBadgesInput {
             non_fungible_local_ids,
-        } = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        } = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address = {
             let substate_key = AccessControllerField::AccessController.into();

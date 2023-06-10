@@ -37,7 +37,7 @@ fn test_manifest_with_non_existent_resource() {
         matches!(
             e,
             RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::NodeNotFound(..)
+                KernelError::InvalidReference(..)
             ))
         )
     });

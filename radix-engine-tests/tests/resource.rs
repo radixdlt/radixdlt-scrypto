@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine::types::*;
@@ -280,7 +280,9 @@ fn cannot_mint_in_component_with_proof_in_root() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
         )
     });
 }
@@ -347,7 +349,9 @@ fn cannot_burn_in_component_with_proof_in_root() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
         )
     });
 }

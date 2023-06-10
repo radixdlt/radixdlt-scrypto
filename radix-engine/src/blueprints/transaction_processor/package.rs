@@ -1,5 +1,5 @@
+use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
@@ -67,7 +67,6 @@ impl TransactionProcessorNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -78,15 +77,10 @@ impl TransactionProcessorNativePackage {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 TransactionProcessorBlueprint::run(input, api)
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

@@ -16,7 +16,6 @@ use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -1638,18 +1637,21 @@ impl StateHashSupport {
 }
 
 pub fn is_auth_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(_)))
+    matches!(
+        e,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(_))
+    )
 }
 
 pub fn is_costing_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::ModuleError(ModuleError::CostingError(_)))
+    matches!(
+        e,
+        RuntimeError::SystemModuleError(SystemModuleError::CostingError(_))
+    )
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(
-        e,
-        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
-    )
+    matches!(e, RuntimeError::VmError(VmError::Wasm(..)))
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {

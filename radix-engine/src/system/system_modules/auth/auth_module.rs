@@ -30,7 +30,6 @@ use transaction::model::AuthZoneParams;
 pub enum AuthError {
     NoFunction(FnIdentifier),
     NoMethod(FnIdentifier),
-    UsedReservedRole(String),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
@@ -101,12 +100,12 @@ impl AuthModule {
             if let Some(access_rule) = access_rule {
                 access_rule.clone()
             } else {
-                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::NoFunction(FnIdentifier {
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
                         blueprint: blueprint.clone(),
                         ident: FnIdent::Application(ident.to_string()),
-                    }),
-                )));
+                    })),
+                ));
             }
         };
 
@@ -224,9 +223,11 @@ impl AuthModule {
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::NoMethod(callee.fn_identifier()),
-                            )));
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::AuthError(AuthError::NoMethod(
+                                    callee.fn_identifier(),
+                                )),
+                            ));
                         }
                         _ => return Ok(()),
                     }
@@ -275,12 +276,12 @@ impl AuthModule {
         match result {
             AuthorityListAuthorizationResult::Authorized => Ok(()),
             AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
-                Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized {
+                Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
                         failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
                         fn_identifier,
-                    })),
-                )))
+                    }))),
+                ))
             }
         }
     }
@@ -320,14 +321,16 @@ impl AuthModule {
                     match auth_result {
                         AuthorizationCheckResult::Authorized => {}
                         AuthorizationCheckResult::Failed(access_rule_stack) => {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::Unauthorized(Box::new(Unauthorized {
-                                    failed_access_rules: FailedAccessRules::AccessRule(
-                                        access_rule_stack,
-                                    ),
-                                    fn_identifier: callee.fn_identifier(),
-                                })),
-                            )));
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(
+                                    Unauthorized {
+                                        failed_access_rules: FailedAccessRules::AccessRule(
+                                            access_rule_stack,
+                                        ),
+                                        fn_identifier: callee.fn_identifier(),
+                                    },
+                                ))),
+                            ));
                         }
                     }
                 }

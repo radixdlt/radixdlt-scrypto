@@ -10,14 +10,12 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{StoreAccess, StoreAccessInfo};
 use crate::types::*;
 use crate::{
-    errors::{CanBeAbortion, ModuleError, RuntimeError},
+    errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-};
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
@@ -65,9 +63,9 @@ impl CostingModule {
         self.fee_reserve
             .consume_multiplied_execution(cost_units, multiplier, reason)
             .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
             })
     }
 
@@ -80,9 +78,9 @@ impl CostingModule {
         self.fee_reserve
             .lock_fee(vault_id, locked_fee, contingent)
             .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
             })
     }
 
@@ -153,7 +151,9 @@ fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         .fee_reserve
         .consume_royalty(royalty_amount, recipient, recipient_vault_id)
         .map_err(|e| {
-            RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
+            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                CostingError::FeeReserveError(e),
+            ))
         })
 }
 
@@ -180,9 +180,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 )
             })
             .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
             })
     }
 
@@ -192,9 +192,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
-            return Err(RuntimeError::ModuleError(ModuleError::CostingError(
-                CostingError::MaxCallDepthLimitReached,
-            )));
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::CostingError(CostingError::MaxCallDepthLimitReached),
+            ));
         }
 
         if current_depth > 0 {

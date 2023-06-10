@@ -1,9 +1,9 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorBlueprint};
-use crate::errors::RuntimeError;
-use crate::errors::SystemUpstreamError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_auth_template, types::*};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
@@ -365,7 +365,6 @@ impl ConsensusManagerNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -376,13 +375,8 @@ impl ConsensusManagerNativePackage {
             CONSENSUS_MANAGER_CREATE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: ConsensusManagerCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::create(
                     input.validator_owner_token_address,
@@ -399,7 +393,7 @@ impl ConsensusManagerNativePackage {
 
                 let _input: ConsensusManagerGetCurrentEpochInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
                 let rtn = ConsensusManagerBlueprint::get_current_epoch(api)?;
@@ -408,13 +402,11 @@ impl ConsensusManagerNativePackage {
             CONSENSUS_MANAGER_START_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: ConsensusManagerStartInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = ConsensusManagerBlueprint::start(receiver, api)?;
+                let rtn = ConsensusManagerBlueprint::start(&receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -422,7 +414,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ConsensusManagerGetCurrentTimeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::get_current_time(input.precision, api)?;
 
@@ -433,7 +425,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ConsensusManagerCompareCurrentTimeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::compare_current_time(
                     input.instant,
@@ -448,7 +440,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ConsensusManagerNextRoundInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::next_round(
                     input.round,
@@ -464,7 +456,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ConsensusManagerCreateValidatorInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::create_validator(input.key, api)?;
 
@@ -474,7 +466,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::register(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -483,7 +475,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unregister(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -492,7 +484,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::stake(input.stake, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -501,7 +493,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unstake(input.stake_unit_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -510,7 +502,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::claim_xrd(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -519,7 +511,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::update_key(input.key, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -528,7 +520,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorUpdateFeeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::update_fee(input.new_fee_factor, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -538,7 +530,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ValidatorUpdateAcceptDelegatedStakeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::update_accept_delegated_stake(
                     input.accept_delegated_stake,
@@ -550,7 +542,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorLockOwnerStakeUnitsInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::lock_owner_stake_units(input.stake_unit_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -560,7 +552,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ValidatorStartUnlockOwnerStakeUnitsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::start_unlock_owner_stake_units(
                     input.requested_stake_unit_amount,
@@ -573,7 +565,7 @@ impl ConsensusManagerNativePackage {
 
                 let _input: ValidatorFinishUnlockOwnerStakeUnitsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::finish_unlock_owner_stake_units(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -582,7 +574,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorApplyEmissionInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::apply_emission(
                     input.xrd_bucket,
@@ -593,8 +585,8 @@ impl ConsensusManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

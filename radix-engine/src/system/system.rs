@@ -4,7 +4,7 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError,
+    InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -1222,8 +1222,8 @@ where
         }
 
         if !is_drop_allowed {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                     node_id: node_id.clone(),
                     package_address: info.blueprint.package_address,
                     blueprint_name: info.blueprint.blueprint_name,
@@ -1448,9 +1448,8 @@ where
 
         let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
@@ -1539,9 +1538,8 @@ where
         let (node_id, partition_num) =
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
@@ -1995,7 +1993,7 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        // Costing event emission.
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
@@ -2009,8 +2007,8 @@ where
                     ..
                 }) => Ok(object_info.blueprint.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
-                _ => Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(Box::new(EventError::InvalidActor)),
+                _ => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
                 )),
             }?;
 
@@ -2022,8 +2020,8 @@ where
                 if let Some(index) = blueprint_schema.event_schema.get(&event_name).cloned() {
                     index
                 } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::EventError(Box::new(EventError::SchemaNotFoundError {
                             blueprint: blueprint_id.clone(),
                             event_name,
                         })),
@@ -2050,8 +2048,8 @@ where
                 ),
                 local_type_index,
             )),
-            _ => Err(RuntimeError::ApplicationError(
-                ApplicationError::EventError(Box::new(EventError::InvalidActor)),
+            _ => Err(RuntimeError::SystemModuleError(
+                SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
             )),
         }?;
         self.validate_payload(
@@ -2061,7 +2059,7 @@ where
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
+            RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
                 EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
             )))
         })?;
@@ -2083,13 +2081,14 @@ where
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
             .kernel_get_system()
             .modules
             .logger
-            .add_log(level, message);
+            .add(level, message);
         Ok(())
     }
 }
@@ -2121,6 +2120,15 @@ where
             .modules
             .transaction_runtime
             .generate_uuid())
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+            message.to_string(),
+        )))
     }
 }
 

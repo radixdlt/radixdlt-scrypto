@@ -1,20 +1,20 @@
 use crate::blueprints::util::{
     PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
 };
-use crate::errors::RuntimeError;
-use crate::errors::SystemUpstreamError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
@@ -125,7 +125,6 @@ impl IdentityNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -136,13 +135,8 @@ impl IdentityNativePackage {
             IDENTITY_CREATE_ADVANCED_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: IdentityCreateAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_advanced(input.owner_rule, api)?;
@@ -152,13 +146,8 @@ impl IdentityNativePackage {
             IDENTITY_CREATE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create(api)?;
@@ -168,27 +157,20 @@ impl IdentityNativePackage {
             IDENTITY_SECURIFY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::securify(receiver, api)?;
+                let rtn = IdentityBlueprint::securify(&receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_virtual_secp256k1(input, api)?;
@@ -198,21 +180,16 @@ impl IdentityNativePackage {
             IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_virtual_ed25519(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -325,7 +302,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        SecurifiedIdentity::securify(receiver, api)
+        SecurifiedIdentity::securify(&receiver, api)
     }
 
     fn create_object<Y>(
