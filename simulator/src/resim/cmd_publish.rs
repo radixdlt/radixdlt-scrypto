@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET, VmType};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -88,7 +88,7 @@ impl Publish {
             let blueprints_config_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
                 MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET)
+                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
                     .unwrap(),
             );
             let mut blueprint_updates = index_map_new();

@@ -58,6 +58,7 @@ pub enum PackagePartitionOffset {
     Fields,
     Blueprints,
     BlueprintDependencies,
+    Code,
     Royalty,
     AuthFunctionTemplates,
     AuthMethodTemplates,

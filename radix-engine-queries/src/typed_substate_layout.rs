@@ -103,6 +103,7 @@ pub enum TypedMainModuleSubstateKey {
     PackageField(PackageField),
     PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintDependenciesKey(BlueprintVersionKey),
+    PackageCode(u32),
     PackageRoyaltyKey(BlueprintVersionKey),
     PackageAuthFunctionTemplateKey(BlueprintVersionKey),
     PackageAuthMethodTemplateKey(BlueprintVersionKey),
@@ -238,6 +239,12 @@ fn to_typed_object_substate_key_internal(
                 PackagePartitionOffset::BlueprintDependencies => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                PackagePartitionOffset::Code => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageCode(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -402,6 +409,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
     PackageBlueprintDependencies(Option<BlueprintDependencies>),
+    PackageCode(PackageCodeSubstate),
     PackageFunctionAuthTemplate(Option<FunctionAuthTemplate>),
     PackageMethodAuthTemplate(Option<MethodAuthTemplate>),
     PackageRoyalty(Option<RoyaltyConfig>),
@@ -577,6 +585,10 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(..) => {
             let value: SubstateWrapper<Option<BlueprintDependencies>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageBlueprintDependencies(value.value)
+        }
+        TypedMainModuleSubstateKey::PackageCode(..) => {
+            let value: PackageCodeSubstate = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageCode(value)
         }
         TypedMainModuleSubstateKey::PackageRoyaltyKey(_fn_key) => {
             let value: SubstateWrapper<Option<RoyaltyConfig>> = scrypto_decode(data)?;

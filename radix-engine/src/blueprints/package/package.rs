@@ -217,9 +217,21 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_OFFSET)
+                .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
                 .unwrap(),
             minor_version_configs,
+        );
+    };
+
+
+    {
+        partitions.insert(
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
+                .unwrap(),
+            btreemap! (
+                SubstateKey::Map(scrypto_encode(&0u32).unwrap()) => IndexedScryptoValue::from_typed(&code),
+            ),
         );
     };
 
@@ -454,6 +466,17 @@ impl PackageNativePackage {
                 ),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<BlueprintDependencies>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<u32>(),
+                ),
+                value: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
                 ),
                 can_own: false,
             },
