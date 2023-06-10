@@ -1030,6 +1030,39 @@ impl PackageNativePackage {
         )
     }
 
+    pub fn get_schema_hash<Y>(
+        receiver: &NodeId,
+        hash: &Hash,
+        api: &mut Y,
+    ) -> Result<ScryptoSchema, RuntimeError>
+        where
+            Y: KernelSubstateApi<SystemLockData>,
+    {
+        let handle = api.kernel_lock_substate_with_default(
+            receiver,
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(hash).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let wrapper = SubstateWrapper {
+                    value: None::<()>,
+                    mutability: SubstateMutability::Mutable,
+                };
+                IndexedScryptoValue::from_typed(&wrapper)
+            }),
+            SystemLockData::default(),
+        )?;
+
+        let substate: SubstateWrapper<Option<ScryptoSchema>> =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        api.kernel_drop_lock(handle)?;
+
+        let schema = substate.value.unwrap();
+
+        Ok(schema)
+    }
 
     pub fn get_blueprint_definition<Y>(
         receiver: &NodeId,

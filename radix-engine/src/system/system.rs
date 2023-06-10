@@ -1,3 +1,4 @@
+use std::collections::hash_map::Entry;
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
@@ -73,6 +74,18 @@ impl TryFrom<ObjectHandle> for ActorObjectType {
             OBJECT_HANDLE_SELF => Ok(ActorObjectType::SELF),
             OBJECT_HANDLE_OUTER_OBJECT => Ok(ActorObjectType::OuterObject),
             _ => Err(RuntimeError::SystemError(SystemError::InvalidObjectHandle)),
+        }
+    }
+}
+
+pub struct SchemaCache {
+    cache: NonIterMap<Hash, ScryptoSchema>,
+}
+
+impl SchemaCache {
+    pub fn new() -> Self {
+        Self {
+            cache: NonIterMap::new()
         }
     }
 }
@@ -385,6 +398,49 @@ where
         }
     }
 
+    pub fn get_schema(
+        &mut self,
+        node_id: &NodeId,
+        schema_hash: &Hash,
+    ) -> Result<ScryptoSchema, RuntimeError> {
+        let def = self
+            .api
+            .kernel_get_system_state()
+            .system
+            .schema_cache
+            .get(schema_hash);
+        if let Some(schema) = def {
+            return Ok(schema.clone());
+        }
+        let schema = PackageNativePackage::get_schema_hash(
+            node_id,
+            schema_hash,
+            self.api,
+        )?;
+
+        self.api
+            .kernel_get_system_state()
+            .system
+            .schema_cache
+            .insert(schema_hash.clone(), schema.clone());
+
+        Ok(schema)
+    }
+
+    // TODO: A hack for now
+    pub fn ensure_schema_loaded(&mut self, node_id: &NodeId, schema_hash: &Hash, schema_cache: &mut SchemaCache) -> Result<(), RuntimeError> {
+        let entry = schema_cache.cache.entry(schema_hash.clone());
+        match entry {
+            Entry::Vacant(e) => {
+                let schema = self.get_schema(node_id, schema_hash)?;
+                e.insert(schema);
+            }
+            Entry::Occupied(..) => {}
+        }
+
+        Ok(())
+    }
+
     // TODO: Move cache management into PackageNativePackage
     pub fn get_blueprint_definition(
         &mut self,
@@ -460,6 +516,8 @@ where
 
         let mut partitions = BTreeMap::new();
 
+        let mut schema_cache = SchemaCache::new();
+
         // Fields
         {
             let expected_num_fields = blueprint_definition.state_schema.num_fields();
@@ -487,13 +545,16 @@ where
                             }
                         }
                     };
-                    let field_type_index = match pointer {
-                        SchemaPointer::Package(_, index) => index,
+                    let (schema, field_type_index) = match pointer {
+                        SchemaPointer::Package(hash, index) => {
+                            self.ensure_schema_loaded(blueprint.package_address.as_node_id(), &hash, &mut schema_cache)?;
+                            (schema_cache.cache.get(&hash).unwrap(), index)
+                        },
                     };
 
                     self.validate_payload(
                         &field,
-                        &blueprint_definition.schema,
+                        schema,
                         field_type_index,
                         SchemaOrigin::Blueprint(blueprint.clone()),
                     )
@@ -531,14 +592,22 @@ where
                         let entries = kv_entries.remove(&index);
                         if let Some(entries) = entries {
                             for (key, value) in entries {
-                                let key_type_index = blueprint_kv_schema.key.clone().map(|v| match v {
-                                    SchemaPointer::Package(_, index) => index
-                                });
+                                let (schema, key_type_index) = match blueprint_kv_schema.key.clone() {
+                                    TypeRef::Blueprint(pointer) => match pointer {
+                                        SchemaPointer::Package(schema_hash, index) => {
+                                            let schema = self.get_schema(blueprint.package_address.as_node_id(), &schema_hash)?;
+                                            (schema, TypeRef::Blueprint(index))
+                                        }
+                                    },
+                                    TypeRef::Instance(i) => {
+                                        (ScryptoSchema::empty(), TypeRef::Instance(i))
+                                    }
+                                };
 
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &key,
                                     &key_type_index,
-                                    &blueprint_definition.schema,
+                                    &schema,
                                     blueprint.clone(),
                                     instance_schema,
                                 )
@@ -557,7 +626,7 @@ where
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &value,
                                     &value_type_index,
-                                    &blueprint_definition.schema,
+                                    &schema,
                                     blueprint.clone(),
                                     instance_schema,
                                 )
@@ -715,8 +784,7 @@ where
         (
             NodeId,
             PartitionNumber,
-            ScryptoSchema,
-            BlueprintKeyValueStoreSchema<LocalTypeIndex>,
+            BlueprintKeyValueStoreSchema<SchemaPointer>,
             ObjectInfo,
         ),
         RuntimeError,
@@ -734,15 +802,11 @@ where
                 ))
             })?;
 
-        let kv_schema = kv_schema.map(|v| match v {
-            SchemaPointer::Package(_, i) => i
-        });
-
         let partition_num = base_partition
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, definition.schema, kv_schema, info))
+        Ok((node_id, partition_num, kv_schema, info))
     }
 
     fn get_actor_index(
@@ -2084,7 +2148,7 @@ where
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema, kv_schema, object_info) =
+        let (node_id, partition_num, kv_schema, object_info) =
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -2099,11 +2163,18 @@ where
                         can_own,
                     }
                 }
-                TypeRef::Blueprint(index) => KeyValueEntryLockData::Write {
-                    schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
-                    schema,
-                    index,
-                    can_own,
+                TypeRef::Blueprint(pointer) => {
+                    match pointer {
+                        SchemaPointer::Package(schema_hash, index) => {
+                            let schema = self.get_schema(object_info.blueprint_id.package_address.as_node_id(), &schema_hash)?;
+                            KeyValueEntryLockData::Write {
+                                schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
+                                schema,
+                                index,
+                                can_own,
+                            }
+                        }
+                    }
                 },
             }
         } else {
