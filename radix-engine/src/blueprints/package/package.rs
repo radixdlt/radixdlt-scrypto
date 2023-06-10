@@ -775,11 +775,14 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
+                let events = setup.event_schema.into_iter()
+                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index))).collect();
+
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
                     functions,
-                    events: setup.event_schema,
+                    events,
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
                     function_exports,
@@ -983,12 +986,14 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
+                let events = setup.event_schema.into_iter()
+                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index))).collect();
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
                     functions,
-                    events: setup.event_schema,
+                    events,
                     schema: setup.schema,
                     state_schema: setup.blueprint.into(),
                     function_exports,

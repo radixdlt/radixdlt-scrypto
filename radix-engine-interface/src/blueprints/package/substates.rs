@@ -133,7 +133,7 @@ pub struct BlueprintDefinition {
     pub features: BTreeSet<String>,
     pub state_schema: IndexedBlueprintStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
-    pub events: BTreeMap<String, LocalTypeIndex>,
+    pub events: BTreeMap<String, SchemaPointer>,
 
     pub function_exports: BTreeMap<String, PackageExport>,
     pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,

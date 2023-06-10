@@ -2258,7 +2258,7 @@ where
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
             let local_type_index =
-                if let Some(index) = blueprint_definition.events.get(&event_name).cloned() {
+                if let Some(SchemaPointer::Package(_, index)) = blueprint_definition.events.get(&event_name).cloned() {
                     index
                 } else {
                     return Err(RuntimeError::ApplicationError(

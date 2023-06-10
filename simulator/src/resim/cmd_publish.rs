@@ -110,7 +110,6 @@ impl Publish {
                 schema_updates.insert(key, update);
 
                 for (function, setup) in s.functions {
-
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -126,11 +125,14 @@ impl Publish {
                     function_exports.insert(function, export);
                 }
 
+                let events = s.event_schema.into_iter()
+                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index))).collect();
+
                 let def = BlueprintDefinition {
                     outer_blueprint: s.outer_blueprint,
                     features: s.features,
                     functions,
-                    events: s.event_schema,
+                    events,
                     schema: s.schema,
                     state_schema: s.blueprint.into(),
                     function_exports,
