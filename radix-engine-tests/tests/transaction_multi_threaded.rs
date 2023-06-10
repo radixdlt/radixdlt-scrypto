@@ -10,8 +10,8 @@ mod multi_threaded_test {
     use radix_engine_interface::rule;
     use radix_engine_stores::memory_db::InMemorySubstateDatabase;
     use transaction::builder::ManifestBuilder;
-    use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use transaction::model::TestTransaction;
+    use transaction::signing::secp256k1::Secp256k1PrivateKey;
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
@@ -33,7 +33,7 @@ mod multi_threaded_test {
             .unwrap();
 
         // Create a key pair
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+        let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
         // Create two accounts

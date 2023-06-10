@@ -10,12 +10,12 @@ use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
     NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     ValidatedNotarizedTransactionV1,
 };
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
@@ -138,9 +138,9 @@ struct TransactionParams {
 
 fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransactionV1 {
     // create key pairs
-    let sk1 = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-    let sk2 = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
-    let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
+    let sk1 = Secp256k1PrivateKey::from_u64(1).unwrap();
+    let sk2 = Secp256k1PrivateKey::from_u64(2).unwrap();
+    let sk_notary = Secp256k1PrivateKey::from_u64(3).unwrap();
 
     TransactionBuilder::new()
         .header(TransactionHeaderV1 {

@@ -25,14 +25,13 @@ pub use XRD as NATIVE_TOKEN;
 //=========================================================================
 
 /// The non-fungible badge resource which is used for virtual proofs of ECDSA Secp256k1 transacton signatures in the transaction processor.
-pub const ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE: ResourceAddress =
-    ResourceAddress::new_or_panic([
-        154, 76, 99, 24, 198, 49, 140, 104, 103, 1, 130, 12, 99, 24, 198, 49, 140, 247, 215, 81,
-        57, 213, 170, 213, 230, 49, 140, 99, 24, 198,
-    ]);
+pub const SECP256K1_SIGNATURE_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
+    154, 76, 99, 24, 198, 49, 140, 104, 103, 1, 130, 12, 99, 24, 198, 49, 140, 247, 215, 81, 57,
+    213, 170, 213, 230, 49, 140, 99, 24, 198,
+]);
 
 /// The non-fungible badge resource which is used for virtual proofs of EdDSA Ed25519 transacton signatures in the transaction processor.
-pub const EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
+pub const ED25519_SIGNATURE_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
     154, 76, 99, 24, 198, 49, 140, 108, 181, 84, 130, 12, 99, 24, 198, 49, 140, 247, 169, 81, 215,
     169, 229, 71, 198, 49, 140, 99, 24, 198,
 ]);
@@ -234,12 +233,12 @@ mod tests {
 
         // Virtual Badges
         check_address(
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref(),
+            SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref(),
             EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxsecpsg",
         );
         check_address(
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref(),
+            ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref(),
             EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxxed25sg",
         );

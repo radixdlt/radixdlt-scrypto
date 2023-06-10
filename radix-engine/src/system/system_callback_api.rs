@@ -8,7 +8,6 @@ use radix_engine_interface::api::ClientApi;
 pub trait SystemCallbackObject: Sized {
     fn invoke<Y>(
         package_address: &PackageAddress,
-
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,

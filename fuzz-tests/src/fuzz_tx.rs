@@ -19,7 +19,7 @@ use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::manifest::ast;
 use transaction::model::InstructionV1;
 
@@ -42,8 +42,8 @@ macro_rules! dbg {
 
 #[derive(Debug, Clone)]
 struct Account {
-    public_key: EcdsaSecp256k1PublicKey,
-    //_private_key: EcdsaSecp256k1PrivateKey,
+    public_key: Secp256k1PublicKey,
+    //_private_key: Secp256k1PrivateKey,
     #[allow(unused)]
     address: ComponentAddress,
     #[allow(unused)]
@@ -63,7 +63,7 @@ pub struct TxFuzzer {
     #[allow(unused)]
     non_fungible_resource_addresses: Vec<ResourceAddress>,
     package_addresses: Vec<PackageAddress>,
-    public_keys: Vec<EcdsaSecp256k1PublicKey>,
+    public_keys: Vec<Secp256k1PublicKey>,
 }
 
 impl TxFuzzer {
@@ -161,7 +161,7 @@ impl TxFuzzer {
             vec![ManifestProof::arbitrary(&mut unstructured).unwrap()];
 
         let mut public_keys = self.public_keys.clone();
-        public_keys.push(EcdsaSecp256k1PublicKey::arbitrary(&mut unstructured).unwrap());
+        public_keys.push(Secp256k1PublicKey::arbitrary(&mut unstructured).unwrap());
 
         let public_key = unstructured.choose(&public_keys[..]).unwrap().clone();
 
@@ -885,6 +885,6 @@ fn test_generate_fuzz_input_data() {
 // output across runs.
 pub fn fuzz_tx_init_statics() {
     // Following code initializes secp256k1::SECP256K1 global static context
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(100).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(100).unwrap();
     let _public_key = private_key.public_key();
 }

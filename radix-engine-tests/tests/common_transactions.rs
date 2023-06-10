@@ -5,8 +5,8 @@ use radix_engine::types::*;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::{compile, BlobProvider};
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 macro_rules! replace_variables {
@@ -44,7 +44,7 @@ fn test_allocate_address_and_call_it() {
 #[test]
 fn transfer_of_funds_to_another_account_succeeds() {
     run_manifest(|this_account_address, bech32_encoder| {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(12).unwrap();
+        let private_key = Secp256k1PrivateKey::from_u64(12).unwrap();
         let public_key = private_key.public_key();
         let other_account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 

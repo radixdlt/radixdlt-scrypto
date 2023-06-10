@@ -4,7 +4,7 @@ use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::crypto::Secp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -230,7 +230,7 @@ pub const CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ConsensusManagerCreateValidatorInput {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
 }
 
 pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket);
@@ -242,7 +242,7 @@ pub enum UpdateSecondaryIndex {
     Create {
         index_key: SortedKey,
         primary: ComponentAddress,
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
         stake: Decimal,
     },
     UpdateStake {
@@ -252,7 +252,7 @@ pub enum UpdateSecondaryIndex {
     },
     UpdatePublicKey {
         index_key: SortedKey,
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
     },
     Remove {
         index_key: SortedKey,
@@ -304,7 +304,7 @@ pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorUpdateKeyInput {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
 }
 
 pub type ValidatorUpdateKeyOutput = ();

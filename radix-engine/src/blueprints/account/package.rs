@@ -23,8 +23,8 @@ use resources_tracker_macro::trace_resources;
 
 use super::AccountSubstate;
 
-const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
-const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_ecdsa_ed25519";
+const ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
+const ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
 
 pub struct AccountNativePackage;
 
@@ -293,11 +293,11 @@ impl AccountNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
-                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
+            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => VirtualLazyLoadSchema {
+                export_name: ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
             },
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadSchema {
-                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
+            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => VirtualLazyLoadSchema {
+                export_name: ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
             }
         );
 
@@ -339,8 +339,8 @@ impl AccountNativePackage {
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
                     dependencies: btreeset!(
-                        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                        EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                        SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                        ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
                         ACCOUNT_OWNER_BADGE.into(),
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
@@ -368,7 +368,6 @@ impl AccountNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -376,7 +375,7 @@ impl AccountNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME => {
+            ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
@@ -387,7 +386,7 @@ impl AccountNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME => {
+            ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {

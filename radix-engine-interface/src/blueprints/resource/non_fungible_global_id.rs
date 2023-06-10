@@ -162,12 +162,12 @@ impl FromPublicKey for NonFungibleGlobalId {
 
     fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self {
         match public_key_hash.into_enum() {
-            PublicKeyHash::EcdsaSecp256k1(public_key_hash) => NonFungibleGlobalId::new(
-                ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+            PublicKeyHash::Secp256k1(public_key_hash) => NonFungibleGlobalId::new(
+                SECP256K1_SIGNATURE_VIRTUAL_BADGE,
                 NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
             ),
-            PublicKeyHash::EddsaEd25519(public_key_hash) => NonFungibleGlobalId::new(
-                EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+            PublicKeyHash::Ed25519(public_key_hash) => NonFungibleGlobalId::new(
+                ED25519_SIGNATURE_VIRTUAL_BADGE,
                 NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
             ),
         }

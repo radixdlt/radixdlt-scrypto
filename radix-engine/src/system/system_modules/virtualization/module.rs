@@ -9,12 +9,10 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
-    ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID,
+    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ED25519_ID, ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
 };
 use radix_engine_interface::blueprints::identity::{
-    IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
-    IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID,
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ED25519_ID, IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
 };
 
 #[derive(Debug, Clone)]
@@ -35,19 +33,19 @@ impl VirtualizationModule {
                 let (blueprint, virtual_func_id) = match entity_type {
                     EntityType::GlobalVirtualSecp256k1Account => (
                         BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                        ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
+                        ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
                     ),
                     EntityType::GlobalVirtualEd25519Account => (
                         BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                        ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID,
+                        ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
                     ),
                     EntityType::GlobalVirtualSecp256k1Identity => (
                         BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                        IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
+                        IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
                     ),
                     EntityType::GlobalVirtualEd25519Identity => (
                         BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                        IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID,
+                        IDENTITY_CREATE_VIRTUAL_ED25519_ID,
                     ),
                     _ => return Ok(false),
                 };

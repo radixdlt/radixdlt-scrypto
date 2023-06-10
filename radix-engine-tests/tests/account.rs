@@ -87,7 +87,7 @@ fn can_withdraw_from_my_virtual_account() {
 
 fn can_withdraw_from_my_account_internal<F>(new_account: F)
 where
-    F: FnOnce(&mut TestRunner) -> (EcdsaSecp256k1PublicKey, ComponentAddress),
+    F: FnOnce(&mut TestRunner) -> (Secp256k1PublicKey, ComponentAddress),
 {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

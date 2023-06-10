@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT, CONSENSUS_MANAGER_START_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::crypto::Secp256k1PublicKey;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
@@ -15,7 +15,7 @@ pub struct ConsensusManager(pub ComponentAddress);
 impl ConsensusManager {
     pub fn create_validator<Y, E: Debug + ScryptoDecode>(
         &self,
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), E>
     where

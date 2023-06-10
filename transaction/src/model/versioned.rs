@@ -66,7 +66,7 @@ mod tests {
 
     use super::*;
     use crate::model::*;
-    use crate::{ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey};
+    use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
     fn hash_manifest_encoded_without_prefix_byte<T: ManifestEncode>(value: T) -> Hash {
         hash(&manifest_encode(&value).unwrap()[1..])
@@ -79,9 +79,9 @@ mod tests {
         let network = NetworkDefinition::simulator();
 
         // Create key pairs
-        let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let sig_2_private_key = EddsaEd25519PrivateKey::from_u64(2).unwrap();
-        let notary_private_key = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
 
         //===================
         // INTENT

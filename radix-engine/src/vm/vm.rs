@@ -17,7 +17,6 @@ pub struct Vm<'g, W: WasmEngine> {
 impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
     fn invoke<Y>(
         address: &PackageAddress,
-
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -86,7 +85,6 @@ pub trait VmInvoke {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api
     fn invoke<Y>(
         &mut self,
-
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,

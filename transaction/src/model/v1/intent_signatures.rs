@@ -9,33 +9,33 @@ use crate::internal_prelude::*;
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum SignatureWithPublicKeyV1 {
-    EcdsaSecp256k1 {
-        signature: EcdsaSecp256k1Signature,
+    Secp256k1 {
+        signature: Secp256k1Signature,
     },
-    EddsaEd25519 {
-        public_key: EddsaEd25519PublicKey,
-        signature: EddsaEd25519Signature,
+    Ed25519 {
+        public_key: Ed25519PublicKey,
+        signature: Ed25519Signature,
     },
 }
 
 impl SignatureWithPublicKeyV1 {
     pub fn signature(&self) -> SignatureV1 {
         match &self {
-            Self::EcdsaSecp256k1 { signature } => signature.clone().into(),
-            Self::EddsaEd25519 { signature, .. } => signature.clone().into(),
+            Self::Secp256k1 { signature } => signature.clone().into(),
+            Self::Ed25519 { signature, .. } => signature.clone().into(),
         }
     }
 }
 
-impl From<EcdsaSecp256k1Signature> for SignatureWithPublicKeyV1 {
-    fn from(signature: EcdsaSecp256k1Signature) -> Self {
-        Self::EcdsaSecp256k1 { signature }
+impl From<Secp256k1Signature> for SignatureWithPublicKeyV1 {
+    fn from(signature: Secp256k1Signature) -> Self {
+        Self::Secp256k1 { signature }
     }
 }
 
-impl From<(EddsaEd25519PublicKey, EddsaEd25519Signature)> for SignatureWithPublicKeyV1 {
-    fn from((public_key, signature): (EddsaEd25519PublicKey, EddsaEd25519Signature)) -> Self {
-        Self::EddsaEd25519 {
+impl From<(Ed25519PublicKey, Ed25519Signature)> for SignatureWithPublicKeyV1 {
+    fn from((public_key, signature): (Ed25519PublicKey, Ed25519Signature)) -> Self {
+        Self::Ed25519 {
             public_key,
             signature,
         }

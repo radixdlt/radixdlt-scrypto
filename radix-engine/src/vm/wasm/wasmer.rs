@@ -740,7 +740,7 @@ impl From<RuntimeError> for InvokeError<WasmRuntimeError> {
         let e_str = format!("{:?}", error);
         match error.downcast::<InvokeError<WasmRuntimeError>>() {
             Ok(e) => e,
-            _ => InvokeError::SelfError(WasmRuntimeError::Trap(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str)),
         }
     }
 }
@@ -767,7 +767,7 @@ impl WasmInstance for WasmerInstance {
             .exports
             .get_function(func_name)
             .map_err(|_| {
-                InvokeError::SelfError(WasmRuntimeError::UnknownWasmFunction(func_name.to_string()))
+                InvokeError::SelfError(WasmRuntimeError::UnknownExport(func_name.to_string()))
             })?
             .call(&input)
             .map_err(|e| {

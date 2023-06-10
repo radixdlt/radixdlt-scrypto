@@ -1,83 +1,46 @@
 use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 
-pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0x10;
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
-pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
-pub const COST_UNIT_LIMIT_FUNCTION_ID: usize = 0x12;
 pub const COST_UNIT_LIMIT_FUNCTION_NAME: &str = "cost_unit_limit";
-pub const COST_UNIT_PRICE_FUNCTION_ID: usize = 0x13;
 pub const COST_UNIT_PRICE_FUNCTION_NAME: &str = "cost_unit_price";
-pub const TIP_PERCENTAGE_FUNCTION_ID: usize = 0x14;
 pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
-pub const FEE_BALANCE_FUNCTION_ID: usize = 0x15;
 pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 
-pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_ID: usize = 0x20;
 pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
 
-pub const NEW_OBJECT_FUNCTION_ID: usize = 0x30;
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
-pub const GLOBALIZE_OBJECT_FUNCTION_ID: usize = 0x31;
 pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize_object";
-pub const GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_ID: usize = 0x32;
 pub const GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME: &str = "globalize_with_address";
-pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
-pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
-pub const GET_OBJECT_INFO_FUNCTION_ID: usize = 0x35;
 pub const GET_OBJECT_INFO_FUNCTION_NAME: &str = "get_object_info";
-pub const DROP_OBJECT_FUNCTION_ID: usize = 0x36;
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
-pub const KEY_VALUE_STORE_NEW_FUNCTION_ID: usize = 0x37;
 pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
-pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_ID: usize = 0x38;
 pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
-pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_ID: usize = 0x39;
 pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME: &str = "kv_store_lock_entry";
-pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_ID: usize = 0x3a;
 pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
-
-pub const KEY_VALUE_ENTRY_GET_FUNCTION_ID: usize = 0x3b;
 pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
-pub const KEY_VALUE_ENTRY_SET_FUNCTION_ID: usize = 0x3c;
 pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
-pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_ID: usize = 0x3d;
 pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
 
-pub const ACTOR_LOCK_FIELD_FUNCTION_ID: usize = 0x43;
 pub const ACTOR_LOCK_FIELD_FUNCTION_NAME: &str = "actor_lock_field";
-pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_ID: usize = 0x44;
 pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
 
-pub const FIELD_LOCK_READ_FUNCTION_ID: usize = 0x45;
 pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
-pub const FIELD_LOCK_WRITE_FUNCTION_ID: usize = 0x46;
 pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
-pub const FIELD_LOCK_RELEASE_FUNCTION_ID: usize = 0x47;
 pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 
-pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
-pub const LOG_MESSAGE_FUNCTION_ID: usize = 0x51;
 pub const LOG_MESSAGE_FUNCTION_NAME: &str = "log_message";
-pub const GET_TRANSACTION_HASH_FUNCTION_ID: usize = 0x52;
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
-pub const GENERATE_UUID_FUNCTION_ID: usize = 0x53;
 pub const GENERATE_UUID_FUNCTION_NAME: &str = "generate_uuid";
-pub const GET_GLOBAL_ADDRESS_FUNCTION_ID: usize = 0x54;
 pub const GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "get_global_address";
-pub const GET_BLUEPRINT_FUNCTION_ID: usize = 0x55;
 pub const GET_BLUEPRINT_FUNCTION_NAME: &str = "get_blueprint";
-pub const GET_AUTH_ZONE_FUNCTION_ID: usize = 0x56;
 pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
-pub const ASSERT_ACCESS_RULE_FUNCTION_ID: usize = 0x57;
 pub const ASSERT_ACCESS_RULE_FUNCTION_NAME: &str = "assert_access_rule";
-pub const GET_NODE_ID_FUNCTION_ID: usize = 0x58;
 pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
-pub const PANIC_FUNCTION_ID: usize = 0x59;
 pub const PANIC_FUNCTION_NAME: &str = "panic";
 
 pub const MODULE_ENV_NAME: &str = "env";
