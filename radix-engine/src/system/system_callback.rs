@@ -56,21 +56,24 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     }
 
 
-    let index = match function_schema.input {
-        SchemaPointer::Package(_hash, index) => index,
+    let (schema, index) = match function_schema.input {
+        SchemaPointer::Package(schema_hash, index) => {
+            let schema = service.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
+            (schema, index)
+        },
     };
 
     service
         .validate_payload(
             input.as_slice(),
-            &blueprint_definition.schema,
+            &schema,
             index,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
                 fn_ident.to_string(),
-                err.error_message(&blueprint_definition.schema),
+                err.error_message(&schema),
             ))
         })?;
 
@@ -120,21 +123,24 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         .get(fn_ident)
         .expect("Checked by `validate_input`");
 
-    let index = match &output_schema_pointer.output {
-        SchemaPointer::Package(_hash, index) => index.clone(),
+    let (schema, index) = match &output_schema_pointer.output {
+        SchemaPointer::Package(schema_hash, index) => {
+            let schema = service.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
+            (schema, index.clone())
+        },
     };
 
     service
         .validate_payload(
             output.as_slice(),
-            &blueprint_definition.schema,
+            &schema,
             index,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
                 fn_ident.to_string(),
-                err.error_message(&blueprint_definition.schema),
+                err.error_message(&schema),
             ))
         })?;
 

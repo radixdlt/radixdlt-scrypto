@@ -29,11 +29,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintSetup, BlueprintVersionKey, FunctionSetup, MethodAuthTemplate,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
-    PACKAGE_BLUEPRINT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintSetup, BlueprintVersionKey, FunctionSetup, MethodAuthTemplate, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup, PACKAGE_BLUEPRINT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -1568,21 +1564,17 @@ impl TestRunner {
             ),
         };
 
-        let bp_version_key = BlueprintVersionKey::new_default(blueprint_name);
         (
             local_type_index,
             self.substate_db()
-                .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<BlueprintDefinition>>>(
+                .list_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<ScryptoSchema>>, MapKey>(
                     package_address.as_node_id(),
                     MAIN_BASE_PARTITION
-                        .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                        .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
                         .unwrap(),
-                    &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
                 )
-                .unwrap()
-                .value
-                .unwrap()
-                .schema,
+                .next().unwrap()
+                .1.value.unwrap()
         )
     }
 
