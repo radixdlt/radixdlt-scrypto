@@ -70,7 +70,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    BlueprintDefinition, BlueprintVersionKey, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
@@ -328,7 +328,7 @@ pub fn get_signing_keys(
 
 pub fn export_package_schema(
     package_address: PackageAddress,
-) -> Result<BTreeMap<String, BlueprintDefinition>, Error> {
+) -> Result<BTreeMap<BlueprintVersionKey, BlueprintDefinition>, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
@@ -341,12 +341,12 @@ pub fn export_package_schema(
 
     let mut blueprints = BTreeMap::new();
     for (key, blueprint_definition) in entries {
-        let blueprint: String = match key {
+        let bp_version_key: BlueprintVersionKey = match key {
             SubstateKey::Map(v) => scrypto_decode(&v).unwrap(),
             _ => panic!("Unexpected"),
         };
 
-        blueprints.insert(blueprint, blueprint_definition.value.unwrap());
+        blueprints.insert(bp_version_key, blueprint_definition.value.unwrap());
     }
 
     Ok(blueprints)
@@ -380,7 +380,7 @@ pub fn export_blueprint_schema(
     blueprint_name: &str,
 ) -> Result<BlueprintDefinition, Error> {
     let definition = export_package_schema(package_address)?
-        .get(blueprint_name)
+        .get(&BlueprintVersionKey::new_default(blueprint_name))
         .cloned()
         .ok_or(Error::BlueprintNotFound(
             package_address,
@@ -389,7 +389,7 @@ pub fn export_blueprint_schema(
     Ok(definition)
 }
 
-pub fn get_blueprint(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
+pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();

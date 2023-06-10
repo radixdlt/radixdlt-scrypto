@@ -80,7 +80,7 @@ pub struct FunctionSchema {
     pub output: SchemaPointer,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, Ord, PartialOrd)]
 pub struct BlueprintVersion {
     pub major: u32,
     pub minor: u32,
@@ -97,7 +97,7 @@ impl Default for BlueprintVersion {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Ord, PartialOrd)]
 pub struct BlueprintVersionKey {
     pub blueprint: String,
     pub version: BlueprintVersion,

@@ -121,7 +121,7 @@ pub fn build_call_arguments<'a>(
                 built_args.push(tuple.1);
             }
         }
-        _ => panic!("Inconsistent schema"),
+        e @ _ => panic!("Inconsistent schema: {:?}", e),
     }
 
     Ok((

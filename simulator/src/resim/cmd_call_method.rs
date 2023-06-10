@@ -108,9 +108,8 @@ impl CallMethod {
         args: Vec<String>,
         account: Option<ComponentAddress>,
     ) -> Result<&'a mut ManifestBuilder, Error> {
-        let blueprint_id = get_blueprint(component_address)?;
-        let bp_def =
-            export_blueprint_schema(blueprint_id.package_address, &blueprint_id.blueprint_name)?;
+        let bp_id = get_blueprint_id(component_address)?;
+        let bp_def = export_blueprint_schema(bp_id.package_address, &bp_id.blueprint_name)?;
 
         let function_schema = bp_def.find_method(method_name.as_str()).ok_or_else(|| {
             Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(
@@ -118,9 +117,9 @@ impl CallMethod {
             ))
         })?;
 
-        let (schema, index) = match function_schema.output {
+        let (schema, index) = match function_schema.input {
             SchemaPointer::Package(schema_hash, index) => {
-                let schema = export_schema(blueprint_id.package_address, schema_hash)?;
+                let schema = export_schema(bp_id.package_address, schema_hash)?;
                 (schema, index)
             }
         };
