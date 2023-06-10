@@ -172,7 +172,7 @@ pub type IndexedFieldSchema = FeaturedSchema<SchemaPointer>;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedBlueprintStateSchema {
     pub fields: Option<(PartitionOffset, Vec<IndexedFieldSchema>)>,
-    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
+    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema<LocalTypeIndex>)>,
     pub num_partitions: u8,
 }
 
@@ -232,7 +232,7 @@ impl IndexedBlueprintStateSchema {
     pub fn key_value_store_partition(
         mut self,
         collection_index: u8,
-    ) -> Option<(PartitionOffset, BlueprintKeyValueStoreSchema)> {
+    ) -> Option<(PartitionOffset, BlueprintKeyValueStoreSchema<LocalTypeIndex>)> {
         let index = collection_index as usize;
         if index >= self.collections.len() {
             return None;

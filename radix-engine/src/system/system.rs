@@ -109,7 +109,7 @@ where
     fn validate_payload_against_blueprint_or_instance_schema<'s>(
         &'s mut self,
         payload: &Vec<u8>,
-        type_ref: &TypeRef,
+        type_ref: &TypeRef<LocalTypeIndex>,
         blueprint_schema: &'s ScryptoSchema,
         blueprint_id: BlueprintId,
         instance_schema: &'s Option<InstanceSchema>,
@@ -708,7 +708,7 @@ where
             NodeId,
             PartitionNumber,
             ScryptoSchema,
-            BlueprintKeyValueStoreSchema,
+            BlueprintKeyValueStoreSchema<LocalTypeIndex>,
             ObjectInfo,
         ),
         RuntimeError,

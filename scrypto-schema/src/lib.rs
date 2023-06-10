@@ -89,19 +89,19 @@ impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
 pub struct BlueprintSchema {
     /// State Schema
     pub fields: Vec<FieldSchema>,
-    pub collections: Vec<BlueprintCollectionSchema>,
+    pub collections: Vec<BlueprintCollectionSchema<LocalTypeIndex>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum TypeRef {
-    Blueprint(LocalTypeIndex),
+pub enum TypeRef<T> {
+    Blueprint(T),
     Instance(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintKeyValueStoreSchema {
-    pub key: TypeRef,
-    pub value: TypeRef,
+pub struct BlueprintKeyValueStoreSchema<T> {
+    pub key: TypeRef<T>,
+    pub value: TypeRef<T>,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
@@ -112,8 +112,8 @@ pub struct BlueprintIndexSchema {}
 pub struct BlueprintSortedIndexSchema {}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum BlueprintCollectionSchema {
-    KeyValueStore(BlueprintKeyValueStoreSchema),
+pub enum BlueprintCollectionSchema<T> {
+    KeyValueStore(BlueprintKeyValueStoreSchema<T>),
     Index(BlueprintIndexSchema),
     SortedIndex(BlueprintSortedIndexSchema),
 }
