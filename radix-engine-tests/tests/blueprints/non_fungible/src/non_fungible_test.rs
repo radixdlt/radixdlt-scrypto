@@ -238,7 +238,7 @@ mod non_fungible_test {
                 .metadata("name", "Katz's Sandwiches")
                 .create_with_no_initial_supply();
 
-            assert_eq!(resource_manager.total_supply(), Decimal::zero(),);
+            assert_eq!(resource_manager.total_supply().unwrap(), Decimal::zero(),);
         }
 
         pub fn non_fungible_exists() -> (Bucket, Bucket) {

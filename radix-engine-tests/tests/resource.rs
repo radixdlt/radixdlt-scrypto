@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError, SystemUpstreamError};
+use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine::types::*;
@@ -25,12 +25,9 @@ fn cannot_get_total_supply_of_xrd() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(..))
-        )
-    })
+    let commit = receipt.expect_commit_success();
+    let output: Option<Decimal> = commit.output(1);
+    assert!(output.is_none());
 }
 
 #[test]

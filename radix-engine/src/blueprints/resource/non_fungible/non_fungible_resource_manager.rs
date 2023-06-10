@@ -763,16 +763,24 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::TotalSupply.into(),
-            LockFlags::read_only(),
-        )?;
-        let total_supply: Decimal = api.field_lock_read_typed(handle)?;
-        Ok(total_supply)
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
+            let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                NonFungibleResourceManagerField::TotalSupply.into(),
+                LockFlags::read_only(),
+            )?;
+            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            Ok(Some(total_supply))
+        } else {
+            Ok(None)
+        }
     }
 }

@@ -83,4 +83,4 @@ pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetTotalSupplyInput {}
 
-pub type ResourceManagerGetTotalSupplyOutput = Decimal;
+pub type ResourceManagerGetTotalSupplyOutput = Option<Decimal>;
