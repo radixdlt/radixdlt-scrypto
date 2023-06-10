@@ -287,6 +287,8 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
+        // These roles define an extra filter on top of the roles defined on the resource manager
+        // The purpose of these roles is to enable freezing of individual vaults
         // TODO: Figure out how to use SELF_ROLE rather than package
         let mut roles = Roles::new();
         roles.define_role(

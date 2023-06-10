@@ -568,6 +568,7 @@ impl ResourceManagerNativePackage {
                 SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
                 SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                SchemaMethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
                 SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
@@ -741,6 +742,10 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
+            // This is the mapping from Vault methods to Vault roles
+            // NOTE: This is an extra filter on top of the ResourceManager filter
+            // This is for use with the freezing feature
+            // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
             let method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -751,11 +756,13 @@ impl ResourceManagerNativePackage {
                 SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
+                SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
                 SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
             };
 
+            // This is the mapping to ResourceManager roles
+            // NOTE: This is an extra filter on top of the Vault filter
             let outer_method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -989,6 +996,10 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
+            // This is the mapping from Vault methods to Vault roles
+            // NOTE: This is an extra filter on top of the ResourceManager filter
+            // This is for use with the freezing feature
+            // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
             let method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -1003,13 +1014,15 @@ impl ResourceManagerNativePackage {
                 SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
 
                 SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => [BURN_ROLE];
+                SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
 
                 SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
                 SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
             };
 
+            // This is the mapping to ResourceManager roles
+            // NOTE: This is an extra filter on top of the Vault filter
             let outer_method_auth_template = method_auth_template! {
                 SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                 SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
