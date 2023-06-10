@@ -383,7 +383,6 @@ impl PackageNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y, L: Default>(
         export_name: &str,
-
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

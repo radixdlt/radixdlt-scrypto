@@ -1171,7 +1171,7 @@ impl WasmiInstance {
             .get_export(self.store.as_context_mut(), name)
             .and_then(Extern::into_func)
             .ok_or_else(|| {
-                InvokeError::SelfError(WasmRuntimeError::UnknownWasmFunction(name.to_string()))
+                InvokeError::SelfError(WasmRuntimeError::UnknownExport(name.to_string()))
             })
     }
 }
@@ -1186,10 +1186,10 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
                 if let Some(invoke_err) = trap.downcast_ref::<InvokeError<WasmRuntimeError>>() {
                     invoke_err.clone()
                 } else {
-                    InvokeError::SelfError(WasmRuntimeError::Trap(format!("{:?}", trap)))
+                    InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str))
                 }
             }
-            _ => InvokeError::SelfError(WasmRuntimeError::Trap(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str)),
         }
     }
 }

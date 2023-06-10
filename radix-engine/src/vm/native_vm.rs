@@ -45,7 +45,6 @@ pub struct NativeVmInstance {
 impl VmInvoke for NativeVmInstance {
     fn invoke<Y>(
         &mut self,
-
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,

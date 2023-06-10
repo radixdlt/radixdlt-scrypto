@@ -60,7 +60,7 @@ fn test_rust_panic() {
 
         receipt.expect_specific_failure(|e| match e {
             RuntimeError::ApplicationError(ApplicationError::Panic(e)) => {
-                e.eq("Panicked at 'Hey', logger/src/lib.rs:15:13")
+                e.eq("Hey @ logger/src/lib.rs:15:13")
             }
             _ => false,
         })
@@ -88,6 +88,8 @@ fn test_scrypto_panic() {
     }
 }
 
+// TODO: add length tests when adding event/log/panic message length limit.
+
 #[test]
 fn test_assert_length_5() {
     // Arrange
@@ -103,7 +105,7 @@ fn test_assert_length_5() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq("Panicked at 'assertion failed: `(left == right)`\n  left: `2`,\n right: `5`', logger/src/lib.rs:23:13"),
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
             _ => false,
         })
     }
