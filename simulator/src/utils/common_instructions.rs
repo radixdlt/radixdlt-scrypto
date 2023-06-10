@@ -4,7 +4,7 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::BlueprintDefinition;
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, SchemaPointer};
 use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::model::InstructionV1;
@@ -87,11 +87,15 @@ pub fn add_call_function_instruction_with_schema<'a>(
         .find_function(function)
         .ok_or_else(|| BuildCallInstructionError::FunctionNotFound(function.to_owned()))?;
 
+    let index = match &function_schema.input {
+        SchemaPointer::Package(_hash, index) => index.clone(),
+    };
+
     let (builder, built_args) = build_call_arguments(
         builder,
         bech32_decoder,
         &blueprint_schema.schema,
-        function_schema.input,
+        index,
         args,
         account,
     )?;
@@ -125,11 +129,15 @@ pub fn add_call_method_instruction_with_schema<'a>(
         .find_method(method_name)
         .ok_or_else(|| BuildCallInstructionError::MethodNotFound(method_name.to_owned()))?;
 
+    let index = match &function_schema.output {
+        SchemaPointer::Package(_hash, index) => index.clone(),
+    };
+
     let (builder, built_args) = build_call_arguments(
         builder,
         bech32_decoder,
         &blueprint_schema.schema,
-        function_schema.input,
+        index,
         args,
         account,
     )?;

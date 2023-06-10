@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType, PackageExport};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType, PackageExport, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -81,27 +81,42 @@ impl Publish {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
             );
-            let blueprints_config_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+            let schemas_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let dependencies_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
                     .unwrap(),
             );
             let mut blueprint_updates = index_map_new();
-            let mut blueprint_config_updates = index_map_new();
+            let mut dependency_updates = index_map_new();
+            let mut schema_updates = index_map_new();
 
             let code_hash = hash(scrypto_encode(&package_code).unwrap());
 
             for (b, s) in package_definition.blueprints {
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
+
+                let blueprint_schema = s.schema.clone();
+                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&schema_hash).unwrap());
+                let update = DatabaseUpdate::Set(scrypto_encode(&blueprint_schema).unwrap());
+                schema_updates.insert(key, update);
+
                 for (function, setup) in s.functions {
+
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: setup.input,
-                            output: setup.output,
+                            input: SchemaPointer::Package(schema_hash, setup.input),
+                            output: SchemaPointer::Package(schema_hash, setup.output),
                         },
                     );
                     let export = PackageExport {
@@ -110,8 +125,6 @@ impl Publish {
                     };
                     function_exports.insert(function, export);
                 }
-
-
 
                 let def = BlueprintDefinition {
                     outer_blueprint: s.outer_blueprint,
@@ -142,12 +155,13 @@ impl Publish {
                     })
                     .unwrap(),
                 );
-                blueprint_config_updates.insert(key, update);
+                dependency_updates.insert(key, update);
             }
 
             let database_updates = indexmap!(
                 blueprints_partition_key => blueprint_updates,
-                blueprints_config_partition_key => blueprint_config_updates,
+                dependencies_partition_key => dependency_updates,
+                schemas_partition_key => schema_updates,
             );
 
             substate_db.commit(&database_updates);

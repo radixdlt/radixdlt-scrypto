@@ -71,10 +71,15 @@ pub struct PackageRoyaltyAccumulatorSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum SchemaPointer {
+    Package(Hash, LocalTypeIndex),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
     pub receiver: Option<ReceiverInfo>,
-    pub input: LocalTypeIndex,
-    pub output: LocalTypeIndex,
+    pub input: SchemaPointer,
+    pub output: SchemaPointer,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor)]

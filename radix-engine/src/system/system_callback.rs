@@ -55,11 +55,16 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         }
     }
 
+
+    let index = match function_schema.input {
+        SchemaPointer::Package(_hash, index) => index,
+    };
+
     service
         .validate_payload(
             input.as_slice(),
             &blueprint_definition.schema,
-            function_schema.input,
+            index,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
@@ -110,16 +115,20 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     fn_ident: &str,
     output: &IndexedScryptoValue,
 ) -> Result<(), RuntimeError> {
-    let function_schema = blueprint_definition
+    let output_schema_pointer = blueprint_definition
         .functions
         .get(fn_ident)
         .expect("Checked by `validate_input`");
+
+    let index = match &output_schema_pointer.output {
+        SchemaPointer::Package(_hash, index) => index.clone(),
+    };
 
     service
         .validate_payload(
             output.as_slice(),
             &blueprint_definition.schema,
-            function_schema.output,
+            index,
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {

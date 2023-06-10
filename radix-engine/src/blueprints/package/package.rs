@@ -753,6 +753,10 @@ impl PackageNativePackage {
 
                 blueprint_auth_templates.insert(blueprint.clone(), setup.template);
 
+                let blueprint_schema = setup.schema.clone();
+                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                schemas.insert(schema_hash, blueprint_schema);
+
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
                 for (function, setup) in setup.functions {
@@ -760,8 +764,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: setup.input,
-                            output: setup.output,
+                            input: SchemaPointer::Package(schema_hash, setup.input),
+                            output: SchemaPointer::Package(schema_hash, setup.output),
                         },
                     );
                     let export = PackageExport {
@@ -770,10 +774,6 @@ impl PackageNativePackage {
                     };
                     function_exports.insert(function, export);
                 }
-
-                let blueprint_schema = setup.schema.clone();
-                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
-                schemas.insert(schema_hash, blueprint_schema);
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
@@ -961,6 +961,10 @@ impl PackageNativePackage {
                 );
                 method_auth_templates.insert(blueprint.clone(), setup.template);
 
+                let blueprint_schema = setup.schema.clone();
+                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                schemas.insert(schema_hash, blueprint_schema);
+
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
                 for (function, setup) in setup.functions {
@@ -968,8 +972,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: setup.input,
-                            output: setup.output,
+                            input: SchemaPointer::Package(schema_hash, setup.input),
+                            output: SchemaPointer::Package(schema_hash, setup.output),
                         },
                     );
                     let export = PackageExport {
@@ -979,9 +983,6 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let blueprint_schema = setup.schema.clone();
-                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
-                schemas.insert(schema_hash, blueprint_schema);
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
