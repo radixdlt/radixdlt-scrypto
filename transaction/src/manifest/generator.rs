@@ -136,7 +136,7 @@ impl NameResolver {
         name: String,
         bucket_id: ManifestBucket,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
+        if self.named_buckets.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
             self.named_buckets.insert(name, bucket_id);
@@ -149,7 +149,7 @@ impl NameResolver {
         name: String,
         proof_id: ManifestProof,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
+        if self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
             self.named_proofs.insert(name, proof_id);
@@ -162,9 +162,7 @@ impl NameResolver {
         name: String,
         address_reservation_id: ManifestAddressReservation,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name)
-            || self.named_address_reservations.contains_key(&name)
-        {
+        if self.named_address_reservations.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
             self.named_address_reservations
@@ -178,7 +176,7 @@ impl NameResolver {
         name: String,
         named_address_id: ManifestNamedAddress,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_address_names.contains_key(&name) {
+        if self.named_address_names.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
             self.named_address_names.insert(name, named_address_id);

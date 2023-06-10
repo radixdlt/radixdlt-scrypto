@@ -247,6 +247,7 @@ pub enum InstructionV1 {
     CallFunction {
         // Note that we no long structurally verify if it's indeed a package address and error is deferred to runtime.
         // We can potentially check if the global address is package address, if it's static.
+        // TODO: Maybe `DynamicPackageAddress`?
         package_address: DynamicGlobalAddress,
         blueprint_name: String,
         function_name: String,

@@ -74,10 +74,9 @@ impl OwnValidation {
         match self {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => false,
-            OwnValidation::IsVault => true,
+            OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
             OwnValidation::IsGlobalAddressReservation => true,
-            // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => false,
         }
     }

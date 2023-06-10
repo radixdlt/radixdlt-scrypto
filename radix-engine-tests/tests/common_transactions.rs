@@ -16,7 +16,6 @@ macro_rules! replace_variables {
     };
 }
 
-/// An example manifest for creating a new fungible resource with no initial supply
 #[test]
 fn test_allocate_address_and_call_it() {
     run_manifest(|account_address, bech32_encoder| {

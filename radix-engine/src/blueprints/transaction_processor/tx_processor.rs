@@ -502,12 +502,12 @@ impl TransactionProcessor {
         &mut self,
         named_address_id: &ManifestNamedAddress,
     ) -> Result<GlobalAddress, RuntimeError> {
-        let real_id = self.named_address_mapping.remove(named_address_id).ok_or(
+        let real_id = self.named_address_mapping.get(named_address_id).ok_or(
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                 TransactionProcessorError::NamedAddressNotFound(named_address_id.0),
             )),
         )?;
-        Ok(GlobalAddress::new_or_panic(real_id.into()))
+        Ok(GlobalAddress::new_or_panic(real_id.clone().into()))
     }
 
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
