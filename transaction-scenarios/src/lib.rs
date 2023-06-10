@@ -5,6 +5,22 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
+//====================================================================================
+// TRANSACTION SCENARIOS
+// The purpose of scenarios is to add "interesting, pre-determined state"
+// to test network ledgers.
+//
+// These scenarios can be run on a test network immediately after genesis.
+// (Therefore please make sure they are all deterministic!).
+//
+// The intention is for these scenarios to fulfill a number of purposes:
+// - Covering all the substate types for exercising Core API and Gateway ingestion
+// - Create interesting test data for dashboard/wallet to explore
+// - To provide many valid example manifests for reference by integrators
+// - To allow for testing of multi-transaction journeys and the typed substate mappings
+//   in this repository
+//====================================================================================
+
 pub mod accounts;
 pub mod runners;
 pub mod scenario;

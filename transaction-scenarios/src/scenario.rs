@@ -1,9 +1,3 @@
-//====================================================================================
-// POST-BOOTSTRAP LEDGER EXERCISES
-// The purpose of this file is to add "interesting, pre-determined state"
-// to test network ledgers, for the purpose of testing Core API, Gateway etc
-//====================================================================================
-
 use radix_engine::errors::RuntimeError;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT;
 use radix_engine_interface::manifest_args;
