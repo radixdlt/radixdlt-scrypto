@@ -73,6 +73,14 @@ lazy_static! {
 
         known_enum!(
             m,
+            enum AuthorityKey {
+                Owner = 0;
+                Module = 1;
+            }
+        );
+
+        known_enum!(
+            m,
             enum AccessRule {
                 AllowAll = 0;
                 DenyAll = 1;

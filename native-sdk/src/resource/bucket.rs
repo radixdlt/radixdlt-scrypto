@@ -48,6 +48,13 @@ pub trait NativeBucket {
     where
         Y: ClientApi<E>;
 
+    fn package_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
+
     fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: ClientApi<E>,
@@ -208,6 +215,17 @@ impl NativeBucket for Bucket {
     {
         let resource_address = self.resource_address(api)?;
         ResourceManager(resource_address).burn(Bucket(self.0), api)
+    }
+
+    fn package_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let resource_address = self.resource_address(api)?;
+        ResourceManager(resource_address).package_burn(Bucket(self.0), api)
     }
 
     fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>

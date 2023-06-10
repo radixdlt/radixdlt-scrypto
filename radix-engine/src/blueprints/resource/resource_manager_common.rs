@@ -15,38 +15,20 @@ fn build_access_rules(
 ) -> Roles {
     let mut roles = Roles::new();
 
+    // Meta roles
     {
-        let (mint_access_rule, mint_mutability) = access_rules_map
-            .remove(&Mint)
-            .unwrap_or((DenyAll, rule!(deny_all)));
-        let (burn_access_rule, burn_mutability) = access_rules_map
-            .remove(&Burn)
-            .unwrap_or((DenyAll, rule!(deny_all)));
-        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
-            access_rules_map
-                .remove(&UpdateNonFungibleData)
-                .unwrap_or((AllowAll, rule!(deny_all)));
-        let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
-            .remove(&UpdateMetadata)
-            .unwrap_or((DenyAll, rule!(deny_all)));
+        roles.define_role(
+            RESOURCE_PACKAGE_ROLE,
+            RoleEntry::immutable(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+        );
+    }
 
-        {
-            roles.define_role(
-                SET_METADATA_UPDATE_ROLE,
-                RoleEntry::new(update_metadata_mutability, [SET_METADATA_UPDATE_ROLE], true),
-            );
-
-            roles.define_role(
-                SET_METADATA_ROLE,
-                RoleEntry::new(
-                    update_metadata_access_rule,
-                    [SET_METADATA_UPDATE_ROLE],
-                    true,
-                ),
-            );
-        }
-
+    // Main roles
+    {
         // Mint
+        let (mint_access_rule, mint_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Mint)
+            .unwrap_or((DenyAll, DenyAll));
         {
             roles.define_role(
                 MINT_UPDATE_ROLE,
@@ -59,6 +41,9 @@ fn build_access_rules(
         }
 
         // Burn
+        let (burn_access_rule, burn_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Burn)
+            .unwrap_or((DenyAll, DenyAll));
         {
             roles.define_role(
                 BURN_UPDATE_ROLE,
@@ -71,6 +56,10 @@ fn build_access_rules(
         }
 
         // Non Fungible Update data
+        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
+            access_rules_map
+                .remove(&ResourceMethodAuthKey::UpdateNonFungibleData)
+                .unwrap_or((AllowAll, DenyAll));
         {
             roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
@@ -90,26 +79,31 @@ fn build_access_rules(
                 ),
             );
         }
-    }
 
-    {
-        let (deposit_access_rule, deposit_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Deposit)
-            .unwrap_or((AllowAll, rule!(deny_all)));
-        let (withdraw_access_rule, withdraw_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Withdraw)
-            .unwrap_or((AllowAll, rule!(deny_all)));
-        let (recall_access_rule, recall_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Recall)
-            .unwrap_or((DenyAll, rule!(deny_all)));
-        let (freeze_access_rule, freeze_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Freeze)
-            .unwrap_or((DenyAll, rule!(deny_all)));
-        let (unfreeze_access_rule, unfreeze_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Unfreeze)
-            .unwrap_or((DenyAll, rule!(deny_all)));
+        // Metadata
+        let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::UpdateMetadata)
+            .unwrap_or((DenyAll, DenyAll));
+        {
+            roles.define_role(
+                SET_METADATA_UPDATE_ROLE,
+                RoleEntry::new(update_metadata_mutability, [SET_METADATA_UPDATE_ROLE], true),
+            );
+
+            roles.define_role(
+                SET_METADATA_ROLE,
+                RoleEntry::new(
+                    update_metadata_access_rule,
+                    [SET_METADATA_UPDATE_ROLE],
+                    true,
+                ),
+            );
+        }
 
         // Withdraw
+        let (withdraw_access_rule, withdraw_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Withdraw)
+            .unwrap_or((AllowAll, DenyAll));
         {
             roles.define_role(
                 WITHDRAW_ROLE,
@@ -122,6 +116,9 @@ fn build_access_rules(
         }
 
         // Recall
+        let (recall_access_rule, recall_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Recall)
+            .unwrap_or((DenyAll, DenyAll));
         {
             roles.define_role(
                 RECALL_ROLE,
@@ -134,6 +131,9 @@ fn build_access_rules(
         }
 
         // Freeze
+        let (freeze_access_rule, freeze_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Freeze)
+            .unwrap_or((DenyAll, DenyAll));
         {
             roles.define_role(
                 FREEZE_ROLE,
@@ -146,6 +146,9 @@ fn build_access_rules(
         }
 
         // Unfreeze
+        let (unfreeze_access_rule, unfreeze_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Unfreeze)
+            .unwrap_or((DenyAll, DenyAll));
         {
             roles.define_role(
                 UNFREEZE_ROLE,
@@ -158,6 +161,9 @@ fn build_access_rules(
         }
 
         // Deposit
+        let (deposit_access_rule, deposit_mutability) = access_rules_map
+            .remove(&ResourceMethodAuthKey::Deposit)
+            .unwrap_or((AllowAll, DenyAll));
         {
             roles.define_role(
                 DEPOSIT_ROLE,
@@ -166,14 +172,6 @@ fn build_access_rules(
             roles.define_role(
                 DEPOSIT_UPDATE_ROLE,
                 RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], true),
-            );
-        }
-
-        // Internal
-        {
-            roles.define_role(
-                "this_package",
-                RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
             );
         }
     }

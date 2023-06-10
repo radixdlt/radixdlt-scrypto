@@ -163,6 +163,27 @@ impl AccountNativePackage {
         );
 
         functions.insert(
+            ACCOUNT_BURN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountBurnInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountBurnOutput>(),
+                export_name: ACCOUNT_BURN_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountBurnNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountBurnNonFungiblesOutput>(),
+                export_name: ACCOUNT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -301,6 +322,30 @@ impl AccountNativePackage {
             }
         );
 
+        /* TODO: If we decide to add back groupings, we'd want the following:
+            lock_fee: [
+                "lock_fee",
+                "lock_contingent_fee"
+            ]
+            withdraw: [
+                "withdraw",
+                "withdraw_non_fungibles"
+            ]
+            withdraw & lock fee: [
+                "lock_fee_and_withdraw",
+                "lock_fee_and_withdraw_non_fungibles"
+            ]
+            create_proof: [
+                "create_proof",
+                "create_proof_of_amount",
+                "create_proof_of_ids",
+            ]
+            deposit: [
+                "deposit",
+                "deposit_batch",
+            ]
+        */
+
         let method_auth_template = method_auth_template!(
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
@@ -320,6 +365,8 @@ impl AccountNativePackage {
             SchemaMethodKey::main(ACCOUNT_SECURIFY_IDENT) => [SECURIFY_ROLE];
             SchemaMethodKey::main(ACCOUNT_DEPOSIT_IDENT) => [OWNER_ROLE];
             SchemaMethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_BURN_IDENT) => [OWNER_ROLE];
+            SchemaMethodKey::main(ACCOUNT_BURN_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
 
             SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT) => SchemaMethodPermission::Public;
@@ -540,6 +587,26 @@ impl AccountNativePackage {
                     input.ids,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_BURN_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::burn(input.resource_address, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountBurnNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    AccountBlueprint::burn_non_fungibles(input.resource_address, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
