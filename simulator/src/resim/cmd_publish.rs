@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType, PackageExport};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -106,7 +106,11 @@ impl Publish {
                             output: setup.output,
                         },
                     );
-                    function_exports.insert(function, setup.export);
+                    let export = PackageExport {
+                        hash: hash([0]),
+                        export_name: setup.export.value().clone(),
+                    };
+                    function_exports.insert(function, export);
                 }
 
                 let def = BlueprintDefinition {

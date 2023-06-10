@@ -1,3 +1,4 @@
+use radix_engine_common::crypto::Hash;
 use crate::blueprints::resource::AccessRule;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
@@ -120,6 +121,12 @@ pub struct BlueprintDependencies {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct PackageExport {
+    pub hash: Hash,
+    pub export_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintDefinition {
     // TODO: Move these into separate struct
     pub outer_blueprint: Option<String>,
@@ -128,7 +135,7 @@ pub struct BlueprintDefinition {
     pub functions: BTreeMap<String, FunctionSchema>,
     pub events: BTreeMap<String, LocalTypeIndex>,
 
-    pub function_exports: BTreeMap<String, ExportSchema>,
+    pub function_exports: BTreeMap<String, PackageExport>,
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadExport>,
 
     pub schema: ScryptoSchema,

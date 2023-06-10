@@ -5,7 +5,7 @@ use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
@@ -75,6 +75,9 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         )),
     )?;
 
+    let export_name = export_schema.export_name.clone();
+
+    /*
     let export_name = match export_schema {
         FeaturedSchema::Normal { value: export_name } => export_name.clone(),
         FeaturedSchema::Conditional {
@@ -97,6 +100,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             }
         },
     };
+     */
 
     Ok(export_name)
 }

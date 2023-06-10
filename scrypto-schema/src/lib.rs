@@ -130,6 +130,13 @@ impl<V> FeaturedSchema<V> {
             value: value.into(),
         }
     }
+
+    pub fn value(&self) -> &V {
+        match self {
+            FeaturedSchema::Normal { value } => value,
+            FeaturedSchema::Conditional { value, .. } => value,
+        }
+    }
 }
 
 pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;

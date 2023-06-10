@@ -722,7 +722,11 @@ impl PackageNativePackage {
                             output: setup.output,
                         },
                     );
-                    function_exports.insert(function, setup.export);
+                    let export = PackageExport {
+                        hash: hash([0]),
+                        export_name: setup.export.value().clone(),
+                    };
+                    function_exports.insert(function, export);
                 }
 
                 let definition = BlueprintDefinition {
@@ -909,7 +913,11 @@ impl PackageNativePackage {
                             output: setup.output,
                         },
                     );
-                    function_exports.insert(function, setup.export);
+                    let export = PackageExport {
+                        hash: hash([0]),
+                        export_name: setup.export.value().clone(),
+                    };
+                    function_exports.insert(function, export);
                 }
 
                 let definition = BlueprintDefinition {
