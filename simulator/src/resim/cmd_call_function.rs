@@ -73,9 +73,7 @@ impl CallFunction {
                     self.function_name.clone(),
                     self.arguments.clone(),
                     Some(default_account),
-                    &export_blueprint_schema(self.package_address.0, &self.blueprint_name)?,
-                )
-                .map_err(Error::TransactionConstructionError)?;
+                )?;
                 Ok(builder)
             })?
             .call_method(
@@ -113,24 +111,30 @@ impl CallFunction {
         function_name: String,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        blueprint_schema: &BlueprintDefinition,
-    ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
-        let function_schema = blueprint_schema
-            .find_function(function_name.as_str())
-            .ok_or_else(|| BuildCallInstructionError::FunctionNotFound(function_name.clone()))?;
+    ) -> Result<&'a mut ManifestBuilder, Error> {
+        let bp_definition = export_blueprint_schema(package_address, &blueprint_name)?;
 
-        let index = match &function_schema.input {
-            SchemaPointer::Package(_hash, index) => index.clone(),
+        let function_schema = bp_definition
+            .find_function(function_name.as_str())
+            .ok_or_else(|| Error::TransactionConstructionError(BuildCallInstructionError::FunctionNotFound(function_name.clone())))?;
+
+        let (schema, index) = match function_schema.input {
+            SchemaPointer::Package(hash, index) => {
+                let schema = export_schema(package_address, hash)?;
+                (schema, index)
+            },
         };
 
         let (builder, built_args) = build_call_arguments(
             builder,
             bech32_decoder,
-            &blueprint_schema.schema,
+            &schema,
             index,
             args,
             account,
-        )?;
+        ).map_err(|e| {
+            Error::TransactionConstructionError(BuildCallInstructionError::FailedToBuildArguments(e))
+        })?;
 
         builder.add_instruction(InstructionV1::CallFunction {
             package_address,

@@ -61,7 +61,6 @@ impl CallMethod {
             })?;
         }
 
-        let blueprint = get_blueprint(self.component_address.0)?;
 
         let manifest = manifest_builder
             .lock_fee(FAUCET, 100.into())
@@ -73,9 +72,7 @@ impl CallMethod {
                     self.method_name.clone(),
                     self.arguments.clone(),
                     Some(default_account),
-                    &export_blueprint_schema(blueprint.package_address, &blueprint.blueprint_name)?,
-                )
-                .map_err(Error::TransactionConstructionError)?;
+                );
                 Ok(builder)
             })?
             .call_method(
@@ -111,24 +108,31 @@ impl CallMethod {
         method_name: String,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        blueprint_schema: &BlueprintDefinition,
-    ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
-        let function_schema = blueprint_schema
-            .find_method(method_name.as_str())
-            .ok_or_else(|| BuildCallInstructionError::MethodNotFound(method_name.clone()))?;
+    ) -> Result<&'a mut ManifestBuilder, Error> {
+        let blueprint_id = get_blueprint(component_address)?;
+        let bp_def = export_blueprint_schema(blueprint_id.package_address, &blueprint_id.blueprint_name)?;
 
-        let index = match &function_schema.output {
-            SchemaPointer::Package(_hash, index) => index.clone(),
+        let function_schema = bp_def
+            .find_method(method_name.as_str())
+            .ok_or_else(|| Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(method_name.clone())))?;
+
+        let (schema, index) = match function_schema.output {
+            SchemaPointer::Package(schema_hash, index) => {
+                let schema = export_schema(blueprint_id.package_address, schema_hash)?;
+                (schema, index)
+            },
         };
 
         let (builder, built_args) = build_call_arguments(
             builder,
             bech32_decoder,
-            &blueprint_schema.schema,
+            &schema,
             index,
             args,
             account,
-        )?;
+        ).map_err(|e| {
+            Error::TransactionConstructionError(BuildCallInstructionError::FailedToBuildArguments(e))
+        })?;
 
         builder.add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),

@@ -353,6 +353,26 @@ pub fn export_package_schema(
     Ok(blueprints)
 }
 
+pub fn export_schema(
+    package_address: PackageAddress,
+    schema_hash: Hash,
+) -> Result<ScryptoSchema, Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+    let schema = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<ScryptoSchema>>>(
+            package_address.as_node_id(),
+            MAIN_BASE_PARTITION.at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET).unwrap(),
+            &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+        ).ok_or(Error::SchemaNotFound(package_address, schema_hash))?
+        .value
+        .unwrap();
+
+    Ok(schema)
+}
+
 pub fn export_blueprint_schema(
     package_address: PackageAddress,
     blueprint_name: &str,
