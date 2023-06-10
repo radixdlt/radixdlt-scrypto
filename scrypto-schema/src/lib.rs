@@ -98,11 +98,30 @@ pub enum TypeRef<T> {
     Instance(u8),
 }
 
+impl<T> TypeRef<T> {
+    pub fn map<U, F: Fn(T) -> U>(self, f: F) -> TypeRef<U> {
+        match self {
+            TypeRef::Blueprint(v) => TypeRef::Blueprint(f(v)),
+            TypeRef::Instance(v) => TypeRef::Instance(v),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintKeyValueStoreSchema<T> {
     pub key: TypeRef<T>,
     pub value: TypeRef<T>,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+}
+
+impl<T> BlueprintKeyValueStoreSchema<T> {
+    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintKeyValueStoreSchema<U> {
+        BlueprintKeyValueStoreSchema {
+            key: self.key.map(f),
+            value: self.value.map(f),
+            can_own: self.can_own,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -116,6 +135,16 @@ pub enum BlueprintCollectionSchema<T> {
     KeyValueStore(BlueprintKeyValueStoreSchema<T>),
     Index(BlueprintIndexSchema),
     SortedIndex(BlueprintSortedIndexSchema),
+}
+
+impl<T> BlueprintCollectionSchema<T> {
+    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintCollectionSchema<U> {
+        match self {
+            BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema),
+            BlueprintCollectionSchema::SortedIndex(schema) => BlueprintCollectionSchema::SortedIndex(schema),
+            BlueprintCollectionSchema::KeyValueStore(schema) => BlueprintCollectionSchema::KeyValueStore(schema.map(f))
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

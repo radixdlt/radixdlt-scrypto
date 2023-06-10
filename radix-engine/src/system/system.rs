@@ -531,9 +531,13 @@ where
                         let entries = kv_entries.remove(&index);
                         if let Some(entries) = entries {
                             for (key, value) in entries {
+                                let key_type_index = blueprint_kv_schema.key.clone().map(|v| match v {
+                                    SchemaPointer::Package(_, index) => index
+                                });
+
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &key,
-                                    &blueprint_kv_schema.key,
+                                    &key_type_index,
                                     &blueprint_definition.schema,
                                     blueprint.clone(),
                                     instance_schema,
@@ -546,9 +550,13 @@ where
                                     ))
                                 })?;
 
+                                let value_type_index = blueprint_kv_schema.value.clone().map(|v| match v {
+                                    SchemaPointer::Package(_, index) => index
+                                });
+
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &value,
-                                    &blueprint_kv_schema.value,
+                                    &value_type_index,
                                     &blueprint_definition.schema,
                                     blueprint.clone(),
                                     instance_schema,
@@ -725,6 +733,10 @@ where
                     collection_index,
                 ))
             })?;
+
+        let kv_schema = kv_schema.map(|v| match v {
+            SchemaPointer::Package(_, i) => i
+        });
 
         let partition_num = base_partition
             .at_offset(partition_offset)
