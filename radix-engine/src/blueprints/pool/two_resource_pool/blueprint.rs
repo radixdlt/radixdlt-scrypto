@@ -192,7 +192,7 @@ impl TwoResourcePoolBlueprint {
             let pool_unit_total_supply = substate
                 .pool_unit_resource_manager
                 .total_supply(api)?
-                .unwrap();
+                .expect("Total supply is always enabled for pool unit resource.");
             let reserves1 = vault1.amount(api)?;
             let reserves2 = vault2.amount(api)?;
             let contribution1 = bucket1.amount(api)?;
@@ -337,7 +337,7 @@ impl TwoResourcePoolBlueprint {
         let pool_units_total_supply = substate
             .pool_unit_resource_manager
             .total_supply(api)?
-            .unwrap();
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
@@ -453,7 +453,7 @@ impl TwoResourcePoolBlueprint {
         let pool_units_total_supply = substate
             .pool_unit_resource_manager
             .total_supply(api)?
-            .unwrap();
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;

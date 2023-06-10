@@ -241,7 +241,7 @@ impl MultiResourcePoolBlueprint {
         let pool_unit_total_supply = substate
             .pool_unit_resource_manager
             .total_supply(api)?
-            .unwrap();
+            .expect("Total supply is always enabled for pool unit resource.");
         // Case: New Pool
         let (pool_units, change) = if pool_unit_total_supply.is_zero() {
             // Regarding the unwrap here, there are two cases here where this unwrap could panic:
@@ -400,7 +400,7 @@ impl MultiResourcePoolBlueprint {
         let pool_units_total_supply = substate
             .pool_unit_resource_manager
             .total_supply(api)?
-            .unwrap();
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
@@ -517,7 +517,7 @@ impl MultiResourcePoolBlueprint {
         let pool_units_total_supply = substate
             .pool_unit_resource_manager
             .total_supply(api)?
-            .unwrap();
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;

@@ -143,7 +143,9 @@ impl OneResourcePoolBlueprint {
          */
 
         let reserves = vault.amount(api)?;
-        let pool_unit_total_supply = pool_unit_resource_manager.total_supply(api)?.unwrap();
+        let pool_unit_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let amount_of_contributed_resources = bucket.amount(api)?;
 
         let pool_units_to_mint = match (
@@ -201,7 +203,9 @@ impl OneResourcePoolBlueprint {
 
         // Calculating the amount owed based on the passed pool units.
         let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?.unwrap();
+        let pool_units_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)
@@ -294,7 +298,9 @@ impl OneResourcePoolBlueprint {
         };
 
         let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?.unwrap();
+        let pool_units_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)
