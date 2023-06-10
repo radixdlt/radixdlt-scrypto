@@ -1,6 +1,6 @@
 extern crate core;
 
-use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
@@ -95,7 +95,10 @@ fn locked_mint_auth_cannot_be_updated() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Mint, false);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -104,7 +107,10 @@ fn locked_mint_auth_cannot_be_relocked() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Mint, true);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -113,7 +119,10 @@ fn locked_burn_auth_cannot_be_updated() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Burn, false);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -122,7 +131,10 @@ fn locked_burn_auth_cannot_be_relocked() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Burn, true);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -131,7 +143,10 @@ fn locked_withdraw_auth_cannot_be_updated() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Withdraw, false);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -140,7 +155,10 @@ fn locked_withdraw_auth_cannot_be_relocked() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Withdraw, true);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -149,7 +167,10 @@ fn locked_deposit_auth_cannot_be_updated() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Deposit, false);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -158,7 +179,10 @@ fn locked_deposit_auth_cannot_be_relocked() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Deposit, true);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -167,7 +191,10 @@ fn locked_recall_auth_cannot_be_updated() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Recall, false);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -176,7 +203,10 @@ fn locked_recall_auth_cannot_be_relocked() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::Recall, true);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -185,7 +215,10 @@ fn locked_update_metadata_auth_cannot_be_updated() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::UpdateMetadata, false);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }
 
@@ -194,6 +227,9 @@ fn locked_update_metadata_auth_cannot_be_relocked() {
     let receipt = lock_resource_auth_and_try_update(ResourceAuth::UpdateMetadata, true);
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     })
 }

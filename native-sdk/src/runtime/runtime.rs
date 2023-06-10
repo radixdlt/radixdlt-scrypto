@@ -1,3 +1,4 @@
+use radix_engine_common::types::NodeId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -91,5 +92,13 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.assert_access_rule(access_rule)
+    }
+
+    pub fn get_node_id<Y, E>(api: &mut Y) -> Result<NodeId, E>
+    where
+        Y: ClientApi<E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        api.actor_get_node_id()
     }
 }

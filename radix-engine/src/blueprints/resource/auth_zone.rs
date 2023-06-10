@@ -267,9 +267,9 @@ impl AuthZoneBlueprint {
     {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
-        let input: AuthZoneDropInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: AuthZoneDropInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Detach proofs from the auth zone
         let handle = api.kernel_lock_substate(

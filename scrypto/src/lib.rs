@@ -69,10 +69,6 @@ pub fn set_up_panic_hook() {
             "<unknown>".to_owned()
         };
 
-        crate::runtime::Logger::error(sbor::rust::format!(
-            "Panicked at '{}', {}",
-            payload,
-            location
-        ));
+        crate::runtime::Runtime::panic(sbor::rust::format!("{} @ {}", payload, location));
     }));
 }

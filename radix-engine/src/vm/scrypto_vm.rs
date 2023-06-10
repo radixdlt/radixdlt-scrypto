@@ -45,7 +45,6 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
     fn invoke<Y>(
         &mut self,
-        _receiver: Option<&NodeId>,
         func_name: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
