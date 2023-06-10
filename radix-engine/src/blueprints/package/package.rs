@@ -131,6 +131,7 @@ fn globalize_package<Y, L: Default>(
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_config: BTreeMap<String, BlueprintDependencies>,
 
+    schemas: BTreeMap<Hash, ScryptoSchema>,
     code: PackageCodeSubstate,
     code_hash: Hash,
 
@@ -222,6 +223,30 @@ where
             minor_version_configs,
         );
     };
+
+    {
+        let schemas_partition = schemas
+            .into_iter()
+            .map(|(hash, schema)| {
+                let value = SubstateWrapper {
+                    value: Some(schema),
+                    mutability: SubstateMutability::Immutable,
+                };
+
+                (
+                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
+                    IndexedScryptoValue::from_typed(&value),
+                )
+            })
+            .collect();
+
+        partitions.insert(
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                .unwrap(),
+            schemas_partition,
+        );
+    }
 
 
     {
@@ -474,6 +499,17 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<Hash>(),
                 ),
                 value: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<Hash>(),
+                ),
+                value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
                 ),
                 can_own: false,
@@ -695,6 +731,7 @@ impl PackageNativePackage {
         // Build node init
         let mut function_auth = BTreeMap::new();
         let mut blueprint_auth_templates = BTreeMap::new();
+        let mut schemas = BTreeMap::new();
         let mut blueprints = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
 
@@ -734,6 +771,10 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
+                let blueprint_schema = setup.schema.clone();
+                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                schemas.insert(schema_hash, blueprint_schema);
+
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
@@ -762,6 +803,7 @@ impl PackageNativePackage {
             package_address,
             blueprints,
             blueprint_dependencies,
+            schemas,
             code,
             code_hash,
             btreemap!(),
@@ -904,6 +946,7 @@ impl PackageNativePackage {
         let mut method_auth_templates = BTreeMap::new();
 
         let mut blueprints = BTreeMap::new();
+        let mut schemas = BTreeMap::new();
         let mut royalties = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
 
@@ -936,6 +979,10 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
+                let blueprint_schema = setup.schema.clone();
+                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                schemas.insert(schema_hash, blueprint_schema);
+
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
@@ -965,6 +1012,7 @@ impl PackageNativePackage {
             package_address,
             blueprints,
             blueprint_dependencies,
+            schemas,
             code,
             code_hash,
             royalties,

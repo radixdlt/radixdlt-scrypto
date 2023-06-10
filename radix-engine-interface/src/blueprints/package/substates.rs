@@ -26,12 +26,13 @@ pub const POOL_ID: u8 = 13u8;
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-pub const PACKAGE_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-pub const PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
-pub const PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
+pub const PACKAGE_SCHEMAS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
+pub const PACKAGE_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
+pub const PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
+pub const PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
 
-pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 3u8;
+pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 4u8;
 
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

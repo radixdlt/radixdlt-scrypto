@@ -103,7 +103,8 @@ pub enum TypedMainModuleSubstateKey {
     PackageField(PackageField),
     PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintDependenciesKey(BlueprintVersionKey),
-    PackageCode(Hash),
+    PackageSchemaKey(Hash),
+    PackageCodeKey(Hash),
     PackageRoyaltyKey(BlueprintVersionKey),
     PackageAuthFunctionTemplateKey(BlueprintVersionKey),
     PackageAuthMethodTemplateKey(BlueprintVersionKey),
@@ -242,9 +243,15 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
+                PackagePartitionOffset::Schemas => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageSchemaKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
                 PackagePartitionOffset::Code => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageCode(
+                    TypedMainModuleSubstateKey::PackageCodeKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -409,6 +416,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
     PackageBlueprintDependencies(Option<BlueprintDependencies>),
+    PackageSchema(Option<ScryptoSchema>),
     PackageCode(Option<PackageCodeSubstate>),
     PackageFunctionAuthTemplate(Option<FunctionAuthTemplate>),
     PackageMethodAuthTemplate(Option<MethodAuthTemplate>),
@@ -585,7 +593,11 @@ fn to_typed_object_substate_value(
             let value: SubstateWrapper<Option<BlueprintDependencies>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageBlueprintDependencies(value.value)
         }
-        TypedMainModuleSubstateKey::PackageCode(..) => {
+        TypedMainModuleSubstateKey::PackageSchemaKey(..) => {
+            let value: SubstateWrapper<Option<ScryptoSchema>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageSchema(value.value)
+        }
+        TypedMainModuleSubstateKey::PackageCodeKey(..) => {
             let value: SubstateWrapper<Option<PackageCodeSubstate>> = scrypto_decode(data)?;
             TypedMainModuleSubstateValue::PackageCode(value.value)
         }
