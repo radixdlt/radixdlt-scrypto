@@ -66,11 +66,11 @@ impl CallMethod {
         let manifest = manifest_builder
             .lock_fee(FAUCET, 100.into())
             .borrow_mut(|builder| {
-                add_call_method_instruction_with_schema(
+                self.add_call_method_instruction_with_schema(
                     builder,
                     &bech32_decoder,
                     self.component_address.0,
-                    &self.method_name,
+                    self.method_name.clone(),
                     self.arguments.clone(),
                     Some(default_account),
                     &export_blueprint_schema(blueprint.package_address, &blueprint.blueprint_name)?,
@@ -94,5 +94,47 @@ impl CallMethod {
             out,
         )
         .map(|_| ())
+    }
+
+    /// Calls a method.
+    ///
+    /// The implementation will automatically prepare the arguments based on the
+    /// method SCHEMA, including resource buckets and proofs.
+    ///
+    /// If an Account component address is provided, resources will be withdrawn from the given account;
+    /// otherwise, they will be taken from transaction worktop.
+    pub fn add_call_method_instruction_with_schema<'a>(
+        &self,
+        builder: &'a mut ManifestBuilder,
+        bech32_decoder: &Bech32Decoder,
+        component_address: ComponentAddress,
+        method_name: String,
+        args: Vec<String>,
+        account: Option<ComponentAddress>,
+        blueprint_schema: &BlueprintDefinition,
+    ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
+        let function_schema = blueprint_schema
+            .find_method(method_name.as_str())
+            .ok_or_else(|| BuildCallInstructionError::MethodNotFound(method_name.clone()))?;
+
+        let index = match &function_schema.output {
+            SchemaPointer::Package(_hash, index) => index.clone(),
+        };
+
+        let (builder, built_args) = build_call_arguments(
+            builder,
+            bech32_decoder,
+            &blueprint_schema.schema,
+            index,
+            args,
+            account,
+        )?;
+
+        builder.add_instruction(InstructionV1::CallMethod {
+            address: component_address.into(),
+            method_name,
+            args: built_args,
+        });
+        Ok(builder)
     }
 }

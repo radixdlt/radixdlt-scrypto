@@ -65,12 +65,12 @@ impl CallFunction {
         let manifest = manifest_builder
             .lock_fee(FAUCET, 100.into())
             .borrow_mut(|builder| {
-                add_call_function_instruction_with_schema(
+                self.add_call_function_instruction_with_schema(
                     builder,
                     &bech32_decoder,
                     self.package_address.0,
-                    &self.blueprint_name,
-                    &self.function_name,
+                    self.blueprint_name.clone(),
+                    self.function_name.clone(),
                     self.arguments.clone(),
                     Some(default_account),
                     &export_blueprint_schema(self.package_address.0, &self.blueprint_name)?,
@@ -94,5 +94,50 @@ impl CallFunction {
             out,
         )
         .map(|_| ())
+    }
+
+
+    /// Calls a function.
+    ///
+    /// The implementation will automatically prepare the arguments based on the
+    /// function SCHEMA, including resource buckets and proofs.
+    ///
+    /// If an Account component address is provided, resources will be withdrawn from the given account;
+    /// otherwise, they will be taken from transaction worktop.
+    pub fn add_call_function_instruction_with_schema<'a>(
+        &self,
+        builder: &'a mut ManifestBuilder,
+        bech32_decoder: &Bech32Decoder,
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
+        args: Vec<String>,
+        account: Option<ComponentAddress>,
+        blueprint_schema: &BlueprintDefinition,
+    ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
+        let function_schema = blueprint_schema
+            .find_function(function_name.as_str())
+            .ok_or_else(|| BuildCallInstructionError::FunctionNotFound(function_name.clone()))?;
+
+        let index = match &function_schema.input {
+            SchemaPointer::Package(_hash, index) => index.clone(),
+        };
+
+        let (builder, built_args) = build_call_arguments(
+            builder,
+            bech32_decoder,
+            &blueprint_schema.schema,
+            index,
+            args,
+            account,
+        )?;
+
+        builder.add_instruction(InstructionV1::CallFunction {
+            package_address,
+            blueprint_name,
+            function_name,
+            args: built_args,
+        });
+        Ok(builder)
     }
 }
