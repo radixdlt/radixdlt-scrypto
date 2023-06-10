@@ -226,12 +226,16 @@ where
 
     {
         let hash = hash([0]);
+        let value = SubstateWrapper {
+            value: Some(code),
+            mutability: SubstateMutability::Immutable,
+        };
         partitions.insert(
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
                 .unwrap(),
             btreemap! (
-                SubstateKey::Map(scrypto_encode(&hash).unwrap()) => IndexedScryptoValue::from_typed(&code),
+                SubstateKey::Map(scrypto_encode(&hash).unwrap()) => IndexedScryptoValue::from_typed(&value),
             ),
         );
     };

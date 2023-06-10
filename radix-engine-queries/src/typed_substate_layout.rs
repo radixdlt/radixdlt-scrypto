@@ -409,7 +409,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     PackageBlueprint(Option<BlueprintDefinition>),
     PackageBlueprintDependencies(Option<BlueprintDependencies>),
-    PackageCode(PackageCodeSubstate),
+    PackageCode(Option<PackageCodeSubstate>),
     PackageFunctionAuthTemplate(Option<FunctionAuthTemplate>),
     PackageMethodAuthTemplate(Option<MethodAuthTemplate>),
     PackageRoyalty(Option<RoyaltyConfig>),
@@ -587,8 +587,8 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::PackageBlueprintDependencies(value.value)
         }
         TypedMainModuleSubstateKey::PackageCode(..) => {
-            let value: PackageCodeSubstate = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::PackageCode(value)
+            let value: SubstateWrapper<Option<PackageCodeSubstate>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::PackageCode(value.value)
         }
         TypedMainModuleSubstateKey::PackageRoyaltyKey(_fn_key) => {
             let value: SubstateWrapper<Option<RoyaltyConfig>> = scrypto_decode(data)?;

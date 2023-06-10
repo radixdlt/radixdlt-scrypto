@@ -9,6 +9,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+#[ignore]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

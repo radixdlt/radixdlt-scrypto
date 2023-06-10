@@ -9,6 +9,7 @@ use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVm, ScryptoVm};
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::*;
+use crate::system::system::{SubstateMutability, SubstateWrapper};
 
 pub struct Vm<'g, W: WasmEngine> {
     pub scrypto_vm: &'g ScryptoVm<W>,
@@ -30,17 +31,27 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         W: WasmEngine,
     {
         let package_code = {
-            let handle = api.kernel_lock_substate(
+            let hash = hash([0]);
+            let handle = api.kernel_lock_substate_with_default(
                 address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &PackageField::Code.into(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
+                    .unwrap(),
+                &SubstateKey::Map(scrypto_encode(&hash).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let wrapper = SubstateWrapper {
+                        value: None::<()>,
+                        mutability: SubstateMutability::Immutable,
+                    };
+                    IndexedScryptoValue::from_typed(&wrapper)
+                }),
                 SystemLockData::default(),
             )?;
             let code = api.kernel_read_substate(handle)?;
-            let package_code: PackageCodeSubstate = code.as_typed().unwrap();
+            let package_code: SubstateWrapper<Option<PackageCodeSubstate>> = code.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
-            package_code
+            package_code.value.unwrap()
         };
 
         let output = match package_code.vm_type {
