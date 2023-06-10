@@ -30,7 +30,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     fn_ident: &str,
     with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
-) -> Result<String, RuntimeError> {
+) -> Result<PackageExport, RuntimeError> {
     let function_schema =
         blueprint_definition
             .functions
@@ -69,13 +69,13 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    let export_schema = blueprint_definition.function_exports.get(fn_ident).ok_or(
+    let package_export = blueprint_definition.function_exports.get(fn_ident).ok_or(
         RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(
             fn_ident.to_string(),
         )),
     )?;
 
-    let export_name = export_schema.export_name.clone();
+    Ok(package_export.clone())
 
     /*
     let export_name = match export_schema {
@@ -101,8 +101,6 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         },
     };
      */
-
-    Ok(export_name)
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
@@ -449,9 +447,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_drop_lock(handle)?;
 
             //  Validate input
-            let export_name = match &ident {
+            let export = match &ident {
                 FnIdent::Application(ident) => {
-                    let export_name = validate_input(
+                    let export = validate_input(
                         &mut system,
                         blueprint.clone(),
                         &definition,
@@ -459,14 +457,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         receiver,
                         &args,
                     )?;
-                    export_name
+                    export
                 }
                 FnIdent::System(system_func_id) => {
                     if let Some(sys_func) = definition
                         .virtual_lazy_load_functions
                         .get(&system_func_id)
                     {
-                        sys_func.export_name.to_string()
+                        PackageExport {
+                            hash: hash([0]),
+                            export_name: sys_func.export_name.to_string(),
+                        }
                     } else {
                         return Err(RuntimeError::SystemUpstreamError(
                             SystemUpstreamError::InvalidSystemCall,
@@ -480,7 +481,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 C::invoke(
                     &blueprint.package_address,
                     receiver.as_ref().map(|r| &r.0),
-                    &export_name,
+                    export,
                     args,
                     &mut system,
                 )?

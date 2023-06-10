@@ -19,7 +19,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
     fn invoke<Y>(
         address: &PackageAddress,
         receiver: Option<&NodeId>,
-        export_name: &str,
+        export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -31,13 +31,12 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         W: WasmEngine,
     {
         let package_code = {
-            let hash = hash([0]);
             let handle = api.kernel_lock_substate_with_default(
                 address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&hash).unwrap()),
+                &SubstateKey::Map(scrypto_encode(&export.hash).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let wrapper = SubstateWrapper {
@@ -57,7 +56,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         let output = match package_code.vm_type {
             VmType::Native => {
                 let mut vm_instance = { NativeVm::create_instance(address, &package_code.code)? };
-                let output = { vm_instance.invoke(receiver, &export_name, input, api)? };
+                let output = { vm_instance.invoke(receiver, export.export_name.as_str(), input, api)? };
 
                 output
             }
@@ -69,7 +68,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .create_instance(address, &package_code.code)
                 };
 
-                let output = { scrypto_vm_instance.invoke(receiver, &export_name, input, api)? };
+                let output = { scrypto_vm_instance.invoke(receiver, export.export_name.as_str(), input, api)? };
 
                 output
             }
