@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType, PackageExport, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType, PackageExport, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET, IndexedBlueprintStateSchema};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -134,7 +134,7 @@ impl Publish {
                     functions,
                     events,
                     schema: s.schema,
-                    state_schema: s.blueprint.into(),
+                    state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, s.blueprint),
                     function_exports,
                     virtual_lazy_load_functions: s.virtual_lazy_load_functions.into_iter()
                         .map(|(key, export_name)| (key, PackageExport {

@@ -167,13 +167,25 @@ pub struct FunctionAuthTemplate {
     pub rules: BTreeMap<String, AccessRule>,
 }
 
-impl From<BlueprintSchema> for IndexedBlueprintStateSchema {
-    fn from(schema: BlueprintSchema) -> Self {
+pub type IndexedFieldSchema = FeaturedSchema<SchemaPointer>;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct IndexedBlueprintStateSchema {
+    pub fields: Option<(PartitionOffset, Vec<IndexedFieldSchema>)>,
+    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
+    pub num_partitions: u8,
+}
+
+impl IndexedBlueprintStateSchema {
+    pub fn from_schema(schema_hash: Hash, schema: BlueprintSchema) -> Self {
         let mut partition_offset = 0u8;
 
         let mut fields = None;
         if !schema.fields.is_empty() {
-            fields = Some((PartitionOffset(partition_offset), schema.fields));
+            let schema_fields = schema.fields.into_iter()
+                .map(|s| s.map(|v| SchemaPointer::Package(schema_hash, v)))
+               .collect();
+            fields = Some((PartitionOffset(partition_offset), schema_fields));
             partition_offset += 1;
         };
 
@@ -188,17 +200,9 @@ impl From<BlueprintSchema> for IndexedBlueprintStateSchema {
             collections,
             num_partitions: partition_offset,
         }
+
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedBlueprintStateSchema {
-    pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
-    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
-    pub num_partitions: u8,
-}
-
-impl IndexedBlueprintStateSchema {
     pub fn num_partitions(&self) -> u8 {
         self.num_partitions
     }
@@ -217,7 +221,9 @@ impl IndexedBlueprintStateSchema {
                 fields
                     .get(field_index)
                     .cloned()
-                    .map(|f| (offset.clone(), f))
+                    .map(|f| (offset.clone(), f.map(|p| match p {
+                        SchemaPointer::Package(_, v) => v
+                    })))
             }
             _ => None,
         }

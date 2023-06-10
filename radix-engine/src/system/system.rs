@@ -477,15 +477,18 @@ where
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
-                    let field_type_index = match &field_schemas[i] {
-                        FieldSchema::Normal { value } => value.clone(),
-                        FieldSchema::Conditional { feature, value } => {
+                    let pointer = match &field_schemas[i] {
+                        IndexedFieldSchema::Normal { value } => value.clone(),
+                        IndexedFieldSchema::Conditional { feature, value } => {
                             if features.contains(feature) {
                                 value.clone()
                             } else {
                                 continue;
                             }
                         }
+                    };
+                    let field_type_index = match pointer {
+                        SchemaPointer::Package(_, index) => index,
                     };
 
                     self.validate_payload(

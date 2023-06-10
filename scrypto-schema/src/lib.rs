@@ -137,6 +137,13 @@ impl<V> FeaturedSchema<V> {
             FeaturedSchema::Conditional { value, .. } => value,
         }
     }
+
+    pub fn map<T, F: FnOnce(V) -> T>(self, f: F) -> FeaturedSchema<T> {
+        match self {
+            Self::Normal { value } => FeaturedSchema::Normal { value: f(value) },
+            Self::Conditional { feature, value } => FeaturedSchema::Conditional { feature, value: f(value) },
+        }
+    }
 }
 
 pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;

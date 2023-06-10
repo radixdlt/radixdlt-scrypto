@@ -784,7 +784,7 @@ impl PackageNativePackage {
                     functions,
                     events,
                     schema: setup.schema,
-                    state_schema: setup.blueprint.into(),
+                    state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, setup.blueprint),
                     function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()
                         .map(|(key, export_name)| (key, PackageExport {
@@ -995,7 +995,7 @@ impl PackageNativePackage {
                     functions,
                     events,
                     schema: setup.schema,
-                    state_schema: setup.blueprint.into(),
+                    state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, setup.blueprint),
                     function_exports,
                     virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()
                         .map(|(key, export_name)| (key, PackageExport {
