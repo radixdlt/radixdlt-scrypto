@@ -3,8 +3,9 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::SubstateWrapper;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::PackageCodeSubstate;
+use radix_engine_interface::blueprints::package::{PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_CODE_PARTITION_OFFSET, PackageCodeSubstate};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
 use radix_engine_store_interface::{
@@ -29,12 +30,11 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let substate = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, PackageCodeSubstate>(
+    let (_, substate) = substate_db
+        .list_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<PackageCodeSubstate>>, MapKey>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &PackageField::Code.into(),
-        )
+            MAIN_BASE_PARTITION.at_offset(PACKAGE_CODE_PARTITION_OFFSET).unwrap(),
+        ).next()
         .ok_or(EntityDumpError::PackageNotFound)?;
 
     writeln!(
@@ -47,7 +47,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.code.len()
+        substate.value.unwrap().code.len()
     );
     Ok(())
 }
