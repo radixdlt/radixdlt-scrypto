@@ -38,9 +38,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{
-    BlueprintSchema, FieldSchema, FunctionSchema,
-};
+use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};

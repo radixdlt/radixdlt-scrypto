@@ -238,7 +238,10 @@ impl MultiResourcePoolBlueprint {
             resource_bucket_amount_mapping
         };
 
-        let pool_unit_total_supply = substate.pool_unit_resource_manager.total_supply(api)?.unwrap();
+        let pool_unit_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .unwrap();
         // Case: New Pool
         let (pool_units, change) = if pool_unit_total_supply.is_zero() {
             // Regarding the unwrap here, there are two cases here where this unwrap could panic:
@@ -394,7 +397,10 @@ impl MultiResourcePoolBlueprint {
         }
 
         let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?.unwrap();
+        let pool_units_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .unwrap();
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
@@ -508,7 +514,10 @@ impl MultiResourcePoolBlueprint {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?.unwrap();
+        let pool_units_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .unwrap();
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;

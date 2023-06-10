@@ -5,9 +5,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
-use radix_engine_interface::schema::{
-    BlueprintSchema, FieldSchema, FunctionSchema,
-};
+use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

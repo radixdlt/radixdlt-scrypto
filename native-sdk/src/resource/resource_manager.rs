@@ -219,7 +219,10 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Option<Decimal>, E>
+    pub fn total_supply<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Option<Decimal>, E>
     where
         Y: ClientApi<E>,
     {
