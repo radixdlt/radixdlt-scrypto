@@ -4,38 +4,38 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::eddsa_ed25519::EddsaEd25519PrivateKey;
 use transaction::model::TransactionHeaderV1;
 use transaction::model::TransactionPayload;
-use transaction::validation::verify_ecdsa_secp256k1;
-use transaction::validation::verify_eddsa_ed25519;
+use transaction::signing::ed25519::Ed25519PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::validation::verify_ed25519;
+use transaction::validation::verify_secp256k1;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
-use transaction::validation::{recover_ecdsa_secp256k1, TransactionValidator};
+use transaction::validation::{recover_secp256k1, TransactionValidator};
 
-fn bench_ecdsa_secp256k1_validation(c: &mut Criterion) {
+fn bench_secp256k1_validation(c: &mut Criterion) {
     let message_hash = hash("This is a long message".repeat(100));
-    let signer = EcdsaSecp256k1PrivateKey::from_u64(123123123123).unwrap();
+    let signer = Secp256k1PrivateKey::from_u64(123123123123).unwrap();
     let signature = signer.sign(&message_hash);
 
     c.bench_function("Validation::verify_ecdsa", |b| {
         b.iter(|| {
-            let public_key = recover_ecdsa_secp256k1(&message_hash, &signature).unwrap();
-            verify_ecdsa_secp256k1(&message_hash, &public_key, &signature);
+            let public_key = recover_secp256k1(&message_hash, &signature).unwrap();
+            verify_secp256k1(&message_hash, &public_key, &signature);
         })
     });
 }
 
-fn bench_eddsa_ed25519_validation(c: &mut Criterion) {
+fn bench_ed25519_validation(c: &mut Criterion) {
     let message_hash = hash("This is a long message".repeat(100));
-    let signer = EddsaEd25519PrivateKey::from_u64(123123123123).unwrap();
+    let signer = Ed25519PrivateKey::from_u64(123123123123).unwrap();
     let public_key = signer.public_key();
     let signature = signer.sign(&message_hash);
 
     c.bench_function("Validation::verify_ed25519", |b| {
         b.iter(|| {
-            verify_eddsa_ed25519(&message_hash, &public_key, &signature);
+            verify_ed25519(&message_hash, &public_key, &signature);
         })
     });
 }
@@ -53,7 +53,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         "account_sim1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5syrgz9",
     )
     .unwrap();
-    let signer = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+    let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
 
     let transaction = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
@@ -95,8 +95,8 @@ fn bench_transaction_validation(c: &mut Criterion) {
 
 criterion_group!(
     validation,
-    bench_ecdsa_secp256k1_validation,
-    bench_eddsa_ed25519_validation,
+    bench_secp256k1_validation,
+    bench_ed25519_validation,
     bench_transaction_validation,
 );
 criterion_main!(validation);

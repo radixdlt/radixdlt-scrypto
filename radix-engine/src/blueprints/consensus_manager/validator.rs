@@ -45,7 +45,7 @@ pub struct ValidatorSubstate {
     pub sorted_key: Option<SortedKey>,
 
     /// This validator's public key.
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
 
     /// Whether this validator is currently interested in participating in the consensus.
     pub is_registered: bool,
@@ -434,7 +434,7 @@ impl ValidatorBlueprint {
         Ok(claimed_bucket)
     }
 
-    pub fn update_key<Y>(key: EcdsaSecp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn update_key<Y>(key: Secp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -1006,7 +1006,7 @@ impl ValidatorCreator {
     }
 
     pub fn create<Y>(
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
         is_registered: bool,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>

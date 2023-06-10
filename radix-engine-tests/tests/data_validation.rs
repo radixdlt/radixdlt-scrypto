@@ -18,7 +18,7 @@ fn setup_component(test_runner: &mut TestRunner) -> ComponentAddress {
 }
 
 fn sink_account() -> ComponentAddress {
-    ComponentAddress::virtual_account_from_public_key(&EcdsaSecp256k1PublicKey([0; 33]))
+    ComponentAddress::virtual_account_from_public_key(&Secp256k1PublicKey([0; 33]))
 }
 
 fn create_manifest_with_middle(

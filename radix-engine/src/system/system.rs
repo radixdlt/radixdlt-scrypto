@@ -175,8 +175,8 @@ where
                 outer_object: None,
                 instance_schema: None,
             }));
-        } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+        } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
             || node_id.eq(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(GLOBAL_CALLER_VIRTUAL_BADGE.as_node_id())

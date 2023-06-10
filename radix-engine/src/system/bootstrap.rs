@@ -16,7 +16,7 @@ use crate::transaction::{
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::ScryptoVm;
-use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
@@ -46,15 +46,15 @@ const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct GenesisValidator {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
 
-impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
-    fn from(key: EcdsaSecp256k1PublicKey) -> Self {
+impl From<Secp256k1PublicKey> for GenesisValidator {
+    fn from(key: Secp256k1PublicKey) -> Self {
         // Re-using the validator key for its owner
         let default_owner_address = ComponentAddress::virtual_account_from_public_key(&key);
         GenesisValidator {
@@ -95,7 +95,7 @@ pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
         accounts: Vec<ComponentAddress>,
-        allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
+        allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
     },
     Resources(Vec<GenesisResource>),
     ResourceBalances {
@@ -681,14 +681,14 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // ECDSA
+    // ECDSA Secp256k1
     {
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE),
+            GlobalAddress::from(SECP256K1_SIGNATURE_VIRTUAL_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
@@ -704,14 +704,14 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // EDDSA ED25519 Token
+    // Ed25519
     {
         let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE),
+            GlobalAddress::from(ED25519_SIGNATURE_VIRTUAL_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,

@@ -2,7 +2,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn can_globalize_with_component_metadata() {
@@ -168,9 +168,7 @@ fn can_set_address_metadata_through_manifest() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
-    let key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
@@ -206,7 +204,7 @@ fn can_set_address_metadata_through_manifest() {
 #[test]
 fn can_set_public_key_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataValue::PublicKey(
-        EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        Secp256k1PrivateKey::from_u64(1u64)
             .unwrap()
             .public_key()
             .into(),
@@ -236,8 +234,8 @@ fn can_set_origin_metadata_through_manifest() {
 
 #[test]
 fn can_set_public_key_hash_metadata_through_manifest() {
-    can_set_metadata_through_manifest(MetadataValue::PublicKeyHash(PublicKeyHash::EcdsaSecp256k1(
-        EcdsaSecp256k1PublicKeyHash([0; 29]),
+    can_set_metadata_through_manifest(MetadataValue::PublicKeyHash(PublicKeyHash::Secp256k1(
+        Secp256k1PublicKeyHash([0; 29]),
     )));
 }
 
