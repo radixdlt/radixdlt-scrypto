@@ -3,7 +3,9 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system_modules::costing::{apply_royalty_cost, FIXED_HIGH_FEE, FIXED_MEDIUM_FEE, RoyaltyRecipient};
+use crate::system::system_modules::costing::{
+    apply_royalty_cost, RoyaltyRecipient, FIXED_HIGH_FEE, FIXED_MEDIUM_FEE,
+};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
@@ -28,10 +30,10 @@ use sbor::LocalTypeIndex;
 use crate::method_auth_template;
 use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback_api::SystemCallbackObject;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
-use crate::system::system_callback_api::SystemCallbackObject;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -247,7 +249,6 @@ where
             schemas_partition,
         );
     }
-
 
     {
         let value = SubstateWrapper {
@@ -495,9 +496,7 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<Hash>(),
-                ),
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
                 ),
@@ -506,9 +505,7 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<Hash>(),
-                ),
+                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
                 ),
@@ -517,7 +514,9 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<BlueprintVersionKey>()),
+                key: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
+                ),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<RoyaltyConfig>(),
                 ),
@@ -537,7 +536,9 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<BlueprintVersionKey>()),
+                key: TypeRef::Blueprint(
+                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
+                ),
                 value: TypeRef::Blueprint(
                     aggregator.add_child_type_and_descendents::<MethodAuthTemplate>(),
                 ),
@@ -775,21 +776,35 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let events = setup.event_schema.into_iter()
-                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index))).collect();
+                let events = setup
+                    .event_schema
+                    .into_iter()
+                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
+                    .collect();
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
                     functions,
                     events,
-                    state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, setup.blueprint),
+                    state_schema: IndexedBlueprintStateSchema::from_schema(
+                        schema_hash,
+                        setup.blueprint,
+                    ),
                     function_exports,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()
-                        .map(|(key, export_name)| (key, PackageExport {
-                            code_hash,
-                            export_name,
-                        })).collect(),
+                    virtual_lazy_load_functions: setup
+                        .virtual_lazy_load_functions
+                        .into_iter()
+                        .map(|(key, export_name)| {
+                            (
+                                key,
+                                PackageExport {
+                                    code_hash,
+                                    export_name,
+                                },
+                            )
+                        })
+                        .collect(),
                 };
                 blueprints.insert(blueprint.clone(), definition);
 
@@ -799,7 +814,6 @@ impl PackageNativePackage {
                 blueprint_dependencies.insert(blueprint.clone(), minor_version_config);
             }
         };
-
 
         globalize_package(
             package_address,
@@ -873,8 +887,6 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-
-
 
         for BlueprintSetup {
             outer_blueprint: parent,
@@ -985,21 +997,35 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let events = setup.event_schema.into_iter()
-                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index))).collect();
+                let events = setup
+                    .event_schema
+                    .into_iter()
+                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
+                    .collect();
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
                     features: setup.features,
                     functions,
                     events,
-                    state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, setup.blueprint),
+                    state_schema: IndexedBlueprintStateSchema::from_schema(
+                        schema_hash,
+                        setup.blueprint,
+                    ),
                     function_exports,
-                    virtual_lazy_load_functions: setup.virtual_lazy_load_functions.into_iter()
-                        .map(|(key, export_name)| (key, PackageExport {
-                            code_hash,
-                            export_name,
-                        })).collect(),
+                    virtual_lazy_load_functions: setup
+                        .virtual_lazy_load_functions
+                        .into_iter()
+                        .map(|(key, export_name)| {
+                            (
+                                key,
+                                PackageExport {
+                                    code_hash,
+                                    export_name,
+                                },
+                            )
+                        })
+                        .collect(),
                 };
                 blueprints.insert(blueprint.clone(), definition);
                 royalties.insert(blueprint.clone(), setup.royalty_config);
@@ -1010,7 +1036,6 @@ impl PackageNativePackage {
                 blueprint_dependencies.insert(blueprint.clone(), dependencies);
             }
         }
-
 
         globalize_package(
             package_address,
@@ -1033,8 +1058,8 @@ impl PackageNativePackage {
         hash: &Hash,
         api: &mut Y,
     ) -> Result<ScryptoSchema, RuntimeError>
-        where
-            Y: KernelSubstateApi<SystemLockData>,
+    where
+        Y: KernelSubstateApi<SystemLockData>,
     {
         let handle = api.kernel_lock_substate_with_default(
             receiver,
@@ -1101,7 +1126,6 @@ impl PackageNativePackage {
     }
 }
 
-
 pub struct PackageRoyaltyNativeBlueprint;
 
 impl PackageRoyaltyNativeBlueprint {
@@ -1111,9 +1135,9 @@ impl PackageRoyaltyNativeBlueprint {
         ident: &str,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            V: SystemCallbackObject,
-            Y: KernelApi<SystemConfig<V>>,
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
     {
         let handle = api.kernel_lock_substate_with_default(
             receiver,
@@ -1136,7 +1160,8 @@ impl PackageRoyaltyNativeBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
-        let royalty_charge = substate.value
+        let royalty_charge = substate
+            .value
             .and_then(|c| c.rules.get(ident).cloned())
             .unwrap_or(RoyaltyAmount::Free);
 
@@ -1176,8 +1201,8 @@ impl PackageRoyaltyNativeBlueprint {
     }
 
     pub(crate) fn claim_royalty<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -1203,8 +1228,8 @@ impl PackageAuthNativeBlueprint {
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<MethodAuthTemplate, RuntimeError>
-        where
-            Y: KernelSubstateApi<SystemLockData>,
+    where
+        Y: KernelSubstateApi<SystemLockData>,
     {
         let handle = api.kernel_lock_substate_with_default(
             receiver,
@@ -1230,9 +1255,7 @@ impl PackageAuthNativeBlueprint {
         let template = substate.value.ok_or_else(|| {
             let package_address = PackageAddress::new_or_panic(receiver.0.clone());
             let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
-            RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(
-                blueprint_id
-            ))
+            RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(blueprint_id))
         })?;
 
         Ok(template)
@@ -1243,8 +1266,8 @@ impl PackageAuthNativeBlueprint {
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<FunctionAuthTemplate, RuntimeError>
-        where
-            Y: KernelSubstateApi<SystemLockData>,
+    where
+        Y: KernelSubstateApi<SystemLockData>,
     {
         let handle = api.kernel_lock_substate_with_default(
             receiver,

@@ -25,11 +25,9 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
+use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
-use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTIES_IDENT,
-};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

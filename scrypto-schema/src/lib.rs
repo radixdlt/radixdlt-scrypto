@@ -141,8 +141,12 @@ impl<T> BlueprintCollectionSchema<T> {
     pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintCollectionSchema<U> {
         match self {
             BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema),
-            BlueprintCollectionSchema::SortedIndex(schema) => BlueprintCollectionSchema::SortedIndex(schema),
-            BlueprintCollectionSchema::KeyValueStore(schema) => BlueprintCollectionSchema::KeyValueStore(schema.map(f))
+            BlueprintCollectionSchema::SortedIndex(schema) => {
+                BlueprintCollectionSchema::SortedIndex(schema)
+            }
+            BlueprintCollectionSchema::KeyValueStore(schema) => {
+                BlueprintCollectionSchema::KeyValueStore(schema.map(f))
+            }
         }
     }
 }
@@ -170,7 +174,10 @@ impl<V> FeaturedSchema<V> {
     pub fn map<T, F: FnOnce(V) -> T>(self, f: F) -> FeaturedSchema<T> {
         match self {
             Self::Normal { value } => FeaturedSchema::Normal { value: f(value) },
-            Self::Conditional { feature, value } => FeaturedSchema::Conditional { feature, value: f(value) },
+            Self::Conditional { feature, value } => FeaturedSchema::Conditional {
+                feature,
+                value: f(value),
+            },
         }
     }
 }

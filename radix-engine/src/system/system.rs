@@ -1,4 +1,3 @@
-use std::collections::hash_map::Entry;
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
@@ -36,12 +35,13 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FieldSchema, InstanceSchema,
-    KeyValueStoreSchema, TypeRef,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, InstanceSchema, KeyValueStoreSchema,
+    TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use std::collections::hash_map::Entry;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {
@@ -85,7 +85,7 @@ pub struct SchemaCache {
 impl SchemaCache {
     pub fn new() -> Self {
         Self {
-            cache: NonIterMap::new()
+            cache: NonIterMap::new(),
         }
     }
 }
@@ -336,12 +336,11 @@ where
         }
 
         let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
-        let method_auth_template =
-            PackageAuthNativeBlueprint::get_bp_method_auth_template(
-                blueprint.package_address.as_node_id(),
-                &bp_version_key,
-                self.api,
-            )?;
+        let method_auth_template = PackageAuthNativeBlueprint::get_bp_method_auth_template(
+            blueprint.package_address.as_node_id(),
+            &bp_version_key,
+            self.api,
+        )?;
 
         self.api
             .kernel_get_system_state()
@@ -412,11 +411,7 @@ where
         if let Some(schema) = def {
             return Ok(schema.clone());
         }
-        let schema = PackageNativePackage::get_schema_hash(
-            node_id,
-            schema_hash,
-            self.api,
-        )?;
+        let schema = PackageNativePackage::get_schema_hash(node_id, schema_hash, self.api)?;
 
         self.api
             .kernel_get_system_state()
@@ -428,7 +423,12 @@ where
     }
 
     // TODO: A hack for now
-    pub fn ensure_schema_loaded(&mut self, node_id: &NodeId, schema_hash: &Hash, schema_cache: &mut SchemaCache) -> Result<(), RuntimeError> {
+    pub fn ensure_schema_loaded(
+        &mut self,
+        node_id: &NodeId,
+        schema_hash: &Hash,
+        schema_cache: &mut SchemaCache,
+    ) -> Result<(), RuntimeError> {
         let entry = schema_cache.cache.entry(schema_hash.clone());
         match entry {
             Entry::Vacant(e) => {
@@ -547,9 +547,13 @@ where
                     };
                     let (schema, field_type_index) = match pointer {
                         SchemaPointer::Package(hash, index) => {
-                            self.ensure_schema_loaded(blueprint.package_address.as_node_id(), &hash, &mut schema_cache)?;
+                            self.ensure_schema_loaded(
+                                blueprint.package_address.as_node_id(),
+                                &hash,
+                                &mut schema_cache,
+                            )?;
                             (schema_cache.cache.get(&hash).unwrap(), index)
-                        },
+                        }
                     };
 
                     self.validate_payload(
@@ -560,9 +564,7 @@ where
                     )
                     .map_err(|err| {
                         RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                            CreateObjectError::InvalidSubstateWrite(
-                                err.error_message(schema),
-                            ),
+                            CreateObjectError::InvalidSubstateWrite(err.error_message(schema)),
                         )))
                     })?;
 
@@ -592,10 +594,14 @@ where
                         let entries = kv_entries.remove(&index);
                         if let Some(entries) = entries {
                             for (key, value) in entries {
-                                let (schema, key_type_index) = match blueprint_kv_schema.key.clone() {
+                                let (schema, key_type_index) = match blueprint_kv_schema.key.clone()
+                                {
                                     TypeRef::Blueprint(pointer) => match pointer {
                                         SchemaPointer::Package(schema_hash, index) => {
-                                            let schema = self.get_schema(blueprint.package_address.as_node_id(), &schema_hash)?;
+                                            let schema = self.get_schema(
+                                                blueprint.package_address.as_node_id(),
+                                                &schema_hash,
+                                            )?;
                                             (schema, TypeRef::Blueprint(index))
                                         }
                                     },
@@ -619,9 +625,10 @@ where
                                     ))
                                 })?;
 
-                                let value_type_index = blueprint_kv_schema.value.clone().map(|v| match v {
-                                    SchemaPointer::Package(_, index) => index
-                                });
+                                let value_type_index =
+                                    blueprint_kv_schema.value.clone().map(|v| match v {
+                                        SchemaPointer::Package(_, index) => index,
+                                    });
 
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &value,
@@ -775,7 +782,8 @@ where
 
         match pointer {
             SchemaPointer::Package(schema_hash, type_index) => {
-                let schema = self.get_schema(info.blueprint_id.package_address.as_node_id(), &schema_hash)?;
+                let schema =
+                    self.get_schema(info.blueprint_id.package_address.as_node_id(), &schema_hash)?;
 
                 Ok((node_id, partition_num, schema, type_index, info))
             }
@@ -2169,16 +2177,17 @@ where
                         can_own,
                     }
                 }
-                TypeRef::Blueprint(pointer) => {
-                    match pointer {
-                        SchemaPointer::Package(schema_hash, index) => {
-                            let schema = self.get_schema(object_info.blueprint_id.package_address.as_node_id(), &schema_hash)?;
-                            KeyValueEntryLockData::Write {
-                                schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
-                                schema,
-                                index,
-                                can_own,
-                            }
+                TypeRef::Blueprint(pointer) => match pointer {
+                    SchemaPointer::Package(schema_hash, index) => {
+                        let schema = self.get_schema(
+                            object_info.blueprint_id.package_address.as_node_id(),
+                            &schema_hash,
+                        )?;
+                        KeyValueEntryLockData::Write {
+                            schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
+                            schema,
+                            index,
+                            can_own,
                         }
                     }
                 },
@@ -2366,9 +2375,10 @@ where
 
         let (schema, local_type_index) = match &schema_pointer {
             SchemaPointer::Package(schema_hash, index) => {
-                let schema = self.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
+                let schema =
+                    self.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
                 (schema, index.clone())
-            },
+            }
         };
 
         // Construct the event type identifier based on the current actor

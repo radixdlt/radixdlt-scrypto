@@ -61,7 +61,6 @@ impl CallMethod {
             })?;
         }
 
-
         let manifest = manifest_builder
             .lock_fee(FAUCET, 100.into())
             .borrow_mut(|builder| {
@@ -110,29 +109,30 @@ impl CallMethod {
         account: Option<ComponentAddress>,
     ) -> Result<&'a mut ManifestBuilder, Error> {
         let blueprint_id = get_blueprint(component_address)?;
-        let bp_def = export_blueprint_schema(blueprint_id.package_address, &blueprint_id.blueprint_name)?;
+        let bp_def =
+            export_blueprint_schema(blueprint_id.package_address, &blueprint_id.blueprint_name)?;
 
-        let function_schema = bp_def
-            .find_method(method_name.as_str())
-            .ok_or_else(|| Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(method_name.clone())))?;
+        let function_schema = bp_def.find_method(method_name.as_str()).ok_or_else(|| {
+            Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(
+                method_name.clone(),
+            ))
+        })?;
 
         let (schema, index) = match function_schema.output {
             SchemaPointer::Package(schema_hash, index) => {
                 let schema = export_schema(blueprint_id.package_address, schema_hash)?;
                 (schema, index)
-            },
+            }
         };
 
-        let (builder, built_args) = build_call_arguments(
-            builder,
-            bech32_decoder,
-            &schema,
-            index,
-            args,
-            account,
-        ).map_err(|e| {
-            Error::TransactionConstructionError(BuildCallInstructionError::FailedToBuildArguments(e))
-        })?;
+        let (builder, built_args) =
+            build_call_arguments(builder, bech32_decoder, &schema, index, args, account).map_err(
+                |e| {
+                    Error::TransactionConstructionError(
+                        BuildCallInstructionError::FailedToBuildArguments(e),
+                    )
+                },
+            )?;
 
         builder.add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),

@@ -1,12 +1,11 @@
 use crate::api::ObjectModuleId;
+use crate::blueprints::package::SchemaPointer;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use sbor::LocalTypeIndex;
 use utils::ContextualDisplay;
-use crate::blueprints::package::SchemaPointer;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
 ///

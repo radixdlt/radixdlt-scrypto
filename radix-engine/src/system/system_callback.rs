@@ -4,8 +4,8 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::{FeaturedSchema, RefTypes};
+use radix_engine_interface::schema::RefTypes;
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -55,12 +55,12 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         }
     }
 
-
     let (schema, index) = match function_schema.input {
         SchemaPointer::Package(schema_hash, index) => {
-            let schema = service.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
+            let schema =
+                service.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
             (schema, index)
-        },
+        }
     };
 
     service
@@ -125,9 +125,10 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 
     let (schema, index) = match &output_schema_pointer.output {
         SchemaPointer::Package(schema_hash, index) => {
-            let schema = service.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
+            let schema =
+                service.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
             (schema, index.clone())
-        },
+        }
     };
 
     service
@@ -476,9 +477,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     export
                 }
                 FnIdent::System(system_func_id) => {
-                    if let Some(package_export) = definition
-                        .virtual_lazy_load_functions
-                        .get(&system_func_id)
+                    if let Some(package_export) =
+                        definition.virtual_lazy_load_functions.get(&system_func_id)
                     {
                         package_export.clone()
                     } else {

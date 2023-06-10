@@ -1,11 +1,12 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
+use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
-use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{StoreAccess, StoreAccessInfo};
 use crate::types::*;
@@ -13,14 +14,10 @@ use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
     transaction::AbortReason,
 };
-use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::blueprints::package::{PackageRoyaltyAccumulatorSubstate, PACKAGE_ROYALTY_PARTITION_OFFSET, BlueprintVersionKey};
+use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
-use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
-use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -263,7 +260,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             ComponentRoyaltyBlueprint::charge_component_royalty(
                 component_address.as_node_id(),
                 ident,
-                api
+                api,
             )?;
         }
 

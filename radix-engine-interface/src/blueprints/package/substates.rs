@@ -1,10 +1,9 @@
-use radix_engine_common::crypto::Hash;
 use crate::blueprints::resource::AccessRule;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;
-use radix_engine_common::prelude::ScryptoSchema;
+use radix_engine_common::crypto::Hash;
 use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
@@ -33,7 +32,6 @@ pub const PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET: PartitionOffset = Par
 pub const PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
 
 pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 4u8;
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
@@ -180,9 +178,11 @@ impl IndexedBlueprintStateSchema {
 
         let mut fields = None;
         if !schema.fields.is_empty() {
-            let schema_fields = schema.fields.into_iter()
+            let schema_fields = schema
+                .fields
+                .into_iter()
                 .map(|s| s.map(|v| SchemaPointer::Package(schema_hash, v)))
-               .collect();
+                .collect();
             fields = Some((PartitionOffset(partition_offset), schema_fields));
             partition_offset += 1;
         };
@@ -199,7 +199,6 @@ impl IndexedBlueprintStateSchema {
             collections,
             num_partitions: partition_offset,
         }
-
     }
 
     pub fn num_partitions(&self) -> u8 {

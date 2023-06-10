@@ -94,7 +94,6 @@ impl CallFunction {
         .map(|_| ())
     }
 
-
     /// Calls a function.
     ///
     /// The implementation will automatically prepare the arguments based on the
@@ -116,25 +115,27 @@ impl CallFunction {
 
         let function_schema = bp_definition
             .find_function(function_name.as_str())
-            .ok_or_else(|| Error::TransactionConstructionError(BuildCallInstructionError::FunctionNotFound(function_name.clone())))?;
+            .ok_or_else(|| {
+                Error::TransactionConstructionError(BuildCallInstructionError::FunctionNotFound(
+                    function_name.clone(),
+                ))
+            })?;
 
         let (schema, index) = match function_schema.input {
             SchemaPointer::Package(hash, index) => {
                 let schema = export_schema(package_address, hash)?;
                 (schema, index)
-            },
+            }
         };
 
-        let (builder, built_args) = build_call_arguments(
-            builder,
-            bech32_decoder,
-            &schema,
-            index,
-            args,
-            account,
-        ).map_err(|e| {
-            Error::TransactionConstructionError(BuildCallInstructionError::FailedToBuildArguments(e))
-        })?;
+        let (builder, built_args) =
+            build_call_arguments(builder, bech32_decoder, &schema, index, args, account).map_err(
+                |e| {
+                    Error::TransactionConstructionError(
+                        BuildCallInstructionError::FailedToBuildArguments(e),
+                    )
+                },
+            )?;
 
         builder.add_instruction(InstructionV1::CallFunction {
             package_address,

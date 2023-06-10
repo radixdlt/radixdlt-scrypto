@@ -3,7 +3,11 @@ use colored::*;
 use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintDependencies, FunctionSchema, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, VmType, PackageExport, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET, IndexedBlueprintStateSchema};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedBlueprintStateSchema,
+    PackageExport, SchemaPointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
@@ -105,7 +109,9 @@ impl Publish {
 
                 let blueprint_schema = s.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
-                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&schema_hash).unwrap());
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
+                    &scrypto_encode(&schema_hash).unwrap(),
+                );
                 let update = DatabaseUpdate::Set(scrypto_encode(&blueprint_schema).unwrap());
                 schema_updates.insert(key, update);
 
@@ -125,21 +131,35 @@ impl Publish {
                     function_exports.insert(function, export);
                 }
 
-                let events = s.event_schema.into_iter()
-                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index))).collect();
+                let events = s
+                    .event_schema
+                    .into_iter()
+                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
+                    .collect();
 
                 let def = BlueprintDefinition {
                     outer_blueprint: s.outer_blueprint,
                     features: s.features,
                     functions,
                     events,
-                    state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, s.blueprint),
+                    state_schema: IndexedBlueprintStateSchema::from_schema(
+                        schema_hash,
+                        s.blueprint,
+                    ),
                     function_exports,
-                    virtual_lazy_load_functions: s.virtual_lazy_load_functions.into_iter()
-                        .map(|(key, export_name)| (key, PackageExport {
-                            code_hash,
-                            export_name,
-                        })).collect(),
+                    virtual_lazy_load_functions: s
+                        .virtual_lazy_load_functions
+                        .into_iter()
+                        .map(|(key, export_name)| {
+                            (
+                                key,
+                                PackageExport {
+                                    code_hash,
+                                    export_name,
+                                },
+                            )
+                        })
+                        .collect(),
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());

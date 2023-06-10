@@ -20,7 +20,6 @@ use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -29,7 +28,11 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintSetup, BlueprintVersionKey, FunctionSetup, MethodAuthTemplate, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup, PACKAGE_BLUEPRINT, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET, SchemaPointer};
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackagePublishWasmAdvancedManifestInput,
+    PackageRoyaltyAccumulatorSubstate, PackageSetup, SchemaPointer, PACKAGE_BLUEPRINT,
+    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -1513,18 +1516,11 @@ impl TestRunner {
         let (package_address, schema_pointer) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
                 match node_module {
-                    ObjectModuleId::AccessRules => (
-                        ACCESS_RULES_MODULE_PACKAGE,
-                        schema_pointer.clone(),
-                    ),
-                    ObjectModuleId::Royalty => (
-                        ROYALTY_MODULE_PACKAGE,
-                        schema_pointer.clone(),
-                    ),
-                    ObjectModuleId::Metadata => (
-                        METADATA_MODULE_PACKAGE,
-                        schema_pointer.clone(),
-                    ),
+                    ObjectModuleId::AccessRules => {
+                        (ACCESS_RULES_MODULE_PACKAGE, schema_pointer.clone())
+                    }
+                    ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, schema_pointer.clone()),
+                    ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, schema_pointer.clone()),
                     ObjectModuleId::Main => {
                         let type_info = self
                             .substate_db()
@@ -1539,10 +1535,7 @@ impl TestRunner {
                             TypeInfoSubstate::Object(ObjectInfo {
                                 blueprint_id: blueprint,
                                 ..
-                            }) => (
-                                blueprint.package_address,
-                                *schema_pointer,
-                            ),
+                            }) => (blueprint.package_address, *schema_pointer),
                             _ => {
                                 panic!("No event schema.")
                             }
@@ -1550,10 +1543,7 @@ impl TestRunner {
                     }
                 }
             }
-            EventTypeIdentifier(
-                Emitter::Function(node_id, ..),
-                schema_pointer,
-            ) => (
+            EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
                 PackageAddress::new_or_panic(node_id.0),
                 schema_pointer.clone(),
             ),
@@ -1561,10 +1551,13 @@ impl TestRunner {
 
         match schema_pointer {
             SchemaPointer::Package(schema_hash, index) => {
-                let schema = self.substate_db()
+                let schema = self
+                    .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<ScryptoSchema>>>(
                         package_address.as_node_id(),
-                        MAIN_BASE_PARTITION.at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET).unwrap(),
+                        MAIN_BASE_PARTITION
+                            .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                            .unwrap(),
                         &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
                     )
                     .unwrap()
@@ -1572,7 +1565,7 @@ impl TestRunner {
                     .unwrap();
 
                 (index, schema)
-            },
+            }
         }
     }
 

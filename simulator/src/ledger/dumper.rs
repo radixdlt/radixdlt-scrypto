@@ -5,7 +5,9 @@ use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::SubstateWrapper;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::{PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PACKAGE_CODE_PARTITION_OFFSET, PackageCodeSubstate};
+use radix_engine_interface::blueprints::package::{
+    PackageCodeSubstate, PACKAGE_CODE_PARTITION_OFFSET,
+};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
 use radix_engine_store_interface::{
@@ -33,8 +35,11 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let (_, substate) = substate_db
         .list_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<PackageCodeSubstate>>, MapKey>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION.at_offset(PACKAGE_CODE_PARTITION_OFFSET).unwrap(),
-        ).next()
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
+                .unwrap(),
+        )
+        .next()
         .ok_or(EntityDumpError::PackageNotFound)?;
 
     writeln!(

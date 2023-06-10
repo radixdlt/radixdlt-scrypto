@@ -2,8 +2,7 @@ use super::HasTypeInfo;
 use crate::prelude::{Global, HasStub, ObjectStub, ObjectStubHandle};
 use radix_engine_common::prelude::PACKAGE_PACKAGE;
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltiesInput, PACKAGE_BLUEPRINT,
-    PACKAGE_CLAIM_ROYALTIES_IDENT,
+    PackageClaimRoyaltiesInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::types::*;
