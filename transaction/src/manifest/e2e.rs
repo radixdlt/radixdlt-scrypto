@@ -52,6 +52,7 @@ CALL_FUNCTION
     "BlueprintName"
     "no_such_function"
     Decimal("1")
+    NamedAddress("my_package")
 ;
 "##,
             ),
