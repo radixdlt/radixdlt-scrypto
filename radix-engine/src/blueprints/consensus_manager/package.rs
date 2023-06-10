@@ -15,8 +15,8 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FeaturedSchema,
-    FieldSchema, FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
+    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FieldSchema,
+    FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -65,7 +65,7 @@ impl ConsensusManagerNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
-                export: FeaturedSchema::normal(CONSENSUS_MANAGER_CREATE_IDENT),
+                export: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -76,7 +76,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>(),
-                export: FeaturedSchema::normal(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT),
+                export: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -85,7 +85,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
                 output: aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
-                export: FeaturedSchema::normal(CONSENSUS_MANAGER_START_IDENT),
+                export: CONSENSUS_MANAGER_START_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -96,7 +96,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(),
-                export: FeaturedSchema::normal(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT),
+                export: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -107,7 +107,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(),
-                export: FeaturedSchema::normal(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT),
+                export: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -118,7 +118,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
-                export: FeaturedSchema::normal(CONSENSUS_MANAGER_NEXT_ROUND_IDENT),
+                export: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -129,7 +129,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>(),
-                export: FeaturedSchema::normal(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT),
+                export: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             },
         );
 
@@ -173,7 +173,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_REGISTER_IDENT),
+                export: VALIDATOR_REGISTER_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -182,7 +182,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_UNREGISTER_IDENT),
+                export: VALIDATOR_UNREGISTER_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -191,7 +191,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_STAKE_IDENT),
+                export: VALIDATOR_STAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -200,7 +200,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_UNSTAKE_IDENT),
+                export: VALIDATOR_UNSTAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -209,7 +209,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_CLAIM_XRD_IDENT),
+                export: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -218,7 +218,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_UPDATE_KEY_IDENT),
+                export: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -227,7 +227,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_UPDATE_FEE_IDENT),
+                export: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -238,7 +238,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT),
+                export: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -249,7 +249,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT),
+                export: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -260,7 +260,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT),
+                export: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -271,7 +271,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT),
+                export: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -280,7 +280,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
-                export: FeaturedSchema::normal(VALIDATOR_APPLY_EMISSION_IDENT),
+                export: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
             },
         );
 

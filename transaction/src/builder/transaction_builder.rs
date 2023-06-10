@@ -107,11 +107,11 @@ mod tests {
 
     use super::*;
     use crate::builder::*;
-    use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+    use crate::signing::secp256k1::Secp256k1PrivateKey;
 
     #[test]
     fn notary_as_signatory() {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+        let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
 
         let transaction = TransactionBuilder::new()
             .header(TransactionHeaderV1 {

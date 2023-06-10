@@ -9,19 +9,19 @@ use crate::internal_prelude::*;
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum SignatureV1 {
-    EcdsaSecp256k1(EcdsaSecp256k1Signature),
-    EddsaEd25519(EddsaEd25519Signature),
+    Secp256k1(Secp256k1Signature),
+    Ed25519(Ed25519Signature),
 }
 
-impl From<EcdsaSecp256k1Signature> for SignatureV1 {
-    fn from(signature: EcdsaSecp256k1Signature) -> Self {
-        Self::EcdsaSecp256k1(signature)
+impl From<Secp256k1Signature> for SignatureV1 {
+    fn from(signature: Secp256k1Signature) -> Self {
+        Self::Secp256k1(signature)
     }
 }
 
-impl From<EddsaEd25519Signature> for SignatureV1 {
-    fn from(signature: EddsaEd25519Signature) -> Self {
-        Self::EddsaEd25519(signature)
+impl From<Ed25519Signature> for SignatureV1 {
+    fn from(signature: Ed25519Signature) -> Self {
+        Self::Ed25519(signature)
     }
 }
 

@@ -49,7 +49,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -61,7 +61,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -73,7 +73,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -85,7 +85,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -97,9 +97,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
-                    export: FeaturedSchema::normal(
-                        ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME,
-                    ),
+                    export: ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -112,9 +110,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME,
-                    ),
+                    export: ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -126,7 +122,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -177,7 +173,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -189,7 +185,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -201,7 +197,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -213,7 +209,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -225,9 +221,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
-                    export: FeaturedSchema::normal(
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME,
-                    ),
+                    export: TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -240,9 +234,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME,
-                    ),
+                    export: TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -254,7 +246,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -305,7 +297,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -317,7 +309,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -329,7 +321,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -342,9 +334,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME,
-                    ),
+                    export: MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -358,9 +348,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME,
-                    ),
+                    export: MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -374,7 +362,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -386,9 +374,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>(),
-                    export: FeaturedSchema::normal(
-                        MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME,
-                    ),
+                    export: MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );
 

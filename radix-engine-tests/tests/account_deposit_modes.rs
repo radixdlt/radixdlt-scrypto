@@ -6,7 +6,7 @@ use radix_engine_queries::typed_substate_layout::AccountError;
 use scrypto::prelude::*;
 use scrypto_unit::TestRunner;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn account_deposit_method_is_callable_with_owner_signature() {
@@ -605,9 +605,7 @@ impl AccountDepositModesTestRunner {
 
     pub fn burn(&mut self, resource_address: ResourceAddress) {
         let virtual_account = ComponentAddress::virtual_account_from_public_key(
-            &EcdsaSecp256k1PrivateKey::from_u64(1u64)
-                .unwrap()
-                .public_key(),
+            &Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key(),
         );
 
         let balance = self

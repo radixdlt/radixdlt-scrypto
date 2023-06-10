@@ -39,7 +39,7 @@ use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{
-    BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema,
+    BlueprintSchema, FieldSchema, FunctionSchema,
 };
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
@@ -58,12 +58,12 @@ use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
     AttachmentsV1, BlobV1, Executable, InstructionV1, IntentV1, PreviewFlags, PreviewIntentV1,
     SystemTransactionV1, TestTransaction, TransactionHeaderV1, TransactionPayload,
 };
-use transaction::prelude::{BlobsV1, InstructionsV1};
+use transaction::prelude::*;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 pub struct Compile;
 
@@ -138,9 +138,7 @@ pub struct CustomGenesis {
 
 impl CustomGenesis {
     pub fn default(initial_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
-        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-            .unwrap()
-            .public_key();
+        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         Self::single_validator_and_staker(
             pub_key,
             Decimal::one(),
@@ -167,7 +165,7 @@ impl CustomGenesis {
     }
 
     pub fn single_validator_and_staker(
-        validator_public_key: EcdsaSecp256k1PublicKey,
+        validator_public_key: Secp256k1PublicKey,
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: Epoch,
@@ -343,8 +341,8 @@ impl TestRunner {
         self.next_transaction_nonce - 1
     }
 
-    pub fn new_key_pair(&mut self) -> (EcdsaSecp256k1PublicKey, EcdsaSecp256k1PrivateKey) {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(self.next_private_key()).unwrap();
+    pub fn new_key_pair(&mut self) -> (Secp256k1PublicKey, Secp256k1PrivateKey) {
+        let private_key = Secp256k1PrivateKey::from_u64(self.next_private_key()).unwrap();
         let public_key = private_key.public_key();
 
         (public_key, private_key)
@@ -352,11 +350,7 @@ impl TestRunner {
 
     pub fn new_key_pair_with_auth_address(
         &mut self,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        NonFungibleGlobalId,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, NonFungibleGlobalId) {
         let key_pair = self.new_allocated_account();
         (
             key_pair.0,
@@ -573,23 +567,16 @@ impl TestRunner {
 
     pub fn new_virtual_account(
         &mut self,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        ComponentAddress,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_key_pair();
-        let account = ComponentAddress::virtual_account_from_public_key(
-            &PublicKey::EcdsaSecp256k1(pub_key.clone()),
-        );
+        let account = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
+            pub_key.clone(),
+        ));
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
 
-    pub fn get_active_validator_info_by_key(
-        &self,
-        key: &EcdsaSecp256k1PublicKey,
-    ) -> ValidatorSubstate {
+    pub fn get_active_validator_info_by_key(&self, key: &Secp256k1PublicKey) -> ValidatorSubstate {
         let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
     }
@@ -604,7 +591,7 @@ impl TestRunner {
             .unwrap()
     }
 
-    pub fn get_active_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+    pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
@@ -624,11 +611,7 @@ impl TestRunner {
 
     pub fn new_allocated_account(
         &mut self,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        ComponentAddress,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
@@ -638,11 +621,7 @@ impl TestRunner {
     pub fn new_account(
         &mut self,
         is_virtual: bool,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        ComponentAddress,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         if is_virtual {
             self.new_virtual_account()
         } else {
@@ -650,11 +629,7 @@ impl TestRunner {
         }
     }
 
-    pub fn new_identity(
-        &mut self,
-        pk: EcdsaSecp256k1PublicKey,
-        is_virtual: bool,
-    ) -> ComponentAddress {
+    pub fn new_identity(&mut self, pk: Secp256k1PublicKey, is_virtual: bool) -> ComponentAddress {
         if is_virtual {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
@@ -690,7 +665,7 @@ impl TestRunner {
 
     pub fn new_validator_with_pub_key(
         &mut self,
-        pub_key: EcdsaSecp256k1PublicKey,
+        pub_key: Secp256k1PublicKey,
         account: ComponentAddress,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
@@ -935,9 +910,7 @@ impl TestRunner {
                         start_epoch_inclusive: epoch,
                         end_epoch_exclusive: epoch.after(10),
                         nonce: 0,
-                        notary_public_key: PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
-                            [0u8; 33],
-                        )),
+                        notary_public_key: PublicKey::Secp256k1(Secp256k1PublicKey([0u8; 33])),
                         notary_is_signatory: false,
                         tip_percentage,
                     },
@@ -1738,7 +1711,7 @@ pub fn single_function_package_definition(
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: FeaturedSchema::normal(format!("{}_{}", blueprint_name, function_name)),
+                        export: format!("{}_{}", blueprint_name, function_name),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),

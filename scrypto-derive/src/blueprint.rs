@@ -1210,7 +1210,7 @@ fn generate_schema(
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
-                                export: ExportSchema::normal(#export_name),
+                                export: #export_name.to_string(),
                             }
                         });
                     } else {
@@ -1220,7 +1220,7 @@ fn generate_schema(
                                 receiver: Option::Some(#receiver),
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
-                                export: ExportSchema::normal(#export_name),
+                                export: #export_name.to_string(),
                             }
                         });
                     }
@@ -1445,7 +1445,7 @@ mod tests {
                                 receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
                                 input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
                                 output: aggregator.add_child_type_and_descendents::<u32>(),
-                                export: ExportSchema::normal("Test_x"),
+                                export: "Test_x".to_string(),
                             }
                         );
                         functions.insert(
@@ -1454,7 +1454,7 @@ mod tests {
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
                                 output: aggregator.add_child_type_and_descendents::<u32>(),
-                                export: ExportSchema::normal("Test_y"),
+                                export: "Test_y".to_string(),
                             }
                         );
                         let mut event_schema = BTreeMap::new();

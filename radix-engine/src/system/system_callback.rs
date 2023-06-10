@@ -4,8 +4,8 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::{FeaturedSchema, RefTypes};
+use radix_engine_interface::schema::RefTypes;
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -69,30 +69,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    let export_name = match &function_schema.export {
-        FeaturedSchema::Normal { value: export_name } => export_name.clone(),
-        FeaturedSchema::Conditional {
-            feature: cfg,
-            value: export_name,
-        } => match &service.kernel_get_system_state().current {
-            Actor::Method(method) => {
-                if method.module_object_info.features.contains(cfg) {
-                    export_name.clone()
-                } else {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
-                    ));
-                }
-            }
-            _ => {
-                return Err(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
-                ));
-            }
-        },
-    };
-
-    Ok(export_name)
+    Ok(function_schema.export.to_string())
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(

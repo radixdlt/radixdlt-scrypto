@@ -9,8 +9,8 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
+use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
-use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema};
 use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
@@ -32,7 +32,7 @@ impl TransactionProcessorNativePackage {
                 input: aggregator.add_child_type_and_descendents::<TransactionProcessorRunInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<TransactionProcessorRunOutput>(),
-                export: FeaturedSchema::normal(TRANSACTION_PROCESSOR_RUN_IDENT),
+                export: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
             },
         );
 

@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintSetup, BlueprintTemplate, PackageSetup,
 };
 use radix_engine_interface::schema::{
-    BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema,
+    BlueprintSchema, FieldSchema, FunctionSchema,
 };
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
@@ -159,7 +159,7 @@ fn test_basic_package_missing_export() {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: FeaturedSchema::normal("not_exist"),
+                        export: "not_exist".to_string(),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),

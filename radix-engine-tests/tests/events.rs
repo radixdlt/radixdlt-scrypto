@@ -21,8 +21,8 @@ use scrypto::prelude::{AccessRule, FromPublicKey, ResourceMethodAuthKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::InstructionV1;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 // TODO: In the future, the ClientAPI should only be able to add events to the event store. It
 // should not be able to have full control over it.
@@ -710,9 +710,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
 fn consensus_manager_epoch_update_emits_xrd_minting_event() {
     // Arrange: some validator, and a degenerate 1-round epoch config, to advance it easily
     let emission_xrd = dec!("13.37");
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         Decimal::one(),
@@ -762,9 +760,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
 fn validator_registration_emits_correct_event() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
@@ -814,9 +810,7 @@ fn validator_registration_emits_correct_event() {
 fn validator_unregistration_emits_correct_event() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
@@ -877,9 +871,7 @@ fn validator_unregistration_emits_correct_event() {
 fn validator_staking_emits_correct_event() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
@@ -1003,12 +995,8 @@ fn validator_unstake_emits_correct_events() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let num_unstake_epochs = 1;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -1160,12 +1148,8 @@ fn validator_claim_xrd_emits_correct_events() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let num_unstake_epochs = 1;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,

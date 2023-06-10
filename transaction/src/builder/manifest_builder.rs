@@ -32,7 +32,7 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_PACKAGE,
 };
-use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
+use radix_engine_interface::crypto::{hash, Hash, Secp256k1PublicKey};
 #[cfg(feature = "dump_manifest_to_file")]
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::data::manifest::{
@@ -502,7 +502,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
+    pub fn create_validator(&mut self, key: Secp256k1PublicKey) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),

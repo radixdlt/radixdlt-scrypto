@@ -99,7 +99,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
         Self::create_virtual(public_key_hash, api)
     }
 
@@ -110,7 +110,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
         Self::create_virtual(public_key_hash, api)
     }
 

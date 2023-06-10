@@ -24,8 +24,7 @@ use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
-    BlueprintSchema, FeaturedSchema, FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey,
-    SchemaMethodPermission,
+    BlueprintSchema, FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -310,7 +309,7 @@ impl PackageNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_PUBLISH_WASM_IDENT),
+                export: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -321,7 +320,7 @@ impl PackageNativePackage {
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT),
+                export: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -330,7 +329,7 @@ impl PackageNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_PUBLISH_NATIVE_IDENT),
+                export: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -339,7 +338,7 @@ impl PackageNativePackage {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_SET_ROYALTY_IDENT),
+                export: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -348,7 +347,7 @@ impl PackageNativePackage {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_CLAIM_ROYALTIES_IDENT),
+                export: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             },
         );
 
