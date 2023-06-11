@@ -217,7 +217,7 @@ fn test_genesis_resource_with_initial_allocation() {
     );
     let allocation_amount = dec!("105");
     let genesis_resource = GenesisResource {
-        address_reservation: ManifestOwn(0),
+        address_reservation: ManifestAddressReservation(0),
         initial_supply: allocation_amount,
         metadata: vec![(
             "symbol".to_string(),

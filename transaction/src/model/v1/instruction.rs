@@ -5,6 +5,160 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
+/*
+=================================================================================
+NOTE: For now, we only support "dynamic" addresses for CALL instructions.
+=================================================================================
+This is to reduce the scope of change and make manifest easier to reason about.
+
+In theory, we can apply it to all types of global addresses (`GlobalAddress`,
+`PackageAddress`, `ResourceAddress` and `ComponentAddress`).
+
+Then, we can do more advanced stuff in manifest, such as
+```
+ALLOCATE_GLOBAL_ADDRESS
+    Address("{resource_package}")
+    "FungibleResourceManager"
+    AddressReservation("address_reservation")
+    NamedAddress("new_resource")
+;
+CALL_FUNCTION
+    Address("{resource_package}")
+    "FungibleResourceManager"
+    "create_with_initial_supply_and_address"
+    Decimal("10")
+    AddressReservation("address_reservation")
+;
+TAKE_FROM_WORKTOP
+    NamedAddress("new_resource")
+    Decimal("5.0")
+    Bucket("bucket1")
+;
+TAKE_FROM_WORKTOP
+    NamedAddress("new_resource")
+    Decimal("5.0")
+    Bucket("bucket2")
+;
+```
+*/
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+pub enum DynamicGlobalAddress {
+    Static(GlobalAddress),
+    Named(u32),
+}
+
+impl DynamicGlobalAddress {
+    /// This is to support either `Address("static_address")` or `NamedAddress("abc")` in manifest instruction,
+    /// instead of `Enum<0u8>(Address("static_address"))`.
+    pub fn to_instruction_argument(&self) -> ManifestValue {
+        match self {
+            Self::Static(address) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Static(
+                    address.into_node_id(),
+                )),
+            },
+            Self::Named(id) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Named(*id)),
+            },
+        }
+    }
+
+    pub fn is_static_global_package(&self) -> bool {
+        match self {
+            Self::Static(address) => address.as_node_id().is_global_package(),
+            Self::Named(_) => false,
+        }
+    }
+
+    pub fn is_static_global_fungible_resource_manager(&self) -> bool {
+        match self {
+            Self::Static(address) => address.as_node_id().is_global_fungible_resource_manager(),
+            Self::Named(_) => false,
+        }
+    }
+    pub fn is_static_global_non_fungible_resource_manager(&self) -> bool {
+        match self {
+            Self::Static(address) => address
+                .as_node_id()
+                .is_global_non_fungible_resource_manager(),
+            Self::Named(_) => false,
+        }
+    }
+}
+
+impl From<GlobalAddress> for DynamicGlobalAddress {
+    fn from(value: GlobalAddress) -> Self {
+        Self::Static(value)
+    }
+}
+
+impl From<PackageAddress> for DynamicGlobalAddress {
+    fn from(value: PackageAddress) -> Self {
+        Self::Static(value.into())
+    }
+}
+
+impl From<ResourceAddress> for DynamicGlobalAddress {
+    fn from(value: ResourceAddress) -> Self {
+        Self::Static(value.into())
+    }
+}
+
+impl From<ComponentAddress> for DynamicGlobalAddress {
+    fn from(value: ComponentAddress) -> Self {
+        Self::Static(value.into())
+    }
+}
+
+impl From<u32> for DynamicGlobalAddress {
+    fn from(value: u32) -> Self {
+        Self::Named(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+pub enum DynamicPackageAddress {
+    Static(PackageAddress),
+    Named(u32),
+}
+
+impl DynamicPackageAddress {
+    /// This is to support either `Address("static_address")` or `NamedAddress("abc")` in manifest instruction,
+    /// instead of `Enum<0u8>(Address("static_address"))`.
+    pub fn to_instruction_argument(&self) -> ManifestValue {
+        match self {
+            Self::Static(address) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Static(
+                    address.into_node_id(),
+                )),
+            },
+            Self::Named(id) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Named(*id)),
+            },
+        }
+    }
+
+    pub fn is_static_global_package_of(&self, package_address: &PackageAddress) -> bool {
+        match self {
+            Self::Static(address) => address.as_node_id().eq(package_address.as_node_id()),
+            Self::Named(_) => false,
+        }
+    }
+}
+
+impl From<PackageAddress> for DynamicPackageAddress {
+    fn from(value: PackageAddress) -> Self {
+        Self::Static(value.into())
+    }
+}
+
+impl From<u32> for DynamicPackageAddress {
+    fn from(value: u32) -> Self {
+        Self::Named(value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum InstructionV1 {
     //==============
@@ -128,7 +282,7 @@ pub enum InstructionV1 {
     //==============
     #[sbor(discriminator(INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR))]
     CallFunction {
-        package_address: PackageAddress,
+        package_address: DynamicPackageAddress,
         blueprint_name: String,
         function_name: String,
         args: ManifestValue,
@@ -136,28 +290,28 @@ pub enum InstructionV1 {
 
     #[sbor(discriminator(INSTRUCTION_CALL_METHOD_DISCRIMINATOR))]
     CallMethod {
-        address: GlobalAddress,
+        address: DynamicGlobalAddress,
         method_name: String,
         args: ManifestValue,
     },
 
     #[sbor(discriminator(INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR))]
     CallRoyaltyMethod {
-        address: GlobalAddress,
+        address: DynamicGlobalAddress,
         method_name: String,
         args: ManifestValue,
     },
 
     #[sbor(discriminator(INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR))]
     CallMetadataMethod {
-        address: GlobalAddress,
+        address: DynamicGlobalAddress,
         method_name: String,
         args: ManifestValue,
     },
 
     #[sbor(discriminator(INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR))]
     CallAccessRulesMethod {
-        address: GlobalAddress,
+        address: DynamicGlobalAddress,
         method_name: String,
         args: ManifestValue,
     },
@@ -175,6 +329,12 @@ pub enum InstructionV1 {
     /// Drops all proofs, both named proofs and auth zone proofs.
     #[sbor(discriminator(INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR))]
     DropAllProofs,
+
+    #[sbor(discriminator(INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR))]
+    AllocateGlobalAddress {
+        package_address: PackageAddress,
+        blueprint_name: String,
+    },
 }
 
 //===============================================================

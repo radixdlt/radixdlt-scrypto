@@ -2,6 +2,7 @@ use crate::data::transform;
 use crate::data::TransformHandler;
 use crate::errors::*;
 use crate::validation::*;
+use radix_engine_common::prelude::Reference;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::Own;
@@ -19,25 +20,28 @@ pub enum ProofKind {
     AuthZoneProof,
 }
 
+#[derive(Default)]
 pub struct ManifestValidator {
     id_allocator: ManifestIdAllocator,
+    /// Bucket id -> lock count
     bucket_ids: NonIterMap<ManifestBucket, usize>,
+    /// Proof id to proof info
     proof_ids: NonIterMap<ManifestProof, ProofKind>,
+    /// Set of active allocated global address reservation ids
+    address_reservation_ids: IndexSet<ManifestAddressReservation>,
+    /// Set of named global address ids
+    address_ids: IndexSet<u32>,
 }
 
 impl ManifestValidator {
     pub fn new() -> Self {
-        Self {
-            id_allocator: ManifestIdAllocator::new(),
-            bucket_ids: NonIterMap::new(),
-            proof_ids: NonIterMap::new(),
-        }
+        Self::default()
     }
 
-    pub fn new_bucket(&mut self) -> Result<ManifestBucket, ManifestIdValidationError> {
+    pub fn new_bucket(&mut self) -> ManifestBucket {
         let bucket_id = self.id_allocator.new_bucket_id();
         self.bucket_ids.insert(bucket_id.clone(), 0);
-        Ok(bucket_id)
+        bucket_id
     }
 
     pub fn drop_bucket(
@@ -119,6 +123,45 @@ impl ManifestValidator {
         Ok(())
     }
 
+    pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
+        let address_reservation_id = self.id_allocator.new_address_reservation_id();
+        self.address_reservation_ids
+            .insert(address_reservation_id.clone());
+        address_reservation_id
+    }
+
+    pub fn drop_address_reservation(
+        &mut self,
+        address_reservation_id: &ManifestAddressReservation,
+    ) -> Result<(), ManifestIdValidationError> {
+        if self.address_reservation_ids.remove(address_reservation_id) {
+            Ok(())
+        } else {
+            Err(ManifestIdValidationError::AddressReservationNotFound(
+                address_reservation_id.clone(),
+            ))
+        }
+    }
+
+    pub fn new_named_address(&mut self) -> u32 {
+        let address_id = self.id_allocator.new_address_id();
+        self.address_ids.insert(address_id.clone());
+        address_id
+    }
+
+    pub fn check_named_address(
+        &mut self,
+        address_id: &u32,
+    ) -> Result<(), ManifestIdValidationError> {
+        if self.address_ids.contains(address_id) {
+            Ok(())
+        } else {
+            Err(ManifestIdValidationError::AddressNotFound(
+                address_id.clone(),
+            ))
+        }
+    }
+
     pub fn process_call_data(
         &mut self,
         args: &ManifestValue,
@@ -138,8 +181,17 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    fn replace_own(&mut self, _p: ManifestOwn) -> Result<Own, ManifestIdValidationError> {
+    fn replace_address_reservation(
+        &mut self,
+        r: ManifestAddressReservation,
+    ) -> Result<Own, ManifestIdValidationError> {
+        self.drop_address_reservation(&r)?;
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
+    }
+
+    fn replace_named_address(&mut self, a: u32) -> Result<Reference, ManifestIdValidationError> {
+        self.check_named_address(&a)?;
+        Ok(Reference(NodeId([0u8; NodeId::LENGTH])))
     }
 
     // TODO: validate expression and blob as well
