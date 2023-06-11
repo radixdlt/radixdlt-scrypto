@@ -15,7 +15,6 @@ pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
 use radix_engine::system::system::KeyValueEntrySubstate;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 
 //=========================================================================
@@ -344,7 +343,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(Option<ScryptoOwnedRawValue>),
+    NonFungibleResourceData(KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
@@ -353,14 +352,14 @@ pub enum TypedMainModuleSubstateValue {
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
-    AccountVaultIndex(AccountVaultIndexEntry),
+    AccountVaultIndex(KeyValueEntrySubstate<AccountVaultIndexEntry>),
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
+    GenericKeyValueStore(KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>>),
 }
 
 #[derive(Debug, Clone)]
@@ -487,8 +486,7 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::MetadataModuleEntryKey(_) => {
-            let value: KeyValueEntrySubstate<Option<MetadataValue>> = scrypto_decode(data)?;
-            TypedSubstateValue::MetadataModuleEntryValue(value.value)
+            TypedSubstateValue::MetadataModuleEntryValue(scrypto_decode(data)?)
         }
         TypedSubstateKey::MainModule(object_substate_key) => TypedSubstateValue::MainModule(
             to_typed_object_substate_value(object_substate_key, data)?,
@@ -537,9 +535,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            let value: KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
-
-            TypedMainModuleSubstateValue::NonFungibleResourceData(value.value)
+            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
             TypedMainModuleSubstateValue::FungibleVault(match offset {
@@ -604,8 +600,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
-            let value: KeyValueEntrySubstate<Option<Own>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::AccountVaultIndex(value.value)
+            TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
@@ -627,9 +622,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            let value: KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
-
-            TypedMainModuleSubstateValue::GenericKeyValueStore(value.value)
+            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
             TypedMainModuleSubstateValue::OneResourcePool(match offset {
