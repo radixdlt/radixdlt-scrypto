@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::BlueprintStateSchemaInit;
+use radix_engine_interface::schema::{BlueprintEventSchemaInit, BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
@@ -47,7 +47,7 @@ impl TransactionProcessorNativePackage {
                 },
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 schema,
                 function_auth: btreemap!(
                     TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?

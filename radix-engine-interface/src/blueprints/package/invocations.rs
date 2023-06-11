@@ -10,7 +10,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::LocalTypeIndex;
-use scrypto_schema::{BlueprintStateSchemaInit, ReceiverInfo};
+use scrypto_schema::{BlueprintEventSchemaInit, BlueprintStateSchemaInit, ReceiverInfo};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -104,7 +104,7 @@ pub struct BlueprintDefinitionInit {
 
     pub schema: ScryptoSchema,
     pub blueprint: BlueprintStateSchemaInit,
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    pub event_schema: BlueprintEventSchemaInit,
     pub functions: BTreeMap<String, FunctionSchemaInit>,
     pub virtual_lazy_load_functions: BTreeMap<u8, String>,
 
@@ -120,7 +120,7 @@ impl Default for BlueprintDefinitionInit {
             dependencies: BTreeSet::default(),
             feature_set: BTreeSet::default(),
             blueprint: BlueprintStateSchemaInit::default(),
-            event_schema: BTreeMap::default(),
+            event_schema: BlueprintEventSchemaInit::default(),
             function_auth: BTreeMap::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),

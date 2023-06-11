@@ -9,10 +9,7 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey, SchemaMethodPermission};
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema,
-    ReceiverInfo, TypeRef,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema, ReceiverInfo, TypeRef};
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
 use crate::method_auth_template;
@@ -387,7 +384,7 @@ impl AccountNativePackage {
                     fields,
                     collections,
                 },
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(
                     ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
                     ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),

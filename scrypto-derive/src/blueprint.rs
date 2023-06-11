@@ -608,7 +608,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     feature_set: BTreeSet::new(),
                     blueprint,
                     schema,
-                    event_schema,
+                    event_schema: BlueprintEventSchemaInit {
+                        event_schema,
+                    },
                     function_auth,
                     royalty_config,
                     template,
@@ -1489,6 +1491,9 @@ mod tests {
                             feature_set: BTreeSet::new(),
                             blueprint,
                             schema,
+                            event_schema: BlueprintEventSchemaInit {
+                                event_schema,
+                            },
                             event_schema,
                             function_auth,
                             royalty_config,

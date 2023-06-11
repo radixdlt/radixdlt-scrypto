@@ -40,6 +40,12 @@ impl KeyValueStoreSchema {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct BlueprintEventSchemaInit {
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintStateSchemaInit {
     pub fields: Vec<FieldSchema>,

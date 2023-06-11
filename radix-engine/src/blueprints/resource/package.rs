@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintIndexSchema;
+use radix_engine_interface::schema::{BlueprintEventSchemaInit, BlueprintIndexSchema};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, FieldSchema,
 };
@@ -1212,7 +1212,7 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
                 schema,
                 blueprint,
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: MethodAuthTemplate {
@@ -1386,7 +1386,7 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
                 schema,
                 blueprint,
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: MethodAuthTemplate {
@@ -1474,7 +1474,7 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
                 schema,
                 blueprint,
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(
                     PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -1565,7 +1565,7 @@ impl ResourceManagerNativePackage {
             BlueprintDefinitionInit {
                 blueprint,
                 schema,
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
@@ -1700,7 +1700,7 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
                 schema,
                 blueprint: worktop_blueprint,
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(
                     WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -1836,7 +1836,7 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
                 schema,
                 blueprint: auth_zone_blueprint,
-                event_schema: btreemap!(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: MethodAuthTemplate {

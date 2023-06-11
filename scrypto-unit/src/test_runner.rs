@@ -38,7 +38,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintStateSchemaInit, FieldSchema};
+use radix_engine_interface::schema::{BlueprintEventSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -1671,7 +1671,7 @@ pub fn single_function_package_definition(
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
             },
-            event_schema: [].into(),
+            event_schema: BlueprintEventSchemaInit::default(),
             function_auth: btreemap!(
                 function_name.to_string() => rule!(allow_all),
             ),

@@ -19,7 +19,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::ReceiverInfo;
+use radix_engine_interface::schema::{BlueprintEventSchemaInit, ReceiverInfo};
 use radix_engine_interface::schema::{BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
 
@@ -97,7 +97,7 @@ impl IdentityNativePackage {
                     fields,
                     collections: vec![],
                 },
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(
                     IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                     IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),

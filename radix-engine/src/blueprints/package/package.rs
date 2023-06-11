@@ -19,10 +19,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema,
-    RefTypes, TypeRef,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema, RefTypes, TypeRef};
 use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
 
@@ -84,7 +81,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
         // Package schema validation happens when the package is published. No need to redo
         // it here again.
 
-        for (expected_event_name, local_type_index) in event_schema.iter() {
+        for (expected_event_name, local_type_index) in event_schema.event_schema.iter() {
             // Checking that the event is either a struct or an enum
             let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
@@ -581,7 +578,7 @@ impl PackageNativePackage {
                     fields,
                     collections,
                 },
-                event_schema: [].into(),
+                event_schema: BlueprintEventSchemaInit::default(),
                 function_auth: btreemap!(
                     PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
                     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
@@ -740,6 +737,7 @@ impl PackageNativePackage {
                 }
 
                 let events = setup
+                    .event_schema
                     .event_schema
                     .into_iter()
                     .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
@@ -961,6 +959,7 @@ impl PackageNativePackage {
                 }
 
                 let events = setup
+                    .event_schema
                     .event_schema
                     .into_iter()
                     .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))

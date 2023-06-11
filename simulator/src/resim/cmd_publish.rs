@@ -132,6 +132,7 @@ impl Publish {
 
                 let events = s
                     .event_schema
+                    .event_schema
                     .into_iter()
                     .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
                     .collect();

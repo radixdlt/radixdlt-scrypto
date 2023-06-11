@@ -5,7 +5,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup,
 };
-use radix_engine_interface::schema::{BlueprintStateSchemaInit, FieldSchema};
+use radix_engine_interface::schema::{BlueprintEventSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -150,7 +150,7 @@ fn test_basic_package_missing_export() {
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
             },
-            event_schema: [].into(),
+            event_schema: BlueprintEventSchemaInit::default(),
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],
