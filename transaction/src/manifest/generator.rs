@@ -1420,7 +1420,7 @@ mod tests {
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::schema::BlueprintSchema;
+    use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, RoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
@@ -1653,7 +1653,7 @@ mod tests {
                         .try_into()
                         .unwrap()
                     ),
-                    BTreeMap::<String, BlueprintSchema>::new(),
+                    BTreeMap::<String, BlueprintStateSchemaInit>::new(),
                     BTreeMap::<String, RoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
                     Roles::new()

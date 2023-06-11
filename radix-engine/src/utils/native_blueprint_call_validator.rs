@@ -116,7 +116,7 @@ fn get_blueprint_schema<'p>(
     package_definition: &'p PackageSetup,
     package_address: PackageAddress,
     blueprint: &str,
-) -> Result<&'p BlueprintSetup, InstructionSchemaValidationError> {
+) -> Result<&'p BlueprintDefinitionInit, InstructionSchemaValidationError> {
     package_definition.blueprints.get(blueprint).ok_or(
         InstructionSchemaValidationError::InvalidBlueprint(package_address, blueprint.to_owned()),
     )

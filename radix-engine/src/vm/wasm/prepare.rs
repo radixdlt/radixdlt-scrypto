@@ -3,7 +3,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_interface::blueprints::package::BlueprintSetup;
+use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -936,7 +936,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSetup>>(
+    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         self,
         blueprints: I,
     ) -> Result<Self, PrepareError> {
@@ -1089,8 +1089,8 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::blueprints::package::FunctionSetup;
-    use radix_engine_interface::schema::{BlueprintSchema, FieldSchema};
+    use radix_engine_interface::blueprints::package::FunctionSchemaInit;
+    use radix_engine_interface::schema::{BlueprintStateSchemaInit, FieldSchema};
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
@@ -1248,12 +1248,12 @@ mod tests {
         let mut blueprints = BTreeMap::new();
         blueprints.insert(
             "Test".to_string(),
-            BlueprintSetup {
+            BlueprintDefinitionInit {
                 outer_blueprint: None,
                 dependencies: btreeset!(),
-                features: btreeset!(),
+                feature_set: btreeset!(),
 
-                blueprint: BlueprintSchema {
+                blueprint: BlueprintStateSchemaInit {
                     fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                     collections: vec![],
                 },
@@ -1261,7 +1261,7 @@ mod tests {
                 event_schema: Default::default(),
                 function_auth: Default::default(),
                 functions: btreemap!(
-                    "f".to_string() => FunctionSetup {
+                    "f".to_string() => FunctionSchemaInit {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(UNIT_ID),

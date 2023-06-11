@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackagePublishWasmAdvancedManifestInput,
+    BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackagePublishWasmAdvancedManifestInput,
     PackageRoyaltyAccumulatorSubstate, PackageSetup, SchemaPointer, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
@@ -38,7 +38,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, FieldSchema};
+use radix_engine_interface::schema::{BlueprintStateSchemaInit, FieldSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -765,7 +765,7 @@ impl TestRunner {
 
     pub fn compile_and_publish_retain_blueprints<
         P: AsRef<Path>,
-        F: FnMut(&String, &mut BlueprintSetup) -> bool,
+        F: FnMut(&String, &mut BlueprintDefinitionInit) -> bool,
     >(
         &mut self,
         package_dir: P,
@@ -1658,16 +1658,16 @@ pub fn single_function_package_definition(
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         blueprint_name.to_string(),
-        BlueprintSetup {
+        BlueprintDefinitionInit {
             outer_blueprint: None,
             dependencies: btreeset!(),
-            features: btreeset!(),
+            feature_set: btreeset!(),
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            blueprint: BlueprintSchema {
+            blueprint: BlueprintStateSchemaInit {
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
             },
@@ -1682,7 +1682,7 @@ pub fn single_function_package_definition(
             },
             virtual_lazy_load_functions: btreemap!(),
             functions: btreemap!(
-            function_name.to_string() => FunctionSetup {
+            function_name.to_string() => FunctionSchemaInit {
                     receiver: Option::None,
                     input: LocalTypeIndex::WellKnown(ANY_ID),
                     output: LocalTypeIndex::WellKnown(ANY_ID),

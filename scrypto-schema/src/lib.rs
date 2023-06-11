@@ -40,54 +40,8 @@ impl KeyValueStoreSchema {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct SchemaMethodKey {
-    pub module_id: u8,
-    pub ident: String,
-}
-
-impl SchemaMethodKey {
-    pub fn main<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 0u8,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn metadata<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 1u8,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn royalty<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 2u8,
-            ident: method_ident.to_string(),
-        }
-    }
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SchemaMethodPermission {
-    Public,
-    Protected(Vec<String>),
-}
-
-impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
-    fn from(value: [&str; N]) -> Self {
-        SchemaMethodPermission::Protected(
-            value.to_vec().into_iter().map(|s| s.to_string()).collect(),
-        )
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintSchema {
-    /// State Schema
+pub struct BlueprintStateSchemaInit {
     pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema<LocalTypeIndex>>,
 }
@@ -220,7 +174,7 @@ pub enum Receiver {
     SelfRefMut,
 }
 
-impl Default for BlueprintSchema {
+impl Default for BlueprintStateSchemaInit {
     fn default() -> Self {
         Self {
             fields: Vec::default(),

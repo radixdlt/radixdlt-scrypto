@@ -3,9 +3,9 @@ use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
+    BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup,
 };
-use radix_engine_interface::schema::{BlueprintSchema, FieldSchema};
+use radix_engine_interface::schema::{BlueprintStateSchemaInit, FieldSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -142,11 +142,11 @@ fn test_basic_package_missing_export() {
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "Test".to_string(),
-        BlueprintSetup {
+        BlueprintDefinitionInit {
             outer_blueprint: None,
             dependencies: btreeset!(),
-            features: btreeset!(),
-            blueprint: BlueprintSchema {
+            feature_set: btreeset!(),
+            blueprint: BlueprintStateSchemaInit {
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
             },
@@ -164,7 +164,7 @@ fn test_basic_package_missing_export() {
             },
             virtual_lazy_load_functions: btreemap!(),
             functions: btreemap!(
-                "f".to_string() => FunctionSetup {
+                "f".to_string() => FunctionSchemaInit {
                     receiver: Option::None,
                     input: LocalTypeIndex::WellKnown(ANY_ID),
                     output: LocalTypeIndex::WellKnown(ANY_ID),

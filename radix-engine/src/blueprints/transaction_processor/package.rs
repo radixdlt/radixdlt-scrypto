@@ -6,10 +6,10 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
+    BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::BlueprintStateSchemaInit;
 use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
@@ -26,7 +26,7 @@ impl TransactionProcessorNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<TransactionProcessorRunInput>(),
                 output: aggregator
@@ -37,11 +37,11 @@ impl TransactionProcessorNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-            TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSetup {
+            TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 outer_blueprint: None,
                 dependencies: btreeset!(),
-                features: btreeset!(),
-                blueprint: BlueprintSchema {
+                feature_set: btreeset!(),
+                blueprint: BlueprintStateSchemaInit {
                     fields,
                     collections: vec![],
                 },

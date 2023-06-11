@@ -173,7 +173,7 @@ pub struct IndexedBlueprintStateSchema {
 }
 
 impl IndexedBlueprintStateSchema {
-    pub fn from_schema(schema_hash: Hash, schema: BlueprintSchema) -> Self {
+    pub fn from_schema(schema_hash: Hash, schema: BlueprintStateSchemaInit) -> Self {
         let mut partition_offset = 0u8;
 
         let mut fields = None;

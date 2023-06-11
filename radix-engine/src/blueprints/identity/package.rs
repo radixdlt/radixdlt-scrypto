@@ -17,12 +17,10 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::ReceiverInfo;
-use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
@@ -39,7 +37,7 @@ impl IdentityNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
@@ -48,7 +46,7 @@ impl IdentityNativePackage {
         );
         functions.insert(
             IDENTITY_CREATE_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
@@ -57,7 +55,7 @@ impl IdentityNativePackage {
         );
         functions.insert(
             IDENTITY_SECURIFY_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
@@ -85,7 +83,7 @@ impl IdentityNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-            IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
+            IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 outer_blueprint: None,
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -93,9 +91,9 @@ impl IdentityNativePackage {
                     IDENTITY_OWNER_BADGE.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
-                features: btreeset!(),
+                feature_set: btreeset!(),
                 schema,
-                blueprint: BlueprintSchema {
+                blueprint: BlueprintStateSchemaInit {
                     fields,
                     collections: vec![],
                 },

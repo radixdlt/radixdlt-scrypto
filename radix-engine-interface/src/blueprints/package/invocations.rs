@@ -10,7 +10,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::LocalTypeIndex;
-use scrypto_schema::{BlueprintSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission};
+use scrypto_schema::{BlueprintStateSchemaInit, ReceiverInfo};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -85,11 +85,11 @@ pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageSetup {
-    pub blueprints: BTreeMap<String, BlueprintSetup>,
+    pub blueprints: BTreeMap<String, BlueprintDefinitionInit>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct FunctionSetup {
+pub struct FunctionSchemaInit {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
@@ -97,27 +97,29 @@ pub struct FunctionSetup {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintSetup {
+pub struct BlueprintDefinitionInit {
     pub outer_blueprint: Option<String>,
+    pub feature_set: BTreeSet<String>,
     pub dependencies: BTreeSet<GlobalAddress>,
-    pub features: BTreeSet<String>,
-    pub blueprint: BlueprintSchema,
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
-    pub function_auth: BTreeMap<String, AccessRule>,
-    pub functions: BTreeMap<String, FunctionSetup>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
-    pub royalty_config: RoyaltyConfig,
+
     pub schema: ScryptoSchema,
+    pub blueprint: BlueprintStateSchemaInit,
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    pub functions: BTreeMap<String, FunctionSchemaInit>,
+    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
+
+    pub royalty_config: RoyaltyConfig,
+    pub function_auth: BTreeMap<String, AccessRule>,
     pub template: MethodAuthTemplate,
 }
 
-impl Default for BlueprintSetup {
+impl Default for BlueprintDefinitionInit {
     fn default() -> Self {
         Self {
             outer_blueprint: None,
             dependencies: BTreeSet::default(),
-            features: BTreeSet::default(),
-            blueprint: BlueprintSchema::default(),
+            feature_set: BTreeSet::default(),
+            blueprint: BlueprintStateSchemaInit::default(),
             event_schema: BTreeMap::default(),
             function_auth: BTreeMap::default(),
             functions: BTreeMap::default(),
@@ -137,4 +139,50 @@ impl Default for BlueprintSetup {
 pub struct MethodAuthTemplate {
     pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
     pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+}
+
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct SchemaMethodKey {
+    pub module_id: u8,
+    pub ident: String,
+}
+
+impl SchemaMethodKey {
+    pub fn main<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 0u8,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn metadata<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 1u8,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn royalty<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: 2u8,
+            ident: method_ident.to_string(),
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum SchemaMethodPermission {
+    Public,
+    Protected(Vec<String>),
+}
+
+impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
+    fn from(value: [&str; N]) -> Self {
+        SchemaMethodPermission::Protected(
+            value.to_vec().into_iter().map(|s| s.to_string()).collect(),
+        )
+    }
 }

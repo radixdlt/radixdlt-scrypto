@@ -20,8 +20,8 @@ use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_H
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FieldSchema,
-    RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema,
+    RefTypes, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
@@ -59,7 +59,7 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 }
 
-fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSetup>>(
+fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for setup in blueprints {
@@ -72,10 +72,10 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSetup>>(
     Ok(())
 }
 
-fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintSetup>>(
+fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
-    for BlueprintSetup {
+    for BlueprintDefinitionInit {
         schema,
         event_schema,
         ..
@@ -530,7 +530,7 @@ impl PackageNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
@@ -539,7 +539,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
@@ -550,7 +550,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
@@ -559,7 +559,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-            FunctionSetup {
+            FunctionSchemaInit {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
@@ -569,15 +569,15 @@ impl PackageNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-            PACKAGE_BLUEPRINT.to_string() => BlueprintSetup {
+            PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 outer_blueprint: None,
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     PACKAGE_OWNER_BADGE.into(),
                 ),
-                features: btreeset!(),
+                feature_set: btreeset!(),
                 schema,
-                blueprint: BlueprintSchema {
+                blueprint: BlueprintStateSchemaInit {
                     fields,
                     collections,
                 },
@@ -747,7 +747,7 @@ impl PackageNativePackage {
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
-                    features: setup.features,
+                    features: setup.feature_set,
                     functions,
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(
@@ -851,10 +851,10 @@ impl PackageNativePackage {
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
-        for BlueprintSetup {
+        for BlueprintDefinitionInit {
             outer_blueprint: parent,
-            features,
-            blueprint: BlueprintSchema { collections, .. },
+            feature_set: features,
+            blueprint: BlueprintStateSchemaInit { collections, .. },
             virtual_lazy_load_functions,
             functions,
             ..
@@ -968,7 +968,7 @@ impl PackageNativePackage {
 
                 let definition = BlueprintDefinition {
                     outer_blueprint: setup.outer_blueprint,
-                    features: setup.features,
+                    features: setup.feature_set,
                     functions,
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(

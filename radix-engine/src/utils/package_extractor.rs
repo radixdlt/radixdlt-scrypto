@@ -1,4 +1,4 @@
-use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
+use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageSetup};
 use sbor::rust::iter;
 
 use crate::errors::InvokeError;
@@ -55,7 +55,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaErro
             .map_err(ExtractSchemaError::RunSchemaGenError)?;
 
         let name = function_export.replace("_schema", "").to_string();
-        let blueprint_setup: BlueprintSetup =
+        let blueprint_setup: BlueprintDefinitionInit =
             scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
         blueprints.insert(name.clone(), blueprint_setup);
     }

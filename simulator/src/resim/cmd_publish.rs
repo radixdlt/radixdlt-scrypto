@@ -138,7 +138,7 @@ impl Publish {
 
                 let def = BlueprintDefinition {
                     outer_blueprint: s.outer_blueprint,
-                    features: s.features,
+                    features: s.feature_set,
                     functions,
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(
