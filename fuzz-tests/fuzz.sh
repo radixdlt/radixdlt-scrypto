@@ -142,7 +142,7 @@ function fuzzer_simple() {
 
     set -x
     cargo $cmd --release \
-        --no-default-features --features std,moka,simple-fuzzer \
+        --no-default-features --features std,simple-fuzzer \
         --bin $target \
         -- $@
 }

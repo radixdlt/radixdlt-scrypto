@@ -10,12 +10,12 @@ use radix_engine_interface::ScryptoSbor;
 use scrypto::prelude::{AccessRule, ComponentAddress};
 use scrypto::NonFungibleData;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::{compile, decompile, BlobProvider};
 use transaction::model::{
     PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     TransactionPayloadPreparable,
 };
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let compiled_transaction = compiled_notarized_transaction();
@@ -70,7 +70,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
 }
 
 fn compiled_notarized_transaction() -> Vec<u8> {
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
     let public_key = private_key.public_key();
     let component_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 
@@ -79,6 +79,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
         builder.lock_fee(component_address, 10.into());
         builder.create_non_fungible_resource(
             NonFungibleIdType::Integer,
+            false,
             BTreeMap::new(),
             BTreeMap::<_, (_, AccessRule)>::new(),
             Some(

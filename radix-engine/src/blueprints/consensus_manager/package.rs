@@ -1,20 +1,22 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorBlueprint};
-use crate::errors::RuntimeError;
-use crate::errors::SystemUpstreamError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_auth_template, types::*};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
+    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FieldSchema,
+    FunctionSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -28,17 +30,28 @@ pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
 pub struct ConsensusManagerNativePackage;
 
 impl ConsensusManagerNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
-        fields
-            .push(aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>());
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>(),
+        ));
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::SortedIndex(
@@ -52,7 +65,7 @@ impl ConsensusManagerNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
-                export_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
+                export: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -63,7 +76,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>(),
-                export_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+                export: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -72,7 +85,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
                 output: aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
-                export_name: CONSENSUS_MANAGER_START_IDENT.to_string(),
+                export: CONSENSUS_MANAGER_START_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -83,7 +96,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(),
-                export_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+                export: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -94,7 +107,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(),
-                export_name: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
+                export: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -105,7 +118,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
-                export_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                export: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -116,7 +129,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>(),
-                export_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                export: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             },
         );
 
@@ -127,16 +140,6 @@ impl ConsensusManagerNativePackage {
                 EpochChangeEvent
             ]
         };
-
-        let method_permissions_instance = method_auth_template!(
-            SchemaMethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
-            SchemaMethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
-
-            SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => SchemaMethodPermission::Public;
-        );
 
         let schema = generate_full_schema(aggregator);
         let consensus_manager_schema = BlueprintSchema {
@@ -153,14 +156,15 @@ impl ConsensusManagerNativePackage {
                 SYSTEM_TRANSACTION_BADGE.into(),
                 VALIDATOR_OWNER_BADGE.into(),
             ),
-            method_auth_template: method_permissions_instance,
-            outer_method_auth_template: btreemap!(),
+            features: btreeset!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<ValidatorSubstate>());
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ValidatorSubstate>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -169,7 +173,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
-                export_name: VALIDATOR_REGISTER_IDENT.to_string(),
+                export: VALIDATOR_REGISTER_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -178,7 +182,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
-                export_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
+                export: VALIDATOR_UNREGISTER_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -187,7 +191,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
-                export_name: VALIDATOR_STAKE_IDENT.to_string(),
+                export: VALIDATOR_STAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -196,7 +200,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
-                export_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
+                export: VALIDATOR_UNSTAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -205,7 +209,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
-                export_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+                export: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -214,7 +218,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
-                export_name: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
+                export: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -223,7 +227,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
-                export_name: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+                export: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -234,7 +238,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>(),
-                export_name: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+                export: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -245,7 +249,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
-                export_name: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+                export: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -256,7 +260,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>(),
-                export_name: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+                export: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -267,7 +271,7 @@ impl ConsensusManagerNativePackage {
                     .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>(),
-                export_name: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+                export: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -276,7 +280,7 @@ impl ConsensusManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
-                export_name: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+                export: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
             },
         );
 
@@ -295,25 +299,6 @@ impl ConsensusManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
-        let method_permissions_instance = method_auth_template! {
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-            SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
-            SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
-        };
-
         let validator_schema = BlueprintSchema {
             outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
             schema,
@@ -323,34 +308,63 @@ impl ConsensusManagerNativePackage {
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
             dependencies: btreeset!(),
-            method_auth_template: method_permissions_instance,
-            outer_method_auth_template: btreemap!(),
+            features: btreeset!(),
         };
 
-        let schema = PackageSchema {
-            blueprints: btreemap!(
-                CONSENSUS_MANAGER_BLUEPRINT.to_string() => consensus_manager_schema,
-                VALIDATOR_BLUEPRINT.to_string() => validator_schema
-            ),
-        };
+        let blueprints = btreemap!(
+            CONSENSUS_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: consensus_manager_schema,
+                function_auth: btreemap!(
+                    CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template!(
+                        SchemaMethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
+                        SchemaMethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
 
-        let function_access_rules = btreemap!(
-            CONSENSUS_MANAGER_BLUEPRINT.to_string() => btreemap!(
-                CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
-            )
+                        SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => SchemaMethodPermission::Public;
+                    ),
+                    outer_method_auth_template: btreemap!(),
+                },
+            },
+            VALIDATOR_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: validator_schema,
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+                    },
+                    outer_method_auth_template: btreemap!(),
+                },
+            }
         );
 
-        PackageDefinition {
-            schema,
-            function_access_rules,
-            royalty_config: btreemap!(),
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -361,13 +375,8 @@ impl ConsensusManagerNativePackage {
             CONSENSUS_MANAGER_CREATE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: ConsensusManagerCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::create(
                     input.validator_owner_token_address,
@@ -384,7 +393,7 @@ impl ConsensusManagerNativePackage {
 
                 let _input: ConsensusManagerGetCurrentEpochInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
                 let rtn = ConsensusManagerBlueprint::get_current_epoch(api)?;
@@ -393,13 +402,11 @@ impl ConsensusManagerNativePackage {
             CONSENSUS_MANAGER_START_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: ConsensusManagerStartInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = ConsensusManagerBlueprint::start(receiver, api)?;
+                let rtn = ConsensusManagerBlueprint::start(&receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -407,7 +414,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ConsensusManagerGetCurrentTimeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::get_current_time(input.precision, api)?;
 
@@ -418,7 +425,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ConsensusManagerCompareCurrentTimeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::compare_current_time(
                     input.instant,
@@ -433,7 +440,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ConsensusManagerNextRoundInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::next_round(
                     input.round,
@@ -449,7 +456,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ConsensusManagerCreateValidatorInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::create_validator(input.key, api)?;
 
@@ -459,7 +466,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::register(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -468,7 +475,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unregister(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -477,7 +484,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::stake(input.stake, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -486,7 +493,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unstake(input.stake_unit_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -495,7 +502,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::claim_xrd(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -504,7 +511,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::update_key(input.key, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -513,7 +520,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorUpdateFeeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::update_fee(input.new_fee_factor, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -523,7 +530,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ValidatorUpdateAcceptDelegatedStakeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::update_accept_delegated_stake(
                     input.accept_delegated_stake,
@@ -535,7 +542,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorLockOwnerStakeUnitsInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::lock_owner_stake_units(input.stake_unit_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -545,7 +552,7 @@ impl ConsensusManagerNativePackage {
 
                 let input: ValidatorStartUnlockOwnerStakeUnitsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::start_unlock_owner_stake_units(
                     input.requested_stake_unit_amount,
@@ -558,7 +565,7 @@ impl ConsensusManagerNativePackage {
 
                 let _input: ValidatorFinishUnlockOwnerStakeUnitsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::finish_unlock_owner_stake_units(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -567,7 +574,7 @@ impl ConsensusManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ValidatorApplyEmissionInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::apply_emission(
                     input.xrd_bucket,
@@ -578,8 +585,8 @@ impl ConsensusManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

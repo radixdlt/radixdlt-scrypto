@@ -12,8 +12,8 @@ use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
@@ -87,7 +87,7 @@ impl TransactionFuzzer {
         }
 
         let manifest = builder.build();
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+        let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
         let header = TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
             start_epoch_inclusive: Epoch::zero(),

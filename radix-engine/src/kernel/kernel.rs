@@ -92,7 +92,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     &TypeInfoField::TypeInfo.into(),
                     LockFlags::read_only(),
                 )
-                .map_err(|_| KernelError::NodeNotFound(*node_id))?;
+                .map_err(|_| KernelError::InvalidReference(*node_id))?;
             let (substate_ref, _store_access) = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.release_lock(handle);
@@ -273,7 +273,7 @@ where
 
             // Now, check if any own has been left!
             if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-                return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
                     node_id,
                 )));
             }

@@ -15,7 +15,7 @@ impl Default for LoggerModule {
 }
 
 impl LoggerModule {
-    pub fn add_log(&mut self, level: Level, message: String) {
+    pub fn add(&mut self, level: Level, message: String) {
         self.0.push((level, message))
     }
 

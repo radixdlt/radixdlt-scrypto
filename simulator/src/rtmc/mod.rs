@@ -1,5 +1,5 @@
 use clap::Parser;
-use radix_engine::types::*;
+use radix_engine::{types::*, utils::*};
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::{compile, BlobProvider};
@@ -31,6 +31,7 @@ pub enum Error {
     EncodeError(sbor::EncodeError),
     CompileError(transaction::manifest::CompileError),
     ParseNetworkError(ParseNetworkError),
+    InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
 pub fn run() -> Result<(), Error> {
@@ -49,6 +50,8 @@ pub fn run() -> Result<(), Error> {
     }
     let transaction = compile(&content, &network, BlobProvider::new_with_blobs(blobs))
         .map_err(Error::CompileError)?;
+    validate_call_arguments_to_native_components(&transaction.instructions)
+        .map_err(Error::InstructionSchemaValidationError)?;
     std::fs::write(
         args.output,
         manifest_encode(&transaction).map_err(Error::EncodeError)?,

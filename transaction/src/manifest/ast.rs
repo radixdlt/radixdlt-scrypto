@@ -138,6 +138,13 @@ pub enum Instruction {
 
     DropAllProofs,
 
+    AllocateGlobalAddress {
+        package_address: Value,
+        blueprint_name: Value,
+        address_reservation: Value,
+        named_address: Value,
+    },
+
     /* Call direct vault method aliases */
     RecallVault {
         vault_id: Value,
@@ -281,6 +288,8 @@ pub enum ValueKind {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+    AddressReservation,
+    NamedAddress,
 }
 
 impl ValueKind {
@@ -329,6 +338,7 @@ impl ValueKind {
             // Custom value kinds
             // ==============
             ValueKind::Address => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
+            ValueKind::NamedAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
             ValueKind::Bucket => ManifestValueKind::Custom(ManifestCustomValueKind::Bucket),
             ValueKind::Proof => ManifestValueKind::Custom(ManifestCustomValueKind::Proof),
             ValueKind::Expression => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
@@ -339,6 +349,9 @@ impl ValueKind {
             }
             ValueKind::NonFungibleLocalId => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
+            }
+            ValueKind::AddressReservation => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::AddressReservation)
             }
         }
     }
@@ -384,6 +397,7 @@ pub enum Value {
     // Custom values
     // ==============
     Address(Box<Value>),
+    NamedAddress(Box<Value>),
     Bucket(Box<Value>),
     Proof(Box<Value>),
     Expression(Box<Value>),
@@ -391,6 +405,7 @@ pub enum Value {
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
     NonFungibleLocalId(Box<Value>),
+    AddressReservation(Box<Value>),
 }
 
 impl Value {
@@ -430,6 +445,7 @@ impl Value {
             // Custom values
             // ==============
             Value::Address(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
+            Value::NamedAddress(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
             Value::Bucket(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Bucket),
             Value::Proof(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Proof),
             Value::Expression(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
@@ -440,6 +456,9 @@ impl Value {
             }
             Value::NonFungibleLocalId(_) => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId)
+            }
+            Value::AddressReservation(_) => {
+                ManifestValueKind::Custom(ManifestCustomValueKind::AddressReservation)
             }
         }
     }

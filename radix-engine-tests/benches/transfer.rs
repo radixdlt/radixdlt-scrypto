@@ -10,8 +10,8 @@ use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
@@ -26,7 +26,7 @@ fn bench_transfer(c: &mut Criterion) {
         .unwrap();
 
     // Create a key pair
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
     let public_key = private_key.public_key();
 
     // Create two accounts

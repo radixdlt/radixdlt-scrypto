@@ -30,6 +30,7 @@ mod some_resource {
         pub fn call_some_resource_total_supply() -> Decimal {
             resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6")
                 .total_supply()
+                .unwrap()
         }
 
         pub fn resource() -> ResourceManager {

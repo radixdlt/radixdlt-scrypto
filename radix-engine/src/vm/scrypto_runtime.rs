@@ -153,7 +153,7 @@ where
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let object_states = scrypto_decode::<Vec<Vec<u8>>>(&object_states)
-            .map_err(WasmRuntimeError::InvalidAppStates)?;
+            .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self
             .api
@@ -421,6 +421,12 @@ where
         Ok(())
     }
 
+    fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api
+            .panic(String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?)?;
+        Ok(())
+    }
+
     fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let hash = self.api.get_transaction_hash()?;
 
@@ -672,6 +678,10 @@ impl WasmRuntime for NopWasmRuntime {
         level: Vec<u8>,
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

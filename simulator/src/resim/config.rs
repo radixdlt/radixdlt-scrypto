@@ -56,10 +56,10 @@ pub fn get_default_account() -> Result<ComponentAddress, Error> {
         .ok_or(Error::NoDefaultAccount)
 }
 
-pub fn get_default_private_key() -> Result<EcdsaSecp256k1PrivateKey, Error> {
+pub fn get_default_private_key() -> Result<Secp256k1PrivateKey, Error> {
     get_configs()?
         .default_private_key
-        .map(|v| EcdsaSecp256k1PrivateKey::from_bytes(&hex::decode(&v).unwrap()).unwrap())
+        .map(|v| Secp256k1PrivateKey::from_bytes(&hex::decode(&v).unwrap()).unwrap())
         .ok_or(Error::NoDefaultPrivateKey)
 }
 

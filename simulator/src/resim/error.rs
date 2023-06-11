@@ -71,4 +71,6 @@ pub enum Error {
     ParseNetworkError(ParseNetworkError),
 
     OwnerBadgeNotSpecified,
+
+    InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }

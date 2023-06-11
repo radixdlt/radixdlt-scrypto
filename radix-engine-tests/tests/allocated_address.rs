@@ -25,10 +25,7 @@ fn test_create_and_return() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::DropNodeFailure(_))
-        )
+        matches!(e, RuntimeError::KernelError(KernelError::NodeOrphaned(_)))
     });
 }
 

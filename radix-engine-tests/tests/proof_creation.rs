@@ -38,7 +38,7 @@ fn can_create_proof_from_fungible_bucket() {
     create_proof_internal("create_proof_from_fungible_bucket_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_bucket_of_non_fungibles",
-        Some("UnreachableCodeReached"),
+        Some("assertion failed: self.resource_address().as_node_id().is_global_non_fungible_resource_manager()"),
     );
     create_proof_internal("create_proof_from_fungible_bucket_of_all", None);
 }
@@ -60,7 +60,7 @@ fn can_create_proof_from_fungible_vault() {
     create_proof_internal("create_proof_from_fungible_vault_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_vault_of_non_fungibles",
-        Some("UnreachableCodeReached"),
+        Some("assertion failed: self.0.as_node_id().is_internal_non_fungible_vault()"),
     );
 }
 

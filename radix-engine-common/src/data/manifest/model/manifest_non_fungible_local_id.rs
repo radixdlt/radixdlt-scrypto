@@ -1,7 +1,5 @@
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
@@ -108,26 +106,6 @@ impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
         };
 
         Ok(val)
-    }
-}
-
-//========
-// error
-//========
-
-/// Represents an error when parsing ManifestNonFungibleLocalId.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseManifestNonFungibleLocalIdError {
-    InvalidLength,
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseManifestNonFungibleLocalIdError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseManifestNonFungibleLocalIdError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

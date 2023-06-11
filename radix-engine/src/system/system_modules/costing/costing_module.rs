@@ -4,18 +4,18 @@ use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
-use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
+use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{StoreAccess, StoreAccessInfo};
 use crate::types::*;
 use crate::{
-    errors::{CanBeAbortion, ModuleError, RuntimeError},
+    errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
@@ -63,9 +63,9 @@ impl CostingModule {
         self.fee_reserve
             .consume_multiplied_execution(cost_units, multiplier, reason)
             .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
             })
     }
 
@@ -78,9 +78,9 @@ impl CostingModule {
         self.fee_reserve
             .lock_fee(vault_id, locked_fee, contingent)
             .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
             })
     }
 
@@ -151,7 +151,9 @@ fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         .fee_reserve
         .consume_royalty(royalty_amount, recipient, recipient_vault_id)
         .map_err(|e| {
-            RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
+            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                CostingError::FeeReserveError(e),
+            ))
         })
 }
 
@@ -178,9 +180,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 )
             })
             .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
             })
     }
 
@@ -190,9 +192,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
-            return Err(RuntimeError::ModuleError(ModuleError::CostingError(
-                CostingError::MaxCallDepthLimitReached,
-            )));
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::CostingError(CostingError::MaxCallDepthLimitReached),
+            ));
         }
 
         if current_depth > 0 {
@@ -290,17 +292,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(ident).unwrap()),
                 LockFlags::read_only(),
-                Some(|| {
-                    let wrapper = SubstateWrapper {
-                        value: None::<()>,
-                        mutability: SubstateMutability::Mutable,
-                    };
-                    IndexedScryptoValue::from_typed(&wrapper)
-                }),
+                Some(|| IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::<()>::default())),
                 SystemLockData::default(),
             )?;
 
-            let substate: SubstateWrapper<Option<RoyaltyAmount>> =
+            let substate: KeyValueEntrySubstate<RoyaltyAmount> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
 
