@@ -22,13 +22,13 @@ impl FormattableCustomExtension for ManifestCustomExtension {
             ManifestCustomValue::Address(value) => match value {
                 ManifestAddress::Static(node_id) => {
                     if let Some(encoder) = context.bech32_encoder {
-                        if let Ok(bech32) = encoder.encode(node_id.0.as_ref()) {
+                        if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
                             write!(f, "\"{}\"", bech32)?;
                         } else {
-                            write!(f, "\"{}\"", hex::encode(node_id.0.as_ref()))?;
+                            write!(f, "\"{}\"", hex::encode(node_id.as_ref()))?;
                         }
                     } else {
-                        write!(f, "\"{}\"", hex::encode(node_id.0.as_ref()))?;
+                        write!(f, "\"{}\"", hex::encode(node_id.as_ref()))?;
                     }
                 }
                 ManifestAddress::Named(address_id) => {

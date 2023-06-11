@@ -156,7 +156,7 @@ impl ManifestValidator {
         if self.address_ids.contains(address_id) {
             Ok(())
         } else {
-            Err(ManifestIdValidationError::NamedAddressNotFound(
+            Err(ManifestIdValidationError::AddressNotFound(
                 address_id.clone(),
             ))
         }

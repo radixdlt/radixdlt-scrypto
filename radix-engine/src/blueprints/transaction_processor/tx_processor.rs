@@ -55,7 +55,7 @@ pub enum TransactionProcessorError {
     BucketNotFound(u32),
     ProofNotFound(u32),
     AddressReservationNotFound(u32),
-    NamedAddressNotFound(u32),
+    AddressNotFound(u32),
     BlobNotFound(Hash),
     InvalidCallData(DecodeError),
     InvalidPackageSchema(DecodeError),
@@ -405,7 +405,7 @@ impl TransactionProcessorBlueprint {
                         BlueprintId::new(&package_address, blueprint_name),
                     )?;
                     processor.create_manifest_address_reservation(address_reservation)?;
-                    processor.create_manifest_named_address(address)?;
+                    processor.create_manifest_address(address)?;
 
                     InstructionOutput::None
                 }
@@ -507,7 +507,7 @@ impl TransactionProcessor {
                 .cloned()
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::NamedAddressNotFound(*address_id),
+                        TransactionProcessorError::AddressNotFound(*address_id),
                     ),
                 ))?;
         Ok(real_id)
@@ -562,10 +562,7 @@ impl TransactionProcessor {
         Ok(new_id)
     }
 
-    fn create_manifest_named_address(
-        &mut self,
-        address: GlobalAddress,
-    ) -> Result<u32, RuntimeError> {
+    fn create_manifest_address(&mut self, address: GlobalAddress) -> Result<u32, RuntimeError> {
         let new_id = self.id_allocator.new_address_id();
         self.address_mapping.insert(new_id, address.into());
         Ok(new_id)

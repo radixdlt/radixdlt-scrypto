@@ -16,17 +16,17 @@ impl SerializableCustomExtension for ManifestCustomExtension {
             ManifestCustomValue::Address(value) => match value {
                 ManifestAddress::Static(node_id) => {
                     if let Some(encoder) = context.custom_context.bech32_encoder {
-                        if let Ok(bech32) = encoder.encode(node_id.0.as_ref()) {
+                        if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
                             (SerializableType::String(bech32), false)
                         } else {
                             (
-                                SerializableType::String(hex::encode(node_id.0.as_ref())),
+                                SerializableType::String(hex::encode(node_id.as_ref())),
                                 true,
                             )
                         }
                     } else {
                         (
-                            SerializableType::String(hex::encode(node_id.0.as_ref())),
+                            SerializableType::String(hex::encode(node_id.as_ref())),
                             true,
                         )
                     }

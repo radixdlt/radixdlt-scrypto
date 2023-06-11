@@ -197,7 +197,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                         if !own_validation.could_match_manifest_address_reservation() {
                             return Err(PayloadValidationError::ValidationError(
                                 ValidationError::CustomError(format!(
-                                    "Expected Own<{:?}>, but found manifest address_reservation",
+                                    "Expected Own<{:?}>, but found manifest address reservation",
                                     own_validation
                                 )),
                             ));
