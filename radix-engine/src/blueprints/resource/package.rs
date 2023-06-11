@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
@@ -29,6 +30,8 @@ const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME: &str =
     "create_with_initial_supply_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME: &str =
+    "package_burn_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
     "create_empty_vault_FungibleResourceManager";
@@ -45,6 +48,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungib
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
     "create_with_initial_supply_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME: &str =
+    "package_burn_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
     "mint_uuid_NonFungibleResourceManager";
@@ -70,6 +75,7 @@ const FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
     "create_proof_of_amount_FungibleVault";
 const FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleVault";
 const FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleVault";
+const FUNGIBLE_VAULT_BURN_EXPORT_NAME: &str = "burn_FungibleVault";
 
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
@@ -83,6 +89,7 @@ const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
 const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str = "unlock_fungibles_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_non_fungibles_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME: &str = "burn_NonFungibleVault";
 
 const FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_FungibleBucket";
 const FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_FungibleBucket";
@@ -203,6 +210,17 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
                     export: FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -438,6 +456,17 @@ impl ResourceManagerNativePackage {
             );
 
             functions.insert(
+                RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -658,6 +687,15 @@ impl ResourceManagerNativePackage {
                     export: FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
+            functions.insert(
+                VAULT_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    export: FUNGIBLE_VAULT_BURN_EXPORT_NAME.to_string(),
+                },
+            );
 
             let event_schema = event_schema! {
                 aggregator,
@@ -854,6 +892,26 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
                         ),
                     export: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    export: NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesOutput>(),
+                    export: NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
 
@@ -1540,6 +1598,7 @@ impl ResourceManagerNativePackage {
 
                         SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
                         SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
                         SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
@@ -1568,6 +1627,7 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
                         SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
                         SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
                         SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
                         SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
@@ -1585,6 +1645,10 @@ impl ResourceManagerNativePackage {
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
+                    // This is the mapping from Vault methods to Vault roles
+                    // NOTE: This is an extra filter on top of the ResourceManager filter
+                    // This is for use with the freezing feature
+                    // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
                     method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -1594,25 +1658,26 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-
                         SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
                         SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
                     },
+                    // This is the mapping to ResourceManager roles
+                    // NOTE: This is an extra filter on top of the Vault filter
                     outer_method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-
                         SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
                         SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
                         SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
                         SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
                         SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
                         SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
                     },
                 }
             },
@@ -1621,6 +1686,10 @@ impl ResourceManagerNativePackage {
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
+                    // This is the mapping from Vault methods to Vault roles
+                    // NOTE: This is an extra filter on top of the ResourceManager filter
+                    // This is for use with the freezing feature
+                    // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
                     method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
@@ -1633,12 +1702,14 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-
                         SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
                         SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
                     },
+                    // This is the mapping to ResourceManager roles
+                    // NOTE: This is an extra filter on top of the Vault filter
                     outer_method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
@@ -1653,8 +1724,10 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
                         SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
                         SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
                     },
                 }
             },
@@ -1673,8 +1746,8 @@ impl ResourceManagerNativePackage {
                         SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
 
-                        SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"];
+                        SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
                     }
                 }
             },
@@ -1685,18 +1758,18 @@ impl ResourceManagerNativePackage {
                 template: BlueprintTemplate {
                     method_auth_template: btreemap!(),
                     outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
 
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
                     }
                 }
             },
@@ -1834,6 +1907,15 @@ impl ResourceManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::burn(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerPackageBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::package_burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
@@ -2000,6 +2082,15 @@ impl ResourceManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::burn(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerPackageBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleResourceManagerBlueprint::package_burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
@@ -2194,6 +2285,15 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::unlock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_VAULT_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: VaultBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::burn(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
 
             NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
@@ -2342,6 +2442,28 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(input.local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: VaultBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::burn(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: NonFungibleVaultBurnNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleVaultBlueprint::burn_non_fungibles(
+                    input.non_fungible_local_ids,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 

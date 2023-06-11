@@ -216,6 +216,22 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
+    pub fn package_burn<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
+            scrypto_encode(&ResourceManagerPackageBurnInput { bucket }).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
     pub fn total_supply<Y, E: Debug + ScryptoDecode>(
         &self,
         api: &mut Y,

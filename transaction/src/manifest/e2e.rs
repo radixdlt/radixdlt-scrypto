@@ -907,7 +907,9 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Enum<0u8>()
+    Enum<2u8>(
+        Enum<0u8>()
+    )
 ;
 CREATE_ACCOUNT;
 "##,

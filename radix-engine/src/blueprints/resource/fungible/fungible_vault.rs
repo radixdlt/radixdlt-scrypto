@@ -3,6 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
+use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
@@ -224,6 +225,14 @@ impl FungibleVaultBlueprint {
         )?;
 
         Ok(Proof(Own(proof_id)))
+    }
+
+    pub fn burn<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        Self::take(&amount, api)?.package_burn(api)?;
+        Ok(())
     }
 
     //===================

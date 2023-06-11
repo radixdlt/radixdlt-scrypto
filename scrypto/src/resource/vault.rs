@@ -48,6 +48,8 @@ pub trait ScryptoVault {
     fn as_fungible(&self) -> FungibleVault;
 
     fn as_non_fungible(&self) -> NonFungibleVault;
+
+    fn burn<A: Into<Decimal>>(&mut self, amount: A);
 }
 
 pub trait ScryptoFungibleVault {
@@ -76,6 +78,8 @@ pub trait ScryptoNonFungibleVault {
     ) -> NonFungibleBucket;
 
     fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> NonFungibleProof;
+
+    fn burn_non_fungibles(&mut self, ids: &BTreeSet<NonFungibleLocalId>);
 }
 
 //===========
@@ -206,6 +210,21 @@ impl ScryptoVault for Vault {
         assert!(self.0.as_node_id().is_internal_non_fungible_vault());
         NonFungibleVault(Vault(self.0))
     }
+
+    fn burn<A: Into<Decimal>>(&mut self, amount: A) {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                VAULT_BURN_IDENT,
+                scrypto_encode(&VaultBurnInput {
+                    amount: amount.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 }
 
 //================
@@ -270,6 +289,10 @@ impl ScryptoVault for FungibleVault {
 
     fn as_non_fungible(&self) -> NonFungibleVault {
         self.0.as_non_fungible()
+    }
+
+    fn burn<A: Into<Decimal>>(&mut self, amount: A) {
+        self.0.burn(amount)
     }
 }
 
@@ -375,6 +398,10 @@ impl ScryptoVault for NonFungibleVault {
     fn as_non_fungible(&self) -> NonFungibleVault {
         self.0.as_non_fungible()
     }
+
+    fn burn<A: Into<Decimal>>(&mut self, amount: A) {
+        self.0.burn(amount)
+    }
 }
 
 impl ScryptoNonFungibleVault for NonFungibleVault {
@@ -462,6 +489,21 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
                 self.0 .0.as_node_id(),
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn burn_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0 .0.as_node_id(),
+                NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&NonFungibleVaultBurnNonFungiblesInput {
+                    non_fungible_local_ids: non_fungible_local_ids.clone(),
+                })
+                .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

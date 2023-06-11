@@ -37,7 +37,7 @@ pub enum AuthError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FailedAccessRules {
-    AuthorityList(Vec<(RoleKey, Vec<AccessRule>)>),
+    RoleList(Vec<(RoleKey, Vec<AccessRule>)>),
     AccessRule(Vec<AccessRule>),
 }
 
@@ -278,7 +278,7 @@ impl AuthModule {
             AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
                 Err(RuntimeError::SystemModuleError(
                     SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
-                        failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
+                        failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
                         fn_identifier,
                     }))),
                 ))
