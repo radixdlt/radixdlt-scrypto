@@ -160,3 +160,9 @@ pub enum AccessRule {
     DenyAll,
     Protected(AccessRuleNode),
 }
+
+impl From<AccessRuleNode> for AccessRule {
+    fn from(value: AccessRuleNode) -> Self {
+        AccessRule::Protected(value)
+    }
+}

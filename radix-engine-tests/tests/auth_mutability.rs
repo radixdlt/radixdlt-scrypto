@@ -24,7 +24,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
-    let authority_key = match action {
+    let role_key = match action {
         ResourceAuth::Mint => RoleKey::new(MINT_ROLE),
         ResourceAuth::Burn => RoleKey::new(BURN_ROLE),
         ResourceAuth::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
@@ -36,11 +36,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .update_role_mutability(
-                token_address.into(),
-                authority_key,
-                (RoleList::none(), false),
-            )
+            .update_role_mutability(token_address.into(), role_key, (RoleList::none(), false))
             .build();
         test_runner
             .execute_manifest(

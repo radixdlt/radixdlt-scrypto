@@ -318,3 +318,31 @@ pub struct AccountTryDepositBatchOrAbortInput {
 }
 
 pub type AccountTryDepositBatchOrAbortOutput = ();
+
+//============================
+// Account Burn
+//============================
+
+pub const ACCOUNT_BURN_IDENT: &str = "burn";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountBurnInput {
+    pub resource_address: ResourceAddress,
+    pub amount: Decimal,
+}
+
+pub type AccountBurnOutput = ();
+
+//=========================
+// Account Burn By Ids
+//=========================
+
+pub const ACCOUNT_BURN_NON_FUNGIBLES_IDENT: &str = "burn_non_fungibles";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountBurnNonFungiblesInput {
+    pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type AccountBurnNonFungiblesOutput = ();

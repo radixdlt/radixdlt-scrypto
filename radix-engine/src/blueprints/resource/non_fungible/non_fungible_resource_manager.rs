@@ -631,6 +631,21 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::burn_internal(bucket, api)
+    }
+
+    /// Only callable within this package - this is to allow the burning of tokens from a vault.
+    pub(crate) fn package_burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::burn_internal(bucket, api)
+    }
+
+    fn burn_internal<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
         // Drop the bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -702,15 +717,17 @@ impl NonFungibleResourceManagerBlueprint {
             ],
         )?;
 
+        // These roles define an extra filter on top of the roles defined on the resource manager
+        // The purpose of these roles is to enable freezing of individual vaults
         // TODO: Figure out how to use SELF_ROLE rather than package
         let mut roles = Roles::new();
         roles.define_role(
-            "this_package",
+            RESOURCE_PACKAGE_ROLE,
             RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         );
         roles.define_role(
             VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, ["this_package"], true),
+            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
         );
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
