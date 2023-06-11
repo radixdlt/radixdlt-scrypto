@@ -21,10 +21,6 @@ PUBLISH_PACKAGE_ADVANCED
     Some(AddressReservation("my_reservation"))
     Blob("${code_blob_hash}")
     Tuple(
-        Tuple(
-            Map<String, Tuple>()
-        ),
-        Map<String, Map>(),
         Map<String, Tuple>()
     )
     Map<String, Enum>()

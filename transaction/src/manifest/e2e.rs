@@ -38,10 +38,6 @@ PUBLISH_PACKAGE_ADVANCED
     )
     Blob("${code_blob_hash}")
     Tuple(
-        Tuple(
-            Map<String, Tuple>()
-        ),
-        Map<String, Map>(),
         Map<String, Tuple>()
     )
     Map<String, Enum>()
@@ -52,7 +48,7 @@ CALL_FUNCTION
     "BlueprintName"
     "no_such_function"
     Decimal("1")
-    NamedAddress("my_package")
+    NamedAddress("address1")
 ;
 "##,
             ),
