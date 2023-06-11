@@ -42,16 +42,42 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SubstateMutability {
+pub enum KeyValueEntryMutability {
     Mutable,
     Immutable,
 }
 
 // TODO: Extend this use into substate fields
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct SubstateWrapper<V> {
-    pub value: V,
-    pub mutability: SubstateMutability,
+pub struct KeyValueEntrySubstate<E> {
+    pub value: E, // This should be Option<V> but need to do this manually since this isn't support by sbor yet
+    pub mutability: KeyValueEntryMutability,
+}
+
+impl<V> KeyValueEntrySubstate<Option<V>> {
+    pub fn entry(value: V) -> Self {
+        Self {
+            value: Some(value),
+            mutability: KeyValueEntryMutability::Mutable,
+        }
+    }
+
+    pub fn remove(&mut self) -> Option<V> {
+        self.value.take()
+    }
+
+    pub fn freeze(&mut self) {
+        self.mutability = KeyValueEntryMutability::Immutable;
+    }
+}
+
+impl<V> Default for KeyValueEntrySubstate<Option<V>> {
+    fn default() -> Self {
+        Self {
+            value: Option::None,
+            mutability: KeyValueEntryMutability::Mutable,
+        }
+    }
 }
 
 /// Provided to upper layer for invoking lower layer service
@@ -482,12 +508,8 @@ where
                                 })?;
 
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let wrapped_value = SubstateWrapper {
-                                    value: Some(value),
-                                    mutability: SubstateMutability::Mutable,
-                                };
-
-                                let value = IndexedScryptoValue::from_typed(&wrapped_value);
+                                let kv_entry = KeyValueEntrySubstate::entry(value);
+                                let value = IndexedScryptoValue::from_typed(&kv_entry);
 
                                 if !blueprint_kv_schema.can_own {
                                     if !value.owned_nodes().is_empty() {
@@ -536,10 +558,10 @@ where
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
 
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+        let mut kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> =
             scrypto_decode(&current_value).unwrap();
-        let value = wrapper.value.take();
-        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
         self.kernel_drop_lock(handle)?;
 
@@ -1284,7 +1306,7 @@ where
         }
 
         self.api.kernel_read_substate(handle).map(|v| {
-            let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
+            let wrapper: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
             scrypto_encode(&wrapper.value).unwrap()
         })
     }
@@ -1302,9 +1324,9 @@ where
         };
 
         let v = self.api.kernel_read_substate(handle)?;
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-        wrapper.mutability = SubstateMutability::Immutable;
-        let indexed = IndexedScryptoValue::from_typed(&wrapper);
+        let mut kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
+        kv_entry.freeze();
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
         self.api.kernel_write_substate(handle, indexed)?;
         Ok(())
     }
@@ -1318,10 +1340,10 @@ where
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
 
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+        let mut kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> =
             scrypto_decode(&current_value).unwrap();
-        let value = wrapper.value.take();
-        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
         let current_value = scrypto_encode(&value).unwrap();
 
@@ -1372,11 +1394,8 @@ where
         };
 
         let value = substate.as_scrypto_value().clone();
-        let wrapper = SubstateWrapper {
-            value: Some(value),
-            mutability: SubstateMutability::Mutable,
-        };
-        let indexed = IndexedScryptoValue::from_vec(scrypto_encode(&wrapper).unwrap()).unwrap();
+        let kv_entry = KeyValueEntrySubstate::entry(value);
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -1484,22 +1503,19 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<Option<()>>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             lock_data,
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
-                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-                wrapper.mutability
+                let kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
+                kv_entry.mutability
             })?;
 
-            if let SubstateMutability::Immutable = mutability {
+            if let KeyValueEntryMutability::Immutable = mutability {
                 return Err(RuntimeError::SystemError(
                     SystemError::MutatingImmutableSubstate,
                 ));
@@ -1968,22 +1984,19 @@ where
             &SubstateKey::Map(key.to_vec()),
             flags,
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<Option<()>>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::KeyValueEntry(lock_data),
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
-                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-                wrapper.mutability
+                let kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
+                kv_entry.mutability
             })?;
 
-            if let SubstateMutability::Immutable = mutability {
+            if let KeyValueEntryMutability::Immutable = mutability {
                 return Err(RuntimeError::SystemError(
                     SystemError::MutatingImmutableSubstate,
                 ));

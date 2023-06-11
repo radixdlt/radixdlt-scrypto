@@ -71,8 +71,8 @@ fn test_basic_transfer() {
         + 5143 /* DropLock */
         + 1365 /* DropNode */
         + 736166 /* Invoke */
-        + 440024 /* LockSubstate */
-        + 7280 /* ReadSubstate */
+        + 440183 /* LockSubstate */
+        + 7336 /* ReadSubstate */
         + 57500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -213,7 +213,7 @@ fn test_radiswap() {
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.6563512"),
+        dec!("0.6563698"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }

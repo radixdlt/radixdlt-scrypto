@@ -8,7 +8,7 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::SubstateWrapper;
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
     PreviewError, TransactionReceipt, TransactionResult,
@@ -383,7 +383,7 @@ impl TestRunner {
 
         let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<MetadataValue>>>(
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<Option<MetadataValue>>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
