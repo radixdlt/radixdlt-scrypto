@@ -7,6 +7,8 @@ use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
+use radix_engine_common::types::NodeId;
+use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
@@ -50,7 +52,6 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
-use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::ResourceAddress;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
@@ -92,7 +93,7 @@ pub enum GeneratorError {
     InvalidSecp256k1Signature(String),
     InvalidEd25519PublicKey(String),
     InvalidEd25519Signature(String),
-    InvalidBlobHash,
+    InvalidBlobHash(String),
     BlobNotFound(String),
     InvalidBytesHex(String),
     SborEncodeError(EncodeError),
@@ -113,20 +114,22 @@ pub enum GeneratorError {
 pub enum NameResolverError {
     UndefinedBucket(String),
     UndefinedProof(String),
+    UndefinedAddressReservation(String),
+    UndefinedNamedAddress(String),
     NamedAlreadyDefined(String),
 }
 
+#[derive(Default)]
 pub struct NameResolver {
     named_buckets: BTreeMap<String, ManifestBucket>,
     named_proofs: BTreeMap<String, ManifestProof>,
+    named_address_reservations: BTreeMap<String, ManifestAddressReservation>,
+    named_addresses: BTreeMap<String, u32>,
 }
 
 impl NameResolver {
     pub fn new() -> Self {
-        Self {
-            named_buckets: BTreeMap::new(),
-            named_proofs: BTreeMap::new(),
-        }
+        Self::default()
     }
 
     pub fn insert_bucket(
@@ -134,7 +137,7 @@ impl NameResolver {
         name: String,
         bucket_id: ManifestBucket,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
+        if self.named_buckets.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
             self.named_buckets.insert(name, bucket_id);
@@ -147,10 +150,37 @@ impl NameResolver {
         name: String,
         proof_id: ManifestProof,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
+        if self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
             self.named_proofs.insert(name, proof_id);
+            Ok(())
+        }
+    }
+
+    pub fn insert_address_reservation(
+        &mut self,
+        name: String,
+        address_reservation_id: ManifestAddressReservation,
+    ) -> Result<(), NameResolverError> {
+        if self.named_address_reservations.contains_key(&name) {
+            Err(NameResolverError::NamedAlreadyDefined(name))
+        } else {
+            self.named_address_reservations
+                .insert(name, address_reservation_id);
+            Ok(())
+        }
+    }
+
+    pub fn insert_named_address(
+        &mut self,
+        name: String,
+        address_id: u32,
+    ) -> Result<(), NameResolverError> {
+        if self.named_addresses.contains_key(&name) {
+            Err(NameResolverError::NamedAlreadyDefined(name))
+        } else {
+            self.named_addresses.insert(name, address_id);
             Ok(())
         }
     }
@@ -166,6 +196,23 @@ impl NameResolver {
         match self.named_proofs.get(name).cloned() {
             Some(proof_id) => Ok(proof_id),
             None => Err(NameResolverError::UndefinedProof(name.into())),
+        }
+    }
+
+    pub fn resolve_address_reservation(
+        &mut self,
+        name: &str,
+    ) -> Result<ManifestAddressReservation, NameResolverError> {
+        match self.named_address_reservations.get(name).cloned() {
+            Some(address_reservation_id) => Ok(address_reservation_id),
+            None => Err(NameResolverError::UndefinedAddressReservation(name.into())),
+        }
+    }
+
+    pub fn resolve_named_address(&mut self, name: &str) -> Result<u32, NameResolverError> {
+        match self.named_addresses.get(name).cloned() {
+            Some(address_id) => Ok(address_id),
+            None => Err(NameResolverError::UndefinedNamedAddress(name.into())),
         }
     }
 }
@@ -214,9 +261,7 @@ where
             amount,
             new_bucket,
         } => {
-            let bucket_id = id_validator
-                .new_bucket()
-                .map_err(GeneratorError::IdValidationError)?;
+            let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             InstructionV1::TakeFromWorktop {
@@ -229,9 +274,7 @@ where
             ids,
             new_bucket,
         } => {
-            let bucket_id = id_validator
-                .new_bucket()
-                .map_err(GeneratorError::IdValidationError)?;
+            let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             InstructionV1::TakeNonFungiblesFromWorktop {
@@ -243,9 +286,7 @@ where
             resource_address,
             new_bucket,
         } => {
-            let bucket_id = id_validator
-                .new_bucket()
-                .map_err(GeneratorError::IdValidationError)?;
+            let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             InstructionV1::TakeAllFromWorktop {
@@ -433,7 +474,8 @@ where
             function_name,
             args,
         } => {
-            let package_address = generate_package_address(package_address, bech32_decoder)?;
+            let package_address =
+                generate_dynamic_package_address(package_address, bech32_decoder, resolver)?;
             let blueprint_name = generate_string(&blueprint_name)?;
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
@@ -453,7 +495,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -470,7 +512,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -487,7 +529,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -504,7 +546,7 @@ where
             method_name,
             args,
         } => {
-            let address = generate_global_address(address, bech32_decoder)?;
+            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
@@ -522,6 +564,24 @@ where
                 .drop_all_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::DropAllProofs
+        }
+
+        ast::Instruction::AllocateGlobalAddress {
+            package_address,
+            blueprint_name,
+            address_reservation,
+            named_address,
+        } => {
+            let address_reservation_id = id_validator.new_address_reservation();
+            declare_address_reservation(address_reservation, resolver, address_reservation_id)?;
+
+            let address_id = id_validator.new_named_address();
+            declare_named_address(named_address, resolver, address_id)?;
+
+            InstructionV1::AllocateGlobalAddress {
+                package_address: generate_package_address(package_address, bech32_decoder)?,
+                blueprint_name: generate_string(&blueprint_name)?,
+            }
         }
 
         /* direct vault method aliases */
@@ -545,26 +605,26 @@ where
 
         /* call function aliases */
         ast::Instruction::PublishPackage { args } => InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::PublishPackageAdvanced { args } => InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateFungibleResource { args } => InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateFungibleResourceWithInitialSupply { args } => {
             InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -572,14 +632,14 @@ where
             }
         }
         ast::Instruction::CreateNonFungibleResource { args } => InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE,
+            package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateNonFungibleResourceWithInitialSupply { args } => {
             InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -587,31 +647,31 @@ where
             }
         }
         ast::Instruction::CreateAccessController { args } => InstructionV1::CallFunction {
-            package_address: ACCESS_CONTROLLER_PACKAGE,
+            package_address: ACCESS_CONTROLLER_PACKAGE.into(),
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateIdentity { args } => InstructionV1::CallFunction {
-            package_address: IDENTITY_PACKAGE,
+            package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateIdentityAdvanced { args } => InstructionV1::CallFunction {
-            package_address: IDENTITY_PACKAGE,
+            package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateAccount { args } => InstructionV1::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
+            package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateAccountAdvanced { args } => InstructionV1::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
+            package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
@@ -619,57 +679,57 @@ where
 
         /* call non-main method aliases */
         ast::Instruction::SetMetadata { address, args } => InstructionV1::CallMetadataMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: METADATA_SET_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::RemoveMetadata { address, args } => InstructionV1::CallMetadataMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: METADATA_REMOVE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetComponentRoyaltyConfig { address, args } => {
             InstructionV1::CallRoyaltyMethod {
-                address: generate_global_address(address, bech32_decoder)?,
+                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
                 method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::ClaimComponentRoyalty { address, args } => {
             InstructionV1::CallRoyaltyMethod {
-                address: generate_global_address(address, bech32_decoder)?,
+                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
                 method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::UpdateRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintNonFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintUuidNonFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetPackageRoyaltyConfig { address, args } => InstructionV1::CallMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
@@ -744,7 +804,7 @@ fn generate_package_address(
     bech32_decoder: &Bech32Decoder,
 ) -> Result<PackageAddress, GeneratorError> {
     match value {
-        ast::Value::Address(inner) => match &**inner {
+        ast::Value::Address(inner) => match inner.borrow() {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
@@ -779,28 +839,71 @@ fn generate_resource_address(
     }
 }
 
-fn generate_global_address(
+fn generate_dynamic_global_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
-) -> Result<GlobalAddress, GeneratorError> {
+    resolver: &mut NameResolver,
+) -> Result<DynamicGlobalAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
-                        return Ok(address);
+                        return Ok(DynamicGlobalAddress::Static(address));
                     }
                 }
                 return Err(GeneratorError::InvalidGlobalAddress(s.into()));
             }
             v => return invalid_type!(v, ast::ValueKind::String),
         },
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
+            ast::Value::String(s) => resolver
+                .resolve_named_address(&s)
+                .map(Into::into)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
         v => invalid_type!(
             v,
             ast::ValueKind::Address,
             ast::ValueKind::PackageAddress,
             ast::ValueKind::ResourceAddress,
-            ast::ValueKind::ComponentAddress
+            ast::ValueKind::ComponentAddress,
+            ast::ValueKind::NamedAddress
+        ),
+    }
+}
+
+fn generate_dynamic_package_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+    resolver: &mut NameResolver,
+) -> Result<DynamicPackageAddress, GeneratorError> {
+    match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
+                        return Ok(DynamicPackageAddress::Static(address));
+                    }
+                }
+                return Err(GeneratorError::InvalidPackageAddress(s.into()));
+            }
+            v => return invalid_type!(v, ast::ValueKind::String),
+        },
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
+            ast::Value::String(s) => resolver
+                .resolve_named_address(&s)
+                .map(Into::into)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
+        v => invalid_type!(
+            v,
+            ast::ValueKind::PackageAddress,
+            ast::ValueKind::NamedAddress
         ),
     }
 }
@@ -879,6 +982,38 @@ fn declare_proof(
     }
 }
 
+fn declare_address_reservation(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    address_reservation_id: ManifestAddressReservation,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::AddressReservation(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_address_reservation(name.to_string(), address_reservation_id)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::AddressReservation),
+    }
+}
+
+fn declare_named_address(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    address_id: u32,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_named_address(name.to_string(), address_id)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::NamedAddress),
+    }
+}
+
 fn generate_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
@@ -892,6 +1027,69 @@ fn generate_proof(
             v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(v, ast::ValueKind::Proof),
+    }
+}
+
+fn generate_address_reservation(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+) -> Result<ManifestAddressReservation, GeneratorError> {
+    match value {
+        ast::Value::AddressReservation(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(ManifestAddressReservation(*n)),
+            ast::Value::String(s) => resolver
+                .resolve_address_reservation(&s)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::AddressReservation),
+    }
+}
+
+fn generate_static_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<ManifestAddress, GeneratorError> {
+    match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => {
+                // Check bech32 && entity type
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    // Check length
+                    if full_data.len() == NodeId::LENGTH {
+                        return Ok(ManifestAddress::Static(NodeId(
+                            full_data.try_into().unwrap(),
+                        )));
+                    }
+                }
+                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+            }
+            v => return invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(
+            v,
+            ast::ValueKind::Address,
+            ast::ValueKind::PackageAddress,
+            ast::ValueKind::ResourceAddress,
+            ast::ValueKind::ComponentAddress
+        ),
+    }
+}
+
+fn generate_named_address(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+) -> Result<ManifestAddress, GeneratorError> {
+    match value {
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(ManifestAddress::Named(*n)),
+            ast::Value::String(s) => resolver
+                .resolve_named_address(&s)
+                .map(|x| ManifestAddress::Named(x))
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::NamedAddress),
     }
 }
 
@@ -929,7 +1127,8 @@ where
     match value {
         ast::Value::Blob(inner) => match &**inner {
             ast::Value::String(s) => {
-                let hash = Hash::from_str(s).map_err(|_| GeneratorError::InvalidBlobHash)?;
+                let hash = Hash::from_str(s)
+                    .map_err(|_| GeneratorError::InvalidBlobHash(s.to_string()))?;
                 blobs
                     .get_blob(&hash)
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
@@ -1100,7 +1299,7 @@ where
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ManifestCustomValue::Address(ManifestAddress(
+                        value: ManifestCustomValue::Address(ManifestAddress::Static(
                             global_id.resource_address().into(),
                         )),
                     },
@@ -1116,8 +1315,13 @@ where
         // Custom Types
         // ==============
         ast::Value::Address(_) => {
-            generate_global_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(ManifestAddress(v.into())),
+            generate_static_address(value, bech32_decoder).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(v),
+            })
+        }
+        ast::Value::NamedAddress(_) => {
+            generate_named_address(value, resolver).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(v),
             })
         }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
@@ -1141,6 +1345,11 @@ where
         ast::Value::NonFungibleLocalId(_) => {
             generate_non_fungible_local_id(value).map(|v| Value::Custom {
                 value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(v)),
+            })
+        }
+        ast::Value::AddressReservation(_) => {
+            generate_address_reservation(value, resolver).map(|v| Value::Custom {
+                value: ManifestCustomValue::AddressReservation(v),
             })
         }
     }
@@ -1209,7 +1418,7 @@ mod tests {
     use crate::signing::secp256k1::Secp256k1PrivateKey;
     use radix_engine_common::manifest_args;
     use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
-    use radix_engine_common::types::ComponentAddress;
+    use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
@@ -1410,7 +1619,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_FUNCTION  Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
             InstructionV1::CallFunction {
-                package_address,
+                package_address: package_address.into(),
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
                 args: manifest_args!(500u32, pdec!("120"))
@@ -1439,7 +1648,7 @@ mod tests {
         generate_instruction_ok!(
             r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
             InstructionV1::CallFunction {
-                package_address: PACKAGE_PACKAGE,
+                package_address: PACKAGE_PACKAGE.into(),
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
                 function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
                 args: manifest_args!(
@@ -1489,7 +1698,7 @@ mod tests {
                     )
                 );"#,
             InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
@@ -1534,7 +1743,7 @@ mod tests {
             "{}",
             crate::manifest::decompile(
                 &[InstructionV1::CallFunction {
-                    package_address: RESOURCE_PACKAGE,
+                    package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
@@ -1590,7 +1799,7 @@ mod tests {
                 )
             ;"##,
             InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -1647,7 +1856,7 @@ mod tests {
                 )
             ;"#,
             InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
@@ -1694,7 +1903,7 @@ mod tests {
                 Decimal("500")
             ;"#,
             InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),

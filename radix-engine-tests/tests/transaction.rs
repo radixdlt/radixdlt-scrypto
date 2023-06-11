@@ -122,7 +122,7 @@ fn test_non_existent_blob_hash() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .add_instruction(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE,
+            package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {

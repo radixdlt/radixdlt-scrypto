@@ -97,7 +97,7 @@ pub fn add_call_function_instruction_with_schema<'a>(
     )?;
 
     builder.add_instruction(InstructionV1::CallFunction {
-        package_address,
+        package_address: package_address.into(),
         blueprint_name: blueprint_name.to_string(),
         function_name: function.to_string(),
         args: built_args,

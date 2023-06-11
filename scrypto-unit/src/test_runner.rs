@@ -693,14 +693,14 @@ impl TestRunner {
         let receipt = self.execute_transaction(
             SystemTransactionV1 {
                 instructions: InstructionsV1(vec![InstructionV1::CallFunction {
-                    package_address: PACKAGE_PACKAGE,
+                    package_address: PACKAGE_PACKAGE.into(),
                     blueprint_name: PACKAGE_BLUEPRINT.to_string(),
                     function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
                     args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         setup: definition,
                         metadata: btreemap!(),
-                        package_address: Some(ManifestOwn(0)),
+                        package_address: Some(ManifestAddressReservation(0)),
                         owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
                 }]),
@@ -799,7 +799,7 @@ impl TestRunner {
         manifest.instructions.insert(
             0,
             transaction::model::InstructionV1::CallMethod {
-                address: self.faucet_component(),
+                address: self.faucet_component().into(),
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
             },

@@ -17,11 +17,13 @@ pub fn extract_references(
                 if let TerminalValueRef::Custom(c) = r {
                     match c.0 {
                         ManifestCustomValue::Address(address) => {
-                            references.insert(Reference(address.0));
+                            if let ManifestAddress::Static(node_id) = address {
+                                references.insert(Reference(node_id));
+                            }
                         }
                         ManifestCustomValue::Bucket(_)
                         | ManifestCustomValue::Proof(_)
-                        | ManifestCustomValue::Own(_)
+                        | ManifestCustomValue::AddressReservation(_)
                         | ManifestCustomValue::Expression(_)
                         | ManifestCustomValue::Blob(_)
                         | ManifestCustomValue::Decimal(_)

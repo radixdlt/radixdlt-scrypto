@@ -97,10 +97,10 @@ fn static_component_should_be_callable() {
         .compile_and_publish_at_address("./tests/blueprints/static_dependencies", package_address);
     let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![InstructionV1::CallFunction {
-            package_address,
+            package_address: package_address.into(),
             blueprint_name: "Preallocated".to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(ManifestOwn(0), "my_secret".to_string()),
+            args: manifest_args!(ManifestAddressReservation(0), "my_secret".to_string()),
         }],
         vec![(
             BlueprintId::new(&package_address, "Preallocated"),
@@ -144,7 +144,7 @@ fn static_resource_should_be_callable() {
     let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![
             InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: "FungibleResourceManager".to_string(),
                 function_name: "create_with_initial_supply_and_address".to_string(),
                 args: manifest_decode(
@@ -155,7 +155,7 @@ fn static_resource_should_be_callable() {
                             metadata: btreemap!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
-                            resource_address: ManifestOwn(0),
+                            resource_address: ManifestAddressReservation(0),
                         },
                     )
                     .unwrap(),
