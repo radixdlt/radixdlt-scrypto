@@ -28,15 +28,16 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageDefinition, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltySubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    BlueprintSetup, BlueprintTemplate, PackageInfoSubstate,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate, PackageSetup,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -64,7 +65,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSetup) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -681,7 +682,7 @@ impl TestRunner {
     pub fn publish_package_at_address(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         address: PackageAddress,
     ) {
         let code_hash = hash(&code);
@@ -695,7 +696,7 @@ impl TestRunner {
                     function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
                     args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
-                        definition,
+                        setup: definition,
                         metadata: btreemap!(),
                         package_address: Some(ManifestOwn(0)),
                         owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
@@ -721,7 +722,7 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
@@ -737,7 +738,7 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
@@ -765,14 +766,14 @@ impl TestRunner {
 
     pub fn compile_and_publish_retain_blueprints<
         P: AsRef<Path>,
-        F: FnMut(&String, &mut BlueprintSchema) -> bool,
+        F: FnMut(&String, &mut BlueprintSetup) -> bool,
     >(
         &mut self,
         package_dir: P,
         retain: F,
     ) -> PackageAddress {
         let (code, mut definition) = Compile::compile(package_dir);
-        definition.schema.blueprints.retain(retain);
+        definition.blueprints.retain(retain);
         self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
@@ -987,7 +988,7 @@ impl TestRunner {
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
+            .create_fungible_resource(true, 0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(
                 to,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1157,6 +1158,7 @@ impl TestRunner {
             .lock_fee(self.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),
@@ -1182,7 +1184,13 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
+            .create_fungible_resource(
+                true,
+                divisibility,
+                BTreeMap::new(),
+                access_rules,
+                Some(amount),
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1206,7 +1214,7 @@ impl TestRunner {
         access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(1u8, BTreeMap::new(), access_rules, None)
+            .create_fungible_resource(true, 1u8, BTreeMap::new(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1230,7 +1238,7 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
+            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1254,7 +1262,7 @@ impl TestRunner {
         access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
+            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1519,6 +1527,7 @@ impl TestRunner {
                 .blueprints
                 .remove(&blueprint_name)
                 .unwrap()
+                .schema
                 .schema,
         )
     }
@@ -1659,41 +1668,44 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
-) -> PackageDefinition {
-    let mut package_schema = PackageSchema::default();
-    package_schema.blueprints.insert(
+) -> PackageSetup {
+    let mut blueprints = BTreeMap::new();
+    blueprints.insert(
         blueprint_name.to_string(),
-        BlueprintSchema {
-            outer_blueprint: None,
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
-            fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-            collections: vec![],
-            functions: btreemap!(
+        BlueprintSetup {
+            schema: BlueprintSchema {
+                outer_blueprint: None,
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                collections: vec![],
+                functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
-                    receiver: Option::None,
-                    input: LocalTypeIndex::WellKnown(ANY_ID),
-                    output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export_name: format!("{}_{}", blueprint_name, function_name),
-                }
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export: format!("{}_{}", blueprint_name, function_name),
+                    }
+                ),
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            },
+            function_auth: btreemap!(
+                function_name.to_string() => rule!(allow_all),
             ),
-            virtual_lazy_load_functions: btreemap!(),
-            event_schema: [].into(),
-            dependencies: btreeset!(),
-            method_auth_template: btreemap!(),
-            outer_method_auth_template: btreemap!(),
+            royalty_config: RoyaltyConfig::default(),
+            template: BlueprintTemplate {
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
+            },
         },
     );
-    PackageDefinition {
-        schema: package_schema,
-        function_access_rules: btreemap!(
-            blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))
-        ),
-        royalty_config: btreemap!(),
-    }
+    PackageSetup { blueprints }
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

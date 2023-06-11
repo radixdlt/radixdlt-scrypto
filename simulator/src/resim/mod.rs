@@ -355,7 +355,8 @@ pub fn export_blueprint_schema(
         .ok_or(Error::BlueprintNotFound(
             package_address,
             blueprint_name.to_string(),
-        ))?;
+        ))?
+        .schema;
     Ok(schema)
 }
 
@@ -441,6 +442,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
             .blueprints
             .get(&blueprint_name)
             .unwrap()
+            .schema
             .schema
             .clone(),
     ))

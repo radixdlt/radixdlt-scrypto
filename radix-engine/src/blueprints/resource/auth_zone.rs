@@ -101,6 +101,7 @@ impl AuthZoneBlueprint {
                             global: false,
                             outer_object: Some(resource_address.into()),
                             instance_schema: None,
+                            features: btreeset!(),
                         })).to_substates()
                     ),
                 )?;
@@ -115,6 +116,7 @@ impl AuthZoneBlueprint {
                             global: false,
                             outer_object: Some(resource_address.into()),
                             instance_schema: None,
+                            features: btreeset!(),
                         })).to_substates()
                     ),
                 )?;
@@ -154,6 +156,7 @@ impl AuthZoneBlueprint {
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
+                    features: btreeset!(),
                 })).to_substates()
             ),
         )?;
@@ -194,6 +197,7 @@ impl AuthZoneBlueprint {
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
+                    features: btreeset!(),
                 })).to_substates()
             ),
         )?;

@@ -628,6 +628,7 @@ dependencies = [
  "bitflags",
  "colored",
  "hex",
+ "lazy_static",
  "moka",
  "native-sdk",
  "parity-wasm",

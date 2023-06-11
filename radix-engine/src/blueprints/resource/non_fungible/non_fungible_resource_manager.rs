@@ -95,6 +95,7 @@ pub struct NonFungibleResourceManagerBlueprint;
 impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -107,8 +108,10 @@ impl NonFungibleResourceManagerBlueprint {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
+
         Self::create_with_address(
             id_type,
+            track_total_supply,
             non_fungible_schema,
             metadata,
             access_rules,
@@ -119,6 +122,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_address<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -137,8 +141,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -159,6 +169,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_initial_supply<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -214,8 +225,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -237,6 +254,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_uuid_with_initial_supply<Y>(
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -273,8 +291,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
@@ -323,6 +347,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update total supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -381,6 +410,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update Total Supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -441,6 +475,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update total supply
+        // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -659,6 +698,10 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -753,16 +796,24 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::TotalSupply.into(),
-            LockFlags::read_only(),
-        )?;
-        let total_supply: Decimal = api.field_lock_read_typed(handle)?;
-        Ok(total_supply)
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
+            let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                NonFungibleResourceManagerField::TotalSupply.into(),
+                LockFlags::read_only(),
+            )?;
+            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            Ok(Some(total_supply))
+        } else {
+            Ok(None)
+        }
     }
 }

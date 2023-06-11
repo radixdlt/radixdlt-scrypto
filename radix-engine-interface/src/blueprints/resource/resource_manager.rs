@@ -3,6 +3,8 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
+pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
+
 // Meta-roles
 pub const RESOURCE_PACKAGE_ROLE: &str = "resource_package";
 
@@ -94,4 +96,4 @@ pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetTotalSupplyInput {}
 
-pub type ResourceManagerGetTotalSupplyOutput = Decimal;
+pub type ResourceManagerGetTotalSupplyOutput = Option<Decimal>;

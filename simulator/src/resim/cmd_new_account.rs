@@ -76,6 +76,7 @@ impl NewAccount {
                         .to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type: NonFungibleIdType::Integer,
+                        track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: btreemap!(
                             "name".to_owned() => MetadataValue::String("Owner Badge".to_owned()) 

@@ -94,6 +94,7 @@ impl NewSimpleBadge {
                     .to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                     id_type: NonFungibleIdType::Integer,
+                    track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata,
                     access_rules: btreemap!(

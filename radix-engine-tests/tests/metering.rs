@@ -1,7 +1,7 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::PackageSetup;
 use scrypto_unit::*;
 use transaction::builder::*;
 use utils::ContextualDisplay;
@@ -66,19 +66,19 @@ fn test_basic_transfer() {
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
         0
-        + 1104 /* AllocateNodeId */
-        + 1744 /* CreateNode */
-        + 6142 /* DropLock */
-        + 1680 /* DropNode */
-        + 1140299 /* Invoke */
-        + 435286 /* LockSubstate */
-        + 8624 /* ReadSubstate */
-        + 65000 /* RunNative */
+        + 897 /* AllocateNodeId */
+        + 1417 /* CreateNode */
+        + 5143 /* DropLock */
+        + 1365 /* DropNode */
+        + 736166 /* Invoke */
+        + 440024 /* LockSubstate */
+        + 7280 /* ReadSubstate */
+        + 57500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1280 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 979 /* WriteSubstate */
+        + 856 /* WriteSubstate */
     );
 }
 
@@ -195,25 +195,25 @@ fn test_radiswap() {
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
         0
-        + 2553 /* AllocateNodeId */
-        + 4044 /* CreateNode */
-        + 14689 /* DropLock */
-        + 3780 /* DropNode */
-        + 3803751 /* Invoke */
-        + 2489185 /* LockSubstate */
-        + 20608 /* ReadSubstate */
-        + 137500 /* RunNative */
+        + 2208 /* AllocateNodeId */
+        + 3499 /* CreateNode */
+        + 12839 /* DropLock */
+        + 3255 /* DropNode */
+        + 3130196 /* Invoke */
+        + 2492199 /* LockSubstate */
+        + 18088 /* ReadSubstate */
+        + 125000 /* RunNative */
         + 20000 /* RunSystem */
-        + 606505 /* RunWasm */
+        + 602635 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2123 /* WriteSubstate */
+        + 1918 /* WriteSubstate */
     );
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7256413"),
+        dec!("0.6563512"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -307,20 +307,20 @@ fn test_flash_loan() {
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
         0
-        + 4002 /* AllocateNodeId */
-        + 6322 /* CreateNode */
-        + 23199 /* DropLock */
-        + 6090 /* DropNode */
-        + 4768533 /* Invoke */
-        + 4393610 /* LockSubstate */
-        + 32928 /* ReadSubstate */
-        + 205000 /* RunNative */
+        + 3657 /* AllocateNodeId */
+        + 5777 /* CreateNode */
+        + 21497 /* DropLock */
+        + 5565 /* DropNode */
+        + 4094978 /* Invoke */
+        + 4477492 /* LockSubstate */
+        + 30632 /* ReadSubstate */
+        + 192500 /* RunNative */
         + 40000 /* RunSystem */
-        + 1178875 /* RunWasm */
+        + 1170125 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 4436 /* WriteSubstate */
+        + 4231 /* WriteSubstate */
     );
 }
 
@@ -344,7 +344,7 @@ fn test_publish_large_package() {
         .lock_fee(test_runner.faucet_component(), 100.into())
         .publish_package_advanced(
             code,
-            PackageDefinition::default(),
+            PackageSetup::default(),
             BTreeMap::new(),
             OwnerRole::None,
         )

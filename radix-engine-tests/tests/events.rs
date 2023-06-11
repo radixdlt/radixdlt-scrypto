@@ -143,14 +143,11 @@ fn local_type_index_with_misleading_name_fails() {
     let mut test_runner = TestRunner::builder().without_trace().build();
 
     let (code, mut definition) = Compile::compile("./tests/blueprints/events");
-    let blueprint_schema = definition
-        .schema
-        .blueprints
-        .get_mut("ScryptoEvents")
-        .unwrap();
-    blueprint_schema.event_schema.insert(
+    let blueprint_schema = definition.blueprints.get_mut("ScryptoEvents").unwrap();
+    blueprint_schema.schema.event_schema.insert(
         "HelloHelloEvent".to_string(),
         blueprint_schema
+            .schema
             .event_schema
             .get("RegisteredEvent")
             .unwrap()
@@ -298,6 +295,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 Some([(id.clone(), EmptyStruct {})]),
@@ -391,6 +389,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_fungible_resource(
+            false,
             18,
             Default::default(),
             BTreeMap::<ResourceMethodAuthKey, (AccessRule, AccessRule)>::new(),
@@ -457,7 +456,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
-            .create_fungible_resource(18, Default::default(), access_rules, None)
+            .create_fungible_resource(false, 18, Default::default(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -538,6 +537,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
@@ -1481,7 +1481,7 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
     .collect();
 
     let manifest = ManifestBuilder::new()
-        .create_fungible_resource(18, BTreeMap::new(), access_rules, None)
+        .create_fungible_resource(false, 18, BTreeMap::new(), access_rules, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     *receipt

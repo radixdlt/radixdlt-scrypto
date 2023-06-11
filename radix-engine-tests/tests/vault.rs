@@ -634,6 +634,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,

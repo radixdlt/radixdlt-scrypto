@@ -20,7 +20,7 @@ fn package_burn_is_only_callable_within_resource_package() {
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(18, Default::default(), access_rules, None)
+            .create_fungible_resource(true, 18, Default::default(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
@@ -64,7 +64,7 @@ fn can_burn_by_amount_from_fungible_vault() {
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(18, Default::default(), access_rules, None)
+            .create_fungible_resource(true, 18, Default::default(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
@@ -124,6 +124,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -193,6 +194,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -267,7 +269,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(18, Default::default(), access_rules, None)
+            .create_fungible_resource(true, 18, Default::default(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
@@ -331,6 +333,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -404,6 +407,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -479,7 +483,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(18, Default::default(), access_rules, None)
+            .create_fungible_resource(true, 18, Default::default(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
@@ -542,6 +546,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -614,6 +619,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -685,7 +691,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
             UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(18, Default::default(), access_rules, None)
+            .create_fungible_resource(true, 18, Default::default(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
@@ -745,6 +751,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -814,6 +821,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
@@ -887,7 +895,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(18, Default::default(), access_rules, Some(100.into()))
+            .create_fungible_resource(true, 18, Default::default(), access_rules, Some(100.into()))
             .try_deposit_batch_or_abort(account)
             .build();
         test_runner
@@ -940,6 +948,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Some(btreemap!(
@@ -995,6 +1004,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                true,
                 Default::default(),
                 access_rules,
                 Some(btreemap!(

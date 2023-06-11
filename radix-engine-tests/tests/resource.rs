@@ -9,6 +9,28 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+fn cannot_get_total_supply_of_xrd() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(
+            RADIX_TOKEN,
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let commit = receipt.expect_commit_success();
+    let output: Option<Decimal> = commit.output(1);
+    assert!(output.is_none());
+}
+
+#[test]
 fn test_set_mintable_with_self_resource_address() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -126,7 +148,13 @@ fn create_fungible_too_high_granularity_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_fungible_resource(23u8, BTreeMap::new(), access_rules, Some(dec!("100")))
+        .create_fungible_resource(
+            false,
+            23u8,
+            BTreeMap::new(),
+            access_rules,
+            Some(dec!("100")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

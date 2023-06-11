@@ -223,6 +223,7 @@ pub enum SystemError {
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
     InvalidInstanceSchema,
+    InvalidFeature(String),
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(BlueprintId),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),

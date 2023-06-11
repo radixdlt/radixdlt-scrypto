@@ -25,10 +25,13 @@ fn test_static_package_address() {
     let (mut code, mut definition) = Compile::compile("./tests/blueprints/static_dependencies");
     let place_holder: GlobalAddress =
         PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER).into();
-    for (_, blueprint) in &mut definition.schema.blueprints {
-        if blueprint.dependencies.contains(&place_holder) {
-            blueprint.dependencies.remove(&place_holder);
-            blueprint.dependencies.insert(package_address1.into());
+    for (_, blueprint) in &mut definition.blueprints {
+        if blueprint.schema.dependencies.contains(&place_holder) {
+            blueprint.schema.dependencies.remove(&place_holder);
+            blueprint
+                .schema
+                .dependencies
+                .insert(package_address1.into());
         }
     }
 
@@ -147,6 +150,7 @@ fn static_resource_should_be_callable() {
                 args: manifest_decode(
                     &manifest_encode(
                         &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
+                            track_total_supply: true,
                             divisibility: 0u8,
                             metadata: btreemap!(),
                             access_rules: btreemap!(),

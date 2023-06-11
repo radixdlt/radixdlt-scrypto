@@ -34,8 +34,8 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, InstanceSchema, KeyValueStoreSchema,
-    TypeRef,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FieldSchema, InstanceSchema,
+    KeyValueStoreSchema, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -174,6 +174,7 @@ where
                 global: true,
                 outer_object: None,
                 instance_schema: None,
+                features: btreeset!(),
             }));
         } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
@@ -193,6 +194,7 @@ where
                 global: true,
                 outer_object: None,
                 instance_schema: None,
+                features: btreeset!(),
             }));
         }
 
@@ -220,13 +222,21 @@ where
     fn new_object_internal(
         &mut self,
         blueprint: &BlueprintId,
+        features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
-        let (expected_blueprint_parent, user_substates) =
-            self.verify_instance_schema_and_state(blueprint, &instance_schema, fields, kv_entries)?;
+        let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+
+        let (expected_blueprint_parent, user_substates) = self.verify_instance_schema_and_state(
+            blueprint,
+            &features,
+            &instance_schema,
+            fields,
+            kv_entries,
+        )?;
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
@@ -256,6 +266,7 @@ where
                     global:false,
                     outer_object,
                     instance_schema,
+                    features,
                 })
             ).to_substates(),
         );
@@ -272,17 +283,17 @@ where
         Ok(node_id.into())
     }
 
-    pub fn get_blueprint_schema(
+    pub fn get_blueprint_definition(
         &mut self,
         blueprint: &BlueprintId,
-    ) -> Result<IndexedBlueprintSchema, RuntimeError> {
-        let schema = self
+    ) -> Result<BlueprintDefinition, RuntimeError> {
+        let def = self
             .api
             .kernel_get_system_state()
             .system
-            .blueprint_schema_cache
+            .blueprint_cache
             .get(blueprint);
-        if let Some(schema) = schema {
+        if let Some(schema) = def {
             return Ok(schema.clone());
         } else {
             let handle = self.api.kernel_lock_substate(
@@ -306,14 +317,14 @@ where
             self.api
                 .kernel_get_system_state()
                 .system
-                .blueprint_schema_cache
+                .blueprint_cache
                 .insert(blueprint.clone(), schema);
             self.api.kernel_drop_lock(handle)?;
             let schema = self
                 .api
                 .kernel_get_system_state()
                 .system
-                .blueprint_schema_cache
+                .blueprint_cache
                 .get(blueprint)
                 .unwrap();
             Ok(schema.clone())
@@ -323,6 +334,7 @@ where
     fn verify_instance_schema_and_state(
         &mut self,
         blueprint: &BlueprintId,
+        features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -333,7 +345,18 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_schema = self.get_blueprint_schema(blueprint)?;
+        let blueprint_schema = self.get_blueprint_definition(blueprint)?.schema;
+
+        // Validate features
+        {
+            for feature in features {
+                if !blueprint_schema.features.contains(feature) {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                        feature.to_string(),
+                    )));
+                }
+            }
+        }
 
         // Validate instance schema
         {
@@ -363,14 +386,25 @@ where
                 )));
             }
 
-            if let Some((offset, field_type_index)) = blueprint_schema.fields {
+            if let Some((offset, field_schemas)) = blueprint_schema.fields {
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
+                    let field_type_index = match &field_schemas[i] {
+                        FieldSchema::Normal { value } => value.clone(),
+                        FieldSchema::Conditional { feature, value } => {
+                            if features.contains(feature) {
+                                value.clone()
+                            } else {
+                                continue;
+                            }
+                        }
+                    };
+
                     self.validate_payload(
                         &field,
                         &blueprint_schema.schema,
-                        field_type_index[i],
+                        field_type_index,
                         SchemaOrigin::Blueprint(blueprint.clone()),
                     )
                     .map_err(|err| {
@@ -503,14 +537,14 @@ where
             ActorObjectType::OuterObject => {
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
-                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
                 Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
-                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
                 Ok((node_id, object_module_id.base_partition_num(), info, schema))
             }
         }
@@ -532,12 +566,26 @@ where
     > {
         let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, type_index) = schema.field(field_index).ok_or_else(|| {
+        let (partition_offset, field_schema) = schema.field(field_index).ok_or_else(|| {
             RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                 info.blueprint.clone(),
                 field_index,
             ))
         })?;
+
+        let type_index = match field_schema {
+            FieldSchema::Normal { value } => value,
+            FieldSchema::Conditional { feature, value } => {
+                if info.features.contains(&feature) {
+                    value
+                } else {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint.clone(),
+                        field_index,
+                    )));
+                }
+            }
+        };
 
         let partition_num = base_partition
             .at_offset(partition_offset)
@@ -909,6 +957,7 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
+        features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -918,7 +967,14 @@ where
         let instance_context = actor.instance_context();
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
-        self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
+        self.new_object_internal(
+            &blueprint,
+            features,
+            instance_context,
+            schema,
+            fields,
+            kv_entries,
+        )
     }
 
     fn attach_access_rules(
@@ -1017,6 +1073,7 @@ where
 
         let inner_object = self.new_object_internal(
             &blueprint,
+            vec![],
             Some(InstanceContext {
                 outer_object: global_address,
                 outer_blueprint: actor_blueprint.blueprint_name,
@@ -1079,6 +1136,7 @@ where
                     outer_object: None,
                     global: receiver_info.global,
                     instance_schema: None,
+                    features: btreeset!(),
                 },
                 None,
             ),
@@ -1954,7 +2012,7 @@ where
                 )),
             }?;
 
-            let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
+            let blueprint_schema = self.get_blueprint_definition(&blueprint_id)?.schema;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
