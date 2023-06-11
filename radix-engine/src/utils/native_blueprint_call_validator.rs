@@ -24,13 +24,13 @@ pub fn validate_call_arguments_to_native_components(
     for (index, instruction) in instructions.iter().enumerate() {
         let (invocation, args) = match instruction {
             InstructionV1::CallFunction {
-                package_address: DynamicGlobalAddress::Static(address),
+                package_address: DynamicPackageAddress::Static(address),
                 blueprint_name,
                 function_name,
                 args,
-            } if address.as_node_id().is_global_package() => (
+            } => (
                 Invocation::Function(
-                    PackageAddress::new_or_panic(address.clone().into()),
+                    *address,
                     blueprint_name.to_owned(),
                     function_name.to_owned(),
                 ),

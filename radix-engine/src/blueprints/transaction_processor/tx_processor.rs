@@ -59,7 +59,8 @@ pub enum TransactionProcessorError {
     BlobNotFound(Hash),
     InvalidCallData(DecodeError),
     InvalidPackageSchema(DecodeError),
-    NotPackageAddress(GlobalAddress),
+    NotPackageAddress(NodeId),
+    NotGlobalAddress(NodeId),
 }
 
 pub struct TransactionProcessorBlueprint;
@@ -499,16 +500,17 @@ impl TransactionProcessor {
         Ok(Proof(Own(real_id)))
     }
 
-    fn get_named_address(&mut self, address_id: &u32) -> Result<GlobalAddress, RuntimeError> {
+    fn get_address(&mut self, address_id: &u32) -> Result<NodeId, RuntimeError> {
         let real_id =
             self.address_mapping
                 .get(address_id)
+                .cloned()
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::TransactionProcessorError(
                         TransactionProcessorError::NamedAddressNotFound(*address_id),
                     ),
                 ))?;
-        Ok(GlobalAddress::new_or_panic(real_id.clone().into()))
+        Ok(real_id)
     }
 
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
@@ -571,15 +573,19 @@ impl TransactionProcessor {
 
     fn resolve_package_address(
         &mut self,
-        address: DynamicGlobalAddress,
+        address: DynamicPackageAddress,
     ) -> Result<PackageAddress, RuntimeError> {
-        let global_address = self.resolve_global_address(address)?;
-
-        PackageAddress::try_from(global_address).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::NotPackageAddress(global_address),
-            ))
-        })
+        match address {
+            DynamicPackageAddress::Static(address) => Ok(address),
+            DynamicPackageAddress::Named(name) => {
+                let node_id = self.get_address(&name)?;
+                PackageAddress::try_from(node_id.0).map_err(|_| {
+                    RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::NotPackageAddress(node_id),
+                    ))
+                })
+            }
+        }
     }
 
     fn resolve_global_address(
@@ -588,7 +594,14 @@ impl TransactionProcessor {
     ) -> Result<GlobalAddress, RuntimeError> {
         match address {
             DynamicGlobalAddress::Static(address) => Ok(address),
-            DynamicGlobalAddress::Named(name) => self.get_named_address(&name),
+            DynamicGlobalAddress::Named(name) => {
+                let node_id = self.get_address(&name)?;
+                GlobalAddress::try_from(node_id.0).map_err(|_| {
+                    RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::NotGlobalAddress(node_id),
+                    ))
+                })
+            }
         }
     }
 
@@ -708,7 +721,7 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     }
 
     fn replace_named_address(&mut self, a: u32) -> Result<Reference, RuntimeError> {
-        self.processor.get_named_address(&a).map(|x| x.into())
+        self.processor.get_address(&a).map(|x| Reference(x))
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {

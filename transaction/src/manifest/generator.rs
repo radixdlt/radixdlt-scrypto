@@ -475,7 +475,7 @@ where
             args,
         } => {
             let package_address =
-                generate_dynamic_global_address(package_address, bech32_decoder, resolver)?;
+                generate_dynamic_package_address(package_address, bech32_decoder, resolver)?;
             let blueprint_name = generate_string(&blueprint_name)?;
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
@@ -870,6 +870,39 @@ fn generate_dynamic_global_address(
             ast::ValueKind::PackageAddress,
             ast::ValueKind::ResourceAddress,
             ast::ValueKind::ComponentAddress,
+            ast::ValueKind::NamedAddress
+        ),
+    }
+}
+
+fn generate_dynamic_package_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+    resolver: &mut NameResolver,
+) -> Result<DynamicPackageAddress, GeneratorError> {
+    match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
+                        return Ok(DynamicPackageAddress::Static(address));
+                    }
+                }
+                return Err(GeneratorError::InvalidPackageAddress(s.into()));
+            }
+            v => return invalid_type!(v, ast::ValueKind::String),
+        },
+        ast::Value::NamedAddress(inner) => match &**inner {
+            ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
+            ast::Value::String(s) => resolver
+                .resolve_named_address(&s)
+                .map(Into::into)
+                .map_err(GeneratorError::NameResolverError),
+            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
+        v => invalid_type!(
+            v,
+            ast::ValueKind::PackageAddress,
             ast::ValueKind::NamedAddress
         ),
     }

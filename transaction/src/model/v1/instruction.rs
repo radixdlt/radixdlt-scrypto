@@ -53,12 +53,12 @@ impl DynamicGlobalAddress {
     /// instead of `Enum<0u8>(Address("static_address"))`.
     pub fn to_instruction_argument(&self) -> ManifestValue {
         match self {
-            DynamicGlobalAddress::Static(address) => ManifestValue::Custom {
+            Self::Static(address) => ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(
                     address.into_node_id(),
                 )),
             },
-            DynamicGlobalAddress::Named(id) => ManifestValue::Custom {
+            Self::Named(id) => ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Named(*id)),
             },
         }
@@ -66,65 +66,96 @@ impl DynamicGlobalAddress {
 
     pub fn is_static_global_package(&self) -> bool {
         match self {
-            DynamicGlobalAddress::Static(address) => address.as_node_id().is_global_package(),
-            DynamicGlobalAddress::Named(_) => false,
-        }
-    }
-
-    pub fn is_static_global_package_of(&self, package_address: &PackageAddress) -> bool {
-        match self {
-            DynamicGlobalAddress::Static(address) => {
-                address.as_node_id().eq(package_address.as_node_id())
-            }
-            DynamicGlobalAddress::Named(_) => false,
+            Self::Static(address) => address.as_node_id().is_global_package(),
+            Self::Named(_) => false,
         }
     }
 
     pub fn is_static_global_fungible_resource_manager(&self) -> bool {
         match self {
-            DynamicGlobalAddress::Static(address) => {
-                address.as_node_id().is_global_fungible_resource_manager()
-            }
-            DynamicGlobalAddress::Named(_) => false,
+            Self::Static(address) => address.as_node_id().is_global_fungible_resource_manager(),
+            Self::Named(_) => false,
         }
     }
     pub fn is_static_global_non_fungible_resource_manager(&self) -> bool {
         match self {
-            DynamicGlobalAddress::Static(address) => address
+            Self::Static(address) => address
                 .as_node_id()
                 .is_global_non_fungible_resource_manager(),
-            DynamicGlobalAddress::Named(_) => false,
+            Self::Named(_) => false,
         }
     }
 }
 
 impl From<GlobalAddress> for DynamicGlobalAddress {
     fn from(value: GlobalAddress) -> Self {
-        DynamicGlobalAddress::Static(value)
+        Self::Static(value)
     }
 }
 
 impl From<PackageAddress> for DynamicGlobalAddress {
     fn from(value: PackageAddress) -> Self {
-        DynamicGlobalAddress::Static(value.into())
+        Self::Static(value.into())
     }
 }
 
 impl From<ResourceAddress> for DynamicGlobalAddress {
     fn from(value: ResourceAddress) -> Self {
-        DynamicGlobalAddress::Static(value.into())
+        Self::Static(value.into())
     }
 }
 
 impl From<ComponentAddress> for DynamicGlobalAddress {
     fn from(value: ComponentAddress) -> Self {
-        DynamicGlobalAddress::Static(value.into())
+        Self::Static(value.into())
     }
 }
 
 impl From<u32> for DynamicGlobalAddress {
     fn from(value: u32) -> Self {
-        DynamicGlobalAddress::Named(value)
+        Self::Named(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+pub enum DynamicPackageAddress {
+    Static(PackageAddress),
+    Named(u32),
+}
+
+impl DynamicPackageAddress {
+    /// This is to support either `Address("static_address")` or `NamedAddress("abc")` in manifest instruction,
+    /// instead of `Enum<0u8>(Address("static_address"))`.
+    pub fn to_instruction_argument(&self) -> ManifestValue {
+        match self {
+            Self::Static(address) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Static(
+                    address.into_node_id(),
+                )),
+            },
+            Self::Named(id) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Named(*id)),
+            },
+        }
+    }
+
+    pub fn is_static_global_package_of(&self, package_address: &PackageAddress) -> bool {
+        match self {
+            Self::Static(address) => address.as_node_id().eq(package_address.as_node_id()),
+            Self::Named(_) => false,
+        }
+    }
+}
+
+impl From<PackageAddress> for DynamicPackageAddress {
+    fn from(value: PackageAddress) -> Self {
+        Self::Static(value.into())
+    }
+}
+
+impl From<u32> for DynamicPackageAddress {
+    fn from(value: u32) -> Self {
+        Self::Named(value)
     }
 }
 
@@ -251,10 +282,7 @@ pub enum InstructionV1 {
     //==============
     #[sbor(discriminator(INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR))]
     CallFunction {
-        // Note that we no long structurally verify if it's indeed a package address and error is deferred to runtime.
-        // We can potentially check if the global address is package address, if it's static.
-        // TODO: Maybe `DynamicPackageAddress`?
-        package_address: DynamicGlobalAddress,
+        package_address: DynamicPackageAddress,
         blueprint_name: String,
         function_name: String,
         args: ManifestValue,
