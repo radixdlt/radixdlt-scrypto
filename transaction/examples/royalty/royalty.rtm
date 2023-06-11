@@ -1,10 +1,7 @@
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
-    Tuple(
-        Map<String, U32>(
-            "method" => 1u32
-        )
-    );
+    "my_method"
+    Enum<RoyaltyAmount::Free>();
 
 CLAIM_PACKAGE_ROYALTY
     Address("${package_address}");

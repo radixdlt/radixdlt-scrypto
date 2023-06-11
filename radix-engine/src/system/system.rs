@@ -5,7 +5,7 @@ use super::system_modules::costing::CostingReason;
 use crate::blueprints::package::{PackageAuthNativeBlueprint, PackageNativePackage};
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleSet, InvalidModuleType, KernelError, ModuleError, RuntimeError,
+    InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -51,9 +51,50 @@ pub enum SubstateMutability {
 
 // TODO: Extend this use into substate fields
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct SubstateWrapper<V> {
-    pub value: V,
+pub struct DynSubstate<E> {
+    pub value: E,
     pub mutability: SubstateMutability,
+}
+
+impl<E> DynSubstate<E> {
+    pub fn freeze(&mut self) {
+        self.mutability = SubstateMutability::Immutable;
+    }
+
+    pub fn is_mutable(&self) -> bool {
+        matches!(self.mutability, SubstateMutability::Mutable)
+    }
+}
+
+pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;
+
+impl<V> KeyValueEntrySubstate<V> {
+    pub fn entry(value: V) -> Self {
+        Self {
+            value: Some(value),
+            mutability: SubstateMutability::Mutable,
+        }
+    }
+
+    pub fn immutable_entry(value: V) -> Self {
+        Self {
+            value: Some(value),
+            mutability: SubstateMutability::Immutable,
+        }
+    }
+
+    pub fn remove(&mut self) -> Option<V> {
+        self.value.take()
+    }
+}
+
+impl<V> Default for KeyValueEntrySubstate<V> {
+    fn default() -> Self {
+        Self {
+            value: Option::None,
+            mutability: SubstateMutability::Mutable,
+        }
+    }
 }
 
 /// Provided to upper layer for invoking lower layer service
@@ -207,8 +248,8 @@ where
                 instance_schema: None,
                 features: btreeset!(),
             }));
-        } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+        } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
             || node_id.eq(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(GLOBAL_CALLER_VIRTUAL_BADGE.as_node_id())
@@ -388,12 +429,12 @@ where
         if let Some(access_rule) = access_rule {
             Ok(access_rule.clone())
         } else {
-            Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::NoFunction(FnIdentifier {
+            Err(RuntimeError::SystemModuleError(
+                SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
                     blueprint: blueprint.clone(),
                     ident: FnIdent::Application(ident.to_string()),
-                }),
-            )))
+                })),
+            ))
         }
     }
 
@@ -646,12 +687,8 @@ where
                                 })?;
 
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let wrapped_value = SubstateWrapper {
-                                    value: Some(value),
-                                    mutability: SubstateMutability::Mutable,
-                                };
-
-                                let value = IndexedScryptoValue::from_typed(&wrapped_value);
+                                let kv_entry = KeyValueEntrySubstate::entry(value);
+                                let value = IndexedScryptoValue::from_typed(&kv_entry);
 
                                 if !blueprint_kv_schema.can_own {
                                     if !value.owned_nodes().is_empty() {
@@ -700,10 +737,10 @@ where
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
 
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> =
             scrypto_decode(&current_value).unwrap();
-        let value = wrapper.value.take();
-        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
         self.kernel_drop_lock(handle)?;
 
@@ -1466,8 +1503,8 @@ where
         }
 
         if !is_drop_allowed {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                     node_id: node_id.clone(),
                     package_address: info.blueprint_id.package_address,
                     blueprint_name: info.blueprint_id.blueprint_name,
@@ -1505,7 +1542,7 @@ where
         }
 
         self.api.kernel_read_substate(handle).map(|v| {
-            let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
+            let wrapper: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
             scrypto_encode(&wrapper.value).unwrap()
         })
     }
@@ -1523,9 +1560,9 @@ where
         };
 
         let v = self.api.kernel_read_substate(handle)?;
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-        wrapper.mutability = SubstateMutability::Immutable;
-        let indexed = IndexedScryptoValue::from_typed(&wrapper);
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+        kv_entry.freeze();
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
         self.api.kernel_write_substate(handle, indexed)?;
         Ok(())
     }
@@ -1539,10 +1576,10 @@ where
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
 
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> =
             scrypto_decode(&current_value).unwrap();
-        let value = wrapper.value.take();
-        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
         let current_value = scrypto_encode(&value).unwrap();
 
@@ -1593,11 +1630,8 @@ where
         };
 
         let value = substate.as_scrypto_value().clone();
-        let wrapper = SubstateWrapper {
-            value: Some(value),
-            mutability: SubstateMutability::Mutable,
-        };
-        let indexed = IndexedScryptoValue::from_vec(scrypto_encode(&wrapper).unwrap()).unwrap();
+        let kv_entry = KeyValueEntrySubstate::entry(value);
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -1705,19 +1739,16 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             lock_data,
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
-                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-                wrapper.mutability
+                let kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+                kv_entry.mutability
             })?;
 
             if let SubstateMutability::Immutable = mutability {
@@ -1756,9 +1787,8 @@ where
 
         let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
@@ -1847,9 +1877,8 @@ where
         let (node_id, partition_num) =
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
@@ -2202,22 +2231,17 @@ where
             &SubstateKey::Map(key.to_vec()),
             flags,
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::KeyValueEntry(lock_data),
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
-            let mutability = self.api.kernel_read_substate(handle).map(|v| {
-                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-                wrapper.mutability
-            })?;
+            let substate: KeyValueEntrySubstate<ScryptoValue> =
+                self.api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            if let SubstateMutability::Immutable = mutability {
+            if !substate.is_mutable() {
                 return Err(RuntimeError::SystemError(
                     SystemError::MutatingImmutableSubstate,
                 ));
@@ -2335,7 +2359,7 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        // Costing event emission.
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
@@ -2349,8 +2373,8 @@ where
                     ..
                 }) => Ok(object_info.blueprint_id.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
-                _ => Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(Box::new(EventError::InvalidActor)),
+                _ => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
                 )),
             }?;
 
@@ -2362,8 +2386,8 @@ where
                 if let Some(pointer) = blueprint_definition.events.get(&event_name).cloned() {
                     pointer
                 } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::EventError(Box::new(EventError::SchemaNotFoundError {
                             blueprint: blueprint_id.clone(),
                             event_name,
                         })),
@@ -2398,8 +2422,8 @@ where
                 ),
                 schema_pointer,
             )),
-            _ => Err(RuntimeError::ApplicationError(
-                ApplicationError::EventError(Box::new(EventError::InvalidActor)),
+            _ => Err(RuntimeError::SystemModuleError(
+                SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
             )),
         }?;
         self.validate_payload(
@@ -2409,7 +2433,7 @@ where
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
+            RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
                 EventError::EventSchemaNotMatch(err.error_message(&schema)),
             )))
         })?;
@@ -2431,13 +2455,14 @@ where
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
             .kernel_get_system()
             .modules
             .logger
-            .add_log(level, message);
+            .add(level, message);
         Ok(())
     }
 }
@@ -2469,6 +2494,15 @@ where
             .modules
             .transaction_runtime
             .generate_uuid())
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+            message.to_string(),
+        )))
     }
 }
 

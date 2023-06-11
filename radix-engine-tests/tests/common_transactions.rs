@@ -1,9 +1,11 @@
+use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::{compile, BlobProvider};
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 macro_rules! replace_variables {
@@ -13,11 +15,29 @@ macro_rules! replace_variables {
     };
 }
 
+#[test]
+fn test_allocate_address_and_call_it() {
+    run_manifest(|account_address, bech32_encoder| {
+        let code_blob = include_bytes!("../../assets/radiswap.wasm").to_vec();
+        let manifest = replace_variables!(
+            include_str!("../../transaction/examples/address_allocation/allocate_address.rtm"),
+            account_address = account_address.display(bech32_encoder),
+            package_package_address = PACKAGE_PACKAGE.display(bech32_encoder),
+            code_blob_hash = hash(&code_blob)
+        );
+        (manifest, vec![code_blob])
+    })
+    .expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(..)) => true,
+        _ => false,
+    });
+}
+
 /// An example manifest for transfer of funds between accounts
 #[test]
 fn transfer_of_funds_to_another_account_succeeds() {
-    test_manifest(|this_account_address, bech32_encoder| {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(12).unwrap();
+    run_manifest(|this_account_address, bech32_encoder| {
+        let private_key = Secp256k1PrivateKey::from_u64(12).unwrap();
         let public_key = private_key.public_key();
         let other_account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 
@@ -28,7 +48,8 @@ fn transfer_of_funds_to_another_account_succeeds() {
             other_account_address = other_account_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
-    });
+    })
+    .expect_commit_success();
 }
 
 #[test]
@@ -56,7 +77,7 @@ fn multi_account_fund_transfer_succeeds() {
 /// An example manifest for creating a new fungible resource with no initial supply
 #[test]
 fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
-    test_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, bech32_encoder| {
         let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
@@ -64,13 +85,14 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
             account_address = account_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
-    });
+    })
+    .expect_commit_success();
 }
 
 /// An example manifest for creating a new fungible resource with an initial supply
 #[test]
 fn creating_a_fungible_resource_with_initial_supply_succeeds() {
-    test_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, bech32_encoder| {
         let initial_supply = dec!("10000000");
 
         let manifest = replace_variables!(
@@ -81,13 +103,14 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
             account_address = account_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
-    });
+    })
+    .expect_commit_success();
 }
 
 /// An example manifest for creating a new non-fungible resource with no supply
 #[test]
 fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
-    test_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, bech32_encoder| {
         let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
@@ -95,13 +118,14 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
             account_address = account_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
-    });
+    })
+    .expect_commit_success();
 }
 
 /// An example manifest for creating a new non-fungible resource with an initial supply
 #[test]
 fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
-    test_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, bech32_encoder| {
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_address =
@@ -109,13 +133,14 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
                 non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
-    });
+    })
+    .expect_commit_success();
 }
 
 /// A sample manifest that publishes a package.
 #[test]
 fn publish_package_succeeds() {
-    test_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, bech32_encoder| {
         let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
 
         let manifest = replace_variables!(
@@ -126,7 +151,8 @@ fn publish_package_succeeds() {
             auth_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob])
-    });
+    })
+    .expect_commit_success();
 }
 
 /// A sample manifest for minting of a fungible resource
@@ -198,12 +224,12 @@ fn changing_account_default_deposit_rule_succeeds() {
     );
 }
 
-fn test_manifest<F>(string_manifest_builder: F)
+fn run_manifest<F>(string_manifest_builder: F) -> TransactionReceipt
 where
     F: Fn(&ComponentAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunner::builder().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
@@ -222,9 +248,7 @@ where
     )
     .expect("Failed to compile manifest from manifest string");
 
-    test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
-        .expect_commit_success();
+    test_runner.execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
 }
 
 fn test_manifest_with_restricted_minting_resource<F>(
@@ -263,12 +287,12 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
-            .create_fungible_resource(vec![], divisibility, BTreeMap::new(), access_rules, None)
+            .create_fungible_resource(false, divisibility, BTreeMap::new(), access_rules, None)
             .build(),
         ResourceType::NonFungible { id_type } => ManifestBuilder::new()
             .create_non_fungible_resource(
-                vec![],
                 id_type,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,

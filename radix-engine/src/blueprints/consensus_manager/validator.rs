@@ -45,7 +45,7 @@ pub struct ValidatorSubstate {
     pub sorted_key: Option<SortedKey>,
 
     /// This validator's public key.
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
 
     /// Whether this validator is currently interested in participating in the consensus.
     pub is_registered: bool,
@@ -185,7 +185,7 @@ impl ValidatorBlueprint {
             let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
                 xrd_bucket_amount,
                 xrd_vault.amount(api)?,
-                stake_unit_resman.total_supply(api)?,
+                stake_unit_resman.total_supply(api)?.unwrap(),
             );
 
             let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
@@ -232,7 +232,7 @@ impl ValidatorBlueprint {
             let mut stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
 
             let active_stake_amount = stake_vault.amount(api)?;
-            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
             let xrd_amount = if total_stake_unit_supply.is_zero() {
                 Decimal::zero()
             } else {
@@ -434,7 +434,7 @@ impl ValidatorBlueprint {
         Ok(claimed_bucket)
     }
 
-    pub fn update_key<Y>(key: EcdsaSecp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn update_key<Y>(key: Secp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -770,7 +770,7 @@ impl ValidatorBlueprint {
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
         let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
         let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
-        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             validator_fee_xrd,
             post_emission_stake_pool_xrd,
@@ -970,7 +970,7 @@ impl ValidatorCreator {
         stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let stake_unit_resman = ResourceManager::new_fungible(
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
+            true,
             18,
             BTreeMap::new(),
             stake_unit_resource_auth,
@@ -1001,8 +1001,8 @@ impl ValidatorCreator {
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
-            vec![TRACK_TOTAL_SUPPLY_FEATURE],
             NonFungibleIdType::UUID,
+            true,
             BTreeMap::new(),
             unstake_nft_auth,
             api,
@@ -1012,7 +1012,7 @@ impl ValidatorCreator {
     }
 
     pub fn create<Y>(
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
         is_registered: bool,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>

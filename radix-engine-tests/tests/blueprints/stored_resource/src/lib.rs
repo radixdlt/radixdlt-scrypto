@@ -16,7 +16,7 @@ mod stored_resource {
         }
 
         pub fn total_supply(&self) -> Decimal {
-            self.resource_manager.total_supply()
+            self.resource_manager.total_supply().unwrap()
         }
     }
 }

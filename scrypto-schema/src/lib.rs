@@ -183,7 +183,6 @@ impl<V> FeaturedSchema<V> {
 }
 
 pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;
-pub type ExportSchema = FeaturedSchema<String>;
 
 bitflags! {
     #[derive(Sbor)]

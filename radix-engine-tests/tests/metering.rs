@@ -66,19 +66,20 @@ fn test_basic_transfer() {
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
-        1104 /* AllocateNodeId */
-        + 1744 /* CreateNode */
-        + 6401 /* DropLock */
-        + 1680 /* DropNode */
-        + 1140299 /* Invoke */
-        + 190634 /* LockSubstate */
-        + 9800 /* ReadSubstate */
-        + 65000 /* RunNative */
+        0
+        + 897 /* AllocateNodeId */
+        + 1417 /* CreateNode */
+        + 5032 /* DropLock */
+        + 1365 /* DropNode */
+        + 736166 /* Invoke */
+        + 422978 /* LockSubstate */
+        + 7168 /* ReadSubstate */
+        + 57500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1280 /* TxPayloadCost */
+        + 1345 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 979 /* WriteSubstate */
+        + 856 /* WriteSubstate */
     );
 }
 
@@ -195,25 +196,26 @@ fn test_radiswap() {
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
-        2553 /* AllocateNodeId */
-        + 4044 /* CreateNode */
-        + 14245 /* DropLock */
-        + 3780 /* DropNode */
-        + 3803738 /* Invoke */
-        + 2377095 /* LockSubstate */
-        + 21728 /* ReadSubstate */
-        + 137500 /* RunNative */
+        0
+        + 2208 /* AllocateNodeId */
+        + 3499 /* CreateNode */
+        + 12321 /* DropLock */
+        + 3255 /* DropNode */
+        + 3130196 /* Invoke */
+        + 2443034 /* LockSubstate */
+        + 17360 /* ReadSubstate */
+        + 125000 /* RunNative */
         + 20000 /* RunSystem */
-        + 602865 /* RunWasm */
+        + 602635 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1675 /* TxPayloadCost */
+        + 1765 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2131 /* WriteSubstate */
+        + 1926 /* WriteSubstate */
     );
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7143357"),
+        dec!("0.6513199"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -307,20 +309,21 @@ fn test_flash_loan() {
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
-        4002 /* AllocateNodeId */
-        + 6322 /* CreateNode */
-        + 22274 /* DropLock */
-        + 6090 /* DropNode */
-        + 4768533 /* Invoke */
-        + 4402084 /* LockSubstate */
-        + 34552 /* ReadSubstate */
-        + 205000 /* RunNative */
+        0
+        + 3657 /* AllocateNodeId */
+        + 5777 /* CreateNode */
+        + 20461 /* DropLock */
+        + 5565 /* DropNode */
+        + 4094978 /* Invoke */
+        + 4438004 /* LockSubstate */
+        + 29288 /* ReadSubstate */
+        + 192500 /* RunNative */
         + 40000 /* RunSystem */
-        + 1184420 /* RunWasm */
+        + 1170125 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2455 /* TxPayloadCost */
+        + 2570 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 4507 /* WriteSubstate */
+        + 4302 /* WriteSubstate */
     );
 }
 

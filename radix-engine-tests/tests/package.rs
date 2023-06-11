@@ -1,11 +1,11 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintSetup, FunctionSetup, MethodAuthTemplate, PackageSetup,
 };
-use radix_engine_interface::schema::{BlueprintSchema, FeaturedSchema, FieldSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FieldSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -64,7 +64,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+        if let RuntimeError::VmError(VmError::Wasm(b)) = e {
             matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
@@ -87,7 +87,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+        if let RuntimeError::VmError(VmError::Wasm(b)) = e {
             matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
@@ -168,7 +168,7 @@ fn test_basic_package_missing_export() {
                     receiver: Option::None,
                     input: LocalTypeIndex::WellKnown(ANY_ID),
                     output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export: FeaturedSchema::normal("not_exist"),
+                    export: "not_exist".to_string(),
                 }
             ),
         },

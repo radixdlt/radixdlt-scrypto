@@ -36,7 +36,7 @@ pub struct ConsensusManagerSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct Validator {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
     pub stake: Decimal,
 }
 
@@ -64,7 +64,7 @@ impl ActiveValidatorSet {
     /// Note for performance - this is calculated by iterating over the whole validator set.
     pub fn get_by_public_key(
         &self,
-        public_key: &EcdsaSecp256k1PublicKey,
+        public_key: &Secp256k1PublicKey,
     ) -> Option<(&ComponentAddress, &Validator)> {
         self.validators_by_stake_desc
             .iter()
@@ -202,8 +202,8 @@ impl ConsensusManagerBlueprint {
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
             ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
-                vec![TRACK_TOTAL_SUPPLY_FEATURE],
                 NonFungibleIdType::UUID,
+                true,
                 metadata,
                 access_rules,
                 validator_token_address_reservation,
@@ -445,7 +445,7 @@ impl ConsensusManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where

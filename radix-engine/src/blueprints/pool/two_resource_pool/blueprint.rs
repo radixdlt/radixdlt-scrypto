@@ -70,13 +70,7 @@ impl TwoResourcePoolBlueprint {
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(
-                vec![TRACK_TOTAL_SUPPLY_FEATURE],
-                18,
-                Default::default(),
-                access_rules,
-                api,
-            )?
+            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
         };
 
         // Creating the pool nodes
@@ -189,7 +183,10 @@ impl TwoResourcePoolBlueprint {
 
         // Determine the amount of pool units to mint based on the the current state of the pool.
         let (pool_units_to_mint, amount1, amount2) = {
-            let pool_unit_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
+            let pool_unit_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
             let reserves1 = vault1.amount(api)?;
             let reserves2 = vault2.amount(api)?;
             let contribution1 = bucket1.amount(api)?;
@@ -331,7 +328,10 @@ impl TwoResourcePoolBlueprint {
         }
 
         let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
@@ -444,7 +444,10 @@ impl TwoResourcePoolBlueprint {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;

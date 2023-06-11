@@ -13,9 +13,7 @@ use radix_engine_interface::*;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
-use sbor::rust::vec;
 use scrypto::prelude::ScryptoValue;
-use scrypto::prelude::ToString;
 use scrypto::resource::ResourceManager;
 
 /// Not divisible.
@@ -478,8 +476,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&FungibleResourceManagerCreateInput {
-                        features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                         divisibility,
+                        track_total_supply: true,
                         metadata,
                         access_rules,
                     })
@@ -498,8 +496,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                        features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                         id_type,
+                        track_total_supply: true,
                         non_fungible_schema,
                         metadata,
                         access_rules,
@@ -556,7 +554,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
+                    track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
@@ -608,7 +606,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
+                    track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
                     metadata: self.metadata,
@@ -661,7 +659,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
+                    track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
                     metadata: self.metadata,
@@ -714,8 +712,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                     id_type: BytesNonFungibleLocalId::id_type(),
+                    track_total_supply: true,
                     non_fungible_schema,
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
@@ -771,8 +769,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
-                        features: vec![TRACK_TOTAL_SUPPLY_FEATURE.to_string()],
                         non_fungible_schema,
+                        track_total_supply: true,
                         metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),
                         entries: entries

@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::package::PackageExport;
 pub trait SystemCallbackObject: Sized {
     fn invoke<Y>(
         package_address: &PackageAddress,
-        receiver: Option<&NodeId>,
         package_export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,

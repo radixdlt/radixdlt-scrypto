@@ -8,7 +8,6 @@ use crate::method_auth_template;
 use crate::system::system_callback::*;
 use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
-use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
@@ -49,7 +48,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -61,7 +60,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -73,7 +72,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -85,7 +84,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -97,9 +96,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
-                    export: FeaturedSchema::normal(
-                        ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME,
-                    ),
+                    export: ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -112,9 +109,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME,
-                    ),
+                    export: ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -126,7 +121,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(),
-                    export: FeaturedSchema::normal(ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME),
+                    export: ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -205,7 +200,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -217,7 +212,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -229,7 +224,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -241,7 +236,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -253,9 +248,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
-                    export: FeaturedSchema::normal(
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME,
-                    ),
+                    export: TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -268,9 +261,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME,
-                    ),
+                    export: TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -282,7 +273,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(),
-                    export: FeaturedSchema::normal(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME),
+                    export: TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -360,7 +351,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -372,7 +363,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -384,7 +375,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -397,9 +388,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME,
-                    ),
+                    export: MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -413,9 +402,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawOutput>(
                         ),
-                    export: FeaturedSchema::normal(
-                        MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME,
-                    ),
+                    export: MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -429,7 +416,7 @@ impl PoolNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueOutput>(
                         ),
-                    export: FeaturedSchema::normal(MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME),
+                    export: MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -441,9 +428,7 @@ impl PoolNativePackage {
                         .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>(),
-                    export: FeaturedSchema::normal(
-                        MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME,
-                    ),
+                    export: MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -512,7 +497,6 @@ impl PoolNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -523,17 +507,11 @@ impl PoolNativePackage {
             ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let OneResourcePoolInstantiateInput {
                     resource_address,
                     pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::instantiate(
                     resource_address,
@@ -548,7 +526,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let OneResourcePoolContributeInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::contribute(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -558,7 +536,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let OneResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::redeem(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -569,7 +547,7 @@ impl PoolNativePackage {
 
                 let OneResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = OneResourcePoolBlueprint::protected_deposit(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -580,7 +558,7 @@ impl PoolNativePackage {
 
                 let OneResourcePoolProtectedWithdrawInput { amount } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = OneResourcePoolBlueprint::protected_withdraw(amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -592,7 +570,7 @@ impl PoolNativePackage {
                 let OneResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     OneResourcePoolBlueprint::get_redemption_value(amount_of_pool_units, api)?;
@@ -603,7 +581,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let OneResourcePoolGetVaultAmountInput {} = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::get_vault_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -612,17 +590,11 @@ impl PoolNativePackage {
             TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let TwoResourcePoolInstantiateInput {
                     resource_addresses,
                     pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::instantiate(
                     resource_addresses,
@@ -637,7 +609,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let TwoResourcePoolContributeInput { buckets } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::contribute(buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -647,7 +619,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let TwoResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::redeem(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -658,7 +630,7 @@ impl PoolNativePackage {
 
                 let TwoResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = TwoResourcePoolBlueprint::protected_deposit(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -671,7 +643,7 @@ impl PoolNativePackage {
                     amount,
                     resource_address,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     TwoResourcePoolBlueprint::protected_withdraw(resource_address, amount, api)?;
@@ -684,7 +656,7 @@ impl PoolNativePackage {
                 let TwoResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     TwoResourcePoolBlueprint::get_redemption_value(amount_of_pool_units, api)?;
@@ -695,7 +667,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let TwoResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::get_vault_amounts(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -704,17 +676,11 @@ impl PoolNativePackage {
             MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let MultiResourcePoolInstantiateInput {
                     resource_addresses,
                     pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = MultiResourcePoolBlueprint::instantiate(
                     resource_addresses,
@@ -730,7 +696,7 @@ impl PoolNativePackage {
 
                 let MultiResourcePoolContributeInput { buckets } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = MultiResourcePoolBlueprint::contribute(buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -740,7 +706,7 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let MultiResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = MultiResourcePoolBlueprint::redeem(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -751,7 +717,7 @@ impl PoolNativePackage {
 
                 let MultiResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = MultiResourcePoolBlueprint::protected_deposit(bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -764,7 +730,7 @@ impl PoolNativePackage {
                     amount,
                     resource_address,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     MultiResourcePoolBlueprint::protected_withdraw(resource_address, amount, api)?;
@@ -777,7 +743,7 @@ impl PoolNativePackage {
                 let MultiResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     MultiResourcePoolBlueprint::get_redemption_value(amount_of_pool_units, api)?;
@@ -788,14 +754,14 @@ impl PoolNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let MultiResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = MultiResourcePoolBlueprint::get_vault_amounts(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

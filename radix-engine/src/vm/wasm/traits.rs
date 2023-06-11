@@ -159,6 +159,8 @@ pub trait WasmRuntime {
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
+    fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+
     fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

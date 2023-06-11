@@ -69,29 +69,28 @@ impl From<fmt::Error> for DecompileError {
     }
 }
 
+#[derive(Default)]
 pub struct DecompilationContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,
+    pub address_reservation_names: NonIterMap<ManifestAddressReservation, String>,
+    pub address_names: NonIterMap<u32, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
     pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
         Self {
             bech32_encoder: Some(bech32_encoder),
-            id_allocator: ManifestIdAllocator::new(),
-            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
-            proof_names: NonIterMap::<ManifestProof, String>::new(),
+            ..Default::default()
         }
     }
 
     pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
             bech32_encoder,
-            id_allocator: ManifestIdAllocator::new(),
-            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
-            proof_names: NonIterMap::<ManifestProof, String>::new(),
+            ..Default::default()
         }
     }
 
@@ -100,22 +99,45 @@ impl<'a> DecompilationContext<'a> {
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,
+            &self.address_reservation_names,
+            &self.address_names,
         )
         .with_multi_line(4, 4)
     }
 
-    pub fn new_bucket(&mut self) -> Result<ManifestBucket, DecompileError> {
-        let bucket = self.id_allocator.new_bucket_id();
+    pub fn new_bucket(&mut self) -> ManifestBucket {
+        let id = self.id_allocator.new_bucket_id();
         let name = format!("bucket{}", self.bucket_names.len() + 1);
-        self.bucket_names.insert(bucket, name.clone());
-        Ok(bucket)
+        self.bucket_names.insert(id, name.clone());
+        id
     }
 
-    pub fn new_proof(&mut self) -> Result<ManifestProof, DecompileError> {
-        let proof = self.id_allocator.new_proof_id();
+    pub fn new_proof(&mut self) -> ManifestProof {
+        let id = self.id_allocator.new_proof_id();
         let name = format!("proof{}", self.proof_names.len() + 1);
-        self.proof_names.insert(proof, name.clone());
-        Ok(proof)
+        self.proof_names.insert(id, name.clone());
+        id
+    }
+
+    pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
+        let id = self.id_allocator.new_address_reservation_id();
+        let name = format!("reservation{}", self.address_reservation_names.len() + 1);
+        self.address_reservation_names.insert(id, name.clone());
+        id
+    }
+
+    pub fn new_address(&mut self) -> ManifestAddress {
+        let id = self.id_allocator.new_address_id();
+        let name = format!("address{}", self.address_names.len() + 1);
+        self.address_names.insert(id, name.clone());
+        ManifestAddress::Named(id)
+    }
+
+    /// Allocate addresses before transaction, for system transactions only.
+    pub fn preallocate_addresses(&mut self, n: u32) {
+        for _ in 0..n {
+            self.new_address();
+        }
     }
 }
 
@@ -145,7 +167,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
             amount,
         } => {
-            let bucket = context.new_bucket()?;
+            let bucket = context.new_bucket();
             (
                 "TAKE_FROM_WORKTOP",
                 to_manifest_value(&(resource_address, amount, bucket)),
@@ -155,14 +177,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             ids,
             resource_address,
         } => {
-            let bucket = context.new_bucket()?;
+            let bucket = context.new_bucket();
             (
                 "TAKE_NON_FUNGIBLES_FROM_WORKTOP",
                 to_manifest_value(&(resource_address, ids, bucket)),
             )
         }
         InstructionV1::TakeAllFromWorktop { resource_address } => {
-            let bucket = context.new_bucket()?;
+            let bucket = context.new_bucket();
             (
                 "TAKE_ALL_FROM_WORKTOP",
                 to_manifest_value(&(resource_address, bucket)),
@@ -186,7 +208,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             to_manifest_value(&(resource_address, ids)),
         ),
         InstructionV1::PopFromAuthZone => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             ("POP_FROM_AUTH_ZONE", to_manifest_value(&(proof,)))
         }
         InstructionV1::PushToAuthZone { proof_id } => {
@@ -194,7 +216,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value(&())),
         InstructionV1::CreateProofFromAuthZone { resource_address } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE",
                 to_manifest_value(&(resource_address, proof)),
@@ -204,7 +226,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
             amount,
         } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
 
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT",
@@ -215,14 +237,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
             ids,
         } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES",
                 to_manifest_value(&(resource_address, ids, proof)),
             )
         }
         InstructionV1::CreateProofFromAuthZoneOfAll { resource_address } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL",
                 to_manifest_value(&(resource_address, proof)),
@@ -232,7 +254,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())),
 
         InstructionV1::CreateProofFromBucket { bucket_id } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET",
                 to_manifest_value(&(bucket_id, proof)),
@@ -240,21 +262,21 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
 
         InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT",
                 to_manifest_value(&(bucket_id, amount, proof)),
             )
         }
         InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES",
                 to_manifest_value(&(bucket_id, ids, proof)),
             )
         }
         InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
-            let proof = context.new_proof()?;
+            let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_ALL",
                 to_manifest_value(&(bucket_id, proof)),
@@ -264,7 +286,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             ("BURN_RESOURCE", to_manifest_value(&(bucket_id,)))
         }
         InstructionV1::CloneProof { proof_id } => {
-            let proof_id2 = context.new_proof()?;
+            let proof_id2 = context.new_proof();
             ("CLONE_PROOF", to_manifest_value(&(proof_id, proof_id2)))
         }
         InstructionV1::DropProof { proof_id } => ("DROP_PROOF", to_manifest_value(&(proof_id,))),
@@ -280,47 +302,73 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
-                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT) => {
+                (package_address, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT)
+                    if package_address.is_static_global_package_of(&PACKAGE_PACKAGE) =>
+                {
                     "PUBLISH_PACKAGE"
                 }
-                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT) => {
+                (package_address, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT)
+                    if package_address.is_static_global_package_of(&PACKAGE_PACKAGE) =>
+                {
                     "PUBLISH_PACKAGE_ADVANCED"
                 }
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT) => {
+                (package_address, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT)
+                    if package_address.is_static_global_package_of(&ACCOUNT_PACKAGE) =>
+                {
                     "CREATE_ACCOUNT_ADVANCED"
                 }
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT) => "CREATE_ACCOUNT",
-                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT) => {
+                (package_address, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT)
+                    if package_address.is_static_global_package_of(&ACCOUNT_PACKAGE) =>
+                {
+                    "CREATE_ACCOUNT"
+                }
+                (package_address, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT)
+                    if package_address.is_static_global_package_of(&IDENTITY_PACKAGE) =>
+                {
                     "CREATE_IDENTITY_ADVANCED"
                 }
-                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT) => "CREATE_IDENTITY",
+                (package_address, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT)
+                    if package_address.is_static_global_package_of(&IDENTITY_PACKAGE) =>
+                {
+                    "CREATE_IDENTITY"
+                }
                 (
-                    &ACCESS_CONTROLLER_PACKAGE,
+                    package_address,
                     ACCESS_CONTROLLER_BLUEPRINT,
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
-                ) => "CREATE_ACCESS_CONTROLLER",
+                ) if package_address.is_static_global_package_of(&ACCESS_CONTROLLER_PACKAGE) => {
+                    "CREATE_ACCESS_CONTROLLER"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                ) => "CREATE_FUNGIBLE_RESOURCE",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_FUNGIBLE_RESOURCE"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                ) => "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                ) => "CREATE_NON_FUNGIBLE_RESOURCE",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_NON_FUNGIBLE_RESOURCE"
+                }
                 (
-                    &RESOURCE_PACKAGE,
+                    package_address,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                ) => "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY",
+                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
+                    "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY"
+                }
                 _ => {
-                    fields.push(to_manifest_value(package_address));
+                    fields.push(package_address.to_instruction_argument());
                     fields.push(to_manifest_value(blueprint_name));
                     fields.push(to_manifest_value(function_name));
                     "CALL_FUNCTION"
@@ -346,34 +394,28 @@ pub fn decompile_instruction<F: fmt::Write>(
                 // Nb - For Main method call, we also check the address type to avoid name clashing.
 
                 /* Package */
-                (address, PACKAGE_CLAIM_ROYALTIES_IDENT)
-                    if address.as_node_id().is_global_package() =>
-                {
-                    fields.push(to_manifest_value(address));
+                (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_static_global_package() => {
+                    fields.push(address.to_instruction_argument());
                     "CLAIM_PACKAGE_ROYALTY"
                 }
 
                 /* Resource manager */
                 (address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address.as_node_id().is_global_fungible_resource_manager() =>
+                    if address.is_static_global_fungible_resource_manager() =>
                 {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "MINT_FUNGIBLE"
                 }
                 (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address
-                        .as_node_id()
-                        .is_global_non_fungible_resource_manager() =>
+                    if address.is_static_global_non_fungible_resource_manager() =>
                 {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "MINT_NON_FUNGIBLE"
                 }
                 (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
-                    if address
-                        .as_node_id()
-                        .is_global_non_fungible_resource_manager() =>
+                    if address.is_static_global_non_fungible_resource_manager() =>
                 {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "MINT_UUID_NON_FUNGIBLE"
                 }
 
@@ -386,7 +428,7 @@ pub fn decompile_instruction<F: fmt::Write>(
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_METHOD"
                 }
@@ -410,17 +452,17 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = match (address, method_name.as_str()) {
                 /* Component royalty */
                 (address, COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "SET_COMPONENT_ROYALTY_CONFIG"
                 }
                 (address, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "CLAIM_COMPONENT_ROYALTY"
                 }
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_ROYALTY_METHOD"
                 }
@@ -444,17 +486,17 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = match (address, method_name.as_str()) {
                 /* Metadata */
                 (address, METADATA_SET_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "SET_METADATA"
                 }
                 (address, METADATA_REMOVE_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "REMOVE_METADATA"
                 }
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_METADATA_METHOD"
                 }
@@ -478,13 +520,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
                 (address, ACCESS_RULES_UPDATE_ROLE_IDENT) => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     "UPDATE_ROLE"
                 }
 
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(address));
+                    fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name));
                     "CALL_ACCESS_RULES_METHOD"
                 }
@@ -537,6 +579,22 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
 
         InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())),
+        InstructionV1::AllocateGlobalAddress {
+            package_address,
+            blueprint_name,
+        } => {
+            let address_reservation = context.new_address_reservation();
+            let named_address = context.new_address();
+            (
+                "ALLOCATE_GLOBAL_ADDRESS",
+                to_manifest_value(&(
+                    package_address,
+                    blueprint_name,
+                    address_reservation,
+                    named_address,
+                )),
+            )
+        }
     };
 
     write!(f, "{}", display_name)?;

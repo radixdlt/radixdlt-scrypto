@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);
@@ -138,7 +138,7 @@ fn transfer_test(c: &mut Criterion) {
         .unwrap();
 
     // Create a key pair
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
     let public_key = private_key.public_key();
 
     // Create two accounts

@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError, SystemUpstreamError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine::types::*;
@@ -26,12 +26,9 @@ fn cannot_get_total_supply_of_xrd() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(..))
-        )
-    })
+    let commit = receipt.expect_commit_success();
+    let output: Option<Decimal> = commit.output(1);
+    assert!(output.is_none());
 }
 
 #[test]
@@ -153,7 +150,7 @@ fn create_fungible_too_high_granularity_should_fail() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_fungible_resource(
-            vec![],
+            false,
             23u8,
             BTreeMap::new(),
             access_rules,
@@ -284,7 +281,9 @@ fn cannot_mint_in_component_with_proof_in_root() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
         )
     });
 }
@@ -351,7 +350,9 @@ fn cannot_burn_in_component_with_proof_in_root() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
         )
     });
 }

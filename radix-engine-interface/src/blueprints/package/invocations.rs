@@ -1,8 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
+use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
-use radix_engine_common::data::manifest::model::ManifestOwn;
 use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
@@ -10,9 +10,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::LocalTypeIndex;
-use scrypto_schema::{
-    BlueprintSchema, ExportSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission,
-};
+use scrypto_schema::{BlueprintSchema, ReceiverInfo, SchemaMethodKey, SchemaMethodPermission};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -47,7 +45,7 @@ pub struct PackagePublishWasmAdvancedInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmAdvancedManifestInput {
-    pub package_address: Option<ManifestOwn>,
+    pub package_address: Option<ManifestAddressReservation>,
     pub code: ManifestBlobRef,
     pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -68,7 +66,7 @@ pub struct PackagePublishNativeInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishNativeManifestInput {
-    pub package_address: Option<ManifestOwn>,
+    pub package_address: Option<ManifestAddressReservation>,
     pub native_package_code_id: u8,
     pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -95,7 +93,7 @@ pub struct FunctionSetup {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
-    pub export: ExportSchema,
+    pub export: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]

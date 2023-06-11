@@ -41,7 +41,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<()>(),
             output: aggregator.add_child_type_and_descendents::<u8>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -50,7 +50,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<()>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -59,7 +59,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<bool>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -68,7 +68,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i8>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -77,7 +77,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i16>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -86,7 +86,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i32>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -95,7 +95,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i64>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -104,7 +104,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i128>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -113,7 +113,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u8>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -122,7 +122,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u16>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -131,7 +131,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u32>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -140,7 +140,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u64>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -149,7 +149,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u128>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -158,7 +158,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<Result<(), ()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -167,7 +167,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<BTreeMap<(), ()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -176,7 +176,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<HashSet<()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("dummy_export"),
+            export: "dummy_export".to_string(),
         },
     );
 

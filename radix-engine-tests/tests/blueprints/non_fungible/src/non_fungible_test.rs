@@ -238,7 +238,7 @@ mod non_fungible_test {
                 .metadata("name", "Katz's Sandwiches")
                 .create_with_no_initial_supply();
 
-            assert_eq!(resource_manager.total_supply(), Decimal::zero(),);
+            assert_eq!(resource_manager.total_supply().unwrap(), Decimal::zero(),);
         }
 
         pub fn non_fungible_exists() -> (Bucket, Bucket) {
@@ -431,8 +431,8 @@ mod non_fungible_test {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                        features: vec![],
                         id_type: NonFungibleIdType::UUID,
+                        track_total_supply: false,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),

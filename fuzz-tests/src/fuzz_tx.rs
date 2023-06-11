@@ -19,7 +19,7 @@ use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::manifest::ast;
 use transaction::model::InstructionV1;
 
@@ -42,8 +42,8 @@ macro_rules! dbg {
 
 #[derive(Debug, Clone)]
 struct Account {
-    public_key: EcdsaSecp256k1PublicKey,
-    //_private_key: EcdsaSecp256k1PrivateKey,
+    public_key: Secp256k1PublicKey,
+    //_private_key: Secp256k1PrivateKey,
     #[allow(unused)]
     address: ComponentAddress,
     #[allow(unused)]
@@ -63,7 +63,7 @@ pub struct TxFuzzer {
     #[allow(unused)]
     non_fungible_resource_addresses: Vec<ResourceAddress>,
     package_addresses: Vec<PackageAddress>,
-    public_keys: Vec<EcdsaSecp256k1PublicKey>,
+    public_keys: Vec<Secp256k1PublicKey>,
 }
 
 impl TxFuzzer {
@@ -161,7 +161,7 @@ impl TxFuzzer {
             vec![ManifestProof::arbitrary(&mut unstructured).unwrap()];
 
         let mut public_keys = self.public_keys.clone();
-        public_keys.push(EcdsaSecp256k1PublicKey::arbitrary(&mut unstructured).unwrap());
+        public_keys.push(Secp256k1PublicKey::arbitrary(&mut unstructured).unwrap());
 
         let public_key = unstructured.choose(&public_keys[..]).unwrap().clone();
 
@@ -218,8 +218,13 @@ impl TxFuzzer {
                 .unwrap();
 
             let instruction = match next {
-                // AssertWorktopContains
+                // AllocateGlobalAddress
                 0 => {
+                    // TODO
+                    None
+                }
+                // AssertWorktopContains
+                1 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::AssertWorktopContains {
@@ -228,46 +233,46 @@ impl TxFuzzer {
                     })
                 }
                 // AssertWorktopContainsNonFungibles
-                1 => Some(InstructionV1::AssertWorktopContainsNonFungibles {
+                2 => Some(InstructionV1::AssertWorktopContainsNonFungibles {
                     resource_address,
                     ids: non_fungible_ids.clone(),
                 }),
                 // BurnResource
-                2 => {
+                3 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
 
                     Some(InstructionV1::BurnResource { bucket_id })
                 }
                 // CallAccessRulesMethod
-                3 => {
+                4 => {
                     // TODO - fuzz more methods
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallAccessRulesMethod {
-                        address,
+                        address: address.into(),
                         method_name: ACCESS_RULES_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }
                 // CallFunction
-                4 => {
-                    // TODO
-                    None
-                }
-                // CallMetadataMethod
                 5 => {
                     // TODO
                     None
                 }
-                // CallMethod
+                // CallMetadataMethod
                 6 => {
                     // TODO
                     None
                 }
+                // CallMethod
+                7 => {
+                    // TODO
+                    None
+                }
                 // CallRoyaltyMethod
-                7 =>
+                8 =>
                 // TODO - fuzz more methods
                 {
                     Some(InstructionV1::CallRoyaltyMethod {
@@ -277,33 +282,33 @@ impl TxFuzzer {
                     })
                 }
                 // ClaimComponentRoyalty
-                8 => Some(InstructionV1::CallRoyaltyMethod {
+                9 => Some(InstructionV1::CallRoyaltyMethod {
                     address: component_address.into(),
                     method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                    args: manifest_args!()
+                    args: manifest_args!(),
                 }),
                 // ClaimPackageRoyalty
-                9 => {
+                10 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     Some(InstructionV1::CallMethod {
                         address: package_address.into(),
                         method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-                        args: manifest_args!()
+                        args: manifest_args!(),
                     })
                 }
                 // ClearAuthZone
-                10 => Some(InstructionV1::ClearAuthZone),
+                11 => Some(InstructionV1::ClearAuthZone),
                 // ClearSignatureProofs
-                11 => Some(InstructionV1::ClearSignatureProofs),
+                12 => Some(InstructionV1::ClearSignatureProofs),
                 // CloneProof
-                12 => {
+                13 => {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
 
                     Some(InstructionV1::CloneProof { proof_id })
                 }
                 // CreateAccessController
-                13 => {
+                14 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
@@ -312,19 +317,19 @@ impl TxFuzzer {
                         <Option<u32>>::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                         function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
                         args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes),
                     })
                 }
                 // CreateAccount
-                14 => {
+                15 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         function_name: ACCOUNT_CREATE_IDENT.to_string(),
                         args: to_manifest_value(
@@ -333,34 +338,34 @@ impl TxFuzzer {
                     })
                 }
                 // CreateAccountAdvanced
-                15 => {
+                16 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }
                 // CreateFungibleResource
-                16 => {
+                17 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input =
                         FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }
                 // CreateFungibleResourceWithInitialSupply
-                17 => {
+                18 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = FungibleResourceManagerCreateWithInitialSupplyInput::arbitrary(
@@ -369,7 +374,7 @@ impl TxFuzzer {
                     .unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                             .to_string(),
@@ -377,40 +382,40 @@ impl TxFuzzer {
                     })
                 }
                 // CreateIdentity
-                18 => {
+                19 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = IdentityCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                         function_name: IDENTITY_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }
                 // CreateIdentityAdvanced
-                19 => {
+                20 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                         function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }
                 // CreateNonFungibleResource
-                20 => {
+                21 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = NonFungibleResourceManagerCreateInput::arbitrary(&mut unstructured)
                         .unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -418,7 +423,7 @@ impl TxFuzzer {
                 }
 
                 // CreateNonFungibleResourceWithInitialSupply
-                21 => {
+                22 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input =
@@ -428,7 +433,7 @@ impl TxFuzzer {
                         .unwrap();
 
                     Some(InstructionV1::CallFunction {
-                        package_address,
+                        package_address: package_address.into(),
                         blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name:
                             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -437,11 +442,11 @@ impl TxFuzzer {
                     })
                 }
                 // CreateProofFromAuthZone
-                22 => Some(InstructionV1::CreateProofFromAuthZone { resource_address }),
+                23 => Some(InstructionV1::CreateProofFromAuthZone { resource_address }),
                 // CreateProofFromAuthZoneofAll
-                23 => Some(InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }),
+                24 => Some(InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }),
                 // CreateProofFromAuthZoneOfAmount
-                24 => {
+                25 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CreateProofFromAuthZoneOfAmount {
@@ -450,38 +455,38 @@ impl TxFuzzer {
                     })
                 }
                 // CreateProofFromAuthZoneOfNonFungibles
-                25 => Some(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
+                26 => Some(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
                 // CreateProofFromBucket
-                26 => {
+                27 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
 
                     Some(InstructionV1::CreateProofFromBucket { bucket_id })
                 }
                 // CreateProofFromBucketOfAll
-                27 => {
+                28 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
 
                     Some(InstructionV1::CreateProofFromBucketOfAll { bucket_id })
                 }
                 // CreateProofFromBucketOfAmount
-                28 => {
+                29 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount })
                 }
                 // CreateProofFromBucketOfNonFungibles
-                29 => {
+                30 => {
                     let ids = non_fungible_ids.clone();
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
 
                     Some(InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids })
                 }
                 // CreateValidator
-                30 => {
+                31 => {
                     let input = ConsensusManagerCreateValidatorInput { key: public_key };
 
                     Some(InstructionV1::CallMethod {
@@ -491,15 +496,15 @@ impl TxFuzzer {
                     })
                 }
                 // DropAllProofs
-                31 => Some(InstructionV1::DropAllProofs),
+                32 => Some(InstructionV1::DropAllProofs),
                 // DropProof
-                32 => {
+                33 => {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
 
                     Some(InstructionV1::DropProof { proof_id })
                 }
                 // FreezeVault
-                33 => {
+                34 => {
                     let vault_id = {
                         let vaults = self
                             .runner
@@ -521,7 +526,7 @@ impl TxFuzzer {
                     })
                 }
                 // MintFungible
-                34 => {
+                35 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMethod {
@@ -531,7 +536,7 @@ impl TxFuzzer {
                     })
                 }
                 // MintNonFungible
-                35 => {
+                36 => {
                     let input =
                         NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
                             .unwrap();
@@ -543,7 +548,7 @@ impl TxFuzzer {
                     })
                 }
                 // MintUuidNonFungible
-                36 => {
+                37 => {
                     let input = NonFungibleResourceManagerMintUuidManifestInput::arbitrary(
                         &mut unstructured,
                     )
@@ -556,9 +561,9 @@ impl TxFuzzer {
                     })
                 }
                 // PopFromAuthZone
-                37 => Some(InstructionV1::PopFromAuthZone {}),
+                38 => Some(InstructionV1::PopFromAuthZone {}),
                 // PublishPackage | PublishPackageAdvanced
-                38 | 39 => {
+                39 | 40 => {
                     // Publishing package involves a compilation by scrypto compiler.
                     // In case of AFL invoking external tool breaks fuzzing.
                     // For now we skip this step
@@ -567,13 +572,13 @@ impl TxFuzzer {
                     None
                 }
                 // PushToAuthZone
-                40 => {
+                41 => {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
 
                     Some(InstructionV1::PushToAuthZone { proof_id })
                 }
                 // RecallVault
-                41 => {
+                42 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
                     let vault_id = {
                         let vaults = self
@@ -595,25 +600,25 @@ impl TxFuzzer {
                     })
                 }
                 // RemoveMetadata
-                42 => {
+                43 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMetadataMethod {
-                        address,
+                        address: address.into(),
                         method_name: METADATA_REMOVE_IDENT.to_string(),
                         args: manifest_args!(key),
                     })
                 }
                 // ReturnToWorktop
-                43 => {
+                44 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
 
                     Some(InstructionV1::ReturnToWorktop { bucket_id })
                 }
                 // SetComponentRoyalty
-                44 => {
+                45 => {
                     let method = String::arbitrary(&mut unstructured).unwrap();
                     let amount = RoyaltyAmount::arbitrary(&mut unstructured).unwrap();
 
@@ -624,22 +629,24 @@ impl TxFuzzer {
                     })
                 }
                 // SetMetadata
-                45 => {
+                46 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
                     let value = MetadataValue::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMetadataMethod {
-                        address,
+                        address: address.into(),
                         method_name: METADATA_SET_IDENT.to_string(),
                         args: manifest_args!(key, value),
                     })
                 }
                 // TakeAllFromWorktop
                 46 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
+                // TakeAllFromWorktop
+                47 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
                 // TakeFromWorktop
-                47 => {
+                48 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::TakeFromWorktop {
@@ -648,12 +655,12 @@ impl TxFuzzer {
                     })
                 }
                 // TakeNonFungiblesFromWorktop
-                48 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
+                49 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
                 // UnfreezeVault
-                49 => {
+                50 => {
                     let vault_id = {
                         let vaults = self
                             .runner
@@ -675,13 +682,13 @@ impl TxFuzzer {
                     })
                 }
                 // UpdateRole
-                50 => {
+                51 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallAccessRulesMethod {
-                        address,
+                        address: address.into(),
                         method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
@@ -867,6 +874,6 @@ fn test_generate_fuzz_input_data() {
 // output across runs.
 pub fn fuzz_tx_init_statics() {
     // Following code initializes secp256k1::SECP256K1 global static context
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(100).unwrap();
+    let private_key = Secp256k1PrivateKey::from_u64(100).unwrap();
     let _public_key = private_key.public_key();
 }

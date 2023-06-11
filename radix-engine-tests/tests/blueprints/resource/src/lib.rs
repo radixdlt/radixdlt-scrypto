@@ -87,7 +87,7 @@ mod resource_test {
             let (badge, resource_manager) = Self::create_fungible();
             (
                 badge,
-                resource_manager.total_supply(),
+                resource_manager.total_supply().unwrap(),
                 resource_manager.resource_type(),
             )
         }

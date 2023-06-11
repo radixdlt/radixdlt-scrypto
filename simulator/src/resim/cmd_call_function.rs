@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::DynamicPackageAddress;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -138,7 +139,7 @@ impl CallFunction {
             )?;
 
         builder.add_instruction(InstructionV1::CallFunction {
-            package_address,
+            package_address: DynamicPackageAddress::Static(package_address),
             blueprint_name,
             function_name,
             args: built_args,

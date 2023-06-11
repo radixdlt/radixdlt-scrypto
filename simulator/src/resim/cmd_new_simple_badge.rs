@@ -88,13 +88,13 @@ impl NewSimpleBadge {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 100.into())
             .add_instruction(InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE,
+                package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                    features: vec![],
                     id_type: NonFungibleIdType::Integer,
+                    track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata,
                     access_rules: btreemap!(

@@ -1,6 +1,5 @@
 use clap::Parser;
 use colored::*;
-use radix_engine::system::system::SubstateMutability;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
@@ -126,7 +125,7 @@ impl Publish {
                     );
                     let export = PackageExport {
                         code_hash,
-                        export_name: setup.export.value().clone(),
+                        export_name: setup.export.clone(),
                     };
                     function_exports.insert(function, export);
                 }
@@ -170,11 +169,7 @@ impl Publish {
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(
-                    scrypto_encode(&SubstateWrapper {
-                        value: config,
-                        mutability: SubstateMutability::Mutable,
-                    })
-                    .unwrap(),
+                    scrypto_encode(&KeyValueEntrySubstate::entry(config)).unwrap(),
                 );
                 dependency_updates.insert(key, update);
             }

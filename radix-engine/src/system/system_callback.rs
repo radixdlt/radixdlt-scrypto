@@ -9,7 +9,7 @@ use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
+use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::track::interface::StoreAccessInfo;
@@ -36,7 +36,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             .functions
             .get(fn_ident)
             .ok_or(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
+                SystemUpstreamError::FnNotFound(fn_ident.to_string()),
             ))?;
 
     match (&function_schema.receiver, with_receiver.as_ref()) {
@@ -78,37 +78,10 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         })?;
 
     let package_export = blueprint_definition.function_exports.get(fn_ident).ok_or(
-        RuntimeError::SystemUpstreamError(SystemUpstreamError::FunctionNotFound(
-            fn_ident.to_string(),
-        )),
+        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(fn_ident.to_string())),
     )?;
 
     Ok(package_export.clone())
-
-    /*
-    let export_name = match export_schema {
-        FeaturedSchema::Normal { value: export_name } => export_name.clone(),
-        FeaturedSchema::Conditional {
-            feature: cfg,
-            value: export_name,
-        } => match &service.kernel_get_system_state().current {
-            Actor::Method(method) => {
-                if method.module_object_info.features.contains(cfg) {
-                    export_name.clone()
-                } else {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
-                    ));
-                }
-            }
-            _ => {
-                return Err(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
-                ));
-            }
-        },
-    };
-     */
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
@@ -385,7 +358,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
@@ -394,14 +367,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance =
                 { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
@@ -412,7 +378,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
@@ -425,14 +391,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else {
@@ -452,11 +411,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
-                    let wrapper = SubstateWrapper {
-                        value: None::<()>,
-                        mutability: SubstateMutability::Mutable,
-                    };
-                    IndexedScryptoValue::from_typed(&wrapper)
+                    let kv_entry = KeyValueEntrySubstate::<()>::default();
+                    IndexedScryptoValue::from_typed(&kv_entry)
                 }),
                 SystemLockData::default(),
             )?;
@@ -483,22 +439,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         package_export.clone()
                     } else {
                         return Err(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::InvalidSystemCall,
+                            SystemUpstreamError::SystemFunctionCallNotAllowed,
                         ));
                     }
                 }
             };
 
             // Execute
-            let output = {
-                C::invoke(
-                    &blueprint.package_address,
-                    receiver.as_ref().map(|r| &r.0),
-                    export,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { C::invoke(&blueprint.package_address, export, args, &mut system)? };
 
             // Validate output
             match ident {

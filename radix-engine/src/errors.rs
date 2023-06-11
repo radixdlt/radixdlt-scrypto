@@ -26,12 +26,11 @@ use crate::system::system_modules::node_move::NodeMoveError;
 use crate::system::system_modules::transaction_limits::TransactionLimitsError;
 use crate::transaction::AbortReason;
 use crate::types::*;
-use crate::vm::wasm::{PrepareError, WasmRuntimeError};
+use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
-    NodeIdWasNotAllocated(NodeId),
     OutOfID,
 }
 
@@ -69,14 +68,16 @@ pub enum RuntimeError {
     /// An error occurred within the system, notably the ClientApi implementation.
     SystemError(SystemError),
 
-    /// TODO: merge with `ModuleError`/`ApplicationError`
+    /// An error occurred within a specific system module, like auth, costing and royalty.
+    /// TODO: merge into SystemError?
+    SystemModuleError(SystemModuleError),
+
+    /// An error issued by the system when invoking upstream (such as blueprints, node modules).
+    /// TODO: merge into SystemError?
     SystemUpstreamError(SystemUpstreamError),
 
     /// An error occurred in the vm layer
     VmError(VmError),
-
-    /// An error occurred within a kernel module.
-    ModuleError(ModuleError),
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
@@ -102,9 +103,9 @@ impl From<SystemUpstreamError> for RuntimeError {
     }
 }
 
-impl From<ModuleError> for RuntimeError {
-    fn from(error: ModuleError) -> Self {
-        RuntimeError::ModuleError(error.into())
+impl From<SystemModuleError> for RuntimeError {
+    fn from(error: SystemModuleError) -> Self {
+        RuntimeError::SystemModuleError(error.into())
     }
 }
 
@@ -117,11 +118,11 @@ impl From<ApplicationError> for RuntimeError {
 impl CanBeAbortion for RuntimeError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            RuntimeError::KernelError(err) => err.abortion(),
+            RuntimeError::KernelError(_) => None,
             RuntimeError::VmError(_) => None,
             RuntimeError::SystemError(_) => None,
             RuntimeError::SystemUpstreamError(_) => None,
-            RuntimeError::ModuleError(err) => err.abortion(),
+            RuntimeError::SystemModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
     }
@@ -131,22 +132,20 @@ impl CanBeAbortion for RuntimeError {
 pub enum KernelError {
     // Call frame
     CallFrameError(CallFrameError),
-
-    /// Interpreter
-    WasmRuntimeError(WasmRuntimeError),
+    NodeOrphaned(NodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
 
-    // RENode
+    // Reference management
     InvalidDirectAccess,
-    NodeNotFound(NodeId),
-    LockDoesNotExist(LockHandle),
-    DropNodeFailure(NodeId),
+    InvalidReference(NodeId),
 
-    // Actor Constraints
+    // Substate lock/read/write/unlock
+    LockDoesNotExist(LockHandle),
+
+    // Invoke
     InvalidInvokeAccess,
-    InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -156,10 +155,10 @@ pub struct InvalidDropNodeAccess {
     pub blueprint_name: String,
 }
 
-impl CanBeAbortion for KernelError {
+impl CanBeAbortion for VmError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
-            KernelError::WasmRuntimeError(err) => err.abortion(),
+            VmError::Wasm(err) => err.abortion(),
             _ => None,
         }
     }
@@ -210,12 +209,8 @@ pub enum SystemError {
     KeyValueStoreDoesNotExist(BlueprintId, u8),
     SortedIndexDoesNotExist(BlueprintId, u8),
     IndexDoesNotExist(BlueprintId, u8),
-    MissingRequiredAuthority(BlueprintId, RoleKey),
-    AuthorityMustBeEmpty(BlueprintId, String),
     MutatingImmutableSubstate,
     NotAKeyValueStore,
-    NotASortedStore,
-    NotAnIterableStore,
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
@@ -227,33 +222,27 @@ pub enum SystemError {
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidGlobalAddressReservation,
-    InvalidModule,
-    InvalidGlobalEntityType,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
     InvalidInstanceSchema,
     InvalidFeature(String),
     AssertAccessRuleFailed,
-    CallMethodOnKeyValueStore,
     BlueprintDoesNotExist(BlueprintId),
     BlueprintTemplateDoesNotExist(BlueprintId),
+    InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+    InvalidScryptoValue(DecodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemUpstreamError {
-    InvalidSystemCall,
+    SystemFunctionCallNotAllowed,
 
-    NativeUnexpectedReceiver(String),
-    NativeExpectedReceiver(String),
-    NativeExportDoesNotExist(String),
-    NativeInvalidCodeId(u8),
-
-    BlueprintNotFound(BlueprintId),
-    FunctionNotFound(String),
+    FnNotFound(String),
     ReceiverNotMatch(String),
-    InputSchemaNotMatch(String, String),
+
     InputDecodeError(DecodeError),
+    InputSchemaNotMatch(String, String),
 
     OutputDecodeError(DecodeError),
     OutputSchemaNotMatch(String, String),
@@ -261,8 +250,13 @@ pub enum SystemUpstreamError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VmError {
-    InvalidCode,
-    WasmPrepareError(PrepareError),
+    Native(NativeRuntimeError),
+    Wasm(WasmRuntimeError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum NativeRuntimeError {
+    InvalidCodeId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -276,11 +270,12 @@ pub enum CreateObjectError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ModuleError {
+pub enum SystemModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
+    EventError(Box<EventError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -299,7 +294,7 @@ pub enum CannotGlobalizeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidModuleSet(pub BTreeSet<ObjectModuleId>);
 
-impl CanBeAbortion for ModuleError {
+impl CanBeAbortion for SystemModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             Self::CostingError(err) => err.abortion(),
@@ -308,19 +303,19 @@ impl CanBeAbortion for ModuleError {
     }
 }
 
-impl From<NodeMoveError> for ModuleError {
+impl From<NodeMoveError> for SystemModuleError {
     fn from(error: NodeMoveError) -> Self {
         Self::NodeMoveError(error)
     }
 }
 
-impl From<AuthError> for ModuleError {
+impl From<AuthError> for SystemModuleError {
     fn from(error: AuthError) -> Self {
         Self::AuthError(error)
     }
 }
 
-impl From<CostingError> for ModuleError {
+impl From<CostingError> for SystemModuleError {
     fn from(error: CostingError) -> Self {
         Self::CostingError(error)
     }
@@ -380,6 +375,27 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
+    //===================
+    // General errors
+    //===================
+    // TODO: this should never happen because of schema check?
+    ExportDoesNotExist(String),
+
+    // TODO: this should never happen because of schema check?
+    InputDecodeError(DecodeError),
+
+    Panic(String),
+
+    //===================
+    // Node module errors
+    //===================
+    AccessRulesError(AccessRulesError),
+
+    MetadataError(MetadataPanicError),
+
+    //===================
+    // Blueprint errors
+    //===================
     TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),
@@ -391,8 +407,6 @@ pub enum ApplicationError {
     ResourceManagerError(FungibleResourceManagerError),
 
     NonFungibleResourceManagerError(NonFungibleResourceManagerError),
-
-    AccessRulesError(AccessRulesError),
 
     BucketError(BucketError),
 
@@ -409,10 +423,6 @@ pub enum ApplicationError {
     AccountError(AccountError),
 
     AccessControllerError(AccessControllerError),
-
-    EventError(Box<EventError>),
-
-    MetadataError(MetadataPanicError),
 
     OneResourcePoolError(OneResourcePoolError),
 

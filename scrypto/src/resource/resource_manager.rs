@@ -186,7 +186,7 @@ impl ResourceManagerStub {
         )
     }
 
-    pub fn total_supply(&self) -> Decimal {
+    pub fn total_supply(&self) -> Option<Decimal> {
         self.call(
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             &ResourceManagerGetTotalSupplyInput {},

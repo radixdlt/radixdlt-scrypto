@@ -59,13 +59,7 @@ impl OneResourcePoolBlueprint {
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(
-                vec![TRACK_TOTAL_SUPPLY_FEATURE],
-                18,
-                Default::default(),
-                access_rules,
-                api,
-            )?
+            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
         };
 
         let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
@@ -143,7 +137,9 @@ impl OneResourcePoolBlueprint {
          */
 
         let reserves = vault.amount(api)?;
-        let pool_unit_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_unit_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let amount_of_contributed_resources = bucket.amount(api)?;
 
         let pool_units_to_mint = match (
@@ -201,7 +197,9 @@ impl OneResourcePoolBlueprint {
 
         // Calculating the amount owed based on the passed pool units.
         let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)
@@ -294,7 +292,9 @@ impl OneResourcePoolBlueprint {
         };
 
         let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)

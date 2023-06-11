@@ -4,7 +4,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
-use radix_engine::errors::{ApplicationError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_modules::events::EventError;
@@ -21,8 +21,8 @@ use scrypto::prelude::{AccessRule, FromPublicKey, ResourceMethodAuthKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::InstructionV1;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 // TODO: In the future, the ClientAPI should only be able to add events to the event store. It
 // should not be able to have full control over it.
@@ -55,7 +55,7 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::EventError(err)) => {
+        RuntimeError::SystemModuleError(SystemModuleError::EventError(err)) => {
             if let EventError::SchemaNotFoundError { .. } = **err {
                 return true;
             } else {
@@ -293,8 +293,8 @@ fn vault_non_fungible_recall_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
-                vec![],
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 Some([(id.clone(), EmptyStruct {})]),
@@ -388,7 +388,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_fungible_resource(
-            vec![],
+            false,
             18,
             Default::default(),
             BTreeMap::<ResourceMethodAuthKey, (AccessRule, AccessRule)>::new(),
@@ -455,7 +455,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
-            .create_fungible_resource(vec![], 18, Default::default(), access_rules, None)
+            .create_fungible_resource(false, 18, Default::default(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -535,8 +535,8 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
-                vec![],
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
@@ -709,9 +709,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
 fn consensus_manager_epoch_update_emits_xrd_minting_event() {
     // Arrange: some validator, and a degenerate 1-round epoch config, to advance it easily
     let emission_xrd = dec!("13.37");
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         Decimal::one(),
@@ -761,9 +759,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
 fn validator_registration_emits_correct_event() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
@@ -813,9 +809,7 @@ fn validator_registration_emits_correct_event() {
 fn validator_unregistration_emits_correct_event() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
@@ -876,9 +870,7 @@ fn validator_unregistration_emits_correct_event() {
 fn validator_staking_emits_correct_event() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
@@ -1002,12 +994,8 @@ fn validator_unstake_emits_correct_events() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let num_unstake_epochs = 1;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -1159,12 +1147,8 @@ fn validator_claim_xrd_emits_correct_events() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let num_unstake_epochs = 1;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -1496,7 +1480,7 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
     .collect();
 
     let manifest = ManifestBuilder::new()
-        .create_fungible_resource(vec![], 18, BTreeMap::new(), access_rules, None)
+        .create_fungible_resource(false, 18, BTreeMap::new(), access_rules, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     *receipt

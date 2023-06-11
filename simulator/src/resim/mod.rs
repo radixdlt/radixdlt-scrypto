@@ -58,7 +58,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::SubstateWrapper;
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -87,11 +87,11 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use transaction::model::{SystemTransactionV1, TransactionPayload};
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -303,9 +303,7 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt
     }
 }
 
-pub fn get_signing_keys(
-    signing_keys: &Option<String>,
-) -> Result<Vec<EcdsaSecp256k1PrivateKey>, Error> {
+pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1PrivateKey>, Error> {
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
@@ -314,11 +312,11 @@ pub fn get_signing_keys(
                 hex::decode(key)
                     .map_err(|_| Error::InvalidPrivateKey)
                     .and_then(|bytes| {
-                        EcdsaSecp256k1PrivateKey::from_bytes(&bytes)
+                        Secp256k1PrivateKey::from_bytes(&bytes)
                             .map_err(|_| Error::InvalidPrivateKey)
                     })
             })
-            .collect::<Result<Vec<EcdsaSecp256k1PrivateKey>, Error>>()?
+            .collect::<Result<Vec<Secp256k1PrivateKey>, Error>>()?
     } else {
         vec![get_default_private_key()?]
     };
@@ -334,7 +332,7 @@ pub fn export_package_schema(
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let entries = substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<BlueprintDefinition>>, MapKey>(
+        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>, MapKey>(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
         );
@@ -361,7 +359,7 @@ pub fn export_schema(
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let schema = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<ScryptoSchema>>>(
+        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
@@ -447,7 +445,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     match schema_pointer {
         SchemaPointer::Package(schema_hash, index) => {
             let schema = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, SubstateWrapper<Option<ScryptoSchema>>>(
+                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                     package_address.as_node_id(),
                     MAIN_BASE_PARTITION
                         .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)

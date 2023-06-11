@@ -1,7 +1,7 @@
 use crate::blueprints::package::VmType;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system::{SubstateMutability, SubstateWrapper};
+use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -18,7 +18,6 @@ pub struct Vm<'g, W: WasmEngine> {
 impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
     fn invoke<Y>(
         address: &PackageAddress,
-        receiver: Option<&NodeId>,
         export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -39,17 +38,13 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                 &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
-                    let wrapper = SubstateWrapper {
-                        value: None::<()>,
-                        mutability: SubstateMutability::Immutable,
-                    };
-                    IndexedScryptoValue::from_typed(&wrapper)
+                    let kv_entry = KeyValueEntrySubstate::<()>::default();
+                    IndexedScryptoValue::from_typed(&kv_entry)
                 }),
                 SystemLockData::default(),
             )?;
             let code = api.kernel_read_substate(handle)?;
-            let package_code: SubstateWrapper<Option<PackageCodeSubstate>> =
-                code.as_typed().unwrap();
+            let package_code: KeyValueEntrySubstate<PackageCodeSubstate> = code.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
             package_code
                 .value
@@ -59,8 +54,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         let output = match package_code.vm_type {
             VmType::Native => {
                 let mut vm_instance = { NativeVm::create_instance(address, &package_code.code)? };
-                let output =
-                    { vm_instance.invoke(receiver, export.export_name.as_str(), input, api)? };
+                let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
             }
@@ -72,9 +66,8 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .create_instance(address, &package_code.code)
                 };
 
-                let output = {
-                    scrypto_vm_instance.invoke(receiver, export.export_name.as_str(), input, api)?
-                };
+                let output =
+                    { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
             }
@@ -88,7 +81,6 @@ pub trait VmInvoke {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api
     fn invoke<Y>(
         &mut self,
-        receiver: Option<&NodeId>,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,

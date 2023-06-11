@@ -13,19 +13,19 @@ use sbor::*;
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum PublicKey {
-    EcdsaSecp256k1(EcdsaSecp256k1PublicKey),
-    EddsaEd25519(EddsaEd25519PublicKey),
+    Secp256k1(Secp256k1PublicKey),
+    Ed25519(Ed25519PublicKey),
 }
 
-impl From<EcdsaSecp256k1PublicKey> for PublicKey {
-    fn from(public_key: EcdsaSecp256k1PublicKey) -> Self {
-        Self::EcdsaSecp256k1(public_key)
+impl From<Secp256k1PublicKey> for PublicKey {
+    fn from(public_key: Secp256k1PublicKey) -> Self {
+        Self::Secp256k1(public_key)
     }
 }
 
-impl From<EddsaEd25519PublicKey> for PublicKey {
-    fn from(public_key: EddsaEd25519PublicKey) -> Self {
-        Self::EddsaEd25519(public_key)
+impl From<Ed25519PublicKey> for PublicKey {
+    fn from(public_key: Ed25519PublicKey) -> Self {
+        Self::Ed25519(public_key)
     }
 }
 

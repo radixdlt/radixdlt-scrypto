@@ -55,6 +55,10 @@ pub trait NativeVault {
     ) -> Result<ResourceAddress, E>
     where
         Y: ClientApi<E>;
+
+    fn burn<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
 }
 
 pub trait NativeFungibleVault {
@@ -89,6 +93,14 @@ pub trait NativeNonFungibleVault {
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
+    fn burn_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), E>
     where
         Y: ClientApi<E>;
 }
@@ -206,8 +218,21 @@ impl NativeVault for Vault {
     where
         Y: ClientApi<E>,
     {
-        let info = api.get_object_info(self.0.as_node_id()).unwrap();
+        let info = api.get_object_info(self.0.as_node_id())?;
         Ok(ResourceAddress::try_from(info.outer_object.unwrap().as_ref()).unwrap())
+    }
+
+    fn burn<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            VAULT_BURN_IDENT,
+            scrypto_encode(&VaultBurnInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 }
 
@@ -286,6 +311,26 @@ impl NativeNonFungibleVault for Vault {
             self.0.as_node_id(),
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
             scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn burn_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultBurnNonFungiblesInput {
+                non_fungible_local_ids,
+            })
+            .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

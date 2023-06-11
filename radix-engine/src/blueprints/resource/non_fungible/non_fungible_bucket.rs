@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
+use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -283,9 +283,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: BucketTakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: BucketTakeInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Check amount
         if !check_non_fungible_amount(&input.amount) {
@@ -310,9 +310,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: BucketTakeNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: BucketTakeNonFungiblesInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Take
         let taken = NonFungibleBucket::take_non_fungibles(&input.ids, api)?;
@@ -330,9 +330,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: BucketPutInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: BucketPutInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Drop other bucket
         let other_bucket = drop_non_fungible_bucket(input.bucket.0.as_node_id(), api)?;
@@ -350,9 +350,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: BucketGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let _input: BucketGetNonFungibleLocalIdsInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let mut ids = NonFungibleBucket::liquid_non_fungible_local_ids(api)?;
         ids.extend(NonFungibleBucket::locked_non_fungible_local_ids(api)?);
@@ -376,9 +376,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let _input: BucketGetResourceAddressInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
@@ -459,9 +459,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: NonFungibleBucketLockNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: NonFungibleBucketLockNonFungiblesInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         NonFungibleBucket::lock_non_fungibles(receiver, input.local_ids, api)?;
 
@@ -475,9 +475,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: NonFungibleBucketUnlockNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: NonFungibleBucketUnlockNonFungiblesInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         NonFungibleBucket::unlock_non_fungibles(input.local_ids, api)?;
 

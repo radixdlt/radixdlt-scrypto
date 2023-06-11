@@ -1,4 +1,4 @@
-use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
@@ -316,7 +316,7 @@ fn cant_move_restricted_proof() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::NodeMoveError(
+            RuntimeError::SystemModuleError(SystemModuleError::NodeMoveError(
                 NodeMoveError::CantMoveDownstream(..)
             ))
         )
@@ -672,7 +672,9 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }
@@ -704,7 +706,9 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }
@@ -736,7 +740,9 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }
@@ -768,7 +774,9 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }
@@ -793,7 +801,9 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }
@@ -818,7 +828,9 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }
@@ -843,7 +855,9 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }
@@ -868,7 +882,9 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            _,
+        ))) => true,
         _ => false,
     })
 }

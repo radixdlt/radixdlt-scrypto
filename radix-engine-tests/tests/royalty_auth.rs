@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 fn set_up_package_and_component() -> (
     TestRunner,
     ComponentAddress,
-    EcdsaSecp256k1PublicKey,
+    Secp256k1PublicKey,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,

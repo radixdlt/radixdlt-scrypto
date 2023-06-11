@@ -20,15 +20,15 @@ use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_H
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FeaturedSchema,
-    FieldSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FieldSchema,
+    RefTypes, SchemaMethodKey, SchemaMethodPermission, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
 use crate::method_auth_template;
-use crate::system::system::{SubstateMutability, SubstateWrapper, SystemService};
+use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 pub use radix_engine_interface::blueprints::package::{
@@ -178,10 +178,7 @@ where
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = SubstateWrapper {
-                    value: Some(definition),
-                    mutability: SubstateMutability::Immutable,
-                };
+                let value = KeyValueEntrySubstate::immutable_entry(definition);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -206,11 +203,7 @@ where
                     version: BlueprintVersion::default(),
                 };
 
-                let value = SubstateWrapper {
-                    value: Some(minor_version_config),
-                    mutability: SubstateMutability::Immutable,
-                };
-
+                let value = KeyValueEntrySubstate::immutable_entry(minor_version_config);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -230,10 +223,7 @@ where
         let schemas_partition = schemas
             .into_iter()
             .map(|(hash, schema)| {
-                let value = SubstateWrapper {
-                    value: Some(schema),
-                    mutability: SubstateMutability::Immutable,
-                };
+                let value = KeyValueEntrySubstate::immutable_entry(schema);
 
                 (
                     SubstateKey::Map(scrypto_encode(&hash).unwrap()),
@@ -251,10 +241,7 @@ where
     }
 
     {
-        let value = SubstateWrapper {
-            value: Some(code),
-            mutability: SubstateMutability::Immutable,
-        };
+        let value = KeyValueEntrySubstate::immutable_entry(code);
         partitions.insert(
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
@@ -273,10 +260,7 @@ where
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = SubstateWrapper {
-                    value: Some(royalty),
-                    mutability: SubstateMutability::Mutable,
-                };
+                let value = KeyValueEntrySubstate::immutable_entry(royalty);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -300,10 +284,7 @@ where
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = SubstateWrapper {
-                    value: Some(auth_template),
-                    mutability: SubstateMutability::Immutable,
-                };
+                let value = KeyValueEntrySubstate::immutable_entry(auth_template);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -327,10 +308,7 @@ where
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = SubstateWrapper {
-                    value: Some(method_auth_template),
-                    mutability: SubstateMutability::Immutable,
-                };
+                let value = KeyValueEntrySubstate::immutable_entry(method_auth_template);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -362,10 +340,7 @@ where
     let metadata_partition = {
         let mut metadata_partition = BTreeMap::new();
         for (key, value) in metadata {
-            let value = SubstateWrapper {
-                value: Some(value),
-                mutability: SubstateMutability::Mutable,
-            };
+            let value = KeyValueEntrySubstate::entry(value);
             metadata_partition.insert(
                 SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 IndexedScryptoValue::from_typed(&value),
@@ -375,12 +350,12 @@ where
     };
     partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
 
-    let node_id = if let Some(reservation) = package_address_reservation {
+    let package_address = if let Some(address_reservation) = package_address_reservation {
         // TODO: Can we use `global_object` API?
 
         // Check global address reservation
         let global_address = {
-            let substates = api.kernel_drop_node(reservation.0.as_node_id())?;
+            let substates = api.kernel_drop_node(address_reservation.0.as_node_id())?;
 
             let type_info: Option<TypeInfoSubstate> = substates
                 .get(&TYPE_INFO_FIELD_PARTITION)
@@ -424,13 +399,15 @@ where
                 CannotGlobalizeError::InvalidBlueprintId,
             )));
         }
-
-        global_address.as_node_id().clone()
+        PackageAddress::new_or_panic(global_address.into())
     } else {
-        api.kernel_allocate_node_id(EntityType::GlobalPackage)?
+        PackageAddress::new_or_panic(
+            api.kernel_allocate_node_id(EntityType::GlobalPackage)?
+                .into(),
+        )
     };
 
-    api.kernel_create_node(node_id, partitions)?;
+    api.kernel_create_node(package_address.into_node_id(), partitions)?;
 
     if let Some(access_rules) = access_rules {
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
@@ -442,7 +419,12 @@ where
                 .at_offset(PartitionOffset(offset))
                 .unwrap();
 
-            api.kernel_move_module(access_rules.0.as_node_id(), src, &node_id, dest)?;
+            api.kernel_move_module(
+                access_rules.0.as_node_id(),
+                src,
+                package_address.as_node_id(),
+                dest,
+            )?;
         }
 
         api.kernel_drop_node(access_rules.0.as_node_id())?;
@@ -456,7 +438,6 @@ where
          */
     }
 
-    let package_address = PackageAddress::new_or_panic(node_id.into());
     Ok(package_address)
 }
 
@@ -553,7 +534,7 @@ impl PackageNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_PUBLISH_WASM_IDENT),
+                export: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -564,7 +545,7 @@ impl PackageNativePackage {
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT),
+                export: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -573,7 +554,7 @@ impl PackageNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_PUBLISH_NATIVE_IDENT),
+                export: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -582,7 +563,7 @@ impl PackageNativePackage {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
-                export: FeaturedSchema::normal(PACKAGE_CLAIM_ROYALTIES_IDENT),
+                export: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             },
         );
 
@@ -628,7 +609,6 @@ impl PackageNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y, L: Default>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -639,14 +619,8 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_native(
@@ -662,13 +636,8 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm(input.code, input.setup, input.metadata, api)?;
@@ -678,13 +647,8 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm_advanced(
@@ -698,17 +662,16 @@ impl PackageNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-
             PACKAGE_CLAIM_ROYALTIES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = PackageRoyaltyNativeBlueprint::claim_royalty(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -771,7 +734,7 @@ impl PackageNativePackage {
                     );
                     let export = PackageExport {
                         code_hash,
-                        export_name: setup.export.value().clone(),
+                        export_name: setup.export.clone(),
                     };
                     function_exports.insert(function, export);
                 }
@@ -992,7 +955,7 @@ impl PackageNativePackage {
                     );
                     let export = PackageExport {
                         code_hash,
-                        export_name: setup.export.value().clone(),
+                        export_name: setup.export.clone(),
                     };
                     function_exports.insert(function, export);
                 }
@@ -1069,16 +1032,13 @@ impl PackageNativePackage {
             &SubstateKey::Map(scrypto_encode(hash).unwrap()),
             LockFlags::read_only(),
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::default(),
         )?;
 
-        let substate: SubstateWrapper<Option<ScryptoSchema>> =
+        let substate: KeyValueEntrySubstate<ScryptoSchema> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
@@ -1103,16 +1063,13 @@ impl PackageNativePackage {
             &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::default(),
         )?;
 
-        let substate: SubstateWrapper<Option<BlueprintDefinition>> =
+        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
@@ -1147,16 +1104,13 @@ impl PackageRoyaltyNativeBlueprint {
             &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::default(),
         )?;
 
-        let substate: SubstateWrapper<Option<RoyaltyConfig>> =
+        let substate: KeyValueEntrySubstate<RoyaltyConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
@@ -1239,16 +1193,13 @@ impl PackageAuthNativeBlueprint {
             &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::default(),
         )?;
 
-        let substate: SubstateWrapper<Option<MethodAuthTemplate>> =
+        let substate: KeyValueEntrySubstate<MethodAuthTemplate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
@@ -1277,16 +1228,13 @@ impl PackageAuthNativeBlueprint {
             &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::default(),
         )?;
 
-        let auth_template: SubstateWrapper<Option<FunctionAuthTemplate>> =
+        let auth_template: KeyValueEntrySubstate<FunctionAuthTemplate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 

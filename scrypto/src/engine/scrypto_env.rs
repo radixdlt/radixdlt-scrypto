@@ -1,11 +1,11 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
@@ -470,6 +470,13 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         let actor = copy_buffer(unsafe { generate_uuid() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), ClientApiError> {
+        unsafe {
+            panic(message.as_ptr(), message.len());
+        };
+        Ok(())
     }
 }
 

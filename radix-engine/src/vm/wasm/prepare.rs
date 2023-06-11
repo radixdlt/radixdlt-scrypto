@@ -4,7 +4,6 @@ use parity_wasm::elements::{
     Internal, Module, Type, ValueType,
 };
 use radix_engine_interface::blueprints::package::BlueprintSetup;
-use radix_engine_interface::schema::FeaturedSchema;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -770,7 +769,7 @@ impl WasmModule {
                                 }
                             }
                         }
-                        LOG_FUNCTION_NAME => {
+                        LOG_MESSAGE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -781,6 +780,18 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                     ],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        PANIC_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
                                     vec![],
                                 ) {
                                     continue;
@@ -933,33 +944,26 @@ impl WasmModule {
             .module
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
-        for blueprint_setup in blueprints {
-            for func in blueprint_setup.functions.values() {
-                let export_mapping = &func.export;
-                match export_mapping {
-                    FeaturedSchema::Conditional {
-                        value: export_name, ..
-                    }
-                    | FeaturedSchema::Normal { value: export_name } => {
-                        if !exports.entries().iter().any(|x| {
-                            x.field().eq(export_name) && {
-                                if let Internal::Function(func_index) = x.internal() {
-                                    Self::function_matches(
-                                        &self.module,
-                                        *func_index as usize,
-                                        vec![ValueType::I64],
-                                        vec![ValueType::I64],
-                                    )
-                                } else {
-                                    false
-                                }
-                            }
-                        }) {
-                            return Err(PrepareError::MissingExport {
-                                export_name: export_name.to_string(),
-                            });
+        for blueprint_schema in blueprints {
+            for func in blueprint_schema.functions.values() {
+                let export_name = &func.export;
+                if !exports.entries().iter().any(|x| {
+                    x.field().eq(export_name) && {
+                        if let Internal::Function(func_index) = x.internal() {
+                            Self::function_matches(
+                                &self.module,
+                                *func_index as usize,
+                                vec![ValueType::I64],
+                                vec![ValueType::I64],
+                            )
+                        } else {
+                            false
                         }
                     }
+                }) {
+                    return Err(PrepareError::MissingExport {
+                        export_name: export_name.to_string(),
+                    });
                 }
             }
         }
@@ -1086,7 +1090,7 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use radix_engine_interface::blueprints::package::FunctionSetup;
-    use radix_engine_interface::schema::{BlueprintSchema, ExportSchema, FieldSchema};
+    use radix_engine_interface::schema::{BlueprintSchema, FieldSchema};
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
@@ -1261,7 +1265,7 @@ mod tests {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(UNIT_ID),
-                        export: ExportSchema::normal("Test_f"),
+                        export: "Test_f".to_string(),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),

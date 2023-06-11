@@ -28,7 +28,7 @@ where
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
-        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+        return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
             bucket_node_id.clone(),
         )));
     }
@@ -46,7 +46,7 @@ where
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedNonFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
-        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+        return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
             bucket_node_id.clone(),
         )));
     }

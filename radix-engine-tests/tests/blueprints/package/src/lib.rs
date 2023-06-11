@@ -39,7 +39,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("LargeReturnSize_f"),
+            export: "LargeReturnSize_f".to_string(),
         },
     );
 
@@ -92,7 +92,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("MaxReturnSize_f"),
+            export: "MaxReturnSize_f".to_string(),
         },
     );
 
@@ -143,7 +143,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export: ExportSchema::normal("ZeroReturnSize_f"),
+            export: "ZeroReturnSize_f".to_string(),
         },
     );
 

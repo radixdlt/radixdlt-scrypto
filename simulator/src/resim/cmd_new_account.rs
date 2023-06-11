@@ -38,7 +38,7 @@ struct EmptyStruct;
 impl NewAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
-        let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&secret).unwrap();
+        let private_key = Secp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
@@ -70,13 +70,13 @@ impl NewAccount {
                 .lock_fee(FAUCET, 100.into())
                 .call_method(FAUCET, "free", manifest_args!())
                 .add_instruction(InstructionV1::CallFunction {
-                    package_address: RESOURCE_PACKAGE,
+                    package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                         .to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        features: vec![],
                         id_type: NonFungibleIdType::Integer,
+                        track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: btreemap!(
                             "name".to_owned() => MetadataValue::String("Owner Badge".to_owned()) 

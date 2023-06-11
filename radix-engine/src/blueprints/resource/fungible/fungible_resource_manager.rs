@@ -66,7 +66,7 @@ pub struct FungibleResourceManagerBlueprint;
 
 impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
-        features: Vec<String>,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -77,9 +77,14 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.iter().map(|s| s.as_str()).collect(),
+            features,
             None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -99,7 +104,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
-        features: Vec<String>,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -115,7 +120,7 @@ impl FungibleResourceManagerBlueprint {
         })?;
 
         Self::create_with_initial_supply_and_address(
-            features,
+            track_total_supply,
             divisibility,
             metadata,
             access_rules,
@@ -126,7 +131,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply_and_address<Y>(
-        features: Vec<String>,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -139,9 +144,14 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.iter().map(|s| s.as_str()).collect(),
+            features,
             None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -207,6 +217,21 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::burn_internal(bucket, api)
+    }
+
+    /// Only callable within this package - this is to allow the burning of tokens from a vault.
+    pub(crate) fn package_burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::burn_internal(bucket, api)
+    }
+
+    fn burn_internal<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -293,15 +318,17 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
+        // These roles define an extra filter on top of the roles defined on the resource manager
+        // The purpose of these roles is to enable freezing of individual vaults
         // TODO: Figure out how to use SELF_ROLE rather than package
         let mut roles = Roles::new();
         roles.define_role(
-            "this_package",
+            RESOURCE_PACKAGE_ROLE,
             RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         );
         roles.define_role(
             VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, ["this_package"], true),
+            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
         );
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
@@ -327,16 +354,24 @@ impl FungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let total_supply_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            FungibleResourceManagerField::TotalSupply.into(),
-            LockFlags::read_only(),
-        )?;
-        let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
-        Ok(total_supply)
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
+            let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                FungibleResourceManagerField::TotalSupply.into(),
+                LockFlags::read_only(),
+            )?;
+            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            Ok(Some(total_supply))
+        } else {
+            Ok(None)
+        }
     }
 }
