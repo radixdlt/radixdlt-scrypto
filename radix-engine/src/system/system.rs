@@ -41,6 +41,45 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum KeyValueEntryMutability {
+    Mutable,
+    Immutable,
+}
+
+// TODO: Extend this use into substate fields
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct KeyValueEntrySubstate<E> {
+    pub value: E, // This should be Option<V> but need to do this manually since this isn't support by sbor yet
+    pub mutability: KeyValueEntryMutability,
+}
+
+impl<V> KeyValueEntrySubstate<Option<V>> {
+    pub fn entry(value: V) -> Self {
+        Self {
+            value: Some(value),
+            mutability: KeyValueEntryMutability::Mutable,
+        }
+    }
+
+    pub fn remove(&mut self) -> Option<V> {
+        self.value.take()
+    }
+
+    pub fn freeze(&mut self) {
+        self.mutability = KeyValueEntryMutability::Immutable;
+    }
+}
+
+impl<V> Default for KeyValueEntrySubstate<Option<V>> {
+    fn default() -> Self {
+        Self {
+            value: Option::None,
+            mutability: KeyValueEntryMutability::Mutable,
+        }
+    }
+}
+
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
@@ -469,7 +508,8 @@ where
                                 })?;
 
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let value = IndexedScryptoValue::from_typed(&Some(value));
+                                let kv_entry = KeyValueEntrySubstate::entry(value);
+                                let value = IndexedScryptoValue::from_typed(&kv_entry);
 
                                 if !blueprint_kv_schema.can_own {
                                     if !value.owned_nodes().is_empty() {
@@ -517,11 +557,16 @@ where
             .api
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
-        self.kernel_write_substate(
-            handle,
-            IndexedScryptoValue::from_typed(&None::<ScryptoValue>),
-        )?;
+
+        let mut kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> =
+            scrypto_decode(&current_value).unwrap();
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
+
         self.kernel_drop_lock(handle)?;
+
+        let current_value = scrypto_encode(&value).unwrap();
+
         Ok(current_value)
     }
 
@@ -1260,9 +1305,49 @@ where
             }
         }
 
-        self.api
+        self.api.kernel_read_substate(handle).map(|v| {
+            let wrapper: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
+            scrypto_encode(&wrapper.value).unwrap()
+        })
+    }
+
+    // TODO: Should this release lock or continue allow to mutate entry until lock released?
+    fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        match data {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write { .. }) => {}
+            _ => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::NotAKeyValueWriteLock,
+                ));
+            }
+        };
+
+        let v = self.api.kernel_read_substate(handle)?;
+        let mut kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
+        kv_entry.freeze();
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
+        self.api.kernel_write_substate(handle, indexed)?;
+        Ok(())
+    }
+
+    fn key_value_entry_remove(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let current_value = self
+            .api
             .kernel_read_substate(handle)
-            .map(|v| v.as_slice().to_vec())
+            .map(|v| v.as_slice().to_vec())?;
+
+        let mut kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> =
+            scrypto_decode(&current_value).unwrap();
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
+
+        let current_value = scrypto_encode(&value).unwrap();
+
+        Ok(current_value)
     }
 
     #[trace_resources]
@@ -1309,8 +1394,8 @@ where
         };
 
         let value = substate.as_scrypto_value().clone();
-        let indexed =
-            IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
+        let kv_entry = KeyValueEntrySubstate::entry(value);
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -1412,14 +1497,32 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
         };
 
-        self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_lock_substate_with_default(
             &node_id,
             OBJECT_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
             flags,
-            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            Some(|| {
+                let kv_entry = KeyValueEntrySubstate::<Option<()>>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
+            }),
             lock_data,
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
+                kv_entry.mutability
+            })?;
+
+            if let KeyValueEntryMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableSubstate,
+                ));
+            }
+        }
+
+        Ok(handle)
     }
 
     fn key_value_store_remove_entry(
@@ -1875,14 +1978,32 @@ where
             KeyValueEntryLockData::Read
         };
 
-        self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_lock_substate_with_default(
             &node_id,
             partition_num,
             &SubstateKey::Map(key.to_vec()),
             flags,
-            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            Some(|| {
+                let kv_entry = KeyValueEntrySubstate::<Option<()>>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
+            }),
             SystemLockData::KeyValueEntry(lock_data),
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let kv_entry: KeyValueEntrySubstate<Option<ScryptoValue>> = v.as_typed().unwrap();
+                kv_entry.mutability
+            })?;
+
+            if let KeyValueEntryMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableSubstate,
+                ));
+            }
+        }
+
+        Ok(handle)
     }
 
     fn actor_remove_key_value_entry(

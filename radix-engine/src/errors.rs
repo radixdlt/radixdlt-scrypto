@@ -207,6 +207,7 @@ pub enum SystemError {
     KeyValueStoreDoesNotExist(BlueprintId, u8),
     SortedIndexDoesNotExist(BlueprintId, u8),
     IndexDoesNotExist(BlueprintId, u8),
+    MutatingImmutableSubstate,
     NotAKeyValueStore,
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),

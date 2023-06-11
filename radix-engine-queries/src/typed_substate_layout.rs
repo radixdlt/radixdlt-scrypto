@@ -14,6 +14,8 @@ pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
+use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 
 //=========================================================================
@@ -485,7 +487,8 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::MetadataModuleEntryKey(_) => {
-            TypedSubstateValue::MetadataModuleEntryValue(scrypto_decode(data)?)
+            let value: KeyValueEntrySubstate<Option<MetadataValue>> = scrypto_decode(data)?;
+            TypedSubstateValue::MetadataModuleEntryValue(value.value)
         }
         TypedSubstateKey::MainModule(object_substate_key) => TypedSubstateValue::MainModule(
             to_typed_object_substate_value(object_substate_key, data)?,
@@ -534,7 +537,9 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
+            let value: KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
+
+            TypedMainModuleSubstateValue::NonFungibleResourceData(value.value)
         }
         TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
             TypedMainModuleSubstateValue::FungibleVault(match offset {
@@ -599,7 +604,8 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
-            TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+            let value: KeyValueEntrySubstate<Option<Own>> = scrypto_decode(data)?;
+            TypedMainModuleSubstateValue::AccountVaultIndex(value.value)
         }
         TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
@@ -621,7 +627,9 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
+            let value: KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
+
+            TypedMainModuleSubstateValue::GenericKeyValueStore(value.value)
         }
         TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
             TypedMainModuleSubstateValue::OneResourcePool(match offset {
