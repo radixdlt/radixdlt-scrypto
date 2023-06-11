@@ -5,6 +5,7 @@ use radix_engine::errors::{
 use radix_engine::kernel::call_frame::{CreateNodeError, TakeNodeError, UnlockSubstateError};
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
+use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -613,3 +614,90 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
         )
     });
 }
+
+#[test]
+fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
+    let (_, _, account) = test_runner.new_account(false);
+    let resource_address = {
+        let access_rules = btreemap!(
+            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
+            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
+            UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
+        );
+        let manifest = ManifestBuilder::new()
+            .create_non_fungible_resource(
+                NonFungibleIdType::Integer,
+                true,
+                Default::default(),
+                access_rules,
+                Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
+            )
+            .build();
+        test_runner
+            .execute_manifest_ignoring_fee(manifest, vec![])
+            .expect_commit_success()
+            .new_resource_addresses()
+            .get(0)
+            .unwrap()
+            .clone()
+    };
+
+    let component_address = {
+        let manifest = ManifestBuilder::new()
+            .mint_non_fungible(
+                resource_address,
+                btreemap!(
+                    NonFungibleLocalId::integer(1) => EmptyStruct {},
+                    NonFungibleLocalId::integer(2) => EmptyStruct {},
+                ),
+            )
+            .take_all_from_worktop(resource_address, |builder, bucket| {
+                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            })
+            .build();
+        test_runner
+            .execute_manifest_ignoring_fee(manifest, vec![])
+            .expect_commit_success()
+            .new_component_addresses()
+            .get(0)
+            .unwrap()
+            .clone()
+    };
+    let vault_id = get_vault_id(&mut test_runner, component_address);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            component_address,
+            "take_ids",
+            manifest_args!(btreeset![NonFungibleLocalId::integer(1)]),
+        )
+        .try_deposit_batch_or_abort(account)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
+        dec!("1")
+    );
+}
+
+fn get_vault_id(test_runner: &mut TestRunner, component_address: ComponentAddress) -> NodeId {
+    let manifest = ManifestBuilder::new()
+        .call_method(component_address, "vault_id", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    receipt.expect_commit_success().output(1)
+}
+
+#[derive(NonFungibleData, ScryptoSbor, ManifestSbor)]
+struct EmptyStruct {}

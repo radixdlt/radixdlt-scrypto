@@ -187,6 +187,8 @@ extern "C" {
         message_len: usize,
     );
 
+    pub fn panic(message_ptr: *const u8, message_len: usize);
+
     pub fn get_transaction_hash() -> Buffer;
 
     pub fn generate_uuid() -> Buffer;
@@ -413,6 +415,11 @@ pub unsafe fn log_message(
     _message_ptr: *const u8,
     _message_len: usize,
 ) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn panic(_message_ptr: *const u8, _message_len: usize) {
     unreachable!()
 }
 

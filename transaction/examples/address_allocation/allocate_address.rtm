@@ -1,0 +1,35 @@
+# This transaction manifest shows how to publish a package and call function immediately.
+
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+ 
+CALL_METHOD 
+    Address("${account_address}") 
+    "lock_fee"
+    Decimal("10")
+;
+ALLOCATE_GLOBAL_ADDRESS
+    Address("${package_package_address}")
+    "Package"
+    AddressReservation("my_reservation")
+    NamedAddress("my_package")
+;
+PUBLISH_PACKAGE_ADVANCED
+    Some(AddressReservation("my_reservation"))
+    Blob("${code_blob_hash}")
+    Tuple(
+        Map<String, Tuple>()
+    )
+    Map<String, Enum>()
+    Enum<0u8>()
+;
+CALL_FUNCTION
+    NamedAddress("my_package")
+    "BlueprintName"
+    "no_such_function" 
+    Decimal("1.0")
+    NamedAddress("my_package")
+;

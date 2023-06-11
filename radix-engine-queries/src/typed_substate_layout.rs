@@ -6,7 +6,7 @@ pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-use radix_engine::blueprints::pool::multi_resource_pool::*;
+pub use radix_engine::blueprints::pool::multi_resource_pool::*;
 pub use radix_engine::blueprints::pool::one_resource_pool::*;
 pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::resource::*;
@@ -14,8 +14,8 @@ pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
-use radix_engine::system::system::SubstateWrapper;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine::system::system::KeyValueEntrySubstate;
+pub use radix_engine_interface::api::node_modules::royalty::*;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -346,8 +346,8 @@ pub enum TypedTypeInfoModuleFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModule {
-    Rule(Option<AccessRule>),
-    Mutability(Option<(RoleList, bool)>),
+    Rule(KeyValueEntrySubstate<AccessRule>),
+    Mutability(KeyValueEntrySubstate<(RoleList, bool)>),
 }
 
 #[derive(Debug, Clone)]
@@ -362,7 +362,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(Option<ScryptoOwnedRawValue>),
+    NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
@@ -371,14 +371,14 @@ pub enum TypedMainModuleSubstateValue {
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
-    AccountVaultIndex(AccountVaultIndexEntry),
+    AccountVaultIndex(KeyValueEntrySubstate<Own>),
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
+    GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -489,13 +489,11 @@ fn to_typed_substate_value_internal(
         }
         TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
             TypedAccessRulesSubstateKey::Rule(_) => {
-                let value: SubstateWrapper<Option<AccessRule>> = scrypto_decode(data)?;
-                TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Rule(value.value))
+                TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Rule(scrypto_decode(data)?))
             }
             TypedAccessRulesSubstateKey::Mutability(_) => {
-                let value: SubstateWrapper<Option<(RoleList, bool)>> = scrypto_decode(data)?;
                 TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Mutability(
-                    value.value,
+                    scrypto_decode(data)?
                 ))
             }
         },
@@ -507,8 +505,7 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::MetadataModuleEntryKey(_) => {
-            let value: SubstateWrapper<Option<MetadataValue>> = scrypto_decode(data)?;
-            TypedSubstateValue::MetadataModuleEntryValue(value.value)
+            TypedSubstateValue::MetadataModuleEntryValue(scrypto_decode(data)?)
         }
         TypedSubstateKey::MainModule(object_substate_key) => TypedSubstateValue::MainModule(
             to_typed_object_substate_value(object_substate_key, data)?,
@@ -557,9 +554,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            let value: SubstateWrapper<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
-
-            TypedMainModuleSubstateValue::NonFungibleResourceData(value.value)
+            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
             TypedMainModuleSubstateValue::FungibleVault(match offset {
@@ -624,8 +619,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
-            let value: SubstateWrapper<Option<Own>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::AccountVaultIndex(value.value)
+            TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
@@ -647,9 +641,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            let value: SubstateWrapper<Option<ScryptoOwnedRawValue>> = scrypto_decode(data)?;
-
-            TypedMainModuleSubstateValue::GenericKeyValueStore(value.value)
+            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
             TypedMainModuleSubstateValue::OneResourcePool(match offset {

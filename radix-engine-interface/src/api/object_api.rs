@@ -83,13 +83,14 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, E> {
-        self.new_object(blueprint_ident, None, fields, btreemap![])
+        self.new_object(blueprint_ident, vec![], None, fields, btreemap![])
     }
 
     /// Creates a new object of a given blueprint type
     fn new_object(
         &mut self,
         blueprint_ident: &str,
+        features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,

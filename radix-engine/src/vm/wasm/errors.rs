@@ -1,4 +1,4 @@
-use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
+use crate::errors::{CanBeAbortion, InvokeError, RuntimeError, SelfError, VmError};
 use crate::system::system_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
@@ -80,81 +80,67 @@ pub enum InvalidTable {
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WasmRuntimeError {
+    /// Host attempted to call unknown WASM function, addressed by name.
+    UnknownExport(String),
+
     /// Error when reading wasm memory.
     MemoryAccessError,
-
-    /// WASM attempted to call undefined host function, addressed by offset.
-    UnknownHostFunction(usize),
-
-    /// Host attempted to call unknown WASM function, addressed by name.
-    UnknownWasmFunction(String),
-
-    /// WASM interpreter error, such as traps.
-    InterpreterError(String),
 
     /// WASM function return is not a `u64` fat pointer which points to a valid memory range.
     InvalidWasmPointer,
 
-    Trap(String),
+    /// WASM execution error, including trap.
+    ExecutionError(String),
 
-    //=================
-    // Scrypto Runtime
-    //=================
     /// Not implemented, no-op wasm runtime
     NotImplemented,
+
     /// Buffer not found
     BufferNotFound(BufferId),
+
     /// Invalid package address
     InvalidPackageAddress(DecodeError),
+
     InvalidBlueprintId(DecodeError),
+
     /// Invalid method ident
     InvalidString,
+
     /// Invalid RE node ID
     InvalidNodeId,
+
     InvalidGlobalAddressReservation,
+
     /// Invalid reference type
     InvalidReferenceType(u32),
+
     /// Invalid RE module ID
     InvalidModuleId(u32),
-    /// Invalid substate offset
-    InvalidSubstateKey,
+
     /// Invalid initial app states
-    InvalidAppStates(DecodeError),
+    InvalidObjectStates(DecodeError),
+
     /// Invalid access rules
     InvalidAccessRules(DecodeError),
-    /// Invalid access rules
-    InvalidSchema(DecodeError),
+
     /// Invalid modules
     InvalidModules(DecodeError),
-    /// Invalid address
-    InvalidAddress(DecodeError),
-    /// Invalid entity type
-    InvalidEntityType(DecodeError),
-    /// Invalid royalty config
-    InvalidRoyaltyConfig(DecodeError),
-    /// Invalid metadata
-    InvalidMetadata(DecodeError),
-    /// Invalid component id
-    InvalidComponentId(DecodeError),
+
     InvalidKeyValueStoreSchema(DecodeError),
-    InvalidValue(DecodeError),
-    // Invalid EventSchema
-    InvalidEventSchema(DecodeError),
+
     /// Invalid component address
     InvalidLockFlags,
+
     /// Invalid log level
     InvalidLogLevel(DecodeError),
 
-    //=============
-    // No-op Runtime
-    //=============
-    /// Costing error
+    /// Costing error (no-op runtime only!)
     FeeReserveError(FeeReserveError),
 }
 
 impl SelfError for WasmRuntimeError {
     fn into_runtime_error(self) -> RuntimeError {
-        RuntimeError::KernelError(KernelError::WasmRuntimeError(self))
+        RuntimeError::VmError(VmError::Wasm(self))
     }
 }
 

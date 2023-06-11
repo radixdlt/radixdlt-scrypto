@@ -12,10 +12,10 @@ use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
@@ -99,7 +99,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
         Self::create_virtual(public_key_hash, api)
     }
 
@@ -110,7 +110,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
         Self::create_virtual(public_key_hash, api)
     }
 
@@ -199,6 +199,7 @@ impl AccountBlueprint {
     {
         let account_id = api.new_object(
             ACCOUNT_BLUEPRINT,
+            vec![],
             None,
             vec![scrypto_encode(&AccountSubstate {
                 default_deposit_rule: AccountDefaultDepositRule::Accept,
@@ -391,6 +392,38 @@ impl AccountBlueprint {
         )?;
 
         Ok(bucket)
+    }
+
+    pub fn burn<Y>(
+        resource_address: ResourceAddress,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::get_vault(
+            resource_address,
+            |vault, api| vault.burn(amount, api),
+            false,
+            api,
+        )
+    }
+
+    pub fn burn_non_fungibles<Y>(
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::get_vault(
+            resource_address,
+            |vault, api| vault.burn_non_fungibles(ids, api),
+            false,
+            api,
+        )
     }
 
     pub fn lock_fee_and_withdraw<Y>(

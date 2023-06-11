@@ -77,11 +77,7 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
         let substate = match &self.original_data {
-            OriginalData::KeyValueStoreEntry(_) => {
-                let substate: Option<ScryptoValue> =
-                    Option::Some(scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap());
-                scrypto_encode(&substate).unwrap()
-            }
+            OriginalData::KeyValueStoreEntry(_) => scrypto_encode(&Some(&self.value)).unwrap(),
             OriginalData::ComponentAppState(_) => scrypto_encode(&self.value).unwrap(),
         };
         env.field_lock_write(self.lock_handle, substate).unwrap();

@@ -66,7 +66,7 @@ mod tests {
 
     use super::*;
     use crate::model::*;
-    use crate::{ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey};
+    use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
     fn hash_manifest_encoded_without_prefix_byte<T: ManifestEncode>(value: T) -> Hash {
         hash(&manifest_encode(&value).unwrap()[1..])
@@ -79,9 +79,9 @@ mod tests {
         let network = NetworkDefinition::simulator();
 
         // Create key pairs
-        let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let sig_2_private_key = EddsaEd25519PrivateKey::from_u64(2).unwrap();
-        let notary_private_key = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
 
         //===================
         // INTENT
@@ -375,11 +375,11 @@ mod tests {
         );
         assert_eq!(
             expected_system_transaction_hash.to_string(),
-            "53d3dfad74617591833b618a1470d213471f4c4c2bb7784b1de8f16cc3751c51"
+            "a9135b8f1c038a439872c9e43f5ce48a5d3820a4d4d7052683e68678448c4238"
         );
         assert_eq!(
             hex::encode(system_transaction_payload_bytes),
-            "4d220404202201120020200207040001020307020506202101022102800d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c60c1746756e6769626c655265736f757263654d616e61676572805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c62007207646fcb3e6a2dbf0fd4830933c54928d3e8dafaf9f704afdae56336fc67aae0d"
+            "4d22040420220112002020020704000102030702050620210102210280000d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c60c1746756e6769626c655265736f757263654d616e6167657280005da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c62007207646fcb3e6a2dbf0fd4830933c54928d3e8dafaf9f704afdae56336fc67aae0d"
         );
     }
 }

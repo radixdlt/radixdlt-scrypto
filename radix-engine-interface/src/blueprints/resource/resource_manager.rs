@@ -3,6 +3,12 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
+pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
+
+// Meta-roles
+pub const RESOURCE_PACKAGE_ROLE: &str = "resource_package";
+
+// Main roles
 pub const MINT_ROLE: &str = "mint";
 pub const MINT_UPDATE_ROLE: &str = "mint_update";
 pub const BURN_ROLE: &str = "burn";
@@ -46,6 +52,15 @@ pub struct ResourceManagerBurnInput {
 
 pub type ResourceManagerBurnOutput = ();
 
+pub const RESOURCE_MANAGER_PACKAGE_BURN_IDENT: &str = "package_burn";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ResourceManagerPackageBurnInput {
+    pub bucket: Bucket,
+}
+
+pub type ResourceManagerPackageBurnOutput = ();
+
 pub const RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT: &str = "create_empty_vault";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -81,4 +96,4 @@ pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetTotalSupplyInput {}
 
-pub type ResourceManagerGetTotalSupplyOutput = Decimal;
+pub type ResourceManagerGetTotalSupplyOutput = Option<Decimal>;

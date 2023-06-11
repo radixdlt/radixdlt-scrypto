@@ -1,13 +1,13 @@
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
+use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
-use radix_engine_common::data::manifest::model::ManifestOwn;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_schema::PackageSchema;
+use scrypto_schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -16,14 +16,14 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
-    pub definition: PackageDefinition,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
-    pub definition: PackageDefinition,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -35,16 +35,16 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub code: Vec<u8>,
-    pub definition: PackageDefinition,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmAdvancedManifestInput {
-    pub package_address: Option<ManifestOwn>,
+    pub package_address: Option<ManifestAddressReservation>,
     pub code: ManifestBlobRef,
-    pub definition: PackageDefinition,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -57,15 +57,15 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub native_package_code_id: u8,
-    pub definition: PackageDefinition,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishNativeManifestInput {
-    pub package_address: Option<ManifestOwn>,
+    pub package_address: Option<ManifestAddressReservation>,
     pub native_package_code_id: u8,
-    pub definition: PackageDefinition,
+    pub setup: PackageSetup,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -94,8 +94,22 @@ pub struct PackageClaimRoyaltiesInput {}
 pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct PackageDefinition {
-    pub schema: PackageSchema,
-    pub function_access_rules: BTreeMap<String, BTreeMap<String, AccessRule>>,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
+pub struct PackageSetup {
+    pub blueprints: BTreeMap<String, BlueprintSetup>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintSetup {
+    pub schema: BlueprintSchema,
+
+    pub function_auth: BTreeMap<String, AccessRule>,
+    pub royalty_config: RoyaltyConfig,
+
+    pub template: BlueprintTemplate,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintTemplate {
+    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }

@@ -16,6 +16,7 @@ CALL_METHOD
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<NonFungibleIdType::Integer>()
+    false # Track Total Supply
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
     Map<String, Enum>(
         "name" => Enum<Metadata::String>("MyResource"),                                        # Resource Name

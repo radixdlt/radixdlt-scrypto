@@ -4,7 +4,7 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError,
+    InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -34,8 +34,8 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, InstanceSchema, KeyValueStoreSchema,
-    TypeRef,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FieldSchema, InstanceSchema,
+    KeyValueStoreSchema, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -49,9 +49,43 @@ pub enum SubstateMutability {
 
 // TODO: Extend this use into substate fields
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct SubstateWrapper<V> {
-    pub value: V,
+pub struct DynSubstate<E> {
+    pub value: E,
     pub mutability: SubstateMutability,
+}
+
+impl<E> DynSubstate<E> {
+    pub fn freeze(&mut self) {
+        self.mutability = SubstateMutability::Immutable;
+    }
+
+    pub fn is_mutable(&self) -> bool {
+        matches!(self.mutability, SubstateMutability::Mutable)
+    }
+}
+
+pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;
+
+impl<V> KeyValueEntrySubstate<V> {
+    pub fn entry(value: V) -> Self {
+        Self {
+            value: Some(value),
+            mutability: SubstateMutability::Mutable,
+        }
+    }
+
+    pub fn remove(&mut self) -> Option<V> {
+        self.value.take()
+    }
+}
+
+impl<V> Default for KeyValueEntrySubstate<V> {
+    fn default() -> Self {
+        Self {
+            value: Option::None,
+            mutability: SubstateMutability::Mutable,
+        }
+    }
 }
 
 /// Provided to upper layer for invoking lower layer service
@@ -188,9 +222,10 @@ where
                 global: true,
                 outer_object: None,
                 instance_schema: None,
+                features: btreeset!(),
             }));
-        } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+        } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
             || node_id.eq(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(GLOBAL_CALLER_VIRTUAL_BADGE.as_node_id())
@@ -207,6 +242,7 @@ where
                 global: true,
                 outer_object: None,
                 instance_schema: None,
+                features: btreeset!(),
             }));
         }
 
@@ -234,13 +270,21 @@ where
     fn new_object_internal(
         &mut self,
         blueprint: &BlueprintId,
+        features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
-        let (expected_blueprint_parent, user_substates) =
-            self.verify_instance_schema_and_state(blueprint, &instance_schema, fields, kv_entries)?;
+        let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+
+        let (expected_blueprint_parent, user_substates) = self.verify_instance_schema_and_state(
+            blueprint,
+            &features,
+            &instance_schema,
+            fields,
+            kv_entries,
+        )?;
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
@@ -270,6 +314,7 @@ where
                     global:false,
                     outer_object,
                     instance_schema,
+                    features,
                 })
             ),
         );
@@ -286,17 +331,17 @@ where
         Ok(node_id.into())
     }
 
-    pub fn get_blueprint_schema(
+    pub fn get_blueprint_definition(
         &mut self,
         blueprint: &BlueprintId,
-    ) -> Result<IndexedBlueprintSchema, RuntimeError> {
-        let schema = self
+    ) -> Result<BlueprintDefinition, RuntimeError> {
+        let def = self
             .api
             .kernel_get_system_state()
             .system
-            .blueprint_schema_cache
+            .blueprint_cache
             .get(blueprint);
-        if let Some(schema) = schema {
+        if let Some(schema) = def {
             return Ok(schema.clone());
         } else {
             let handle = self.api.kernel_lock_substate(
@@ -320,14 +365,14 @@ where
             self.api
                 .kernel_get_system_state()
                 .system
-                .blueprint_schema_cache
+                .blueprint_cache
                 .insert(blueprint.clone(), schema);
             self.api.kernel_drop_lock(handle)?;
             let schema = self
                 .api
                 .kernel_get_system_state()
                 .system
-                .blueprint_schema_cache
+                .blueprint_cache
                 .get(blueprint)
                 .unwrap();
             Ok(schema.clone())
@@ -337,6 +382,7 @@ where
     fn verify_instance_schema_and_state(
         &mut self,
         blueprint: &BlueprintId,
+        features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -347,7 +393,18 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_schema = self.get_blueprint_schema(blueprint)?;
+        let blueprint_schema = self.get_blueprint_definition(blueprint)?.schema;
+
+        // Validate features
+        {
+            for feature in features {
+                if !blueprint_schema.features.contains(feature) {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                        feature.to_string(),
+                    )));
+                }
+            }
+        }
 
         // Validate instance schema
         {
@@ -377,14 +434,25 @@ where
                 )));
             }
 
-            if let Some((offset, field_type_index)) = blueprint_schema.fields {
+            if let Some((offset, field_schemas)) = blueprint_schema.fields {
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
+                    let field_type_index = match &field_schemas[i] {
+                        FieldSchema::Normal { value } => value.clone(),
+                        FieldSchema::Conditional { feature, value } => {
+                            if features.contains(feature) {
+                                value.clone()
+                            } else {
+                                continue;
+                            }
+                        }
+                    };
+
                     self.validate_payload(
                         &field,
                         &blueprint_schema.schema,
-                        field_type_index[i],
+                        field_type_index,
                         SchemaOrigin::Blueprint(blueprint.clone()),
                     )
                     .map_err(|err| {
@@ -449,12 +517,8 @@ where
                                 })?;
 
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let wrapped_value = SubstateWrapper {
-                                    value: Some(value),
-                                    mutability: SubstateMutability::Mutable,
-                                };
-
-                                let value = IndexedScryptoValue::from_typed(&wrapped_value);
+                                let kv_entry = KeyValueEntrySubstate::entry(value);
+                                let value = IndexedScryptoValue::from_typed(&kv_entry);
 
                                 if !blueprint_kv_schema.can_own {
                                     if !value.owned_nodes().is_empty() {
@@ -503,10 +567,10 @@ where
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
 
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> =
             scrypto_decode(&current_value).unwrap();
-        let value = wrapper.value.take();
-        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
         self.kernel_drop_lock(handle)?;
 
@@ -527,14 +591,14 @@ where
             ActorObjectType::OuterObject => {
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
-                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
                 Ok((address.into_node_id(), MAIN_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
-                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                let schema = self.get_blueprint_definition(&info.blueprint)?.schema;
                 Ok((node_id, object_module_id.base_partition_num(), info, schema))
             }
         }
@@ -556,12 +620,26 @@ where
     > {
         let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, type_index) = schema.field(field_index).ok_or_else(|| {
+        let (partition_offset, field_schema) = schema.field(field_index).ok_or_else(|| {
             RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                 info.blueprint.clone(),
                 field_index,
             ))
         })?;
+
+        let type_index = match field_schema {
+            FieldSchema::Normal { value } => value,
+            FieldSchema::Conditional { feature, value } => {
+                if info.features.contains(&feature) {
+                    value
+                } else {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint.clone(),
+                        field_index,
+                    )));
+                }
+            }
+        };
 
         let partition_num = base_partition
             .at_offset(partition_offset)
@@ -784,7 +862,7 @@ where
             }
         };
 
-        let schema = self.get_blueprint_schema(blueprint_id)?;
+        let schema = self.get_blueprint_definition(blueprint_id)?.schema;
         let num_main_partitions = schema.num_partitions();
 
         // Create a global node
@@ -839,7 +917,7 @@ where
                         );
 
                     // Move and drop
-                    let schema = self.get_blueprint_schema(&blueprint_id)?;
+                    let schema = self.get_blueprint_definition(&blueprint_id)?.schema;
                     let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..schema.num_partitions {
                         let src = MAIN_BASE_PARTITION
@@ -949,6 +1027,7 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
+        features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -958,7 +1037,14 @@ where
         let instance_context = actor.instance_context();
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
-        self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
+        self.new_object_internal(
+            &blueprint,
+            features,
+            instance_context,
+            schema,
+            fields,
+            kv_entries,
+        )
     }
 
     fn attach_access_rules(
@@ -968,7 +1054,7 @@ where
     ) -> Result<(), RuntimeError> {
         // Move and drop
         let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint;
-        let schema = self.get_blueprint_schema(&blueprint_id)?;
+        let schema = self.get_blueprint_definition(&blueprint_id)?.schema;
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
         for offset in 0u8..schema.num_partitions {
             let src = MAIN_BASE_PARTITION
@@ -1065,6 +1151,7 @@ where
 
         let inner_object = self.new_object_internal(
             &blueprint,
+            vec![],
             Some(InstanceContext {
                 outer_object: global_address,
                 outer_blueprint: actor_blueprint.blueprint_name,
@@ -1127,6 +1214,7 @@ where
                     outer_object: None,
                     global: receiver_info.global,
                     instance_schema: None,
+                    features: btreeset!(),
                 },
                 None,
             ),
@@ -1227,8 +1315,8 @@ where
         }
 
         if !is_drop_allowed {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                     node_id: node_id.clone(),
                     package_address: info.blueprint.package_address,
                     blueprint_name: info.blueprint.blueprint_name,
@@ -1266,7 +1354,7 @@ where
         }
 
         self.api.kernel_read_substate(handle).map(|v| {
-            let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
+            let wrapper: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
             scrypto_encode(&wrapper.value).unwrap()
         })
     }
@@ -1284,9 +1372,9 @@ where
         };
 
         let v = self.api.kernel_read_substate(handle)?;
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-        wrapper.mutability = SubstateMutability::Immutable;
-        let indexed = IndexedScryptoValue::from_typed(&wrapper);
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+        kv_entry.freeze();
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
         self.api.kernel_write_substate(handle, indexed)?;
         Ok(())
     }
@@ -1300,10 +1388,10 @@ where
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
 
-        let mut wrapper: SubstateWrapper<Option<ScryptoValue>> =
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> =
             scrypto_decode(&current_value).unwrap();
-        let value = wrapper.value.take();
-        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&wrapper))?;
+        let value = kv_entry.remove();
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
         let current_value = scrypto_encode(&value).unwrap();
 
@@ -1354,11 +1442,8 @@ where
         };
 
         let value = substate.as_scrypto_value().clone();
-        let wrapper = SubstateWrapper {
-            value: Some(value),
-            mutability: SubstateMutability::Mutable,
-        };
-        let indexed = IndexedScryptoValue::from_vec(scrypto_encode(&wrapper).unwrap()).unwrap();
+        let kv_entry = KeyValueEntrySubstate::entry(value);
+        let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -1466,19 +1551,16 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             lock_data,
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
-                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-                wrapper.mutability
+                let kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+                kv_entry.mutability
             })?;
 
             if let SubstateMutability::Immutable = mutability {
@@ -1517,9 +1599,8 @@ where
 
         let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
@@ -1608,9 +1689,8 @@ where
         let (node_id, partition_num) =
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
-        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let value = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
         if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
@@ -1952,22 +2032,17 @@ where
             &SubstateKey::Map(key.to_vec()),
             flags,
             Some(|| {
-                let wrapper = SubstateWrapper {
-                    value: None::<()>,
-                    mutability: SubstateMutability::Mutable,
-                };
-                IndexedScryptoValue::from_typed(&wrapper)
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
             }),
             SystemLockData::KeyValueEntry(lock_data),
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
-            let mutability = self.api.kernel_read_substate(handle).map(|v| {
-                let wrapper: SubstateWrapper<Option<ScryptoValue>> = v.as_typed().unwrap();
-                wrapper.mutability
-            })?;
+            let substate: KeyValueEntrySubstate<ScryptoValue> =
+                self.api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            if let SubstateMutability::Immutable = mutability {
+            if !substate.is_mutable() {
                 return Err(RuntimeError::SystemError(
                     SystemError::MutatingImmutableSubstate,
                 ));
@@ -2085,7 +2160,7 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        // Costing event emission.
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
@@ -2099,12 +2174,12 @@ where
                     ..
                 }) => Ok(object_info.blueprint.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
-                _ => Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(Box::new(EventError::InvalidActor)),
+                _ => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
                 )),
             }?;
 
-            let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
+            let blueprint_schema = self.get_blueprint_definition(&blueprint_id)?.schema;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
@@ -2112,8 +2187,8 @@ where
                 if let Some(index) = blueprint_schema.event_schema.get(&event_name).cloned() {
                     index
                 } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::EventError(Box::new(EventError::SchemaNotFoundError {
                             blueprint: blueprint_id.clone(),
                             event_name,
                         })),
@@ -2140,8 +2215,8 @@ where
                 ),
                 local_type_index,
             )),
-            _ => Err(RuntimeError::ApplicationError(
-                ApplicationError::EventError(Box::new(EventError::InvalidActor)),
+            _ => Err(RuntimeError::SystemModuleError(
+                SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
             )),
         }?;
         self.validate_payload(
@@ -2151,7 +2226,7 @@ where
             SchemaOrigin::Blueprint(blueprint_id),
         )
         .map_err(|err| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
+            RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
                 EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
             )))
         })?;
@@ -2173,13 +2248,14 @@ where
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
             .kernel_get_system()
             .modules
             .logger
-            .add_log(level, message);
+            .add(level, message);
         Ok(())
     }
 }
@@ -2211,6 +2287,15 @@ where
             .modules
             .transaction_runtime
             .generate_uuid())
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        // FIXME: update costing rule
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+            message.to_string(),
+        )))
     }
 }
 

@@ -554,6 +554,18 @@ fn log_message(
 
     runtime.log_message(level, message)
 }
+
+fn panic(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+
+    runtime.panic(message)
+}
 // native functions ends
 
 macro_rules! linker_define {
@@ -955,7 +967,7 @@ impl WasmiModule {
             },
         );
 
-        let host_log = Func::wrap(
+        let host_log_message = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              level_ptr: u32,
@@ -965,6 +977,16 @@ impl WasmiModule {
              -> Result<(), Trap> {
                 log_message(caller, level_ptr, level_len, message_ptr, message_len)
                     .map_err(|e| e.into())
+            },
+        );
+
+        let host_panic = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32|
+             -> Result<(), Trap> {
+                panic(caller, message_ptr, message_len).map_err(|e| e.into())
             },
         );
 
@@ -1069,7 +1091,8 @@ impl WasmiModule {
             host_consume_cost_units
         );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
-        linker_define!(linker, LOG_FUNCTION_NAME, host_log);
+        linker_define!(linker, LOG_MESSAGE_FUNCTION_NAME, host_log_message);
+        linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,
             GET_TRANSACTION_HASH_FUNCTION_NAME,
@@ -1148,7 +1171,7 @@ impl WasmiInstance {
             .get_export(self.store.as_context_mut(), name)
             .and_then(Extern::into_func)
             .ok_or_else(|| {
-                InvokeError::SelfError(WasmRuntimeError::UnknownWasmFunction(name.to_string()))
+                InvokeError::SelfError(WasmRuntimeError::UnknownExport(name.to_string()))
             })
     }
 }
@@ -1163,10 +1186,10 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
                 if let Some(invoke_err) = trap.downcast_ref::<InvokeError<WasmRuntimeError>>() {
                     invoke_err.clone()
                 } else {
-                    InvokeError::SelfError(WasmRuntimeError::Trap(format!("{:?}", trap)))
+                    InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str))
                 }
             }
-            _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str)),
         }
     }
 }

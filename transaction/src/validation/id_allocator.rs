@@ -1,13 +1,14 @@
 use radix_engine_interface::{
     data::manifest::model::{ManifestBucket, ManifestProof},
-    prelude::ManifestOwn,
+    prelude::ManifestAddressReservation,
 };
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestIdAllocator {
     next_bucket_id: u32,
     next_proof_id: u32,
-    next_own_id: u32,
+    next_address_reservation_id: u32,
+    next_address_id: u32,
 }
 
 impl ManifestIdAllocator {
@@ -29,9 +30,15 @@ impl ManifestIdAllocator {
         ManifestProof(id)
     }
 
-    pub fn new_own_id(&mut self) -> ManifestOwn {
-        let id = self.next_own_id;
-        self.next_own_id += 1;
-        ManifestOwn(id)
+    pub fn new_address_reservation_id(&mut self) -> ManifestAddressReservation {
+        let id = self.next_address_reservation_id;
+        self.next_address_reservation_id += 1;
+        ManifestAddressReservation(id)
+    }
+
+    pub fn new_address_id(&mut self) -> u32 {
+        let id = self.next_address_id;
+        self.next_address_id += 1;
+        id
     }
 }

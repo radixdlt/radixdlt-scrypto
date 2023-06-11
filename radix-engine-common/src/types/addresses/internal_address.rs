@@ -1,5 +1,6 @@
 use crate::address::Bech32Decoder;
 use crate::address::{AddressDisplayContext, EncodeBech32AddressError, NO_NETWORK};
+use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;
 use crate::data::scrypto::*;
@@ -126,9 +127,9 @@ impl From<InternalAddress> for Reference {
     }
 }
 
-impl From<InternalAddress> for crate::data::manifest::model::ManifestAddress {
+impl From<InternalAddress> for ManifestAddress {
     fn from(value: InternalAddress) -> Self {
-        Self(value.into())
+        Self::Static(value.into())
     }
 }
 
@@ -165,11 +166,42 @@ well_known_scrypto_custom_type!(
     internal_address_type_data
 );
 
-manifest_type!(
-    InternalAddress,
-    ManifestCustomValueKind::Address,
-    NodeId::LENGTH
-);
+impl Categorize<ManifestCustomValueKind> for InternalAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for InternalAddress {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_discriminator(0)?;
+        encoder.write_slice(self.as_ref())?;
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for InternalAddress {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        match decoder.read_discriminator()? {
+            0 => {
+                let slice = decoder.read_slice(NodeId::LENGTH)?;
+                Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
+            }
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
 
 //======
 // text
