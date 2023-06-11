@@ -343,7 +343,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>>),
+    NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
@@ -352,14 +352,14 @@ pub enum TypedMainModuleSubstateValue {
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
-    AccountVaultIndex(KeyValueEntrySubstate<AccountVaultIndexEntry>),
+    AccountVaultIndex(KeyValueEntrySubstate<Own>),
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(KeyValueEntrySubstate<Option<ScryptoOwnedRawValue>>),
+    GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
 }
 
 #[derive(Debug, Clone)]

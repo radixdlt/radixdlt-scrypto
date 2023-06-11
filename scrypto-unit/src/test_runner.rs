@@ -383,7 +383,7 @@ impl TestRunner {
 
         let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<Option<MetadataValue>>>(
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
