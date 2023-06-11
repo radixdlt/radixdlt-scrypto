@@ -88,6 +88,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_object(
         &mut self,
         _blueprint_ident: &str,
+        _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,

@@ -16,6 +16,7 @@ CALL_METHOD
 # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
 # default resource behavior where it can be withdrawn and deposited by anybody.
 CREATE_FUNGIBLE_RESOURCE
+    false # Track Total Supply
     18u8
     Map<String, Enum>(
         "name" =>  Enum<Metadata::String>("MyResource"),                                        # Resource Name

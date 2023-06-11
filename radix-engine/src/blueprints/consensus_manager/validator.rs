@@ -185,7 +185,7 @@ impl ValidatorBlueprint {
             let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
                 xrd_bucket_amount,
                 xrd_vault.amount(api)?,
-                stake_unit_resman.total_supply(api)?,
+                stake_unit_resman.total_supply(api)?.unwrap(),
             );
 
             let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
@@ -232,7 +232,7 @@ impl ValidatorBlueprint {
             let mut stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
 
             let active_stake_amount = stake_vault.amount(api)?;
-            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
             let xrd_amount = if total_stake_unit_supply.is_zero() {
                 Decimal::zero()
             } else {
@@ -770,7 +770,7 @@ impl ValidatorBlueprint {
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
         let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
         let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
-        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             validator_fee_xrd,
             post_emission_stake_pool_xrd,
@@ -969,8 +969,13 @@ impl ValidatorCreator {
         stake_unit_resource_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let stake_unit_resman =
-            ResourceManager::new_fungible(18, BTreeMap::new(), stake_unit_resource_auth, api)?;
+        let stake_unit_resman = ResourceManager::new_fungible(
+            true,
+            18,
+            BTreeMap::new(),
+            stake_unit_resource_auth,
+            api,
+        )?;
 
         Ok(stake_unit_resman.0)
     }
@@ -997,6 +1002,7 @@ impl ValidatorCreator {
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
             NonFungibleIdType::UUID,
+            true,
             BTreeMap::new(),
             unstake_nft_auth,
             api,

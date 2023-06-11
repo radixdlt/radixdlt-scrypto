@@ -1394,7 +1394,7 @@ mod tests {
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::schema::PackageSchema;
+    use radix_engine_interface::schema::BlueprintSchema;
     use radix_engine_interface::types::{NonFungibleData, RoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
@@ -1613,7 +1613,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
             InstructionV1::CallFunction {
                 package_address: PACKAGE_PACKAGE.into(),
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -1627,9 +1627,7 @@ mod tests {
                         .try_into()
                         .unwrap()
                     ),
-                    PackageSchema {
-                        blueprints: BTreeMap::new()
-                    },
+                    BTreeMap::<String, BlueprintSchema>::new(),
                     BTreeMap::<String, RoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
                     Roles::new()
@@ -1643,6 +1641,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE
                 Enum<NonFungibleIdType::Integer>()
+                false
                 Tuple(
                     Tuple(
                         Array<Enum>(),
@@ -1671,6 +1670,7 @@ mod tests {
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
+                    track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([(
                         "name".to_string(),
@@ -1714,6 +1714,7 @@ mod tests {
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                        track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
                         ),
@@ -1732,6 +1733,7 @@ mod tests {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 Enum<NonFungibleIdType::Integer>()
+                false
                 Tuple(
                     Tuple(
                         Array<Enum>(),
@@ -1770,6 +1772,7 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: BTreeMap::from([(
@@ -1803,6 +1806,7 @@ mod tests {
     fn test_create_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE
+                false
                 18u8
                 Map<String, Enum>(
                     "name" => Enum<Metadata::String>("Token")
@@ -1823,6 +1827,7 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
+                    track_total_supply: false,
                     divisibility: 18,
                     metadata: BTreeMap::from([(
                         "name".to_string(),
@@ -1847,6 +1852,7 @@ mod tests {
     fn test_create_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                false
                 18u8
                 Map<String, Enum>(
                     "name" => Enum<Metadata::String>("Token")
@@ -1869,6 +1875,7 @@ mod tests {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                    track_total_supply: false,
                     divisibility: 18,
                     metadata: BTreeMap::from([(
                         "name".to_string(),

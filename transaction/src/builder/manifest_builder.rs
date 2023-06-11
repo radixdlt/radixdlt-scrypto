@@ -21,8 +21,8 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltiesInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PACKAGE_BLUEPRINT,
+    PackageClaimRoyaltiesInput, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PackageSetup, PACKAGE_BLUEPRINT,
     PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
     PACKAGE_SET_ROYALTY_IDENT,
 };
@@ -382,6 +382,7 @@ impl ManifestBuilder {
     /// Creates a fungible resource
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
@@ -399,6 +400,7 @@ impl ManifestBuilder {
                     .to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility,
+                    track_total_supply,
                     metadata,
                     access_rules,
                     initial_supply,
@@ -411,6 +413,7 @@ impl ManifestBuilder {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
                     divisibility,
+                    track_total_supply,
                     metadata,
                     access_rules,
                 }),
@@ -424,6 +427,7 @@ impl ManifestBuilder {
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<T>,
@@ -452,6 +456,7 @@ impl ManifestBuilder {
                 args: to_manifest_value(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type,
+                        track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                         metadata,
                         access_rules,
@@ -466,6 +471,7 @@ impl ManifestBuilder {
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type,
+                    track_total_supply,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                     metadata,
                     access_rules,
@@ -702,7 +708,7 @@ impl ManifestBuilder {
     pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> &mut Self {
@@ -715,7 +721,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                definition,
+                setup: definition,
                 metadata,
                 package_address: None,
                 owner_rule,
@@ -725,7 +731,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package with an owner badge.
-    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageDefinition) -> &mut Self {
+    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageSetup) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
@@ -735,7 +741,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                definition,
+                setup: definition,
                 metadata: BTreeMap::new(),
             }),
         });
@@ -746,7 +752,7 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -759,7 +765,7 @@ impl ManifestBuilder {
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
-                definition,
+                setup: definition,
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
@@ -799,7 +805,7 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(18, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(true, 18, metadata, access_rules, initial_supply)
     }
 
     /// Creates a token resource with fixed supply.
@@ -814,7 +820,7 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(18, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(true, 18, metadata, access_rules, Some(initial_supply))
     }
 
     /// Creates a badge resource with mutable supply.
@@ -832,7 +838,7 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(0, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(false, 0, metadata, access_rules, initial_supply)
     }
 
     /// Creates a badge resource with fixed supply.
@@ -847,7 +853,7 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(0, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(false, 0, metadata, access_rules, Some(initial_supply))
     }
 
     pub fn burn_from_worktop(

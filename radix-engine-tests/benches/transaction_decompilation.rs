@@ -79,6 +79,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
         builder.lock_fee(component_address, 10.into());
         builder.create_non_fungible_resource(
             NonFungibleIdType::Integer,
+            false,
             BTreeMap::new(),
             BTreeMap::<_, (_, AccessRule)>::new(),
             Some(

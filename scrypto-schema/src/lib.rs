@@ -40,15 +40,6 @@ impl KeyValueStoreSchema {
     }
 }
 
-// We keep one self-contained schema per blueprint:
-// - Easier macro to export schema, as they work at blueprint level
-// - Can always combine multiple schemas into one for storage benefits
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct PackageSchema {
-    pub blueprints: BTreeMap<String, BlueprintSchema>,
-}
-
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct SchemaMethodKey {
@@ -98,22 +89,18 @@ impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
 pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
     pub schema: ScryptoSchema,
-
     /// State Schema
-    pub fields: Vec<LocalTypeIndex>,
+    pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema>,
-
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
     /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
+
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
-
     pub dependencies: BTreeSet<GlobalAddress>,
-    // TODO: Move out of schema
-    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub features: BTreeSet<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -143,11 +130,27 @@ pub enum BlueprintCollectionSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum FeaturedSchema<V> {
+    Normal { value: V },
+    Conditional { feature: String, value: V },
+}
+
+impl<V> FeaturedSchema<V> {
+    pub fn normal<I: Into<V>>(value: I) -> Self {
+        FeaturedSchema::Normal {
+            value: value.into(),
+        }
+    }
+}
+
+pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
-    pub export_name: String,
+    pub export: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -206,8 +209,7 @@ impl Default for BlueprintSchema {
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
             dependencies: BTreeSet::default(),
-            method_auth_template: BTreeMap::default(),
-            outer_method_auth_template: BTreeMap::default(),
+            features: BTreeSet::default(),
         }
     }
 }

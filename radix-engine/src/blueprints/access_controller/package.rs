@@ -18,10 +18,11 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
-use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
+use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, ReceiverInfo};
 use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
@@ -162,11 +163,13 @@ impl From<AccessControllerError> for RuntimeError {
 pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<AccessControllerSubstate>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -177,7 +180,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
-                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -188,7 +191,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(),
-                export_name: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -199,7 +202,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCreateProofOutput>(),
-                export_name: ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -210,7 +213,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryOutput>(),
-                export_name: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -221,7 +224,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryOutput>(),
-                export_name: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -232,7 +235,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput>(),
-                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -243,7 +246,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput>(),
-                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -254,7 +257,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryOutput>(),
-                export_name: ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -265,7 +268,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalOutput>(),
-                export_name: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -276,7 +279,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalOutput>(),
-                export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -287,7 +290,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
-                export_name: ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -298,7 +301,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(),
-                export_name: ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -309,7 +312,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(),
-                export_name: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -320,7 +323,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>(),
-                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -331,7 +334,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
-                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -342,7 +345,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>(),
-                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -353,7 +356,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>(),
-                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -364,7 +367,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>(),
-                export_name: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -375,7 +378,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>(),
-                export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -386,7 +389,7 @@ impl AccessControllerNativePackage {
                     .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(),
-                export_name: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
             },
         );
 
@@ -437,9 +440,9 @@ impl AccessControllerNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        let schema = PackageSchema {
-            blueprints: btreemap!(
-                ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
+        let blueprints = btreemap!(
+            ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: BlueprintSchema {
                     outer_blueprint: None,
                     schema,
                     fields,
@@ -450,23 +453,20 @@ impl AccessControllerNativePackage {
                     dependencies: btreeset!(
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
+                    features: btreeset!(),
+                },
+                function_auth: btreemap!(
+                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
-                }
-            ),
-        };
-
-        let function_access_rules = btreemap!(
-            ACCESS_CONTROLLER_BLUEPRINT.to_string() => btreemap!(
-                ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
-            )
+                },
+            }
         );
 
-        PackageDefinition {
-            schema,
-            function_access_rules,
-            royalty_config: btreemap!(),
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]
@@ -682,6 +682,7 @@ impl AccessControllerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
                         id_type: NonFungibleIdType::Integer,
+                        track_total_supply: true,
                         non_fungible_schema,
                         metadata: Default::default(),
                         access_rules: access_rules.into(),

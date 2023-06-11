@@ -199,6 +199,7 @@ impl AccountBlueprint {
     {
         let account_id = api.new_object(
             ACCOUNT_BLUEPRINT,
+            vec![],
             None,
             vec![scrypto_encode(&AccountSubstate {
                 default_deposit_rule: AccountDefaultDepositRule::Accept,
@@ -391,6 +392,38 @@ impl AccountBlueprint {
         )?;
 
         Ok(bucket)
+    }
+
+    pub fn burn<Y>(
+        resource_address: ResourceAddress,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::get_vault(
+            resource_address,
+            |vault, api| vault.burn(amount, api),
+            false,
+            api,
+        )
+    }
+
+    pub fn burn_non_fungibles<Y>(
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::get_vault(
+            resource_address,
+            |vault, api| vault.burn_non_fungibles(ids, api),
+            false,
+            api,
+        )
     }
 
     pub fn lock_fee_and_withdraw<Y>(

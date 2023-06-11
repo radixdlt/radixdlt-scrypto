@@ -17,11 +17,13 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::ReceiverInfo;
 use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
-use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
@@ -30,7 +32,7 @@ const IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed2551
 pub struct IdentityNativePackage;
 
 impl IdentityNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let fields = Vec::new();
@@ -42,7 +44,7 @@ impl IdentityNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
-                export_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+                export: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -51,7 +53,7 @@ impl IdentityNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
-                export_name: IDENTITY_CREATE_IDENT.to_string(),
+                export: IDENTITY_CREATE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -62,7 +64,7 @@ impl IdentityNativePackage {
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
-                export_name: IDENTITY_SECURIFY_IDENT.to_string(),
+                export: IDENTITY_SECURIFY_IDENT.to_string(),
             },
         );
 
@@ -87,9 +89,9 @@ impl IdentityNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
-        let schema = PackageSchema {
-            blueprints: btreemap!(
-                IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
+        let blueprints = btreemap!(
+            IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: BlueprintSchema {
                     outer_blueprint: None,
                     schema,
                     fields,
@@ -103,24 +105,21 @@ impl IdentityNativePackage {
                         IDENTITY_OWNER_BADGE.into(),
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     ),
+                    features: btreeset!(),
+                },
+                function_auth: btreemap!(
+                    IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
+                    IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 }
-            ),
-        };
-
-        let function_access_rules = btreemap!(
-            IDENTITY_BLUEPRINT.to_string() => btreemap!(
-                IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
-                IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
-            )
+            }
         );
 
-        PackageDefinition {
-            schema,
-            function_access_rules,
-            royalty_config: btreemap!(),
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]

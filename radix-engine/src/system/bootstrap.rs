@@ -303,7 +303,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: PACKAGE_CODE_ID,
-                definition: PackageNativePackage::definition(),
+                setup: PackageNativePackage::definition(),
                 metadata: BTreeMap::new(),
             }),
         });
@@ -322,7 +322,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: METADATA_CODE_ID,
-                definition: MetadataNativePackage::definition(),
+                setup: MetadataNativePackage::definition(),
                 metadata: BTreeMap::new(),
             }),
         });
@@ -341,7 +341,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: ROYALTY_CODE_ID,
-                definition: RoyaltyNativePackage::definition(),
+                setup: RoyaltyNativePackage::definition(),
                 metadata: BTreeMap::new(),
             }),
         });
@@ -360,7 +360,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: ACCESS_RULES_CODE_ID,
-                definition: AccessRulesNativePackage::definition(),
+                setup: AccessRulesNativePackage::definition(),
                 metadata: BTreeMap::new(),
             }),
         });
@@ -379,7 +379,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
-                definition: ResourceManagerNativePackage::definition(),
+                setup: ResourceManagerNativePackage::definition(),
                 metadata: BTreeMap::new(),
             }),
         });
@@ -427,6 +427,7 @@ pub fn create_system_bootstrap_transaction(
                 .to_string(),
             args: to_manifest_value(
                 &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
+                    track_total_supply: false,
                     divisibility: 18,
                     metadata,
                     access_rules,
@@ -452,6 +453,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -475,6 +477,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -505,6 +508,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
@@ -535,6 +539,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
@@ -552,7 +557,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: IdentityNativePackage::definition(),
+                setup: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
             }),
@@ -571,7 +576,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: ConsensusManagerNativePackage::definition(),
+                setup: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
             }),
@@ -600,6 +605,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::UUID,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata: btreemap!(),
                 access_rules,
@@ -617,7 +623,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: AccountNativePackage::definition(),
+                setup: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
             }),
@@ -636,7 +642,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: AccessControllerNativePackage::definition(),
+                setup: AccessControllerNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
             }),
@@ -655,7 +661,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: PoolNativePackage::definition(),
+                setup: PoolNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: POOL_ID,
             }),
@@ -674,7 +680,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: TransactionProcessorNativePackage::definition(),
+                setup: TransactionProcessorNativePackage::definition(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
             }),
@@ -696,6 +702,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -719,6 +726,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -742,6 +750,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
                 id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
@@ -767,7 +776,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(faucet_code_hash.0),
-                definition: manifest_decode(&faucet_abi).unwrap(),
+                setup: manifest_decode(&faucet_abi).unwrap(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,
             }),
@@ -793,7 +802,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(genesis_helper_code_hash.0),
-                definition: manifest_decode(&genesis_helper_abi).unwrap(),
+                setup: manifest_decode(&genesis_helper_abi).unwrap(),
                 metadata: BTreeMap::new(),
                 owner_rule: OwnerRole::None,
             }),

@@ -77,10 +77,6 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
     Blob("${code_blob_hash}")
     Tuple(
-        Tuple(
-            Map<String, Tuple>()
-        ),
-        Map<String, Map>(),
         Map<String, Tuple>()
     )
     Map<String, Enum>()
@@ -668,6 +664,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    false
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(
@@ -720,6 +717,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE
+    false
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(
@@ -769,6 +767,7 @@ CALL_METHOD
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
+    false
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -838,6 +837,7 @@ CALL_METHOD
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum<1u8>()
+    false
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -959,7 +959,9 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Enum<0u8>()
+    Enum<2u8>(
+        Enum<0u8>()
+    )
 ;
 CREATE_ACCOUNT;
 "##,
@@ -1127,6 +1129,7 @@ CREATE_ACCESS_CONTROLLER
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 BTreeMap::<_, (_, AccessRule)>::new(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),

@@ -95,6 +95,7 @@ pub struct NonFungibleResourceManagerBlueprint;
 impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -107,8 +108,10 @@ impl NonFungibleResourceManagerBlueprint {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
+
         Self::create_with_address(
             id_type,
+            track_total_supply,
             non_fungible_schema,
             metadata,
             access_rules,
@@ -119,6 +122,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_address<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -137,8 +141,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -159,6 +169,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_initial_supply<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -214,8 +225,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -237,6 +254,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_uuid_with_initial_supply<Y>(
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -273,8 +291,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
@@ -323,6 +347,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update total supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -381,6 +410,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update Total Supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -441,6 +475,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update total supply
+        // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -631,6 +670,21 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::burn_internal(bucket, api)
+    }
+
+    /// Only callable within this package - this is to allow the burning of tokens from a vault.
+    pub(crate) fn package_burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::burn_internal(bucket, api)
+    }
+
+    fn burn_internal<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
         // Drop the bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -644,6 +698,10 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -702,15 +760,17 @@ impl NonFungibleResourceManagerBlueprint {
             ],
         )?;
 
+        // These roles define an extra filter on top of the roles defined on the resource manager
+        // The purpose of these roles is to enable freezing of individual vaults
         // TODO: Figure out how to use SELF_ROLE rather than package
         let mut roles = Roles::new();
         roles.define_role(
-            "this_package",
+            RESOURCE_PACKAGE_ROLE,
             RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         );
         roles.define_role(
             VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, ["this_package"], true),
+            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
         );
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
@@ -736,16 +796,24 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::TotalSupply.into(),
-            LockFlags::read_only(),
-        )?;
-        let total_supply: Decimal = api.field_lock_read_typed(handle)?;
-        Ok(total_supply)
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
+            let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                NonFungibleResourceManagerField::TotalSupply.into(),
+                LockFlags::read_only(),
+            )?;
+            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            Ok(Some(total_supply))
+        } else {
+            Ok(None)
+        }
     }
 }

@@ -59,3 +59,12 @@ pub struct NonFungibleVaultUnlockNonFungiblesInput {
 }
 
 pub type NonFungibleVaultUnlockNonFungiblesOutput = ();
+
+pub const NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT: &str = "burn_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultBurnNonFungiblesInput {
+    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type NonFungibleVaultBurnNonFungiblesOutput = ();

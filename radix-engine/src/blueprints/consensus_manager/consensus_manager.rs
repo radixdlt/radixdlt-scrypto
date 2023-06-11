@@ -203,6 +203,7 @@ impl ConsensusManagerBlueprint {
 
             ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
                 NonFungibleIdType::UUID,
+                true,
                 metadata,
                 access_rules,
                 validator_token_address_reservation,

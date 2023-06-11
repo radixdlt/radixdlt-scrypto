@@ -1,3 +1,4 @@
+use crate::blueprints::package::BlueprintTemplate;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -58,19 +59,13 @@ pub struct PackageRoyaltySubstate {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedPackageSchema {
-    pub blueprints: BTreeMap<String, IndexedBlueprintSchema>,
+    pub blueprints: BTreeMap<String, BlueprintDefinition>,
 }
 
-impl From<PackageSchema> for IndexedPackageSchema {
-    fn from(value: PackageSchema) -> Self {
-        IndexedPackageSchema {
-            blueprints: value
-                .blueprints
-                .into_iter()
-                .map(|(name, b)| (name, b.into()))
-                .collect(),
-        }
-    }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintDefinition {
+    pub schema: IndexedBlueprintSchema,
+    pub template: BlueprintTemplate,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -98,8 +93,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
             dependencies: schema.dependencies,
-            method_permissions_instance: schema.method_auth_template,
-            outer_method_permissions_instance: schema.outer_method_auth_template,
+            features: schema.features,
         }
     }
 }
@@ -109,7 +103,7 @@ pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
 
     pub schema: ScryptoSchema,
-    pub fields: Option<(PartitionOffset, Vec<LocalTypeIndex>)>,
+    pub fields: Option<(PartitionOffset, Vec<FieldSchema>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
 
     /// For each function, there is a [`FunctionSchema`]
@@ -119,9 +113,7 @@ pub struct IndexedBlueprintSchema {
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
     pub dependencies: BTreeSet<GlobalAddress>,
-
-    pub method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub outer_method_permissions_instance: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub features: BTreeSet<String>,
 }
 
 impl IndexedBlueprintSchema {
@@ -132,7 +124,7 @@ impl IndexedBlueprintSchema {
         }
     }
 
-    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, LocalTypeIndex)> {
+    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, FieldSchema)> {
         match &self.fields {
             Some((offset, fields)) => {
                 let field_index: usize = field_index.into();

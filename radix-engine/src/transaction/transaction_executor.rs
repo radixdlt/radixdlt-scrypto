@@ -210,7 +210,7 @@ where
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(executable.transaction_hash().clone());
         let mut system = SystemConfig {
-            blueprint_schema_cache: NonIterMap::new(),
+            blueprint_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
