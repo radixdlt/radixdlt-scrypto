@@ -74,6 +74,13 @@ impl<V> KeyValueEntrySubstate<V> {
         }
     }
 
+    pub fn immutable_entry(value: V) -> Self {
+        Self {
+            value: Some(value),
+            mutability: SubstateMutability::Immutable,
+        }
+    }
+
     pub fn remove(&mut self) -> Option<V> {
         self.value.take()
     }
@@ -274,7 +281,7 @@ where
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, RuntimeError> {
         let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
 
@@ -385,7 +392,7 @@ where
         features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
+        mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<
         (
             Option<String>,
@@ -485,7 +492,7 @@ where
                     BlueprintCollectionSchema::KeyValueStore(blueprint_kv_schema) => {
                         let entries = kv_entries.remove(&index);
                         if let Some(entries) = entries {
-                            for (key, value) in entries {
+                            for (key, (value, freeze)) in entries {
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &key,
                                     &blueprint_kv_schema.key,
@@ -517,7 +524,12 @@ where
                                 })?;
 
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let kv_entry = KeyValueEntrySubstate::entry(value);
+                                let kv_entry = if freeze {
+                                    KeyValueEntrySubstate::immutable_entry(value)
+                                } else {
+                                    KeyValueEntrySubstate::entry(value)
+                                };
+
                                 let value = IndexedScryptoValue::from_typed(&kv_entry);
 
                                 if !blueprint_kv_schema.can_own {
@@ -1030,7 +1042,7 @@ where
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();

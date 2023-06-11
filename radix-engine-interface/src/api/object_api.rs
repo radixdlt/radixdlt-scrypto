@@ -93,7 +93,7 @@ pub trait ClientObjectApi<E> {
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object

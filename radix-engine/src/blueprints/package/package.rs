@@ -244,7 +244,12 @@ where
                 .at_offset(PartitionOffset(offset))
                 .unwrap();
 
-            api.kernel_move_module(access_rules.0.as_node_id(), src, package_address.as_node_id(), dest)?;
+            api.kernel_move_module(
+                access_rules.0.as_node_id(),
+                src,
+                package_address.as_node_id(),
+                dest,
+            )?;
         }
 
         api.kernel_drop_node(access_rules.0.as_node_id())?;

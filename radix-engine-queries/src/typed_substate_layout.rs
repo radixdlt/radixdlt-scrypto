@@ -347,7 +347,7 @@ pub enum TypedTypeInfoModuleFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModule {
     Rule(KeyValueEntrySubstate<AccessRule>),
-    Mutability(KeyValueEntrySubstate<(RoleList, bool)>),
+    Mutability(KeyValueEntrySubstate<RoleList>),
 }
 
 #[derive(Debug, Clone)]
@@ -488,14 +488,12 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
-            TypedAccessRulesSubstateKey::Rule(_) => {
-                TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Rule(scrypto_decode(data)?))
-            }
-            TypedAccessRulesSubstateKey::Mutability(_) => {
-                TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Mutability(
-                    scrypto_decode(data)?
-                ))
-            }
+            TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
+                TypedAccessRulesModule::Rule(scrypto_decode(data)?),
+            ),
+            TypedAccessRulesSubstateKey::Mutability(_) => TypedSubstateValue::AccessRulesModule(
+                TypedAccessRulesModule::Mutability(scrypto_decode(data)?),
+            ),
         },
         TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {
             TypedSubstateValue::RoyaltyModuleFieldValue(match royalty_offset {
