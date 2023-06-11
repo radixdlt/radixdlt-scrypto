@@ -32,7 +32,7 @@ pub enum ManifestIdValidationError {
     ProofNotFound(ManifestProof),
     BucketLocked(ManifestBucket),
     AddressReservationNotFound(ManifestAddressReservation),
-    NamedAddressNotFound(ManifestNamedAddress),
+    NamedAddressNotFound(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

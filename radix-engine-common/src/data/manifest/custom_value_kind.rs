@@ -11,7 +11,6 @@ pub const VALUE_KIND_DECIMAL: u8 = 0x85;
 pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0x86;
 pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
 pub const VALUE_KIND_ADDRESS_RESERVATION: u8 = 0x88;
-pub const VALUE_KIND_NAMED_ADDRESS: u8 = 0x89;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(
@@ -30,7 +29,6 @@ pub enum ManifestCustomValueKind {
     PreciseDecimal,
     NonFungibleLocalId,
     AddressReservation,
-    NamedAddress,
 }
 
 impl From<ManifestCustomValueKind> for ValueKind<ManifestCustomValueKind> {
@@ -51,7 +49,6 @@ impl CustomValueKind for ManifestCustomValueKind {
             Self::PreciseDecimal => VALUE_KIND_PRECISE_DECIMAL,
             Self::NonFungibleLocalId => VALUE_KIND_NON_FUNGIBLE_LOCAL_ID,
             Self::AddressReservation => VALUE_KIND_ADDRESS_RESERVATION,
-            Self::NamedAddress => VALUE_KIND_NAMED_ADDRESS,
         }
     }
 
@@ -66,7 +63,6 @@ impl CustomValueKind for ManifestCustomValueKind {
             VALUE_KIND_PRECISE_DECIMAL => Some(ManifestCustomValueKind::PreciseDecimal),
             VALUE_KIND_NON_FUNGIBLE_LOCAL_ID => Some(ManifestCustomValueKind::NonFungibleLocalId),
             VALUE_KIND_ADDRESS_RESERVATION => Some(ManifestCustomValueKind::AddressReservation),
-            VALUE_KIND_NAMED_ADDRESS => Some(ManifestCustomValueKind::NamedAddress),
             _ => None,
         }
     }

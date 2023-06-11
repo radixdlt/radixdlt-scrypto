@@ -108,7 +108,6 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             }
             ManifestCustomValue::Address(address) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Reference
-                let node_id = address.0;
                 let validation = schema
                     .resolve_type_validation(type_index)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?;
@@ -117,16 +116,23 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                     TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
                         reference_validation,
                     )) => {
-                        let is_valid = match reference_validation {
-                            ReferenceValidation::IsGlobal => node_id.is_global(),
-                            ReferenceValidation::IsGlobalPackage => node_id.is_global_package(),
-                            ReferenceValidation::IsGlobalComponent => node_id.is_global_component(),
-                            ReferenceValidation::IsGlobalResourceManager => {
-                                node_id.is_global_resource_manager()
+                        let is_valid = match address {
+                            model::ManifestAddress::Static(node_id) => match reference_validation {
+                                ReferenceValidation::IsGlobal => node_id.is_global(),
+                                ReferenceValidation::IsGlobalPackage => node_id.is_global_package(),
+                                ReferenceValidation::IsGlobalComponent => {
+                                    node_id.is_global_component()
+                                }
+                                ReferenceValidation::IsGlobalResourceManager => {
+                                    node_id.is_global_resource_manager()
+                                }
+                                ReferenceValidation::IsGlobalTyped(_, _) => node_id.is_global(), // Assume yes
+                                ReferenceValidation::IsInternal => node_id.is_internal(),
+                                ReferenceValidation::IsInternalTyped(_, _) => node_id.is_internal(), // Assume yes
+                            },
+                            model::ManifestAddress::Named(_) => {
+                                reference_validation.could_match_manifest_address()
                             }
-                            ReferenceValidation::IsGlobalTyped(_, _) => node_id.is_global(), // Assume yes
-                            ReferenceValidation::IsInternal => node_id.is_internal(),
-                            ReferenceValidation::IsInternalTyped(_, _) => node_id.is_internal(), // Assume yes
                         };
                         if !is_valid {
                             return Err(PayloadValidationError::ValidationError(
@@ -193,28 +199,6 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                                 ValidationError::CustomError(format!(
                                     "Expected Own<{:?}>, but found manifest address_reservation",
                                     own_validation
-                                )),
-                            ));
-                        }
-                    }
-                    _ => return Err(PayloadValidationError::SchemaInconsistency),
-                };
-            }
-            ManifestCustomValue::NamedAddress(_) => {
-                // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Reference
-                let validation = schema
-                    .resolve_type_validation(type_index)
-                    .ok_or(PayloadValidationError::SchemaInconsistency)?;
-                match validation {
-                    TypeValidation::None => {}
-                    TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                        reference_validation,
-                    )) => {
-                        if !reference_validation.could_match_manifest_allocated_address() {
-                            return Err(PayloadValidationError::ValidationError(
-                                ValidationError::CustomError(format!(
-                                    "Expected Reference<{:?}>, but found manifest named address",
-                                    reference_validation
                                 )),
                             ));
                         }
@@ -294,7 +278,9 @@ mod tests {
     fn valid_manifest_composite_value_passes_validation_against_scrypto_schema() {
         let payload = manifest_encode(&(
             ManifestValue::Custom {
-                value: ManifestCustomValue::Address(ManifestAddress(XRD.as_node_id().clone())),
+                value: ManifestCustomValue::Address(ManifestAddress::Static(
+                    XRD.as_node_id().clone(),
+                )),
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::Blob(ManifestBlobRef([0; 32])),
@@ -341,7 +327,7 @@ mod tests {
     #[test]
     fn manifest_address_fails_validation_against_mismatching_scrypto_schema() {
         let payload = manifest_encode(&ManifestValue::Custom {
-            value: ManifestCustomValue::Address(ManifestAddress(XRD.as_node_id().clone())),
+            value: ManifestCustomValue::Address(ManifestAddress::Static(XRD.as_node_id().clone())),
         })
         .unwrap();
 

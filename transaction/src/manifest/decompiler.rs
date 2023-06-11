@@ -78,7 +78,7 @@ pub struct DecompilationContext<'a> {
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,
     pub address_reservation_names: NonIterMap<ManifestAddressReservation, String>,
-    pub named_address_names: NonIterMap<ManifestNamedAddress, String>,
+    pub address_names: NonIterMap<u32, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
@@ -102,44 +102,43 @@ impl<'a> DecompilationContext<'a> {
             &self.bucket_names,
             &self.proof_names,
             &self.address_reservation_names,
-            &self.named_address_names,
+            &self.address_names,
         )
         .with_multi_line(4, 4)
     }
 
     pub fn new_bucket(&mut self) -> ManifestBucket {
-        let bucket = self.id_allocator.new_bucket_id();
+        let id = self.id_allocator.new_bucket_id();
         let name = format!("bucket{}", self.bucket_names.len() + 1);
-        self.bucket_names.insert(bucket, name.clone());
-        bucket
+        self.bucket_names.insert(id, name.clone());
+        id
     }
 
     pub fn new_proof(&mut self) -> ManifestProof {
-        let proof = self.id_allocator.new_proof_id();
+        let id = self.id_allocator.new_proof_id();
         let name = format!("proof{}", self.proof_names.len() + 1);
-        self.proof_names.insert(proof, name.clone());
-        proof
+        self.proof_names.insert(id, name.clone());
+        id
     }
 
     pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
-        let address_reservation = self.id_allocator.new_address_reservation_id();
+        let id = self.id_allocator.new_address_reservation_id();
         let name = format!("reservation{}", self.address_reservation_names.len() + 1);
-        self.address_reservation_names
-            .insert(address_reservation, name.clone());
-        address_reservation
+        self.address_reservation_names.insert(id, name.clone());
+        id
     }
 
-    pub fn new_named_address(&mut self) -> ManifestNamedAddress {
-        let named_address = self.id_allocator.new_named_address_id();
-        let name = format!("address{}", self.named_address_names.len() + 1);
-        self.named_address_names.insert(named_address, name.clone());
-        named_address
+    pub fn new_address(&mut self) -> ManifestAddress {
+        let id = self.id_allocator.new_address_id();
+        let name = format!("address{}", self.address_names.len() + 1);
+        self.address_names.insert(id, name.clone());
+        ManifestAddress::Named(id)
     }
 
     /// Allocate addresses before transaction, for system transactions only.
     pub fn preallocate_addresses(&mut self, n: u32) {
         for _ in 0..n {
-            self.new_named_address();
+            self.new_address();
         }
     }
 }
@@ -591,7 +590,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             blueprint_name,
         } => {
             let address_reservation = context.new_address_reservation();
-            let named_address = context.new_named_address();
+            let named_address = context.new_address();
             (
                 "ALLOCATE_GLOBAL_ADDRESS",
                 to_manifest_value(&(

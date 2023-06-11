@@ -7,6 +7,7 @@ use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
+use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
@@ -123,7 +124,7 @@ pub struct NameResolver {
     named_buckets: BTreeMap<String, ManifestBucket>,
     named_proofs: BTreeMap<String, ManifestProof>,
     named_address_reservations: BTreeMap<String, ManifestAddressReservation>,
-    named_address_names: BTreeMap<String, ManifestNamedAddress>,
+    named_addresses: BTreeMap<String, u32>,
 }
 
 impl NameResolver {
@@ -174,12 +175,12 @@ impl NameResolver {
     pub fn insert_named_address(
         &mut self,
         name: String,
-        named_address_id: ManifestNamedAddress,
+        address_id: u32,
     ) -> Result<(), NameResolverError> {
-        if self.named_address_names.contains_key(&name) {
+        if self.named_addresses.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
-            self.named_address_names.insert(name, named_address_id);
+            self.named_addresses.insert(name, address_id);
             Ok(())
         }
     }
@@ -208,12 +209,9 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve_named_address(
-        &mut self,
-        name: &str,
-    ) -> Result<ManifestNamedAddress, NameResolverError> {
-        match self.named_address_names.get(name).cloned() {
-            Some(named_address_id) => Ok(named_address_id),
+    pub fn resolve_named_address(&mut self, name: &str) -> Result<u32, NameResolverError> {
+        match self.named_addresses.get(name).cloned() {
+            Some(address_id) => Ok(address_id),
             None => Err(NameResolverError::UndefinedNamedAddress(name.into())),
         }
     }
@@ -577,8 +575,8 @@ where
             let address_reservation_id = id_validator.new_address_reservation();
             declare_address_reservation(address_reservation, resolver, address_reservation_id)?;
 
-            let named_address_id = id_validator.new_named_address();
-            declare_named_address(named_address, resolver, named_address_id)?;
+            let address_id = id_validator.new_named_address();
+            declare_named_address(named_address, resolver, address_id)?;
 
             InstructionV1::AllocateGlobalAddress {
                 package_address: generate_package_address(package_address, bech32_decoder)?,
@@ -851,7 +849,7 @@ fn generate_dynamic_global_address(
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
-                        return Ok(address.into());
+                        return Ok(DynamicGlobalAddress::Static(address));
                     }
                 }
                 return Err(GeneratorError::InvalidGlobalAddress(s.into()));
@@ -859,7 +857,7 @@ fn generate_dynamic_global_address(
             v => return invalid_type!(v, ast::ValueKind::String),
         },
         ast::Value::NamedAddress(inner) => match &**inner {
-            ast::Value::U32(n) => Ok(ManifestNamedAddress(*n).into()),
+            ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
                 .map(Into::into)
@@ -873,32 +871,6 @@ fn generate_dynamic_global_address(
             ast::ValueKind::ResourceAddress,
             ast::ValueKind::ComponentAddress,
             ast::ValueKind::NamedAddress
-        ),
-    }
-}
-
-fn generate_global_address(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<GlobalAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(value) => match value.borrow() {
-            ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
-                    if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
-                        return Ok(address);
-                    }
-                }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
-            }
-            v => return invalid_type!(v, ast::ValueKind::String),
-        },
-        v => invalid_type!(
-            v,
-            ast::ValueKind::Address,
-            ast::ValueKind::PackageAddress,
-            ast::ValueKind::ResourceAddress,
-            ast::ValueKind::ComponentAddress
         ),
     }
 }
@@ -996,12 +968,12 @@ fn declare_address_reservation(
 fn declare_named_address(
     value: &ast::Value,
     resolver: &mut NameResolver,
-    named_address_id: ManifestNamedAddress,
+    address_id: u32,
 ) -> Result<(), GeneratorError> {
     match value {
         ast::Value::NamedAddress(inner) => match &**inner {
             ast::Value::String(name) => resolver
-                .insert_named_address(name.to_string(), named_address_id)
+                .insert_named_address(name.to_string(), address_id)
                 .map_err(GeneratorError::NameResolverError),
             v => invalid_type!(v, ast::ValueKind::String),
         },
@@ -1041,15 +1013,46 @@ fn generate_address_reservation(
     }
 }
 
+fn generate_static_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<ManifestAddress, GeneratorError> {
+    match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => {
+                // Check bech32 && entity type
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    // Check length
+                    if full_data.len() == NodeId::LENGTH {
+                        return Ok(ManifestAddress::Static(NodeId(
+                            full_data.try_into().unwrap(),
+                        )));
+                    }
+                }
+                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+            }
+            v => return invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(
+            v,
+            ast::ValueKind::Address,
+            ast::ValueKind::PackageAddress,
+            ast::ValueKind::ResourceAddress,
+            ast::ValueKind::ComponentAddress
+        ),
+    }
+}
+
 fn generate_named_address(
     value: &ast::Value,
     resolver: &mut NameResolver,
-) -> Result<ManifestNamedAddress, GeneratorError> {
+) -> Result<ManifestAddress, GeneratorError> {
     match value {
         ast::Value::NamedAddress(inner) => match &**inner {
-            ast::Value::U32(n) => Ok(ManifestNamedAddress(*n)),
+            ast::Value::U32(n) => Ok(ManifestAddress::Named(*n)),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
+                .map(|x| ManifestAddress::Named(x))
                 .map_err(GeneratorError::NameResolverError),
             v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
         },
@@ -1263,7 +1266,7 @@ where
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ManifestCustomValue::Address(ManifestAddress(
+                        value: ManifestCustomValue::Address(ManifestAddress::Static(
                             global_id.resource_address().into(),
                         )),
                     },
@@ -1279,8 +1282,13 @@ where
         // Custom Types
         // ==============
         ast::Value::Address(_) => {
-            generate_global_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(ManifestAddress(v.into())),
+            generate_static_address(value, bech32_decoder).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(v),
+            })
+        }
+        ast::Value::NamedAddress(_) => {
+            generate_named_address(value, resolver).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(v),
             })
         }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
@@ -1309,11 +1317,6 @@ where
         ast::Value::AddressReservation(_) => {
             generate_address_reservation(value, resolver).map(|v| Value::Custom {
                 value: ManifestCustomValue::AddressReservation(v),
-            })
-        }
-        ast::Value::NamedAddress(_) => {
-            generate_named_address(value, resolver).map(|v| Value::Custom {
-                value: ManifestCustomValue::NamedAddress(v),
             })
         }
     }

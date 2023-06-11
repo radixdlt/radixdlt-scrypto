@@ -45,7 +45,7 @@ TAKE_FROM_WORKTOP
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum DynamicGlobalAddress {
     Static(GlobalAddress),
-    Named(ManifestNamedAddress),
+    Named(u32),
 }
 
 impl DynamicGlobalAddress {
@@ -53,8 +53,14 @@ impl DynamicGlobalAddress {
     /// instead of `Enum<0u8>(Address("static_address"))`.
     pub fn to_instruction_argument(&self) -> ManifestValue {
         match self {
-            DynamicGlobalAddress::Static(address) => to_manifest_value(address),
-            DynamicGlobalAddress::Named(named_address) => to_manifest_value(named_address),
+            DynamicGlobalAddress::Static(address) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Static(
+                    address.into_node_id(),
+                )),
+            },
+            DynamicGlobalAddress::Named(id) => ManifestValue::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress::Named(*id)),
+            },
         }
     }
 
@@ -116,8 +122,8 @@ impl From<ComponentAddress> for DynamicGlobalAddress {
     }
 }
 
-impl From<ManifestNamedAddress> for DynamicGlobalAddress {
-    fn from(value: ManifestNamedAddress) -> Self {
+impl From<u32> for DynamicGlobalAddress {
+    fn from(value: u32) -> Self {
         DynamicGlobalAddress::Named(value)
     }
 }

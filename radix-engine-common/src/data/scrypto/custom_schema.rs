@@ -83,15 +83,15 @@ impl OwnValidation {
 }
 
 impl ReferenceValidation {
-    pub fn could_match_manifest_allocated_address(&self) -> bool {
+    pub fn could_match_manifest_address(&self) -> bool {
         match self {
             ReferenceValidation::IsGlobal => true,
             ReferenceValidation::IsGlobalPackage => true,
             ReferenceValidation::IsGlobalComponent => true,
             ReferenceValidation::IsGlobalResourceManager => true,
             ReferenceValidation::IsGlobalTyped(_, _) => true,
-            ReferenceValidation::IsInternal => false,
-            ReferenceValidation::IsInternalTyped(_, _) => false,
+            ReferenceValidation::IsInternal => true,
+            ReferenceValidation::IsInternalTyped(_, _) => true,
         }
     }
 }

@@ -338,6 +338,7 @@ impl ValueKind {
             // Custom value kinds
             // ==============
             ValueKind::Address => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
+            ValueKind::NamedAddress => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
             ValueKind::Bucket => ManifestValueKind::Custom(ManifestCustomValueKind::Bucket),
             ValueKind::Proof => ManifestValueKind::Custom(ManifestCustomValueKind::Proof),
             ValueKind::Expression => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
@@ -351,9 +352,6 @@ impl ValueKind {
             }
             ValueKind::AddressReservation => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::AddressReservation)
-            }
-            ValueKind::NamedAddress => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::NamedAddress)
             }
         }
     }
@@ -399,6 +397,7 @@ pub enum Value {
     // Custom values
     // ==============
     Address(Box<Value>),
+    NamedAddress(Box<Value>),
     Bucket(Box<Value>),
     Proof(Box<Value>),
     Expression(Box<Value>),
@@ -407,7 +406,6 @@ pub enum Value {
     PreciseDecimal(Box<Value>),
     NonFungibleLocalId(Box<Value>),
     AddressReservation(Box<Value>),
-    NamedAddress(Box<Value>),
 }
 
 impl Value {
@@ -447,6 +445,7 @@ impl Value {
             // Custom values
             // ==============
             Value::Address(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
+            Value::NamedAddress(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
             Value::Bucket(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Bucket),
             Value::Proof(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Proof),
             Value::Expression(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
@@ -460,9 +459,6 @@ impl Value {
             }
             Value::AddressReservation(_) => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::AddressReservation)
-            }
-            Value::NamedAddress(_) => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::NamedAddress)
             }
         }
     }

@@ -10,7 +10,7 @@ pub struct ManifestValueDisplayContext<'a> {
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
     pub address_reservation_names: Option<&'a NonIterMap<ManifestAddressReservation, String>>,
-    pub named_address_names: Option<&'a NonIterMap<ManifestNamedAddress, String>>,
+    pub address_names: Option<&'a NonIterMap<u32, String>>,
 }
 
 impl<'a> ManifestValueDisplayContext<'a> {
@@ -30,14 +30,14 @@ impl<'a> ManifestValueDisplayContext<'a> {
         bucket_names: &'a NonIterMap<ManifestBucket, String>,
         proof_names: &'a NonIterMap<ManifestProof, String>,
         address_reservation_names: &'a NonIterMap<ManifestAddressReservation, String>,
-        named_address_names: &'a NonIterMap<ManifestNamedAddress, String>,
+        address_names: &'a NonIterMap<u32, String>,
     ) -> Self {
         Self {
             bech32_encoder,
             bucket_names: Some(bucket_names),
             proof_names: Some(proof_names),
             address_reservation_names: Some(address_reservation_names),
-            named_address_names: Some(named_address_names),
+            address_names: Some(address_names),
         }
     }
 
@@ -59,9 +59,9 @@ impl<'a> ManifestValueDisplayContext<'a> {
             .and_then(|names| names.get(address_reservation_id).map(|s| s.as_str()))
     }
 
-    pub fn get_named_address_name(&self, named_address_id: &ManifestNamedAddress) -> Option<&str> {
-        self.named_address_names
-            .and_then(|names| names.get(named_address_id).map(|s| s.as_str()))
+    pub fn get_address_name(&self, address_id: &u32) -> Option<&str> {
+        self.address_names
+            .and_then(|names| names.get(address_id).map(|s| s.as_str()))
     }
 }
 

@@ -30,7 +30,7 @@ pub struct ManifestValidator {
     /// Set of active allocated global address reservation ids
     address_reservation_ids: IndexSet<ManifestAddressReservation>,
     /// Set of named global address ids
-    named_address_ids: IndexSet<ManifestNamedAddress>,
+    address_ids: IndexSet<u32>,
 }
 
 impl ManifestValidator {
@@ -143,21 +143,21 @@ impl ManifestValidator {
         }
     }
 
-    pub fn new_named_address(&mut self) -> ManifestNamedAddress {
-        let named_address_id = self.id_allocator.new_named_address_id();
-        self.named_address_ids.insert(named_address_id.clone());
-        named_address_id
+    pub fn new_named_address(&mut self) -> u32 {
+        let address_id = self.id_allocator.new_address_id();
+        self.address_ids.insert(address_id.clone());
+        address_id
     }
 
-    pub fn get_named_address(
+    pub fn check_named_address(
         &mut self,
-        named_address_id: &ManifestNamedAddress,
+        address_id: &u32,
     ) -> Result<(), ManifestIdValidationError> {
-        if self.named_address_ids.contains(named_address_id) {
+        if self.address_ids.contains(address_id) {
             Ok(())
         } else {
             Err(ManifestIdValidationError::NamedAddressNotFound(
-                named_address_id.clone(),
+                address_id.clone(),
             ))
         }
     }
@@ -189,11 +189,8 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    fn replace_named_address(
-        &mut self,
-        a: ManifestNamedAddress,
-    ) -> Result<Reference, ManifestIdValidationError> {
-        self.get_named_address(&a)?;
+    fn replace_named_address(&mut self, a: u32) -> Result<Reference, ManifestIdValidationError> {
+        self.check_named_address(&a)?;
         Ok(Reference(NodeId([0u8; NodeId::LENGTH])))
     }
 

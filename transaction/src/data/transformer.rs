@@ -9,14 +9,14 @@ use radix_engine_interface::data::scrypto::model::{Own, Reference};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
-use radix_engine_interface::prelude::{ManifestAddressReservation, ManifestNamedAddress};
+use radix_engine_interface::prelude::{ManifestAddress, ManifestAddressReservation};
 use sbor::rust::vec::Vec;
 
 pub trait TransformHandler<E> {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, E>;
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, E>;
     fn replace_address_reservation(&mut self, p: ManifestAddressReservation) -> Result<Own, E>;
-    fn replace_named_address(&mut self, p: ManifestNamedAddress) -> Result<Reference, E>;
+    fn replace_named_address(&mut self, p: u32) -> Result<Reference, E>;
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, E>;
     fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, E>;
 }
@@ -90,9 +90,14 @@ pub fn transform<T: TransformHandler<E>, E>(
             })
         }
         sbor::Value::Custom { value } => match value {
-            ManifestCustomValue::Address(address) => Ok(ScryptoValue::Custom {
-                value: ScryptoCustomValue::Reference(Reference(address.0)),
-            }),
+            ManifestCustomValue::Address(address) => match address {
+                ManifestAddress::Static(node_id) => Ok(ScryptoValue::Custom {
+                    value: ScryptoCustomValue::Reference(Reference(node_id)),
+                }),
+                ManifestAddress::Named(name_id) => Ok(ScryptoValue::Custom {
+                    value: ScryptoCustomValue::Reference(handler.replace_named_address(name_id)?),
+                }),
+            },
             ManifestCustomValue::Bucket(b) => Ok(ScryptoValue::Custom {
                 value: ScryptoCustomValue::Own(handler.replace_bucket(b)?),
             }),
@@ -101,9 +106,6 @@ pub fn transform<T: TransformHandler<E>, E>(
             }),
             ManifestCustomValue::AddressReservation(p) => Ok(ScryptoValue::Custom {
                 value: ScryptoCustomValue::Own(handler.replace_address_reservation(p)?),
-            }),
-            ManifestCustomValue::NamedAddress(p) => Ok(ScryptoValue::Custom {
-                value: ScryptoCustomValue::Reference(handler.replace_named_address(p)?),
             }),
             ManifestCustomValue::Expression(e) => Ok(ScryptoValue::Array {
                 element_value_kind: ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
@@ -175,9 +177,6 @@ pub fn transform_value_kind(kind: ManifestValueKind) -> ScryptoValueKind {
             }
             ManifestCustomValueKind::AddressReservation => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::Own)
-            }
-            ManifestCustomValueKind::NamedAddress => {
-                ScryptoValueKind::Custom(ScryptoCustomValueKind::Reference)
             }
         },
     }

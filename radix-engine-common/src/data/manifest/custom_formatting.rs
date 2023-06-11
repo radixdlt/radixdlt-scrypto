@@ -19,17 +19,26 @@ impl FormattableCustomExtension for ManifestCustomExtension {
         value: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> Result<(), fmt::Error> {
         match &value.0 {
-            ManifestCustomValue::Address(value) => {
-                if let Some(encoder) = context.bech32_encoder {
-                    if let Ok(bech32) = encoder.encode(value.0.as_ref()) {
-                        write!(f, "\"{}\"", bech32)?;
+            ManifestCustomValue::Address(value) => match value {
+                ManifestAddress::Static(node_id) => {
+                    if let Some(encoder) = context.bech32_encoder {
+                        if let Ok(bech32) = encoder.encode(node_id.0.as_ref()) {
+                            write!(f, "\"{}\"", bech32)?;
+                        } else {
+                            write!(f, "\"{}\"", hex::encode(node_id.0.as_ref()))?;
+                        }
                     } else {
-                        write!(f, "\"{}\"", hex::encode(value.0.as_ref()))?;
+                        write!(f, "\"{}\"", hex::encode(node_id.0.as_ref()))?;
                     }
-                } else {
-                    write!(f, "\"{}\"", hex::encode(value.0.as_ref()))?;
                 }
-            }
+                ManifestAddress::Named(address_id) => {
+                    if let Some(name) = context.get_address_name(&address_id) {
+                        write!(f, "\"{}\"", name)?;
+                    } else {
+                        write!(f, "\"{}\"", address_id)?;
+                    }
+                }
+            },
             ManifestCustomValue::Bucket(value) => {
                 if let Some(name) = context.get_bucket_name(&value) {
                     write!(f, "\"{}\"", name)?;
@@ -45,9 +54,6 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                 }
             }
             ManifestCustomValue::AddressReservation(value) => {
-                write!(f, "\"{}\"", value.0)?;
-            }
-            ManifestCustomValue::NamedAddress(value) => {
                 write!(f, "\"{}\"", value.0)?;
             }
             ManifestCustomValue::Expression(value) => {
@@ -86,7 +92,7 @@ mod tests {
         let encoder = Bech32Encoder::for_simulator();
         let payload = manifest_encode(&(
             ManifestValue::Custom {
-                value: ManifestCustomValue::Address(ManifestAddress(
+                value: ManifestCustomValue::Address(ManifestAddress::Static(
                     FUNGIBLE_RESOURCE.as_node_id().clone(),
                 )),
             },

@@ -421,7 +421,7 @@ struct TransactionProcessor {
     bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
     proof_mapping: IndexMap<ManifestProof, NodeId>,
     address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
-    named_address_mapping: NonIterMap<ManifestNamedAddress, NodeId>,
+    address_mapping: NonIterMap<u32, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
@@ -436,7 +436,7 @@ impl TransactionProcessor {
             proof_mapping: index_map_new(),
             bucket_mapping: NonIterMap::new(),
             address_reservation_mapping: NonIterMap::new(),
-            named_address_mapping: NonIterMap::new(),
+            address_mapping: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
         };
 
@@ -498,15 +498,15 @@ impl TransactionProcessor {
         Ok(Proof(Own(real_id)))
     }
 
-    fn get_named_address(
-        &mut self,
-        named_address_id: &ManifestNamedAddress,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        let real_id = self.named_address_mapping.get(named_address_id).ok_or(
-            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::NamedAddressNotFound(named_address_id.0),
-            )),
-        )?;
+    fn get_named_address(&mut self, address_id: &u32) -> Result<GlobalAddress, RuntimeError> {
+        let real_id =
+            self.address_mapping
+                .get(address_id)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::NamedAddressNotFound(*address_id),
+                    ),
+                ))?;
         Ok(GlobalAddress::new_or_panic(real_id.clone().into()))
     }
 
@@ -562,9 +562,9 @@ impl TransactionProcessor {
     fn create_manifest_named_address(
         &mut self,
         address: GlobalAddress,
-    ) -> Result<ManifestNamedAddress, RuntimeError> {
-        let new_id = self.id_allocator.new_named_address_id();
-        self.named_address_mapping.insert(new_id, address.into());
+    ) -> Result<u32, RuntimeError> {
+        let new_id = self.id_allocator.new_address_id();
+        self.address_mapping.insert(new_id, address.into());
         Ok(new_id)
     }
 
@@ -706,10 +706,7 @@ impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
         self.processor.take_address_reservation(&r).map(|x| x.0)
     }
 
-    fn replace_named_address(
-        &mut self,
-        a: ManifestNamedAddress,
-    ) -> Result<Reference, RuntimeError> {
+    fn replace_named_address(&mut self, a: u32) -> Result<Reference, RuntimeError> {
         self.processor.get_named_address(&a).map(|x| x.into())
     }
 

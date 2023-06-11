@@ -15,7 +15,6 @@ pub enum ManifestCustomValue {
     PreciseDecimal(ManifestPreciseDecimal),
     NonFungibleLocalId(ManifestNonFungibleLocalId),
     AddressReservation(ManifestAddressReservation),
-    NamedAddress(ManifestNamedAddress),
 }
 
 impl CustomValue<ManifestCustomValueKind> for ManifestCustomValue {
@@ -34,7 +33,6 @@ impl CustomValue<ManifestCustomValueKind> for ManifestCustomValue {
             ManifestCustomValue::AddressReservation(_) => {
                 ManifestCustomValueKind::AddressReservation
             }
-            ManifestCustomValue::NamedAddress(_) => ManifestCustomValueKind::NamedAddress,
         }
     }
 }
@@ -71,9 +69,6 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::AddressReservation(_) => encoder.write_value_kind(
                 ValueKind::Custom(ManifestCustomValueKind::AddressReservation),
             ),
-            ManifestCustomValue::NamedAddress(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ManifestCustomValueKind::NamedAddress))
-            }
         }
     }
 
@@ -89,7 +84,6 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ManifestCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
             ManifestCustomValue::AddressReservation(v) => v.encode_body(encoder),
-            ManifestCustomValue::NamedAddress(v) => v.encode_body(encoder),
         }
     }
 }
@@ -137,10 +131,6 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
                 ManifestCustomValueKind::AddressReservation => {
                     ManifestAddressReservation::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::AddressReservation)
-                }
-                ManifestCustomValueKind::NamedAddress => {
-                    ManifestNamedAddress::decode_body_with_value_kind(decoder, value_kind)
-                        .map(Self::NamedAddress)
                 }
             },
             _ => Err(DecodeError::UnexpectedCustomValueKind {
