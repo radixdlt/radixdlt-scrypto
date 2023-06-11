@@ -14,28 +14,28 @@ impl SerializableCustomExtension for ManifestCustomExtension {
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
             ManifestCustomValue::Address(value) => match value {
-                ManifestAddress::Static(value) => {
+                ManifestAddress::Static(node_id) => {
                     if let Some(encoder) = context.custom_context.bech32_encoder {
-                        if let Ok(bech32) = encoder.encode(value.0.as_ref()) {
+                        if let Ok(bech32) = encoder.encode(node_id.0.as_ref()) {
                             (SerializableType::String(bech32), false)
                         } else {
                             (
-                                SerializableType::String(hex::encode(value.0.as_ref())),
+                                SerializableType::String(hex::encode(node_id.0.as_ref())),
                                 true,
                             )
                         }
                     } else {
                         (
-                            SerializableType::String(hex::encode(value.0.as_ref())),
+                            SerializableType::String(hex::encode(node_id.0.as_ref())),
                             true,
                         )
                     }
                 }
-                ManifestAddress::Named(value) => {
-                    if let Some(name) = context.custom_context.get_address_name(&value) {
+                ManifestAddress::Named(address_id) => {
+                    if let Some(name) = context.custom_context.get_address_name(&address_id) {
                         (SerializableType::String(name.to_string()), true)
                     } else {
-                        (SerializableType::String(value.to_string()), true)
+                        (SerializableType::String(address_id.to_string()), true)
                     }
                 }
             },

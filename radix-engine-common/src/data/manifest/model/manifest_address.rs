@@ -84,7 +84,9 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
 impl fmt::Debug for ManifestAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
-            ManifestAddress::Static(node_id) => write!(f, "Address({})", hex::encode(node_id.as_bytes())),
+            ManifestAddress::Static(node_id) => {
+                write!(f, "Address({})", hex::encode(node_id.as_bytes()))
+            }
             ManifestAddress::Named(name) => write!(f, "NamedAddress({})", name),
         }
     }
