@@ -340,6 +340,9 @@ jobs:
     - name: Setup AFL
       run: bash ./install_afl.sh
       working-directory: fuzz-tests
+    - name: Build simple fuzzer
+      run: bash ./fuzz.sh simple build
+      working-directory: fuzz-tests
     - name: Build AFL fuzzer
       run: bash ./fuzz.sh afl build
       working-directory: fuzz-tests

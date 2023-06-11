@@ -12,6 +12,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
 use radix_engine_interface::*;
+use sbor::rust::vec::Vec;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
@@ -65,6 +66,7 @@ pub struct FungibleResourceManagerBlueprint;
 
 impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -75,12 +77,20 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_simple_object(
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
+        let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
+            None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
                 scrypto_encode(&Decimal::zero()).unwrap(),
             ],
+            btreemap!(),
         )?;
 
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
@@ -94,6 +104,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -109,6 +120,7 @@ impl FungibleResourceManagerBlueprint {
         })?;
 
         Self::create_with_initial_supply_and_address(
+            track_total_supply,
             divisibility,
             metadata,
             access_rules,
@@ -119,6 +131,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply_and_address<Y>(
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -131,12 +144,20 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_simple_object(
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
+        let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
+            None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
                 scrypto_encode(&initial_supply).unwrap(),
             ],
+            btreemap!(),
         )?;
 
         check_new_amount(divisibility, initial_supply)?;
@@ -170,7 +191,16 @@ impl FungibleResourceManagerBlueprint {
         // check amount
         check_new_amount(divisibility, amount)?;
 
+        let bucket = Self::create_bucket(amount, api)?;
+
+        Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
+
         // Update total supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -183,14 +213,25 @@ impl FungibleResourceManagerBlueprint {
             api.field_lock_release(total_supply_handle)?;
         }
 
-        let bucket = Self::create_bucket(amount, api)?;
-
-        Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
-
         Ok(bucket)
     }
 
     pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::burn_internal(bucket, api)
+    }
+
+    /// Only callable within this package - this is to allow the burning of tokens from a vault.
+    pub(crate) fn package_burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::burn_internal(bucket, api)
+    }
+
+    fn burn_internal<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -206,6 +247,11 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         // Update total supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -272,15 +318,17 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
+        // These roles define an extra filter on top of the roles defined on the resource manager
+        // The purpose of these roles is to enable freezing of individual vaults
         // TODO: Figure out how to use SELF_ROLE rather than package
         let mut roles = Roles::new();
         roles.define_role(
-            "this_package",
+            RESOURCE_PACKAGE_ROLE,
             RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         );
         roles.define_role(
             VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, ["this_package"], true),
+            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
         );
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
@@ -306,16 +354,24 @@ impl FungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let total_supply_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            FungibleResourceManagerField::TotalSupply.into(),
-            LockFlags::read_only(),
-        )?;
-        let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
-        Ok(total_supply)
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
+            let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                FungibleResourceManagerField::TotalSupply.into(),
+                LockFlags::read_only(),
+            )?;
+            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            Ok(Some(total_supply))
+        } else {
+            Ok(None)
+        }
     }
 }

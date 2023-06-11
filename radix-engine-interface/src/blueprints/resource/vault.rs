@@ -83,6 +83,15 @@ pub struct VaultUnfreezeInput {}
 
 pub type VaultUnfreezeOutput = ();
 
+pub const VAULT_BURN_IDENT: &str = "burn";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VaultBurnInput {
+    pub amount: Decimal,
+}
+
+pub type VaultBurnOutput = ();
+
 //========
 // Stub
 //========

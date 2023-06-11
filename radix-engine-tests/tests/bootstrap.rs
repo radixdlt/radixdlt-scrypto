@@ -17,15 +17,15 @@ use radix_engine_store_interface::{
 };
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::CustomGenesis;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = EcdsaSecp256k1PublicKey([0; 33]);
+    let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
     let stake = GenesisStakeAllocation {
         account_index: 0,
@@ -85,9 +85,9 @@ fn test_bootstrap_receipt_should_match_constants() {
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = EcdsaSecp256k1PublicKey([0; 33]);
+    let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
     let stake = GenesisStakeAllocation {
         account_index: 0,
@@ -157,9 +157,9 @@ fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitRe
 fn test_genesis_xrd_allocation_to_accounts() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let account_public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let account_public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let account_component_address = ComponentAddress::virtual_account_from_public_key(
-        &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
+        &PublicKey::Secp256k1(account_public_key.clone()),
     );
     let allocation_amount = dec!("100");
     let genesis_data_chunks = vec![(
@@ -199,9 +199,9 @@ fn test_genesis_xrd_allocation_to_accounts() {
 fn test_genesis_resource_with_initial_allocation() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let token_holder = ComponentAddress::virtual_account_from_public_key(
-        &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
-    );
+    let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
+        Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    ));
     let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
             EntityType::GlobalFungibleResourceManager as u8,
@@ -214,7 +214,7 @@ fn test_genesis_resource_with_initial_allocation() {
         resource_address.into(),
     )];
     let resource_owner = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(2).unwrap().public_key(),
     );
     let allocation_amount = dec!("105");
     let genesis_resource = GenesisResource {
@@ -326,13 +326,13 @@ fn test_genesis_stake_allocation() {
     // There are two genesis validators
     // - one with two stakers (0 and 1)
     // - one with one staker (just 1)
-    let validator_0_key = EcdsaSecp256k1PrivateKey::from_u64(10).unwrap().public_key();
-    let validator_1_key = EcdsaSecp256k1PrivateKey::from_u64(11).unwrap().public_key();
+    let validator_0_key = Secp256k1PrivateKey::from_u64(10).unwrap().public_key();
+    let validator_1_key = Secp256k1PrivateKey::from_u64(11).unwrap().public_key();
     let staker_0 = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(4).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(4).unwrap().public_key(),
     );
     let staker_1 = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(5).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(5).unwrap().public_key(),
     );
     let validator_0_allocations = vec![
         GenesisStakeAllocation {

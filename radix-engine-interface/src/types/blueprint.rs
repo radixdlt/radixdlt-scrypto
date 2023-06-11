@@ -15,6 +15,7 @@ pub struct ObjectInfo {
     pub global: bool,
     pub outer_object: Option<GlobalAddress>,
     pub instance_schema: Option<InstanceSchema>,
+    pub features: BTreeSet<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -9,7 +9,7 @@ use scrypto::prelude::*;
 // Important: the types defined here must match those in bootstrap.rs
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisValidator {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
     pub metadata: Vec<(String, MetadataValue)>,
@@ -41,7 +41,7 @@ pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
         accounts: Vec<ComponentAddress>,
-        allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
+        allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
     },
     Resources(Vec<GenesisResource>),
     ResourceBalances {
@@ -71,7 +71,7 @@ mod genesis_helper {
         consensus_manager: ComponentAddress,
         xrd_vault: Vault,
         resource_vaults: KeyValueStore<ResourceAddress, Vault>,
-        validators: KeyValueStore<EcdsaSecp256k1PublicKey, ComponentAddress>,
+        validators: KeyValueStore<Secp256k1PublicKey, ComponentAddress>,
     }
 
     impl GenesisHelper {
@@ -156,7 +156,7 @@ mod genesis_helper {
         fn allocate_stakes(
             &mut self,
             accounts: Vec<ComponentAddress>,
-            allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
+            allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
         ) {
             for (validator_key, stake_allocations) in allocations.into_iter() {
                 let validator_address = self.validators.get(&validator_key).unwrap();
@@ -245,6 +245,7 @@ mod genesis_helper {
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
                     scrypto_encode(
                         &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                            track_total_supply: true,
                             divisibility: 18,
                             metadata,
                             access_rules,

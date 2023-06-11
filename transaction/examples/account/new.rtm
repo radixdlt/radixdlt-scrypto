@@ -1,3 +1,9 @@
+# The below just gives some example syntax
+# You shouldn't configure your account to have an "AllowAll" access! (apart from maybe for testing)
 CREATE_ACCOUNT_ADVANCED
-    Map<String, Tuple>();                  # Authority Rules
+    Enum<OwnerRole::Updateable>(
+        Enum<AccessRule::AllowAll>()
+    )
+;
+
 CREATE_ACCOUNT;

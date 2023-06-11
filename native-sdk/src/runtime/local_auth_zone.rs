@@ -19,7 +19,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_DRAIN_IDENT,
@@ -32,7 +32,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CLEAR_IDENT,
@@ -47,7 +47,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT,
@@ -60,7 +60,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_POP_IDENT,
@@ -77,7 +77,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_IDENT,
@@ -95,7 +95,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
@@ -117,7 +117,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
@@ -138,7 +138,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
@@ -157,7 +157,7 @@ impl LocalAuthZone {
     {
         let proof: Proof = proof.into();
 
-        let auth_zone = api.get_auth_zone().unwrap();
+        let auth_zone = api.get_auth_zone()?;
         let _rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_PUSH_IDENT,

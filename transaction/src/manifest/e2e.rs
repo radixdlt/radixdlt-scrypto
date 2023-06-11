@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
+    use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
+    use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::blueprints::resource::AccessRule;
     use scrypto_derive::NonFungibleData;
 
@@ -24,10 +25,6 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
     Blob("${code_blob_hash}")
     Tuple(
-        Tuple(
-            Map<String, Tuple>()
-        ),
-        Map<String, Map>(),
         Map<String, Tuple>()
     )
     Map<String, Enum>()
@@ -245,20 +242,20 @@ CALL_METHOD
     Decimal("1")
     PreciseDecimal("2")
 ;
-CALL_ROYALTY_METHOD
+SET_COMPONENT_ROYALTY_CONFIG
     Address("${component_address}")
-    "some_method_1"
-    Decimal("1")
+    "my_method"
+    Enum<0u8>()
 ;
 CALL_METADATA_METHOD
     Address("${component_address}")
-    "some_method_2"
-    Decimal("2")
+    "get"
+    "HelloWorld"
 ;
 CALL_ACCESS_RULES_METHOD
     Address("${component_address}")
-    "some_method_3"
-    Decimal("3")
+    "get_role"
+    "hello"
 ;
 "##,
             ),
@@ -390,21 +387,14 @@ CALL_METHOD
                 r##"
 SET_PACKAGE_ROYALTY_CONFIG
     Address("${package_address}")
-    Map<String, Tuple>(
-        "Blueprint" => Tuple(
-            Map<String, U32>(
-                "method" => 1u32
-            )
-        )
-    )
+    "my_blueprint"
+    "my_function"
+    Enum<0u8>()
 ;
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
-    Tuple(
-        Map<String, U32>(
-            "method" => 1u32
-        )
-    )
+    "my_method"
+    Enum<0u8>()
 ;
 CLAIM_PACKAGE_ROYALTY
     Address("${package_address}")
@@ -595,11 +585,8 @@ REMOVE_METADATA
                 r##"
 UPDATE_ROLE
     Address("${resource_address}")
+    "hello"
     Enum<0u8>()
-    "auth"
-    Enum<1u8>(
-        Enum<0u8>()
-    )
     Enum<0u8>()
 ;
 "##,
@@ -625,6 +612,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    false
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(
@@ -677,6 +665,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE
+    false
     18u8
     Map<String, Enum>(
         "name" => Enum<0u8>(
@@ -726,6 +715,7 @@ CALL_METHOD
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
+    false
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -795,6 +785,7 @@ CALL_METHOD
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum<1u8>()
+    false
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -916,7 +907,9 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Map<String, Tuple>()
+    Enum<2u8>(
+        Enum<0u8>()
+    )
 ;
 CREATE_ACCOUNT;
 "##,
@@ -951,7 +944,7 @@ CREATE_VALIDATOR
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Map<String, Tuple>()
+    Enum<0u8>()
 ;
 CREATE_IDENTITY;
 "##,
@@ -975,9 +968,9 @@ TAKE_ALL_FROM_WORKTOP
 CREATE_ACCESS_CONTROLLER
     Bucket("bucket1")
     Tuple(
-        Enum<0u8>(),
-        Enum<0u8>(),
-        Enum<0u8>()
+        Enum<1u8>(),
+        Enum<1u8>(),
+        Enum<1u8>()
     )
     Enum<0u8>()
 ;
@@ -1057,7 +1050,7 @@ CREATE_ACCESS_CONTROLLER
     fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> Result<IntentV1, CompileError> {
         let blob_provider = BlobProvider::new_with_blobs(blobs);
 
-        let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+        let sk_notary = Ed25519PrivateKey::from_u64(3).unwrap();
 
         let network = NetworkDefinition::simulator();
         let (instructions, blobs) = compile(manifest, &network, blob_provider)?.for_intent();
@@ -1078,130 +1071,13 @@ CREATE_ACCESS_CONTROLLER
         })
     }
 
-    fn apply_address_replacements(input: impl ToString) -> String {
-        let mut input = input.to_string();
-        // Can generate some from resim, eg resim new-account, resim publish examples/hello-world etc
-        // For other addresses, uncomment the below:;
-        // {
-        //     // Generate addresses
-        //     use radix_engine_common::address::{Bech32Decoder, Bech32Encoder};
-        //     use radix_engine_common::types::EntityType;
-        //     use radix_engine_interface::constants::*;
-
-        //     // Random address from resim new-account
-        //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
-
-        //     println!("{}", Bech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
-
-        //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
-        //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
-        //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-        //     pseudo_random_bytes[0] = EntityType::GlobalValidator as u8;
-        //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-        //     pseudo_random_bytes[0] = EntityType::GlobalAccessController as u8;
-        //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-        //     pseudo_random_bytes[0] = EntityType::GlobalGenericComponent as u8;
-        //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-        // };
-        let replacement_vectors = BTreeMap::from([
-            (
-                "${xrd_resource_address}",
-                "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
-            ),
-            (
-                "${fungible_resource_address}",
-                "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-            ),
-            (
-                "${resource_address}",
-                "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-            ),
-            (
-                "${gumball_resource_address}",
-                "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-            ),
-            (
-                "${non_fungible_resource_address}",
-                "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
-            ),
-            (
-                "${badge_resource_address}",
-                "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
-            ),
-            (
-                "${account_address}",
-                "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
-            ),
-            (
-                "${other_account_address}",
-                "account_sim1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5syrgz9",
-            ),
-            (
-                "${component_address}",
-                "component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu",
-            ),
-            (
-                "${package_address}",
-                "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
-            ),
-            (
-                "${minter_badge_resource_address}",
-                "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
-            ),
-            (
-                "${mintable_fungible_resource_address}",
-                "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-            ),
-            (
-                "${mintable_non_fungible_resource_address}",
-                "resource_sim1nfhtg7ttszgjwysfglx8jcjtvv8q02fg9s2y6qpnvtw5jsy3wvlhj6",
-            ),
-            (
-                "${vault_address}",
-                "internal_vault_sim1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvevp72ff",
-            ),
-            ("${owner_badge_non_fungible_local_id}", "#1#"),
-            (
-                "${code_blob_hash}",
-                "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
-            ),
-            ("${initial_supply}", "12"),
-            ("${mint_amount}", "12"),
-            ("${non_fungible_local_id}", "#12#"),
-            (
-                "${auth_badge_resource_address}",
-                "resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj",
-            ),
-            ("${auth_badge_non_fungible_local_id}", "#1#"),
-            (
-                "${package_address}",
-                "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
-            ),
-            (
-                "${consensusmanager_address}",
-                "consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl",
-            ),
-            (
-                "${validator_address}",
-                "validator_sim1sgvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvedzgr3l",
-            ),
-            (
-                "${accesscontroller_address}",
-                "accesscontroller_sim1cvvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvexaj7at",
-            ),
-        ]);
-        for (of, with) in replacement_vectors.into_iter() {
-            input = input.replace(of, with);
-        }
-        input
-    }
-
     #[test]
     pub fn decompilation_of_create_non_fungible_resource_with_initial_supply_is_invertible() {
         // Arrange
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 BTreeMap::<_, (_, AccessRule)>::new(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
@@ -1221,4 +1097,146 @@ CREATE_ACCESS_CONTROLLER
 
     #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
     struct EmptyStruct {}
+}
+
+pub fn apply_address_replacements(input: impl ToString) -> String {
+    let mut input = input.to_string();
+    // Can generate some from resim, eg resim new-account, resim publish examples/hello-world etc
+    // For other addresses, uncomment the below:;
+    // {
+    //     // Generate addresses
+    //     use radix_engine_common::address::{Bech32Decoder, Bech32Encoder};
+    //     use radix_engine_common::types::EntityType;
+    //     use radix_engine_interface::constants::*;
+
+    //     // Random address from resim new-account
+    //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
+
+    //     println!("{}", Bech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
+
+    //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
+    //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
+    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     pseudo_random_bytes[0] = EntityType::GlobalValidator as u8;
+    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     pseudo_random_bytes[0] = EntityType::GlobalAccessController as u8;
+    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     pseudo_random_bytes[0] = EntityType::GlobalGenericComponent as u8;
+    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    // };
+    let replacement_vectors = sbor::prelude::BTreeMap::from([
+        (
+            "${xrd_resource_address}",
+            "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+        ),
+        (
+            "${fungible_resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${gumball_resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${non_fungible_resource_address}",
+            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
+        ),
+        (
+            "${badge_resource_address}",
+            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
+        ),
+        (
+            "${account_address}",
+            "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
+        ),
+        (
+            "${this_account_address}",
+            "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
+        ),
+        (
+            "${other_account_address}",
+            "account_sim1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5syrgz9",
+        ),
+        (
+            "${component_address}",
+            "component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu",
+        ),
+        (
+            "${account_a_component_address}",
+            "account_sim1c8mulhl5yrk6hh4jsyldps5sdrp08r5v9wusupvzxgqvhlp4c4nwjz",
+        ),
+        (
+            "${account_b_component_address}",
+            "account_sim1c8s2hass5g62ckwpv78y8ykdqljtetv4ve6etcz64gveykxznj36tr",
+        ),
+        (
+            "${account_c_component_address}",
+            "account_sim1c8ct6jdcwqrg3gzskyxuy0z933fe55fyjz6p56730r95ulzwl3ppva",
+        ),
+        (
+            "${package_address}",
+            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
+        ),
+        (
+            "${minter_badge_resource_address}",
+            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
+        ),
+        (
+            "${mintable_fungible_resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${mintable_non_fungible_resource_address}",
+            "resource_sim1nfhtg7ttszgjwysfglx8jcjtvv8q02fg9s2y6qpnvtw5jsy3wvlhj6",
+        ),
+        (
+            "${vault_address}",
+            "internal_vault_sim1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvevp72ff",
+        ),
+        ("${owner_badge_non_fungible_local_id}", "#1#"),
+        (
+            "${code_blob_hash}",
+            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
+        ),
+        ("${initial_supply}", "12"),
+        ("${mint_amount}", "12"),
+        ("${non_fungible_local_id}", "#12#"),
+        (
+            "${auth_badge_resource_address}",
+            "resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj",
+        ),
+        ("${auth_badge_non_fungible_local_id}", "#1#"),
+        (
+            "${package_address}",
+            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
+        ),
+        (
+            "${consensusmanager_address}",
+            "consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl",
+        ),
+        (
+            "${validator_address}",
+            "validator_sim1sgvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvedzgr3l",
+        ),
+        (
+            "${accesscontroller_address}",
+            "accesscontroller_sim1cvvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvexaj7at",
+        ),
+        (
+            "${faucet_component_address}",
+            "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh",
+        ),
+        (
+            "${second_resource_address}",
+            "resource_sim1thcgx0f3rwaeetl67cmsssv4p748kd3sjhtge9l4m6ns7cucs97tjv",
+        ),
+    ]);
+    for (of, with) in replacement_vectors.into_iter() {
+        input = input.replace(of, with);
+    }
+    input
 }

@@ -17,7 +17,6 @@ use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -30,15 +29,16 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageDefinition, PackageInfoSubstate, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltySubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    BlueprintSetup, BlueprintTemplate, PackageInfoSubstate,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate, PackageSetup,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -56,17 +56,17 @@ use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
     AttachmentsV1, BlobV1, Executable, InstructionV1, IntentV1, PreviewFlags, PreviewIntentV1,
     SystemTransactionV1, TestTransaction, TransactionHeaderV1, TransactionPayload,
 };
-use transaction::prelude::{BlobsV1, InstructionsV1};
+use transaction::prelude::*;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSetup) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -136,9 +136,7 @@ pub struct CustomGenesis {
 
 impl CustomGenesis {
     pub fn default(initial_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
-        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-            .unwrap()
-            .public_key();
+        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         Self::single_validator_and_staker(
             pub_key,
             Decimal::one(),
@@ -165,7 +163,7 @@ impl CustomGenesis {
     }
 
     pub fn single_validator_and_staker(
-        validator_public_key: EcdsaSecp256k1PublicKey,
+        validator_public_key: Secp256k1PublicKey,
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: Epoch,
@@ -341,8 +339,8 @@ impl TestRunner {
         self.next_transaction_nonce - 1
     }
 
-    pub fn new_key_pair(&mut self) -> (EcdsaSecp256k1PublicKey, EcdsaSecp256k1PrivateKey) {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(self.next_private_key()).unwrap();
+    pub fn new_key_pair(&mut self) -> (Secp256k1PublicKey, Secp256k1PrivateKey) {
+        let private_key = Secp256k1PrivateKey::from_u64(self.next_private_key()).unwrap();
         let public_key = private_key.public_key();
 
         (public_key, private_key)
@@ -350,11 +348,7 @@ impl TestRunner {
 
     pub fn new_key_pair_with_auth_address(
         &mut self,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        NonFungibleGlobalId,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, NonFungibleGlobalId) {
         let key_pair = self.new_allocated_account();
         (
             key_pair.0,
@@ -572,23 +566,16 @@ impl TestRunner {
 
     pub fn new_virtual_account(
         &mut self,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        ComponentAddress,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_key_pair();
-        let account = ComponentAddress::virtual_account_from_public_key(
-            &PublicKey::EcdsaSecp256k1(pub_key.clone()),
-        );
+        let account = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
+            pub_key.clone(),
+        ));
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
 
-    pub fn get_active_validator_info_by_key(
-        &self,
-        key: &EcdsaSecp256k1PublicKey,
-    ) -> ValidatorSubstate {
+    pub fn get_active_validator_info_by_key(&self, key: &Secp256k1PublicKey) -> ValidatorSubstate {
         let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
     }
@@ -603,7 +590,7 @@ impl TestRunner {
             .unwrap()
     }
 
-    pub fn get_active_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+    pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
@@ -623,11 +610,7 @@ impl TestRunner {
 
     pub fn new_allocated_account(
         &mut self,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        ComponentAddress,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
@@ -637,11 +620,7 @@ impl TestRunner {
     pub fn new_account(
         &mut self,
         is_virtual: bool,
-    ) -> (
-        EcdsaSecp256k1PublicKey,
-        EcdsaSecp256k1PrivateKey,
-        ComponentAddress,
-    ) {
+    ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         if is_virtual {
             self.new_virtual_account()
         } else {
@@ -649,11 +628,7 @@ impl TestRunner {
         }
     }
 
-    pub fn new_identity(
-        &mut self,
-        pk: EcdsaSecp256k1PublicKey,
-        is_virtual: bool,
-    ) -> ComponentAddress {
+    pub fn new_identity(&mut self, pk: Secp256k1PublicKey, is_virtual: bool) -> ComponentAddress {
         if is_virtual {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
@@ -689,7 +664,7 @@ impl TestRunner {
 
     pub fn new_validator_with_pub_key(
         &mut self,
-        pub_key: EcdsaSecp256k1PublicKey,
+        pub_key: Secp256k1PublicKey,
         account: ComponentAddress,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
@@ -709,7 +684,7 @@ impl TestRunner {
     pub fn publish_package_at_address(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         address: PackageAddress,
     ) {
         let code_hash = hash(&code);
@@ -723,7 +698,7 @@ impl TestRunner {
                     function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
                     args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
-                        definition,
+                        setup: definition,
                         metadata: btreemap!(),
                         package_address: Some(ManifestOwn(0)),
                         owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
@@ -749,7 +724,7 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
@@ -765,7 +740,7 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
@@ -793,14 +768,14 @@ impl TestRunner {
 
     pub fn compile_and_publish_retain_blueprints<
         P: AsRef<Path>,
-        F: FnMut(&String, &mut BlueprintSchema) -> bool,
+        F: FnMut(&String, &mut BlueprintSetup) -> bool,
     >(
         &mut self,
         package_dir: P,
         retain: F,
     ) -> PackageAddress {
         let (code, mut definition) = Compile::compile(package_dir);
-        definition.schema.blueprints.retain(retain);
+        definition.blueprints.retain(retain);
         self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
@@ -934,9 +909,7 @@ impl TestRunner {
                         start_epoch_inclusive: epoch,
                         end_epoch_exclusive: epoch.after(10),
                         nonce: 0,
-                        notary_public_key: PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
-                            [0u8; 33],
-                        )),
+                        notary_public_key: PublicKey::Secp256k1(Secp256k1PublicKey([0u8; 33])),
                         notary_is_signatory: false,
                         tip_percentage,
                     },
@@ -1017,7 +990,7 @@ impl TestRunner {
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
+            .create_fungible_resource(true, 0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(
                 to,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1187,6 +1160,7 @@ impl TestRunner {
             .lock_fee(self.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
+                false,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),
@@ -1212,7 +1186,13 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
+            .create_fungible_resource(
+                true,
+                divisibility,
+                BTreeMap::new(),
+                access_rules,
+                Some(amount),
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1236,7 +1216,7 @@ impl TestRunner {
         access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(1u8, BTreeMap::new(), access_rules, None)
+            .create_fungible_resource(true, 1u8, BTreeMap::new(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1260,7 +1240,7 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
+            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1284,7 +1264,7 @@ impl TestRunner {
         access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
+            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1549,6 +1529,7 @@ impl TestRunner {
                 .blueprints
                 .remove(&blueprint_name)
                 .unwrap()
+                .schema
                 .schema,
         )
     }
@@ -1634,18 +1615,21 @@ impl StateHashSupport {
 }
 
 pub fn is_auth_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(_)))
+    matches!(
+        e,
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(_))
+    )
 }
 
 pub fn is_costing_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::ModuleError(ModuleError::CostingError(_)))
+    matches!(
+        e,
+        RuntimeError::SystemModuleError(SystemModuleError::CostingError(_))
+    )
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(
-        e,
-        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
-    )
+    matches!(e, RuntimeError::VmError(VmError::Wasm(..)))
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
@@ -1686,41 +1670,44 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
-) -> PackageDefinition {
-    let mut package_schema = PackageSchema::default();
-    package_schema.blueprints.insert(
+) -> PackageSetup {
+    let mut blueprints = BTreeMap::new();
+    blueprints.insert(
         blueprint_name.to_string(),
-        BlueprintSchema {
-            outer_blueprint: None,
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
-            fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-            collections: vec![],
-            functions: btreemap!(
+        BlueprintSetup {
+            schema: BlueprintSchema {
+                outer_blueprint: None,
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                collections: vec![],
+                functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
-                    receiver: Option::None,
-                    input: LocalTypeIndex::WellKnown(ANY_ID),
-                    output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export_name: format!("{}_{}", blueprint_name, function_name),
-                }
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export: format!("{}_{}", blueprint_name, function_name),
+                    }
+                ),
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+                dependencies: btreeset!(),
+                features: btreeset!(),
+            },
+            function_auth: btreemap!(
+                function_name.to_string() => rule!(allow_all),
             ),
-            virtual_lazy_load_functions: btreemap!(),
-            event_schema: [].into(),
-            dependencies: btreeset!(),
-            method_auth_template: btreemap!(),
-            outer_method_auth_template: btreemap!(),
+            royalty_config: RoyaltyConfig::default(),
+            template: BlueprintTemplate {
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
+            },
         },
     );
-    PackageDefinition {
-        schema: package_schema,
-        function_access_rules: btreemap!(
-            blueprint_name.to_string() => btreemap!(function_name.to_string() => rule!(allow_all))
-        ),
-        royalty_config: btreemap!(),
-    }
+    PackageSetup { blueprints }
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

@@ -28,7 +28,9 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let mut fields = Vec::new();
-    fields.push(aggregator.add_child_type_and_descendents::<()>());
+    fields.push(FieldSchema::normal(
+        aggregator.add_child_type_and_descendents::<()>(),
+    ));
 
     let mut functions = BTreeMap::new();
 
@@ -38,7 +40,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<()>(),
             output: aggregator.add_child_type_and_descendents::<u8>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -47,7 +49,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<()>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -56,7 +58,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<bool>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -65,7 +67,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i8>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -74,7 +76,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i16>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -83,7 +85,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i32>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -92,7 +94,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i64>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -101,7 +103,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<i128>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -110,7 +112,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u8>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -119,7 +121,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u16>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -128,7 +130,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u32>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -137,7 +139,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u64>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -146,7 +148,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<u128>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -155,7 +157,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<Result<(), ()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -164,7 +166,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<BTreeMap<(), ()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
     functions.insert(
@@ -173,7 +175,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             receiver: None,
             input: aggregator.add_child_type_and_descendents::<HashSet<()>>(),
             output: aggregator.add_child_type_and_descendents::<()>(),
-            export_name: "dummy_export".to_string(),
+            export: "dummy_export".to_string(),
         },
     );
 
@@ -186,11 +188,10 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
         dependencies: btreeset!(),
-        method_auth_template: btreemap!(),
-        outer_method_auth_template: btreemap!(),
+        features: btreeset!(),
     };
 
-    let function_access_rules: BTreeMap<String, AccessRule> = btreemap!(
+    let function_auth: BTreeMap<String, AccessRule> = btreemap!(
         "invalid_output".to_string() => AccessRule::AllowAll,
         "unit".to_string() => AccessRule::AllowAll,
         "bool".to_string() => AccessRule::AllowAll,
@@ -209,13 +210,18 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "hash_set".to_string() => AccessRule::AllowAll,
     );
 
+    let return_data = scrypto::blueprints::package::BlueprintSetup {
+        schema,
+        function_auth,
+        royalty_config: RoyaltyConfig::default(),
+        template: scrypto::blueprints::package::BlueprintTemplate {
+            method_auth_template: btreemap!(),
+            outer_method_auth_template: btreemap!(),
+        },
+    };
+
     ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&(
-            schema,
-            function_access_rules,
-            RoyaltyConfig::default(),
-        ))
-        .unwrap(),
+        ::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap(),
     )
 }
 

@@ -38,7 +38,7 @@ struct EmptyStruct;
 impl NewAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
-        let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&secret).unwrap();
+        let private_key = Secp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
@@ -76,6 +76,7 @@ impl NewAccount {
                         .to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type: NonFungibleIdType::Integer,
+                        track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: btreemap!(
                             "name".to_owned() => MetadataValue::String("Owner Badge".to_owned()) 

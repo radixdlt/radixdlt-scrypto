@@ -20,8 +20,8 @@ lazy_static! {
         btreeset![
             // resource managers
             RADIX_TOKEN.into(),
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+            SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+            ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
             SYSTEM_TRANSACTION_BADGE.into(),
             PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
             GLOBAL_CALLER_VIRTUAL_BADGE.into(),

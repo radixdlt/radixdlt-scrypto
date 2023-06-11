@@ -6,7 +6,7 @@ pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-use radix_engine::blueprints::pool::multi_resource_pool::*;
+pub use radix_engine::blueprints::pool::multi_resource_pool::*;
 pub use radix_engine::blueprints::pool::one_resource_pool::*;
 pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::resource::*;
@@ -16,6 +16,7 @@ pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
 use radix_engine::system::system::SubstateWrapper;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+pub use radix_engine_interface::api::node_modules::royalty::*;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!

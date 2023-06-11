@@ -1,9 +1,11 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
+use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -27,7 +29,7 @@ fn missing_memory_should_cause_error() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageDefinition::default(),
+            PackageSetup::default(),
             BTreeMap::new(),
             OwnerRole::None,
         )
@@ -62,7 +64,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+        if let RuntimeError::VmError(VmError::Wasm(b)) = e {
             matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
@@ -85,7 +87,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+        if let RuntimeError::VmError(VmError::Wasm(b)) = e {
             matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
@@ -137,31 +139,38 @@ fn test_basic_package() {
 fn test_basic_package_missing_export() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let mut package_schema = PackageSchema::default();
-    package_schema.blueprints.insert(
+    let mut blueprints = BTreeMap::new();
+    blueprints.insert(
         "Test".to_string(),
-        BlueprintSchema {
-            outer_blueprint: None,
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
+        BlueprintSetup {
+            schema: BlueprintSchema {
+                outer_blueprint: None,
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                collections: vec![],
+                functions: btreemap!(
+                    "f".to_string() => FunctionSchema {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export: "not_exist".to_string(),
+                    }
+                ),
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+                dependencies: btreeset!(),
+                features: btreeset!(),
             },
-            fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-            collections: vec![],
-            functions: btreemap!(
-                "f".to_string() => FunctionSchema {
-                    receiver: Option::None,
-                    input: LocalTypeIndex::WellKnown(ANY_ID),
-                    output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export_name: "not_exist".to_string(),
-                }
-            ),
-            virtual_lazy_load_functions: btreemap!(),
-            event_schema: [].into(),
-            dependencies: btreeset!(),
-            method_auth_template: btreemap!(),
-            outer_method_auth_template: btreemap!(),
+            function_auth: btreemap!(),
+            royalty_config: RoyaltyConfig::default(),
+            template: BlueprintTemplate {
+                method_auth_template: btreemap!(),
+                outer_method_auth_template: btreemap!(),
+            },
         },
     );
     // Act
@@ -170,11 +179,7 @@ fn test_basic_package_missing_export() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageDefinition {
-                schema: package_schema,
-                function_access_rules: btreemap!(),
-                royalty_config: btreemap!(),
-            },
+            PackageSetup { blueprints },
             BTreeMap::new(),
             OwnerRole::None,
         )

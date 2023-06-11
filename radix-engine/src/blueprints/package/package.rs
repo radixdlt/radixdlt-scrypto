@@ -13,19 +13,16 @@ use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
-    BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaMethodKey,
-    SchemaMethodPermission,
+    BlueprintSchema, FieldSchema, FunctionSchema, RefTypes, SchemaMethodKey, SchemaMethodPermission,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -61,8 +58,10 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 }
 
-fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
-    for blueprint in schema.blueprints.values() {
+fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+    blueprints: I,
+) -> Result<(), PackageError> {
+    for blueprint in blueprints {
         validate_schema(&blueprint.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
         if blueprint.fields.len() > 0xff {
@@ -72,12 +71,14 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageError> {
+fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+    blueprints: I,
+) -> Result<(), PackageError> {
     for BlueprintSchema {
         schema,
         event_schema,
         ..
-    } in schema.blueprints.values()
+    } in blueprints
     {
         // Package schema validation happens when the package is published. No need to redo
         // it here again.
@@ -161,6 +162,7 @@ where
             global: true,
             outer_object: None,
             instance_schema: None,
+            features: btreeset!(),
         })),
     );
     let mut metadata_init = BTreeMap::new();
@@ -278,15 +280,25 @@ where
 pub struct PackageNativePackage;
 
 impl PackageNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<PackageInfoSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -295,7 +307,7 @@ impl PackageNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
-                export_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+                export: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -306,7 +318,7 @@ impl PackageNativePackage {
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
-                export_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+                export: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -315,7 +327,7 @@ impl PackageNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
-                export_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+                export: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -324,7 +336,7 @@ impl PackageNativePackage {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyOutput>(),
-                export_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
+                export: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -333,23 +345,14 @@ impl PackageNativePackage {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
-                export_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
+                export: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             },
         );
 
-        let method_auth_template = method_auth_template! {
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-            SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::main(PACKAGE_SET_ROYALTY_IDENT) => [OWNER_ROLE];
-        };
-
         let schema = generate_full_schema(aggregator);
-        let schema = PackageSchema {
-            blueprints: btreemap!(
-                PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
+        let blueprints = btreemap!(
+            PACKAGE_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: BlueprintSchema {
                     outer_blueprint: None,
                     schema,
                     fields,
@@ -361,31 +364,34 @@ impl PackageNativePackage {
                         PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                         PACKAGE_OWNER_BADGE.into(),
                     ),
-                    method_auth_template,
+                    features: btreeset!(),
+                },
+                function_auth: btreemap!(
+                    PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
+                    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                    PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template:  method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+                        SchemaMethodKey::main(PACKAGE_SET_ROYALTY_IDENT) => [OWNER_ROLE];
+                    },
                     outer_method_auth_template: btreemap!(),
                 }
-            ),
-        };
-
-        let function_access_rules = btreemap!(
-            PACKAGE_BLUEPRINT.to_string() => btreemap!(
-                PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
-                PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
-            )
+            }
         );
 
-        PackageDefinition {
-            schema,
-            function_access_rules,
-            royalty_config: btreemap!(),
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y, L: Default>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -396,20 +402,14 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_native(
                     input.package_address,
                     input.native_package_code_id,
-                    input.definition,
+                    input.setup,
                     input.metadata,
                     api,
                 )?;
@@ -419,35 +419,25 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = Self::publish_wasm(input.code, input.definition, input.metadata, api)?;
+                let rtn = Self::publish_wasm(input.code, input.setup, input.metadata, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm_advanced(
                     input.package_address,
                     input.code,
-                    input.definition,
+                    input.setup,
                     input.metadata,
                     input.owner_rule,
                     api,
@@ -460,7 +450,7 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: PackageSetRoyaltyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = Self::set_royalty(input.blueprint, input.fn_name, input.royalty, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -468,13 +458,13 @@ impl PackageNativePackage {
             PACKAGE_CLAIM_ROYALTIES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = Self::claim_royalty(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -482,7 +472,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_native<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u8,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -490,15 +480,36 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(&definition.schema)
+        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&definition.schema)
+        validate_package_event_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let info = PackageInfoSubstate {
-            schema: definition.schema.into(),
+        let (function_access_rules, info) = {
+            let mut access_rules = BTreeMap::new();
+            let mut blueprints = BTreeMap::new();
+
+            for (blueprint, setup) in definition.blueprints {
+                for (ident, rule) in setup.function_auth {
+                    access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
+                }
+
+                let definition = BlueprintDefinition {
+                    schema: setup.schema.into(),
+                    template: setup.template,
+                };
+                blueprints.insert(blueprint.clone(), definition);
+            }
+
+            (
+                FunctionAccessRulesSubstate { access_rules },
+                PackageInfoSubstate {
+                    schema: IndexedPackageSchema { blueprints },
+                },
+            )
         };
+
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
             code: vec![native_package_code_id],
@@ -507,7 +518,6 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
-        let function_access_rules = definition.function_access_rules.into();
 
         globalize_package(
             package_address,
@@ -524,7 +534,7 @@ impl PackageNativePackage {
 
     pub(crate) fn publish_wasm<Y, L: Default>(
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
@@ -541,7 +551,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_wasm_advanced<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        definition: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
         api: &mut Y,
@@ -565,7 +575,7 @@ impl PackageNativePackage {
     fn publish_wasm_internal<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
-        definition: PackageDefinition,
+        setup: PackageSetup,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
         api: &mut Y,
@@ -574,17 +584,18 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(&definition.schema)
+        validate_package_schema(setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&definition.schema)
+        validate_package_event_schema(setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
             collections,
             outer_blueprint: parent,
             virtual_lazy_load_functions,
             functions,
+            features,
             ..
-        } in definition.schema.blueprints.values()
+        } in setup.blueprints.values().map(|s| &s.schema)
         {
             if parent.is_some() {
                 return Err(RuntimeError::ApplicationError(
@@ -619,11 +630,19 @@ impl PackageNativePackage {
                     }
                 }
             }
+
+            if !features.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Features not supported".to_string(),
+                    )),
+                ));
+            }
         }
 
         // Validate WASM
         WasmValidator::default()
-            .validate(&code, &definition.schema)
+            .validate(&code, setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -631,18 +650,38 @@ impl PackageNativePackage {
             })?;
 
         // Build node init
-        let info = PackageInfoSubstate {
-            schema: definition.schema.into(),
+        let (function_access_rules, info, royalty) = {
+            let mut access_rules = BTreeMap::new();
+            let mut blueprints = BTreeMap::new();
+            let mut royalties = BTreeMap::new();
+
+            for (blueprint, setup) in setup.blueprints {
+                for (ident, rule) in setup.function_auth {
+                    access_rules.insert(FnKey::new(blueprint.clone(), ident), rule);
+                }
+
+                let definition = BlueprintDefinition {
+                    schema: setup.schema.into(),
+                    template: setup.template,
+                };
+                blueprints.insert(blueprint.clone(), definition);
+                royalties.insert(blueprint.clone(), setup.royalty_config);
+            }
+
+            (
+                FunctionAccessRulesSubstate { access_rules },
+                PackageInfoSubstate {
+                    schema: IndexedPackageSchema { blueprints },
+                },
+                PackageRoyaltySubstate {
+                    royalty_vault: None,
+                    blueprint_royalty_configs: royalties,
+                },
+            )
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code };
-        let royalty = PackageRoyaltySubstate {
-            royalty_vault: None,
-            blueprint_royalty_configs: definition.royalty_config,
-        };
-
-        let function_access_rules = definition.function_access_rules.into();
 
         globalize_package(
             package_address,
