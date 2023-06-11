@@ -83,6 +83,13 @@ impl TransactionManifestV1 {
     }
 }
 
+pub struct Symbols {
+    pub new_buckets: Vec<ManifestBucket>,
+    pub new_proofs: Vec<ManifestProof>,
+    pub new_address_reservations: Vec<ManifestAddressReservation>,
+    pub new_addresses: Vec<u32>,
+}
+
 impl ManifestBuilder {
     /// Starts a new transaction builder.
     pub fn new() -> Self {
@@ -98,14 +105,22 @@ impl ManifestBuilder {
         &mut self,
         inst: InstructionV1,
     ) -> (&mut Self, Option<ManifestBucket>, Option<ManifestProof>) {
-        let mut new_bucket_id: Option<ManifestBucket> = None;
-        let mut new_proof_id: Option<ManifestProof> = None;
+        let (builder, mut symbols) = self.add_instruction_advanced(inst);
+
+        (builder, symbols.new_buckets.pop(), symbols.new_proofs.pop())
+    }
+
+    pub fn add_instruction_advanced(&mut self, inst: InstructionV1) -> (&mut Self, Symbols) {
+        let mut new_buckets: Vec<ManifestBucket> = Vec::new();
+        let mut new_proofs: Vec<ManifestProof> = Vec::new();
+        let mut new_address_reservations: Vec<ManifestAddressReservation> = Vec::new();
+        let mut new_addresses: Vec<u32> = Vec::new();
 
         match &inst {
             InstructionV1::TakeAllFromWorktop { .. }
             | InstructionV1::TakeFromWorktop { .. }
             | InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                new_bucket_id = Some(self.id_allocator.new_bucket_id());
+                new_buckets.push(self.id_allocator.new_bucket_id());
             }
             InstructionV1::PopFromAuthZone { .. }
             | InstructionV1::CreateProofFromAuthZone { .. }
@@ -117,14 +132,26 @@ impl ManifestBuilder {
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
             | InstructionV1::CloneProof { .. } => {
-                new_proof_id = Some(self.id_allocator.new_proof_id());
+                new_proofs.push(self.id_allocator.new_proof_id());
+            }
+            InstructionV1::AllocateGlobalAddress { .. } => {
+                new_address_reservations.push(self.id_allocator.new_address_reservation_id());
+                new_addresses.push(self.id_allocator.new_address_id());
             }
             _ => {}
         }
 
         self.instructions.push(inst);
 
-        (self, new_bucket_id, new_proof_id)
+        (
+            self,
+            Symbols {
+                new_buckets,
+                new_proofs,
+                new_address_reservations,
+                new_addresses,
+            },
+        )
     }
 
     /// Takes resource from worktop.
@@ -361,6 +388,22 @@ impl ManifestBuilder {
             proof_id: proof_id.clone(),
         });
         then(builder, proof_id.unwrap())
+    }
+
+    pub fn allocate_global_address<F>(&mut self, blueprint_id: BlueprintId, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestAddressReservation, u32) -> &mut Self,
+    {
+        let (builder, mut symbols) =
+            self.add_instruction_advanced(InstructionV1::AllocateGlobalAddress {
+                package_address: blueprint_id.package_address,
+                blueprint_name: blueprint_id.blueprint_name,
+            });
+        then(
+            builder,
+            symbols.new_address_reservations.pop().unwrap(),
+            symbols.new_addresses.pop().unwrap(),
+        )
     }
 
     /// Drops a proof.
