@@ -59,7 +59,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
     let token_address = test_runner.create_everything_allowed_non_fungible_resource();
     let admin_auth = test_runner.create_non_fungible_resource(account);
 
-    // Act 1 - Show that updating the action auth is initially possible
+    // Act 1 - Show that updating both the action_role_key and updater_role_key is initially possible
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
@@ -69,14 +69,6 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
                     action.action_role_key(),
                     rule!(require(admin_auth)),
                 )
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
-        )
-        .expect_commit_success();
-    test_runner
-        .execute_manifest_ignoring_fee(
-            ManifestBuilder::new()
-                .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address.into(),
                     action.updater_role_key(),
@@ -97,14 +89,6 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
                     action.action_role_key(),
                     rule!(require(admin_auth)),
                 )
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
-        )
-        .expect_commit_success();
-    test_runner
-        .execute_manifest_ignoring_fee(
-            ManifestBuilder::new()
-                .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address.into(),
                     action.updater_role_key(),
@@ -115,7 +99,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
         )
         .expect_commit_success();
 
-    // Arrange - We now use the updater role to update the updater role to DenyAll
+    // Arrange - We now use the updater role to update the updater role's rule to DenyAll
     {
         test_runner
             .execute_manifest_ignoring_fee(
