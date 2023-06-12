@@ -1094,6 +1094,28 @@ impl TestRunner {
         )
     }
 
+    pub fn create_everything_allowed_non_fungible_resource(&mut self) -> ResourceAddress {
+        let mut access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> =
+            BTreeMap::new();
+        for key in ALL_RESOURCE_AUTH_KEYS {
+            access_rules.insert(key, (rule!(allow_all), rule!(allow_all)));
+        }
+
+        let receipt = self.execute_manifest_ignoring_fee(
+            ManifestBuilder::new()
+                .create_non_fungible_resource::<_, Vec<_>, ()>(
+                    NonFungibleIdType::Integer,
+                    false,
+                    BTreeMap::new(),
+                    access_rules,
+                    None,
+                )
+                .build(),
+            vec![],
+        );
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
     pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));

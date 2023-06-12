@@ -87,7 +87,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 SET_METADATA_UPDATE_ROLE,
-                RoleEntry::new(update_metadata_mutability, [SET_METADATA_UPDATE_ROLE], false),
+                RoleEntry::new(
+                    update_metadata_mutability,
+                    [SET_METADATA_UPDATE_ROLE],
+                    false,
+                ),
             );
 
             roles.define_role(
