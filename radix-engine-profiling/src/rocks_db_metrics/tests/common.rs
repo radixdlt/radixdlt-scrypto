@@ -60,6 +60,28 @@ pub fn calculate_percent_to_max_points(
     output_values
 }
 
+
+pub fn discard_spikes(
+    data: &mut BTreeMap<usize, Vec<Duration>>,
+    delta_range: f32,
+) {
+    for (_, v) in data.iter_mut() {
+        v.sort();
+        let center_idx = v.len() / 2;
+        let median = v[center_idx].as_micros() as f32;
+
+        v.retain(|&i| {
+            let value = i.as_micros() as f32;
+            if value > median {
+                value - median <= delta_range
+            } else {
+                median - value <= delta_range
+            }
+        });
+    }
+}
+
+
 pub fn generate_commit_data(
     rng: &mut ThreadRng,
     value_size: usize,
