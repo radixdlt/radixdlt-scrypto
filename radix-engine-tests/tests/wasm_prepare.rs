@@ -28,7 +28,7 @@ fn test_too_many_locals() {
     assert!(matches!(
         receipt.expect_commit_failure().outcome.expect_failure(),
         RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::InvalidWasm(
-            PrepareError::NotInstantiatable { .. }
+            PrepareError::ValidationError { .. }
         )))
     ));
 }

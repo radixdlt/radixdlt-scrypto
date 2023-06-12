@@ -105,7 +105,8 @@ fn static_component_should_be_callable() {
         vec![(
             BlueprintId::new(&package_address, "Preallocated"),
             GlobalAddress::new_or_panic(PRE_ALLOCATED),
-        )],
+        )
+            .into()],
         btreeset!(),
     );
     receipt.expect_commit_success();
@@ -171,7 +172,8 @@ fn static_resource_should_be_callable() {
         vec![(
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
-        )],
+        )
+            .into()],
         btreeset!(NonFungibleGlobalId::from_public_key(&key)),
     );
     receipt.expect_commit_success();

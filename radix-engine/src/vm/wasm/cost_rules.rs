@@ -227,6 +227,8 @@ impl Rules for InstructionCostRules {
             I64ReinterpretF64 => self.tier_1_cost,
             F32ReinterpretI32 => self.tier_1_cost,
             F64ReinterpretI64 => self.tier_1_cost,
+
+            SignExt(_) => self.tier_1_cost,
         })
     }
 
