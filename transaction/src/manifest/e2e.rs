@@ -857,7 +857,9 @@ CALL_METHOD
 
         assert_eq!(decompiled2.trim(), expected_canonical.trim()); // trim for better view
 
-        let intent = build_intent(&expected_canonical, network, blobs).to_bytes().unwrap();
+        let intent = build_intent(&expected_canonical, network, blobs)
+            .to_bytes()
+            .unwrap();
         print_blob(name, intent);
     }
 
@@ -875,7 +877,11 @@ CALL_METHOD
         println!("];");
     }
 
-    fn build_intent(manifest: &str, network: &NetworkDefinition, blobs: Vec<Vec<u8>>) -> TransactionIntent {
+    fn build_intent(
+        manifest: &str,
+        network: &NetworkDefinition,
+        blobs: Vec<Vec<u8>>,
+    ) -> TransactionIntent {
         let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
         TransactionIntent::new(
