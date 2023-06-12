@@ -1,6 +1,6 @@
 use super::super::*;
-use super::*;
 use super::common::*;
+use super::*;
 use linreg::linear_regression_of;
 use radix_engine_store_interface::{
     db_key_mapper::*,
@@ -24,25 +24,30 @@ fn test_commit_per_size() {
 
     let rounds_count = match std::env::var("ROUNDS_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => ROUNDS_COUNT
+        _ => ROUNDS_COUNT,
     };
     let min_size = match std::env::var("MIN_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => MIN_SIZE
+        _ => MIN_SIZE,
     };
     let max_size = match std::env::var("MAX_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => MAX_SIZE
+        _ => MAX_SIZE,
     };
     let size_step = match std::env::var("SIZE_STEP") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => SIZE_STEP
+        _ => SIZE_STEP,
     };
 
     println!("No JMT part");
-    let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) =
-        test_commit_per_size_internal(rounds_count, min_size, max_size, size_step, PREPARE_DB_WRITE_REPEATS, 
-            |path| SubstateStoreWithMetrics::new_rocksdb(path) );
+    let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_commit_per_size_internal(
+        rounds_count,
+        min_size,
+        max_size,
+        size_step,
+        PREPARE_DB_WRITE_REPEATS,
+        |path| SubstateStoreWithMetrics::new_rocksdb(path),
+    );
 
     let (lin_slope, lin_intercept): (f32, f32) =
         linear_regression_of(&rocksdb_data_output).unwrap();
@@ -63,8 +68,14 @@ fn test_commit_per_size() {
 
     println!("JMT part");
     let (jmt_rocksdb_data, jmt_rocksdb_data_output, jmt_rocksdb_data_original) =
-        test_commit_per_size_internal(rounds_count, min_size, max_size, size_step, PREPARE_DB_WRITE_REPEATS, 
-            |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path) );
+        test_commit_per_size_internal(
+            rounds_count,
+            min_size,
+            max_size,
+            size_step,
+            PREPARE_DB_WRITE_REPEATS,
+            |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path),
+        );
 
     let (jmt_lin_slope, jmt_lin_intercept): (f32, f32) =
         linear_regression_of(&jmt_rocksdb_data_output).unwrap();
@@ -305,7 +316,14 @@ where
     // prepare database with maxium size
     {
         let mut substate_db = create_store(path.clone());
-        prepare_db(&mut substate_db, MIN_SIZE, MAX_SIZE, SIZE_STEP, prepare_db_write_repeats, false);
+        prepare_db(
+            &mut substate_db,
+            MIN_SIZE,
+            MAX_SIZE,
+            SIZE_STEP,
+            prepare_db_write_repeats,
+            false,
+        );
     }
 
     // reopen database and measure commit times

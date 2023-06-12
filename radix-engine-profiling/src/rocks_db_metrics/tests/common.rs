@@ -60,11 +60,7 @@ pub fn calculate_percent_to_max_points(
     output_values
 }
 
-
-pub fn discard_spikes(
-    data: &mut BTreeMap<usize, Vec<Duration>>,
-    delta_range: f32,
-) {
+pub fn discard_spikes(data: &mut BTreeMap<usize, Vec<Duration>>, delta_range: f32) {
     for (_, v) in data.iter_mut() {
         v.sort();
         let center_idx = v.len() / 2;
@@ -80,7 +76,6 @@ pub fn discard_spikes(
         });
     }
 }
-
 
 pub fn generate_commit_data(
     rng: &mut ThreadRng,
@@ -362,7 +357,7 @@ pub fn export_graph_and_print_summary(
             &BLUE,
         ))?
         .label(format!(
-            "Linear approx.: f(x)={:.4}*x{}",
+            "Linear approx.: f(x)={:.3e}*x{}",
             lin_slope,
             number_to_str!(lin_intercept as f32, 1)
         ))
@@ -482,7 +477,7 @@ pub fn export_graph_and_print_summary_for_two_series(
             &RED,
         ))?
         .label(format!(
-            "Linear approx. of diff points: f(x)={:.4}*x{}",
+            "Linear approx. of diff points: f(x)={:.3e}*x{}",
             lin_slope,
             number_to_str!(lin_intercept as f32, 1)
         ))
@@ -495,7 +490,7 @@ pub fn export_graph_and_print_summary_for_two_series(
             &BLACK,
         ))?
         .label(format!(
-            "Line by 1st and last RocksDB point: f(x)={:.4}*x{}",
+            "Line by 1st and last RocksDB point: f(x)={:.3e}*x{}",
             lin_slope_2,
             number_to_str!(lin_intercept_2 as f32, 1)
         ))
@@ -548,9 +543,9 @@ pub fn export_graph_two_series(
     let line_max_y_1 = lin_slope_1 * x_max + lin_intercept_1;
     let line_max_y_2 = lin_slope_2 * x_max + lin_intercept_2;
     let y_max: f32 = if line_max_y_1 > line_max_y_2 {
-        line_max_y_1 * 1.1f32
+        line_max_y_1 * 1.2f32
     } else {
-        line_max_y_2 * 1.1f32
+        line_max_y_2 * 1.2f32
     };
 
     let lin_x_axis = (x_min..(x_max + 1f32)).step(1f32);
@@ -599,7 +594,7 @@ pub fn export_graph_two_series(
             &RED,
         ))?
         .label(format!(
-            "Linear approx. of series 1 f(x)={:.4}*x{}",
+            "Linear approx. of series 1 f(x)={:.3e}*x{}",
             lin_slope_1,
             number_to_str!(lin_intercept_1, 1)
         ))
@@ -612,7 +607,7 @@ pub fn export_graph_two_series(
             &BLACK,
         ))?
         .label(format!(
-            "Linear approx. of series 2 f(x)={:.4}*x{}",
+            "Linear approx. of series 2 f(x)={:.3e}*x{}",
             lin_slope_2,
             number_to_str!(lin_intercept_2, 1)
         ))

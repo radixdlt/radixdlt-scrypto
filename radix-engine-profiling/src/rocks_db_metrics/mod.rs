@@ -133,8 +133,11 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
         for partition_update in database_updates {
             for db_update in partition_update.1 {
                 match db_update.1 {
-                    DatabaseUpdate::Set(value) => if delete_found { 
-                            panic!("Mixed DatabaseUpdate (Set & Delete) not supported while profiling")
+                    DatabaseUpdate::Set(value) => {
+                        if delete_found {
+                            panic!(
+                                "Mixed DatabaseUpdate (Set & Delete) not supported while profiling"
+                            )
                         } else {
                             set_found = true;
                             if multiple_updates {
@@ -146,15 +149,22 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
                                     old_value_len = Some(value.len());
                                 }
                             }
-                        },
-                    DatabaseUpdate::Delete => if set_found { 
-                        panic!("Mixed DatabaseUpdate (Set & Delete) not supported while profiling")
-                    } else {
-                        delete_found = true;
-                        if let Some(value) = self.get_substate(&partition_update.0, &db_update.0) {
-                            delete_value_len = value.len();
                         }
-                    },
+                    }
+                    DatabaseUpdate::Delete => {
+                        if set_found {
+                            panic!(
+                                "Mixed DatabaseUpdate (Set & Delete) not supported while profiling"
+                            )
+                        } else {
+                            delete_found = true;
+                            if let Some(value) =
+                                self.get_substate(&partition_update.0, &db_update.0)
+                            {
+                                delete_value_len = value.len();
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -166,7 +176,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
 
         // Commit profiling tests are divided to two types:
         // - per size - test invokes only database_update per commit (that is why we can use 1st item only here)
-        // - per partition - test invokes commits for particular partition size, so value length is not important here (still it is safe to use 1st item only) 
+        // - per partition - test invokes commits for particular partition size, so value length is not important here (still it is safe to use 1st item only)
         let partition_update = &database_updates[0];
         let db_update = &partition_update[0];
         match db_update {
@@ -185,7 +195,11 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
                 }
             }
             DatabaseUpdate::Delete => {
-                let exists = self.commit_delete_metrics.borrow().get(&delete_value_len).is_some();
+                let exists = self
+                    .commit_delete_metrics
+                    .borrow()
+                    .get(&delete_value_len)
+                    .is_some();
                 if exists {
                     self.commit_delete_metrics
                         .borrow_mut()
@@ -193,9 +207,10 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
                         .unwrap()
                         .push(duration / database_updates.len() as u32);
                 } else {
-                    self.commit_delete_metrics
-                        .borrow_mut()
-                        .insert(delete_value_len, vec![duration / database_updates.len() as u32]);
+                    self.commit_delete_metrics.borrow_mut().insert(
+                        delete_value_len,
+                        vec![duration / database_updates.len() as u32],
+                    );
                 }
             }
         }
