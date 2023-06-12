@@ -348,6 +348,7 @@ where
 
         Ok(())
     }
+    // FIXME: Add costing rules for moving module and listing modules.
 
     fn kernel_move_module(
         &mut self,
@@ -356,8 +357,6 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        // FIXME: costing!
-
         self.current_frame
             .move_module(
                 src_node_id,
@@ -376,8 +375,6 @@ where
         &mut self,
         node_id: &NodeId,
     ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
-        // FIXME: costing!
-
         self.current_frame
             .list_modules(node_id, &mut self.heap)
             .map_err(CallFrameError::ListNodeModuleError)

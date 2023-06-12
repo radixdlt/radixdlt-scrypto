@@ -1083,7 +1083,7 @@ where
         Ok(global_address_reservation)
     }
 
-    // FIXME ensure that only the package actor can globalize its own blueprints
+    // FIXME: ensure that only the package actor can globalize its own blueprints
 
     #[trace_resources]
     fn globalize(
@@ -1155,14 +1155,12 @@ where
                 let global_address = if receiver_info.global {
                     Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                 } else {
+                    // FIXME: Have a correct implementation of tracking global address
                     // See if we have a parent
-
-                    // TODO: Cleanup, this is a rather crude way of trying to figure out
-                    // TODO: whether the node reference is a child of the current parent
-                    // TODO: this should be cleaned up once call_frame is refactored
+                    // Cleanup, this is a rather crude way of trying to figure out
+                    // whether the node reference is a child of the current parent
+                    // this should be cleaned up once call_frame is refactored
                     let node_visibility = self.api.kernel_get_node_visibility(receiver);
-                    // FIXME I believe this logic is incorrect/inconsistent with design, it's
-                    // to duplicate previous logic.
                     if node_visibility.0.iter().any(|v| v.is_normal())
                         && !node_visibility
                             .0
@@ -2120,7 +2118,6 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
@@ -2208,7 +2205,6 @@ where
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
@@ -2249,8 +2245,9 @@ where
             .generate_uuid())
     }
 
+    // FIXME: update costing for runtime data, such as logs, error messages and events.
+
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         Err(RuntimeError::ApplicationError(ApplicationError::Panic(

@@ -137,7 +137,7 @@ impl Authorization {
             auth_zone_id,
             api,
             |auth_zone, _, _, api| {
-                // FIXME: Need to check the composite max amount rather than just each proof individually
+                // TODO: revisit this and decide if we need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
                     if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
                         && p.amount(api)? >= amount

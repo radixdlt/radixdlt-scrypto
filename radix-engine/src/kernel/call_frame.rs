@@ -788,7 +788,7 @@ impl<L: Clone> CallFrame<L> {
                 // Process own
                 //=============
                 for own in substate_value.owned_nodes() {
-                    // FIXME This is problematic, as owned node must have been locked
+                    // FIXME: This is problematic, as owned node must have been locked
                     // In general, we'd like to move node locking/borrowing to heap.
                     self.owned_root_nodes.insert(own.clone(), 0);
                 }
@@ -1116,7 +1116,7 @@ impl<L: Clone> CallFrame<L> {
         store: &mut S,
         node_id: &NodeId,
     ) -> Result<(), PersistNodeError> {
-        // FIXME: Clean this up
+        // FIXME: Use unified approach to node configuration
         let can_be_stored = if node_id.is_global() {
             true
         } else {

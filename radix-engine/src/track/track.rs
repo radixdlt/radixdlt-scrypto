@@ -794,10 +794,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
                 let value = IndexedScryptoValue::from_vec(substate).unwrap();
 
-                // FIXME: This only works because only NonFungible Vaults use this.
-                // FIXME: Will need to fix this by maintaining the invariant that the value
-                // FIXME: of the index contains the key. Or alternatively, change the abstraction
-                // FIXME: from being a Map to a Set
+                // FIXME: review non-fungible implementation and see if this is an issue.
+                // This only works because only NonFungible Vaults use this.
+                // Will need to fix this by maintaining the invariant that the value
+                // of the index contains the key. Or alternatively, change the abstraction
+                // from being a Map to a Set
                 let substate_key = SubstateKey::Map(value.as_slice().to_vec());
 
                 let tracked = TrackedSubstateKey {
