@@ -32,11 +32,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 MINT_UPDATE_ROLE,
-                RoleEntry::new(mint_mutability, [MINT_UPDATE_ROLE], true),
+                RoleEntry::new(mint_mutability, [MINT_UPDATE_ROLE], false),
             );
             roles.define_role(
                 MINT_ROLE,
-                RoleEntry::new(mint_access_rule, [MINT_UPDATE_ROLE], true),
+                RoleEntry::new(mint_access_rule, [MINT_UPDATE_ROLE], false),
             );
         }
 
@@ -47,11 +47,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 BURN_UPDATE_ROLE,
-                RoleEntry::new(burn_mutability, [BURN_UPDATE_ROLE], true),
+                RoleEntry::new(burn_mutability, [BURN_UPDATE_ROLE], false),
             );
             roles.define_role(
                 BURN_ROLE,
-                RoleEntry::new(burn_access_rule, [BURN_UPDATE_ROLE], true),
+                RoleEntry::new(burn_access_rule, [BURN_UPDATE_ROLE], false),
             );
         }
 
@@ -66,7 +66,7 @@ fn build_access_rules(
                 RoleEntry::new(
                     update_non_fungible_data_mutability,
                     [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
-                    true,
+                    false,
                 ),
             );
 
@@ -75,7 +75,7 @@ fn build_access_rules(
                 RoleEntry::new(
                     update_non_fungible_data_access_rule,
                     [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE],
-                    true,
+                    false,
                 ),
             );
         }
@@ -87,7 +87,7 @@ fn build_access_rules(
         {
             roles.define_role(
                 SET_METADATA_UPDATE_ROLE,
-                RoleEntry::new(update_metadata_mutability, [SET_METADATA_UPDATE_ROLE], true),
+                RoleEntry::new(update_metadata_mutability, [SET_METADATA_UPDATE_ROLE], false),
             );
 
             roles.define_role(
@@ -95,7 +95,7 @@ fn build_access_rules(
                 RoleEntry::new(
                     update_metadata_access_rule,
                     [SET_METADATA_UPDATE_ROLE],
-                    true,
+                    false,
                 ),
             );
         }
@@ -107,11 +107,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 WITHDRAW_ROLE,
-                RoleEntry::new(withdraw_access_rule, [WITHDRAW_UPDATE_ROLE], true),
+                RoleEntry::new(withdraw_access_rule, [WITHDRAW_UPDATE_ROLE], false),
             );
             roles.define_role(
                 WITHDRAW_UPDATE_ROLE,
-                RoleEntry::new(withdraw_mutability, [WITHDRAW_UPDATE_ROLE], true),
+                RoleEntry::new(withdraw_mutability, [WITHDRAW_UPDATE_ROLE], false),
             );
         }
 
@@ -122,11 +122,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 RECALL_ROLE,
-                RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], true),
+                RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], false),
             );
             roles.define_role(
                 RECALL_UPDATE_ROLE,
-                RoleEntry::new(recall_mutability, [RECALL_UPDATE_ROLE], true),
+                RoleEntry::new(recall_mutability, [RECALL_UPDATE_ROLE], false),
             );
         }
 
@@ -137,11 +137,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 FREEZE_ROLE,
-                RoleEntry::new(freeze_access_rule, [FREEZE_UPDATE_ROLE], true),
+                RoleEntry::new(freeze_access_rule, [FREEZE_UPDATE_ROLE], false),
             );
             roles.define_role(
                 FREEZE_UPDATE_ROLE,
-                RoleEntry::new(freeze_mutability, [FREEZE_UPDATE_ROLE], true),
+                RoleEntry::new(freeze_mutability, [FREEZE_UPDATE_ROLE], false),
             );
         }
 
@@ -152,11 +152,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 UNFREEZE_ROLE,
-                RoleEntry::new(unfreeze_access_rule, [UNFREEZE_UPDATE_ROLE], true),
+                RoleEntry::new(unfreeze_access_rule, [UNFREEZE_UPDATE_ROLE], false),
             );
             roles.define_role(
                 UNFREEZE_UPDATE_ROLE,
-                RoleEntry::new(unfreeze_mutability, [UNFREEZE_UPDATE_ROLE], true),
+                RoleEntry::new(unfreeze_mutability, [UNFREEZE_UPDATE_ROLE], false),
             );
         }
 
@@ -167,11 +167,11 @@ fn build_access_rules(
         {
             roles.define_role(
                 DEPOSIT_ROLE,
-                RoleEntry::new(deposit_access_rule, [DEPOSIT_UPDATE_ROLE], true),
+                RoleEntry::new(deposit_access_rule, [DEPOSIT_UPDATE_ROLE], false),
             );
             roles.define_role(
                 DEPOSIT_UPDATE_ROLE,
-                RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], true),
+                RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], false),
             );
         }
     }
