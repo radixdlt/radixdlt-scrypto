@@ -1647,12 +1647,15 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
     matches!(e, RuntimeError::VmError(VmError::Wasm(..)))
 }
-
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
-    wabt::wat2wasm(
+    let mut features = wabt::Features::new();
+    features.enable_sign_extension();
+
+    wabt::wat2wasm_with_features(
         wat.replace("${memcpy}", include_str!("snippets/memcpy.wat"))
             .replace("${memmove}", include_str!("snippets/memmove.wat"))
             .replace("${memset}", include_str!("snippets/memset.wat")),
+        features,
     )
     .expect("Failed to compiled WAT into WASM")
 }
