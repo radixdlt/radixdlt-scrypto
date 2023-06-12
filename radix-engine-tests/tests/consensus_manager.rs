@@ -65,14 +65,11 @@ fn genesis_epoch_has_correct_initial_validators() {
     }
 
     let genesis_data_chunks = vec![
-        (vec![], GenesisDataChunk::Validators(validators)),
-        (
-            vec![],
-            GenesisDataChunk::Stakes {
-                accounts,
-                allocations: stake_allocations,
-            },
-        ),
+        GenesisDataChunk::Validators(validators),
+        GenesisDataChunk::Stakes {
+            accounts,
+            allocations: stake_allocations,
+        },
     ];
 
     let genesis = CustomGenesis {
@@ -565,14 +562,11 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         .map(|validator| validator.owner)
         .collect::<Vec<_>>();
     let genesis_data_chunks = vec![
-        (vec![], GenesisDataChunk::Validators(validators)),
-        (
-            vec![],
-            GenesisDataChunk::Stakes {
-                accounts,
-                allocations,
-            },
-        ),
+        GenesisDataChunk::Validators(validators),
+        GenesisDataChunk::Stakes {
+            accounts,
+            allocations,
+        },
     ];
     let genesis = CustomGenesis {
         genesis_data_chunks,
@@ -1113,15 +1107,12 @@ fn create_custom_genesis(
     }
 
     let genesis_data_chunks = vec![
-        (vec![], GenesisDataChunk::Validators(validators)),
-        (
-            vec![],
-            GenesisDataChunk::Stakes {
-                accounts,
-                allocations: stake_allocations,
-            },
-        ),
-        (vec![], GenesisDataChunk::XrdBalances(xrd_balances)),
+        GenesisDataChunk::Validators(validators),
+        GenesisDataChunk::Stakes {
+            accounts,
+            allocations: stake_allocations,
+        },
+        GenesisDataChunk::XrdBalances(xrd_balances),
     ];
 
     let genesis = CustomGenesis {
@@ -2259,14 +2250,20 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
 
     // Act
     let mut pre_allocated_addresses = vec![];
-    pre_allocated_addresses.push((
-        BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-        GlobalAddress::from(CONSENSUS_MANAGER),
-    ));
-    pre_allocated_addresses.push((
-        BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-        GlobalAddress::from(VALIDATOR_OWNER_BADGE),
-    ));
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER),
+        )
+            .into(),
+    );
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+        )
+            .into(),
+    );
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
@@ -2301,14 +2298,20 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
 
     // Act
     let mut pre_allocated_addresses = vec![];
-    pre_allocated_addresses.push((
-        BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-        GlobalAddress::from(VALIDATOR_OWNER_BADGE),
-    ));
-    pre_allocated_addresses.push((
-        BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-        GlobalAddress::from(CONSENSUS_MANAGER),
-    ));
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+        )
+            .into(),
+    );
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER),
+        )
+            .into(),
+    );
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),

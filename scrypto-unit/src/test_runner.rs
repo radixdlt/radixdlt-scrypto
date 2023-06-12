@@ -128,7 +128,7 @@ impl Compile {
 }
 
 pub struct CustomGenesis {
-    pub genesis_data_chunks: Vec<(Vec<(BlueprintId, GlobalAddress)>, GenesisDataChunk)>,
+    pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
@@ -171,23 +171,17 @@ impl CustomGenesis {
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
-            (
-                vec![],
-                GenesisDataChunk::Validators(vec![genesis_validator]),
-            ),
-            (
-                vec![],
-                GenesisDataChunk::Stakes {
-                    accounts: vec![staker_account],
-                    allocations: vec![(
-                        validator_public_key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount,
-                        }],
-                    )],
-                },
-            ),
+            GenesisDataChunk::Validators(vec![genesis_validator]),
+            GenesisDataChunk::Stakes {
+                accounts: vec![staker_account],
+                allocations: vec![(
+                    validator_public_key,
+                    vec![GenesisStakeAllocation {
+                        account_index: 0,
+                        xrd_amount: stake_xrd_amount,
+                    }],
+                )],
+            },
         ];
         CustomGenesis {
             genesis_data_chunks,
@@ -708,10 +702,10 @@ impl TestRunner {
                     blobs: vec![BlobV1(code)],
                 },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses: vec![(
-                    BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-                    address.into(),
-                )],
+                pre_allocated_addresses: vec![PreAllocatedAddress {
+                    blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                    address: address.into(),
+                }],
             }
             .prepare()
             .expect("expected transaction to be preparable")
@@ -1338,7 +1332,7 @@ impl TestRunner {
         &mut self,
         instructions: Vec<InstructionV1>,
         proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
+        pre_allocated_addresses: Vec<PreAllocatedAddress>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
 
@@ -1365,7 +1359,7 @@ impl TestRunner {
     pub fn execute_system_transaction_with_preallocated_addresses(
         &mut self,
         instructions: Vec<InstructionV1>,
-        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
+        pre_allocated_addresses: Vec<PreAllocatedAddress>,
         mut proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();

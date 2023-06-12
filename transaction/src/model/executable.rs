@@ -10,11 +10,26 @@ pub struct AuthZoneParams {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
-    pub pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
+    pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
+pub struct PreAllocatedAddress {
+    pub blueprint_id: BlueprintId,
+    pub address: GlobalAddress,
+}
+
+impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
+    fn from((blueprint_id, address): (BlueprintId, GlobalAddress)) -> Self {
+        PreAllocatedAddress {
+            blueprint_id,
+            address,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -50,7 +65,13 @@ impl<'a> Executable<'a> {
             references.insert(resource.clone().into());
         }
         for preallocated_address in &context.pre_allocated_addresses {
-            references.insert(preallocated_address.0.package_address.clone().into());
+            references.insert(
+                preallocated_address
+                    .blueprint_id
+                    .package_address
+                    .clone()
+                    .into(),
+            );
         }
 
         Self {
@@ -89,7 +110,7 @@ impl<'a> Executable<'a> {
         &self.context.auth_zone_params
     }
 
-    pub fn pre_allocated_addresses(&self) -> &Vec<(BlueprintId, GlobalAddress)> {
+    pub fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
         &self.context.pre_allocated_addresses
     }
 
