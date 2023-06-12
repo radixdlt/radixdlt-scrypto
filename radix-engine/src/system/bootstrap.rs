@@ -34,7 +34,7 @@ use radix_engine_store_interface::{
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
-use transaction::prelude::BlobV1;
+use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
@@ -44,7 +44,15 @@ const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+//==========================================================================================
+// GENESIS CHUNK MODELS
+// - These are used by the node (and in Java) so they need to implement ScryptoEncode so
+//   that they can go over the JNI boundary
+// - The models which use ManifestSbor are also included in the transaction itself, and must
+//   match the corresponding models in the `genesis_helper` component
+//==========================================================================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct GenesisValidator {
     pub key: Secp256k1PublicKey,
     pub accept_delegated_stake: bool,
@@ -70,27 +78,29 @@ impl From<Secp256k1PublicKey> for GenesisValidator {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct GenesisStakeAllocation {
     pub account_index: u32,
     pub xrd_amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+// Note - this gets mapped into the ManifestGenesisResource by replacing the reservation
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
-    pub address_reservation: ManifestAddressReservation,
+    pub reserved_resource_address: ResourceAddress,
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct GenesisResourceAllocation {
     pub account_index: u32,
     pub amount: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+// Note - this gets mapped into the ManifestGenesisResource for inclusion in the transaction
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
@@ -104,6 +114,39 @@ pub enum GenesisDataChunk {
     },
     XrdBalances(Vec<(ComponentAddress, Decimal)>),
 }
+
+//==========================================================================================
+// MANIFEST-SPECIFIC GENESIS CHUNK MODELS
+// - These must match the corresponding models in the `genesis_helper` component
+//==========================================================================================
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub enum ManifestGenesisDataChunk {
+    Validators(Vec<GenesisValidator>),
+    Stakes {
+        accounts: Vec<ComponentAddress>,
+        allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
+    },
+    Resources(Vec<ManifestGenesisResource>),
+    ResourceBalances {
+        accounts: Vec<ComponentAddress>,
+        allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+    },
+    XrdBalances(Vec<(ComponentAddress, Decimal)>),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct ManifestGenesisResource {
+    pub resource_address_reservation: ManifestAddressReservation,
+    pub initial_supply: Decimal,
+    pub metadata: Vec<(String, MetadataValue)>,
+    pub owner: Option<ComponentAddress>,
+}
+
+//==========================================================================================
+// BOOTSTRAPPER
+// Various helper utilities for constructing and executing genesis
+//==========================================================================================
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct GenesisReceipts {
@@ -162,7 +205,7 @@ where
 
     pub fn bootstrap_with_genesis_data(
         &mut self,
-        genesis_data_chunks: Vec<(Vec<(BlueprintId, GlobalAddress)>, GenesisDataChunk)>,
+        genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
@@ -181,7 +224,7 @@ where
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
-                let receipt = self.ingest_genesis_data_chunk(chunk.0, chunk.1, chunk_index);
+                let receipt = self.ingest_genesis_data_chunk(chunk, chunk_index);
                 data_ingestion_receipts.push(receipt);
             }
 
@@ -227,16 +270,11 @@ where
 
     fn ingest_genesis_data_chunk(
         &mut self,
-        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
         chunk: GenesisDataChunk,
         chunk_number: usize,
     ) -> TransactionReceipt {
-        let transaction = create_genesis_data_ingestion_transaction(
-            pre_allocated_addresses,
-            &GENESIS_HELPER,
-            chunk,
-            chunk_number,
-        );
+        let transaction =
+            create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
@@ -861,19 +899,23 @@ pub fn create_system_bootstrap_transaction(
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_addresses,
+        pre_allocated_addresses: pre_allocated_addresses
+            .into_iter()
+            .map(|allocation_pair| allocation_pair.into())
+            .collect(),
         blobs: BlobsV1 { blobs },
         hash_for_execution: hash(format!("Genesis Bootstrap")),
     }
 }
 
 pub fn create_genesis_data_ingestion_transaction(
-    pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
     genesis_helper: &ComponentAddress,
     chunk: GenesisDataChunk,
     chunk_number: usize,
 ) -> SystemTransactionV1 {
     let mut instructions = Vec::new();
+
+    let (chunk, pre_allocated_addresses) = map_address_allocations_for_manifest(chunk);
 
     instructions.push(InstructionV1::CallMethod {
         address: genesis_helper.clone().into(),
@@ -886,6 +928,62 @@ pub fn create_genesis_data_ingestion_transaction(
         pre_allocated_addresses,
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Data Chunk: {}", chunk_number)),
+    }
+}
+
+fn map_address_allocations_for_manifest(
+    genesis_data_chunk: GenesisDataChunk,
+) -> (ManifestGenesisDataChunk, Vec<PreAllocatedAddress>) {
+    match genesis_data_chunk {
+        GenesisDataChunk::Validators(content) => {
+            (ManifestGenesisDataChunk::Validators(content), vec![])
+        }
+        GenesisDataChunk::Stakes {
+            accounts,
+            allocations,
+        } => (
+            ManifestGenesisDataChunk::Stakes {
+                accounts,
+                allocations,
+            },
+            vec![],
+        ),
+        GenesisDataChunk::Resources(resources) => {
+            let (resources, allocations): (Vec<_>, Vec<_>) = resources
+                .into_iter()
+                .enumerate()
+                .map(|(index, resource)| {
+                    let manifest_resource = ManifestGenesisResource {
+                        resource_address_reservation: ManifestAddressReservation(index as u32),
+                        initial_supply: resource.initial_supply,
+                        metadata: resource.metadata,
+                        owner: resource.owner,
+                    };
+                    let address_allocation = PreAllocatedAddress {
+                        blueprint_id: BlueprintId {
+                            package_address: RESOURCE_PACKAGE,
+                            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        },
+                        address: resource.reserved_resource_address.into(),
+                    };
+                    (manifest_resource, address_allocation)
+                })
+                .unzip();
+            (ManifestGenesisDataChunk::Resources(resources), allocations)
+        }
+        GenesisDataChunk::ResourceBalances {
+            accounts,
+            allocations,
+        } => (
+            ManifestGenesisDataChunk::ResourceBalances {
+                accounts,
+                allocations,
+            },
+            vec![],
+        ),
+        GenesisDataChunk::XrdBalances(content) => {
+            (ManifestGenesisDataChunk::XrdBalances(content), vec![])
+        }
     }
 }
 
@@ -917,10 +1015,10 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_addresses: vec![(
-            BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
-            GlobalAddress::from(FAUCET),
-        )],
+        pre_allocated_addresses: vec![PreAllocatedAddress {
+            blueprint_id: BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
+            address: FAUCET.into(),
+        }],
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
     }

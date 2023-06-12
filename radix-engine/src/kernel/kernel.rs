@@ -27,6 +27,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
+use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
@@ -42,7 +43,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         transaction_hash: &'a Hash,
         runtime_validations: &'a [RuntimeValidationRequest],
         manifest_encoded_instructions: &'a [u8],
-        pre_allocated_addresses: &'a Vec<(BlueprintId, GlobalAddress)>,
+        pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
         references: &'a IndexSet<Reference>,
         blobs: &'a IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -125,7 +126,11 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
-        for (blueprint_id, address) in pre_allocated_addresses {
+        for PreAllocatedAddress {
+            blueprint_id,
+            address,
+        } in pre_allocated_addresses
+        {
             let mut system = SystemService::new(&mut kernel);
             let global_address_reservation =
                 system.prepare_global_address(blueprint_id.clone(), address.clone())?;
