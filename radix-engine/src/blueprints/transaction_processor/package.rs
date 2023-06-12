@@ -51,7 +51,7 @@ impl TransactionProcessorNativePackage {
                     features: btreeset!(),
                 },
                 function_auth: btreemap!(
-                    TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?
+                    TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // FIXME: Change to only allow root to call? and add auditors' tests
                 ),
                 royalty_config: RoyaltyConfig::default(),
                 template: BlueprintTemplate {
