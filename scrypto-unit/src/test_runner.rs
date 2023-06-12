@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackagePublishWasmAdvancedManifestInput,
+    AuthTemplate, BlueprintDefinitionInit, PackagePublishWasmAdvancedManifestInput,
     PackageRoyaltyAccumulatorSubstate, PackageSetup, SchemaPointer, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
@@ -39,8 +39,8 @@ use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
-    FieldSchema, FunctionTemplateInit,
+    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
 };
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
@@ -1665,26 +1665,29 @@ pub fn single_function_package_definition(
             outer_blueprint: None,
             dependencies: btreeset!(),
             feature_set: btreeset!(),
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
-            state: BlueprintStateSchemaInit {
-                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
-                collections: vec![],
-            },
-            events: BlueprintEventSchemaInit::default(),
-            functions: BlueprintFunctionsTemplateInit {
-                virtual_lazy_load_functions: btreemap!(),
-                functions: btreemap!(
-                function_name.to_string() => FunctionTemplateInit {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: format!("{}_{}", blueprint_name, function_name),
-                    }
-                ),
+
+            schema: BlueprintSchemaInit {
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                state: BlueprintStateSchemaInit {
+                    fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                    collections: vec![],
+                },
+                events: BlueprintEventSchemaInit::default(),
+                functions: BlueprintFunctionsTemplateInit {
+                    virtual_lazy_load_functions: btreemap!(),
+                    functions: btreemap!(
+                    function_name.to_string() => FunctionTemplateInit {
+                            receiver: Option::None,
+                            input: LocalTypeIndex::WellKnown(ANY_ID),
+                            output: LocalTypeIndex::WellKnown(ANY_ID),
+                            export: format!("{}_{}", blueprint_name, function_name),
+                        }
+                    ),
+                },
             },
 
             royalty_config: RoyaltyConfig::default(),

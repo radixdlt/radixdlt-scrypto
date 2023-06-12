@@ -6,12 +6,12 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackageSetup,
+    AuthTemplate, BlueprintDefinitionInit, PackageSetup,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
-    FunctionTemplateInit,
+    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintStateSchemaInit, FunctionTemplateInit,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -44,16 +44,18 @@ impl TransactionProcessorNativePackage {
                 outer_blueprint: None,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections: vec![],
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections: vec![],
+                    },
+                    functions: BlueprintFunctionsTemplateInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
+                    events: BlueprintEventSchemaInit::default(),
                 },
-                functions: BlueprintFunctionsTemplateInit {
-                    functions,
-                    virtual_lazy_load_functions: btreemap!(),
-                },
-                events: BlueprintEventSchemaInit::default(),
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(

@@ -18,14 +18,13 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
-    SchemaMethodPermission,
+    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintStateSchemaInit;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, FunctionTemplateInit, ReceiverInfo,
 };
+use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
@@ -97,16 +96,19 @@ impl IdentityNativePackage {
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
                 feature_set: btreeset!(),
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections: vec![],
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections: vec![],
+                    },
+                    events: BlueprintEventSchemaInit::default(),
+                    functions: BlueprintFunctionsTemplateInit {
+                        virtual_lazy_load_functions,
+                        functions,
+                    },
                 },
-                events: BlueprintEventSchemaInit::default(),
-                functions: BlueprintFunctionsTemplateInit {
-                    virtual_lazy_load_functions,
-                    functions,
-                },
+
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(

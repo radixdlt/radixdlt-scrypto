@@ -262,6 +262,7 @@ fn get_arguments_schema<'s>(
 
     if let Some(blueprint_schema) = blueprint_schema {
         if let Some(function_schema) = blueprint_schema
+            .schema
             .functions
             .functions
             .get(invocation.method())
@@ -271,7 +272,10 @@ fn get_arguments_schema<'s>(
                     && invocation.is_direct_access_method()
                 || is_function_receiver(&function_schema.receiver) && invocation.is_function()
             {
-                Ok(Some((function_schema.input, &blueprint_schema.schema)))
+                Ok(Some((
+                    function_schema.input,
+                    &blueprint_schema.schema.schema,
+                )))
             } else {
                 Err(InstructionSchemaValidationError::InvalidReceiver)
             }

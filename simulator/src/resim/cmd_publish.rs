@@ -114,7 +114,7 @@ impl Publish {
                 let update = DatabaseUpdate::Set(scrypto_encode(&blueprint_schema).unwrap());
                 schema_updates.insert(key, update);
 
-                for (function, setup) in s.functions.functions {
+                for (function, setup) in s.schema.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -131,6 +131,7 @@ impl Publish {
                 }
 
                 let events = s
+                    .schema
                     .events
                     .event_schema
                     .into_iter()
@@ -142,9 +143,13 @@ impl Publish {
                     features: s.feature_set,
                     functions,
                     events,
-                    state_schema: IndexedBlueprintStateSchema::from_schema(schema_hash, s.state),
+                    state_schema: IndexedBlueprintStateSchema::from_schema(
+                        schema_hash,
+                        s.schema.state,
+                    ),
                     function_exports,
                     virtual_lazy_load_functions: s
+                        .schema
                         .functions
                         .virtual_lazy_load_functions
                         .into_iter()

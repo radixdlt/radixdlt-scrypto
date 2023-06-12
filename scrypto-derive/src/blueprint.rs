@@ -556,50 +556,58 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 use ::sbor::schema::*;
                 use ::sbor::*;
 
-                let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+                let schema = {
+                    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-                // Aggregate fields
-                let mut fields = Vec::new();
-                let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                fields.push(FieldSchema::normal(type_index));
+                    // Aggregate fields
+                    let mut fields = Vec::new();
+                    let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
+                    fields.push(FieldSchema::normal(type_index));
 
-                // Aggregate functions
-                let functions = {
-                    let mut functions: BTreeMap<String, FunctionTemplateInit> = BTreeMap::new();
-                    #(
-                        functions.insert(#fn_names.to_string(), #fn_schemas);
-                    )*
+                    let state = BlueprintStateSchemaInit {
+                        fields,
+                        collections: Vec::new(),
+                    };
 
-                    BlueprintFunctionsTemplateInit {
+                    // Aggregate functions
+                    let functions = {
+                        let mut functions: BTreeMap<String, FunctionTemplateInit> = BTreeMap::new();
+                        #(
+                            functions.insert(#fn_names.to_string(), #fn_schemas);
+                        )*
+
+                        BlueprintFunctionsTemplateInit {
+                            functions,
+                            virtual_lazy_load_functions: BTreeMap::default(),
+                        }
+                    };
+
+                    // Aggregate event schemas
+                    let events = {
+                        let mut event_schema = BTreeMap::new();
+                        #({
+                            let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
+                            event_schema.insert(#event_type_names.to_owned(), local_type_index);
+                        })*
+                        BlueprintEventSchemaInit {
+                            event_schema,
+                        }
+                    };
+
+                    let schema = generate_full_schema(aggregator);
+
+                    BlueprintSchemaInit {
+                        schema,
+                        state,
+                        events,
                         functions,
-                        virtual_lazy_load_functions: BTreeMap::default(),
                     }
                 };
-
-
-                // Aggregate event schemas
-                let events = {
-                    let mut event_schema = BTreeMap::new();
-                    #({
-                        let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
-                        event_schema.insert(#event_type_names.to_owned(), local_type_index);
-                    })*
-                    BlueprintEventSchemaInit {
-                        event_schema,
-                    }
-                };
-
 
                 let mut dependencies = BTreeSet::new();
                 #({
                     dependencies.insert(#dependency_exprs.into());
                 })*
-
-                let schema = generate_full_schema(aggregator);
-                let state = BlueprintStateSchemaInit {
-                    fields,
-                    collections: Vec::new(),
-                };
 
                 let auth_template = {
                     let mut method_auth = method_auth_template();
@@ -622,10 +630,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     outer_blueprint: None,
                     dependencies,
                     feature_set: BTreeSet::new(),
-                    state,
                     schema,
-                    events,
-                    functions,
                     auth_template,
                     royalty_config,
                 };
@@ -1449,53 +1454,63 @@ mod tests {
                         use ::sbor::rust::prelude::*;
                         use ::sbor::schema::*;
                         use ::sbor::*;
-                        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-                        let mut fields = Vec::new();
-                        let type_index = aggregator.add_child_type_and_descendents::<Test>();
-                        fields.push(FieldSchema::normal(type_index));
 
-                        let functions = {
-                            let mut functions: BTreeMap<String, FunctionTemplateInit> = BTreeMap::new();
-                            functions.insert(
-                                "x".to_string(),
-                                FunctionTemplateInit {
-                                    receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
-                                    input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
-                                    output: aggregator.add_child_type_and_descendents::<u32>(),
-                                    export: "Test_x".to_string(),
-                                }
-                            );
-                            functions.insert(
-                                "y".to_string(),
-                                FunctionTemplateInit {
-                                    receiver: Option::None,
-                                    input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
-                                    output: aggregator.add_child_type_and_descendents::<u32>(),
-                                    export: "Test_y".to_string(),
-                                }
-                            );
+                        let schema = {
+                            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+                            let mut fields = Vec::new();
+                            let type_index = aggregator.add_child_type_and_descendents::<Test>();
+                            fields.push(FieldSchema::normal(type_index));
 
-                            BlueprintFunctionsTemplateInit {
+                            let state = BlueprintStateSchemaInit {
+                                fields,
+                                collections: Vec::new(),
+                            };
+
+                            let functions = {
+                                let mut functions: BTreeMap<String, FunctionTemplateInit> = BTreeMap::new();
+                                functions.insert(
+                                    "x".to_string(),
+                                    FunctionTemplateInit {
+                                        receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
+                                        input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
+                                        output: aggregator.add_child_type_and_descendents::<u32>(),
+                                        export: "Test_x".to_string(),
+                                    }
+                                );
+                                functions.insert(
+                                    "y".to_string(),
+                                    FunctionTemplateInit {
+                                        receiver: Option::None,
+                                        input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
+                                        output: aggregator.add_child_type_and_descendents::<u32>(),
+                                        export: "Test_y".to_string(),
+                                    }
+                                );
+
+                                BlueprintFunctionsTemplateInit {
+                                    functions,
+                                    virtual_lazy_load_functions: BTreeMap::default(),
+                                }
+                            };
+
+                            let events = {
+                                let mut event_schema = BTreeMap::new();
+                                BlueprintEventSchemaInit {
+                                    event_schema,
+                                }
+                            };
+
+                            let schema = generate_full_schema(aggregator);
+
+                            BlueprintSchemaInit {
+                                schema,
+                                state,
+                                events,
                                 functions,
-                                virtual_lazy_load_functions: BTreeMap::default(),
-                            }
-                        };
-
-                        let events = {
-                            let mut event_schema = BTreeMap::new();
-                            BlueprintEventSchemaInit {
-                                event_schema,
                             }
                         };
 
                         let mut dependencies = BTreeSet::new();
-
-                        let schema = generate_full_schema(aggregator);
-
-                        let state = BlueprintStateSchemaInit {
-                            fields,
-                            collections: Vec::new(),
-                        };
 
                         let auth_template = {
                             let mut method_auth = method_auth_template();
@@ -1519,9 +1534,6 @@ mod tests {
                             dependencies,
                             feature_set: BTreeSet::new(),
                             schema,
-                            state,
-                            events,
-                            functions,
                             auth_template,
                             royalty_config,
                         };

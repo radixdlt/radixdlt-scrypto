@@ -19,13 +19,12 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
-    SchemaMethodPermission,
+    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
-    ReceiverInfo,
+    BlueprintFunctionsTemplateInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    FunctionTemplateInit, ReceiverInfo,
 };
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
@@ -451,15 +450,17 @@ impl AccessControllerNativePackage {
                 ),
                 feature_set: btreeset!(),
 
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections: vec![],
-                },
-                events,
-                functions: BlueprintFunctionsTemplateInit {
-                    virtual_lazy_load_functions: btreemap!(),
-                    functions,
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections: vec![],
+                    },
+                    events,
+                    functions: BlueprintFunctionsTemplateInit {
+                        virtual_lazy_load_functions: btreemap!(),
+                        functions,
+                    },
                 },
 
                 royalty_config: RoyaltyConfig::default(),

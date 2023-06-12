@@ -9,13 +9,12 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
-    SchemaMethodPermission,
+    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit,
-    BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
-    ReceiverInfo, TypeRef,
+    BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    FunctionTemplateInit, ReceiverInfo, TypeRef,
 };
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
@@ -386,15 +385,18 @@ impl AccountNativePackage {
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
                 feature_set: btreeset!(),
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections,
-                },
-                events: BlueprintEventSchemaInit::default(),
-                functions: BlueprintFunctionsTemplateInit {
-                    virtual_lazy_load_functions,
-                    functions,
+
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: BlueprintEventSchemaInit::default(),
+                    functions: BlueprintFunctionsTemplateInit {
+                        virtual_lazy_load_functions,
+                        functions,
+                    },
                 },
 
                 royalty_config: RoyaltyConfig::default(),

@@ -3,15 +3,12 @@ use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
-use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
-};
+use scrypto_schema::BlueprintSchemaInit;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -95,10 +92,7 @@ pub struct BlueprintDefinitionInit {
     pub feature_set: BTreeSet<String>,
     pub dependencies: BTreeSet<GlobalAddress>,
 
-    pub schema: ScryptoSchema,
-    pub state: BlueprintStateSchemaInit,
-    pub events: BlueprintEventSchemaInit,
-    pub functions: BlueprintFunctionsTemplateInit,
+    pub schema: BlueprintSchemaInit,
 
     pub royalty_config: RoyaltyConfig,
     pub auth_template: AuthTemplate,
@@ -111,14 +105,7 @@ impl Default for BlueprintDefinitionInit {
             dependencies: BTreeSet::default(),
             feature_set: BTreeSet::default(),
 
-            schema: ScryptoSchema {
-                type_kinds: Vec::new(),
-                type_metadata: Vec::new(),
-                type_validations: Vec::new(),
-            },
-            state: BlueprintStateSchemaInit::default(),
-            events: BlueprintEventSchemaInit::default(),
-            functions: BlueprintFunctionsTemplateInit::default(),
+            schema: BlueprintSchemaInit::default(),
 
             royalty_config: RoyaltyConfig::default(),
             auth_template: AuthTemplate::default(),

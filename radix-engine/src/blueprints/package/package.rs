@@ -21,8 +21,8 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit,
-    BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
-    RefTypes, TypeRef,
+    BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    FunctionTemplateInit, RefTypes, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
@@ -63,10 +63,11 @@ pub enum PackageError {
 fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
-    for setup in blueprints {
-        validate_schema(&setup.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
+    for bp_init in blueprints {
+        validate_schema(&bp_init.schema.schema)
+            .map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
-        if setup.state.fields.len() > 0xff {
+        if bp_init.schema.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
     }
@@ -77,15 +78,14 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
     blueprints: I,
 ) -> Result<(), PackageError> {
     for BlueprintDefinitionInit {
-        schema,
-        events: event_schema,
+        schema: BlueprintSchemaInit { schema, events, .. },
         ..
     } in blueprints
     {
         // Package schema validation happens when the package is published. No need to redo
         // it here again.
 
-        for (expected_event_name, local_type_index) in event_schema.event_schema.iter() {
+        for (expected_event_name, local_type_index) in events.event_schema.iter() {
             // Checking that the event is either a struct or an enum
             let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
@@ -543,17 +543,18 @@ impl PackageNativePackage {
                 ),
                 feature_set: btreeset!(),
 
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections,
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: BlueprintEventSchemaInit::default(),
+                    functions: BlueprintFunctionsTemplateInit {
+                        virtual_lazy_load_functions: btreemap!(),
+                        functions,
+                    },
                 },
-                events: BlueprintEventSchemaInit::default(),
-                functions: BlueprintFunctionsTemplateInit {
-                    virtual_lazy_load_functions: btreemap!(),
-                    functions,
-                },
-
 
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
@@ -680,13 +681,13 @@ impl PackageNativePackage {
             for (blueprint, definition_init) in setup.blueprints {
                 blueprint_auth_templates.insert(blueprint.clone(), definition_init.auth_template);
 
-                let blueprint_schema = definition_init.schema.clone();
+                let blueprint_schema = definition_init.schema.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
                 schemas.insert(schema_hash, blueprint_schema);
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
-                for (function, setup) in definition_init.functions.functions {
+                for (function, setup) in definition_init.schema.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -703,6 +704,7 @@ impl PackageNativePackage {
                 }
 
                 let events = definition_init
+                    .schema
                     .events
                     .event_schema
                     .into_iter()
@@ -716,10 +718,11 @@ impl PackageNativePackage {
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(
                         schema_hash,
-                        definition_init.state,
+                        definition_init.schema.state,
                     ),
                     function_exports,
                     virtual_lazy_load_functions: definition_init
+                        .schema
                         .functions
                         .virtual_lazy_load_functions
                         .into_iter()
@@ -818,8 +821,12 @@ impl PackageNativePackage {
         for BlueprintDefinitionInit {
             outer_blueprint: parent,
             feature_set: features,
-            state: BlueprintStateSchemaInit { collections, .. },
-            functions,
+            schema:
+                BlueprintSchemaInit {
+                    state: BlueprintStateSchemaInit { collections, .. },
+                    functions,
+                    ..
+                },
             ..
         } in setup.blueprints.values()
         {
@@ -894,13 +901,13 @@ impl PackageNativePackage {
             for (blueprint, definition_init) in setup.blueprints {
                 auth_templates.insert(blueprint.clone(), definition_init.auth_template);
 
-                let blueprint_schema = definition_init.schema.clone();
+                let blueprint_schema = definition_init.schema.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
                 schemas.insert(schema_hash, blueprint_schema);
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
-                for (function, setup) in definition_init.functions.functions {
+                for (function, setup) in definition_init.schema.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -917,6 +924,7 @@ impl PackageNativePackage {
                 }
 
                 let events = definition_init
+                    .schema
                     .events
                     .event_schema
                     .into_iter()
@@ -930,10 +938,11 @@ impl PackageNativePackage {
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(
                         schema_hash,
-                        definition_init.state,
+                        definition_init.schema.state,
                     ),
                     function_exports,
                     virtual_lazy_load_functions: definition_init
+                        .schema
                         .functions
                         .virtual_lazy_load_functions
                         .into_iter()

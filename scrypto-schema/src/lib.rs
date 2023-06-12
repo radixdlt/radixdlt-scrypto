@@ -41,6 +41,29 @@ impl KeyValueStoreSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintSchemaInit {
+    pub schema: ScryptoSchema,
+    pub state: BlueprintStateSchemaInit,
+    pub events: BlueprintEventSchemaInit,
+    pub functions: BlueprintFunctionsTemplateInit,
+}
+
+impl Default for BlueprintSchemaInit {
+    fn default() -> Self {
+        Self {
+            schema: ScryptoSchema {
+                type_kinds: Vec::new(),
+                type_metadata: Vec::new(),
+                type_validations: Vec::new(),
+            },
+            state: BlueprintStateSchemaInit::default(),
+            events: BlueprintEventSchemaInit::default(),
+            functions: BlueprintFunctionsTemplateInit::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintStateSchemaInit {
     pub fields: Vec<FieldSchema>,
     pub collections: Vec<BlueprintCollectionSchema<LocalTypeIndex>>,
@@ -202,15 +225,6 @@ impl ReceiverInfo {
 pub enum Receiver {
     SelfRef,
     SelfRefMut,
-}
-
-impl Default for BlueprintStateSchemaInit {
-    fn default() -> Self {
-        Self {
-            fields: Vec::default(),
-            collections: Vec::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

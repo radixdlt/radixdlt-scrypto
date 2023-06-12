@@ -12,8 +12,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
-    SchemaMethodPermission,
+    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::rule;
@@ -142,15 +141,18 @@ impl PoolNativePackage {
                 outer_blueprint: None,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections,
-                },
-                events: event_schema,
-                functions: BlueprintFunctionsTemplateInit {
-                    functions,
-                    virtual_lazy_load_functions: btreemap!(),
+
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsTemplateInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
                 },
 
                 royalty_config: RoyaltyConfig::default(),
@@ -295,16 +297,20 @@ impl PoolNativePackage {
                 outer_blueprint: None,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections,
+
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsTemplateInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
                 },
-                events: event_schema,
-                functions: BlueprintFunctionsTemplateInit {
-                    functions,
-                    virtual_lazy_load_functions: btreemap!(),
-                },
+
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(
@@ -451,15 +457,18 @@ impl PoolNativePackage {
                 outer_blueprint: None,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections,
-                },
-                events: event_schema,
-                functions: BlueprintFunctionsTemplateInit {
-                    functions,
-                    virtual_lazy_load_functions: btreemap!(),
+
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsTemplateInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
                 },
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {

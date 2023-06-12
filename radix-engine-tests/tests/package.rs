@@ -3,11 +3,11 @@ use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackageSetup,
+    AuthTemplate, BlueprintDefinitionInit, PackageSetup,
 };
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
-    FieldSchema, FunctionTemplateInit,
+    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
 };
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
@@ -150,26 +150,28 @@ fn test_basic_package_missing_export() {
             dependencies: btreeset!(),
             feature_set: btreeset!(),
 
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
-            state: BlueprintStateSchemaInit {
-                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
-                collections: vec![],
-            },
-            events: BlueprintEventSchemaInit::default(),
-            functions: BlueprintFunctionsTemplateInit {
-                functions: btreemap!(
-                    "f".to_string() => FunctionTemplateInit {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: "not_exist".to_string(),
-                    }
-                ),
-                virtual_lazy_load_functions: btreemap!(),
+            schema: BlueprintSchemaInit {
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                state: BlueprintStateSchemaInit {
+                    fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                    collections: vec![],
+                },
+                events: BlueprintEventSchemaInit::default(),
+                functions: BlueprintFunctionsTemplateInit {
+                    functions: btreemap!(
+                        "f".to_string() => FunctionTemplateInit {
+                            receiver: Option::None,
+                            input: LocalTypeIndex::WellKnown(ANY_ID),
+                            output: LocalTypeIndex::WellKnown(ANY_ID),
+                            export: "not_exist".to_string(),
+                        }
+                    ),
+                    virtual_lazy_load_functions: btreemap!(),
+                },
             },
 
             royalty_config: RoyaltyConfig::default(),

@@ -11,13 +11,13 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
-    SchemaMethodPermission,
+    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintFunctionsTemplateInit, BlueprintSortedIndexSchema,
-    BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit, ReceiverInfo,
+    BlueprintCollectionSchema, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintSortedIndexSchema, BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
+    ReceiverInfo,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -160,15 +160,17 @@ impl ConsensusManagerNativePackage {
                     VALIDATOR_OWNER_BADGE.into(),
                 ),
                 feature_set: btreeset!(),
-                schema: consensus_manager_schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections,
-                },
-                events: event_schema,
-                functions: BlueprintFunctionsTemplateInit {
-                    functions,
-                    virtual_lazy_load_functions: btreemap!(),
+                schema: BlueprintSchemaInit {
+                    schema: consensus_manager_schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsTemplateInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
                 },
 
                 royalty_config: RoyaltyConfig::default(),
@@ -338,15 +340,17 @@ impl ConsensusManagerNativePackage {
                 outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
-                schema,
-                state: BlueprintStateSchemaInit {
-                    fields,
-                    collections: vec![],
-                },
-                events: event_schema,
-                functions: BlueprintFunctionsTemplateInit {
-                    virtual_lazy_load_functions: btreemap!(),
-                    functions,
+                schema: BlueprintSchemaInit {
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections: vec![],
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsTemplateInit {
+                        virtual_lazy_load_functions: btreemap!(),
+                        functions,
+                    },
                 },
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
