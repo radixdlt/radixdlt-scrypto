@@ -63,3 +63,53 @@ fn test_wasm_non_mvp_expect_sign_ext_from_rust_code() {
 
     assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops())
 }
+
+#[test]
+fn test_wasm_non_mvp_mutable_globals_import() {
+    // Arrange
+    let code = wat2wasm(&include_str!("wasm/mutable_globals_import.wat"));
+
+    // Act
+    let mut test_runner = TestRunner::builder().build();
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100u32.into())
+        .publish_package_advanced(
+            code,
+            single_function_package_definition("Test", "f"),
+            BTreeMap::new(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let error_message = receipt
+        .expect_commit_failure()
+        .outcome
+        .expect_failure()
+        .to_string();
+    assert!(error_message.contains("InvalidImport(ImportNotAllowed)"));
+}
+
+#[test]
+fn test_wasm_non_mvp_mutable_globals_export() {
+    // Arrange
+    let code = wat2wasm(&include_str!("wasm/mutable_globals_export.wat"));
+
+    // Act
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.publish_package(
+        code,
+        single_function_package_definition("Test", "f"),
+        BTreeMap::new(),
+        OwnerRole::None,
+    );
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    assert!(receipt.is_commit_success());
+}
