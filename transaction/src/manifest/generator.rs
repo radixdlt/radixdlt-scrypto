@@ -1995,13 +1995,14 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Decimal("1");
             "#,
             InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 args: to_manifest_value(&ConsensusManagerCreateValidatorInput {
                     key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
+                    fee_factor: Decimal::ONE,
                 }),
             },
         );

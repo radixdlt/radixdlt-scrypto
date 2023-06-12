@@ -39,6 +39,7 @@ fn genesis_epoch_has_correct_initial_validators() {
             key: pub_key,
             accept_delegated_stake: true,
             is_registered: true,
+            fee_factor: Decimal::ONE,
             metadata: vec![],
             owner: validator_account_address,
         });
@@ -1078,6 +1079,7 @@ fn create_custom_genesis(
             key: pub_key,
             accept_delegated_stake: true,
             is_registered: true,
+            fee_factor: Decimal::ONE,
             metadata: vec![],
             owner: validator_account_address,
         });

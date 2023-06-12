@@ -487,7 +487,7 @@ impl TxFuzzer {
                 }
                 // CreateValidator
                 31 => {
-                    let input = ConsensusManagerCreateValidatorInput { key: public_key };
+                    let input = ConsensusManagerCreateValidatorInput { key: public_key, fee_factor: Decimal::ONE };
 
                     Some(InstructionV1::CallMethod {
                         address: component_address.into(),

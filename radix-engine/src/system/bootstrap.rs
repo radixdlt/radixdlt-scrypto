@@ -57,6 +57,7 @@ pub struct GenesisValidator {
     pub key: Secp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
+    pub fee_factor: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
@@ -69,6 +70,7 @@ impl From<Secp256k1PublicKey> for GenesisValidator {
             key,
             accept_delegated_stake: true,
             is_registered: true,
+            fee_factor: Decimal::ONE,
             metadata: vec![(
                 "url".to_string(),
                 MetadataValue::Url(Url(format!("http://test.local?validator={:?}", key))),

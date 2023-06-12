@@ -12,6 +12,7 @@ pub struct GenesisValidator {
     pub key: Secp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
+    pub fee_factor: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
@@ -120,7 +121,7 @@ mod genesis_helper {
 
         fn create_validator(&mut self, validator: GenesisValidator) {
             let (validator_address, owner_token_bucket) = ConsensusManager(self.consensus_manager)
-                .create_validator(validator.key, &mut ScryptoEnv)
+                .create_validator(validator.key, validator.fee_factor, &mut ScryptoEnv)
                 .unwrap();
 
             // Deposit the badge to the owner account
