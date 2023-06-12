@@ -335,6 +335,15 @@ impl TransactionReceipt {
             );
         }
     }
+
+    pub fn expect_auth_failure(&self) {
+        self.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+            )
+        })
+    }
 }
 
 macro_rules! prefix {
