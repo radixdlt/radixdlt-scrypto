@@ -127,13 +127,13 @@ impl AuthModule {
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
                 let template = api
-                    .get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?
+                    .get_bp_auth_template(&callee.node_object_info.blueprint_id)?
                     .clone();
-                template.method_auth_template
+                template.method_auth
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
                 let template = api
-                    .get_bp_method_auth_template(&callee.node_object_info.blueprint_id)?
+                    .get_bp_auth_template(&callee.node_object_info.blueprint_id)?
                     .clone();
                 template.outer_method_auth_template
             }

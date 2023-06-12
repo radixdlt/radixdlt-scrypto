@@ -12,7 +12,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey,
+    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
     SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::pool::*;
@@ -152,14 +152,13 @@ impl PoolNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(
-                    ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    outer_method_auth_template: btreemap!(),
 
-                    method_auth_template: method_auth_template! {
+                royalty_config: RoyaltyConfig::default(),
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: method_auth_template! {
                         // Metadata Module rules
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
@@ -177,6 +176,7 @@ impl PoolNativePackage {
                         SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
                         SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
                     },
+                    outer_method_auth_template: btreemap!(),
                 },
             }
         };
@@ -305,12 +305,12 @@ impl PoolNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(
-                    TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: method_auth_template! {
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: method_auth_template! {
                         // Metadata Module rules
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
@@ -461,12 +461,12 @@ impl PoolNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(
-                    MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: method_auth_template! {
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: method_auth_template! {
                         // Metadata Module rules
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];

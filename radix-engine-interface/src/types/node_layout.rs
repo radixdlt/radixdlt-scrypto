@@ -60,8 +60,7 @@ pub enum PackagePartitionOffset {
     Schemas,
     Code,
     Royalty,
-    AuthFunctionTemplates,
-    AuthMethodTemplates,
+    AuthTemplates,
 }
 
 impl TryFrom<u8> for PackagePartitionOffset {

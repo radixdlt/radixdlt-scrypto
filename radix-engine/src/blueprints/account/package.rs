@@ -9,7 +9,7 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey,
+    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
     SchemaMethodPermission,
 };
 use radix_engine_interface::schema::{
@@ -347,7 +347,7 @@ impl AccountNativePackage {
             ]
         */
 
-        let method_auth_template = method_auth_template!(
+        let method_auth = method_auth_template!(
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
@@ -396,14 +396,15 @@ impl AccountNativePackage {
                     virtual_lazy_load_functions,
                     functions,
                 },
-                function_auth: btreemap!(
-                    ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
-                    ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
-                    ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                ),
+
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template,
+                auth_template: AuthTemplate {
+                     function_auth: btreemap!(
+                        ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
+                        ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
+                        ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth,
                     outer_method_auth_template: btreemap!(),
                 },
             }

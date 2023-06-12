@@ -362,22 +362,22 @@ where
     }
 
     // TODO: Move cache management into PackageNativePackage
-    pub fn get_bp_method_auth_template(
+    pub fn get_bp_auth_template(
         &mut self,
         blueprint: &BlueprintId,
-    ) -> Result<MethodAuthTemplate, RuntimeError> {
-        let method_auth = self
+    ) -> Result<AuthTemplate, RuntimeError> {
+        let auth_template = self
             .api
             .kernel_get_system_state()
             .system
-            .method_auth_cache
+            .auth_cache
             .get(blueprint);
-        if let Some(method_auth) = method_auth {
-            return Ok(method_auth.clone());
+        if let Some(auth_template) = auth_template {
+            return Ok(auth_template.clone());
         }
 
         let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
-        let method_auth_template = PackageAuthNativeBlueprint::get_bp_method_auth_template(
+        let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             blueprint.package_address.as_node_id(),
             &bp_version_key,
             self.api,
@@ -386,10 +386,10 @@ where
         self.api
             .kernel_get_system_state()
             .system
-            .method_auth_cache
-            .insert(blueprint.clone(), method_auth_template.clone());
+            .auth_cache
+            .insert(blueprint.clone(), auth_template.clone());
 
-        Ok(method_auth_template)
+        Ok(auth_template)
     }
 
     pub fn get_bp_function_access_rule(
@@ -397,35 +397,8 @@ where
         blueprint: &BlueprintId,
         ident: &str,
     ) -> Result<AccessRule, RuntimeError> {
-        let function_auth = self
-            .api
-            .kernel_get_system_state()
-            .system
-            .function_auth_cache
-            .get(blueprint);
-        let function_auth = if let Some(function_auth) = function_auth {
-            function_auth
-        } else {
-            let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
-            let auth_template = PackageAuthNativeBlueprint::get_bp_function_auth_template(
-                blueprint.package_address.as_node_id(),
-                &bp_version_key,
-                self.api,
-            )?;
-            self.api
-                .kernel_get_system_state()
-                .system
-                .function_auth_cache
-                .insert(blueprint.clone(), auth_template.clone());
-            self.api
-                .kernel_get_system_state()
-                .system
-                .function_auth_cache
-                .get(blueprint)
-                .unwrap()
-        };
-
-        let access_rule = function_auth.rules.get(ident);
+        let auth_template = self.get_bp_auth_template(blueprint)?;
+        let access_rule = auth_template.function_auth.get(ident);
         if let Some(access_rule) = access_rule {
             Ok(access_rule.clone())
         } else {

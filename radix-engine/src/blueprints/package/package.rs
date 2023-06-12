@@ -139,8 +139,8 @@ fn globalize_package<Y, L: Default>(
     code_hash: Hash,
 
     package_royalties: BTreeMap<String, RoyaltyConfig>,
-    blueprint_auth_template: BTreeMap<String, MethodAuthTemplate>,
-    function_auth: BTreeMap<String, FunctionAuthTemplate>,
+
+    blueprint_auth_template: BTreeMap<String, AuthTemplate>,
 
     metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
@@ -278,7 +278,7 @@ where
     };
 
     {
-        let function_auth_partition = function_auth
+        let auth_partition = blueprint_auth_template
             .into_iter()
             .map(|(blueprint, auth_template)| {
                 let key = BlueprintVersionKey {
@@ -295,33 +295,9 @@ where
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET)
+                .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
-            function_auth_partition,
-        );
-    }
-
-    {
-        let method_auth_partition = blueprint_auth_template
-            .into_iter()
-            .map(|(blueprint, method_auth_template)| {
-                let key = BlueprintVersionKey {
-                    blueprint,
-                    version: BlueprintVersion::default(),
-                };
-                let value = KeyValueEntrySubstate::immutable_entry(method_auth_template);
-                (
-                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
-
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET)
-                .unwrap(),
-            method_auth_partition,
+            auth_partition,
         );
     }
 
@@ -511,18 +487,7 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<FunctionAuthTemplate>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Blueprint(
-                    aggregator.add_child_type_and_descendents::<MethodAuthTemplate>(),
+                    aggregator.add_child_type_and_descendents::<AuthTemplate>(),
                 ),
                 can_own: false,
             },
@@ -589,14 +554,15 @@ impl PackageNativePackage {
                     functions,
                 },
 
-                function_auth: btreemap!(
-                    PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
-                    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                    PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
-                ),
+
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template:  method_auth_template! {
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
+                        PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                        PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                    ),
+                    method_auth:  method_auth_template! {
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
                         SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
@@ -698,7 +664,6 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let mut function_auth = BTreeMap::new();
         let mut blueprint_auth_templates = BTreeMap::new();
         let mut schemas = BTreeMap::new();
         let mut blueprints = BTreeMap::new();
@@ -712,23 +677,16 @@ impl PackageNativePackage {
         let code_hash = hash(scrypto_encode(&code).unwrap());
 
         {
-            for (blueprint, setup) in setup.blueprints {
-                function_auth.insert(
-                    blueprint.clone(),
-                    FunctionAuthTemplate {
-                        rules: setup.function_auth,
-                    },
-                );
+            for (blueprint, definition_init) in setup.blueprints {
+                blueprint_auth_templates.insert(blueprint.clone(), definition_init.auth_template);
 
-                blueprint_auth_templates.insert(blueprint.clone(), setup.template);
-
-                let blueprint_schema = setup.schema.clone();
+                let blueprint_schema = definition_init.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
                 schemas.insert(schema_hash, blueprint_schema);
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
-                for (function, setup) in setup.functions.functions {
+                for (function, setup) in definition_init.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -744,7 +702,7 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let events = setup
+                let events = definition_init
                     .events
                     .event_schema
                     .into_iter()
@@ -752,16 +710,16 @@ impl PackageNativePackage {
                     .collect();
 
                 let definition = BlueprintDefinition {
-                    outer_blueprint: setup.outer_blueprint,
-                    features: setup.feature_set,
+                    outer_blueprint: definition_init.outer_blueprint,
+                    features: definition_init.feature_set,
                     functions,
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(
                         schema_hash,
-                        setup.state,
+                        definition_init.state,
                     ),
                     function_exports,
-                    virtual_lazy_load_functions: setup
+                    virtual_lazy_load_functions: definition_init
                         .functions
                         .virtual_lazy_load_functions
                         .into_iter()
@@ -779,7 +737,7 @@ impl PackageNativePackage {
                 blueprints.insert(blueprint.clone(), definition);
 
                 let minor_version_config = BlueprintDependencies {
-                    dependencies: setup.dependencies,
+                    dependencies: definition_init.dependencies,
                 };
                 blueprint_dependencies.insert(blueprint.clone(), minor_version_config);
             }
@@ -794,7 +752,6 @@ impl PackageNativePackage {
             code_hash,
             btreemap!(),
             blueprint_auth_templates,
-            function_auth,
             metadata,
             None,
             api,
@@ -925,8 +882,7 @@ impl PackageNativePackage {
 
         let code_hash = hash(scrypto_encode(&code).unwrap());
 
-        let mut function_auth_templates = BTreeMap::new();
-        let mut method_auth_templates = BTreeMap::new();
+        let mut auth_templates = BTreeMap::new();
 
         let mut blueprints = BTreeMap::new();
         let mut schemas = BTreeMap::new();
@@ -936,13 +892,7 @@ impl PackageNativePackage {
         // Build node init
         {
             for (blueprint, definition_init) in setup.blueprints {
-                function_auth_templates.insert(
-                    blueprint.clone(),
-                    FunctionAuthTemplate {
-                        rules: definition_init.function_auth,
-                    },
-                );
-                method_auth_templates.insert(blueprint.clone(), definition_init.template);
+                auth_templates.insert(blueprint.clone(), definition_init.auth_template);
 
                 let blueprint_schema = definition_init.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
@@ -1016,8 +966,7 @@ impl PackageNativePackage {
             code,
             code_hash,
             royalties,
-            method_auth_templates,
-            function_auth_templates,
+            auth_templates,
             metadata,
             Some(access_rules),
             api,
@@ -1185,53 +1134,18 @@ impl PackageRoyaltyNativeBlueprint {
 pub struct PackageAuthNativeBlueprint;
 
 impl PackageAuthNativeBlueprint {
-    pub fn get_bp_method_auth_template<Y>(
+    pub fn get_bp_auth_template<Y>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
-    ) -> Result<MethodAuthTemplate, RuntimeError>
+    ) -> Result<AuthTemplate, RuntimeError>
     where
         Y: KernelSubstateApi<SystemLockData>,
     {
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET)
-                .unwrap(),
-            &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
-            LockFlags::read_only(),
-            Some(|| {
-                let kv_entry = KeyValueEntrySubstate::<()>::default();
-                IndexedScryptoValue::from_typed(&kv_entry)
-            }),
-            SystemLockData::default(),
-        )?;
-
-        let substate: KeyValueEntrySubstate<MethodAuthTemplate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
-
-        let template = substate.value.ok_or_else(|| {
-            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
-            RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(blueprint_id))
-        })?;
-
-        Ok(template)
-    }
-
-    pub fn get_bp_function_auth_template<Y>(
-        receiver: &NodeId,
-        bp_version_key: &BlueprintVersionKey,
-        api: &mut Y,
-    ) -> Result<FunctionAuthTemplate, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData>,
-    {
-        let handle = api.kernel_lock_substate_with_default(
-            receiver,
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET)
+                .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
             &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             LockFlags::read_only(),
@@ -1242,7 +1156,7 @@ impl PackageAuthNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let auth_template: KeyValueEntrySubstate<FunctionAuthTemplate> =
+        let auth_template: KeyValueEntrySubstate<AuthTemplate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 

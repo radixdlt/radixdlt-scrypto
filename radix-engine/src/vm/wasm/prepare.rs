@@ -1259,7 +1259,6 @@ mod tests {
                 },
 
                 events: Default::default(),
-                function_auth: Default::default(),
                 functions: BlueprintFunctionsTemplateInit {
                     functions: btreemap!(
                         "f".to_string() => FunctionTemplateInit {
@@ -1277,7 +1276,7 @@ mod tests {
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                template: Default::default(),
+                auth_template: Default::default(),
             },
         );
 

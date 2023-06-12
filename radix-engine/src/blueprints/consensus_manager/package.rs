@@ -11,7 +11,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey,
+    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
     SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::resource::require;
@@ -170,12 +170,13 @@ impl ConsensusManagerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(
-                    CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
-                ),
+
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: method_auth_template!(
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                    ),
+                    method_auth: method_auth_template!(
                         SchemaMethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
                         SchemaMethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
 
@@ -347,10 +348,10 @@ impl ConsensusManagerNativePackage {
                     virtual_lazy_load_functions: btreemap!(),
                     functions,
                 },
-                function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: method_auth_template! {
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(),
+                    method_auth: method_auth_template! {
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
                         SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;

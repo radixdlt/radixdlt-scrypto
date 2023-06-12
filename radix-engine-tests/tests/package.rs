@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    BlueprintDefinitionInit, AuthTemplate, PackageSetup,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
@@ -172,12 +172,8 @@ fn test_basic_package_missing_export() {
                 virtual_lazy_load_functions: btreemap!(),
             },
 
-            function_auth: btreemap!(),
             royalty_config: RoyaltyConfig::default(),
-            template: MethodAuthTemplate {
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: btreemap!(),
-            },
+            auth_template: AuthTemplate::default(),
         },
     );
     // Act

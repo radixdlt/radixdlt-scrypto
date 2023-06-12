@@ -211,9 +211,8 @@ where
         let mut id_allocator = IdAllocator::new(executable.transaction_hash().clone());
         let mut system = SystemConfig {
             blueprint_cache: NonIterMap::new(),
-            method_auth_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
-            function_auth_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },

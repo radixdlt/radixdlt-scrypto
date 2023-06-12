@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey,
+    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
     SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -310,14 +310,14 @@ impl ResourceManagerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                ),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: method_auth_template! {
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: method_auth_template! {
                         SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
@@ -592,16 +592,17 @@ impl ResourceManagerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                ),
+
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: method_auth_template! {
-                                                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
                         SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
 
@@ -790,15 +791,14 @@ impl ResourceManagerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-
-                function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(),
                     // This is the mapping from Vault methods to Vault roles
                     // NOTE: This is an extra filter on top of the ResourceManager filter
                     // This is for use with the freezing feature
                     // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                    method_auth_template: method_auth_template! {
+                    method_auth: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
@@ -1053,14 +1053,14 @@ impl ResourceManagerNativePackage {
                     virtual_lazy_load_functions: btreemap!(),
                 },
 
-                function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(),
                     // This is the mapping from Vault methods to Vault roles
                     // NOTE: This is an extra filter on top of the ResourceManager filter
                     // This is for use with the freezing feature
                     // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                    method_auth_template: method_auth_template! {
+                    method_auth: method_auth_template! {
                         SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
@@ -1227,10 +1227,10 @@ impl ResourceManagerNativePackage {
                     virtual_lazy_load_functions: btreemap!(),
                 },
 
-                function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: btreemap!(),
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(),
+                    method_auth: btreemap!(),
                     outer_method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
@@ -1402,10 +1402,10 @@ impl ResourceManagerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: btreemap!(),
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(),
+                    method_auth: btreemap!(),
                     outer_method_auth_template: method_auth_template! {
                         SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
@@ -1491,12 +1491,12 @@ impl ResourceManagerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                 },
-                function_auth: btreemap!(
-                    PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                ),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: btreemap!(),
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: btreemap!(),
                     outer_method_auth_template: method_auth_template!(
                         SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
@@ -1588,12 +1588,12 @@ impl ResourceManagerNativePackage {
                     virtual_lazy_load_functions: btreemap!(),
                 },
 
-                function_auth: btreemap!(
-                    PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                ),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: btreemap!(),
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: btreemap!(),
                     outer_method_auth_template: method_auth_template!(
                         SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
                         SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
@@ -1724,12 +1724,12 @@ impl ResourceManagerNativePackage {
                     virtual_lazy_load_functions: btreemap!(),
                 },
 
-                function_auth: btreemap!(
-                    WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
-                ),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: btreemap!(),
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },
             }
@@ -1864,10 +1864,10 @@ impl ResourceManagerNativePackage {
                     virtual_lazy_load_functions: btreemap!(),
                 },
 
-                function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template: btreemap!(),
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(),
+                    method_auth: btreemap!(),
                     outer_method_auth_template: btreemap!(),
                 },
             }

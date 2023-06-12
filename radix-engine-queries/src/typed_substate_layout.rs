@@ -106,8 +106,7 @@ pub enum TypedMainModuleSubstateKey {
     PackageSchemaKey(Hash),
     PackageCodeKey(Hash),
     PackageRoyaltyKey(BlueprintVersionKey),
-    PackageAuthFunctionTemplateKey(BlueprintVersionKey),
-    PackageAuthMethodTemplateKey(BlueprintVersionKey),
+    PackageAuthTemplateKey(BlueprintVersionKey),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
     NonFungibleResourceData(NonFungibleLocalId),
@@ -261,15 +260,9 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                PackagePartitionOffset::AuthFunctionTemplates => {
+                PackagePartitionOffset::AuthTemplates => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageAuthFunctionTemplateKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                PackagePartitionOffset::AuthMethodTemplates => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageAuthMethodTemplateKey(
+                    TypedMainModuleSubstateKey::PackageAuthTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -418,8 +411,7 @@ pub enum TypedMainModuleSubstateValue {
     PackageBlueprintDependencies(KeyValueEntrySubstate<BlueprintDependencies>),
     PackageSchema(KeyValueEntrySubstate<ScryptoSchema>),
     PackageCode(KeyValueEntrySubstate<PackageCodeSubstate>),
-    PackageFunctionAuthTemplate(KeyValueEntrySubstate<FunctionAuthTemplate>),
-    PackageMethodAuthTemplate(KeyValueEntrySubstate<MethodAuthTemplate>),
+    PackageAuthTemplate(KeyValueEntrySubstate<AuthTemplate>),
     PackageRoyalty(KeyValueEntrySubstate<RoyaltyConfig>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
@@ -595,11 +587,8 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::PackageRoyaltyKey(_fn_key) => {
             TypedMainModuleSubstateValue::PackageRoyalty(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::PackageAuthFunctionTemplateKey(_fn_key) => {
-            TypedMainModuleSubstateValue::PackageFunctionAuthTemplate(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageAuthMethodTemplateKey(_fn_key) => {
-            TypedMainModuleSubstateValue::PackageMethodAuthTemplate(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::PackageAuthTemplateKey(_fn_key) => {
+            TypedMainModuleSubstateValue::PackageAuthTemplate(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::FungibleResourceField(offset) => {
             TypedMainModuleSubstateValue::FungibleResource(match offset {

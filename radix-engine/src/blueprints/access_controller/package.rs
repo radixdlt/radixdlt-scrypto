@@ -19,7 +19,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey,
+    BlueprintDefinitionInit, AuthTemplate, PackageSetup, SchemaMethodKey,
     SchemaMethodPermission,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -411,7 +411,7 @@ impl AccessControllerNativePackage {
             ]
         };
 
-        let method_auth_template = method_auth_template!(
+        let method_auth = method_auth_template!(
             SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
             SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
             SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
@@ -462,12 +462,12 @@ impl AccessControllerNativePackage {
                     functions,
                 },
 
-                function_auth: btreemap!(
-                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
-                ),
                 royalty_config: RoyaltyConfig::default(),
-                template: MethodAuthTemplate {
-                    method_auth_template,
+                auth_template: AuthTemplate {
+                    function_auth: btreemap!(
+                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth,
                     outer_method_auth_template: btreemap!(),
                 },
             }

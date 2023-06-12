@@ -101,8 +101,7 @@ pub struct BlueprintDefinitionInit {
     pub functions: BlueprintFunctionsTemplateInit,
 
     pub royalty_config: RoyaltyConfig,
-    pub function_auth: BTreeMap<String, AccessRule>,
-    pub template: MethodAuthTemplate,
+    pub auth_template: AuthTemplate,
 }
 
 impl Default for BlueprintDefinitionInit {
@@ -111,6 +110,7 @@ impl Default for BlueprintDefinitionInit {
             outer_blueprint: None,
             dependencies: BTreeSet::default(),
             feature_set: BTreeSet::default(),
+
             schema: ScryptoSchema {
                 type_kinds: Vec::new(),
                 type_metadata: Vec::new(),
@@ -119,16 +119,17 @@ impl Default for BlueprintDefinitionInit {
             state: BlueprintStateSchemaInit::default(),
             events: BlueprintEventSchemaInit::default(),
             functions: BlueprintFunctionsTemplateInit::default(),
-            function_auth: BTreeMap::default(),
+
             royalty_config: RoyaltyConfig::default(),
-            template: MethodAuthTemplate::default(),
+            auth_template: AuthTemplate::default(),
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct MethodAuthTemplate {
-    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+pub struct AuthTemplate {
+    pub function_auth: BTreeMap<String, AccessRule>,
+    pub method_auth: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
     pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
 

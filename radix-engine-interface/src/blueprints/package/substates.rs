@@ -1,4 +1,3 @@
-use crate::blueprints::resource::AccessRule;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -28,8 +27,7 @@ pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = Par
 pub const PACKAGE_SCHEMAS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
 pub const PACKAGE_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
-pub const PACKAGE_AUTH_FUNCTION_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
-pub const PACKAGE_AUTH_METHOD_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
+pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
 
 pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 4u8;
 
@@ -155,12 +153,6 @@ impl BlueprintDefinition {
         }
         None
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-#[sbor(transparent)]
-pub struct FunctionAuthTemplate {
-    pub rules: BTreeMap<String, AccessRule>,
 }
 
 pub type IndexedFieldSchema = FeaturedSchema<SchemaPointer>;
