@@ -358,10 +358,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         } else {
             // TODO: Use AllPublicMethod Template instead
             quote! {
-                fn method_auth_template() -> BTreeMap<scrypto::blueprints::package::SchemaMethodKey, scrypto::blueprints::package::SchemaMethodPermission> {
+                fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                     btreemap!(
                         #(
-                            scrypto::blueprints::package::SchemaMethodKey::main(#method_names) => scrypto::blueprints::package::SchemaMethodPermission::Public,
+                            MethodKey::main(#method_names) => MethodPermission::Public,
                         )*
                     )
                 }
@@ -610,17 +610,16 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 })*
 
                 let auth_template = {
-                    let mut method_auth = method_auth_template();
-                    if !method_auth.contains_key(&scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
-                        method_auth.insert(scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), scrypto::blueprints::package::SchemaMethodPermission::Public);
-                        method_auth.insert(scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
-                        method_auth.insert(scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
-                    }
+                    let auth = method_auth_template();
+                    let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
+                        auth,
+                        outer_auth: BTreeMap::new(),
+                    };
+                    method_auth.add_metadata_default_if_not_specified();
 
                     scrypto::blueprints::package::AuthTemplate {
                         method_auth,
                         function_auth: function_auth(),
-                        outer_method_auth_template: BTreeMap::new(),
                     }
                 };
 
@@ -1313,9 +1312,9 @@ mod tests {
                     use scrypto::prelude::MethodPermission::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
-                    fn method_auth_template() -> BTreeMap<scrypto::blueprints::package::SchemaMethodKey, scrypto::blueprints::package::SchemaMethodPermission> {
+                    fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                         btreemap!(
-                            scrypto::blueprints::package::SchemaMethodKey::main("x") => scrypto::blueprints::package::SchemaMethodPermission::Public,
+                            MethodKey::main("x") => MethodPermission::Public,
                         )
                     }
 
@@ -1513,17 +1512,16 @@ mod tests {
                         let mut dependencies = BTreeSet::new();
 
                         let auth_template = {
-                            let mut method_auth = method_auth_template();
-                            if !method_auth.contains_key(&scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
-                                method_auth.insert(scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), scrypto::blueprints::package::SchemaMethodPermission::Public);
-                                method_auth.insert(scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
-                                method_auth.insert(scrypto::blueprints::package::SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
-                            }
+                            let auth = method_auth_template();
+                            let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
+                                auth,
+                                outer_auth: BTreeMap::new(),
+                            };
+                            method_auth.add_metadata_default_if_not_specified();
 
                             scrypto::blueprints::package::AuthTemplate {
                                 method_auth,
                                 function_auth: function_auth(),
-                                outer_method_auth_template: BTreeMap::new(),
                             }
                         };
 

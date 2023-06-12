@@ -5,9 +5,7 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, PackageSetup,
-};
+use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
@@ -61,8 +59,10 @@ impl TransactionProcessorNativePackage {
                     function_auth: btreemap!(
                         TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // TODO: Change to only allow root to call?
                     ),
-                    method_auth: btreemap!(),
-                    outer_method_auth_template: btreemap!(),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: btreemap!(),
+                        outer_auth: btreemap!(),
+                    },
                 },
             }
         );

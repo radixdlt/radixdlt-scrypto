@@ -18,9 +18,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
-};
+use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintFunctionsTemplateInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
@@ -411,34 +409,34 @@ impl AccessControllerNativePackage {
         };
 
         let method_auth = method_auth_template!(
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
-            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+            MethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
+            MethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
+            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => MethodPermission::Public;
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"];
+            MethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"];
         );
 
         let schema = generate_full_schema(aggregator);
@@ -468,8 +466,10 @@ impl AccessControllerNativePackage {
                     function_auth: btreemap!(
                         ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth,
-                    outer_method_auth_template: btreemap!(),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth,
+                        outer_auth: btreemap!(),
+                    },
                 },
             }
         );

@@ -17,9 +17,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
-};
+use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, FunctionTemplateInit, ReceiverInfo,
@@ -75,14 +73,14 @@ impl IdentityNativePackage {
         );
 
         let method_auth = method_auth_template! {
-            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
+            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
 
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
+            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
 
-            SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
+            MethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
         };
 
         let schema = generate_full_schema(aggregator);
@@ -115,8 +113,10 @@ impl IdentityNativePackage {
                         IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                         IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth,
-                    outer_method_auth_template: btreemap!(),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth,
+                        outer_auth: btreemap!(),
+                    },
                 },
             }
         );

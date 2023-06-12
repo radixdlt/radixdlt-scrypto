@@ -28,11 +28,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltyAccumulatorSubstate, PackageSetup, SchemaPointer, PACKAGE_BLUEPRINT,
-    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup, SchemaPointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET, MethodAuthTemplate};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -1695,8 +1691,10 @@ pub fn single_function_package_definition(
                 function_auth: btreemap!(
                     function_name.to_string() => rule!(allow_all),
                 ),
-                method_auth: btreemap!(),
-                outer_method_auth_template: btreemap!(),
+                method_auth: MethodAuthTemplate::Static {
+                    auth: btreemap!(),
+                    outer_auth: btreemap!(),
+                },
             },
         },
     );

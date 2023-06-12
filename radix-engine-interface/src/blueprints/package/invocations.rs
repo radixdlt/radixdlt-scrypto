@@ -9,6 +9,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::BlueprintSchemaInit;
+use crate::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -104,63 +105,59 @@ impl Default for BlueprintDefinitionInit {
             outer_blueprint: None,
             dependencies: BTreeSet::default(),
             feature_set: BTreeSet::default(),
-
             schema: BlueprintSchemaInit::default(),
-
             royalty_config: RoyaltyConfig::default(),
             auth_template: AuthTemplate::default(),
         }
     }
 }
 
+
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct AuthTemplate {
     pub function_auth: BTreeMap<String, AccessRule>,
-    pub method_auth: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+    pub method_auth: MethodAuthTemplate,
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct SchemaMethodKey {
-    pub module_id: u8,
-    pub ident: String,
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum MethodAuthTemplate {
+    Static {
+        auth: BTreeMap<MethodKey, MethodPermission>,
+        outer_auth: BTreeMap<MethodKey, MethodPermission>,
+    },
 }
 
-impl SchemaMethodKey {
-    pub fn main<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 0u8,
-            ident: method_ident.to_string(),
+impl MethodAuthTemplate {
+    pub fn add_metadata_default_if_not_specified(&mut self) {
+        match self {
+            MethodAuthTemplate::Static { auth, .. } => {
+                if !auth.contains_key(&MethodKey::metadata(METADATA_GET_IDENT)) {
+                    auth.insert(MethodKey::metadata(METADATA_GET_IDENT), MethodPermission::Public);
+                    auth.insert(MethodKey::metadata(METADATA_SET_IDENT), [OWNER_ROLE].into());
+                    auth.insert(MethodKey::metadata(METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
+                }
+            }
         }
     }
 
-    pub fn metadata<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 1u8,
-            ident: method_ident.to_string(),
+    pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
+        match self {
+            MethodAuthTemplate::Static { auth, .. } => auth
         }
     }
 
-    pub fn royalty<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 2u8,
-            ident: method_ident.to_string(),
+    pub fn outer_auth(self) -> BTreeMap<MethodKey, MethodPermission> {
+        match self {
+            MethodAuthTemplate::Static { outer_auth, .. } => outer_auth
         }
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SchemaMethodPermission {
-    Public,
-    Protected(Vec<String>),
-}
-
-impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
-    fn from(value: [&str; N]) -> Self {
-        SchemaMethodPermission::Protected(
-            value.to_vec().into_iter().map(|s| s.to_string()).collect(),
-        )
+impl Default for MethodAuthTemplate {
+    fn default() -> Self {
+        MethodAuthTemplate::Static {
+            auth: BTreeMap::default(),
+            outer_auth: BTreeMap::default(),
+        }
     }
 }

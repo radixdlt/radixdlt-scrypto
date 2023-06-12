@@ -388,11 +388,7 @@ macro_rules! main_permissions {
     ($permissions:expr, $module_methods:ident, $key:ident, $($method:ident => $($permission:ident),+ ;)*) => ({
         let permissions = method_permissions!($module_methods, $($method => $($permission),+ ;)*);
         for (method, permission) in permissions.to_mapping() {
-            let permission = match permission {
-                MethodPermission::Public => scrypto::blueprints::package::SchemaMethodPermission::Public,
-                MethodPermission::Protected(role_list) => scrypto::blueprints::package::SchemaMethodPermission::Protected(role_list.to_list()),
-            };
-            $permissions.insert(scrypto::blueprints::package::SchemaMethodKey::$key(method), permission);
+            $permissions.insert(MethodKey::$key(method), permission);
         }
     })
 }
@@ -434,8 +430,8 @@ macro_rules! enable_method_auth {
             $($role: stringify!($role)),*
         };
 
-        fn method_auth_template() -> BTreeMap<scrypto::blueprints::package::SchemaMethodKey, scrypto::blueprints::package::SchemaMethodPermission> {
-            let mut permissions: BTreeMap<scrypto::blueprints::package::SchemaMethodKey, scrypto::blueprints::package::SchemaMethodPermission> = BTreeMap::new();
+        fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
+            let mut permissions: BTreeMap<MethodKey, MethodPermission> = BTreeMap::new();
             $(
                 module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
             )*
@@ -446,8 +442,8 @@ macro_rules! enable_method_auth {
     (
         $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
     ) => (
-        fn method_auth_template() -> BTreeMap<scrypto::blueprints::package::SchemaMethodKey, scrypto::blueprints::package::SchemaMethodPermission> {
-            let mut permissions: BTreeMap<scrypto::blueprints::package::SchemaMethodKey, scrypto::blueprints::package::SchemaMethodPermission> = BTreeMap::new();
+        fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
+            let mut permissions: BTreeMap<MethodKey, MethodPermission> = BTreeMap::new();
             $(
                 module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
             )*

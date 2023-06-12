@@ -563,14 +563,17 @@ impl PackageNativePackage {
                         PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
                         PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                     ),
-                    method_auth:  method_auth_template! {
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template! {
+                            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
 
-                        SchemaMethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-                    },
-                    outer_method_auth_template: btreemap!(),
+                            MethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+                        },
+                        outer_auth: method_auth_template!(),
+                    }
+
                 },
             }
         );

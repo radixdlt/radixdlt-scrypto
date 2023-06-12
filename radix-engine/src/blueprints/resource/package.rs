@@ -12,9 +12,7 @@ use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
-};
+use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema};
 use radix_engine_interface::schema::{
@@ -318,21 +316,23 @@ impl ResourceManagerNativePackage {
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: method_auth_template! {
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template! {
+                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
+                            MethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
 
-                        SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
-                    },
-                    outer_method_auth_template: btreemap!(),
+                            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                            MethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => MethodPermission::Public;
+                        },
+                        outer_auth: btreemap!(),
+                    }
                 },
             }
         };
@@ -604,26 +604,28 @@ impl ResourceManagerNativePackage {
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: method_auth_template! {
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template! {
+                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
+                            MethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
 
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => SchemaMethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
+                            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                            MethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
+                            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => MethodPermission::Public;
+                            MethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => MethodPermission::Public;
+                        },
+                        outer_auth: btreemap!(),
                     },
-                    outer_method_auth_template: btreemap!(),
                 },
             }
         };
@@ -800,40 +802,44 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(),
-                    // This is the mapping from Vault methods to Vault roles
-                    // NOTE: This is an extra filter on top of the ResourceManager filter
-                    // This is for use with the freezing feature
-                    // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                    method_auth: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                    },
-                    // This is the mapping to ResourceManager roles
-                    // NOTE: This is an extra filter on top of the Vault filter
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                        SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                    },
+
+                    method_auth: MethodAuthTemplate::Static {
+                        // This is the mapping from Vault methods to Vault roles
+                        // NOTE: This is an extra filter on top of the ResourceManager filter
+                        // This is for use with the freezing feature
+                        // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
+                        auth: method_auth_template! {
+                            MethodKey::main(VAULT_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_RECALL_IDENT) => MethodPermission::Public;
+                            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_FREEZE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_UNFREEZE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_PUT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_BURN_IDENT) => MethodPermission::Public;
+                            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                            MethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                        },
+
+                        // This is the mapping to ResourceManager roles
+                        // NOTE: This is an extra filter on top of the Vault filter
+                        outer_auth: method_auth_template! {
+                            MethodKey::main(VAULT_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                            MethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
+                            MethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
+                            MethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                            MethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                            MethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
+                            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        },
+                    }
                 },
             }
         };
@@ -1064,48 +1070,50 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(),
-                    // This is the mapping from Vault methods to Vault roles
-                    // NOTE: This is an extra filter on top of the ResourceManager filter
-                    // This is for use with the freezing feature
-                    // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                    method_auth: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
-                    },
-                    // This is the mapping to ResourceManager roles
-                    // NOTE: This is an extra filter on top of the Vault filter
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                    method_auth: MethodAuthTemplate::Static {
+                        // This is the mapping from Vault methods to Vault roles
+                        // NOTE: This is an extra filter on top of the ResourceManager filter
+                        // This is for use with the freezing feature
+                        // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
+                        auth: method_auth_template! {
+                            MethodKey::main(VAULT_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_RECALL_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_FREEZE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_UNFREEZE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_PUT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_BURN_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
+                        },
+                        // This is the mapping to ResourceManager roles
+                        // NOTE: This is an extra filter on top of the Vault filter
+                        outer_auth: method_auth_template! {
+                            MethodKey::main(VAULT_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => MethodPermission::Public;
 
-                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
-                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
-                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
-                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
-                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                        SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => [BURN_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
+                            MethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                            MethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                            MethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
+                            MethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                            MethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => [BURN_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        },
                     },
                 },
             }
@@ -1240,19 +1248,21 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(),
-                    method_auth: btreemap!(),
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: btreemap!(),
+                        outer_auth: method_auth_template! {
+                            MethodKey::main(BUCKET_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_CREATE_PROOF_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_PUT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_TAKE_IDENT) => MethodPermission::Public;
 
-                        SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                        SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                    },
+                            MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        },
+                    }
                 },
             }
         };
@@ -1419,20 +1429,22 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(),
-                    method_auth: btreemap!(),
-                    outer_method_auth_template: method_auth_template! {
-                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: btreemap!(),
+                        outer_auth: method_auth_template! {
+                            MethodKey::main(BUCKET_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_CREATE_PROOF_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_PUT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(BUCKET_TAKE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => MethodPermission::Public;
 
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
-                        SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                            MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        },
                     },
                 },
             }
@@ -1514,13 +1526,15 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: btreemap!(),
-                    outer_method_auth_template: method_auth_template!(
-                        SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                    ),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: btreemap!(),
+                        outer_auth: method_auth_template!(
+                            MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(PROOF_CLONE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(PROOF_DROP_IDENT) => MethodPermission::Public;
+                            MethodKey::main(PROOF_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                        ),
+                    },
                 },
             }
         };
@@ -1613,14 +1627,16 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: btreemap!(),
-                    outer_method_auth_template: method_auth_template!(
-                        SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                    ),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: btreemap!(),
+                        outer_auth: method_auth_template!(
+                            MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(PROOF_CLONE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(PROOF_DROP_IDENT) => MethodPermission::Public;
+                            MethodKey::main(PROOF_GET_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => MethodPermission::Public;
+                        ),
+                    }
                 },
             }
         };
@@ -1749,8 +1765,10 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: btreemap!(),
-                    outer_method_auth_template: btreemap!(),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: btreemap!(),
+                        outer_auth: btreemap!(),
+                    },
                 },
             }
         };
@@ -1889,8 +1907,10 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(),
-                    method_auth: btreemap!(),
-                    outer_method_auth_template: btreemap!(),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: btreemap!(),
+                        outer_auth: btreemap!(),
+                    },
                 },
             }
         };

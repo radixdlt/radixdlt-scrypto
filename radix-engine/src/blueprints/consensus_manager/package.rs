@@ -10,9 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, PackageSetup, SchemaMethodKey, SchemaMethodPermission,
-};
+use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
@@ -178,16 +176,18 @@ impl ConsensusManagerNativePackage {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: method_auth_template!(
-                        SchemaMethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
-                        SchemaMethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template!(
+                            MethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
+                            MethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
 
-                        SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => SchemaMethodPermission::Public;
-                    ),
-                    outer_method_auth_template: btreemap!(),
+                            MethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT) => MethodPermission::Public;
+                            MethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT) => MethodPermission::Public;
+                            MethodKey::main(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT) => MethodPermission::Public;
+                            MethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public;
+                        ),
+                        outer_auth: method_auth_template!(),
+                    },
                 },
             }
         };
@@ -355,25 +355,27 @@ impl ConsensusManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_template: AuthTemplate {
                     function_auth: btreemap!(),
-                    method_auth: method_auth_template! {
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template! {
+                            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
 
-                        SchemaMethodKey::main(VALIDATOR_UNSTAKE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
-                        SchemaMethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+                            MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
+                            MethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
+                            MethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
+                            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+                        },
+                        outer_auth: btreemap!(),
                     },
-                    outer_method_auth_template: btreemap!(),
                 },
             }
         };
