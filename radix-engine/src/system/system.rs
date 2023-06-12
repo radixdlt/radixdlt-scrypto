@@ -39,9 +39,9 @@ use radix_engine_interface::schema::{
     TypeRef,
 };
 use resources_tracker_macro::trace_resources;
+use sbor::rust::collections::hash_map::Entry;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use sbor::rust::collections::hash_map::Entry;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {

@@ -14,7 +14,9 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{BlueprintVersion, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::blueprints::package::{
+    BlueprintVersion, SchemaMethodKey, SchemaMethodPermission,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;

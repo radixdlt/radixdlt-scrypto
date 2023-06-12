@@ -19,7 +19,11 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema, RefTypes, TypeRef};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit,
+    BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
+    RefTypes, TypeRef,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
 
@@ -62,7 +66,7 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     for setup in blueprints {
         validate_schema(&setup.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
-        if setup.blueprint.fields.len() > 0xff {
+        if setup.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
     }
@@ -74,7 +78,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
 ) -> Result<(), PackageError> {
     for BlueprintDefinitionInit {
         schema,
-        event_schema,
+        events: event_schema,
         ..
     } in blueprints
     {
@@ -527,7 +531,7 @@ impl PackageNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
@@ -536,7 +540,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
@@ -547,7 +551,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
@@ -556,7 +560,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
@@ -573,12 +577,18 @@ impl PackageNativePackage {
                     PACKAGE_OWNER_BADGE.into(),
                 ),
                 feature_set: btreeset!(),
+
                 schema,
-                blueprint: BlueprintStateSchemaInit {
+                state: BlueprintStateSchemaInit {
                     fields,
                     collections,
                 },
-                event_schema: BlueprintEventSchemaInit::default(),
+                events: BlueprintEventSchemaInit::default(),
+                functions: BlueprintFunctionsTemplateInit {
+                    virtual_lazy_load_functions: btreemap!(),
+                    functions,
+                },
+
                 function_auth: btreemap!(
                     PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
                     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
@@ -595,8 +605,6 @@ impl PackageNativePackage {
                     },
                     outer_method_auth_template: btreemap!(),
                 },
-                virtual_lazy_load_functions: btreemap!(),
-                functions,
             }
         );
 
@@ -720,7 +728,7 @@ impl PackageNativePackage {
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
-                for (function, setup) in setup.functions {
+                for (function, setup) in setup.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -737,7 +745,7 @@ impl PackageNativePackage {
                 }
 
                 let events = setup
-                    .event_schema
+                    .events
                     .event_schema
                     .into_iter()
                     .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
@@ -750,10 +758,11 @@ impl PackageNativePackage {
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(
                         schema_hash,
-                        setup.blueprint,
+                        setup.state,
                     ),
                     function_exports,
                     virtual_lazy_load_functions: setup
+                        .functions
                         .virtual_lazy_load_functions
                         .into_iter()
                         .map(|(key, export_name)| {
@@ -852,8 +861,7 @@ impl PackageNativePackage {
         for BlueprintDefinitionInit {
             outer_blueprint: parent,
             feature_set: features,
-            blueprint: BlueprintStateSchemaInit { collections, .. },
-            virtual_lazy_load_functions,
+            state: BlueprintStateSchemaInit { collections, .. },
             functions,
             ..
         } in setup.blueprints.values()
@@ -861,14 +869,6 @@ impl PackageNativePackage {
             if parent.is_some() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::PackageError(PackageError::InvalidTypeParent),
-                ));
-            }
-
-            if !virtual_lazy_load_functions.is_empty() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::WasmUnsupported(
-                        "Lazy load functions not supported".to_string(),
-                    )),
                 ));
             }
 
@@ -880,7 +880,15 @@ impl PackageNativePackage {
                 ));
             }
 
-            for (_name, schema) in functions {
+            if !functions.virtual_lazy_load_functions.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Lazy load functions not supported".to_string(),
+                    )),
+                ));
+            }
+
+            for (_name, schema) in &functions.functions {
                 if let Some(info) = &schema.receiver {
                     if info.ref_types != RefTypes::NORMAL {
                         return Err(RuntimeError::ApplicationError(
@@ -927,22 +935,22 @@ impl PackageNativePackage {
 
         // Build node init
         {
-            for (blueprint, setup) in setup.blueprints {
+            for (blueprint, definition_init) in setup.blueprints {
                 function_auth_templates.insert(
                     blueprint.clone(),
                     FunctionAuthTemplate {
-                        rules: setup.function_auth,
+                        rules: definition_init.function_auth,
                     },
                 );
-                method_auth_templates.insert(blueprint.clone(), setup.template);
+                method_auth_templates.insert(blueprint.clone(), definition_init.template);
 
-                let blueprint_schema = setup.schema.clone();
+                let blueprint_schema = definition_init.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
                 schemas.insert(schema_hash, blueprint_schema);
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
-                for (function, setup) in setup.functions {
+                for (function, setup) in definition_init.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -958,24 +966,25 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let events = setup
-                    .event_schema
+                let events = definition_init
+                    .events
                     .event_schema
                     .into_iter()
                     .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
                     .collect();
 
                 let definition = BlueprintDefinition {
-                    outer_blueprint: setup.outer_blueprint,
-                    features: setup.feature_set,
+                    outer_blueprint: definition_init.outer_blueprint,
+                    features: definition_init.feature_set,
                     functions,
                     events,
                     state_schema: IndexedBlueprintStateSchema::from_schema(
                         schema_hash,
-                        setup.blueprint,
+                        definition_init.state,
                     ),
                     function_exports,
-                    virtual_lazy_load_functions: setup
+                    virtual_lazy_load_functions: definition_init
+                        .functions
                         .virtual_lazy_load_functions
                         .into_iter()
                         .map(|(key, export_name)| {
@@ -990,10 +999,10 @@ impl PackageNativePackage {
                         .collect(),
                 };
                 blueprints.insert(blueprint.clone(), definition);
-                royalties.insert(blueprint.clone(), setup.royalty_config);
+                royalties.insert(blueprint.clone(), definition_init.royalty_config);
 
                 let dependencies = BlueprintDependencies {
-                    dependencies: setup.dependencies,
+                    dependencies: definition_init.dependencies,
                 };
                 blueprint_dependencies.insert(blueprint.clone(), dependencies);
             }

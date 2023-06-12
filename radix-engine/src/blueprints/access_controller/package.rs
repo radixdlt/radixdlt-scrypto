@@ -18,9 +18,15 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey,
+    SchemaMethodPermission,
+};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintStateSchemaInit, FieldSchema, ReceiverInfo};
+use radix_engine_interface::schema::{
+    BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
+    ReceiverInfo,
+};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
@@ -171,7 +177,7 @@ impl AccessControllerNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
@@ -182,7 +188,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
@@ -193,7 +199,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
@@ -204,7 +210,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>(),
@@ -215,7 +221,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>(),
@@ -226,7 +232,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>(),
@@ -237,7 +243,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>(),
@@ -248,7 +254,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>(),
@@ -259,7 +265,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>(),
@@ -270,7 +276,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>(),
@@ -281,7 +287,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
@@ -292,7 +298,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
@@ -303,7 +309,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
@@ -314,7 +320,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
@@ -325,7 +331,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
@@ -336,7 +342,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>(),
@@ -347,7 +353,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>(),
@@ -358,7 +364,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>(),
@@ -369,7 +375,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>(),
@@ -380,7 +386,7 @@ impl AccessControllerNativePackage {
         );
         functions.insert(
             ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
-            FunctionSchemaInit {
+            FunctionTemplateInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(),
@@ -390,7 +396,7 @@ impl AccessControllerNativePackage {
             },
         );
 
-        let event_schema = event_schema! {
+        let events = event_schema! {
             aggregator,
             [
                 InitiateRecoveryEvent,
@@ -444,12 +450,18 @@ impl AccessControllerNativePackage {
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
                 feature_set: btreeset!(),
+
                 schema,
-                blueprint: BlueprintStateSchemaInit {
+                state: BlueprintStateSchemaInit {
                     fields,
                     collections: vec![],
                 },
-                event_schema,
+                events,
+                functions: BlueprintFunctionsTemplateInit {
+                    virtual_lazy_load_functions: btreemap!(),
+                    functions,
+                },
+
                 function_auth: btreemap!(
                     ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                 ),
@@ -458,8 +470,6 @@ impl AccessControllerNativePackage {
                     method_auth_template,
                     outer_method_auth_template: btreemap!(),
                 },
-                virtual_lazy_load_functions: btreemap!(),
-                functions,
             }
         );
 

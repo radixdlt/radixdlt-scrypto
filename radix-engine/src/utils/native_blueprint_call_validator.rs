@@ -261,7 +261,11 @@ fn get_arguments_schema<'s>(
     };
 
     if let Some(blueprint_schema) = blueprint_schema {
-        if let Some(function_schema) = blueprint_schema.functions.get(invocation.method()) {
+        if let Some(function_schema) = blueprint_schema
+            .functions
+            .functions
+            .get(invocation.method())
+        {
             if is_self_or_mut_self_receiver(&function_schema.receiver) && invocation.is_method()
                 || is_direct_access_receiver(&function_schema.receiver)
                     && invocation.is_direct_access_method()

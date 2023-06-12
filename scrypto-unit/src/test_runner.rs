@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackagePublishWasmAdvancedManifestInput,
+    BlueprintDefinitionInit, MethodAuthTemplate, PackagePublishWasmAdvancedManifestInput,
     PackageRoyaltyAccumulatorSubstate, PackageSetup, SchemaPointer, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
@@ -38,7 +38,10 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintEventSchemaInit, BlueprintStateSchemaInit, FieldSchema};
+use radix_engine_interface::schema::{
+    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
+    FieldSchema, FunctionTemplateInit,
+};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -1667,11 +1670,22 @@ pub fn single_function_package_definition(
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            blueprint: BlueprintStateSchemaInit {
+            state: BlueprintStateSchemaInit {
                 fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
             },
-            event_schema: BlueprintEventSchemaInit::default(),
+            events: BlueprintEventSchemaInit::default(),
+            functions: BlueprintFunctionsTemplateInit {
+                virtual_lazy_load_functions: btreemap!(),
+                functions: btreemap!(
+                function_name.to_string() => FunctionTemplateInit {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export: format!("{}_{}", blueprint_name, function_name),
+                    }
+                ),
+            },
             function_auth: btreemap!(
                 function_name.to_string() => rule!(allow_all),
             ),
@@ -1680,15 +1694,6 @@ pub fn single_function_package_definition(
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },
-            virtual_lazy_load_functions: btreemap!(),
-            functions: btreemap!(
-            function_name.to_string() => FunctionSchemaInit {
-                    receiver: Option::None,
-                    input: LocalTypeIndex::WellKnown(ANY_ID),
-                    output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export: format!("{}_{}", blueprint_name, function_name),
-                }
-            ),
         },
     );
     PackageSetup { blueprints }

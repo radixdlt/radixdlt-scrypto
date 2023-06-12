@@ -3,9 +3,12 @@ use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup,
+    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
 };
-use radix_engine_interface::schema::{BlueprintEventSchemaInit, BlueprintStateSchemaInit, FieldSchema};
+use radix_engine_interface::schema::{
+    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
+    FieldSchema, FunctionTemplateInit,
+};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -146,31 +149,35 @@ fn test_basic_package_missing_export() {
             outer_blueprint: None,
             dependencies: btreeset!(),
             feature_set: btreeset!(),
-            blueprint: BlueprintStateSchemaInit {
-                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
-                collections: vec![],
-            },
-            event_schema: BlueprintEventSchemaInit::default(),
+
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],
                 type_validations: vec![],
             },
+            state: BlueprintStateSchemaInit {
+                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                collections: vec![],
+            },
+            events: BlueprintEventSchemaInit::default(),
+            functions: BlueprintFunctionsTemplateInit {
+                functions: btreemap!(
+                    "f".to_string() => FunctionTemplateInit {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(ANY_ID),
+                        export: "not_exist".to_string(),
+                    }
+                ),
+                virtual_lazy_load_functions: btreemap!(),
+            },
+
             function_auth: btreemap!(),
             royalty_config: RoyaltyConfig::default(),
             template: MethodAuthTemplate {
                 method_auth_template: btreemap!(),
                 outer_method_auth_template: btreemap!(),
             },
-            virtual_lazy_load_functions: btreemap!(),
-            functions: btreemap!(
-                "f".to_string() => FunctionSchemaInit {
-                    receiver: Option::None,
-                    input: LocalTypeIndex::WellKnown(ANY_ID),
-                    output: LocalTypeIndex::WellKnown(ANY_ID),
-                    export: "not_exist".to_string(),
-                }
-            ),
         },
     );
     // Act

@@ -945,10 +945,9 @@ impl WasmModule {
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
         for blueprint_schema in blueprints {
-            for func in blueprint_schema.functions.values() {
-                let export_name = &func.export;
+            for export_name in blueprint_schema.functions.exports() {
                 if !exports.entries().iter().any(|x| {
-                    x.field().eq(export_name) && {
+                    x.field().eq(&export_name) && {
                         if let Internal::Function(func_index) = x.internal() {
                             Self::function_matches(
                                 &self.module,
@@ -1089,8 +1088,9 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::blueprints::package::FunctionSchemaInit;
-    use radix_engine_interface::schema::{BlueprintStateSchemaInit, FieldSchema};
+    use radix_engine_interface::schema::{
+        BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
+    };
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
@@ -1253,22 +1253,24 @@ mod tests {
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
-                blueprint: BlueprintStateSchemaInit {
+                state: BlueprintStateSchemaInit {
                     fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                     collections: vec![],
                 },
 
-                event_schema: Default::default(),
+                events: Default::default(),
                 function_auth: Default::default(),
-                functions: btreemap!(
-                    "f".to_string() => FunctionSchemaInit {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(UNIT_ID),
-                        export: "Test_f".to_string(),
-                    }
-                ),
-                virtual_lazy_load_functions: btreemap!(),
+                functions: BlueprintFunctionsTemplateInit {
+                    functions: btreemap!(
+                        "f".to_string() => FunctionTemplateInit {
+                            receiver: Option::None,
+                            input: LocalTypeIndex::WellKnown(ANY_ID),
+                            output: LocalTypeIndex::WellKnown(UNIT_ID),
+                            export: "Test_f".to_string(),
+                        }
+                    ),
+                    virtual_lazy_load_functions: btreemap!(),
+                },
                 royalty_config: Default::default(),
                 schema: ScryptoSchema {
                     type_kinds: vec![],

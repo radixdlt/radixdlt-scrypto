@@ -40,16 +40,40 @@ impl KeyValueStoreSchema {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintStateSchemaInit {
+    pub fields: Vec<FieldSchema>,
+    pub collections: Vec<BlueprintCollectionSchema<LocalTypeIndex>>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlueprintEventSchemaInit {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintStateSchemaInit {
-    pub fields: Vec<FieldSchema>,
-    pub collections: Vec<BlueprintCollectionSchema<LocalTypeIndex>>,
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct FunctionTemplateInit {
+    pub receiver: Option<ReceiverInfo>,
+    pub input: LocalTypeIndex,
+    pub output: LocalTypeIndex,
+    pub export: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
+pub struct BlueprintFunctionsTemplateInit {
+    pub functions: BTreeMap<String, FunctionTemplateInit>,
+    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
+}
+
+impl BlueprintFunctionsTemplateInit {
+    pub fn exports(&self) -> Vec<String> {
+        let mut exports: Vec<String> = self.functions.values().map(|t| t.export.clone()).collect();
+        for export in self.virtual_lazy_load_functions.values() {
+            exports.push(export.clone());
+        }
+        exports
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

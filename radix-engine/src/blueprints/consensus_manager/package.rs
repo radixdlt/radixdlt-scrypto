@@ -10,11 +10,14 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, FunctionSchemaInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup, SchemaMethodKey,
+    SchemaMethodPermission,
+};
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintStateSchemaInit, BlueprintSortedIndexSchema, FieldSchema,
-    ReceiverInfo,
+    BlueprintCollectionSchema, BlueprintFunctionsTemplateInit, BlueprintSortedIndexSchema,
+    BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit, ReceiverInfo,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -60,7 +63,7 @@ impl ConsensusManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
@@ -71,7 +74,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>(),
@@ -82,7 +85,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_START_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerStartInput>(),
@@ -93,7 +96,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
@@ -104,7 +107,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(
@@ -117,7 +120,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
@@ -128,7 +131,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>(),
@@ -147,10 +150,6 @@ impl ConsensusManagerNativePackage {
             };
 
             let consensus_manager_schema = generate_full_schema(aggregator);
-            let blueprint = BlueprintStateSchemaInit {
-                fields,
-                collections,
-            };
 
             BlueprintDefinitionInit {
                 outer_blueprint: None,
@@ -162,8 +161,15 @@ impl ConsensusManagerNativePackage {
                 ),
                 feature_set: btreeset!(),
                 schema: consensus_manager_schema,
-                blueprint,
-                event_schema,
+                state: BlueprintStateSchemaInit {
+                    fields,
+                    collections,
+                },
+                events: event_schema,
+                functions: BlueprintFunctionsTemplateInit {
+                    functions,
+                    virtual_lazy_load_functions: btreemap!(),
+                },
                 function_auth: btreemap!(
                     CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                 ),
@@ -180,8 +186,6 @@ impl ConsensusManagerNativePackage {
                     ),
                     outer_method_auth_template: btreemap!(),
                 },
-                virtual_lazy_load_functions: btreemap!(),
-                functions,
             }
         };
 
@@ -196,7 +200,7 @@ impl ConsensusManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 VALIDATOR_REGISTER_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
@@ -205,7 +209,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UNREGISTER_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
                     output: aggregator
@@ -215,7 +219,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_STAKE_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
@@ -224,7 +228,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UNSTAKE_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
@@ -233,7 +237,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_CLAIM_XRD_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
@@ -242,7 +246,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UPDATE_KEY_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
@@ -251,7 +255,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UPDATE_FEE_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
                     output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
@@ -260,7 +264,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>(),
@@ -271,7 +275,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
@@ -282,7 +286,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>(),
@@ -293,7 +297,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>(),
@@ -304,7 +308,7 @@ impl ConsensusManagerNativePackage {
             );
             functions.insert(
                 VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
-                FunctionSchemaInit {
+                FunctionTemplateInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
@@ -329,18 +333,20 @@ impl ConsensusManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let validator_blueprint = BlueprintStateSchemaInit {
-                fields,
-                collections: vec![],
-            };
-
             BlueprintDefinitionInit {
                 outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
                 schema,
-                blueprint: validator_blueprint,
-                event_schema,
+                state: BlueprintStateSchemaInit {
+                    fields,
+                    collections: vec![],
+                },
+                events: event_schema,
+                functions: BlueprintFunctionsTemplateInit {
+                    virtual_lazy_load_functions: btreemap!(),
+                    functions,
+                },
                 function_auth: btreemap!(),
                 royalty_config: RoyaltyConfig::default(),
                 template: MethodAuthTemplate {
@@ -364,8 +370,6 @@ impl ConsensusManagerNativePackage {
                     },
                     outer_method_auth_template: btreemap!(),
                 },
-                virtual_lazy_load_functions: btreemap!(),
-                functions,
             }
         };
 

@@ -9,8 +9,9 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::LocalTypeIndex;
-use scrypto_schema::{BlueprintEventSchemaInit, BlueprintStateSchemaInit, ReceiverInfo};
+use scrypto_schema::{
+    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintStateSchemaInit,
+};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -88,14 +89,6 @@ pub struct PackageSetup {
     pub blueprints: BTreeMap<String, BlueprintDefinitionInit>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct FunctionSchemaInit {
-    pub receiver: Option<ReceiverInfo>,
-    pub input: LocalTypeIndex,
-    pub output: LocalTypeIndex,
-    pub export: String,
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinitionInit {
     pub outer_blueprint: Option<String>,
@@ -103,10 +96,9 @@ pub struct BlueprintDefinitionInit {
     pub dependencies: BTreeSet<GlobalAddress>,
 
     pub schema: ScryptoSchema,
-    pub blueprint: BlueprintStateSchemaInit,
-    pub event_schema: BlueprintEventSchemaInit,
-    pub functions: BTreeMap<String, FunctionSchemaInit>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
+    pub state: BlueprintStateSchemaInit,
+    pub events: BlueprintEventSchemaInit,
+    pub functions: BlueprintFunctionsTemplateInit,
 
     pub royalty_config: RoyaltyConfig,
     pub function_auth: BTreeMap<String, AccessRule>,
@@ -119,17 +111,16 @@ impl Default for BlueprintDefinitionInit {
             outer_blueprint: None,
             dependencies: BTreeSet::default(),
             feature_set: BTreeSet::default(),
-            blueprint: BlueprintStateSchemaInit::default(),
-            event_schema: BlueprintEventSchemaInit::default(),
-            function_auth: BTreeMap::default(),
-            functions: BTreeMap::default(),
-            virtual_lazy_load_functions: BTreeMap::default(),
-            royalty_config: RoyaltyConfig::default(),
             schema: ScryptoSchema {
                 type_kinds: Vec::new(),
                 type_metadata: Vec::new(),
                 type_validations: Vec::new(),
             },
+            state: BlueprintStateSchemaInit::default(),
+            events: BlueprintEventSchemaInit::default(),
+            functions: BlueprintFunctionsTemplateInit::default(),
+            function_auth: BTreeMap::default(),
+            royalty_config: RoyaltyConfig::default(),
             template: MethodAuthTemplate::default(),
         }
     }
@@ -140,7 +131,6 @@ pub struct MethodAuthTemplate {
     pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
     pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
 }
-
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
