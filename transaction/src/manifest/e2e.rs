@@ -630,6 +630,202 @@ CREATE_ACCESS_CONTROLLER
         );
     }
 
+    #[test]
+    fn test_simple_transfer() {
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer",
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "lock_fee"
+    Decimal("10");
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "withdraw"
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Decimal("123");
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("123")
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+"##,
+            &NetworkDefinition::kisharnet(),
+            vec![],
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "lock_fee"
+    Decimal("10");
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "withdraw"
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Decimal("123");
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("123")
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+"##,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_with_multiple_locked_fees() {
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_with_multiple_locked_fees",
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "lock_fee"
+    Decimal("1.2");
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "withdraw"
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Decimal("123");
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("123")
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "lock_fee"
+    Decimal("3.4");
+"##,
+            &NetworkDefinition::kisharnet(),
+            vec![],
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "lock_fee"
+    Decimal("1.2");
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "withdraw"
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Decimal("123");
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("123")
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "lock_fee"
+    Decimal("3.4");
+"##,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_nft() {
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft",
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "lock_fee"
+    Decimal("10");
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "withdraw_non_fungibles"
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"));
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("2")
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+"##,
+            &NetworkDefinition::kisharnet(),
+            vec![],
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "lock_fee"
+    Decimal("10");
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "withdraw_non_fungibles"
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"));
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("2")
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+"##,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_nft_by_id() {
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft_by_id",
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "lock_fee"
+    Decimal("10");
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "withdraw_non_fungibles"
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"), NonFungibleLocalId("#3#"));
+TAKE_FROM_WORKTOP_BY_IDS
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"), NonFungibleLocalId("#3#"))
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+"##,
+            &NetworkDefinition::kisharnet(),
+            vec![],
+            r##"
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "lock_fee"
+    Decimal("10");
+CALL_METHOD
+    Address("account_tdx_c_1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsjzg46h")
+    "withdraw_non_fungibles"
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"), NonFungibleLocalId("#3#"));
+TAKE_FROM_WORKTOP_BY_IDS
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"), NonFungibleLocalId("#3#"))
+    Address("resource_tdx_c_1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2pmpun")
+    Bucket("bucket1");
+CALL_METHOD
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
+"##,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test(
         name: &str,
         manifest: &str,
@@ -661,7 +857,9 @@ CREATE_ACCESS_CONTROLLER
 
         assert_eq!(decompiled2.trim(), expected_canonical.trim()); // trim for better view
 
-        let intent = build_intent(&expected_canonical, blobs).to_bytes().unwrap();
+        let intent = build_intent(&expected_canonical, network, blobs)
+            .to_bytes()
+            .unwrap();
         print_blob(name, intent);
     }
 
@@ -679,14 +877,18 @@ CREATE_ACCESS_CONTROLLER
         println!("];");
     }
 
-    fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> TransactionIntent {
+    fn build_intent(
+        manifest: &str,
+        network: &NetworkDefinition,
+        blobs: Vec<Vec<u8>>,
+    ) -> TransactionIntent {
         let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
         TransactionIntent::new(
-            &NetworkDefinition::simulator(),
+            network,
             TransactionHeader {
                 version: 1,
-                network_id: NetworkDefinition::simulator().id,
+                network_id: network.id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 1000,
                 nonce: 5,

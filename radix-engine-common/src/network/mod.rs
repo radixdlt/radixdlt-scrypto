@@ -38,6 +38,14 @@ impl NetworkDefinition {
         }
     }
 
+    pub fn kisharnet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 0x0c,
+            logical_name: String::from("kisharnet"),
+            hrp_suffix: String::from("tdx_c_"),
+        }
+    }
+
     pub fn mainnet() -> NetworkDefinition {
         NetworkDefinition {
             id: 1,
