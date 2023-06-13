@@ -592,9 +592,8 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         };
     }
 
-    // TODO: burn and update validator rewards substate
-    let tips_to_handle = fee_summary.tips_to_handle();
-    let fees_to_handle = fee_summary.fees_to_handle();
+    let tips_to_distribute = fee_summary.tips_to_distribute();
+    let fees_to_distribute = fee_summary.fees_to_distribute();
 
     // Fetch current leader
     // TODO: maybe we should move current leader into validator rewards?
@@ -623,8 +622,8 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         .0;
     let mut substate: ValidatorRewardsSubstate = track.read_substate(handle).0.as_typed().unwrap();
     let proposer_rewards = if let Some(current_leader) = current_leader {
-        let rewards = tips_to_handle * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-            + fees_to_handle * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
+        let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
+            + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
         substate
             .individual_validator_rewards
             .entry(current_leader)
@@ -634,8 +633,9 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     } else {
         Decimal::ZERO
     };
-    let validator_set_rewards = tips_to_handle * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-        + fees_to_handle * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100);
+    let validator_set_rewards = tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE
+        / dec!(100)
+        + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100);
     let vault_node_id = substate.validator_rewards.0 .0;
     track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
     track.release_lock(handle);
