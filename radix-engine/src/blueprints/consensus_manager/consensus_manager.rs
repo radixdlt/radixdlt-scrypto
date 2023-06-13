@@ -44,15 +44,15 @@ pub struct Validator {
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorRewardsSubstate {
-    pub individual_validator_rewards: IndexMap<ValidatorIndex, Decimal>,
-    pub validator_rewards: Vault,
+    pub proposer_rewards: IndexMap<ValidatorIndex, Decimal>,
+    pub rewards_vault: Vault,
 }
 
 impl Clone for ValidatorRewardsSubstate {
     fn clone(&self) -> Self {
         Self {
-            individual_validator_rewards: self.individual_validator_rewards.clone(),
-            validator_rewards: Vault(self.validator_rewards.0.clone()),
+            proposer_rewards: self.proposer_rewards.clone(),
+            rewards_vault: Vault(self.rewards_vault.0.clone()),
         }
     }
 }
@@ -239,8 +239,8 @@ impl ConsensusManagerBlueprint {
                 current_leader: None,
             };
             let validator_rewards = ValidatorRewardsSubstate {
-                individual_validator_rewards: IndexMap::new(),
-                validator_rewards: Vault::create(RADIX_TOKEN, api)?,
+                proposer_rewards: IndexMap::new(),
+                rewards_vault: Vault::create(RADIX_TOKEN, api)?,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: ActiveValidatorSet {
@@ -581,11 +581,21 @@ impl ConsensusManagerBlueprint {
             api.field_lock_read_typed(statistic_handle)?;
         let previous_statistics = statistic_substate.validator_statistics;
 
+        // Read & write validator rewards
+        let rewards_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::ValidatorRewards.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut rewards_substate: ValidatorRewardsSubstate =
+            api.field_lock_read_typed(rewards_handle)?;
+
         // Apply emissions
-        Self::apply_validator_emissions(
+        Self::apply_validator_emissions_and_rewards(
             previous_validator_set,
             previous_statistics,
             config,
+            &mut rewards_substate,
             next_epoch.previous(),
             api,
         )?;
@@ -636,6 +646,10 @@ impl ConsensusManagerBlueprint {
             },
         )?;
 
+        // Write updated validator rewards
+        api.field_lock_write_typed(rewards_handle, rewards_substate)?;
+        api.field_lock_release(rewards_handle)?;
+
         // Write zeroed statistics of next validators
         statistic_substate.validator_statistics = (0..next_active_validator_set.validator_count())
             .map(|_index| ProposalStatistic::default())
@@ -653,83 +667,117 @@ impl ConsensusManagerBlueprint {
 
     /// Emits a configured XRD amount ([`ConsensusManagerConfigSubstate.total_emission_xrd_per_epoch`])
     /// and distributes it across the given validator set, according to their stake.
-    fn apply_validator_emissions<Y>(
+    fn apply_validator_emissions_and_rewards<Y>(
         validator_set: ActiveValidatorSet,
         validator_statistics: Vec<ProposalStatistic>,
         config: &ConsensusManagerConfig,
+        validator_rewards: &mut ValidatorRewardsSubstate,
         epoch: Epoch, // the concluded epoch, for event creation
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let validator_emissions = validator_set
+        let mut validator_infos: IndexMap<ValidatorIndex, ValidatorInfo> = index_map_new();
+        for (index, (address, validator)) in validator_set
             .validators_by_stake_desc
             .into_iter()
-            .zip(validator_statistics)
-            .filter_map(|((address, validator), statistic)| {
-                ValidatorEmission::create_if_applicable(
-                    address,
-                    validator.stake,
-                    statistic,
-                    config.min_validator_reliability,
-                )
-            })
-            .collect::<Vec<_>>();
-
-        if validator_emissions.is_empty() {
+            .enumerate()
+        {
+            if let Some(info) = ValidatorInfo::create_if_applicable(
+                address,
+                validator.stake,
+                validator_statistics[index].clone(),
+                config.min_validator_reliability,
+            ) {
+                validator_infos.insert(
+                    TryInto::<u8>::try_into(index)
+                        .expect("Validator index exceeds the range of u8"),
+                    info,
+                );
+            } else {
+                // Excluded due to slashing ?
+            }
+        }
+        if validator_infos.is_empty() {
             return Ok(());
         }
 
-        let stake_sum_xrd = validator_emissions
-            .iter()
-            .map(|validator_emission| validator_emission.stake_xrd)
+        let stake_sum_xrd = validator_infos
+            .values()
+            .map(|validator_info| validator_info.stake_xrd)
             .sum::<Decimal>();
+
+        //======================
+        // Distribute emissions
+        //======================
+
         // calculate "how much XRD is emitted by 1 XRD staked", and later apply it evenly among validators
         // (the gains are slightly rounded down, but more fairly distributed - not affected by different rounding errors for different validators)
         let emission_per_staked_xrd = config.total_emission_xrd_per_epoch / stake_sum_xrd;
-        let effective_total_emission_xrd = validator_emissions
-            .iter()
-            .map(|validator_emission| {
-                validator_emission.effective_stake_xrd * emission_per_staked_xrd
-            })
+        let effective_total_emission_xrd = validator_infos
+            .values()
+            .map(|validator_info| validator_info.effective_stake_xrd * emission_per_staked_xrd)
             .sum::<Decimal>();
 
         let total_emission_xrd_bucket =
             ResourceManager(RADIX_TOKEN).mint_fungible(effective_total_emission_xrd, api)?;
 
-        for validator_emission in validator_emissions {
+        for validator_info in validator_infos.values() {
             let emission_xrd_bucket = total_emission_xrd_bucket.take(
-                validator_emission.effective_stake_xrd * emission_per_staked_xrd,
+                validator_info.effective_stake_xrd * emission_per_staked_xrd,
                 api,
             )?;
             api.call_method(
-                validator_emission.address.as_node_id(),
+                validator_info.address.as_node_id(),
                 VALIDATOR_APPLY_EMISSION_IDENT,
                 scrypto_encode(&ValidatorApplyEmissionInput {
                     xrd_bucket: emission_xrd_bucket,
                     epoch,
-                    proposals_made: validator_emission.proposal_statistic.made,
-                    proposals_missed: validator_emission.proposal_statistic.missed,
+                    proposals_made: validator_info.proposal_statistic.made,
+                    proposals_missed: validator_info.proposal_statistic.missed,
                 })
                 .unwrap(),
             )?;
         }
         total_emission_xrd_bucket.drop_empty(api)?;
 
+        //===========================
+        // Distribute rewards (fees)
+        //===========================
+        let reward_per_staked_xrd = validator_rewards.rewards_vault.amount(api)? / stake_sum_xrd;
+        for (index, validator_info) in validator_infos {
+            let from_pool = validator_info.effective_stake_xrd * reward_per_staked_xrd;
+            let from_self = validator_rewards
+                .proposer_rewards
+                .remove(&index)
+                .unwrap_or_default();
+            let reward_amount = from_pool + from_self;
+
+            // Note that dusted xrd (due to rounding) are kept in the vault and will
+            // become retrievable next epoch.
+            let xrd_bucket = validator_rewards.rewards_vault.take(reward_amount, api)?;
+
+            api.call_method(
+                validator_info.address.as_node_id(),
+                VALIDATOR_APPLY_REWARD_IDENT,
+                scrypto_encode(&ValidatorApplyRewardInput { xrd_bucket, epoch }).unwrap(),
+            )?;
+        }
+
         Ok(())
     }
 }
 
 #[derive(Debug)]
-struct ValidatorEmission {
+struct ValidatorInfo {
     pub address: ComponentAddress,
     pub stake_xrd: Decimal,
     pub effective_stake_xrd: Decimal,
     pub proposal_statistic: ProposalStatistic, // needed only for passing the information to event
 }
 
-impl ValidatorEmission {
+impl ValidatorInfo {
     fn create_if_applicable(
         address: ComponentAddress,
         stake_xrd: Decimal,

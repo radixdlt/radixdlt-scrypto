@@ -625,7 +625,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
             + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
         substate
-            .individual_validator_rewards
+            .proposer_rewards
             .entry(current_leader)
             .or_default()
             .add_assign(rewards);
@@ -633,10 +633,11 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     } else {
         Decimal::ZERO
     };
-    let validator_set_rewards = tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE
-        / dec!(100)
-        + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100);
-    let vault_node_id = substate.validator_rewards.0 .0;
+    let validator_set_rewards = {
+        tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+            + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+    };
+    let vault_node_id = substate.rewards_vault.0 .0;
     track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
     track.release_lock(handle);
 
