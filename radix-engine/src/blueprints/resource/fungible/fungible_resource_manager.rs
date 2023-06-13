@@ -56,7 +56,6 @@ fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeErr
         ));
     }
 
-    // TODO: refactor this into mint function
     if amount > *MAX_MINT_AMOUNT {
         return Err(RuntimeError::ApplicationError(
             ApplicationError::ResourceManagerError(
