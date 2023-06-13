@@ -81,6 +81,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             resource_address,
             match amount {
                 Some(amount) => {
+                    // FIXME: add test
                     NonFungiblesSpecification::Some(amount.to_string().parse().map_err(|_| {
                         RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
                             AuthZoneError::ComposeProofError(ComposeProofError::InvalidAmount),
