@@ -345,7 +345,21 @@ where
         print!("\rRound {}/{}", idx + 1, rounds_count);
         std::io::stdout().flush().ok();
 
-        for item in round {
+        // prepare vector with indices of data to draw from
+        let mut idx_vector: Vec<usize> = (0..round.len()).collect();
+        let mut idx_vector_output: Vec<usize> = Vec::new();
+
+        for _ in 0..round.len() {
+            assert!(!idx_vector.is_empty());
+            // randomize index of data to delete
+            let idx = rng.gen_range(0..idx_vector.len());
+
+            // store sequence of indices for intermediate data
+            idx_vector_output.push(idx_vector[idx]);
+
+            // select current random item
+            let item = &round[idx_vector[idx]];
+
             let mut input_data = DatabaseUpdates::new();
 
             let mut partition = PartitionUpdates::new();
@@ -356,19 +370,23 @@ where
             input_data.insert(item.0.clone(), partition);
 
             substate_db.commit(&input_data);
+
+            idx_vector.remove(idx);
         }
+        assert!(idx_vector.is_empty());
 
         // prepare intermediate data
         for (_k, v) in substate_db.commit_delete_metrics.borrow().iter() {
+            assert_eq!(v.len(), idx_vector_output.len());
             for (i, val) in v.iter().enumerate() {
-                let exists = rocksdb_data_intermediate.get(&(i + 1)).is_some();
+                let exists = rocksdb_data_intermediate.get(&(idx_vector_output[i] + 1)).is_some();
                 if exists {
                     rocksdb_data_intermediate
-                        .get_mut(&(i + 1))
+                        .get_mut(&(idx_vector_output[i] + 1))
                         .unwrap()
                         .push(*val);
                 } else {
-                    rocksdb_data_intermediate.insert(i + 1, vec![*val]);
+                    rocksdb_data_intermediate.insert(idx_vector_output[i] + 1, vec![*val]);
                 }
             }
         }
