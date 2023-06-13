@@ -10,13 +10,25 @@ use crate::accounts::ed25519_account_1;
 
 pub struct NextTransaction {
     pub logical_name: String,
+    pub stage_counter: usize,
+    /// When we have a ManifestBuilderV2 which includes named proofs/buckets and
+    /// comments, this should be a model which includes those, and can be used for
+    /// dumping out a "nicer" manifest.
+    pub manifest: TransactionManifestV1,
     pub raw_transaction: RawNotarizedTransaction,
 }
 
 impl NextTransaction {
-    pub fn of(logical_name: String, transaction: NotarizedTransactionV1) -> Self {
+    pub fn of(
+        logical_name: String,
+        stage_counter: usize,
+        transaction: NotarizedTransactionV1,
+    ) -> Self {
+        let manifest = TransactionManifestV1::from_intent(&transaction.signed_intent.intent);
         Self {
             logical_name,
+            stage_counter,
+            manifest,
             raw_transaction: transaction.to_raw().expect("Transaction could be encoded"),
         }
     }
@@ -31,30 +43,43 @@ impl NextTransaction {
                 ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
             })
     }
+
+    #[cfg(feature = "std")]
+    pub fn dump_manifest(
+        &self,
+        dump_directory: &Option<std::path::PathBuf>,
+        network: &NetworkDefinition,
+    ) {
+        use transaction::manifest::dumper::dump_manifest_to_file_system;
+
+        let Some(directory_path) = dump_directory else {
+            return;
+        };
+        let file_name = format!("{}--{}", self.stage_counter, self.logical_name);
+        dump_manifest_to_file_system(&self.manifest, directory_path, Some(&file_name), &network)
+            .unwrap()
+    }
 }
 
-pub struct ScenarioContext {
+/// A core set of functionality and utilities common to every scenario
+pub struct ScenarioCore {
     network: NetworkDefinition,
     epoch: Epoch,
     nonce: u32,
     default_notary: PrivateKey,
     last_transaction_name: Option<String>,
     stage_counter: usize,
-    #[cfg(feature = "std")]
-    dump_manifest_directory: Option<std::path::PathBuf>,
 }
 
-impl ScenarioContext {
-    pub fn new(network: NetworkDefinition, epoch: Epoch) -> Self {
+impl ScenarioCore {
+    pub fn new(network: NetworkDefinition, epoch: Epoch, starting_nonce: u32) -> Self {
         Self {
             network,
             epoch,
-            nonce: 0,
+            nonce: starting_nonce,
             default_notary: ed25519_account_1().key,
             last_transaction_name: None,
             stage_counter: 0,
-            #[cfg(feature = "std")]
-            dump_manifest_directory: None,
         }
     }
 
@@ -63,28 +88,22 @@ impl ScenarioContext {
         self.stage_counter
     }
 
-    #[cfg(feature = "std")]
-    pub fn with_manifest_dumping(mut self, directory: std::path::PathBuf) -> Self {
-        self.dump_manifest_directory = Some(directory);
-        self
-    }
-
     pub fn next_transaction_with_faucet_lock_fee(
         &mut self,
         logical_name: &str,
         create_manifest: impl FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
         signers: Vec<&PrivateKey>,
-    ) -> Option<NextTransaction> {
+    ) -> NextTransaction {
         let mut manifest_builder = ManifestBuilder::new();
         manifest_builder.lock_fee(FAUCET, dec!(100));
         create_manifest(&mut manifest_builder);
-        self.next_transaction(logical_name, manifest_builder.build(), signers)
+        self.next_transaction(logical_name, manifest_builder, signers)
     }
 
     pub fn next_transaction_free_xrd_from_faucet(
         &mut self,
         to_account: ComponentAddress,
-    ) -> Option<NextTransaction> {
+    ) -> NextTransaction {
         self.next_transaction_with_faucet_lock_fee(
             "faucet-top-up",
             |builder| {
@@ -102,16 +121,19 @@ impl ScenarioContext {
         )
     }
 
+    pub fn next_nonce(&self) -> u32 {
+        self.nonce
+    }
+
     pub fn next_transaction(
         &mut self,
         logical_name: &str,
-        manifest: TransactionManifestV1,
+        manifest_builder: ManifestBuilder,
         signers: Vec<&PrivateKey>,
-    ) -> Option<NextTransaction> {
+    ) -> NextTransaction {
         let nonce = self.nonce;
         self.nonce += 1;
-        #[cfg(feature = "std")]
-        self.dump_manifest(logical_name, &manifest);
+        let manifest = manifest_builder.build();
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeaderV1 {
                 network_id: self.network.id,
@@ -128,26 +150,13 @@ impl ScenarioContext {
         }
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
-        Some(NextTransaction::of(
-            logical_name.to_owned(),
-            builder.build(),
-        ))
+        NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build())
     }
 
-    pub fn finish_scenario(&self) -> Option<NextTransaction> {
-        None
-    }
-
-    #[cfg(feature = "std")]
-    fn dump_manifest(&self, logical_name: &str, manifest: &TransactionManifestV1) {
-        use transaction::manifest::dumper::dump_manifest_to_file_system;
-
-        let Some(directory_path) = &self.dump_manifest_directory else {
-            return;
-        };
-        let file_name = format!("{}--{}", self.stage_counter, logical_name);
-        dump_manifest_to_file_system(manifest, directory_path, Some(&file_name), &self.network)
-            .unwrap()
+    pub fn finish_scenario(&self) -> NextAction {
+        NextAction::Completed(EndState {
+            next_unused_nonce: self.nonce,
+        })
     }
 
     pub fn network(&self) -> &NetworkDefinition {
@@ -214,33 +223,43 @@ pub enum ScenarioError {
 }
 
 impl ScenarioError {
-    pub fn into_full(self, scenario: &Box<dyn ScenarioCore>) -> FullScenarioError {
+    pub fn into_full(self, scenario: &Box<dyn ScenarioInstance>) -> FullScenarioError {
         FullScenarioError {
-            scenario: scenario.logical_name().to_owned(),
+            scenario: scenario.metadata().logical_name.to_owned(),
             error: self,
         }
     }
 }
 
-pub trait ScenarioCore {
-    /// Gets the logical name of the scenario.
-    /// This should be spaceless as it will be used for a file path.
-    fn logical_name(&self) -> &'static str;
-
-    /// Consumes the previous receipt, and gets the next transaction in the scenario.
-    fn next(
-        &mut self,
-        context: &mut ScenarioContext,
-        previous: Option<&TransactionReceipt>,
-    ) -> Result<Option<NextTransaction>, ScenarioError>;
+pub enum NextAction {
+    Transaction(NextTransaction),
+    Completed(EndState),
 }
 
-pub trait Scenario: Sized + ScenarioCore {
+#[derive(Debug)]
+pub struct EndState {
+    pub next_unused_nonce: u32,
+}
+
+pub trait ScenarioInstance {
+    /// Consumes the previous receipt, and gets the next transaction in the scenario.
+    fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError>;
+
+    fn metadata(&self) -> ScenarioMetadata;
+}
+
+pub struct ScenarioMetadata {
+    /// The logical name of the scenario.
+    /// This should be spaceless as it will be used for a file path.
+    pub logical_name: &'static str,
+}
+
+pub trait ScenarioDefinition: Sized + ScenarioInstance {
     type Config: Default;
 
-    fn new() -> Self {
-        Self::new_with_config(Default::default())
+    fn new(core: ScenarioCore) -> Self {
+        Self::new_with_config(core, Default::default())
     }
 
-    fn new_with_config(config: Self::Config) -> Self;
+    fn new_with_config(core: ScenarioCore, config: Self::Config) -> Self;
 }

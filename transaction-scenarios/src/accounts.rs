@@ -1,7 +1,7 @@
 use radix_engine_interface::{prelude::PublicKey, types::ComponentAddress};
 use transaction::prelude::*;
 
-use crate::internal_prelude::ScenarioContext;
+use crate::internal_prelude::ScenarioCore;
 
 pub struct VirtualAccount {
     pub key: PrivateKey,
@@ -20,7 +20,7 @@ impl VirtualAccount {
         }
     }
 
-    pub fn encode(&self, context: &ScenarioContext) -> String {
+    pub fn encode(&self, context: &ScenarioCore) -> String {
         self.address
             .to_string(AddressDisplayContext::with_encoder(&context.encoder()))
     }

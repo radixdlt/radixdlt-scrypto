@@ -1,6 +1,7 @@
 use crate::internal_prelude::*;
 
 pub struct TransferXrdScenario {
+    core: ScenarioCore,
     config: TransferXrdConfig,
 }
 
@@ -20,40 +21,39 @@ impl Default for TransferXrdConfig {
     }
 }
 
-impl Scenario for TransferXrdScenario {
+impl ScenarioDefinition for TransferXrdScenario {
     type Config = TransferXrdConfig;
 
-    fn new_with_config(config: Self::Config) -> Self {
-        Self { config }
+    fn new_with_config(core: ScenarioCore, config: Self::Config) -> Self {
+        Self { core, config }
     }
 }
 
-impl ScenarioCore for TransferXrdScenario {
-    fn logical_name(&self) -> &'static str {
-        "transfer_xrd"
+impl ScenarioInstance for TransferXrdScenario {
+    fn metadata(&self) -> ScenarioMetadata {
+        ScenarioMetadata {
+            logical_name: "transfer_xrd",
+        }
     }
 
-    fn next(
-        &mut self,
-        context: &mut ScenarioContext,
-        previous: Option<&TransactionReceipt>,
-    ) -> Result<Option<NextTransaction>, ScenarioError> {
+    fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
         // Destructure config for beauty
         let TransferXrdConfig {
             from_account,
             to_account_1,
             to_account_2,
         } = &self.config;
+        let core = &mut self.core;
 
         // Handle the previous result, return the next result
-        let up_next = match context.next_stage() {
+        let up_next = match core.next_stage() {
             1 => {
-                context.check_start(&previous)?;
-                context.next_transaction_free_xrd_from_faucet(from_account.address)
+                core.check_start(&previous)?;
+                core.next_transaction_free_xrd_from_faucet(from_account.address)
             }
             2 => {
-                context.check_commit_success(&previous)?;
-                context.next_transaction_with_faucet_lock_fee(
+                core.check_commit_success(&previous)?;
+                core.next_transaction_with_faucet_lock_fee(
                     "transfer--try_deposit_batch_or_abort",
                     |builder| {
                         builder
@@ -64,8 +64,8 @@ impl ScenarioCore for TransferXrdScenario {
                 )
             }
             3 => {
-                context.check_commit_success(&previous)?;
-                context.next_transaction_with_faucet_lock_fee(
+                core.check_commit_success(&previous)?;
+                core.next_transaction_with_faucet_lock_fee(
                     "transfer--try_deposit_batch_or_refund",
                     |builder| {
                         builder
@@ -76,8 +76,8 @@ impl ScenarioCore for TransferXrdScenario {
                 )
             }
             4 => {
-                context.check_commit_success(&previous)?;
-                context.next_transaction_with_faucet_lock_fee(
+                core.check_commit_success(&previous)?;
+                core.next_transaction_with_faucet_lock_fee(
                     "self-transfer--deposit_batch",
                     |builder| {
                         builder
@@ -88,8 +88,8 @@ impl ScenarioCore for TransferXrdScenario {
                 )
             }
             5 => {
-                context.check_commit_success(&previous)?;
-                context.next_transaction_with_faucet_lock_fee(
+                core.check_commit_success(&previous)?;
+                core.next_transaction_with_faucet_lock_fee(
                     "multi-transfer--deposit_batch",
                     |builder| {
                         builder
@@ -102,10 +102,10 @@ impl ScenarioCore for TransferXrdScenario {
                 )
             }
             _ => {
-                context.check_commit_success(&previous)?;
-                context.finish_scenario()
+                core.check_commit_success(&previous)?;
+                return Ok(core.finish_scenario());
             }
         };
-        Ok(up_next)
+        Ok(NextAction::Transaction(up_next))
     }
 }
