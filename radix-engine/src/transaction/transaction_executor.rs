@@ -595,70 +595,74 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     let tips_to_distribute = fee_summary.tips_to_distribute();
     let fees_to_distribute = fee_summary.fees_to_distribute();
 
-    // Fetch current leader
-    // TODO: maybe we should move current leader into validator rewards?
-    let handle = track
-        .acquire_lock(
-            CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
-            LockFlags::read_only(),
-        )
-        .unwrap()
-        .0;
-    let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
-    let current_leader = substate.current_leader;
-    track.release_lock(handle);
+    if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
+        // Fetch current leader
+        // TODO: maybe we should move current leader into validator rewards?
+        let handle = track
+            .acquire_lock(
+                CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+                LockFlags::read_only(),
+            )
+            .unwrap()
+            .0;
+        let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
+        let current_leader = substate.current_leader;
+        track.release_lock(handle);
 
-    // Update validator rewards
-    let handle = track
-        .acquire_lock(
-            CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
-            &ConsensusManagerField::ValidatorRewards.into(),
-            LockFlags::MUTABLE,
-        )
-        .unwrap()
-        .0;
-    let mut substate: ValidatorRewardsSubstate = track.read_substate(handle).0.as_typed().unwrap();
-    let proposer_rewards = if let Some(current_leader) = current_leader {
-        let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-            + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
+        // Update validator rewards
+        let handle = track
+            .acquire_lock(
+                CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ValidatorRewards.into(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap()
+            .0;
+        let mut substate: ValidatorRewardsSubstate =
+            track.read_substate(handle).0.as_typed().unwrap();
+        let proposer_rewards = if let Some(current_leader) = current_leader {
+            let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
+                + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
+            substate
+                .proposer_rewards
+                .entry(current_leader)
+                .or_default()
+                .add_assign(rewards);
+            rewards
+        } else {
+            Decimal::ZERO
+        };
+        let validator_set_rewards = {
+            tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+                + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+        };
+        let vault_node_id = substate.rewards_vault.0 .0;
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
+
+        // Put validator rewards into the vault
+        let handle = track
+            .acquire_lock(
+                &vault_node_id,
+                OBJECT_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap()
+            .0;
+        let mut substate: LiquidFungibleResource =
+            track.read_substate(handle).0.as_typed().unwrap();
         substate
-            .proposer_rewards
-            .entry(current_leader)
-            .or_default()
-            .add_assign(rewards);
-        rewards
-    } else {
-        Decimal::ZERO
-    };
-    let validator_set_rewards = {
-        tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-            + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-    };
-    let vault_node_id = substate.rewards_vault.0 .0;
-    track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-    track.release_lock(handle);
-
-    // Put validator rewards into the vault
-    let handle = track
-        .acquire_lock(
-            &vault_node_id,
-            OBJECT_BASE_PARTITION,
-            &FungibleVaultField::LiquidFungible.into(),
-            LockFlags::MUTABLE,
-        )
-        .unwrap()
-        .0;
-    let mut substate: LiquidFungibleResource = track.read_substate(handle).0.as_typed().unwrap();
-    substate
-        .put(LiquidFungibleResource::new(
-            proposer_rewards + validator_set_rewards,
-        ))
-        .unwrap();
-    track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-    track.release_lock(handle);
+            .put(LiquidFungibleResource::new(
+                proposer_rewards + validator_set_rewards,
+            ))
+            .unwrap();
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
+    }
 
     (fee_summary, fee_payments)
 }
