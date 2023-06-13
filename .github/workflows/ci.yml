@@ -256,6 +256,20 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: transaction
+  transaction-scenarios:
+    name: Run transaction scenarios
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.69.0
+    - name: Run tests
+      run: cargo test
+      working-directory: transaction-scenarios
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}

@@ -69,6 +69,18 @@ pub struct TransactionManifestV1 {
 }
 
 impl TransactionManifestV1 {
+    pub fn from_intent(intent: &IntentV1) -> Self {
+        Self {
+            instructions: intent.instructions.0.clone(),
+            blobs: intent
+                .blobs
+                .blobs
+                .iter()
+                .map(|blob| (hash(&blob.0), blob.0.clone()))
+                .collect(),
+        }
+    }
+
     pub fn for_intent(self) -> (InstructionsV1, BlobsV1) {
         (
             InstructionsV1(self.instructions),
