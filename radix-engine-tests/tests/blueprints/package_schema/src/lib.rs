@@ -28,7 +28,7 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let mut fields = Vec::new();
-    fields.push(FieldSchema::normal(
+    fields.push(FieldSchema::static_field(
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 

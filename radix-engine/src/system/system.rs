@@ -548,11 +548,9 @@ where
                 for (i, field) in fields.into_iter().enumerate() {
 
                     // Check for any feature conditions
-                    if let Some(condition) = &field_schemas[i].conditional {
-                        match condition {
-                            Condition::RequireFeature(feature) => if !features.contains(feature) {
-                                continue;
-                            }
+                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
+                        if !features.contains(feature) {
+                            continue;
                         }
                     }
 
@@ -566,6 +564,9 @@ where
                                 &mut schema_cache,
                             )?;
                             (schema_cache.cache.get(&hash).unwrap(), index)
+                        }
+                        SchemaPointer::Instance(_instance_index) => {
+                            todo!()
                         }
                     };
 
@@ -609,17 +610,15 @@ where
                             for (key, (value, freeze)) in entries {
                                 let (schema, key_type_index) = match blueprint_kv_schema.key.clone()
                                 {
-                                    TypeRef::Static(pointer) => match pointer {
-                                        SchemaPointer::Package(schema_hash, index) => {
-                                            let schema = self.get_schema(
-                                                blueprint.package_address.as_node_id(),
-                                                &schema_hash,
-                                            )?;
-                                            (schema, TypeRef::Static(index))
-                                        }
-                                    },
-                                    TypeRef::Generic(i) => {
-                                        (ScryptoSchema::empty(), TypeRef::Generic(i))
+                                    SchemaPointer::Package(schema_hash, index) => {
+                                        let schema = self.get_schema(
+                                            blueprint.package_address.as_node_id(),
+                                            &schema_hash,
+                                        )?;
+                                        (schema, TypeRef::Static(index))
+                                    }
+                                    SchemaPointer::Instance(instance_index) => {
+                                        (ScryptoSchema::empty(), TypeRef::Generic(instance_index))
                                     }
                                 };
 
@@ -638,10 +637,14 @@ where
                                     ))
                                 })?;
 
-                                let value_type_index =
-                                    blueprint_kv_schema.value.clone().map(|v| match v {
-                                        SchemaPointer::Package(_, index) => index,
-                                    });
+                                let value_type_index = match blueprint_kv_schema.value.clone() {
+                                    SchemaPointer::Package(_schema_hash, index) => {
+                                        TypeRef::Static(index)
+                                    }
+                                    SchemaPointer::Instance(instance_index) => {
+                                        TypeRef::Generic(instance_index)
+                                    }
+                                };
 
                                 self.validate_payload_against_blueprint_or_instance_schema(
                                     &value,
@@ -776,14 +779,12 @@ where
                 ))
             })?;
 
-        if let Some(condition) = field_schema.conditional {
-            match condition {
-                Condition::RequireFeature(feature) => if !info.features.contains(&feature) {
-                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        info.blueprint_id.clone(),
-                        field_index,
-                    )));
-                }
+        if let Condition::IfFeature(feature) = field_schema.condition {
+            if !info.features.contains(&feature) {
+                return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                    info.blueprint_id.clone(),
+                    field_index,
+                )));
             }
         }
 
@@ -799,6 +800,9 @@ where
                     self.get_schema(info.blueprint_id.package_address.as_node_id(), &schema_hash)?;
 
                 Ok((node_id, partition_num, schema, type_index, info))
+            }
+            SchemaPointer::Instance(_instance_index) => {
+                todo!()
             }
         }
     }
@@ -2176,29 +2180,27 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
             match kv_schema.value {
-                TypeRef::Generic(index) => {
+                SchemaPointer::Package(schema_hash, index) => {
+                    let schema = self.get_schema(
+                        object_info.blueprint_id.package_address.as_node_id(),
+                        &schema_hash,
+                    )?;
+                    KeyValueEntryLockData::Write {
+                        schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
+                        schema,
+                        index,
+                        can_own,
+                    }
+                }
+                SchemaPointer::Instance(instance_index) => {
                     let mut instance_schema = object_info.instance_schema.unwrap();
                     KeyValueEntryLockData::Write {
                         schema_origin: SchemaOrigin::Instance {},
                         schema: instance_schema.schema,
-                        index: instance_schema.type_index.remove(index as usize),
+                        index: instance_schema.type_index.remove(instance_index as usize),
                         can_own,
                     }
                 }
-                TypeRef::Static(pointer) => match pointer {
-                    SchemaPointer::Package(schema_hash, index) => {
-                        let schema = self.get_schema(
-                            object_info.blueprint_id.package_address.as_node_id(),
-                            &schema_hash,
-                        )?;
-                        KeyValueEntryLockData::Write {
-                            schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
-                            schema,
-                            index,
-                            can_own,
-                        }
-                    }
-                },
             }
         } else {
             KeyValueEntryLockData::Read
@@ -2381,6 +2383,9 @@ where
                 let schema =
                     self.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
                 (schema, index.clone())
+            }
+            SchemaPointer::Instance(instance_index) => {
+                todo!()
             }
         };
 

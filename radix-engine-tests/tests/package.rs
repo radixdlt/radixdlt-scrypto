@@ -157,7 +157,7 @@ fn test_basic_package_missing_export() {
                     type_validations: vec![],
                 },
                 state: BlueprintStateSchemaInit {
-                    fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(UNIT_ID))],
                     collections: vec![],
                 },
                 events: BlueprintEventSchemaInit::default(),

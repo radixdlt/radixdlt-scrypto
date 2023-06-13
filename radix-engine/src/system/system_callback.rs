@@ -62,6 +62,10 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
                 service.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
             (schema, index)
         }
+
+        SchemaPointer::Instance(_instance_index) => {
+            todo!()
+        }
     };
 
     service
@@ -103,6 +107,9 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             let schema =
                 service.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
             (schema, index.clone())
+        }
+        SchemaPointer::Instance(instance_index) => {
+            todo!()
         }
     };
 

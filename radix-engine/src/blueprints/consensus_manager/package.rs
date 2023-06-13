@@ -34,22 +34,22 @@ impl ConsensusManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>(),
             ));
 
@@ -196,7 +196,7 @@ impl ConsensusManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ValidatorSubstate>(),
             ));
 

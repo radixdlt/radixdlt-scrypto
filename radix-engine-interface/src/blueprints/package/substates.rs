@@ -7,7 +7,7 @@ use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
-use sbor::LocalTypeIndex;
+use sbor::{LocalTypeIndex, Schema};
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -68,7 +68,8 @@ pub struct PackageRoyaltyAccumulatorSubstate {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum SchemaPointer {
-    Package(Hash, LocalTypeIndex),
+    Package(Hash, LocalTypeIndex), // For static types
+    Instance(u8), // For generics
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -161,11 +162,9 @@ impl BlueprintInterface {
     }
 }
 
-pub type IndexedFieldSchema = FieldSchema<SchemaPointer>;
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedBlueprintStateSchema {
-    pub fields: Option<(PartitionOffset, Vec<IndexedFieldSchema>)>,
+    pub fields: Option<(PartitionOffset, Vec<FieldSchema<SchemaPointer>>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema<SchemaPointer>)>,
     pub num_partitions: u8,
 }
@@ -179,9 +178,15 @@ impl IndexedBlueprintStateSchema {
             let schema_fields = schema
                 .fields
                 .into_iter()
-                .map(|s| FieldSchema {
-                    field: SchemaPointer::Package(schema_hash, s.field),
-                    conditional: s.conditional,
+                .map(|field_schema| {
+                    let pointer = match field_schema.field {
+                        TypeRef::Static(type_index) => SchemaPointer::Package(schema_hash, type_index),
+                        TypeRef::Generic(instance_index) => SchemaPointer::Instance(instance_index),
+                    };
+                    FieldSchema {
+                        field: pointer,
+                        condition: field_schema.condition,
+                    }
                 })
                 .collect();
             fields = Some((PartitionOffset(partition_offset), schema_fields));
@@ -190,7 +195,13 @@ impl IndexedBlueprintStateSchema {
 
         let mut collections = Vec::new();
         for collection_schema in schema.collections {
-            let schema = collection_schema.map(|s| SchemaPointer::Package(schema_hash, s));
+            let schema = collection_schema
+                .map(|type_ref| {
+                    match type_ref {
+                        TypeRef::Static(type_index) => SchemaPointer::Package(schema_hash, type_index),
+                        TypeRef::Generic(instance_index) => SchemaPointer::Instance(instance_index),
+                    }
+                });
             collections.push((PartitionOffset(partition_offset), schema));
             partition_offset += 1;
         }
@@ -213,7 +224,7 @@ impl IndexedBlueprintStateSchema {
         }
     }
 
-    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, IndexedFieldSchema)> {
+    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, FieldSchema<SchemaPointer>)> {
         match &self.fields {
             Some((offset, fields)) => {
                 let field_index: usize = field_index.into();
@@ -270,8 +281,8 @@ impl IndexedBlueprintStateSchema {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
                     match &kv_schema.key {
-                        TypeRef::Static(..) => {}
-                        TypeRef::Generic(type_index) => {
+                        SchemaPointer::Package(..) => {}
+                        SchemaPointer::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;
@@ -283,8 +294,8 @@ impl IndexedBlueprintStateSchema {
                     }
 
                     match &kv_schema.value {
-                        TypeRef::Static(..) => {}
-                        TypeRef::Generic(type_index) => {
+                        SchemaPointer::Package(..) => {}
+                        SchemaPointer::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;

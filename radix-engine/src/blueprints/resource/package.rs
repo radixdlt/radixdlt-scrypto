@@ -146,16 +146,16 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(
                     ),
             ));
-            fields.push(FieldSchema {
-                field: aggregator
-                    .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
-                conditional: Some(Condition::RequireFeature(TRACK_TOTAL_SUPPLY_FEATURE.to_string())),
-            });
+            fields.push(FieldSchema::if_feature(
+                aggregator.add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
+
+                TRACK_TOTAL_SUPPLY_FEATURE,
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -343,20 +343,20 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator
                     .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
             ));
             fields.push(
-                FieldSchema::normal(aggregator
+                FieldSchema::static_field(aggregator
                     .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
                     )),
             );
             fields.push(
-                FieldSchema {
-                    field: aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>(),
-                    conditional: Some(Condition::RequireFeature(TRACK_TOTAL_SUPPLY_FEATURE.to_string())),
-                }
+                FieldSchema::if_feature(
+                    aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>(),
+                    TRACK_TOTAL_SUPPLY_FEATURE,
+                )
             );
 
             let mut collections = Vec::new();
@@ -635,10 +635,10 @@ impl ResourceManagerNativePackage {
         let fungible_vault_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
 
@@ -849,10 +849,10 @@ impl ResourceManagerNativePackage {
         let non_fungible_vault_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
             ));
 
@@ -1125,10 +1125,10 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LiquidFungibleResource>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
 
@@ -1273,10 +1273,10 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
             ));
 
@@ -1454,10 +1454,10 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<FungibleProofSubstate>(),
             ));
 
@@ -1543,10 +1543,10 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
             ));
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>(),
             ));
 
@@ -1645,7 +1645,7 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
             ));
 
@@ -1777,7 +1777,7 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<AuthZone>(),
             ));
 

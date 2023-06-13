@@ -1514,6 +1514,9 @@ impl TestRunner {
 
                 (index, schema)
             }
+            SchemaPointer::Instance(_instance_index) => {
+                todo!()
+            }
         }
     }
 
@@ -1669,7 +1672,7 @@ pub fn single_function_package_definition(
                     type_validations: vec![],
                 },
                 state: BlueprintStateSchemaInit {
-                    fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
+                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(UNIT_ID))],
                     collections: vec![],
                 },
                 events: BlueprintEventSchemaInit::default(),

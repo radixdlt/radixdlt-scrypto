@@ -9,7 +9,7 @@ use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::types::PackageAddress;
-use radix_engine_common::{ManifestSbor, ScryptoSbor};
+use radix_engine_common::{ManifestSbor, ScryptoEncode, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -65,8 +65,8 @@ impl Default for BlueprintSchemaInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintStateSchemaInit {
-    pub fields: Vec<FieldSchema<LocalTypeIndex>>,
-    pub collections: Vec<BlueprintCollectionSchema<LocalTypeIndex>>,
+    pub fields: Vec<FieldSchema<TypeRef<LocalTypeIndex>>>,
+    pub collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeIndex>>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
@@ -105,27 +105,18 @@ pub enum TypeRef<T> {
     Generic(u8), // Type is defined per instance
 }
 
-impl<T> TypeRef<T> {
-    pub fn map<U, F: Fn(T) -> U>(self, f: F) -> TypeRef<U> {
-        match self {
-            TypeRef::Static(v) => TypeRef::Static(f(v)),
-            TypeRef::Generic(v) => TypeRef::Generic(v),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintKeyValueStoreSchema<T> {
-    pub key: TypeRef<T>,
-    pub value: TypeRef<T>,
+    pub key: T,
+    pub value: T,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
 impl<T> BlueprintKeyValueStoreSchema<T> {
     pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintKeyValueStoreSchema<U> {
         BlueprintKeyValueStoreSchema {
-            key: self.key.map(f),
-            value: self.value.map(f),
+            key: f(self.key),
+            value: f(self.value),
             can_own: self.can_own,
         }
     }
@@ -160,25 +151,29 @@ impl<T> BlueprintCollectionSchema<T> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum Condition {
-    RequireFeature(String),
+    Always,
+    IfFeature(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FieldSchema<V> {
     pub field: V,
-    pub conditional: Option<Condition>,
+    pub condition: Condition,
 }
 
-impl<V> FieldSchema<V> {
-    pub fn normal<I: Into<V>>(value: I) -> Self {
+impl FieldSchema<TypeRef<LocalTypeIndex>> {
+    pub fn if_feature<I: Into<LocalTypeIndex>, S: ToString>(value: I, feature: S) -> Self {
         FieldSchema {
-            field: value.into(),
-            conditional: None,
+            field: TypeRef::Static(value.into()),
+            condition: Condition::IfFeature(feature.to_string()),
         }
     }
 
-    pub fn field(&self) -> &V {
-        &self.field
+    pub fn static_field<I: Into<LocalTypeIndex>>(value: I) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::Always,
+        }
     }
 }
 

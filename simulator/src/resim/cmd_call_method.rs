@@ -122,6 +122,9 @@ impl CallMethod {
                 let schema = export_schema(bp_id.package_address, schema_hash)?;
                 (schema, index)
             }
+            SchemaPointer::Instance(instance_index) => {
+                todo!()
+            }
         };
 
         let (builder, built_args) =

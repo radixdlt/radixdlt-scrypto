@@ -127,6 +127,9 @@ impl CallFunction {
                 let schema = export_schema(package_address, hash)?;
                 (schema, index)
             }
+            SchemaPointer::Instance(_instance_index) => {
+                todo!()
+            }
         };
 
         let (builder, built_args) =

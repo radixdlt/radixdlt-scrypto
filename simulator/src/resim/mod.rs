@@ -457,6 +457,9 @@ pub fn get_event_schema<S: SubstateDatabase>(
 
             Some((index, schema))
         }
+        SchemaPointer::Instance(..) => {
+            todo!()
+        }
     }
 }
 
