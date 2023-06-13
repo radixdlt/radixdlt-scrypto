@@ -179,7 +179,7 @@ where
                 SchemaPointer::Instance(instance_index) => {
                     let instance_schema = match instance_schema.as_ref() {
                         Some(instance_schema) => instance_schema,
-                        None => return Err("Instance schema does not exist"),
+                        None => return Err("Instance schema does not exist".to_string()),
                     };
                     let index = instance_schema
                         .type_index
@@ -2345,31 +2345,15 @@ where
                     ));
                 };
 
-            let (schema, local_type_index, schema_origin) = match pointer {
-                SchemaPointer::Package(schema_hash, index) => {
-                    let schema =
-                        self.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
-                    (schema, index, SchemaOrigin::Blueprint(blueprint_id))
-                }
-                SchemaPointer::Instance(instance_index) => {
-                    let instance_schema = instance_schema.ok_or_else(|| RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(EventError::InvalidActor))))?;
-                    let schema = instance_schema.schema;
-                    let index = instance_schema.type_index[instance_index as usize];
-                    (schema, index, SchemaOrigin::Instance)
-                }
-            };
-
-            self.validate_payload(
-                &event_data,
-                &schema,
-                local_type_index,
-                schema_origin,
-            )
-                .map_err(|err| {
-                    RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
-                        EventError::EventSchemaNotMatch(err.error_message(&schema)),
-                    )))
-                })?;
+            self.validate_payload_against_blueprint_schema(
+                [(&event_data, &pointer)],
+                &blueprint_id,
+                &instance_schema,
+            ).map_err(|err| {
+                RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
+                    EventError::EventSchemaNotMatch(err),
+                )))
+            })?;
 
             pointer
         };
