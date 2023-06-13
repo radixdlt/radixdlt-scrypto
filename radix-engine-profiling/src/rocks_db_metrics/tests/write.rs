@@ -365,7 +365,7 @@ where
         }
     }
 
-    drop_highest_and_lowest_value(&substate_db, 3);
+    discard_spikes(&mut substate_db.commit_set_metrics.borrow_mut(), 5000f32);
     let rocksdb_output_data =
         calculate_percent_to_max_points(&mut substate_db.commit_set_metrics.borrow_mut(), 95f32);
 
