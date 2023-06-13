@@ -755,7 +755,7 @@ impl ConsensusManagerBlueprint {
             let reward_amount = from_pool + from_self;
 
             // Note that dusted xrd (due to rounding) are kept in the vault and will
-            // become retrievable next epoch.
+            // become retrievable next time.
             let xrd_bucket = validator_rewards.rewards_vault.take(reward_amount, api)?;
 
             api.call_method(

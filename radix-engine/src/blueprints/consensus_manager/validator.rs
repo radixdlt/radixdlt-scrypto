@@ -807,6 +807,63 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    pub fn apply_reward<Y>(
+        xrd_bucket: Bucket,
+        concluded_epoch: Epoch,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // begin the read+modify+write of the validator substate...
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        // Get the total reward amount
+        let total_reward_xrd = xrd_bucket.amount(api)?;
+
+        // Stake it
+        let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
+        let starting_stake_pool_xrd = stake_xrd_vault.amount(api)?;
+        let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
+        let post_reward_stake_pool_xrd = starting_stake_pool_xrd + total_reward_xrd;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
+        let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
+            total_reward_xrd,
+            post_reward_stake_pool_xrd,
+            total_stake_unit_supply,
+        );
+        let new_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
+        stake_xrd_vault.put(xrd_bucket, api)?;
+
+        // Lock these new stake units in the internal owner's "public display" vault
+        Vault(substate.locked_owner_stake_unit_vault_id).put(new_stake_unit_bucket, api)?;
+
+        // Update the index, since the stake increased (because of staking of the reward)
+        let new_stake_xrd = starting_stake_pool_xrd + total_reward_xrd;
+        let new_index_key =
+            Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
+
+        // Flush validator substate changes
+        substate.sorted_key = new_index_key;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
+
+        Runtime::emit_event(
+            api,
+            ValidatorRewardAppliedEvent {
+                epoch: concluded_epoch,
+                amount: total_reward_xrd,
+            },
+        )?;
+
+        Ok(())
+    }
+
     fn to_sorted_key(
         registered: bool,
         stake: Decimal,
@@ -941,6 +998,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
         btreemap!(
             RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
+            RoleKey::new(VALIDATOR_APPLY_REWARD_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
             RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { mutable: [SELF_ROLE].into(), mutable_mutable: false },
         )
     }
