@@ -42,6 +42,9 @@ impl ConsensusManagerNativePackage {
             aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
         ));
         fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<ValidatorRewardsSubstate>(),
+        ));
+        fields.push(FieldSchema::normal(
             aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
         ));
         fields.push(FieldSchema::normal(
