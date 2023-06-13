@@ -261,8 +261,8 @@ impl IndexedBlueprintStateSchema {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
                     match &kv_schema.key {
-                        TypeRef::Blueprint(..) => {}
-                        TypeRef::Instance(type_index) => {
+                        TypeRef::Static(..) => {}
+                        TypeRef::Generic(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;
@@ -274,8 +274,8 @@ impl IndexedBlueprintStateSchema {
                     }
 
                     match &kv_schema.value {
-                        TypeRef::Blueprint(..) => {}
-                        TypeRef::Instance(type_index) => {
+                        TypeRef::Static(..) => {}
+                        TypeRef::Generic(type_index) => {
                             if let Some(instance_schema) = instance_schema {
                                 if instance_schema.type_index.len() < (*type_index as usize) {
                                     return false;

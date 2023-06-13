@@ -169,7 +169,7 @@ where
         instance_schema: &'s Option<InstanceSchema>,
     ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
         match type_ref {
-            TypeRef::Blueprint(index) => {
+            TypeRef::Static(index) => {
                 self.validate_payload(
                     payload,
                     blueprint_schema,
@@ -177,7 +177,7 @@ where
                     SchemaOrigin::Blueprint(blueprint_id),
                 )?;
             }
-            TypeRef::Instance(instance_index) => {
+            TypeRef::Generic(instance_index) => {
                 let instance_schema = instance_schema.as_ref().unwrap();
                 let index = instance_schema
                     .type_index
@@ -610,17 +610,17 @@ where
                             for (key, (value, freeze)) in entries {
                                 let (schema, key_type_index) = match blueprint_kv_schema.key.clone()
                                 {
-                                    TypeRef::Blueprint(pointer) => match pointer {
+                                    TypeRef::Static(pointer) => match pointer {
                                         SchemaPointer::Package(schema_hash, index) => {
                                             let schema = self.get_schema(
                                                 blueprint.package_address.as_node_id(),
                                                 &schema_hash,
                                             )?;
-                                            (schema, TypeRef::Blueprint(index))
+                                            (schema, TypeRef::Static(index))
                                         }
                                     },
-                                    TypeRef::Instance(i) => {
-                                        (ScryptoSchema::empty(), TypeRef::Instance(i))
+                                    TypeRef::Generic(i) => {
+                                        (ScryptoSchema::empty(), TypeRef::Generic(i))
                                     }
                                 };
 
@@ -2175,7 +2175,7 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
             match kv_schema.value {
-                TypeRef::Instance(index) => {
+                TypeRef::Generic(index) => {
                     let mut instance_schema = object_info.instance_schema.unwrap();
                     KeyValueEntryLockData::Write {
                         schema_origin: SchemaOrigin::Instance {},
@@ -2184,7 +2184,7 @@ where
                         can_own,
                     }
                 }
-                TypeRef::Blueprint(pointer) => match pointer {
+                TypeRef::Static(pointer) => match pointer {
                     SchemaPointer::Package(schema_hash, index) => {
                         let schema = self.get_schema(
                             object_info.blueprint_id.package_address.as_node_id(),

@@ -101,15 +101,15 @@ impl BlueprintFunctionsTemplateInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum TypeRef<T> {
-    Blueprint(T),
-    Instance(u8),
+    Static(T), // Type is defined by blueprint
+    Generic(u8), // Type is defined per instance
 }
 
 impl<T> TypeRef<T> {
     pub fn map<U, F: Fn(T) -> U>(self, f: F) -> TypeRef<U> {
         match self {
-            TypeRef::Blueprint(v) => TypeRef::Blueprint(f(v)),
-            TypeRef::Instance(v) => TypeRef::Instance(v),
+            TypeRef::Static(v) => TypeRef::Static(f(v)),
+            TypeRef::Generic(v) => TypeRef::Generic(v),
         }
     }
 }

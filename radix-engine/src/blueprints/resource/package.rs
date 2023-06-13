@@ -362,10 +362,10 @@ impl ResourceManagerNativePackage {
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
                 BlueprintKeyValueStoreSchema {
-                    key: TypeRef::Blueprint(
+                    key: TypeRef::Static(
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
-                    value: TypeRef::Instance(0u8),
+                    value: TypeRef::Generic(0u8),
                     can_own: false,
                 },
             ));

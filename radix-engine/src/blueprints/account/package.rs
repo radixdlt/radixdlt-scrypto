@@ -40,19 +40,19 @@ impl AccountNativePackage {
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
+                key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
-                value: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<Own>()),
                 can_own: true,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
+                key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
-                value: TypeRef::Blueprint(
+                value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
                 ),
                 can_own: false,

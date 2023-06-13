@@ -432,10 +432,10 @@ impl PackageNativePackage {
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
+                key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
-                value: TypeRef::Blueprint(
+                value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintDefinition>(),
                 ),
                 can_own: false,
@@ -443,10 +443,10 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
+                key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
-                value: TypeRef::Blueprint(
+                value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintDependencies>(),
                 ),
                 can_own: false,
@@ -454,8 +454,8 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Blueprint(
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
+                value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
                 ),
                 can_own: false,
@@ -463,8 +463,8 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Blueprint(
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
+                value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
                 ),
                 can_own: false,
@@ -472,10 +472,10 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
+                key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
-                value: TypeRef::Blueprint(
+                value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<RoyaltyConfig>(),
                 ),
                 can_own: false,
@@ -483,10 +483,10 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Blueprint(
+                key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
-                value: TypeRef::Blueprint(
+                value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<AuthTemplate>(),
                 ),
                 can_own: false,
