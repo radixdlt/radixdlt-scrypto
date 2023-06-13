@@ -161,7 +161,7 @@ impl BlueprintInterface {
     }
 }
 
-pub type IndexedFieldSchema = FeaturedSchema<SchemaPointer>;
+pub type IndexedFieldSchema = FieldSchema<SchemaPointer>;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedBlueprintStateSchema {
@@ -179,7 +179,10 @@ impl IndexedBlueprintStateSchema {
             let schema_fields = schema
                 .fields
                 .into_iter()
-                .map(|s| s.map(|v| SchemaPointer::Package(schema_hash, v)))
+                .map(|s| FieldSchema {
+                    field: SchemaPointer::Package(schema_hash, s.field),
+                    conditional: s.conditional,
+                })
                 .collect();
             fields = Some((PartitionOffset(partition_offset), schema_fields));
             partition_offset += 1;

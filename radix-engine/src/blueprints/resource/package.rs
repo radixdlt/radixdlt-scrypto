@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, Condition, FieldSchema};
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintIndexSchema,
     FunctionTemplateInit,
@@ -151,10 +151,10 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(
                     ),
             ));
-            fields.push(FieldSchema::Conditional {
-                feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                value: aggregator
+            fields.push(FieldSchema {
+                field: aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
+                conditional: Some(Condition::RequireFeature(TRACK_TOTAL_SUPPLY_FEATURE.to_string())),
             });
 
             let mut functions = BTreeMap::new();
@@ -353,9 +353,9 @@ impl ResourceManagerNativePackage {
                     )),
             );
             fields.push(
-                FieldSchema::Conditional {
-                    feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                    value: aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>(),
+                FieldSchema {
+                    field: aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>(),
+                    conditional: Some(Condition::RequireFeature(TRACK_TOTAL_SUPPLY_FEATURE.to_string())),
                 }
             );
 

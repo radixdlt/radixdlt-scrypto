@@ -139,14 +139,16 @@ impl Publish {
                     .collect();
 
                 let def = BlueprintDefinition {
-                    outer_blueprint: s.outer_blueprint,
-                    features: s.feature_set,
-                    functions,
-                    events,
-                    state_schema: IndexedBlueprintStateSchema::from_schema(
-                        schema_hash,
-                        s.schema.state,
-                    ),
+                    interface: BlueprintInterface {
+                        outer_blueprint: s.outer_blueprint,
+                        features: s.feature_set,
+                        functions,
+                        events,
+                        state: IndexedBlueprintStateSchema::from_schema(
+                            schema_hash,
+                            s.schema.state,
+                        ),
+                    },
                     function_exports,
                     virtual_lazy_load_functions: s
                         .schema

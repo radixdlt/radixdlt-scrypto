@@ -65,7 +65,7 @@ impl Default for BlueprintSchemaInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintStateSchemaInit {
-    pub fields: Vec<FieldSchema>,
+    pub fields: Vec<FieldSchema<LocalTypeIndex>>,
     pub collections: Vec<BlueprintCollectionSchema<LocalTypeIndex>>,
 }
 
@@ -159,37 +159,28 @@ impl<T> BlueprintCollectionSchema<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum FeaturedSchema<V> {
-    Normal { value: V },
-    Conditional { feature: String, value: V },
+pub enum Condition {
+    RequireFeature(String),
 }
 
-impl<V> FeaturedSchema<V> {
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct FieldSchema<V> {
+    pub field: V,
+    pub conditional: Option<Condition>,
+}
+
+impl<V> FieldSchema<V> {
     pub fn normal<I: Into<V>>(value: I) -> Self {
-        FeaturedSchema::Normal {
-            value: value.into(),
+        FieldSchema {
+            field: value.into(),
+            conditional: None,
         }
     }
 
-    pub fn value(&self) -> &V {
-        match self {
-            FeaturedSchema::Normal { value } => value,
-            FeaturedSchema::Conditional { value, .. } => value,
-        }
-    }
-
-    pub fn map<T, F: FnOnce(V) -> T>(self, f: F) -> FeaturedSchema<T> {
-        match self {
-            Self::Normal { value } => FeaturedSchema::Normal { value: f(value) },
-            Self::Conditional { feature, value } => FeaturedSchema::Conditional {
-                feature,
-                value: f(value),
-            },
-        }
+    pub fn field(&self) -> &V {
+        &self.field
     }
 }
-
-pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;
 
 bitflags! {
     #[derive(Sbor)]

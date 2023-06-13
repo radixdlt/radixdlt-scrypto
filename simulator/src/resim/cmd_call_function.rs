@@ -112,7 +112,7 @@ impl CallFunction {
         args: Vec<String>,
         account: Option<ComponentAddress>,
     ) -> Result<&'a mut ManifestBuilder, Error> {
-        let bp_interface = export_blueprint_interface(package_address, &blueprint_name)?.interface;
+        let bp_interface = export_blueprint_interface(package_address, &blueprint_name)?;
 
         let function_schema = bp_interface
             .find_function(function_name.as_str())

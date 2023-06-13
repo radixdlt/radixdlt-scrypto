@@ -34,10 +34,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, InstanceSchema, KeyValueStoreSchema,
-    TypeRef,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema, TypeRef};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::hash_map::Entry;
 use sbor::rust::string::ToString;
@@ -549,16 +546,18 @@ where
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
-                    let pointer = match &field_schemas[i] {
-                        IndexedFieldSchema::Normal { value } => value.clone(),
-                        IndexedFieldSchema::Conditional { feature, value } => {
-                            if features.contains(feature) {
-                                value.clone()
-                            } else {
+
+                    // Check for any feature conditions
+                    if let Some(condition) = &field_schemas[i].conditional {
+                        match condition {
+                            Condition::RequireFeature(feature) => if !features.contains(feature) {
                                 continue;
                             }
                         }
-                    };
+                    }
+
+                    let pointer = field_schemas[i].field.clone();
+
                     let (schema, field_type_index) = match pointer {
                         SchemaPointer::Package(hash, index) => {
                             self.ensure_schema_loaded(
@@ -777,19 +776,18 @@ where
                 ))
             })?;
 
-        let pointer = match field_schema {
-            IndexedFieldSchema::Normal { value } => value,
-            IndexedFieldSchema::Conditional { feature, value } => {
-                if info.features.contains(&feature) {
-                    value
-                } else {
+        if let Some(condition) = field_schema.conditional {
+            match condition {
+                Condition::RequireFeature(feature) => if !info.features.contains(&feature) {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                         info.blueprint_id.clone(),
                         field_index,
                     )));
                 }
             }
-        };
+        }
+
+        let pointer = field_schema.field;
 
         let partition_num = base_partition
             .at_offset(partition_offset)
