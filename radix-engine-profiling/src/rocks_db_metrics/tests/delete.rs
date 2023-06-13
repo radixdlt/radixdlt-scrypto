@@ -280,17 +280,20 @@ where
     let mut rng = rand::thread_rng();
 
     // prepare database
-    let data: Vec<(DbPartitionKey, Vec<DbSortKey>)> = {
+    let data_per_round: Vec<Vec<(DbPartitionKey, Vec<DbSortKey>)>> = {
         let mut substate_db = create_store(path.clone());
-        // 1_000_000 substates of size 100 bytes under random partitions
+        // fill db with 1_000_000 substates of size 100 bytes under random partitions
         prepare_db(&mut substate_db, 100, 100, 1, 1000000, false);
 
+        // fill db with additional substates which will be deleted in next step
         let value_size = 100;
 
-        let mut data_index_vector: Vec<(DbPartitionKey, Vec<DbSortKey>)> =
-            Vec::with_capacity(n_value * n_value);
+        let mut data_per_round: Vec<Vec<(DbPartitionKey, Vec<DbSortKey>)>> =
+            Vec::with_capacity(rounds_count);
 
         for _ in 0..rounds_count {
+            let mut data: Vec<(DbPartitionKey, Vec<DbSortKey>)> = Vec::new();
+
             let mut input_data = DatabaseUpdates::new();
             for i in 1..=n_value {
                 let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
@@ -317,13 +320,15 @@ where
 
                     sort_key_data.push(sort_key);
                 }
-                data_index_vector.push((partition_key.clone(), sort_key_data));
+                data.push((partition_key.clone(), sort_key_data));
                 input_data.insert(partition_key, partition);
             }
             substate_db.commit(&input_data);
+
+            data_per_round.push(data);
         }
 
-        data_index_vector
+        data_per_round
     };
 
     // reopen database and measure commit times
@@ -336,41 +341,39 @@ where
 
     let mut rocksdb_data_intermediate: BTreeMap<usize, Vec<Duration>> = BTreeMap::new();
 
-    for (idx, item) in data.iter().enumerate() {
-        if (idx + 1) % n_value == 0 {
-            print!("\rRound {}/{}", idx / n_value + 1, rounds_count);
-            std::io::stdout().flush().ok();
-        }
+    for (idx, round) in data_per_round.iter().enumerate() {
+        print!("\rRound {}/{}", idx + 1, rounds_count);
+        std::io::stdout().flush().ok();
 
-        let mut input_data = DatabaseUpdates::new();
+        for item in round {
+            let mut input_data = DatabaseUpdates::new();
 
-        let mut partition = PartitionUpdates::new();
-        for j in &item.1 {
-            partition.insert(j.clone(), DatabaseUpdate::Delete);
-        }
-
-        input_data.insert(item.0.clone(), partition);
-
-        substate_db.commit(&input_data);
-
-        if (idx + 1) % n_value == 0 {
-            // prepare intermediate data
-            for (_k, v) in substate_db.commit_delete_metrics.borrow().iter() {
-                for (i, val) in v.iter().enumerate() {
-                    let exists = rocksdb_data_intermediate.get(&(i + 1)).is_some();
-                    if exists {
-                        rocksdb_data_intermediate
-                            .get_mut(&(i + 1))
-                            .unwrap()
-                            .push(*val);
-                    } else {
-                        rocksdb_data_intermediate.insert(i + 1, vec![*val]);
-                    }
-                }
+            let mut partition = PartitionUpdates::new();
+            for j in &item.1 {
+                partition.insert(j.clone(), DatabaseUpdate::Delete);
             }
 
-            substate_db.commit_delete_metrics.borrow_mut().clear();
+            input_data.insert(item.0.clone(), partition);
+
+            substate_db.commit(&input_data);
         }
+
+        // prepare intermediate data
+        for (_k, v) in substate_db.commit_delete_metrics.borrow().iter() {
+            for (i, val) in v.iter().enumerate() {
+                let exists = rocksdb_data_intermediate.get(&(i + 1)).is_some();
+                if exists {
+                    rocksdb_data_intermediate
+                        .get_mut(&(i + 1))
+                        .unwrap()
+                        .push(*val);
+                } else {
+                    rocksdb_data_intermediate.insert(i + 1, vec![*val]);
+                }
+            }
+        }
+        // clear metrics between rounds
+        substate_db.commit_delete_metrics.borrow_mut().clear();
     }
 
     println!("");
