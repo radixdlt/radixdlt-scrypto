@@ -678,7 +678,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     );
                 }
 
-                // TODO: Check that substate is not write locked
+                // TODO: Check that substate is not write locked, before use outside of native blueprints
                 if let Some(substate) = tracked.tracked.get() {
                     track_read_size += substate.len();
                     items.push(substate.clone());
@@ -756,7 +756,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     );
                 }
 
-                // TODO: Check that substate is not locked
+                // TODO: Check that substate is not locked, before use outside of native blueprints
                 if let Some(value) = tracked.tracked.take() {
                     track_read_size += value.len();
                     items.push(value);
@@ -852,7 +852,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo) {
-        // TODO: Add partition dependencies/lock
+        // TODO: ensure we abort if any substates are write locked.
         let count: usize = count.try_into().unwrap();
 
         // initialize the track partition, since we will definitely need it: either to read values from it OR to update the `range_read` on it
@@ -887,7 +887,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .substates
             .iter()
             .map(|(key, tracked_substate_key)| {
-                // TODO: Check that substate is not write locked
+                // TODO: ensure we abort if any substates are write locked.
                 (key.clone(), tracked_substate_key.tracked.get().cloned())
             })
             .inspect(|(_key, value)| {

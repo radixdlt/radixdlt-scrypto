@@ -150,7 +150,6 @@ impl ScryptoUncheckedProof for Proof {
 
     fn drop(self) {
         let mut env = ScryptoEnv;
-        // TODO: Clean this up
         let info = env.get_object_info(self.0.as_node_id()).unwrap();
         env.call_function(
             RESOURCE_PACKAGE,

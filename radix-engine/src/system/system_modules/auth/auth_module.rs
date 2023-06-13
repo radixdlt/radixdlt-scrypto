@@ -74,7 +74,7 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
     ) -> Result<AccessRule, RuntimeError> {
         let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-            // TODO: remove
+            // FIXME: remove
             if blueprint.blueprint_name.eq(PACKAGE_BLUEPRINT)
                 && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {

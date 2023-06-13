@@ -354,7 +354,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
-        // TODO: we should not need to load substates form substate database
+        // FIXME: explore if we can avoid loading from substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 

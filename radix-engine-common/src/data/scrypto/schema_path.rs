@@ -6,6 +6,8 @@ use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 use sbor::*;
 
+// FIXME: remove schema path
+
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor, Ord, PartialOrd)]
 pub enum SchemaSubPath {

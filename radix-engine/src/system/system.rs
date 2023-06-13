@@ -47,7 +47,7 @@ pub enum SubstateMutability {
     Immutable,
 }
 
-// TODO: Extend this use into substate fields
+// FIXME: Extend this use into substate fields
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct DynSubstate<E> {
     pub value: E,
@@ -351,7 +351,6 @@ where
                 SystemLockData::default(),
             )?;
 
-            // TODO: We really need to split up PackageInfo into multiple substates
             let mut package: PackageInfoSubstate =
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
             let schema = package
@@ -1180,7 +1179,7 @@ where
 
                 (receiver_info.clone(), global_address)
             }
-            // TODO: Check if type has these object modules
+            // FIXME: verify whether we need to check the modules or not
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
                 ObjectInfo {
                     blueprint: object_module_id.static_blueprint().unwrap(),
@@ -1210,6 +1209,7 @@ where
                 None => None,
                 Some(blueprint_parent) => {
                     // TODO: do this recursively until global?
+                    // FIXME: is unwrap safe?
                     let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
                     Some(InstanceContext {
                         outer_object: blueprint_parent.clone(),
@@ -1255,7 +1255,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let mut is_drop_allowed = false;
 
-        // TODO: what's the right model, trading off between flexibility and security?
+        // FIXME: what's the right model, trading off between flexibility and security?
 
         // If the actor is the object's outer object
         if let Some(outer_object) = info.outer_object {
@@ -1317,7 +1317,7 @@ where
         })
     }
 
-    // TODO: Should this release lock or continue allow to mutate entry until lock released?
+    // FIXME: Should this release lock or continue allow to mutate entry until lock released?
     fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {

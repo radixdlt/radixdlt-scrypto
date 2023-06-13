@@ -210,7 +210,7 @@ where
                 .get_node_visibility(&node_id)
                 .can_be_invoked(*is_direct_access),
             Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
-                // TODO: Josh comment: what's the purpose of this?
+                // FIXME: combine this with reference check of invocation
                 self.current_frame
                     .get_node_visibility(blueprint.package_address.as_node_id())
                     .can_be_invoked(false)
@@ -626,7 +626,7 @@ where
             }
         };
 
-        // TODO: pass the right size
+        // FIXME: pass the right size
         M::after_lock_substate(lock_handle, 0, &store_access, self)?;
 
         Ok(lock_handle)
@@ -669,7 +669,7 @@ where
             .map_err(KernelError::CallFrameError)?;
         let mut value_size = value.len();
 
-        // TODO: replace this overwrite with proper packing costing rule
+        // FIXME: revisit package special costing rules
         let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
         if lock_info.node_id.is_global_package() {
             store_access.clear();
@@ -824,7 +824,7 @@ where
         let rtn = self.invoke(invocation)?;
 
         M::after_invoke(
-            0, // TODO: Pass the right size
+            0, // FIXME: Pass the right size
             self,
         )?;
 

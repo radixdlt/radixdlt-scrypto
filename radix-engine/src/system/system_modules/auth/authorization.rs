@@ -11,7 +11,7 @@ use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
-// TODO: Refactor structure to be able to remove this
+// FIXME: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActingLocation {
     AtBarrier,

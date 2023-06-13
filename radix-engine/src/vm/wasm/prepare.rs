@@ -923,7 +923,7 @@ impl WasmModule {
             }
         }
 
-        // TODO: do we need to enforce limit on the number of locals and parameters?
+        // FIXME: do we need to enforce limit on the number of locals and parameters?
 
         Ok(self)
     }

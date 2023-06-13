@@ -589,6 +589,6 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         };
     }
 
-    // TODO: distribute fees
+    // FIXME: distribute fees
     (fee_summary, fee_payments)
 }
