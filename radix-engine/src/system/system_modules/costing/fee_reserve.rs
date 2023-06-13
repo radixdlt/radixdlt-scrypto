@@ -488,7 +488,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         // Sanity check
         assert_eq!(
             total_execution_cost_xrd,
-            fee_summary.fee_to_distribute() + fee_summary.tips_to_distribute()
+            fee_summary.fees_to_handle() + fee_summary.tips_to_handle()
         );
         fee_summary
     }

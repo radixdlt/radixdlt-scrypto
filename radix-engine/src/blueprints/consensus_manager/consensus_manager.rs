@@ -45,6 +45,22 @@ pub struct CurrentValidatorSetSubstate {
     pub validator_set: ActiveValidatorSet,
 }
 
+#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+pub struct ValidatorRewardsSubstate {
+    /// Transaction fees that are awarded to individual validators.
+    pub individual_validator_rewards: BTreeMap<ComponentAddress, Vault>,
+    /// Transaction fees that are distributed to the active validator set.
+    pub shared_validator_rewards: Vault,
+    /// At the end of a notarized transaction, the proposer portion of transaction fees is temporarily
+    /// accounted here and moved to `individual_validator_rewards` at `next_round` time.
+    ///
+    /// ```text
+    /// Tips: 100% proposer
+    /// Fees: 25% proposer, 25% validator set, 50% burnt
+    /// ```
+    pub proposer_rewards: Vault,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct ActiveValidatorSet {

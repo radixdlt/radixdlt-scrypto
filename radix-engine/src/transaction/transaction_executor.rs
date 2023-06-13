@@ -589,6 +589,9 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         };
     }
 
-    // TODO: distribute fees
+    // TODO: burn and update validator rewards substate
+    let _fees_to_handle = fee_summary.fees_to_handle();
+    let _tips_to_handle = fee_summary.tips_to_handle();
+
     (fee_summary, fee_payments)
 }

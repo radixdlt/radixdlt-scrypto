@@ -32,11 +32,11 @@ impl FeeSummary {
         self.total_bad_debt_xrd == 0.into()
     }
 
-    pub fn fee_to_distribute(&self) -> Decimal {
+    pub fn fees_to_handle(&self) -> Decimal {
         self.cost_unit_price * Decimal::from(self.execution_cost_sum)
     }
 
-    pub fn tips_to_distribute(&self) -> Decimal {
+    pub fn tips_to_handle(&self) -> Decimal {
         (self.cost_unit_price * Decimal::from(self.tip_percentage) / Decimal::from(100u32))
             * Decimal::from(self.execution_cost_sum)
     }
