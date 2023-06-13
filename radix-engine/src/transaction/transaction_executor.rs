@@ -247,11 +247,17 @@ where
                 output
             });
 
-        let mut fee_reserve = system.modules.costing.fee_reserve();
-        let mut application_events = system.modules.events.events();
-        let application_logs = system.modules.logger.logs();
-
         // Finalize
+        let (
+            costing_module,
+            events_module,
+            logger_module,
+            execution_trace_module,
+            transaction_limits_module,
+        ) = system.modules.unpack();
+        let mut fee_reserve = costing_module.fee_reserve();
+        let mut application_events = events_module.events();
+        let application_logs = logger_module.logs();
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
         let transaction_result = match result_type {
             TransactionResultType::Commit(outcome) => {
@@ -297,11 +303,8 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
-        let execution_metrics = system
-            .modules
-            .transaction_limits
-            .finalize(&transaction_result);
+        let execution_trace = execution_trace_module.finalize(&transaction_result);
+        let execution_metrics = transaction_limits_module.finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {

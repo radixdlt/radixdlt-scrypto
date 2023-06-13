@@ -225,7 +225,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api
+            .kernel_get_system()
+            .modules
+            .transaction_limits_module()
+            .unwrap();
         let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
             tlimit.invoke_payload_max_size = input_size;
@@ -251,7 +255,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         // push new empty wasm memory value refencing current call frame to internal stack
         api.kernel_get_system()
             .modules
-            .transaction_limits
+            .transaction_limits_module()
+            .unwrap()
             .call_frames_stack
             .push(CallFrameLimitInfo::default());
         Ok(())
@@ -264,7 +269,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         // pop from internal stack
         api.kernel_get_system()
             .modules
-            .transaction_limits
+            .transaction_limits_module()
+            .unwrap()
             .call_frames_stack
             .pop();
         Ok(())
@@ -276,7 +282,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api
+            .kernel_get_system()
+            .modules
+            .transaction_limits_module()
+            .unwrap();
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
@@ -294,7 +304,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api
+            .kernel_get_system()
+            .modules
+            .transaction_limits_module()
+            .unwrap();
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;

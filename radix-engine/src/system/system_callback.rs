@@ -485,10 +485,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         if let Some(auth_zone_id) = api
             .kernel_get_system()
             .modules
-            .auth
-            .auth_zone_stack
-            .last()
-            .cloned()
+            .auth_module()
+            .and_then(|auth| auth.auth_zone_stack.last().cloned())
         {
             let handle = api.kernel_lock_substate(
                 &auth_zone_id,
