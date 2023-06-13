@@ -1,10 +1,6 @@
-#![allow(unused_imports)]
-
 use super::super::*;
 use super::common::*;
-use super::*;
 use linreg::linear_regression_of;
-use plotters::prelude::IntoLinspace;
 use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{
@@ -13,18 +9,23 @@ use radix_engine_store_interface::{
     },
 };
 use rand::Rng;
-use std::{cmp::Ordering, io::Write, path::PathBuf};
+use std::{io::Write, path::PathBuf};
+
+/// One test delete rounds count
+const ROUNDS_COUNT: usize = 50;
+/// Range start of the measuremnts
+const MIN_SIZE: usize = 1;
+/// Range end of the measuremnts
+const MAX_SIZE: usize = 4 * 1024 * 1024;
+/// Range step
+const SIZE_STEP: usize = 100 * 1024;
+/// Count of repeated writes for database preparation
+const PREPARE_DB_WRITE_REPEATS: usize = ROUNDS_COUNT * 2;
 
 #[test]
 // to run this test use following command in the main repository folder:
 // cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_delete_per_size
 fn test_delete_per_size() {
-    const ROUNDS_COUNT: usize = 50;
-    const MIN_SIZE: usize = 1;
-    const MAX_SIZE: usize = 4 * 1024 * 1024;
-    const SIZE_STEP: usize = 100 * 1024;
-    const PREPARE_DB_WRITE_REPEATS: usize = ROUNDS_COUNT * 2;
-
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_delete_per_size_internal(
         ROUNDS_COUNT,
@@ -43,7 +44,7 @@ fn test_delete_per_size() {
         &format!("RocksDB per size deletion, rounds: {}", ROUNDS_COUNT),
         &rocksdb_data,
         &rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_size_deletion.png",
+        "/tmp/scrypto_delete_per_size_rocksdb.png",
         "95th percentile of deletion",
         &rocksdb_data_original,
         axis_ranges,
@@ -73,7 +74,7 @@ fn test_delete_per_size() {
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_size_deletion_JMT.png",
+        "/tmp/scrypto_delete_per_size_rocksdb_JMT.png",
         "95th percentile of deletion",
         &jmt_rocksdb_data_original,
         axis_ranges,
@@ -88,7 +89,7 @@ fn test_delete_per_size() {
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_size_deletion_diff.png",
+        "/tmp/scrypto_delete_per_size_rocksdb_diff.png",
         "Size [bytes]",
         "Duration [µs]",
         "Series 1: deletion",
@@ -121,7 +122,7 @@ fn test_delete_per_partition() {
         ),
         &rocksdb_data,
         &rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_partition_deletion.png",
+        "/tmp/scrypto_delete_per_partition.png",
         "95th percentile of deletion",
         &rocksdb_data_original,
         axis_ranges,
@@ -146,7 +147,7 @@ fn test_delete_per_partition() {
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_partition_deletion_JMT.png",
+        "/tmp/scrypto_delete_per_partition_rocksdb_JMT.png",
         "95th percentile of deletion",
         &jmt_rocksdb_data_original,
         axis_ranges,
@@ -161,7 +162,7 @@ fn test_delete_per_partition() {
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_partition_deletion_diff.png",
+        "/tmp/scrypto_delete_per_partition_rocksdb_diff.png",
         "N",
         "Duration [µs]",
         "Series 1: deletion",
@@ -379,7 +380,9 @@ where
         for (_k, v) in substate_db.commit_delete_metrics.borrow().iter() {
             assert_eq!(v.len(), idx_vector_output.len());
             for (i, val) in v.iter().enumerate() {
-                let exists = rocksdb_data_intermediate.get(&(idx_vector_output[i] + 1)).is_some();
+                let exists = rocksdb_data_intermediate
+                    .get(&(idx_vector_output[i] + 1))
+                    .is_some();
                 if exists {
                     rocksdb_data_intermediate
                         .get_mut(&(idx_vector_output[i] + 1))

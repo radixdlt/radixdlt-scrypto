@@ -1,6 +1,5 @@
 use super::super::*;
 use super::common::*;
-use super::*;
 use linreg::linear_regression_of;
 use radix_engine_store_interface::{
     db_key_mapper::*,
@@ -12,16 +11,21 @@ use radix_engine_store_interface::{
 use rand::Rng;
 use std::{io::Write, path::PathBuf};
 
+/// One test write rounds count
+const ROUNDS_COUNT: usize = 50;
+/// Range start of the measuremnts
+const MIN_SIZE: usize = 1;
+/// Range end of the measuremnts
+const MAX_SIZE: usize = 4 * 1024 * 1024;
+/// Range step
+const SIZE_STEP: usize = 100 * 1024;
+/// Count of repeated writes for database preparation
+const PREPARE_DB_WRITE_REPEATS: usize = 10;
+
 #[test]
 // to run this test use following command in the main repository folder:
 // cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_size
 fn test_commit_per_size() {
-    const ROUNDS_COUNT: usize = 50;
-    const MIN_SIZE: usize = 1;
-    const MAX_SIZE: usize = 4 * 1024 * 1024;
-    const SIZE_STEP: usize = 100 * 1024;
-    const PREPARE_DB_WRITE_REPEATS: usize = 10;
-
     let rounds_count = match std::env::var("ROUNDS_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => ROUNDS_COUNT,
@@ -58,7 +62,7 @@ fn test_commit_per_size() {
         &format!("RocksDB per size commits, rounds: {}", rounds_count),
         &rocksdb_data,
         &rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_size_commits.png",
+        "/tmp/scrypto_commit_per_size_rocksdb.png",
         "95th percentile of commits",
         &rocksdb_data_original,
         axis_ranges,
@@ -89,7 +93,7 @@ fn test_commit_per_size() {
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_size_commits_JMT.png",
+        "/tmp/scrypto_commit_per_size_rocksdb_JMT.png",
         "95th percentile of commits",
         &jmt_rocksdb_data_original,
         axis_ranges,
@@ -104,7 +108,7 @@ fn test_commit_per_size() {
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_size_commits_diff.png",
+        "/tmp/scrypto_commit_per_size_rocksdb_diff.png",
         "Size [bytes]",
         "Duration [µs]",
         "Series 1: commits",
@@ -140,7 +144,7 @@ fn test_commit_per_partition() {
         ),
         &rocksdb_data,
         &rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_partition_commits.png",
+        "/tmp/scrypto_commit_per_partition_rocksdb.png",
         "95th percentile of commits",
         &rocksdb_data_original,
         axis_ranges,
@@ -166,7 +170,7 @@ fn test_commit_per_partition() {
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_partition_commits_JMT.png",
+        "/tmp/scrypto_commit_per_partition_rocksdb_JMT.png",
         "95th percentile of commits",
         &jmt_rocksdb_data_original,
         axis_ranges,
@@ -181,7 +185,7 @@ fn test_commit_per_partition() {
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
-        "/tmp/scrypto_rocksdb_per_partition_commits_diff.png",
+        "/tmp/scrypto_commit_per_partition_rocksdb_diff.png",
         "N",
         "Duration [µs]",
         "Series 1: commits",

@@ -26,7 +26,7 @@ pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDa
     substate_store: &SubstateStoreWithMetrics<S>,
     count: usize,
 ) {
-    if substate_store.read_metrics.borrow().len() > 2 * count {
+    if substate_store.read_metrics.borrow().len() >= 2 * count {
         for (_, v) in substate_store.read_metrics.borrow_mut().iter_mut() {
             v.sort();
             for _ in 0..count {
@@ -35,7 +35,7 @@ pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDa
             }
         }
     }
-    if substate_store.commit_set_metrics.borrow().len() > 2 * count {
+    if substate_store.commit_set_metrics.borrow().len() >= 2 * count {
         for (_, v) in substate_store.commit_set_metrics.borrow_mut().iter_mut() {
             v.sort();
             for _ in 0..count {
@@ -305,14 +305,15 @@ pub fn export_graph_and_print_summary(
     let x_min = axis_ranges.0;
     let x_max = axis_ranges.1;
     let mut y_min = axis_ranges.2;
-    let y_max = axis_ranges.3;
+    let mut y_max = axis_ranges.3;
 
     // 4. calculate linear approximation
-    let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&output_data).unwrap();
+    let (lin_slope, lin_intercept): (f32, f32) = linear_regression_of(&output_data).unwrap();
     let lin_x_axis = (x_min as f32..(x_max + 1f32) as f32).step(1f32);
     if lin_intercept < y_min.into() {
         y_min = lin_intercept as f32;
     }
+    y_max = find_y_max(lin_slope, lin_intercept, None, None, x_max, y_max) * 1.1f32;
 
     // draw scatter plot
     let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
@@ -353,13 +354,13 @@ pub fn export_graph_and_print_summary(
         .draw_series(LineSeries::new(
             lin_x_axis
                 .values()
-                .map(|x| (x, (lin_slope * x as f64 + lin_intercept) as f32)),
+                .map(|x| (x, lin_slope * x + lin_intercept)),
             &BLUE,
         ))?
         .label(format!(
             "Linear approx.: f(x)={:.3e}*x{}",
             lin_slope,
-            number_to_str!(lin_intercept as f32, 1)
+            number_to_str!(lin_intercept, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
     scatter_ctx
@@ -395,6 +396,38 @@ pub fn export_graph_and_print_summary(
     Ok(())
 }
 
+fn find_y_max(
+    lin_slope_1: f32,
+    lin_intercept_1: f32,
+    lin_slope_2: Option<f32>,
+    lin_intercept_2: Option<f32>,
+    x_max: f32,
+    y_max: f32,
+) -> f32 {
+    let mut y_max_ret = y_max;
+    let lin_1_y_max = if lin_slope_1 > 0f32 {
+        lin_slope_1 * x_max + lin_intercept_1
+    } else {
+        lin_intercept_1
+    };
+    let lin_2_y_max = if lin_slope_2.is_some() {
+        if lin_slope_2.unwrap() > 0f32 {
+            lin_slope_2.unwrap() * x_max + lin_intercept_2.unwrap()
+        } else {
+            lin_intercept_2.unwrap()
+        }
+    } else {
+        0f32
+    };
+    if lin_1_y_max > y_max {
+        y_max_ret = lin_1_y_max;
+    }
+    if lin_slope_2.is_some() && lin_2_y_max > y_max {
+        y_max_ret = lin_2_y_max;
+    }
+    y_max_ret
+}
+
 pub fn export_graph_and_print_summary_for_two_series(
     caption: &str,
     data_series1: &Vec<(f32, f32)>,
@@ -409,22 +442,35 @@ pub fn export_graph_and_print_summary_for_two_series(
         *diff_value -= data_series2[idx].1;
     }
     // calculate linear approximation of diff points
-    let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&v1).unwrap();
+    let (lin_slope_1, lin_intercept_1): (f32, f32) = linear_regression_of(&v1).unwrap();
 
     // calculate linethrough 1st and last diff points
     let v2: Vec<(f32, f32)> = vec![
         *data_series1.first().unwrap(),
         *data_series1.last().unwrap(),
     ];
-    let (lin_slope_2, lin_intercept_2): (f64, f64) = linear_regression_of(&v2).unwrap();
+    let (lin_slope_2, lin_intercept_2): (f32, f32) = linear_regression_of(&v2).unwrap();
 
     // calculate axis max/min values
-    let y_ofs = 10f32;
-    let x_ofs = 5000f32;
+    let y_ofs = 0f32; //10f32;
+    let x_ofs = 0f32; //5000f32;
     let x_min = -x_ofs;
     let x_max = data_series1.iter().map(|i| i.0 as i32).max().unwrap() as f32 + x_ofs;
     let y_min = 0f32;
-    let y_max = data_series1.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    let mut y_max = data_series1.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    let y_max_2 = data_series2.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    if y_max_2 > y_max {
+        y_max = y_max_2;
+    }
+
+    y_max = find_y_max(
+        lin_slope_1,
+        lin_intercept_1,
+        Some(lin_slope_2),
+        Some(lin_intercept_2),
+        x_max,
+        y_max,
+    ) * 1.1f32;
 
     let lin_x_axis = (x_min..x_max).step(10f32);
 
@@ -473,26 +519,26 @@ pub fn export_graph_and_print_summary_for_two_series(
         .draw_series(LineSeries::new(
             lin_x_axis
                 .values()
-                .map(|x| (x, (lin_slope * x as f64 + lin_intercept) as f32)),
+                .map(|x| (x, lin_slope_1 * x + lin_intercept_1)),
             &RED,
         ))?
         .label(format!(
             "Linear approx. of diff points: f(x)={:.3e}*x{}",
-            lin_slope,
-            number_to_str!(lin_intercept as f32, 1)
+            lin_slope_1,
+            number_to_str!(lin_intercept_1, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
     scatter_ctx
         .draw_series(LineSeries::new(
             lin_x_axis
                 .values()
-                .map(|x| (x, (lin_slope_2 * x as f64 + lin_intercept_2) as f32)),
+                .map(|x| (x, lin_slope_2 * x + lin_intercept_2)),
             &BLACK,
         ))?
         .label(format!(
             "Line by 1st and last RocksDB point: f(x)={:.3e}*x{}",
             lin_slope_2,
-            number_to_str!(lin_intercept_2 as f32, 1)
+            number_to_str!(lin_intercept_2, 1)
         ))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
     scatter_ctx
@@ -509,7 +555,7 @@ pub fn export_graph_and_print_summary_for_two_series(
     println!("Points list (size, time[µs]): {:?}", v1);
     println!(
         "Linear approx.:  f(size) = {} * size + {}\n",
-        lin_slope, lin_intercept
+        lin_slope_1, lin_intercept_1
     );
     println!(
         "Liny by 1st and last RocksDB point:  f(size) = {} * size + {}\n",

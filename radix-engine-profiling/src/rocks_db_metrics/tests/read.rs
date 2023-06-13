@@ -1,12 +1,22 @@
 use super::super::*;
 use super::common::*;
-use super::*;
 use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{CommittableSubstateDatabase, DbPartitionKey, DbSortKey, SubstateDatabase},
 };
 use rand::Rng;
 use std::{io::Write, path::PathBuf};
+
+/// Range start of the measuremnts
+const MIN_SIZE: usize = 1;
+/// Range end of the measuremnts
+const MAX_SIZE: usize = 4 * 1024 * 1024;
+/// Range step
+const SIZE_STEP: usize = 100 * 1024;
+/// Each step write and read
+const COUNT: usize = 20;
+/// Multiplication of each step read (COUNT * READ_REPEATS)
+const READ_REPEATS: usize = 100;
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
@@ -42,7 +52,7 @@ fn test_read() {
     run_read_not_found_test(&mut substate_db);
 
     // prepare data for linear approximation
-    drop_highest_and_lowest_value(&mut substate_db, 3);
+    discard_spikes(&mut substate_db.read_metrics.borrow_mut(), 200f32);
     let rocksdb_output_data =
         calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 
@@ -55,12 +65,12 @@ fn test_read() {
     }
 
     // export results
-    let axis_ranges = calculate_axis_ranges(&rocksdb_data, Some(100f32), Some(5000f32));
+    let axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None); //Some(100f32), Some(5000f32));
     export_graph_and_print_summary(
         "RocksDB random reads",
         &rocksdb_data,
         &rocksdb_output_data,
-        "/tmp/scrypto_rocksdb_1.png",
+        "/tmp/scrypto_read_rocksdb.png",
         "95th percentile of reads",
         &substate_db.read_metrics.borrow(),
         axis_ranges,
@@ -85,7 +95,7 @@ fn test_read() {
     run_read_not_found_test(&mut substate_db);
 
     // prepare data for linear approximation
-    drop_highest_and_lowest_value(&mut substate_db, 3);
+    discard_spikes(&mut substate_db.read_metrics.borrow_mut(), 200f32);
     let inmem_output_data =
         calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 
@@ -98,12 +108,12 @@ fn test_read() {
     }
 
     // export results
-    let axis_ranges = calculate_axis_ranges(&rocksdb_data, Some(100f32), Some(5000f32));
+    let axis_ranges = calculate_axis_ranges(&inmem_data, None, None); //Some(100f32), Some(5000f32));
     export_graph_and_print_summary(
         "InMemoryDB random reads",
         &inmem_data,
         &inmem_output_data,
-        "/tmp/scrypto_inmem_1.png",
+        "/tmp/scrypto_read_inmem.png",
         "95th percentile of reads",
         &substate_db.read_metrics.borrow(),
         axis_ranges,
@@ -116,7 +126,7 @@ fn test_read() {
         "RocksDB - InMemoryDB random reads",
         &rocksdb_output_data,
         &inmem_output_data,
-        "/tmp/scrypto_diff_1.png",
+        "/tmp/scrypto_read_diff.png",
     )
     .unwrap();
 
