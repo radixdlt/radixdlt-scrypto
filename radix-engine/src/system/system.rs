@@ -157,37 +157,43 @@ where
         )
     }
 
-    fn validate_payload_against_blueprint_or_instance_schema<'s>(
+    fn validate_payload_against_blueprint_schema<'s, const N: usize>(
         &'s mut self,
-        payload: &Vec<u8>,
-        type_ref: &TypeRef<LocalTypeIndex>,
-        blueprint_schema: &'s ScryptoSchema,
-        blueprint_id: BlueprintId,
+        payloads: [(&Vec<u8>, &SchemaPointer); N],
+        blueprint_id: &BlueprintId,
         instance_schema: &'s Option<InstanceSchema>,
-    ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
-        match type_ref {
-            TypeRef::Static(index) => {
-                self.validate_payload(
-                    payload,
-                    blueprint_schema,
-                    *index,
-                    SchemaOrigin::Blueprint(blueprint_id),
-                )?;
-            }
-            TypeRef::Generic(instance_index) => {
-                let instance_schema = instance_schema.as_ref().unwrap();
-                let index = instance_schema
-                    .type_index
-                    .get(*instance_index as usize)
-                    .unwrap()
-                    .clone();
+    ) -> Result<(), String> {
+        for (payload, schema_pointer) in payloads {
+            match schema_pointer {
+                SchemaPointer::Package(hash, index) => {
+                    let schema = self.get_schema(blueprint_id.package_address.as_node_id(), hash)
+                        .map_err(|e| e.to_string())?;
 
-                self.validate_payload(
-                    payload,
-                    &instance_schema.schema,
-                    index,
-                    SchemaOrigin::Instance,
-                )?;
+                    self.validate_payload(
+                        payload,
+                        &schema,
+                        *index,
+                        SchemaOrigin::Blueprint(blueprint_id.clone()),
+                    ).map_err(|err| err.error_message(&schema))?;
+                }
+                SchemaPointer::Instance(instance_index) => {
+                    let instance_schema = match instance_schema.as_ref() {
+                        Some(instance_schema) => instance_schema,
+                        None => return Err("Instance schema does not exist"),
+                    };
+                    let index = instance_schema
+                        .type_index
+                        .get(*instance_index as usize)
+                        .unwrap()
+                        .clone();
+
+                    self.validate_payload(
+                        payload,
+                        &instance_schema.schema,
+                        index,
+                        SchemaOrigin::Instance,
+                    ).map_err(|err| err.error_message(&instance_schema.schema))?;
+                }
             }
         }
 
@@ -484,7 +490,7 @@ where
 
     fn verify_instance_schema_and_state(
         &mut self,
-        blueprint: &BlueprintId,
+        blueprint_id: &BlueprintId,
         features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
@@ -496,7 +502,7 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_interface = self.get_blueprint_definition(blueprint)?.interface;
+        let blueprint_interface = self.get_blueprint_definition(blueprint_id)?.interface;
 
         // Validate features
         {
@@ -535,7 +541,7 @@ where
             if expected_num_fields != fields.len() {
                 return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                     Box::new(CreateObjectError::WrongNumberOfSubstates(
-                        blueprint.clone(),
+                        blueprint_id.clone(),
                         fields.len(),
                         expected_num_fields,
                     )),
@@ -559,7 +565,7 @@ where
                     let (schema, field_type_index) = match pointer {
                         SchemaPointer::Package(hash, index) => {
                             self.ensure_schema_loaded(
-                                blueprint.package_address.as_node_id(),
+                                blueprint_id.package_address.as_node_id(),
                                 &hash,
                                 &mut schema_cache,
                             )?;
@@ -574,7 +580,7 @@ where
                         &field,
                         schema,
                         field_type_index,
-                        SchemaOrigin::Blueprint(blueprint.clone()),
+                        SchemaOrigin::Blueprint(blueprint_id.clone()),
                     )
                     .map_err(|err| {
                         RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
@@ -608,56 +614,17 @@ where
                         let entries = kv_entries.remove(&index);
                         if let Some(entries) = entries {
                             for (key, (value, freeze)) in entries {
-                                let (schema, key_type_index) = match blueprint_kv_schema.key.clone()
-                                {
-                                    SchemaPointer::Package(schema_hash, index) => {
-                                        let schema = self.get_schema(
-                                            blueprint.package_address.as_node_id(),
-                                            &schema_hash,
-                                        )?;
-                                        (schema, TypeRef::Static(index))
-                                    }
-                                    SchemaPointer::Instance(instance_index) => {
-                                        (ScryptoSchema::empty(), TypeRef::Generic(instance_index))
-                                    }
-                                };
-
-                                self.validate_payload_against_blueprint_or_instance_schema(
-                                    &key,
-                                    &key_type_index,
-                                    &schema,
-                                    blueprint.clone(),
+                                self.validate_payload_against_blueprint_schema(
+                                    [
+                                        (&key, &blueprint_kv_schema.key),
+                                        (&value, &blueprint_kv_schema.value),
+                                    ],
+                                    blueprint_id,
                                     instance_schema,
                                 )
                                 .map_err(|err| {
                                     RuntimeError::SystemError(SystemError::CreateObjectError(
-                                        Box::new(CreateObjectError::InvalidSubstateWrite(
-                                            err.error_message(&schema),
-                                        )),
-                                    ))
-                                })?;
-
-                                let value_type_index = match blueprint_kv_schema.value.clone() {
-                                    SchemaPointer::Package(_schema_hash, index) => {
-                                        TypeRef::Static(index)
-                                    }
-                                    SchemaPointer::Instance(instance_index) => {
-                                        TypeRef::Generic(instance_index)
-                                    }
-                                };
-
-                                self.validate_payload_against_blueprint_or_instance_schema(
-                                    &value,
-                                    &value_type_index,
-                                    &schema,
-                                    blueprint.clone(),
-                                    instance_schema,
-                                )
-                                .map_err(|err| {
-                                    RuntimeError::SystemError(SystemError::CreateObjectError(
-                                        Box::new(CreateObjectError::InvalidSubstateWrite(
-                                            err.error_message(&schema),
-                                        )),
+                                        Box::new(CreateObjectError::InvalidSubstateWrite(err)),
                                     ))
                                 })?;
 

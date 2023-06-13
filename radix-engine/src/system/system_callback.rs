@@ -63,7 +63,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             (schema, index)
         }
 
-        SchemaPointer::Instance(_instance_index) => {
+        SchemaPointer::Instance(instance_index) => {
             todo!()
         }
     };
