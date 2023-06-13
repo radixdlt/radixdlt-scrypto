@@ -7,6 +7,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
+use native_sdk::resource::NativeVault;
 use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -32,6 +33,7 @@ pub struct ConsensusManagerSubstate {
     pub epoch: Epoch,
     pub epoch_start_milli: i64,
     pub round: Round,
+    pub current_leader: Option<ValidatorIndex>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
@@ -40,25 +42,24 @@ pub struct Validator {
     pub stake: Decimal,
 }
 
+#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+pub struct ValidatorRewardsSubstate {
+    pub individual_validator_rewards: IndexMap<ValidatorIndex, Decimal>,
+    pub validator_rewards: Vault,
+}
+
+impl Clone for ValidatorRewardsSubstate {
+    fn clone(&self) -> Self {
+        Self {
+            individual_validator_rewards: self.individual_validator_rewards.clone(),
+            validator_rewards: Vault(self.validator_rewards.0.clone()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CurrentValidatorSetSubstate {
     pub validator_set: ActiveValidatorSet,
-}
-
-#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct ValidatorRewardsSubstate {
-    /// Transaction fees that are awarded to individual validators.
-    pub individual_validator_rewards: BTreeMap<ComponentAddress, Vault>,
-    /// Transaction fees that are distributed to the active validator set.
-    pub shared_validator_rewards: Vault,
-    /// At the end of a notarized transaction, the proposer portion of transaction fees is temporarily
-    /// accounted here and moved to `individual_validator_rewards` at `next_round` time.
-    ///
-    /// ```text
-    /// Tips: 100% proposer
-    /// Fees: 25% proposer, 25% validator set, 50% burnt
-    /// ```
-    pub proposer_rewards: Vault,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -235,6 +236,11 @@ impl ConsensusManagerBlueprint {
                 epoch: initial_epoch,
                 epoch_start_milli: initial_time_milli,
                 round: Round::zero(),
+                current_leader: None,
+            };
+            let validator_rewards = ValidatorRewardsSubstate {
+                individual_validator_rewards: IndexMap::new(),
+                validator_rewards: Vault::create(RADIX_TOKEN, api)?,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: ActiveValidatorSet {
@@ -256,6 +262,7 @@ impl ConsensusManagerBlueprint {
                 vec![
                     scrypto_encode(&config).unwrap(),
                     scrypto_encode(&consensus_manager).unwrap(),
+                    scrypto_encode(&validator_rewards).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
                     scrypto_encode(&current_proposal_statistic).unwrap(),
                     scrypto_encode(&minute_timestamp).unwrap(),
@@ -434,6 +441,7 @@ impl ConsensusManagerBlueprint {
                 ))
             })?;
 
+        let current_leader = proposal_history.current_leader;
         Self::update_proposal_statistics(progressed_rounds, proposal_history, api)?;
 
         let config = &config_substate.config;
@@ -451,6 +459,7 @@ impl ConsensusManagerBlueprint {
             Runtime::emit_event(api, RoundChangeEvent { round })?;
             manager_substate.round = round;
         }
+        manager_substate.current_leader = Some(current_leader);
 
         api.field_lock_write_typed(manager_handle, &manager_substate)?;
         api.field_lock_release(manager_handle)?;
