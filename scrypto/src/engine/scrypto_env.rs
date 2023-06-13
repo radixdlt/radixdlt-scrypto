@@ -66,6 +66,8 @@ impl ClientCostingApi<ClientApiError> for ScryptoEnv {
     }
 }
 
+// FIXME: finalize API
+
 impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_simple_object(
         &mut self,
@@ -112,7 +114,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _node_id: &NodeId,
         _access_rules_node_id: &NodeId,
     ) -> Result<(), ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn globalize(
@@ -226,14 +228,14 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn key_value_entry_freeze(
         &mut self,
         _handle: KeyValueEntryHandle,
     ) -> Result<(), ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn key_value_entry_release(
@@ -367,7 +369,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     }
 
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {

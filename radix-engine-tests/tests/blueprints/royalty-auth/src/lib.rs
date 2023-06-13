@@ -29,6 +29,7 @@ mod royalty_test {
             1
         }
 
+        // FIXME: remove this as the interface to set royalty has been removed
         // Doesn't really work because of proof downstream movement limitation
         // TODO: make it work by changing the rule to "1-barrier".
 

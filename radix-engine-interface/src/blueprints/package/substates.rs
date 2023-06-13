@@ -53,7 +53,6 @@ pub struct PackageRoyaltySubstate {
     pub royalty_vault: Option<Own>,
 
     /// Royalty configuration per blueprint
-    ///   TODO: replace with KVStore
     pub blueprint_royalty_configs: BTreeMap<String, RoyaltyConfig>,
 }
 

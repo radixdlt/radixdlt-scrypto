@@ -154,12 +154,12 @@ impl Actor {
             })
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
-            Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
+            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
 
     /// Proofs which exist only on the local call frame
-    /// TODO: Update abstractions such that it is based on local call frame
+    /// FIXME: Update abstractions such that it is based on local call frame
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
         btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
             *self.package_address()
@@ -182,7 +182,7 @@ impl Actor {
             }) => blueprint,
             Actor::Function { blueprint, .. } => blueprint,
             Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
-            Actor::Root => return &PACKAGE_PACKAGE, // TODO: Should we mock this with something better?
+            Actor::Root => return &PACKAGE_PACKAGE, // FIXME: have the right interface
         };
 
         &blueprint.package_address
@@ -196,7 +196,7 @@ impl Actor {
             })
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.blueprint_name.as_str(),
-            Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
+            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
 

@@ -173,7 +173,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &message.move_nodes {
-            // TODO: Move into system layer
             Self::prepare_move_downstream(*node_id, callee, api)?;
         }
 

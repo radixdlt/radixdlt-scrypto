@@ -263,6 +263,8 @@ where
                     application_events.clear();
                     // application logs retain
                     track.revert_non_force_write_changes();
+
+                    // FIXME: clean up locks
                 }
 
                 // Finalize fees

@@ -76,8 +76,6 @@ pub type BucketCreateProofOfAllOutput = Proof;
 // Stub
 //========
 
-// TODO: update schema type
-
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub Own);
 
