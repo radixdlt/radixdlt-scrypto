@@ -706,8 +706,6 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // FIXME: double check if auth is set up for any package
-
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             PackageField::Royalty.into(),

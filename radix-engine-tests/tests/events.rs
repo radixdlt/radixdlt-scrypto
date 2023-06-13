@@ -27,7 +27,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 // TODO: In the future, the ClientAPI should only be able to add events to the event store. It
 // should not be able to have full control over it.
 
-// TODO: Creation of proofs triggers withdraw and deposit events when the amount is still liquid.
+// FIXME: Creation of proofs triggers withdraw and deposit events when the amount is still liquid.
 // This is not the intended behavior. Should figure out a solution to that so that it doesn't emit
 // that and clean up this test to have one event.
 
@@ -241,7 +241,7 @@ fn vault_fungible_recall_emits_correct_events() {
                 true,
             _ => false,
         });
-        // TODO: Currently recall first emits a withdraw event and then a recall event. Should the
+        // FIXME: Currently recall first emits a withdraw event and then a recall event. Should the
         // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
             Some((
@@ -276,7 +276,8 @@ fn vault_fungible_recall_emits_correct_events() {
     }
 }
 
-// TODO: Currently treats non-fungibles as fungible. Correct this test once recall non-fungibles
+// FIXME: double check if the instruction has been updated
+// Currently treats non-fungibles as fungible. Correct this test once recall non-fungibles
 // has a dedicated instruction.
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
@@ -338,7 +339,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 true,
             _ => false,
         });
-        // TODO: Currently recall first emits a withdraw event and then a recall event. Should the
+        // FIXME: Currently recall first emits a withdraw event and then a recall event. Should the
         // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
             Some((

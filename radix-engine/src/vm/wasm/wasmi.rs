@@ -1207,7 +1207,7 @@ impl WasmInstance for WasmiInstance {
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
             // set up runtime pointer
-            // FIXME: Triple casting to workaround this error message:
+            // Using triple casting is to workaround this error message:
             // error[E0521]: borrowed data escapes outside of associated function
             //  `runtime` escapes the associated function body here argument requires that `'r` must outlive `'static`
             self.store

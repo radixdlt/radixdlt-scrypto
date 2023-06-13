@@ -194,8 +194,6 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Reference(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    // TODO: validate expression and blob as well
-
     fn replace_expression(
         &mut self,
         _e: ManifestExpression,
@@ -203,6 +201,7 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Vec::new())
     }
 
+    // TODO: validate blob as well?
     fn replace_blob(&mut self, _b: ManifestBlobRef) -> Result<Vec<u8>, ManifestIdValidationError> {
         Ok(Vec::new())
     }

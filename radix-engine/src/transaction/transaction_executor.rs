@@ -262,6 +262,8 @@ where
                     application_events.clear();
                     // application logs retain
                     track.revert_non_force_write_changes();
+
+                    // FIXME: clean up locks
                 }
 
                 // Finalize fees
@@ -589,6 +591,6 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         };
     }
 
-    // TODO: distribute fees
+    // FIXME: distribute fees
     (fee_summary, fee_payments)
 }

@@ -56,7 +56,7 @@ pub enum CostingEntry<'a> {
         size_old: u32,
         size_new: u32,
     },
-    // TODO: more costing after API becomes stable.
+    // FIXME: more costing after API becomes stable.
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -299,16 +299,17 @@ impl FeeTable {
                     }
                 }
             }
+            // FIXME update numbers below
             CostingEntry::LockSubstate {
                 node_id: _,
                 partition_num: _,
                 substate_key: _,
-            } => 100, // todo: determine correct value
-            CostingEntry::ScanSubstate => 16, // todo: determine correct value
-            CostingEntry::SetSubstate => 16,  // todo: determine correct value
-            CostingEntry::TakeSubstate => 16, // todo: determine correct value
-            CostingEntry::ReadSubstate { size: _ } => 174, // todo: determine correct value size dependent
-            CostingEntry::WriteSubstate { size: _ } => 126, // todo: determine correct value size dependent
+            } => 100,
+            CostingEntry::ScanSubstate => 16,
+            CostingEntry::SetSubstate => 16,
+            CostingEntry::TakeSubstate => 16,
+            CostingEntry::ReadSubstate { size: _ } => 174,
+            CostingEntry::WriteSubstate { size: _ } => 126,
 
             // following variants are used in storage usage part only
             CostingEntry::SubstateReadFromDb { size: _ } => 0,
@@ -338,13 +339,14 @@ impl FeeTable {
                 value += (value >> 16) + 25; // ~24.999130166946998
                 value as u32
             }
-            CostingEntry::SubstateReadFromDbNotFound => 1, // todo: determine correct value
-            CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
-            CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
+            // FIXME: update numbers below
+            CostingEntry::SubstateReadFromDbNotFound => 1,
+            CostingEntry::SubstateReadFromTrack { size } => 10 * size,
+            CostingEntry::SubstateWriteToTrack { size } => 10 * size,
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new,
-            } => 10 * size_new, // todo: determine correct value
+            } => 10 * size_new,
             _ => 0,
         }) as u64
             * COSTING_COEFFICENT_STORAGE

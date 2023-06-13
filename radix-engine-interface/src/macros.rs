@@ -1,4 +1,4 @@
-// TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
+// TODO: Move this logic into procedural macro.
 #[macro_export]
 macro_rules! access_and_or {
     (|| $tt:tt) => {{
