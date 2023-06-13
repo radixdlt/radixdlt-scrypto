@@ -3,10 +3,7 @@ use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::blueprints::package::{PackageAuthNativeBlueprint, PackageNativePackage};
-use crate::errors::{
-    ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError,
-};
+use crate::errors::{ApplicationError, BlueprintSchemaValidationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError};
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
@@ -128,6 +125,33 @@ impl SchemaCache {
     }
 }
 
+pub enum KeyValueStoreIdent {
+    Key,
+    Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum BlueprintSchemaIdent {
+    /*
+    KeyValueStore {
+        collection_index: usize,
+        value: KeyValueStoreIdent,
+    },
+     */
+    Event(String),
+}
+
+impl BlueprintSchemaIdent {
+    pub fn get_pointer(&self, blueprint_interface: &BlueprintInterface) -> Option<SchemaPointer> {
+        match self {
+            BlueprintSchemaIdent::Event(event_name) => {
+                blueprint_interface.events.get(event_name).cloned()
+
+            }
+        }
+    }
+}
+
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -157,10 +181,78 @@ where
         )
     }
 
+    fn validate_payload_against_blueprint_schema2<'s>(
+        &'s mut self,
+        blueprint_id: &BlueprintId,
+        instance_schema: &'s Option<InstanceSchema>,
+        payloads: Vec<(&Vec<u8>, BlueprintSchemaIdent)>,
+    ) -> Result<Vec<SchemaPointer>, RuntimeError> {
+        let blueprint_interface = self.get_blueprint_definition(blueprint_id)?.interface;
+
+        let mut schema_pointers = Vec::new();
+
+        for (payload, schema_ident) in payloads {
+            let schema_pointer = schema_ident.get_pointer(&blueprint_interface)
+                .ok_or_else(|| {
+                    RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
+                        BlueprintSchemaValidationError::DoesNotExist(schema_ident)
+                    ))
+                })?;
+
+            match schema_pointer {
+                SchemaPointer::Package(hash, index) => {
+                    let schema = self.get_schema(blueprint_id.package_address.as_node_id(), &hash)?;
+
+                    self.validate_payload(
+                        payload,
+                        &schema,
+                        index,
+                        SchemaOrigin::Blueprint(blueprint_id.clone()),
+                    ).map_err(|err| {
+                        RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
+                            BlueprintSchemaValidationError::SchemaValidationError(err.error_message(&schema))
+                        ))
+                    })?;
+                }
+                SchemaPointer::Instance(instance_index) => {
+                    let instance_schema = match instance_schema.as_ref() {
+                        Some(instance_schema) => instance_schema,
+                        None => {
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::BlueprintSchemaValidationError(
+                                    BlueprintSchemaValidationError::InstanceSchemaDoesNotExist
+                                )
+                            ));
+                        },
+                    };
+                    let index = instance_schema
+                        .type_index
+                        .get(instance_index as usize)
+                        .unwrap()
+                        .clone();
+
+                    self.validate_payload(
+                        payload,
+                        &instance_schema.schema,
+                        index,
+                        SchemaOrigin::Instance,
+                    ).map_err(|err| {
+                        RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
+                            BlueprintSchemaValidationError::SchemaValidationError(err.error_message(&instance_schema.schema))
+                        ))
+                    })?;
+                }
+            }
+            schema_pointers.push(schema_pointer);
+        }
+
+        Ok(schema_pointers)
+    }
+
     fn validate_payload_against_blueprint_schema<'s, const N: usize>(
         &'s mut self,
-        payloads: [(&Vec<u8>, &SchemaPointer); N],
         blueprint_id: &BlueprintId,
+        payloads: [(&Vec<u8>, &SchemaPointer); N],
         instance_schema: &'s Option<InstanceSchema>,
     ) -> Result<(), String> {
         for (payload, schema_pointer) in payloads {
@@ -615,11 +707,11 @@ where
                         if let Some(entries) = entries {
                             for (key, (value, freeze)) in entries {
                                 self.validate_payload_against_blueprint_schema(
+                                    blueprint_id,
                                     [
                                         (&key, &blueprint_kv_schema.key),
                                         (&value, &blueprint_kv_schema.value),
                                     ],
-                                    blueprint_id,
                                     instance_schema,
                                 )
                                 .map_err(|err| {
@@ -2329,33 +2421,11 @@ where
                 )),
             };
 
-            let blueprint_interface = self.get_blueprint_definition(&blueprint_id)?.interface;
-
-            // Translating the event name to it's local_type_index which is stored in the blueprint
-            // schema
-            let pointer =
-                if let Some(pointer) = blueprint_interface.events.get(&event_name).cloned() {
-                    pointer
-                } else {
-                    return Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::EventError(Box::new(EventError::SchemaNotFoundError {
-                            blueprint: blueprint_id.clone(),
-                            event_name,
-                        })),
-                    ));
-                };
-
-            self.validate_payload_against_blueprint_schema(
-                [(&event_data, &pointer)],
+            self.validate_payload_against_blueprint_schema2(
                 &blueprint_id,
                 &instance_schema,
-            ).map_err(|err| {
-                RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
-                    EventError::EventSchemaNotMatch(err),
-                )))
-            })?;
-
-            pointer
+                vec![(&event_data, BlueprintSchemaIdent::Event(event_name.clone()))],
+            )?[0]
         };
 
         // Construct the event type identifier based on the current actor

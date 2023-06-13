@@ -28,6 +28,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use crate::system::system::BlueprintSchemaIdent;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -271,11 +272,20 @@ pub enum CreateObjectError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemModuleError {
+    BlueprintSchemaValidationError(BlueprintSchemaValidationError),
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
     EventError(Box<EventError>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum BlueprintSchemaValidationError {
+    BlueprintDoesNotExist(BlueprintId),
+    DoesNotExist(BlueprintSchemaIdent),
+    SchemaValidationError(String),
+    InstanceSchemaDoesNotExist,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
