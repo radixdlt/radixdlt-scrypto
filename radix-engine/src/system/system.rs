@@ -2343,28 +2343,31 @@ where
         // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_system_state().current;
-
         // Locking the package info substate associated with the emitter's package
-        let (blueprint_id, schema_pointer) = {
+        let schema_pointer = {
+            let actor = self.api.kernel_get_system_state().current;
+
             // Getting the package address and blueprint name associated with the actor
-            let blueprint_id = match actor {
+            let (instance_schema, blueprint_id) = match actor {
                 Actor::Method(MethodActor {
-                    module_object_info: ref object_info,
+                    module_object_info,
                     ..
-                }) => Ok(object_info.blueprint_id.clone()),
-                Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
-                _ => Err(RuntimeError::SystemModuleError(
+                }) => {
+                    (module_object_info.instance_schema.clone(),
+                    module_object_info.blueprint_id.clone())
+                },
+                Actor::Function { ref blueprint, .. } => (None, blueprint.clone()),
+                _ => return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
                 )),
-            }?;
+            };
 
-            let blueprint_definition = self.get_blueprint_definition(&blueprint_id)?;
+            let blueprint_interface = self.get_blueprint_definition(&blueprint_id)?.interface;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
             let pointer =
-                if let Some(pointer) = blueprint_definition.interface.events.get(&event_name).cloned() {
+                if let Some(pointer) = blueprint_interface.events.get(&event_name).cloned() {
                     pointer
                 } else {
                     return Err(RuntimeError::SystemModuleError(
@@ -2375,18 +2378,33 @@ where
                     ));
                 };
 
-            (blueprint_id, pointer)
-        };
+            let (schema, local_type_index, schema_origin) = match pointer {
+                SchemaPointer::Package(schema_hash, index) => {
+                    let schema =
+                        self.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
+                    (schema, index, SchemaOrigin::Blueprint(blueprint_id))
+                }
+                SchemaPointer::Instance(instance_index) => {
+                    let instance_schema = instance_schema.ok_or_else(|| RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(EventError::InvalidActor))))?;
+                    let schema = instance_schema.schema;
+                    let index = instance_schema.type_index[instance_index as usize];
+                    (schema, index, SchemaOrigin::Instance)
+                }
+            };
 
-        let (schema, local_type_index) = match &schema_pointer {
-            SchemaPointer::Package(schema_hash, index) => {
-                let schema =
-                    self.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
-                (schema, index.clone())
-            }
-            SchemaPointer::Instance(instance_index) => {
-                todo!()
-            }
+            self.validate_payload(
+                &event_data,
+                &schema,
+                local_type_index,
+                schema_origin,
+            )
+                .map_err(|err| {
+                    RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
+                        EventError::EventSchemaNotMatch(err.error_message(&schema)),
+                    )))
+                })?;
+
+            pointer
         };
 
         // Construct the event type identifier based on the current actor
@@ -2410,17 +2428,6 @@ where
                 SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
             )),
         }?;
-        self.validate_payload(
-            &event_data,
-            &schema,
-            local_type_index,
-            SchemaOrigin::Blueprint(blueprint_id),
-        )
-        .map_err(|err| {
-            RuntimeError::SystemModuleError(SystemModuleError::EventError(Box::new(
-                EventError::EventSchemaNotMatch(err.error_message(&schema)),
-            )))
-        })?;
 
         // Adding the event to the event store
         self.api
