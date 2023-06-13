@@ -69,9 +69,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintVersionKey, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintVersionKey, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET, BlueprintInterface};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
@@ -373,18 +371,19 @@ pub fn export_schema(
     Ok(schema)
 }
 
-pub fn export_blueprint_schema(
+pub fn export_blueprint_interface(
     package_address: PackageAddress,
     blueprint_name: &str,
-) -> Result<BlueprintDefinition, Error> {
-    let definition = export_package_schema(package_address)?
+) -> Result<BlueprintInterface, Error> {
+    let interface = export_package_schema(package_address)?
         .get(&BlueprintVersionKey::new_default(blueprint_name))
         .cloned()
         .ok_or(Error::BlueprintNotFound(
             package_address,
             blueprint_name.to_string(),
-        ))?;
-    Ok(definition)
+        ))?
+        .interface;
+    Ok(interface)
 }
 
 pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<BlueprintId, Error> {

@@ -124,18 +124,24 @@ pub struct PackageExport {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintDefinition {
-    // TODO: Move these into separate struct
-    pub outer_blueprint: Option<String>,
-    pub features: BTreeSet<String>,
-    pub state_schema: IndexedBlueprintStateSchema,
-    pub functions: BTreeMap<String, FunctionSchema>,
-    pub events: BTreeMap<String, SchemaPointer>,
+    // Frontend interface, this must be backward compatible with minor version updates
+    pub interface: BlueprintInterface,
 
+    // Backend implementation pointers
     pub function_exports: BTreeMap<String, PackageExport>,
     pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,
 }
 
-impl BlueprintDefinition {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintInterface {
+    pub outer_blueprint: Option<String>,
+    pub features: BTreeSet<String>,
+    pub state: IndexedBlueprintStateSchema,
+    pub functions: BTreeMap<String, FunctionSchema>,
+    pub events: BTreeMap<String, SchemaPointer>,
+}
+
+impl BlueprintInterface {
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {

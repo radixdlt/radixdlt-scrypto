@@ -715,14 +715,16 @@ impl PackageNativePackage {
                     .collect();
 
                 let definition = BlueprintDefinition {
-                    outer_blueprint: definition_init.outer_blueprint,
-                    features: definition_init.feature_set,
-                    functions,
-                    events,
-                    state_schema: IndexedBlueprintStateSchema::from_schema(
-                        schema_hash,
-                        definition_init.schema.state,
-                    ),
+                    interface: BlueprintInterface {
+                        outer_blueprint: definition_init.outer_blueprint,
+                        features: definition_init.feature_set,
+                        functions,
+                        events,
+                        state: IndexedBlueprintStateSchema::from_schema(
+                            schema_hash,
+                            definition_init.schema.state,
+                        ),
+                    },
                     function_exports,
                     virtual_lazy_load_functions: definition_init
                         .schema
@@ -935,14 +937,16 @@ impl PackageNativePackage {
                     .collect();
 
                 let definition = BlueprintDefinition {
-                    outer_blueprint: definition_init.outer_blueprint,
-                    features: definition_init.feature_set,
-                    functions,
-                    events,
-                    state_schema: IndexedBlueprintStateSchema::from_schema(
-                        schema_hash,
-                        definition_init.schema.state,
-                    ),
+                    interface: BlueprintInterface {
+                        outer_blueprint: definition_init.outer_blueprint,
+                        features: definition_init.feature_set,
+                        functions,
+                        events,
+                        state: IndexedBlueprintStateSchema::from_schema(
+                            schema_hash,
+                            definition_init.schema.state,
+                        ),
+                    },
                     function_exports,
                     virtual_lazy_load_functions: definition_init
                         .schema

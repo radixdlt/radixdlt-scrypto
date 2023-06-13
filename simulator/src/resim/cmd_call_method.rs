@@ -109,7 +109,7 @@ impl CallMethod {
         account: Option<ComponentAddress>,
     ) -> Result<&'a mut ManifestBuilder, Error> {
         let bp_id = get_blueprint_id(component_address)?;
-        let bp_def = export_blueprint_schema(bp_id.package_address, &bp_id.blueprint_name)?;
+        let bp_def = export_blueprint_interface(bp_id.package_address, &bp_id.blueprint_name)?;
 
         let function_schema = bp_def.find_method(method_name.as_str()).ok_or_else(|| {
             Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(

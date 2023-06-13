@@ -499,12 +499,12 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_definition = self.get_blueprint_definition(blueprint)?;
+        let blueprint_interface = self.get_blueprint_definition(blueprint)?.interface;
 
         // Validate features
         {
             for feature in features {
-                if !blueprint_definition.features.contains(feature) {
+                if !blueprint_interface.features.contains(feature) {
                     return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
                         feature.to_string(),
                     )));
@@ -518,8 +518,8 @@ where
                 validate_schema(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
             }
-            if !blueprint_definition
-                .state_schema
+            if !blueprint_interface
+                .state
                 .validate_instance_schema(instance_schema)
             {
                 return Err(RuntimeError::SystemError(
@@ -534,7 +534,7 @@ where
 
         // Fields
         {
-            let expected_num_fields = blueprint_definition.state_schema.num_fields();
+            let expected_num_fields = blueprint_interface.state.num_fields();
             if expected_num_fields != fields.len() {
                 return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                     Box::new(CreateObjectError::WrongNumberOfSubstates(
@@ -545,7 +545,7 @@ where
                 )));
             }
 
-            if let Some((offset, field_schemas)) = blueprint_definition.state_schema.fields {
+            if let Some((offset, field_schemas)) = blueprint_interface.state.fields {
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
@@ -595,8 +595,8 @@ where
 
         // Collections
         {
-            for (index, (offset, blueprint_partition_schema)) in blueprint_definition
-                .state_schema
+            for (index, (offset, blueprint_partition_schema)) in blueprint_interface
+                .state
                 .collections
                 .iter()
                 .enumerate()
@@ -700,7 +700,7 @@ where
             }
         }
 
-        let parent_blueprint = blueprint_definition.outer_blueprint.clone();
+        let parent_blueprint = blueprint_interface.outer_blueprint.clone();
 
         Ok((parent_blueprint, partitions))
     }
@@ -770,7 +770,7 @@ where
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, field_schema) =
-            definition.state_schema.field(field_index).ok_or_else(|| {
+            definition.interface.state.field(field_index).ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                     info.blueprint_id.clone(),
                     field_index,
@@ -822,7 +822,8 @@ where
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, kv_schema) = definition
-            .state_schema
+            .interface
+            .state
             .key_value_store_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
@@ -847,7 +848,8 @@ where
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = definition
-            .state_schema
+            .interface
+            .state
             .index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::IndexDoesNotExist(
@@ -872,7 +874,8 @@ where
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = definition
-            .state_schema
+            .interface
+            .state
             .sorted_index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
@@ -1025,7 +1028,7 @@ where
             }
         };
 
-        let schema = self.get_blueprint_definition(blueprint_id)?.state_schema;
+        let schema = self.get_blueprint_definition(blueprint_id)?.interface.state;
         let num_main_partitions = schema.num_partitions();
 
         // Create a global node
@@ -1080,7 +1083,7 @@ where
                         );
 
                     // Move and drop
-                    let schema = self.get_blueprint_definition(&blueprint_id)?.state_schema;
+                    let schema = self.get_blueprint_definition(&blueprint_id)?.interface.state;
                     let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..schema.num_partitions {
                         let src = MAIN_BASE_PARTITION
@@ -1217,7 +1220,7 @@ where
     ) -> Result<(), RuntimeError> {
         // Move and drop
         let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
-        let schema = self.get_blueprint_definition(&blueprint_id)?.state_schema;
+        let schema = self.get_blueprint_definition(&blueprint_id)?.interface.state;
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
         for offset in 0u8..schema.num_partitions {
             let src = MAIN_BASE_PARTITION
@@ -2361,7 +2364,7 @@ where
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
             let pointer =
-                if let Some(pointer) = blueprint_definition.events.get(&event_name).cloned() {
+                if let Some(pointer) = blueprint_definition.interface.events.get(&event_name).cloned() {
                     pointer
                 } else {
                     return Err(RuntimeError::SystemModuleError(

@@ -112,9 +112,9 @@ impl CallFunction {
         args: Vec<String>,
         account: Option<ComponentAddress>,
     ) -> Result<&'a mut ManifestBuilder, Error> {
-        let bp_definition = export_blueprint_schema(package_address, &blueprint_name)?;
+        let bp_interface = export_blueprint_interface(package_address, &blueprint_name)?.interface;
 
-        let function_schema = bp_definition
+        let function_schema = bp_interface
             .find_function(function_name.as_str())
             .ok_or_else(|| {
                 Error::TransactionConstructionError(BuildCallInstructionError::FunctionNotFound(

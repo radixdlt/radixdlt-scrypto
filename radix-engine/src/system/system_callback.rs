@@ -33,6 +33,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 ) -> Result<PackageExport, RuntimeError> {
     let function_schema =
         blueprint_definition
+            .interface
             .functions
             .get(fn_ident)
             .ok_or(RuntimeError::SystemUpstreamError(
@@ -92,6 +93,7 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     output: &IndexedScryptoValue,
 ) -> Result<(), RuntimeError> {
     let output_schema_pointer = blueprint_definition
+        .interface
         .functions
         .get(fn_ident)
         .expect("Checked by `validate_input`");
