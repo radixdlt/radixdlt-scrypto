@@ -240,7 +240,7 @@ impl ConsensusManagerBlueprint {
                 current_leader: initial_current_leader,
             };
             let validator_rewards = ValidatorRewardsSubstate {
-                proposer_rewards: IndexMap::new(),
+                proposer_rewards: index_map_new(),
                 rewards_vault: Vault::create(RADIX_TOKEN, api)?,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
