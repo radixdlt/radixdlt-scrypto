@@ -11,7 +11,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
@@ -31,7 +31,7 @@ pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
 pub struct ConsensusManagerNativePackage;
 
 impl ConsensusManagerNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         let consensus_manager_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
@@ -387,7 +387,7 @@ impl ConsensusManagerNativePackage {
             VALIDATOR_BLUEPRINT.to_string() => validator_blueprint,
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

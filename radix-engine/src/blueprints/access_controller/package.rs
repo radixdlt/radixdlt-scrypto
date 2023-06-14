@@ -19,7 +19,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -165,7 +165,7 @@ impl From<AccessControllerError> for RuntimeError {
 pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -476,7 +476,7 @@ impl AccessControllerNativePackage {
             }
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

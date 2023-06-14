@@ -1,7 +1,7 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
-use radix_engine_interface::blueprints::package::PackageSetup;
+use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::*;
 use utils::ContextualDisplay;
@@ -35,7 +35,6 @@ fn execute_with_time_logging(
 }
 
 #[test]
-#[ignore]
 fn test_basic_transfer() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -69,11 +68,11 @@ fn test_basic_transfer() {
         0
         + 897 /* AllocateNodeId */
         + 1417 /* CreateNode */
-        + 5032 /* DropLock */
+        + 4958 /* DropLock */
         + 1365 /* DropNode */
         + 736166 /* Invoke */
-        + 422978 /* LockSubstate */
-        + 7168 /* ReadSubstate */
+        + 242267 /* LockSubstate */
+        + 7560 /* ReadSubstate */
         + 57500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -84,7 +83,6 @@ fn test_basic_transfer() {
 }
 
 #[test]
-#[ignore]
 fn test_radiswap() {
     let mut test_runner = TestRunner::builder().build();
 
@@ -199,14 +197,14 @@ fn test_radiswap() {
         0
         + 2208 /* AllocateNodeId */
         + 3499 /* CreateNode */
-        + 12321 /* DropLock */
+        + 11988 /* DropLock */
         + 3255 /* DropNode */
         + 3130196 /* Invoke */
-        + 2443034 /* LockSubstate */
-        + 17360 /* ReadSubstate */
+        + 2263794 /* LockSubstate */
+        + 18200 /* ReadSubstate */
         + 125000 /* RunNative */
         + 20000 /* RunSystem */
-        + 602635 /* RunWasm */
+        + 592885 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1765 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -215,13 +213,12 @@ fn test_radiswap() {
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.6513199"),
+        dec!("0.6324716"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
 
 #[test]
-#[ignore]
 fn test_flash_loan() {
     let mut test_runner = TestRunner::builder().build();
 
@@ -312,14 +309,14 @@ fn test_flash_loan() {
         0
         + 3657 /* AllocateNodeId */
         + 5777 /* CreateNode */
-        + 20461 /* DropLock */
+        + 19462 /* DropLock */
         + 5565 /* DropNode */
         + 4094978 /* Invoke */
-        + 4438004 /* LockSubstate */
-        + 29288 /* ReadSubstate */
+        + 4499317 /* LockSubstate */
+        + 30128 /* ReadSubstate */
         + 192500 /* RunNative */
         + 40000 /* RunSystem */
-        + 1170125 /* RunWasm */
+        + 1196775 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2570 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -347,7 +344,7 @@ fn test_publish_large_package() {
         .lock_fee(test_runner.faucet_component(), 100.into())
         .publish_package_advanced(
             code,
-            PackageSetup::default(),
+            PackageDefinition::default(),
             BTreeMap::new(),
             OwnerRole::None,
         )

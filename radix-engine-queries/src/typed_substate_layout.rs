@@ -254,13 +254,13 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                PackagePartitionOffset::Royalty => {
+                PackagePartitionOffset::RoyaltyConfig => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageRoyaltyKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                PackagePartitionOffset::AuthTemplates => {
+                PackagePartitionOffset::AuthConfig => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageAuthTemplateKey(
                         scrypto_decode(&key).map_err(|_| ())?,

@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema};
@@ -141,7 +141,7 @@ const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         //====================================================================================
 
         let fungible_resource_manager_blueprint = {
@@ -1930,7 +1930,7 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_blueprint,
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

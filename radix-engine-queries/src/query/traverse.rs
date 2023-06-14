@@ -1,5 +1,5 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::types::{FieldsKey, MapKey, ScryptoValue, SubstateKey};
+use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
@@ -181,7 +181,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         ROYALTY_BASE_PARTITION,
                         ACCESS_RULES_BASE_PARTITION,
                     ] {
-                        self.traverse_substates::<FieldsKey>(node_id, partition_num, depth)
+                        self.traverse_substates::<FieldKey>(node_id, partition_num, depth)
                     }
                     for partition_num in [METADATA_KV_STORE_PARTITION] {
                         self.traverse_substates::<MapKey>(node_id, partition_num, depth)
@@ -210,7 +210,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             depth,
                         )
                     } else {
-                        self.traverse_substates::<FieldsKey>(node_id, MAIN_BASE_PARTITION, depth)
+                        self.traverse_substates::<FieldKey>(node_id, MAIN_BASE_PARTITION, depth)
                     }
                 }
             }

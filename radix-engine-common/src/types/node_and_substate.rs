@@ -217,15 +217,15 @@ pub struct PartitionOffset(pub u8);
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
-    Fields(FieldsKey),
+    Field(FieldKey),
     Map(MapKey),
     Sorted(SortedU16Key),
 }
 
 impl SubstateKey {
-    pub fn for_fields(&self) -> Option<&FieldsKey> {
+    pub fn for_field(&self) -> Option<&FieldKey> {
         match self {
-            SubstateKey::Fields(key) => Some(key),
+            SubstateKey::Field(key) => Some(key),
             _ => None,
         }
     }
@@ -245,6 +245,6 @@ impl SubstateKey {
     }
 }
 
-pub type FieldsKey = u8;
+pub type FieldKey = u8;
 pub type MapKey = Vec<u8>;
 pub type SortedU16Key = (u16, Vec<u8>);

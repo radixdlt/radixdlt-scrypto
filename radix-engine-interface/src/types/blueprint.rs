@@ -17,7 +17,7 @@ pub struct ObjectInfo {
     pub blueprint_id: BlueprintId,
     pub version: BlueprintVersion,
 
-    // Blueprint parameters
+    // Blueprint arguments
     pub outer_object: Option<GlobalAddress>,
     pub instance_schema: Option<InstanceSchema>,
     pub features: BTreeSet<String>,

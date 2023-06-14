@@ -29,8 +29,6 @@ pub const PACKAGE_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
 pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
 
-pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 4u8;
-
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
     Native,
@@ -136,6 +134,10 @@ pub struct BlueprintDefinition {
     pub interface: BlueprintInterface,
 
     // Backend implementation pointers
+
+    // There is an implicit variant that must be maintained in that the key set in `function_exports`
+    // matches that of the `functions` under `interface`. This is currently maintained since the
+    // `publish` interface uses `BlueprintDefinitionInit` rather than `BlueprintDefinition`.
     pub function_exports: BTreeMap<String, PackageExport>,
     pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,
 }
@@ -186,6 +188,7 @@ impl IndexedBlueprintStateSchema {
                 .fields
                 .into_iter()
                 .map(|field_schema| {
+                    // FIXME: Verify that these are checked to be consistent
                     let pointer = match field_schema.field {
                         TypeRef::Static(type_index) => {
                             TypePointer::Package(schema_hash, type_index)

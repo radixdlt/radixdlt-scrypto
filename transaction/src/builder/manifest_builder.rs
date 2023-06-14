@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::identity::{
 };
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PackageSetup, PACKAGE_BLUEPRINT,
+    PackagePublishWasmManifestInput, PackageDefinition, PACKAGE_BLUEPRINT,
     PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
@@ -731,7 +731,7 @@ impl ManifestBuilder {
     pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> &mut Self {
@@ -754,7 +754,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package with an owner badge.
-    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageSetup) -> &mut Self {
+    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageDefinition) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
@@ -775,7 +775,7 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);

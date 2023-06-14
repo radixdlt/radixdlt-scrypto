@@ -422,7 +422,7 @@ where
 pub struct PackageNativePackage;
 
 impl PackageNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -577,7 +577,7 @@ impl PackageNativePackage {
             }
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]
@@ -653,7 +653,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_native<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u8,
-        setup: PackageSetup,
+        setup: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -767,7 +767,7 @@ impl PackageNativePackage {
 
     pub(crate) fn publish_wasm<Y, L: Default>(
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
@@ -784,7 +784,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_wasm_advanced<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
         api: &mut Y,
@@ -808,7 +808,7 @@ impl PackageNativePackage {
     fn publish_wasm_internal<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
-        setup: PackageSetup,
+        setup: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
         api: &mut Y,

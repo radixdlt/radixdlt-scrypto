@@ -1,4 +1,4 @@
-use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageSetup};
+use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition};
 use sbor::rust::iter;
 
 use crate::errors::InvokeError;
@@ -21,7 +21,7 @@ impl From<PrepareError> for ExtractSchemaError {
     }
 }
 
-pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaError> {
+pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchemaError> {
     let function_exports = WasmModule::init(code)
         .and_then(WasmModule::to_bytes)?
         .1
@@ -60,5 +60,5 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaErro
         blueprints.insert(name.clone(), blueprint_setup);
     }
 
-    Ok(PackageSetup { blueprints })
+    Ok(PackageDefinition { blueprints })
 }

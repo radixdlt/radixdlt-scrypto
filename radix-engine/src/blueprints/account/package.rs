@@ -9,7 +9,7 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit,
@@ -31,7 +31,7 @@ const ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519
 pub struct AccountNativePackage;
 
 impl AccountNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
@@ -414,7 +414,7 @@ impl AccountNativePackage {
             }
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

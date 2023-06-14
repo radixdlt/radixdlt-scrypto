@@ -12,7 +12,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission};
@@ -27,7 +27,7 @@ pub const POOL_MANAGER_ROLE: &'static str = "pool_manager_role";
 
 pub struct PoolNativePackage;
 impl PoolNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         // One Resource Pool
         let one_resource_pool_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -511,7 +511,7 @@ impl PoolNativePackage {
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => multi_resource_pool_blueprint,
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

@@ -20,14 +20,14 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -39,7 +39,7 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub code: Vec<u8>,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -48,7 +48,7 @@ pub struct PackagePublishWasmAdvancedInput {
 pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub code: ManifestBlobRef,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -61,7 +61,7 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub native_package_code_id: u8,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -69,7 +69,7 @@ pub struct PackagePublishNativeInput {
 pub struct PackagePublishNativeManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub native_package_code_id: u8,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -85,7 +85,7 @@ pub struct PackageClaimRoyaltiesInput {}
 pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct PackageSetup {
+pub struct PackageDefinition {
     pub blueprints: BTreeMap<String, BlueprintDefinitionInit>,
 }
 

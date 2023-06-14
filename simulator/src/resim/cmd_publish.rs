@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::package::{
     PackageExport, TypePointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
     PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
-use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
+use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -60,7 +60,7 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let package_definition: PackageSetup = manifest_decode(
+        let package_definition: PackageDefinition = manifest_decode(
             &fs::read(&definition_path)
                 .map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
         )

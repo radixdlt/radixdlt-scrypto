@@ -4,7 +4,7 @@ use crate::interface::{
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_common::types::{FieldsKey, MapKey, PartitionNumber, SortedU16Key};
+use radix_engine_common::types::{FieldKey, MapKey, PartitionNumber, SortedU16Key};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::types::{NodeId, SubstateKey};
 use sbor::rust::prelude::*;
@@ -23,7 +23,7 @@ pub trait DatabaseKeyMapper {
     /// type found inside (see `*_to_db_sort_key()` family).
     fn to_db_sort_key(key: &SubstateKey) -> DbSortKey {
         match key {
-            SubstateKey::Fields(fields_key) => Self::fields_to_db_sort_key(fields_key),
+            SubstateKey::Field(fields_key) => Self::field_to_db_sort_key(fields_key),
             SubstateKey::Map(map_key) => Self::map_to_db_sort_key(map_key),
             SubstateKey::Sorted(sorted_key) => Self::sorted_to_db_sort_key(sorted_key),
         }
@@ -35,7 +35,7 @@ pub trait DatabaseKeyMapper {
     fn from_db_sort_key<K: SubstateKeyContent>(db_sort_key: &DbSortKey) -> SubstateKey {
         match K::get_type() {
             SubstateKeyTypeContentType::Tuple => {
-                SubstateKey::Fields(Self::fields_from_db_sort_key(db_sort_key))
+                SubstateKey::Field(Self::field_from_db_sort_key(db_sort_key))
             }
             SubstateKeyTypeContentType::Map => {
                 SubstateKey::Map(Self::map_from_db_sort_key(db_sort_key))
@@ -48,8 +48,8 @@ pub trait DatabaseKeyMapper {
 
     // Type-specific methods for mapping the `SubstateKey` inner data to/from `DbSortKey`:
 
-    fn fields_to_db_sort_key(fields_key: &FieldsKey) -> DbSortKey;
-    fn fields_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldsKey;
+    fn field_to_db_sort_key(field_key: &FieldKey) -> DbSortKey;
+    fn field_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldKey;
 
     fn map_to_db_sort_key(map_key: &MapKey) -> DbSortKey;
     fn map_from_db_sort_key(db_sort_key: &DbSortKey) -> MapKey;
@@ -88,11 +88,11 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         (NodeId(bytes), partition_num)
     }
 
-    fn fields_to_db_sort_key(fields_key: &FieldsKey) -> DbSortKey {
+    fn field_to_db_sort_key(fields_key: &FieldKey) -> DbSortKey {
         DbSortKey(vec![*fields_key])
     }
 
-    fn fields_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldsKey {
+    fn field_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldKey {
         db_sort_key.0[0]
     }
 
@@ -128,7 +128,7 @@ impl SpreadPrefixKeyMapper {
     /// - high enough to avoid being cracked (for crafting arbitrarily long key prefixes);
     /// - low enough to avoid inflating database key sizes.
     ///
-    /// Note: hashing will not be applied to [`FieldsKey`] (which is a single byte, and hence does
+    /// Note: hashing will not be applied to [`FieldKey`] (which is a single byte, and hence does
     /// not create the risk of long common prefixes).
     const HASHED_PREFIX_LENGTH: usize = 20;
 
@@ -243,7 +243,7 @@ impl SubstateKeyContent for MapKey {
     }
 }
 
-impl SubstateKeyContent for FieldsKey {
+impl SubstateKeyContent for FieldKey {
     fn get_type() -> SubstateKeyTypeContentType {
         SubstateKeyTypeContentType::Tuple
     }

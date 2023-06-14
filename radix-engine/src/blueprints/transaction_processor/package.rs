@@ -6,7 +6,7 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
@@ -21,7 +21,7 @@ use super::TransactionProcessorRunInput;
 pub struct TransactionProcessorNativePackage;
 
 impl TransactionProcessorNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let fields = Vec::new();
@@ -69,7 +69,7 @@ impl TransactionProcessorNativePackage {
             }
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

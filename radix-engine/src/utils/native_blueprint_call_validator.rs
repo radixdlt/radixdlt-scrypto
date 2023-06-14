@@ -113,7 +113,7 @@ pub fn validate_call_arguments_to_native_components(
 }
 
 fn get_blueprint_schema<'p>(
-    package_definition: &'p PackageSetup,
+    package_definition: &'p PackageDefinition,
     package_address: PackageAddress,
     blueprint: &str,
 ) -> Result<&'p BlueprintDefinitionInit, InstructionSchemaValidationError> {

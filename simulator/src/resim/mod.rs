@@ -360,7 +360,7 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             TYPE_INFO_FIELD_PARTITION,
-            &SubstateKey::Fields(0u8),
+            &SubstateKey::Field(0u8),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
     match type_info {

@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, PackageDefinition,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
@@ -32,7 +32,7 @@ fn missing_memory_should_cause_error() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageSetup::default(),
+            PackageDefinition::default(),
             BTreeMap::new(),
             OwnerRole::None,
         )
@@ -186,7 +186,7 @@ fn test_basic_package_missing_export() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageSetup { blueprints },
+            PackageDefinition { blueprints },
             BTreeMap::new(),
             OwnerRole::None,
         )

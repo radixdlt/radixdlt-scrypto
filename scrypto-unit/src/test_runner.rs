@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageDefinition,
     TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
     PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
@@ -70,7 +70,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSetup) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -679,7 +679,7 @@ impl TestRunner {
     pub fn publish_package_at_address(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         address: PackageAddress,
     ) {
         let code_hash = hash(&code);
@@ -719,7 +719,7 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
@@ -735,7 +735,7 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
@@ -1680,7 +1680,7 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
-) -> PackageSetup {
+) -> PackageDefinition {
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         blueprint_name.to_string(),
@@ -1727,7 +1727,7 @@ pub fn single_function_package_definition(
             },
         },
     );
-    PackageSetup { blueprints }
+    PackageDefinition { blueprints }
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
