@@ -1018,14 +1018,37 @@ impl PackageNativePackage {
         Ok(schema)
     }
 
-    pub fn get_blueprint_definition<Y>(
+    pub fn get_blueprint_default_interface<Y, V>(
+        receiver: &NodeId,
+        blueprint_name: &str,
+        api: &mut Y,
+    ) -> Result<BlueprintInterface, RuntimeError>
+        where
+            Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+            V: SystemCallbackObject,
+    {
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint_name.to_string());
+        Ok(Self::get_blueprint_definition(receiver, &bp_version_key, api)?.interface)
+    }
+
+    pub fn get_blueprint_definition<Y, V>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<BlueprintDefinition, RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData>,
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
     {
+        let def = api
+            .kernel_get_system_state()
+            .system
+            .blueprint_cache
+            .get(bp_version_key);
+        if let Some(definition) = def {
+            return Ok(definition.clone());
+        }
+
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
@@ -1049,6 +1072,12 @@ impl PackageNativePackage {
             let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
             RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint_id))
         })?;
+
+        api
+            .kernel_get_system_state()
+            .system
+            .blueprint_cache
+            .insert(bp_version_key.clone(), definition.clone());
 
         Ok(definition)
     }

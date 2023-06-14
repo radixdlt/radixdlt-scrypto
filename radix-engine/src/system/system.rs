@@ -311,7 +311,11 @@ where
         instance_schema: &'s Option<InstanceSchema>,
         payloads: &[(&Vec<u8>, BlueprintSchemaIdent)],
     ) -> Result<Vec<(SchemaPointer, bool)>, RuntimeError> {
-        let blueprint_interface = self.get_blueprint_definition(blueprint_id)?.interface;
+        let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
+            blueprint_id.package_address.as_node_id(),
+            blueprint_id.blueprint_name.as_str(),
+            self.api,
+        )?;
 
         let mut schema_pointers = Vec::new();
 
@@ -601,36 +605,6 @@ where
         Ok(())
     }
 
-    // TODO: Move cache management into PackageNativePackage
-    pub fn get_blueprint_definition(
-        &mut self,
-        blueprint: &BlueprintId,
-    ) -> Result<BlueprintDefinition, RuntimeError> {
-        let def = self
-            .api
-            .kernel_get_system_state()
-            .system
-            .blueprint_cache
-            .get(blueprint);
-        if let Some(definition) = def {
-            return Ok(definition.clone());
-        }
-        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
-        let definition = PackageNativePackage::get_blueprint_definition(
-            blueprint.package_address.as_node_id(),
-            &bp_version_key,
-            self.api,
-        )?;
-
-        self.api
-            .kernel_get_system_state()
-            .system
-            .blueprint_cache
-            .insert(blueprint.clone(), definition.clone());
-
-        Ok(definition)
-    }
-
     fn verify_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -645,7 +619,11 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_interface = self.get_blueprint_definition(blueprint_id)?.interface;
+        let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
+            blueprint_id.package_address.as_node_id(),
+            blueprint_id.blueprint_name.as_str(),
+            self.api,
+        )?;
 
         // Validate features
         {
@@ -831,7 +809,7 @@ where
     fn get_actor_schema(
         &mut self,
         actor_object_type: ActorObjectType,
-    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, BlueprintDefinition), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, BlueprintInterface), RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let method = actor
             .try_as_method()
@@ -840,15 +818,25 @@ where
             ActorObjectType::OuterObject => {
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
-                let schema = self.get_blueprint_definition(&info.blueprint_id)?;
-                Ok((address.into_node_id(), MAIN_BASE_PARTITION, info, schema))
+
+                let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
+                    info.blueprint_id.package_address.as_node_id(),
+                    info.blueprint_id.blueprint_name.as_str(),
+                    self.api,
+                )?;
+
+                Ok((address.into_node_id(), MAIN_BASE_PARTITION, info, blueprint_interface))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
-                let schema = self.get_blueprint_definition(&info.blueprint_id)?;
-                Ok((node_id, object_module_id.base_partition_num(), info, schema))
+                let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
+                    info.blueprint_id.package_address.as_node_id(),
+                    info.blueprint_id.blueprint_name.as_str(),
+                    self.api,
+                )?;
+                Ok((node_id, object_module_id.base_partition_num(), info, blueprint_interface))
             }
         }
     }
@@ -858,11 +846,10 @@ where
         actor_object_type: ActorObjectType,
         field_index: u8,
     ) -> Result<(NodeId, PartitionNumber, SchemaPointer, ObjectInfo), RuntimeError> {
-        let (node_id, base_partition, info, definition) =
+        let (node_id, base_partition, info, interface) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, field_schema) = definition
-            .interface
+        let (partition_offset, field_schema) = interface
             .state
             .field(field_index)
             .ok_or_else(|| {
@@ -903,11 +890,10 @@ where
         ),
         RuntimeError,
     > {
-        let (node_id, base_partition, info, definition) =
+        let (node_id, base_partition, info, interface) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, kv_schema) = definition
-            .interface
+        let (partition_offset, kv_schema) = interface
             .state
             .key_value_store_partition(collection_index)
             .ok_or_else(|| {
@@ -929,11 +915,10 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, object_info, definition) =
+        let (node_id, base_partition, object_info, interface) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, _) = definition
-            .interface
+        let (partition_offset, _) = interface
             .state
             .index_partition(collection_index)
             .ok_or_else(|| {
@@ -955,11 +940,10 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, object_info, definition) =
+        let (node_id, base_partition, object_info, interface) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, _) = definition
-            .interface
+        let (partition_offset, _) = interface
             .state
             .sorted_index_partition(collection_index)
             .ok_or_else(|| {
@@ -1113,8 +1097,14 @@ where
             }
         };
 
-        let schema = self.get_blueprint_definition(blueprint_id)?.interface.state;
-        let num_main_partitions = schema.num_partitions();
+
+        let interface = PackageNativePackage::get_blueprint_default_interface(
+            blueprint_id.package_address.as_node_id(),
+            blueprint_id.blueprint_name.as_str(),
+            self.api,
+        )?;
+
+        let num_main_partitions = interface.state.num_partitions();
 
         // Create a global node
         self.kernel_create_node(
@@ -1168,12 +1158,15 @@ where
                         );
 
                     // Move and drop
-                    let schema = self
-                        .get_blueprint_definition(&blueprint_id)?
-                        .interface
-                        .state;
+                    let interface = PackageNativePackage::get_blueprint_default_interface(
+                        blueprint_id.package_address.as_node_id(),
+                        blueprint_id.blueprint_name.as_str(),
+                        self.api,
+                    )?;
+                    let num_partitions = interface.state.num_partitions();
+
                     let module_base_partition = module_id.base_partition_num();
-                    for offset in 0u8..schema.num_partitions {
+                    for offset in 0u8..num_partitions {
                         let src = MAIN_BASE_PARTITION
                             .at_offset(PartitionOffset(offset))
                             .unwrap();
@@ -1308,12 +1301,13 @@ where
     ) -> Result<(), RuntimeError> {
         // Move and drop
         let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
-        let schema = self
-            .get_blueprint_definition(&blueprint_id)?
-            .interface
-            .state;
+        let interface = PackageNativePackage::get_blueprint_default_interface(
+            blueprint_id.package_address.as_node_id(),
+            blueprint_id.blueprint_name.as_str(),
+            self.api,
+        )?;
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
-        for offset in 0u8..schema.num_partitions {
+        for offset in 0u8..interface.state.num_partitions {
             let src = MAIN_BASE_PARTITION
                 .at_offset(PartitionOffset(offset))
                 .unwrap();

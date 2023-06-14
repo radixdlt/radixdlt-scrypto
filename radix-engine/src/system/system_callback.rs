@@ -22,6 +22,7 @@ use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
+use crate::blueprints::package::PackageNativePackage;
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -71,7 +72,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     // TODO: We should be able to make this a more generic cache for
     // TODO: immutable substates
-    pub blueprint_cache: NonIterMap<BlueprintId, BlueprintDefinition>,
+    pub blueprint_cache: NonIterMap<BlueprintVersionKey, BlueprintDefinition>,
     pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
     pub auth_cache: NonIterMap<BlueprintId, AuthTemplate>,
     pub modules: SystemModuleMixer,
@@ -324,7 +325,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_drop_lock(handle)?;
 
             //  Validate input
-            let definition = system.get_blueprint_definition(&blueprint_id)?;
+            let definition = PackageNativePackage::get_blueprint_definition(
+                blueprint_id.package_address.as_node_id(),
+                &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                system.api,
+            )?;
+
             let export = match &ident {
                 FnIdent::Application(ident) => {
                     system.validate_payload_against_blueprint_schema(
