@@ -1130,6 +1130,25 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_deep_value_does_not_panic_with_stack_overflow() {
+        let depth: usize = 1000;
+        let mut value_string = "".to_string();
+        for _ in 0..depth {
+            value_string.push_str("Tuple(");
+        }
+        value_string.push_str("0u8");
+        for _ in 0..depth {
+            value_string.push_str(")");
+        }
+
+        // Should actually be an error not a panic
+        parse_value_error!(
+            &value_string,
+            ParserError::MaxDepthExceeded(PARSER_MAX_DEPTH)
+        );
+    }
+
     // Instruction parsing tests have been removed as they're largely outdated (inconsistent with the data model),
     // which may lead developers to invalid syntax.
     //
