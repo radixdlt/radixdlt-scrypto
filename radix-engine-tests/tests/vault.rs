@@ -31,7 +31,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..)) //RuntimeError::SystemError(SystemError::CreateObjectError(_))
+            RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..))
         )
     });
 }

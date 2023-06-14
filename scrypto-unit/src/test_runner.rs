@@ -41,7 +41,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
 };
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
@@ -1705,7 +1705,7 @@ pub fn single_function_package_definition(
                 functions: BlueprintFunctionsTemplateInit {
                     virtual_lazy_load_functions: btreemap!(),
                     functions: btreemap!(
-                    function_name.to_string() => FunctionTemplateInit {
+                    function_name.to_string() => FunctionSchemaInit {
                             receiver: Option::None,
                             input: LocalTypeIndex::WellKnown(ANY_ID),
                             output: LocalTypeIndex::WellKnown(ANY_ID),

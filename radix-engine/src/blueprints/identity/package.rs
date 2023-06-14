@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, FunctionTemplateInit, ReceiverInfo,
+    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, FunctionSchemaInit, ReceiverInfo,
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
@@ -41,7 +41,7 @@ impl IdentityNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
@@ -50,7 +50,7 @@ impl IdentityNativePackage {
         );
         functions.insert(
             IDENTITY_CREATE_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
@@ -59,7 +59,7 @@ impl IdentityNativePackage {
         );
         functions.insert(
             IDENTITY_SECURIFY_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),

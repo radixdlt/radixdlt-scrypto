@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit,
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionTemplateInit, RefTypes, TypeRef,
+    FunctionSchemaInit, RefTypes, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
@@ -495,7 +495,7 @@ impl PackageNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
@@ -504,7 +504,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
@@ -515,7 +515,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
@@ -524,7 +524,7 @@ impl PackageNativePackage {
         );
         functions.insert(
             PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),

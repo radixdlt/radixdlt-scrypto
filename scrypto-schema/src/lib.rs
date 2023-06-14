@@ -76,7 +76,7 @@ pub struct BlueprintEventSchemaInit {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct FunctionTemplateInit {
+pub struct FunctionSchemaInit {
     pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
@@ -85,7 +85,7 @@ pub struct FunctionTemplateInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
 pub struct BlueprintFunctionsTemplateInit {
-    pub functions: BTreeMap<String, FunctionTemplateInit>,
+    pub functions: BTreeMap<String, FunctionSchemaInit>,
     pub virtual_lazy_load_functions: BTreeMap<u8, String>,
 }
 

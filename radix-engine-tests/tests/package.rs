@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FieldSchema, FunctionTemplateInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
 };
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
@@ -165,7 +165,7 @@ fn test_basic_package_missing_export() {
                 events: BlueprintEventSchemaInit::default(),
                 functions: BlueprintFunctionsTemplateInit {
                     functions: btreemap!(
-                        "f".to_string() => FunctionTemplateInit {
+                        "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
                             input: LocalTypeIndex::WellKnown(ANY_ID),
                             output: LocalTypeIndex::WellKnown(ANY_ID),

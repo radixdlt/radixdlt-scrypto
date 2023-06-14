@@ -1105,7 +1105,7 @@ mod tests {
     use super::*;
     use radix_engine_interface::schema::{
         BlueprintFunctionsTemplateInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-        FunctionTemplateInit,
+        FunctionSchemaInit,
     };
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
@@ -1284,7 +1284,7 @@ mod tests {
                     events: Default::default(),
                     functions: BlueprintFunctionsTemplateInit {
                         functions: btreemap!(
-                            "f".to_string() => FunctionTemplateInit {
+                            "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
                                 input: LocalTypeIndex::WellKnown(ANY_ID),
                                 output: LocalTypeIndex::WellKnown(UNIT_ID),

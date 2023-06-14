@@ -23,7 +23,7 @@ pub trait DatabaseKeyMapper {
     /// type found inside (see `*_to_db_sort_key()` family).
     fn to_db_sort_key(key: &SubstateKey) -> DbSortKey {
         match key {
-            SubstateKey::Fields(tuple_key) => Self::tuple_to_db_sort_key(tuple_key),
+            SubstateKey::Fields(fields_key) => Self::fields_to_db_sort_key(fields_key),
             SubstateKey::Map(map_key) => Self::map_to_db_sort_key(map_key),
             SubstateKey::Sorted(sorted_key) => Self::sorted_to_db_sort_key(sorted_key),
         }
@@ -35,7 +35,7 @@ pub trait DatabaseKeyMapper {
     fn from_db_sort_key<K: SubstateKeyContent>(db_sort_key: &DbSortKey) -> SubstateKey {
         match K::get_type() {
             SubstateKeyTypeContentType::Tuple => {
-                SubstateKey::Fields(Self::tuple_from_db_sort_key(db_sort_key))
+                SubstateKey::Fields(Self::fields_from_db_sort_key(db_sort_key))
             }
             SubstateKeyTypeContentType::Map => {
                 SubstateKey::Map(Self::map_from_db_sort_key(db_sort_key))
@@ -48,8 +48,8 @@ pub trait DatabaseKeyMapper {
 
     // Type-specific methods for mapping the `SubstateKey` inner data to/from `DbSortKey`:
 
-    fn tuple_to_db_sort_key(tuple_key: &FieldsKey) -> DbSortKey;
-    fn tuple_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldsKey;
+    fn fields_to_db_sort_key(fields_key: &FieldsKey) -> DbSortKey;
+    fn fields_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldsKey;
 
     fn map_to_db_sort_key(map_key: &MapKey) -> DbSortKey;
     fn map_from_db_sort_key(db_sort_key: &DbSortKey) -> MapKey;
@@ -88,11 +88,11 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         (NodeId(bytes), partition_num)
     }
 
-    fn tuple_to_db_sort_key(tuple_key: &FieldsKey) -> DbSortKey {
-        DbSortKey(vec![*tuple_key])
+    fn fields_to_db_sort_key(fields_key: &FieldsKey) -> DbSortKey {
+        DbSortKey(vec![*fields_key])
     }
 
-    fn tuple_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldsKey {
+    fn fields_from_db_sort_key(db_sort_key: &DbSortKey) -> FieldsKey {
         db_sort_key.0[0]
     }
 

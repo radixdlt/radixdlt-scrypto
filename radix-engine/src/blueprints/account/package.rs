@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit,
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionTemplateInit, ReceiverInfo, TypeRef,
+    FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
@@ -65,7 +65,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<AccountCreateAdvancedInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountCreateAdvancedOutput>(),
@@ -75,7 +75,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CREATE_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<AccountCreateInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountCreateOutput>(),
@@ -85,7 +85,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<AccountCreateLocalInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountCreateLocalOutput>(),
@@ -95,7 +95,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_SECURIFY_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountSecurifyInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountSecurifyOutput>(),
@@ -105,7 +105,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_LOCK_FEE_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountLockFeeInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountLockFeeOutput>(),
@@ -115,7 +115,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountLockContingentFeeInput>(),
                 output: aggregator
@@ -126,7 +126,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_DEPOSIT_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountDepositInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountDepositOutput>(),
@@ -136,7 +136,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountDepositBatchInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountDepositBatchOutput>(),
@@ -146,7 +146,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_WITHDRAW_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountWithdrawInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountWithdrawOutput>(),
@@ -156,7 +156,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountWithdrawNonFungiblesInput>(),
@@ -168,7 +168,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_BURN_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountBurnInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountBurnOutput>(),
@@ -178,7 +178,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_BURN_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountBurnNonFungiblesInput>(),
                 output: aggregator
@@ -189,7 +189,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountLockFeeAndWithdrawInput>(),
@@ -201,7 +201,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesInput>(),
@@ -214,7 +214,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CREATE_PROOF_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator.add_child_type_and_descendents::<AccountCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountCreateProofOutput>(),
@@ -224,7 +224,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofOfAmountInput>(),
@@ -236,7 +236,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesInput>(),
@@ -248,7 +248,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(),
@@ -260,7 +260,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleInput>(),
@@ -272,7 +272,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountTryDepositOrRefundInput>(),
@@ -284,7 +284,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundInput>(),
@@ -296,7 +296,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountTryDepositOrAbortInput>(),
                 output: aggregator
@@ -307,7 +307,7 @@ impl AccountNativePackage {
 
         functions.insert(
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortInput>(),

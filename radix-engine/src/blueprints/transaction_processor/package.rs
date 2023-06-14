@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FunctionTemplateInit,
+    BlueprintStateSchemaInit, FunctionSchemaInit,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -29,7 +29,7 @@ impl TransactionProcessorNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
-            FunctionTemplateInit {
+            FunctionSchemaInit {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<TransactionProcessorRunInput>(),
                 output: aggregator

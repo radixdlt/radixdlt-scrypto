@@ -19,7 +19,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema};
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintIndexSchema,
-    FunctionTemplateInit,
+    FunctionSchemaInit,
 };
 use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, TypeRef,
@@ -162,7 +162,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
@@ -173,7 +173,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>(),
@@ -184,7 +184,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>(),
@@ -196,7 +196,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
@@ -207,7 +207,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
@@ -217,7 +217,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
@@ -229,7 +229,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
@@ -240,7 +240,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
@@ -252,7 +252,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
@@ -263,7 +263,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
@@ -274,7 +274,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
@@ -375,7 +375,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>(),
@@ -386,7 +386,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>(),
@@ -397,7 +397,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyInput>(),
@@ -408,7 +408,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>(),
@@ -420,7 +420,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(),
@@ -432,7 +432,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleInput>(),
@@ -444,7 +444,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataInput>(),
@@ -455,7 +455,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerExistsInput>(),
@@ -467,7 +467,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
@@ -480,7 +480,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>(),
@@ -492,7 +492,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
@@ -503,7 +503,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
@@ -513,7 +513,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
@@ -525,7 +525,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
@@ -538,7 +538,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
@@ -549,7 +549,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
@@ -560,7 +560,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
@@ -647,7 +647,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 VAULT_TAKE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
@@ -656,7 +656,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_PUT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
@@ -665,7 +665,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_GET_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
@@ -674,7 +674,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeInput>(),
                     output: aggregator
@@ -684,7 +684,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_RECALL_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
@@ -696,7 +696,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_FREEZE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
@@ -708,7 +708,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_UNFREEZE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
@@ -720,7 +720,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_CREATE_PROOF_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
@@ -729,7 +729,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
@@ -740,7 +740,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
@@ -751,7 +751,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>(),
@@ -763,7 +763,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_BURN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
@@ -864,7 +864,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 VAULT_TAKE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
@@ -873,7 +873,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>(),
@@ -884,7 +884,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_RECALL_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
@@ -896,7 +896,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_FREEZE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
@@ -908,7 +908,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_UNFREEZE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
@@ -920,7 +920,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
@@ -936,7 +936,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_PUT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
@@ -945,7 +945,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_GET_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
@@ -954,7 +954,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>(),
@@ -965,7 +965,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_CREATE_PROOF_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
@@ -974,7 +974,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
@@ -985,7 +985,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>(),
@@ -996,7 +996,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
@@ -1007,7 +1007,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesInput>(
@@ -1020,7 +1020,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 VAULT_BURN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
@@ -1029,7 +1029,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesInput>(),
@@ -1137,7 +1137,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
@@ -1146,7 +1146,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_TAKE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
@@ -1155,7 +1155,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_GET_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
@@ -1164,7 +1164,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
@@ -1175,7 +1175,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_CREATE_PROOF_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
@@ -1184,7 +1184,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
@@ -1195,7 +1195,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
@@ -1206,7 +1206,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
@@ -1217,7 +1217,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
@@ -1285,7 +1285,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
@@ -1294,7 +1294,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_TAKE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
@@ -1304,7 +1304,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 BUCKET_GET_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
@@ -1313,7 +1313,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
@@ -1324,7 +1324,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_CREATE_PROOF_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
@@ -1333,7 +1333,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
@@ -1344,7 +1344,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesInput>(),
                     output: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesOutput>(),
@@ -1353,7 +1353,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
@@ -1364,7 +1364,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
@@ -1375,7 +1375,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
@@ -1386,7 +1386,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesInput>(),
@@ -1398,7 +1398,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
@@ -1466,7 +1466,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 PROOF_DROP_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
@@ -1475,7 +1475,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 PROOF_CLONE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
@@ -1484,7 +1484,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 PROOF_GET_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
@@ -1493,7 +1493,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
@@ -1555,7 +1555,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 PROOF_DROP_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
@@ -1564,7 +1564,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 PROOF_CLONE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
@@ -1573,7 +1573,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 PROOF_GET_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
@@ -1582,7 +1582,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
@@ -1594,7 +1594,7 @@ impl ResourceManagerNativePackage {
 
             functions.insert(
                 NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
@@ -1654,7 +1654,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 WORKTOP_DROP_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
@@ -1663,7 +1663,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_PUT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
@@ -1672,7 +1672,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_TAKE_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
@@ -1681,7 +1681,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
@@ -1692,7 +1692,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_TAKE_ALL_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
                     output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
@@ -1701,7 +1701,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<WorktopAssertContainsInput>(),
@@ -1712,7 +1712,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
@@ -1723,7 +1723,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
@@ -1735,7 +1735,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 WORKTOP_DRAIN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
                     output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
@@ -1786,7 +1786,7 @@ impl ResourceManagerNativePackage {
             let mut functions = BTreeMap::new();
             functions.insert(
                 AUTH_ZONE_POP_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
                     output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
@@ -1795,7 +1795,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_PUSH_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
                     output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
@@ -1804,7 +1804,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
                     output: aggregator
@@ -1814,7 +1814,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
@@ -1825,7 +1825,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
@@ -1837,7 +1837,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
@@ -1848,7 +1848,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_CLEAR_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
                     output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
@@ -1857,7 +1857,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
@@ -1868,7 +1868,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_DRAIN_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
                     output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
@@ -1877,7 +1877,7 @@ impl ResourceManagerNativePackage {
             );
             functions.insert(
                 AUTH_ZONE_DROP_IDENT.to_string(),
-                FunctionTemplateInit {
+                FunctionSchemaInit {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),

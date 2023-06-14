@@ -570,7 +570,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate functions
                     let functions = {
-                        let mut functions: BTreeMap<String, FunctionTemplateInit> = BTreeMap::new();
+                        let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
                         #(
                             functions.insert(#fn_names.to_string(), #fn_schemas);
                         )*
@@ -1224,7 +1224,7 @@ fn generate_schema(
                     if receiver.is_none() {
                         function_idents.push(m.sig.ident.clone());
                         fn_schemas.push(parse_quote! {
-                            FunctionTemplateInit {
+                            FunctionSchemaInit {
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
@@ -1234,7 +1234,7 @@ fn generate_schema(
                     } else {
                         method_idents.push(m.sig.ident.clone());
                         fn_schemas.push(parse_quote! {
-                            FunctionTemplateInit {
+                            FunctionSchemaInit {
                                 receiver: Option::Some(#receiver),
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
@@ -1465,10 +1465,10 @@ mod tests {
                             };
 
                             let functions = {
-                                let mut functions: BTreeMap<String, FunctionTemplateInit> = BTreeMap::new();
+                                let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
                                 functions.insert(
                                     "x".to_string(),
-                                    FunctionTemplateInit {
+                                    FunctionSchemaInit {
                                         receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
                                         input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
                                         output: aggregator.add_child_type_and_descendents::<u32>(),
@@ -1477,7 +1477,7 @@ mod tests {
                                 );
                                 functions.insert(
                                     "y".to_string(),
-                                    FunctionTemplateInit {
+                                    FunctionSchemaInit {
                                         receiver: Option::None,
                                         input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
                                         output: aggregator.add_child_type_and_descendents::<u32>(),
