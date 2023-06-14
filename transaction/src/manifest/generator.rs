@@ -1407,7 +1407,7 @@ where
 mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
-    use crate::manifest::parser::Parser;
+    use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
     use crate::signing::secp256k1::Secp256k1PrivateKey;
     use radix_engine_common::manifest_args;
     use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
@@ -1427,7 +1427,9 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_ok {
         ( $s:expr,   $expected:expr ) => {{
-            let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
+            let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
+                .parse_value()
+                .unwrap();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_value(
@@ -1447,7 +1449,7 @@ mod tests {
         ( $s:expr, $expected:expr $(,)? ) => {{
             // If you use the following output for test cases, make sure you've checked the diff
             // println!("{}", crate::manifest::decompile(&[$expected.clone()], &NetworkDefinition::simulator()).unwrap());
-            let instruction = Parser::new(tokenize($s).unwrap())
+            let instruction = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
                 .parse_instruction()
                 .unwrap();
             let mut id_validator = ManifestValidator::new();
@@ -1468,7 +1470,9 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
-            let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
+            let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
+                .parse_value()
+                .unwrap();
             match generate_value(
                 &value,
                 None,
