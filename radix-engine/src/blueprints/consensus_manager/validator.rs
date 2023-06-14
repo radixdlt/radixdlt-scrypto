@@ -31,9 +31,6 @@ use super::{
 /// operations on any validator's owner's stake units vault.
 pub const OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT: usize = 100;
 
-/// A validator fee of newly-created validators.
-pub const DEFAULT_VALIDATOR_FEE_FACTOR: Decimal = Decimal::ONE;
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
     /// A key used internally for storage of registered validators sorted by their stake descending.
@@ -467,12 +464,8 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // only allow a proper fraction
-        if new_fee_factor.is_negative() || new_fee_factor > Decimal::one() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ValidatorError(ValidatorError::InvalidValidatorFeeFactor),
-            ));
-        }
+        // check if new fee is valid
+        check_validator_fee_factor(new_fee_factor)?;
 
         // read the current epoch
         let consensus_manager_handle = api.actor_lock_field(
@@ -915,6 +908,16 @@ impl ValidatorBlueprint {
     }
 }
 
+fn check_validator_fee_factor(fee_factor: Decimal) -> Result<(), RuntimeError> {
+    // only allow a proper fraction
+    if fee_factor.is_negative() || fee_factor > Decimal::one() {
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::ValidatorError(ValidatorError::InvalidValidatorFeeFactor),
+        ));
+    }
+    Ok(())
+}
+
 fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     // Note: XRD max supply is 24bn
     // 24bn / MAX::16 = 366210.9375 - so 100k as a divisor here is sensible.
@@ -1014,11 +1017,15 @@ impl ValidatorCreator {
     pub fn create<Y>(
         key: Secp256k1PublicKey,
         is_registered: bool,
+        fee_factor: Decimal,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        // check if validator fee is valid
+        check_validator_fee_factor(fee_factor)?;
+
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: CONSENSUS_MANAGER_PACKAGE,
             blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
@@ -1036,7 +1043,7 @@ impl ValidatorCreator {
             sorted_key: None,
             key,
             is_registered,
-            validator_fee_factor: DEFAULT_VALIDATOR_FEE_FACTOR,
+            validator_fee_factor: fee_factor,
             validator_fee_change_request: None,
             stake_unit_resource,
             unstake_nft,

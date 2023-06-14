@@ -666,7 +666,7 @@ impl TestRunner {
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 10.into())
-            .create_validator(pub_key)
+            .create_validator(pub_key, Decimal::ONE)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
