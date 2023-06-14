@@ -34,7 +34,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let mut functions = BTreeMap::new();
     functions.insert(
         "f".to_string(),
-        FunctionTemplateInit {
+        FunctionSchemaInit {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -91,7 +91,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     let mut functions = BTreeMap::new();
     functions.insert(
         "f".to_string(),
-        FunctionTemplateInit {
+        FunctionSchemaInit {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
@@ -148,7 +148,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     let mut functions = BTreeMap::new();
     functions.insert(
         "f".to_string(),
-        FunctionTemplateInit {
+        FunctionSchemaInit {
             receiver: None,
             input: LocalTypeIndex::WellKnown(ANY_ID),
             output: aggregator.add_child_type_and_descendents::<()>(),
