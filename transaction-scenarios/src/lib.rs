@@ -22,6 +22,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 //====================================================================================
 
 pub mod accounts;
+#[allow(unused)] // Some things are only used in std build
 pub mod runners;
 pub mod scenario;
 pub mod scenarios;

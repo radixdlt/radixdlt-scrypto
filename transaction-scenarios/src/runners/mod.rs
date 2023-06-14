@@ -11,7 +11,6 @@ use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
 
 use crate::{internal_prelude::*, scenarios::get_builder_for_every_scenario};
 
-#[allow(unused)]
 pub struct RunnerContext {
     #[cfg(feature = "std")]
     pub dump_manifest_root: Option<std::path::PathBuf>,
