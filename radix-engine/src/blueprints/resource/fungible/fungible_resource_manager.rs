@@ -3,8 +3,10 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
+use lazy_static::lazy_static;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::runtime::Runtime;
+use num_traits::pow::Pow;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
@@ -15,6 +17,10 @@ use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
+
+lazy_static! {
+    static ref MAX_MINT_AMOUNT: Decimal = Decimal(BnumI256::from(2).pow(160)); // 2^160 subunits
+}
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -40,7 +46,7 @@ pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-fn check_new_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
+fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
     if !check_fungible_amount(&amount, divisibility) {
         return Err(RuntimeError::ApplicationError(
             ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
@@ -50,8 +56,7 @@ fn check_new_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeErro
         ));
     }
 
-    // TODO: refactor this into mint function
-    if amount > dec!("1000000000000000000") {
+    if amount > *MAX_MINT_AMOUNT {
         return Err(RuntimeError::ApplicationError(
             ApplicationError::ResourceManagerError(
                 FungibleResourceManagerError::MaxMintAmountExceeded,
@@ -160,7 +165,7 @@ impl FungibleResourceManagerBlueprint {
             btreemap!(),
         )?;
 
-        check_new_amount(divisibility, initial_supply)?;
+        check_mint_amount(divisibility, initial_supply)?;
 
         let (resource_address, bucket) = globalize_fungible_with_initial_supply(
             object_id,
@@ -189,7 +194,7 @@ impl FungibleResourceManagerBlueprint {
         };
 
         // check amount
-        check_new_amount(divisibility, amount)?;
+        check_mint_amount(divisibility, amount)?;
 
         let bucket = Self::create_bucket(amount, api)?;
 

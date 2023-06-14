@@ -677,6 +677,7 @@ dependencies = [
  "lazy_static",
  "moka",
  "native-sdk",
+ "num-traits",
  "parity-wasm",
  "paste",
  "radix-engine-common",
