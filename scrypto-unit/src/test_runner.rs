@@ -134,6 +134,7 @@ pub struct CustomGenesis {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub faucet_supply: Decimal,
 }
 
 impl CustomGenesis {
@@ -192,6 +193,7 @@ impl CustomGenesis {
             initial_epoch,
             initial_config,
             initial_time_ms: 0,
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
         }
     }
 }
@@ -236,6 +238,7 @@ impl TestRunnerBuilder {
                     custom_genesis.initial_epoch,
                     custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
+                    *DEFAULT_TESTING_FAUCET_SUPPLY,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
@@ -699,7 +702,7 @@ impl TestRunner {
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 10.into())
-            .create_validator(pub_key)
+            .create_validator(pub_key, Decimal::ONE)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,

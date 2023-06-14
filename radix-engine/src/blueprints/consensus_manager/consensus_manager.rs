@@ -464,12 +464,14 @@ impl ConsensusManagerBlueprint {
 
     pub(crate) fn create_validator<Y>(
         key: EcdsaSecp256k1PublicKey,
+        fee_factor: Decimal,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let (validator_address, owner_token_bucket) = ValidatorCreator::create(key, false, api)?;
+        let (validator_address, owner_token_bucket) =
+            ValidatorCreator::create(key, false, fee_factor, api)?;
 
         Ok((validator_address, owner_token_bucket))
     }

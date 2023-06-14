@@ -31,9 +31,6 @@ use super::{
 /// operations on any validator's owner's stake units vault.
 pub const OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT: usize = 100;
 
-/// A validator fee of newly-created validators.
-pub const DEFAULT_VALIDATOR_FEE_FACTOR: Decimal = Decimal::ONE;
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
     /// A key used internally for storage of registered validators sorted by their stake descending.
@@ -467,12 +464,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // only allow a proper fraction
-        if new_fee_factor.is_negative() || new_fee_factor > Decimal::one() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ValidatorError(ValidatorError::InvalidValidatorFeeFactor),
-            ));
-        }
+        check_validator_fee_factor(new_fee_factor)?;
 
         // read the current epoch
         let consensus_manager_handle = api.actor_lock_field(
@@ -1032,11 +1024,14 @@ impl ValidatorCreator {
     pub fn create<Y>(
         key: EcdsaSecp256k1PublicKey,
         is_registered: bool,
+        fee_factor: Decimal,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        check_validator_fee_factor(fee_factor)?;
+
         let address = GlobalAddress::new_or_panic(
             api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
         );
@@ -1053,7 +1048,7 @@ impl ValidatorCreator {
             sorted_key: None,
             key,
             is_registered,
-            validator_fee_factor: DEFAULT_VALIDATOR_FEE_FACTOR,
+            validator_fee_factor: fee_factor,
             validator_fee_change_request: None,
             stake_unit_resource,
             unstake_nft,
@@ -1089,6 +1084,16 @@ impl ValidatorCreator {
             owner_token_bucket,
         ))
     }
+}
+
+fn check_validator_fee_factor(fee_factor: Decimal) -> Result<(), RuntimeError> {
+    // only allow a proper fraction
+    if fee_factor.is_negative() || fee_factor > Decimal::one() {
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::ValidatorError(ValidatorError::InvalidValidatorFeeFactor),
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
