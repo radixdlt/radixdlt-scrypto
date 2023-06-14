@@ -5,7 +5,7 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{
-    ApplicationError, BlueprintSchemaValidationError, RuntimeError, SystemModuleError,
+    ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemModuleError,
 };
 use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
@@ -57,8 +57,8 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
-            BlueprintSchemaValidationError::DoesNotExist(BlueprintSchemaIdent::Event(event)),
+        RuntimeError::SystemModuleError(SystemModuleError::PayloadValidationAgainstSchemaError(
+                                            PayloadValidationAgainstSchemaError::DoesNotExist(BlueprintSchemaIdent::Event(event)),
         )) if event.eq("UnregisteredEvent") => true,
         _ => false,
     });

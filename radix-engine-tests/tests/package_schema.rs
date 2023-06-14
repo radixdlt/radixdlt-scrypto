@@ -32,7 +32,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
                 matches!(
                     e,
                     RuntimeError::SystemModuleError(
-                        SystemModuleError::BlueprintSchemaValidationError(..)
+                        SystemModuleError::PayloadValidationAgainstSchemaError(..)
                     )
                 )
             });
@@ -42,7 +42,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
                 matches!(
                     e,
                     RuntimeError::SystemModuleError(
-                        SystemModuleError::BlueprintSchemaValidationError(..)
+                        SystemModuleError::PayloadValidationAgainstSchemaError(..)
                     )
                 )
             });

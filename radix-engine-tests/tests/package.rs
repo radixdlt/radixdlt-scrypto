@@ -224,7 +224,7 @@ fn bad_function_schema_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..))
+            RuntimeError::SystemModuleError(SystemModuleError::PayloadValidationAgainstSchemaError(..))
         )
     });
 }

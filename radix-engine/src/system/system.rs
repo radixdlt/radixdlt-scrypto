@@ -4,7 +4,7 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::blueprints::package::PackageNativePackage;
 use crate::errors::{
-    ApplicationError, BlueprintSchemaValidationError, CannotGlobalizeError, CreateObjectError,
+    ApplicationError, PayloadValidationAgainstSchemaError, CannotGlobalizeError, CreateObjectError,
     InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
@@ -266,8 +266,8 @@ where
                 )
                 .map_err(|err| {
                     RuntimeError::SystemModuleError(
-                        SystemModuleError::BlueprintSchemaValidationError(
-                            BlueprintSchemaValidationError::SchemaValidationError(
+                        SystemModuleError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::SchemaValidationError(
                                 err.error_message(schema),
                             ),
                         ),
@@ -279,8 +279,8 @@ where
                     Some(instance_schema) => instance_schema,
                     None => {
                         return Err(RuntimeError::SystemModuleError(
-                            SystemModuleError::BlueprintSchemaValidationError(
-                                BlueprintSchemaValidationError::InstanceSchemaDoesNotExist,
+                            SystemModuleError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
                             ),
                         ));
                     }
@@ -299,8 +299,8 @@ where
                 )
                 .map_err(|err| {
                     RuntimeError::SystemModuleError(
-                        SystemModuleError::BlueprintSchemaValidationError(
-                            BlueprintSchemaValidationError::SchemaValidationError(
+                        SystemModuleError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::SchemaValidationError(
                                 err.error_message(&instance_schema.schema),
                             ),
                         ),
@@ -335,8 +335,8 @@ where
                 .get_pointer(&blueprint_interface)
                 .ok_or_else(|| {
                     RuntimeError::SystemModuleError(
-                        SystemModuleError::BlueprintSchemaValidationError(
-                            BlueprintSchemaValidationError::DoesNotExist(schema_ident.clone()),
+                        SystemModuleError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::DoesNotExist(schema_ident.clone()),
                         ),
                     )
                 })?;
@@ -530,8 +530,8 @@ where
                     .get(collection_index as usize)
                     .ok_or_else(|| {
                         RuntimeError::SystemModuleError(
-                            SystemModuleError::BlueprintSchemaValidationError(
-                                BlueprintSchemaValidationError::CollectionDoesNotExist,
+                            SystemModuleError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::CollectionDoesNotExist,
                             ),
                         )
                     })?
@@ -942,24 +942,6 @@ where
             }
         };
 
-        if !global_address.as_node_id().eq(RADIX_TOKEN.as_node_id()) {
-            // Check module configuration
-            let module_ids = modules
-                .keys()
-                .cloned()
-                .collect::<BTreeSet<ObjectModuleId>>();
-            let standard_object = btreeset!(
-                ObjectModuleId::Main,
-                ObjectModuleId::Metadata,
-                ObjectModuleId::Royalty,
-                ObjectModuleId::AccessRules
-            );
-            if module_ids != standard_object {
-                return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                    Box::new(InvalidModuleSet(module_ids)),
-                )));
-            }
-        }
 
         // Check blueprint id
         let reserved_blueprint_id = {
@@ -980,6 +962,36 @@ where
                 _ => unreachable!(),
             }
         };
+
+        // Check module configuration
+        // TODO: Move this to be a blueprint configuration
+        let expected_modules = if reserved_blueprint_id.package_address.eq(&RESOURCE_PACKAGE) && (
+            reserved_blueprint_id.blueprint_name.eq(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
+                || reserved_blueprint_id.blueprint_name.eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)) {
+            btreeset!(
+                ObjectModuleId::Main,
+                ObjectModuleId::Metadata,
+                ObjectModuleId::AccessRules
+            )
+        } else {
+            btreeset!(
+                ObjectModuleId::Main,
+                ObjectModuleId::Metadata,
+                ObjectModuleId::Royalty,
+                ObjectModuleId::AccessRules
+            )
+        };
+        let module_ids = modules
+            .keys()
+            .cloned()
+            .collect::<BTreeSet<ObjectModuleId>>();
+        if module_ids != expected_modules {
+            return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
+                Box::new(InvalidModuleSet(module_ids)),
+            )));
+        }
+
+
 
         // Read the type info
         let node_id = modules
@@ -1012,6 +1024,7 @@ where
             .as_typed()
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
+
 
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {

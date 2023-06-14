@@ -173,7 +173,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 fn globalize_package<Y, L: Default>(
     package_address_reservation: Option<GlobalAddressReservation>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
-    blueprint_config: BTreeMap<String, BlueprintDependencies>,
+    blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
 
     schemas: BTreeMap<Hash, ScryptoSchema>,
     code: PackageCodeSubstate,
@@ -237,7 +237,7 @@ where
     };
 
     {
-        let minor_version_configs = blueprint_config
+        let minor_version_configs = blueprint_dependencies
             .into_iter()
             .map(|(blueprint, minor_version_config)| {
                 let key = BlueprintVersionKey {
@@ -446,14 +446,6 @@ where
         }
 
         api.kernel_drop_node(access_rules.0.as_node_id())?;
-        /*
-        for (partition, substates) in node_substates {
-            // TODO: Cleanup
-            let offset = partition.0 - MAIN_BASE_PARTITION.0;
-            let partition_num = ACCESS_RULES_BASE_PARTITION.at_offset(PartitionOffset(offset)).unwrap();
-            partitions.insert(partition_num, substates);
-        }
-         */
     }
 
     Ok(package_address)
@@ -1325,7 +1317,7 @@ impl PackageAuthNativeBlueprint {
             Some(template) => template,
             None => {
                 return Err(RuntimeError::SystemError(
-                    SystemError::BlueprintTemplateDoesNotExist(package_bp_version_id),
+                    SystemError::AuthTemplateDoesNotExist(package_bp_version_id),
                 ))
             }
         };

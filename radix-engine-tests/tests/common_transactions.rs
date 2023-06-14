@@ -28,7 +28,7 @@ fn test_allocate_address_and_call_it() {
         (manifest, vec![code_blob])
     })
     .expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(..)) => true,
+        RuntimeError::SystemError(SystemError::AuthTemplateDoesNotExist(..)) => true,
         _ => false,
     });
 }

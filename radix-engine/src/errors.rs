@@ -231,7 +231,7 @@ pub enum SystemError {
     InvalidFeature(String),
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(PackageBlueprintVersionId),
-    BlueprintTemplateDoesNotExist(PackageBlueprintVersionId),
+    AuthTemplateDoesNotExist(PackageBlueprintVersionId),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
     InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
@@ -276,7 +276,7 @@ pub enum CreateObjectError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemModuleError {
-    BlueprintSchemaValidationError(BlueprintSchemaValidationError),
+    PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
@@ -285,7 +285,7 @@ pub enum SystemModuleError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum BlueprintSchemaValidationError {
+pub enum PayloadValidationAgainstSchemaError {
     BlueprintDoesNotExist(BlueprintId),
     CollectionDoesNotExist,
     DoesNotExist(BlueprintSchemaIdent),
