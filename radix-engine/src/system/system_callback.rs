@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::RefTypes;
+use radix_engine_interface::schema::{InstanceSchema, RefTypes};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -146,9 +146,14 @@ impl Default for SystemLockData {
 pub enum KeyValueEntryLockData {
     Read,
     Write {
-        schema_origin: SchemaOrigin,
         schema: ScryptoSchema,
         index: LocalTypeIndex,
+        can_own: bool,
+    },
+    BlueprintWrite {
+        blueprint_id: BlueprintId,
+        instance_schema: Option<InstanceSchema>,
+        schema_pointer: SchemaPointer,
         can_own: bool,
     },
 }

@@ -238,15 +238,15 @@ where
                     index,
                     SchemaOrigin::Blueprint(blueprint_id.clone()),
                 )
-                    .map_err(|err| {
-                        RuntimeError::SystemModuleError(
-                            SystemModuleError::BlueprintSchemaValidationError(
-                                BlueprintSchemaValidationError::SchemaValidationError(
-                                    err.error_message(schema),
-                                ),
+                .map_err(|err| {
+                    RuntimeError::SystemModuleError(
+                        SystemModuleError::BlueprintSchemaValidationError(
+                            BlueprintSchemaValidationError::SchemaValidationError(
+                                err.error_message(schema),
                             ),
-                        )
-                    })?;
+                        ),
+                    )
+                })?;
             }
             SchemaPointer::Instance(instance_index) => {
                 let instance_schema = match instance_schema.as_ref() {
@@ -271,15 +271,15 @@ where
                     index,
                     SchemaOrigin::Instance,
                 )
-                    .map_err(|err| {
-                        RuntimeError::SystemModuleError(
-                            SystemModuleError::BlueprintSchemaValidationError(
-                                BlueprintSchemaValidationError::SchemaValidationError(
-                                    err.error_message(&instance_schema.schema),
-                                ),
+                .map_err(|err| {
+                    RuntimeError::SystemModuleError(
+                        SystemModuleError::BlueprintSchemaValidationError(
+                            BlueprintSchemaValidationError::SchemaValidationError(
+                                err.error_message(&instance_schema.schema),
                             ),
-                        )
-                    })?;
+                        ),
+                    )
+                })?;
             }
         }
 
@@ -309,7 +309,13 @@ where
                     )
                 })?;
 
-            self.validate_schema_pointer(blueprint_id, instance_schema, schema_pointer, payload, Some(&mut schema_cache))?;
+            self.validate_schema_pointer(
+                blueprint_id,
+                instance_schema,
+                schema_pointer,
+                payload,
+                Some(&mut schema_cache),
+            )?;
 
             schema_pointers.push((schema_pointer, can_own));
         }
@@ -833,15 +839,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<
-        (
-            NodeId,
-            PartitionNumber,
-            SchemaPointer,
-            ObjectInfo,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(NodeId, PartitionNumber, SchemaPointer, ObjectInfo), RuntimeError> {
         let (node_id, base_partition, info, definition) =
             self.get_actor_schema(actor_object_type)?;
 
@@ -855,7 +853,6 @@ where
                     field_index,
                 ))
             })?;
-
 
         if let Condition::IfFeature(feature) = field_schema.condition {
             if !info.features.contains(&feature) {
@@ -871,7 +868,6 @@ where
         let partition_num = base_partition
             .at_offset(partition_offset)
             .expect("Module number overflow");
-
 
         Ok((node_id, partition_num, pointer, info))
     }
@@ -1229,7 +1225,7 @@ where
                     &None, // TODO: Change to Some, once support for generic fields is implemented
                     schema_pointer,
                     &buffer,
-                    None
+                    None,
                 )?;
             }
             _ => {
@@ -1609,7 +1605,9 @@ where
     fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
-            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write { .. }) => {}
+            SystemLockData::KeyValueEntry(
+                KeyValueEntryLockData::Write { .. } | KeyValueEntryLockData::BlueprintWrite { .. },
+            ) => {}
             _ => {
                 return Err(RuntimeError::SystemError(
                     SystemError::NotAKeyValueWriteLock,
@@ -1652,33 +1650,36 @@ where
     ) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
-        let substate = match data {
+        let can_own = match data {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
+                blueprint_id,
+                instance_schema,
+                schema_pointer,
+                can_own,
+            }) => {
+                self.validate_schema_pointer(
+                    &blueprint_id,
+                    &instance_schema,
+                    schema_pointer,
+                    &buffer,
+                    None,
+                )?;
+
+                can_own
+            }
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema_origin,
                 schema,
                 index,
                 can_own,
             }) => {
-                self.validate_payload(&buffer, &schema, index, schema_origin)
+                self.validate_payload(&buffer, &schema, index, SchemaOrigin::KeyValueStore {})
                     .map_err(|e| {
                         RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
                             e.error_message(&schema),
                         ))
                     })?;
 
-                let substate = IndexedScryptoValue::from_slice(&buffer)
-                    .expect("Should be valid due to payload check");
-
-                if !can_own {
-                    let own = substate.owned_nodes();
-                    if !own.is_empty() {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::InvalidKeyValueStoreOwnership,
-                        ));
-                    }
-                }
-
-                substate
+                can_own
             }
             _ => {
                 return Err(RuntimeError::SystemError(
@@ -1686,6 +1687,18 @@ where
                 ));
             }
         };
+
+        let substate =
+            IndexedScryptoValue::from_slice(&buffer).expect("Should be valid due to payload check");
+
+        if !can_own {
+            let own = substate.owned_nodes();
+            if !own.is_empty() {
+                return Err(RuntimeError::SystemError(
+                    SystemError::InvalidKeyValueStoreOwnership,
+                ));
+            }
+        }
 
         let value = substate.as_scrypto_value().clone();
         let kv_entry = KeyValueEntrySubstate::entry(value);
@@ -1782,7 +1795,6 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema_origin: SchemaOrigin::KeyValueStore {},
                 schema: info.schema.schema,
                 index: info.schema.value,
                 can_own: info.schema.can_own,
@@ -2252,29 +2264,11 @@ where
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
-            let can_own = kv_schema.can_own;
-            match kv_schema.value {
-                SchemaPointer::Package(schema_hash, index) => {
-                    let schema = self.get_schema(
-                        object_info.blueprint_id.package_address.as_node_id(),
-                        &schema_hash,
-                    )?;
-                    KeyValueEntryLockData::Write {
-                        schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
-                        schema,
-                        index,
-                        can_own,
-                    }
-                }
-                SchemaPointer::Instance(instance_index) => {
-                    let mut instance_schema = object_info.instance_schema.unwrap();
-                    KeyValueEntryLockData::Write {
-                        schema_origin: SchemaOrigin::Instance {},
-                        schema: instance_schema.schema,
-                        index: instance_schema.type_index.remove(instance_index as usize),
-                        can_own,
-                    }
-                }
+            KeyValueEntryLockData::BlueprintWrite {
+                blueprint_id: object_info.blueprint_id,
+                instance_schema: object_info.instance_schema,
+                schema_pointer: kv_schema.value,
+                can_own: kv_schema.can_own,
             }
         } else {
             KeyValueEntryLockData::Read
