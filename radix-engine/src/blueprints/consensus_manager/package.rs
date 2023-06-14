@@ -11,7 +11,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
@@ -174,7 +174,7 @@ impl ConsensusManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
@@ -355,7 +355,7 @@ impl ConsensusManagerNativePackage {
                     },
                 },
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {

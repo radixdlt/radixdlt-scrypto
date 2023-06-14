@@ -608,7 +608,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     dependencies.insert(#dependency_exprs.into());
                 })*
 
-                let auth_template = {
+                let auth_config = {
                     let auth = method_auth_template();
                     let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
                         auth,
@@ -616,7 +616,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     };
                     method_auth.add_metadata_default_if_not_specified();
 
-                    scrypto::blueprints::package::AuthTemplate {
+                    scrypto::blueprints::package::AuthConfig {
                         method_auth,
                         function_auth: function_auth(),
                     }
@@ -629,7 +629,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     dependencies,
                     feature_set: BTreeSet::new(),
                     schema,
-                    auth_template,
+                    auth_config,
                     royalty_config,
                 };
 
@@ -1510,7 +1510,7 @@ mod tests {
 
                         let mut dependencies = BTreeSet::new();
 
-                        let auth_template = {
+                        let auth_config = {
                             let auth = method_auth_template();
                             let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
                                 auth,
@@ -1518,7 +1518,7 @@ mod tests {
                             };
                             method_auth.add_metadata_default_if_not_specified();
 
-                            scrypto::blueprints::package::AuthTemplate {
+                            scrypto::blueprints::package::AuthConfig {
                                 method_auth,
                                 function_auth: function_auth(),
                             }
@@ -1531,7 +1531,7 @@ mod tests {
                             dependencies,
                             feature_set: BTreeSet::new(),
                             schema,
-                            auth_template,
+                            auth_config,
                             royalty_config,
                         };
 

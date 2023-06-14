@@ -12,7 +12,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission};
@@ -157,7 +157,7 @@ impl PoolNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
@@ -315,7 +315,7 @@ impl PoolNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
@@ -476,7 +476,7 @@ impl PoolNativePackage {
                     },
                 },
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),

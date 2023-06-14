@@ -118,11 +118,11 @@ impl CallMethod {
         })?;
 
         let (schema, index) = match function_schema.input {
-            SchemaPointer::Package(schema_hash, index) => {
+            TypePointer::Package(schema_hash, index) => {
                 let schema = export_schema(bp_id.package_address, schema_hash)?;
                 (schema, index)
             }
-            SchemaPointer::Instance(instance_index) => {
+            TypePointer::Instance(instance_index) => {
                 let object_info = export_object_info(component_address)?;
                 match object_info.instance_schema {
                     None => {

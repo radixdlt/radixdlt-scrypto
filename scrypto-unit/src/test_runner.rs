@@ -29,9 +29,9 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate,
     PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
-    SchemaPointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
     PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -1519,7 +1519,7 @@ impl TestRunner {
         };
 
         match schema_pointer {
-            SchemaPointer::Package(schema_hash, index) => {
+            TypePointer::Package(schema_hash, index) => {
                 let schema = self
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
@@ -1535,7 +1535,7 @@ impl TestRunner {
 
                 (index, schema)
             }
-            SchemaPointer::Instance(_instance_index) => {
+            TypePointer::Instance(_instance_index) => {
                 todo!()
             }
         }
@@ -1716,7 +1716,7 @@ pub fn single_function_package_definition(
             },
 
             royalty_config: RoyaltyConfig::default(),
-            auth_template: AuthTemplate {
+            auth_config: AuthConfig {
                 function_auth: btreemap!(
                     function_name.to_string() => rule!(allow_all),
                 ),

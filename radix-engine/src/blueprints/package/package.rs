@@ -141,7 +141,7 @@ fn globalize_package<Y, L: Default>(
 
     package_royalties: BTreeMap<String, RoyaltyConfig>,
 
-    blueprint_auth_template: BTreeMap<String, AuthTemplate>,
+    blueprint_auth_template: BTreeMap<String, AuthConfig>,
 
     metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
@@ -487,7 +487,7 @@ impl PackageNativePackage {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
-                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<AuthTemplate>()),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<AuthConfig>()),
                 can_own: false,
             },
         ));
@@ -556,7 +556,7 @@ impl PackageNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
                         PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
@@ -681,7 +681,7 @@ impl PackageNativePackage {
 
         {
             for (blueprint, definition_init) in setup.blueprints {
-                blueprint_auth_templates.insert(blueprint.clone(), definition_init.auth_template);
+                blueprint_auth_templates.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
@@ -694,8 +694,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: SchemaPointer::Package(schema_hash, setup.input),
-                            output: SchemaPointer::Package(schema_hash, setup.output),
+                            input: TypePointer::Package(schema_hash, setup.input),
+                            output: TypePointer::Package(schema_hash, setup.output),
                         },
                     );
                     let export = PackageExport {
@@ -710,7 +710,7 @@ impl PackageNativePackage {
                     .events
                     .event_schema
                     .into_iter()
-                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
+                    .map(|(key, index)| (key, TypePointer::Package(schema_hash, index)))
                     .collect();
 
                 let definition = BlueprintDefinition {
@@ -903,7 +903,7 @@ impl PackageNativePackage {
         // Build node init
         {
             for (blueprint, definition_init) in setup.blueprints {
-                auth_templates.insert(blueprint.clone(), definition_init.auth_template);
+                auth_templates.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
@@ -916,8 +916,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: SchemaPointer::Package(schema_hash, setup.input),
-                            output: SchemaPointer::Package(schema_hash, setup.output),
+                            input: TypePointer::Package(schema_hash, setup.input),
+                            output: TypePointer::Package(schema_hash, setup.output),
                         },
                     );
                     let export = PackageExport {
@@ -932,7 +932,7 @@ impl PackageNativePackage {
                     .events
                     .event_schema
                     .into_iter()
-                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
+                    .map(|(key, index)| (key, TypePointer::Package(schema_hash, index)))
                     .collect();
 
                 let definition = BlueprintDefinition {
@@ -1231,7 +1231,7 @@ impl PackageAuthNativeBlueprint {
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
-    ) -> Result<AuthTemplate, RuntimeError>
+    ) -> Result<AuthConfig, RuntimeError>
     where
         Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
@@ -1265,7 +1265,7 @@ impl PackageAuthNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let auth_template: KeyValueEntrySubstate<AuthTemplate> =
+        let auth_template: KeyValueEntrySubstate<AuthConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 

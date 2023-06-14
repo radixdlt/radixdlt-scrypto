@@ -49,7 +49,7 @@ pub enum KeyValueEntryLockData {
     BlueprintWrite {
         blueprint_id: BlueprintId,
         instance_schema: Option<InstanceSchema>,
-        schema_pointer: SchemaPointer,
+        schema_pointer: TypePointer,
         can_own: bool,
     },
 }
@@ -59,7 +59,7 @@ pub enum FieldLockData {
     Read,
     Write {
         blueprint_id: BlueprintId,
-        schema_pointer: SchemaPointer,
+        schema_pointer: TypePointer,
     },
 }
 
@@ -73,7 +73,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub blueprint_cache: NonIterMap<PackageBlueprintVersionId, BlueprintDefinition>,
     pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
-    pub auth_cache: NonIterMap<PackageBlueprintVersionId, AuthTemplate>,
+    pub auth_cache: NonIterMap<PackageBlueprintVersionId, AuthConfig>,
     pub modules: SystemModuleMixer,
 }
 

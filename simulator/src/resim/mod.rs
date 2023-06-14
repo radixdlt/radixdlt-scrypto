@@ -70,7 +70,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, SchemaPointer,
+    BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
     PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -463,7 +463,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     match schema_pointer {
-        SchemaPointer::Package(schema_hash, index) => {
+        TypePointer::Package(schema_hash, index) => {
             let schema = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                     package_address.as_node_id(),
@@ -478,7 +478,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
 
             Some((index, schema))
         }
-        SchemaPointer::Instance(..) => {
+        TypePointer::Instance(..) => {
             todo!()
         }
     }

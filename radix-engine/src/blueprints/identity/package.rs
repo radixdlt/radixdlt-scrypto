@@ -18,7 +18,7 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -110,7 +110,7 @@ impl IdentityNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                         IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),

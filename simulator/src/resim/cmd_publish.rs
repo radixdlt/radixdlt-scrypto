@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedBlueprintStateSchema,
-    PackageExport, SchemaPointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    PackageExport, TypePointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
     PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
@@ -119,8 +119,8 @@ impl Publish {
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: SchemaPointer::Package(schema_hash, setup.input),
-                            output: SchemaPointer::Package(schema_hash, setup.output),
+                            input: TypePointer::Package(schema_hash, setup.input),
+                            output: TypePointer::Package(schema_hash, setup.output),
                         },
                     );
                     let export = PackageExport {
@@ -135,7 +135,7 @@ impl Publish {
                     .events
                     .event_schema
                     .into_iter()
-                    .map(|(key, index)| (key, SchemaPointer::Package(schema_hash, index)))
+                    .map(|(key, index)| (key, TypePointer::Package(schema_hash, index)))
                     .collect();
 
                 let def = BlueprintDefinition {

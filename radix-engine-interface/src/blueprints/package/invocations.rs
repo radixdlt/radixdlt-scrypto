@@ -98,7 +98,7 @@ pub struct BlueprintDefinitionInit {
     pub schema: BlueprintSchemaInit,
 
     pub royalty_config: RoyaltyConfig,
-    pub auth_template: AuthTemplate,
+    pub auth_config: AuthConfig,
 }
 
 impl Default for BlueprintDefinitionInit {
@@ -109,13 +109,13 @@ impl Default for BlueprintDefinitionInit {
             feature_set: BTreeSet::default(),
             schema: BlueprintSchemaInit::default(),
             royalty_config: RoyaltyConfig::default(),
-            auth_template: AuthTemplate::default(),
+            auth_config: AuthConfig::default(),
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct AuthTemplate {
+pub struct AuthConfig {
     pub function_auth: BTreeMap<String, AccessRule>,
     pub method_auth: MethodAuthTemplate,
 }

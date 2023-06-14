@@ -162,7 +162,7 @@ impl BlueprintSchemaIdent {
     pub fn get_pointer(
         &self,
         blueprint_interface: &BlueprintInterface,
-    ) -> Option<(SchemaPointer, bool)> {
+    ) -> Option<(TypePointer, bool)> {
         match self {
             BlueprintSchemaIdent::Field(field_index) => {
                 let (_partition, fields) = blueprint_interface.state.fields.clone()?;
@@ -242,7 +242,7 @@ where
         &mut self,
         blueprint_id: &BlueprintId,
         instance_schema: &Option<InstanceSchema>,
-        schema_pointer: SchemaPointer,
+        schema_pointer: TypePointer,
         payload: &[u8],
         cache: Option<&mut SchemaCache>,
     ) -> Result<(), RuntimeError> {
@@ -250,7 +250,7 @@ where
         let schema_cache = cache.unwrap_or(&mut local_cache);
 
         match schema_pointer {
-            SchemaPointer::Package(hash, index) => {
+            TypePointer::Package(hash, index) => {
                 self.ensure_schema_loaded(
                     blueprint_id.package_address.as_node_id(),
                     &hash,
@@ -274,7 +274,7 @@ where
                     )
                 })?;
             }
-            SchemaPointer::Instance(instance_index) => {
+            TypePointer::Instance(instance_index) => {
                 let instance_schema = match instance_schema.as_ref() {
                     Some(instance_schema) => instance_schema,
                     None => {
@@ -318,7 +318,7 @@ where
         blueprint_id: &BlueprintId,
         instance_schema: &'s Option<InstanceSchema>,
         payloads: &[(&Vec<u8>, BlueprintSchemaIdent)],
-    ) -> Result<Vec<(SchemaPointer, bool)>, RuntimeError> {
+    ) -> Result<Vec<(TypePointer, bool)>, RuntimeError> {
         let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
             blueprint_id.package_address.as_node_id(),
             blueprint_id.blueprint_name.as_str(),
@@ -789,7 +789,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, SchemaPointer, ObjectInfo), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, TypePointer, ObjectInfo), RuntimeError> {
         let (node_id, base_partition, info, interface) =
             self.get_actor_schema(actor_object_type)?;
 
@@ -827,7 +827,7 @@ where
         (
             NodeId,
             PartitionNumber,
-            BlueprintKeyValueStoreSchema<SchemaPointer>,
+            BlueprintKeyValueStoreSchema<TypePointer>,
             ObjectInfo,
         ),
         RuntimeError,

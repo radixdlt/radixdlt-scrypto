@@ -123,11 +123,11 @@ impl CallFunction {
             })?;
 
         let (schema, index) = match function_schema.input {
-            SchemaPointer::Package(hash, index) => {
+            TypePointer::Package(hash, index) => {
                 let schema = export_schema(package_address, hash)?;
                 (schema, index)
             }
-            SchemaPointer::Instance(_instance_index) => {
+            TypePointer::Instance(_instance_index) => {
                 todo!()
             }
         };

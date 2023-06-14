@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, PackageSetup,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
@@ -177,7 +177,7 @@ fn test_basic_package_missing_export() {
             },
 
             royalty_config: RoyaltyConfig::default(),
-            auth_template: AuthTemplate::default(),
+            auth_config: AuthConfig::default(),
         },
     );
     // Act

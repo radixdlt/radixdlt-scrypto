@@ -1296,7 +1296,7 @@ mod tests {
                 },
 
                 royalty_config: Default::default(),
-                auth_template: Default::default(),
+                auth_config: Default::default(),
             },
         );
 

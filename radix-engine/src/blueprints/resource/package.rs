@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema};
@@ -312,7 +312,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
@@ -599,7 +599,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
@@ -802,7 +802,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(),
 
                     method_auth: MethodAuthTemplate::Static {
@@ -1070,7 +1070,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static {
                         // This is the mapping from Vault methods to Vault roles
@@ -1248,7 +1248,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static {
                         auth: btreemap!(),
@@ -1429,7 +1429,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static {
                         auth: btreemap!(),
@@ -1524,7 +1524,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
@@ -1625,7 +1625,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
@@ -1763,7 +1763,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(
                         WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
@@ -1907,7 +1907,7 @@ impl ResourceManagerNativePackage {
                 },
 
                 royalty_config: RoyaltyConfig::default(),
-                auth_template: AuthTemplate {
+                auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static {
                         auth: btreemap!(),
