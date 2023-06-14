@@ -127,6 +127,13 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
         // it here again.
 
         for (expected_event_name, local_type_index) in events.event_schema.iter() {
+            let local_type_index = match local_type_index {
+                TypeRef::Static(type_index) => type_index,
+                TypeRef::Generic(..) => {
+                    return Err(PackageError::WasmUnsupported("Generics not supported".to_string()));
+                }
+            };
+
             // Checking that the event is either a struct or an enum
             let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
@@ -772,13 +779,14 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let events = definition_init
-                    .schema
-                    .events
-                    .event_schema
-                    .into_iter()
-                    .map(|(key, index)| (key, TypePointer::Package(schema_hash, index)))
-                    .collect();
+                let mut events = BTreeMap::new();
+                for (key, type_ref) in definition_init.schema.events.event_schema {
+                    let index = match type_ref {
+                        TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                        TypeRef::Generic(index) => TypePointer::Instance(index),
+                    };
+                    events.insert(key, index);
+                }
 
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
@@ -1024,13 +1032,15 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let events = definition_init
-                    .schema
-                    .events
-                    .event_schema
-                    .into_iter()
-                    .map(|(key, index)| (key, TypePointer::Package(schema_hash, index)))
-                    .collect();
+                let mut events = BTreeMap::new();
+
+                for (key, type_ref) in definition_init.schema.events.event_schema {
+                    let index = match type_ref {
+                        TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                        TypeRef::Generic(index) => TypePointer::Instance(index),
+                    };
+                    events.insert(key, index);
+                }
 
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {

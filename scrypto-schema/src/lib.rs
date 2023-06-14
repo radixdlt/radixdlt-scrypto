@@ -79,7 +79,7 @@ pub struct BlueprintStateSchemaInit {
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlueprintEventSchemaInit {
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+    pub event_schema: BTreeMap<String, TypeRef<LocalTypeIndex>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
