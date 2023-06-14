@@ -31,7 +31,6 @@ impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
         factory_opts.disable_cache();
 
         let mut opt = Options::default();
-        opt.set_disable_auto_compactions(true);
         opt.create_if_missing(true);
         opt.create_missing_column_families(true);
         opt.set_block_based_table_factory(&factory_opts);
@@ -52,7 +51,6 @@ impl SubstateStoreWithMetrics<RocksDBWithMerkleTreeSubstateStore> {
         factory_opts.disable_cache();
 
         let mut opt = Options::default();
-        opt.set_disable_auto_compactions(true);
         opt.create_if_missing(true);
         opt.create_missing_column_families(true);
         opt.set_block_based_table_factory(&factory_opts);
