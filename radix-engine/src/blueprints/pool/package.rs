@@ -45,10 +45,14 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
+                    ),
                     export: ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
@@ -57,10 +61,14 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
+                    ),
                     export: ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
@@ -69,10 +77,12 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_REDEEM_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
+                    ),
                     export: ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
@@ -81,10 +91,10 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>()),
                     export: ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
@@ -93,10 +103,10 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>()),
                     export: ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
@@ -105,11 +115,11 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(
-                        ),
+                        )),
                     export: ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
@@ -118,10 +128,15 @@ impl PoolNativePackage {
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(
+                            ),
+                    ),
                     export: ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -204,10 +219,14 @@ impl PoolNativePackage {
                 TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
+                    ),
                     export: TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
@@ -216,10 +235,14 @@ impl PoolNativePackage {
                 TWO_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
+                    ),
                     export: TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
@@ -228,10 +251,12 @@ impl PoolNativePackage {
                 TWO_RESOURCE_POOL_REDEEM_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
+                    ),
                     export: TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
@@ -240,10 +265,10 @@ impl PoolNativePackage {
                 TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>()),
                     export: TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
@@ -252,10 +277,10 @@ impl PoolNativePackage {
                 TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>()),
                     export: TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
@@ -264,11 +289,11 @@ impl PoolNativePackage {
                 TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
-                        ),
+                        )),
                     export: TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
@@ -277,10 +302,16 @@ impl PoolNativePackage {
                 TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(
+                            ),
+                    ),
                     export: TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );
@@ -363,10 +394,14 @@ impl PoolNativePackage {
                 MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
+                    ),
                     export: MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
@@ -375,10 +410,14 @@ impl PoolNativePackage {
                 MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
+                    ),
                     export: MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
@@ -387,10 +426,13 @@ impl PoolNativePackage {
                 MULTI_RESOURCE_POOL_REDEEM_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
+                    ),
                     export: MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
@@ -399,11 +441,11 @@ impl PoolNativePackage {
                 MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(
-                        ),
+                        )),
                     export: MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
@@ -412,12 +454,12 @@ impl PoolNativePackage {
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawOutput>(
-                        ),
+                        )),
                     export: MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
@@ -426,12 +468,12 @@ impl PoolNativePackage {
                 MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueOutput>(
-                        ),
+                        )),
                     export: MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
@@ -440,10 +482,10 @@ impl PoolNativePackage {
                 MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>()),
                     export: MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );

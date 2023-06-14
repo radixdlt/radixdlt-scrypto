@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FunctionSchemaInit,
+    BlueprintStateSchemaInit, FunctionSchemaInit, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -31,9 +31,12 @@ impl TransactionProcessorNativePackage {
             TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<TransactionProcessorRunInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<TransactionProcessorRunOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TransactionProcessorRunInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TransactionProcessorRunOutput>(),
+                ),
                 export: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
             },
         );

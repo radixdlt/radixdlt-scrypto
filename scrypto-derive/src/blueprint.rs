@@ -1227,8 +1227,8 @@ fn generate_schema(
                         fn_schemas.push(parse_quote! {
                             FunctionSchemaInit {
                                 receiver: Option::None,
-                                input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
-                                output: aggregator.add_child_type_and_descendents::<#output_type>(),
+                                input: TypeRef::Static(aggregator.add_child_type_and_descendents::<#input_struct_ident>()),
+                                output: TypeRef::Static(aggregator.add_child_type_and_descendents::<#output_type>()),
                                 export: #export_name.to_string(),
                             }
                         });
@@ -1237,8 +1237,8 @@ fn generate_schema(
                         fn_schemas.push(parse_quote! {
                             FunctionSchemaInit {
                                 receiver: Option::Some(#receiver),
-                                input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
-                                output: aggregator.add_child_type_and_descendents::<#output_type>(),
+                                input: TypeRef::Static(aggregator.add_child_type_and_descendents::<#input_struct_ident>()),
+                                output: TypeRef::Static(aggregator.add_child_type_and_descendents::<#output_type>()),
                                 export: #export_name.to_string(),
                             }
                         });
@@ -1471,8 +1471,8 @@ mod tests {
                                     "x".to_string(),
                                     FunctionSchemaInit {
                                         receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
-                                        input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
-                                        output: aggregator.add_child_type_and_descendents::<u32>(),
+                                        input: TypeRef::Static(aggregator.add_child_type_and_descendents::<Test_x_Input>()),
+                                        output: TypeRef::Static(aggregator.add_child_type_and_descendents::<u32>()),
                                         export: "Test_x".to_string(),
                                     }
                                 );
@@ -1480,8 +1480,8 @@ mod tests {
                                     "y".to_string(),
                                     FunctionSchemaInit {
                                         receiver: Option::None,
-                                        input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
-                                        output: aggregator.add_child_type_and_descendents::<u32>(),
+                                        input: TypeRef::Static(aggregator.add_child_type_and_descendents::<Test_y_Input>()),
+                                        output: TypeRef::Static(aggregator.add_child_type_and_descendents::<u32>()),
                                         export: "Test_y".to_string(),
                                     }
                                 );

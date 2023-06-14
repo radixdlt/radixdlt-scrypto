@@ -36,8 +36,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: LocalTypeIndex::WellKnown(ANY_ID),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "LargeReturnSize_f".to_string(),
         },
     );
@@ -94,8 +94,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: LocalTypeIndex::WellKnown(ANY_ID),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "MaxReturnSize_f".to_string(),
         },
     );
@@ -152,8 +152,8 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: LocalTypeIndex::WellKnown(ANY_ID),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "ZeroReturnSize_f".to_string(),
         },
     );
@@ -208,8 +208,8 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: LocalTypeIndex::SchemaLocalIndex(1usize),
-            output: LocalTypeIndex::SchemaLocalIndex(2usize),
+            input: TypeRef::Static(LocalTypeIndex::SchemaLocalIndex(1usize)),
+            output: TypeRef::Static(LocalTypeIndex::SchemaLocalIndex(2usize)),
             export: "BadFunctionSchema_f".to_string(),
         },
     );

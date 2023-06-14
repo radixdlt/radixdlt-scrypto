@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintSortedIndexSchema, BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
-    ReceiverInfo,
+    ReceiverInfo, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -70,10 +70,12 @@ impl ConsensusManagerNativePackage {
                 CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
+                    ),
                     export: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
                 },
             );
@@ -81,10 +83,10 @@ impl ConsensusManagerNativePackage {
                 CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>()),
                     export: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
                 },
             );
@@ -92,10 +94,12 @@ impl ConsensusManagerNativePackage {
                 CONSENSUS_MANAGER_START_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerStartInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
+                    ),
                     export: CONSENSUS_MANAGER_START_IDENT.to_string(),
                 },
             );
@@ -103,10 +107,16 @@ impl ConsensusManagerNativePackage {
                 CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(
+                            ),
+                    ),
                     export: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
                 },
             );
@@ -114,12 +124,12 @@ impl ConsensusManagerNativePackage {
                 CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(
-                        ),
+                        )),
                     export: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
                 },
             );
@@ -127,10 +137,14 @@ impl ConsensusManagerNativePackage {
                 CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
+                    ),
                     export: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
                 },
             );
@@ -138,10 +152,10 @@ impl ConsensusManagerNativePackage {
                 CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>()),
                     export: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 },
             );
@@ -213,8 +227,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_REGISTER_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
+                    ),
                     export: VALIDATOR_REGISTER_IDENT.to_string(),
                 },
             );
@@ -222,9 +240,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_UNREGISTER_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
+                    ),
                     export: VALIDATOR_UNREGISTER_IDENT.to_string(),
                 },
             );
@@ -232,8 +253,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_STAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
+                    ),
                     export: VALIDATOR_STAKE_IDENT.to_string(),
                 },
             );
@@ -241,8 +266,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_UNSTAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
+                    ),
                     export: VALIDATOR_UNSTAKE_IDENT.to_string(),
                 },
             );
@@ -250,8 +279,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_CLAIM_XRD_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
+                    ),
                     export: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
                 },
             );
@@ -259,8 +292,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_UPDATE_KEY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
+                    ),
                     export: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
                 },
             );
@@ -268,8 +305,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_UPDATE_FEE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
+                    ),
                     export: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
                 },
             );
@@ -277,10 +318,10 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>()),
                     export: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
                 },
             );
@@ -288,10 +329,14 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
+                    ),
                     export: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 },
             );
@@ -299,10 +344,10 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>()),
                     export: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 },
             );
@@ -310,10 +355,10 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>()),
                     export: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 },
             );
@@ -321,10 +366,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
+                    ),
                     export: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
                 },
             );
@@ -332,9 +379,12 @@ impl ConsensusManagerNativePackage {
                 VALIDATOR_APPLY_REWARD_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
+                    ),
                     export: VALIDATOR_APPLY_REWARD_IDENT.to_string(),
                 },
             );

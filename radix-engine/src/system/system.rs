@@ -4,8 +4,9 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::blueprints::package::PackageNativePackage;
 use crate::errors::{
-    ApplicationError, PayloadValidationAgainstSchemaError, CannotGlobalizeError, CreateObjectError,
-    InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError,
+    ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
+    InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
+    SystemModuleError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -942,7 +943,6 @@ where
             }
         };
 
-
         // Check blueprint id
         let reserved_blueprint_id = {
             let lock_handle = self.kernel_lock_substate(
@@ -965,9 +965,14 @@ where
 
         // Check module configuration
         // TODO: Move this to be a blueprint configuration
-        let expected_modules = if reserved_blueprint_id.package_address.eq(&RESOURCE_PACKAGE) && (
-            reserved_blueprint_id.blueprint_name.eq(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
-                || reserved_blueprint_id.blueprint_name.eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)) {
+        let expected_modules = if reserved_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+            && (reserved_blueprint_id
+                .blueprint_name
+                .eq(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
+                || reserved_blueprint_id
+                    .blueprint_name
+                    .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT))
+        {
             btreeset!(
                 ObjectModuleId::Main,
                 ObjectModuleId::Metadata,
@@ -990,8 +995,6 @@ where
                 Box::new(InvalidModuleSet(module_ids)),
             )));
         }
-
-
 
         // Read the type info
         let node_id = modules
@@ -1024,7 +1027,6 @@ where
             .as_typed()
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
-
 
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {

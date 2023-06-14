@@ -90,7 +90,7 @@ pub fn validate_call_arguments_to_native_components(
             }
         })?;
 
-        if let Some((local_type_index, schema)) = schema {
+        if let Some((TypeRef::Static(local_type_index), schema)) = schema {
             validate_payload_against_schema::<ManifestCustomExtension, _>(
                 &manifest_encode(&args).unwrap(),
                 schema,
@@ -129,7 +129,7 @@ fn get_blueprint_schema<'p>(
 fn get_arguments_schema<'s>(
     invocation: Invocation,
 ) -> Result<
-    Option<(LocalTypeIndex, &'s Schema<ScryptoCustomSchema>)>,
+    Option<(TypeRef<LocalTypeIndex>, &'s Schema<ScryptoCustomSchema>)>,
     InstructionSchemaValidationError,
 > {
     let entity_type = invocation.entity_type();
@@ -273,7 +273,7 @@ fn get_arguments_schema<'s>(
                 || is_function_receiver(&function_schema.receiver) && invocation.is_function()
             {
                 Ok(Some((
-                    function_schema.input,
+                    function_schema.input.clone(),
                     &blueprint_schema.schema.schema,
                 )))
             } else {

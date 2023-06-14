@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
 };
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
@@ -168,8 +168,8 @@ fn test_basic_package_missing_export() {
                     functions: btreemap!(
                         "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
-                            input: LocalTypeIndex::WellKnown(ANY_ID),
-                            output: LocalTypeIndex::WellKnown(ANY_ID),
+                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
                             export: "not_exist".to_string(),
                         }
                     ),
@@ -224,7 +224,9 @@ fn bad_function_schema_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::SystemModuleError(
+                SystemModuleError::PayloadValidationAgainstSchemaError(..)
+            )
         )
     });
 }

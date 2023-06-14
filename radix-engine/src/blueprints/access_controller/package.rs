@@ -24,7 +24,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionSchemaInit, ReceiverInfo,
+    FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
@@ -178,10 +178,14 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                ),
                 export: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             },
         );
@@ -189,10 +193,15 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
             },
         );
@@ -200,10 +209,13 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateProofOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerCreateProofOutput>(),
+                ),
                 export: ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
             },
         );
@@ -211,10 +223,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
             },
         );
@@ -222,10 +234,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
             },
         );
@@ -233,10 +245,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
@@ -244,10 +256,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
@@ -255,10 +267,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryOutput>()),
                 export: ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
             },
         );
@@ -266,10 +278,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
@@ -277,10 +289,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
@@ -288,10 +300,14 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
+                ),
                 export: ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
@@ -299,10 +315,15 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
@@ -310,10 +331,15 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             },
         );
@@ -321,10 +347,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
             },
         );
@@ -332,10 +358,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
             },
         );
@@ -343,10 +369,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
@@ -354,10 +380,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
@@ -365,10 +391,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
@@ -376,10 +402,10 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
@@ -387,10 +413,16 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
             },
         );

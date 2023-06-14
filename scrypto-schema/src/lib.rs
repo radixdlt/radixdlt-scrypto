@@ -82,15 +82,15 @@ pub struct BlueprintEventSchemaInit {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FunctionSchemaInit {
     pub receiver: Option<ReceiverInfo>,
-    pub input: LocalTypeIndex,
-    pub output: LocalTypeIndex,
+    pub input: TypeRef<LocalTypeIndex>,
+    pub output: TypeRef<LocalTypeIndex>,
     pub export: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintFunctionsSchemaInit {
     pub functions: BTreeMap<String, FunctionSchemaInit>,
     pub virtual_lazy_load_functions: BTreeMap<u8, String>,

@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
+use radix_engine_interface::schema::TypeRef;
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -119,8 +120,18 @@ impl Publish {
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: TypePointer::Package(schema_hash, setup.input),
-                            output: TypePointer::Package(schema_hash, setup.output),
+                            input: match setup.input {
+                                TypeRef::Static(type_index) => {
+                                    TypePointer::Package(schema_hash, type_index)
+                                }
+                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                            },
+                            output: match setup.output {
+                                TypeRef::Static(type_index) => {
+                                    TypePointer::Package(schema_hash, type_index)
+                                }
+                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                            },
                         },
                     );
                     let export = PackageExport {

@@ -23,6 +23,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
+    TypeRef,
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
@@ -43,8 +44,12 @@ impl IdentityNativePackage {
             IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
-                output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
+                ),
                 export: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             },
         );
@@ -52,8 +57,12 @@ impl IdentityNativePackage {
             IDENTITY_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
-                output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                ),
                 export: IDENTITY_CREATE_IDENT.to_string(),
             },
         );
@@ -61,10 +70,14 @@ impl IdentityNativePackage {
             IDENTITY_SECURIFY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
+                ),
                 export: IDENTITY_SECURIFY_IDENT.to_string(),
             },
         );

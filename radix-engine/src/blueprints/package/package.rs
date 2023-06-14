@@ -529,8 +529,12 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
-                output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
+                ),
                 export: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             },
         );
@@ -538,10 +542,12 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
-                input: aggregator
-                    .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
+                ),
                 export: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             },
         );
@@ -549,8 +555,12 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
-                output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
+                ),
                 export: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             },
         );
@@ -558,8 +568,12 @@ impl PackageNativePackage {
             PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
-                output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
+                ),
                 export: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             },
         );
@@ -722,18 +736,38 @@ impl PackageNativePackage {
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
-                for (function, setup) in definition_init.schema.functions.functions {
+                for (function, function_schema_init) in definition_init.schema.functions.functions {
+                    let input = match function_schema_init.input {
+                        TypeRef::Static(input_type_index) => input_type_index,
+                        TypeRef::Generic(..) => {
+                            return Err(RuntimeError::ApplicationError(
+                                ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                    "Generics not supported".to_string(),
+                                )),
+                            ))
+                        }
+                    };
+                    let output = match function_schema_init.output {
+                        TypeRef::Static(output_type_index) => output_type_index,
+                        TypeRef::Generic(..) => {
+                            return Err(RuntimeError::ApplicationError(
+                                ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                    "Generics not supported".to_string(),
+                                )),
+                            ))
+                        }
+                    };
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
-                            receiver: setup.receiver,
-                            input: TypePointer::Package(schema_hash, setup.input),
-                            output: TypePointer::Package(schema_hash, setup.output),
+                            receiver: function_schema_init.receiver,
+                            input: TypePointer::Package(schema_hash, input),
+                            output: TypePointer::Package(schema_hash, output),
                         },
                     );
                     let export = PackageExport {
                         code_hash,
-                        export_name: setup.export.clone(),
+                        export_name: function_schema_init.export.clone(),
                     };
                     function_exports.insert(function, export);
                 }
@@ -954,18 +988,38 @@ impl PackageNativePackage {
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
-                for (function, setup) in definition_init.schema.functions.functions {
+                for (function, function_schema_init) in definition_init.schema.functions.functions {
+                    let input = match function_schema_init.input {
+                        TypeRef::Static(input_type_index) => input_type_index,
+                        TypeRef::Generic(..) => {
+                            return Err(RuntimeError::ApplicationError(
+                                ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                    "Generics not supported".to_string(),
+                                )),
+                            ))
+                        }
+                    };
+                    let output = match function_schema_init.output {
+                        TypeRef::Static(output_type_index) => output_type_index,
+                        TypeRef::Generic(..) => {
+                            return Err(RuntimeError::ApplicationError(
+                                ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                    "Generics not supported".to_string(),
+                                )),
+                            ))
+                        }
+                    };
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
-                            receiver: setup.receiver,
-                            input: TypePointer::Package(schema_hash, setup.input),
-                            output: TypePointer::Package(schema_hash, setup.output),
+                            receiver: function_schema_init.receiver,
+                            input: TypePointer::Package(schema_hash, input),
+                            output: TypePointer::Package(schema_hash, output),
                         },
                     );
                     let export = PackageExport {
                         code_hash,
-                        export_name: setup.export.clone(),
+                        export_name: function_schema_init.export.clone(),
                     };
                     function_exports.insert(function, export);
                 }

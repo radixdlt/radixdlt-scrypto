@@ -166,10 +166,15 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleResourceManagerCreateOutput>(
+                            ),
+                    ),
                     export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
                 },
             );
@@ -177,10 +182,10 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>()),
                     export: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
@@ -188,10 +193,10 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput>()),
                     export: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
@@ -200,10 +205,14 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerMintOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleResourceManagerMintOutput>(),
+                    ),
                     export: FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
                 },
             );
@@ -211,9 +220,12 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                    ),
                     export: FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -221,10 +233,14 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    ),
                     export: FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -233,10 +249,10 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>()),
                     export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME.to_string(),
                 },
             );
@@ -244,10 +260,10 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>()),
                     export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
@@ -256,10 +272,16 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(
+                            ),
+                    ),
                     export: FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME.to_string(),
                 },
             );
@@ -267,10 +289,15 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(
+                            ),
+                    ),
                     export: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
@@ -278,10 +305,16 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(
+                            ),
+                    ),
                     export: FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
@@ -380,10 +413,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
                 },
             );
@@ -391,10 +424,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
                 },
             );
@@ -402,10 +435,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
@@ -413,10 +446,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
@@ -425,10 +458,16 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<NonFungibleResourceManagerMintOutput>(
+                            ),
+                    ),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
                 },
             );
@@ -437,10 +476,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
                 },
             );
@@ -449,10 +488,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                 },
             );
@@ -460,10 +499,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerExistsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerExistsOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerExistsInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerExistsOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
                 },
             );
@@ -472,12 +511,12 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
-                        ),
+                        )),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
                 },
             );
@@ -485,10 +524,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
                 },
             );
@@ -497,10 +536,14 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    ),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -508,9 +551,12 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                    ),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -518,10 +564,10 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
                         .to_string(),
                 },
@@ -530,10 +576,10 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME
                         .to_string(),
                 },
@@ -543,10 +589,16 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(
+                            ),
+                    ),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME.to_string(),
                 },
             );
@@ -554,10 +606,15 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(
+                            ),
+                    ),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
@@ -565,10 +622,16 @@ impl ResourceManagerNativePackage {
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(
+                            ),
+                    ),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
@@ -653,8 +716,12 @@ impl ResourceManagerNativePackage {
                 VAULT_TAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
                 },
             );
@@ -662,8 +729,12 @@ impl ResourceManagerNativePackage {
                 VAULT_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultPutInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
                 },
             );
@@ -671,8 +742,12 @@ impl ResourceManagerNativePackage {
                 VAULT_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -680,9 +755,12 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleVaultLockFeeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
                 },
             );
@@ -693,8 +771,12 @@ impl ResourceManagerNativePackage {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
                     }),
-                    input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
                 },
             );
@@ -705,8 +787,12 @@ impl ResourceManagerNativePackage {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
                     }),
-                    input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
                 },
             );
@@ -717,8 +803,12 @@ impl ResourceManagerNativePackage {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
                     }),
-                    input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
                 },
             );
@@ -726,8 +816,12 @@ impl ResourceManagerNativePackage {
                 VAULT_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
@@ -735,10 +829,14 @@ impl ResourceManagerNativePackage {
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -746,10 +844,10 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountOutput>()),
                     export: FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -757,11 +855,11 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(
-                        ),
+                        )),
                     export: FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -769,8 +867,12 @@ impl ResourceManagerNativePackage {
                 VAULT_BURN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    ),
                     export: FUNGIBLE_VAULT_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -871,8 +973,12 @@ impl ResourceManagerNativePackage {
                 VAULT_TAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
                 },
             );
@@ -880,10 +986,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesOutput>()),
                     export: NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -894,8 +1000,12 @@ impl ResourceManagerNativePackage {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
                     }),
-                    input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
                 },
             );
@@ -906,8 +1016,12 @@ impl ResourceManagerNativePackage {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
                     }),
-                    input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
                 },
             );
@@ -918,8 +1032,12 @@ impl ResourceManagerNativePackage {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
                     }),
-                    input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
                 },
             );
@@ -930,12 +1048,12 @@ impl ResourceManagerNativePackage {
                         receiver: Receiver::SelfRefMut,
                         ref_types: RefTypes::DIRECT_ACCESS,
                     }),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesOutput>(
-                        ),
+                        )),
                     export: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -943,8 +1061,12 @@ impl ResourceManagerNativePackage {
                 VAULT_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultPutInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
                 },
             );
@@ -952,8 +1074,12 @@ impl ResourceManagerNativePackage {
                 VAULT_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -961,10 +1087,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsOutput>()),
                     export: NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
                 },
             );
@@ -972,8 +1098,12 @@ impl ResourceManagerNativePackage {
                 VAULT_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
@@ -981,10 +1111,14 @@ impl ResourceManagerNativePackage {
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -992,10 +1126,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesOutput>()),
                     export: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -1003,10 +1137,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>()),
                     export: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
@@ -1014,12 +1148,12 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
-                        ),
+                        )),
                     export: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
@@ -1027,8 +1161,12 @@ impl ResourceManagerNativePackage {
                 VAULT_BURN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    ),
                     export: NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -1036,10 +1174,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesOutput>()),
                     export: NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -1145,8 +1283,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketPutInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1154,8 +1296,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_TAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
                 },
             );
@@ -1163,8 +1309,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1172,10 +1322,14 @@ impl ResourceManagerNativePackage {
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
@@ -1183,8 +1337,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
@@ -1192,10 +1350,14 @@ impl ResourceManagerNativePackage {
                 BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1203,10 +1365,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
                 },
             );
@@ -1214,10 +1378,14 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleBucketLockAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleBucketLockAmountOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1225,10 +1393,14 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<FungibleBucketUnlockAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<FungibleBucketUnlockAmountOutput>(),
+                    ),
                     export: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1294,8 +1466,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketPutInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1303,8 +1479,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_TAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
                 },
             );
@@ -1313,8 +1493,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1322,10 +1506,14 @@ impl ResourceManagerNativePackage {
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
@@ -1333,8 +1521,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
-                    output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
@@ -1342,10 +1534,14 @@ impl ResourceManagerNativePackage {
                 BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1353,8 +1549,8 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesInput>(),
-                    output: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesOutput>(),
+                    input: TypeRef::Static(aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesOutput>()),
                     export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
@@ -1362,10 +1558,12 @@ impl ResourceManagerNativePackage {
                 BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
                 },
             );
@@ -1373,10 +1571,12 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
@@ -1384,10 +1584,14 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
+                    ),
                     export: NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME.to_string(),
                 },
             );
@@ -1395,11 +1599,11 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesOutput>(
-                        ),
+                        )),
                     export: NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
@@ -1407,10 +1611,10 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesOutput>()),
                     export: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
@@ -1476,8 +1680,12 @@ impl ResourceManagerNativePackage {
                 PROOF_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofDropInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
+                    ),
                     export: FUNGIBLE_PROOF_DROP_EXPORT_NAME.to_string(),
                 },
             );
@@ -1485,8 +1693,12 @@ impl ResourceManagerNativePackage {
                 PROOF_CLONE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
+                    ),
                     export: FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
                 },
             );
@@ -1494,8 +1706,12 @@ impl ResourceManagerNativePackage {
                 PROOF_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
+                    ),
                     export: FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1503,10 +1719,13 @@ impl ResourceManagerNativePackage {
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
+                    ),
                     export: FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
@@ -1566,8 +1785,12 @@ impl ResourceManagerNativePackage {
                 PROOF_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofDropInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
+                    ),
                     export: NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME.to_string(),
                 },
             );
@@ -1575,8 +1798,12 @@ impl ResourceManagerNativePackage {
                 PROOF_CLONE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
+                    ),
                     export: NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
                 },
             );
@@ -1584,8 +1811,12 @@ impl ResourceManagerNativePackage {
                 PROOF_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
+                    ),
                     export: NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1593,10 +1824,13 @@ impl ResourceManagerNativePackage {
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
+                    ),
                     export: NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
@@ -1605,10 +1839,14 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsOutput>(),
+                    ),
                     export: NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 },
             );
@@ -1666,8 +1904,12 @@ impl ResourceManagerNativePackage {
                 WORKTOP_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
-                    output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
+                    ),
                     export: WORKTOP_DROP_IDENT.to_string(),
                 },
             );
@@ -1675,8 +1917,12 @@ impl ResourceManagerNativePackage {
                 WORKTOP_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
-                    output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
+                    ),
                     export: WORKTOP_PUT_IDENT.to_string(),
                 },
             );
@@ -1684,8 +1930,12 @@ impl ResourceManagerNativePackage {
                 WORKTOP_TAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
+                    ),
                     export: WORKTOP_TAKE_IDENT.to_string(),
                 },
             );
@@ -1693,10 +1943,13 @@ impl ResourceManagerNativePackage {
                 WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
+                    ),
                     export: WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -1704,8 +1957,12 @@ impl ResourceManagerNativePackage {
                 WORKTOP_TAKE_ALL_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
-                    output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
+                    ),
                     export: WORKTOP_TAKE_ALL_IDENT.to_string(),
                 },
             );
@@ -1713,10 +1970,12 @@ impl ResourceManagerNativePackage {
                 WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<WorktopAssertContainsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
+                    ),
                     export: WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
                 },
             );
@@ -1724,10 +1983,14 @@ impl ResourceManagerNativePackage {
                 WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
+                    ),
                     export: WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
                 },
             );
@@ -1735,11 +1998,11 @@ impl ResourceManagerNativePackage {
                 WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesOutput>(
-                        ),
+                        )),
                     export: WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -1747,8 +2010,12 @@ impl ResourceManagerNativePackage {
                 WORKTOP_DRAIN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
-                    output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
+                    ),
                     export: WORKTOP_DRAIN_IDENT.to_string(),
                 },
             );
@@ -1799,8 +2066,12 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_POP_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
-                    output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
+                    ),
                     export: AUTH_ZONE_POP_EXPORT_NAME.to_string(),
                 },
             );
@@ -1808,8 +2079,12 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_PUSH_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
-                    output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
+                    ),
                     export: AUTH_ZONE_PUSH_EXPORT_NAME.to_string(),
                 },
             );
@@ -1817,9 +2092,12 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
+                    ),
                     export: AUTH_ZONE_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
@@ -1827,10 +2105,14 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
+                    ),
                     export: AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -1838,11 +2120,11 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesOutput>(
-                        ),
+                        )),
                     export: AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
@@ -1850,10 +2132,14 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
+                    ),
                     export: AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
                 },
             );
@@ -1861,8 +2147,12 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_CLEAR_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
-                    output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
+                    ),
                     export: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
                 },
             );
@@ -1870,10 +2160,14 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
+                    ),
                     export: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
                 },
             );
@@ -1881,8 +2175,12 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_DRAIN_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
-                    output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
+                    ),
                     export: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
                 },
             );
@@ -1890,8 +2188,12 @@ impl ResourceManagerNativePackage {
                 AUTH_ZONE_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
-                    output: aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
+                    ),
                     export: AUTH_ZONE_DROP_EXPORT_NAME.to_string(),
                 },
             );
