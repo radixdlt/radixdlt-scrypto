@@ -758,6 +758,9 @@ impl ConsensusManagerBlueprint {
                 .unwrap_or_default();
             let from_pool = validator_info.effective_stake_xrd * reward_per_staked_xrd;
             let reward_amount = from_self + from_pool;
+            if reward_amount.is_zero() {
+                continue;
+            }
 
             // Note that dusted xrd (due to rounding) are kept in the vault and will
             // become retrievable next time.
