@@ -2004,4 +2004,84 @@ mod tests {
             },
         );
     }
+
+    macro_rules! generate_manifest_input_with_given_depth {
+        ( $depth:expr ) => {{
+            let depth: usize = $depth;
+            // check depth
+            let mut manifest = r#"CALL_FUNCTION Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk") "blueprint" "func" "#.to_string();
+            for _ in 0..depth - 1 {
+                manifest.push_str("Tuple(");
+            }
+            manifest.push_str("0u8");
+            for _ in 0..depth - 1 {
+                manifest.push_str(")");
+            }
+            manifest.push_str(";");
+            manifest
+        }};
+    }
+
+    macro_rules! generate_compiled_manifest_with_given_depth {
+        ( $depth:expr ) => {{
+            let manifest = generate_manifest_input_with_given_depth!($depth);
+            let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+
+            let tokens = tokenize(&manifest)
+                .map_err(CompileError::LexerError)
+                .unwrap();
+
+            let instructions = parser::Parser::new(tokens, $depth)
+                .parse_manifest()
+                .unwrap();
+            let blobs = BlobProvider::new();
+
+            generate_manifest(&instructions, &bech32_decoder, blobs).unwrap()
+        }};
+    }
+
+    #[test]
+    fn test_no_stack_overflow_for_very_deep_manifest() {
+        use crate::manifest::*;
+
+        let manifest = generate_manifest_input_with_given_depth!(1000);
+
+        let result = compile(
+            &manifest,
+            &NetworkDefinition::simulator(),
+            BlobProvider::default(),
+        );
+        let expected = CompileError::ParserError(ParserError::MaxDepthExceeded(PARSER_MAX_DEPTH));
+
+        match result {
+            Ok(_) => {
+                panic!("Expected {:?} but no error is thrown", expected);
+            }
+            Err(e) => {
+                assert_eq!(e, expected);
+            }
+        }
+    }
+
+    #[test]
+    fn test_if_max_depth_is_possibly_maximal() {
+        use crate::manifest::*;
+        // This test checks if PARSER_MAX_DEPTH is correctly adjusted in relation with
+        // MANIFEST_SBOR_V1_MAX_DEPTH
+
+        // When using manifest input with maximum depth we expect to
+        // successfully encode manifest back from compiled one
+        let compiled = generate_compiled_manifest_with_given_depth!(PARSER_MAX_DEPTH);
+
+        let _result = manifest_encode(&compiled).unwrap();
+
+        // When using manifest input maximum depth is exceeded by one we expect
+        // encoding error when encoding the compiled one.
+        let compiled = generate_compiled_manifest_with_given_depth!(PARSER_MAX_DEPTH + 1);
+
+        let expected = EncodeError::MaxDepthExceeded(MANIFEST_SBOR_V1_MAX_DEPTH);
+
+        let result = manifest_encode(&compiled);
+        assert_eq!(result, Err(expected));
+    }
 }
