@@ -3,7 +3,6 @@ use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::crypto::Hash;
-use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
@@ -145,6 +144,7 @@ pub struct BlueprintDefinition {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintInterface {
     pub outer_blueprint: Option<String>,
+    pub generics: Vec<Generic>,
     pub features: BTreeSet<String>,
     pub state: IndexedBlueprintStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,

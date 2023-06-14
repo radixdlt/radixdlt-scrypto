@@ -16,9 +16,11 @@ use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema};
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintIndexSchema,
+    BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
+};
+use radix_engine_interface::schema::{
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintIndexSchema,
     FunctionSchemaInit,
 };
 use radix_engine_interface::schema::{
@@ -300,13 +302,14 @@ impl ResourceManagerNativePackage {
                 dependencies: btreeset!(),
                 feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -586,13 +589,14 @@ impl ResourceManagerNativePackage {
                 dependencies: btreeset!(),
                 feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema: BlueprintSchemaInit {
+                    generics: vec![Generic::Any],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -789,13 +793,14 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -1057,13 +1062,14 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -1235,13 +1241,14 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -1416,13 +1423,14 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -1511,13 +1519,14 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -1612,13 +1621,14 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -1750,13 +1760,14 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -1897,10 +1908,11 @@ impl ResourceManagerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: auth_zone_blueprint,
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },

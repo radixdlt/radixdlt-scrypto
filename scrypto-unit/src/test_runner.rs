@@ -29,10 +29,9 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageDefinition,
-    TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-    PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
@@ -40,7 +39,7 @@ use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
 };
 use radix_engine_interface::time::Instant;
@@ -1690,6 +1689,7 @@ pub fn single_function_package_definition(
             feature_set: btreeset!(),
 
             schema: BlueprintSchemaInit {
+                generics: vec![],
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],
@@ -1702,7 +1702,7 @@ pub fn single_function_package_definition(
                     collections: vec![],
                 },
                 events: BlueprintEventSchemaInit::default(),
-                functions: BlueprintFunctionsTemplateInit {
+                functions: BlueprintFunctionsSchemaInit {
                     virtual_lazy_load_functions: btreemap!(),
                     functions: btreemap!(
                     function_name.to_string() => FunctionSchemaInit {

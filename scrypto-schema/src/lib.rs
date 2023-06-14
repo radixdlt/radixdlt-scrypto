@@ -41,16 +41,23 @@ impl KeyValueStoreSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum Generic {
+    Any,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
+    pub generics: Vec<Generic>,
     pub schema: ScryptoSchema,
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
-    pub functions: BlueprintFunctionsTemplateInit,
+    pub functions: BlueprintFunctionsSchemaInit,
 }
 
 impl Default for BlueprintSchemaInit {
     fn default() -> Self {
         Self {
+            generics: Vec::new(),
             schema: ScryptoSchema {
                 type_kinds: Vec::new(),
                 type_metadata: Vec::new(),
@@ -58,7 +65,7 @@ impl Default for BlueprintSchemaInit {
             },
             state: BlueprintStateSchemaInit::default(),
             events: BlueprintEventSchemaInit::default(),
-            functions: BlueprintFunctionsTemplateInit::default(),
+            functions: BlueprintFunctionsSchemaInit::default(),
         }
     }
 }
@@ -84,12 +91,12 @@ pub struct FunctionSchemaInit {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
-pub struct BlueprintFunctionsTemplateInit {
+pub struct BlueprintFunctionsSchemaInit {
     pub functions: BTreeMap<String, FunctionSchemaInit>,
     pub virtual_lazy_load_functions: BTreeMap<u8, String>,
 }
 
-impl BlueprintFunctionsTemplateInit {
+impl BlueprintFunctionsSchemaInit {
     pub fn exports(&self) -> Vec<String> {
         let mut exports: Vec<String> = self.functions.values().map(|t| t.export.clone()).collect();
         for export in self.virtual_lazy_load_functions.values() {

@@ -180,6 +180,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
 
     let schema = BlueprintSchemaInit {
+        generics: vec![],
         schema: generate_full_schema(aggregator),
         state: BlueprintStateSchemaInit {
             fields,

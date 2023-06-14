@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, PackageDefinition,
 };
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
 };
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
@@ -151,6 +151,7 @@ fn test_basic_package_missing_export() {
             feature_set: btreeset!(),
 
             schema: BlueprintSchemaInit {
+                generics: vec![],
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],
@@ -163,7 +164,7 @@ fn test_basic_package_missing_export() {
                     collections: vec![],
                 },
                 events: BlueprintEventSchemaInit::default(),
-                functions: BlueprintFunctionsTemplateInit {
+                functions: BlueprintFunctionsSchemaInit {
                     functions: btreemap!(
                         "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
@@ -220,5 +221,10 @@ fn bad_function_schema_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..))
+        )
+    });
 }

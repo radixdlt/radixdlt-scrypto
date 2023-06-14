@@ -43,6 +43,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchemaInit {
+        generics: vec![],
         schema: generate_full_schema(aggregator),
         state: BlueprintStateSchemaInit {
             fields,
@@ -104,6 +105,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchemaInit {
+        generics: vec![],
         schema: generate_full_schema(aggregator),
         state: BlueprintStateSchemaInit {
             fields,
@@ -157,6 +159,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchemaInit {
+        generics: vec![],
         schema: generate_full_schema(aggregator),
         state: BlueprintStateSchemaInit {
             fields,
@@ -195,9 +198,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
 
 #[no_mangle]
 pub extern "C" fn BadFunctionSchema_f(_args: u64) -> Slice {
-    ::scrypto::engine::wasm_api::forget_vec(
-        ::scrypto::data::scrypto::scrypto_encode(&()).unwrap(),
-    )
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
@@ -240,7 +241,7 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
         auth_config: scrypto::blueprints::package::AuthConfig {
             function_auth: btreemap!(
                 "f".to_string() => AccessRule::AllowAll,
-            ) ,
+            ),
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::Static {
                 auth: btreemap!(),
                 outer_auth: btreemap!(),

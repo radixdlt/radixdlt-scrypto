@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintCollectionSchema, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintSortedIndexSchema, BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
     ReceiverInfo,
 };
@@ -161,13 +161,14 @@ impl ConsensusManagerNativePackage {
                 ),
                 feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema: consensus_manager_schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -343,13 +344,14 @@ impl ConsensusManagerNativePackage {
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },

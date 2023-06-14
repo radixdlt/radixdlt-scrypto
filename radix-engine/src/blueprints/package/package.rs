@@ -20,7 +20,7 @@ use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_H
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit,
+    BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, RefTypes, TypeRef,
 };
@@ -57,21 +57,61 @@ pub enum PackageError {
     InvalidSystemFunction,
     InvalidTypeParent,
     WasmUnsupported(String),
+    InvalidGenericId(u8),
 
     InvalidMetadataKey(String),
 }
 
-fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
+fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for bp_init in blueprints {
-        validate_schema(&bp_init.schema.schema)
-            .map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
+        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
-        if bp_init.schema.state.fields.len() > 0xff {
+        if bp_init.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
+
+        let num_generics = bp_init.generics.len() as u8;
+
+        for field in &bp_init.state.fields {
+            match field.field {
+                TypeRef::Static(..) => {}
+                TypeRef::Generic(generic_id) => {
+                    if generic_id >= num_generics {
+                        return Err(PackageError::InvalidGenericId(generic_id));
+                    }
+                }
+            }
+        }
+
+        for collection in &bp_init.state.collections {
+            match collection {
+                BlueprintCollectionSchema::KeyValueStore(kv_store_schema) => {
+                    match kv_store_schema.key {
+                        TypeRef::Static(..) => {}
+                        TypeRef::Generic(generic_id) => {
+                            if generic_id >= num_generics {
+                                return Err(PackageError::InvalidGenericId(generic_id));
+                            }
+                        }
+                    }
+
+                    match kv_store_schema.value {
+                        TypeRef::Static(..) => {}
+                        TypeRef::Generic(generic_id) => {
+                            if generic_id >= num_generics {
+                                return Err(PackageError::InvalidGenericId(generic_id));
+                            }
+                        }
+                    }
+                }
+                BlueprintCollectionSchema::SortedIndex(..) => {}
+                BlueprintCollectionSchema::Index(..) => {}
+            }
+        }
     }
+
     Ok(())
 }
 
@@ -543,13 +583,14 @@ impl PackageNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections,
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },
@@ -661,7 +702,7 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(setup.blueprints.values())
+        validate_package_schema(setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -716,6 +757,7 @@ impl PackageNativePackage {
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
                         outer_blueprint: definition_init.outer_blueprint,
+                        generics: definition_init.schema.generics,
                         features: definition_init.feature_set,
                         functions,
                         events,
@@ -817,7 +859,7 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(setup.blueprints.values())
+        validate_package_schema(setup.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(setup.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -827,6 +869,7 @@ impl PackageNativePackage {
             feature_set: features,
             schema:
                 BlueprintSchemaInit {
+                    generics,
                     state: BlueprintStateSchemaInit { collections, .. },
                     functions,
                     ..
@@ -866,6 +909,14 @@ impl PackageNativePackage {
                         ));
                     }
                 }
+            }
+
+            if !generics.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Generics not supported".to_string(),
+                    )),
+                ));
             }
 
             if !features.is_empty() {
@@ -938,6 +989,7 @@ impl PackageNativePackage {
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
                         outer_blueprint: definition_init.outer_blueprint,
+                        generics: definition_init.schema.generics,
                         features: definition_init.feature_set,
                         functions,
                         events,

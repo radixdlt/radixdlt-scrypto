@@ -1104,7 +1104,7 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use radix_engine_interface::schema::{
-        BlueprintFunctionsTemplateInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+        BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
         FunctionSchemaInit,
     };
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
@@ -1270,6 +1270,7 @@ mod tests {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema: ScryptoSchema {
                         type_kinds: vec![],
                         type_metadata: vec![],
@@ -1282,7 +1283,7 @@ mod tests {
                         collections: vec![],
                     },
                     events: Default::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions: btreemap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,

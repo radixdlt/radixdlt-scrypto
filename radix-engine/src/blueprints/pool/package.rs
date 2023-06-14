@@ -144,13 +144,14 @@ impl PoolNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -302,13 +303,14 @@ impl PoolNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },
@@ -464,13 +466,14 @@ impl PoolNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },

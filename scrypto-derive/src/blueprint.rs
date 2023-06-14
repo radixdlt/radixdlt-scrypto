@@ -575,7 +575,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             functions.insert(#fn_names.to_string(), #fn_schemas);
                         )*
 
-                        BlueprintFunctionsTemplateInit {
+                        BlueprintFunctionsSchemaInit {
                             functions,
                             virtual_lazy_load_functions: BTreeMap::default(),
                         }
@@ -596,6 +596,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     let schema = generate_full_schema(aggregator);
 
                     BlueprintSchemaInit {
+                        generics: vec![],
                         schema,
                         state,
                         events,
@@ -1485,7 +1486,7 @@ mod tests {
                                     }
                                 );
 
-                                BlueprintFunctionsTemplateInit {
+                                BlueprintFunctionsSchemaInit {
                                     functions,
                                     virtual_lazy_load_functions: BTreeMap::default(),
                                 }
@@ -1501,6 +1502,7 @@ mod tests {
                             let schema = generate_full_schema(aggregator);
 
                             BlueprintSchemaInit {
+                                generics: vec![],
                                 schema,
                                 state,
                                 events,

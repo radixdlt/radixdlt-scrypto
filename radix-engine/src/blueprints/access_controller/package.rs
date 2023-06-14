@@ -23,7 +23,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintFunctionsTemplateInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, ReceiverInfo,
 };
 use radix_engine_interface::time::Instant;
@@ -451,13 +451,14 @@ impl AccessControllerNativePackage {
                 feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events,
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },

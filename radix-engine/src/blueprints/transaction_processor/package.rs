@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FunctionSchemaInit,
 };
 use resources_tracker_macro::trace_resources;
@@ -45,12 +45,13 @@ impl TransactionProcessorNativePackage {
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         functions,
                         virtual_lazy_load_functions: btreemap!(),
                     },

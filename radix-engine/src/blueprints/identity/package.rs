@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsTemplateInit, FunctionSchemaInit, ReceiverInfo,
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
@@ -97,13 +97,14 @@ impl IdentityNativePackage {
                 ),
                 feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
+                    generics: vec![],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsTemplateInit {
+                    functions: BlueprintFunctionsSchemaInit {
                         virtual_lazy_load_functions,
                         functions,
                     },
