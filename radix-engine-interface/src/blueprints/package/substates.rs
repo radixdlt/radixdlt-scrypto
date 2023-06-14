@@ -97,6 +97,13 @@ impl Default for BlueprintVersion {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Ord, PartialOrd, Hash)]
+pub struct PackageBlueprintVersionId {
+    pub address: PackageAddress,
+    pub blueprint: String,
+    pub version: BlueprintVersion,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Ord, PartialOrd, Hash)]
 pub struct BlueprintVersionKey {
     pub blueprint: String,
     pub version: BlueprintVersion,

@@ -1040,11 +1040,17 @@ impl PackageNativePackage {
         Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     {
+        let package_address = PackageAddress::new_or_panic(receiver.0.clone());
+        let package_bp_version_key = PackageBlueprintVersionId {
+            address: package_address,
+            blueprint: bp_version_key.blueprint.to_string(),
+            version: bp_version_key.version.clone(),
+        };
         let def = api
             .kernel_get_system_state()
             .system
             .blueprint_cache
-            .get(bp_version_key);
+            .get(&package_bp_version_key);
         if let Some(definition) = def {
             return Ok(definition.clone());
         }
@@ -1077,7 +1083,7 @@ impl PackageNativePackage {
             .kernel_get_system_state()
             .system
             .blueprint_cache
-            .insert(bp_version_key.clone(), definition.clone());
+            .insert(package_bp_version_key, definition.clone());
 
         Ok(definition)
     }
