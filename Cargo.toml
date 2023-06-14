@@ -23,6 +23,7 @@ members = [
     "scrypto-tests",
     "scrypto-unit",
     "transaction",
+    "transaction-scenarios",
     "native-sdk",
     "radix-engine",
     "radix-engine-common",

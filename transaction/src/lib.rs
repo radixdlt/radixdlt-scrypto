@@ -22,7 +22,7 @@ pub mod prelude {
     pub use crate::model::*;
     pub use crate::signing::ed25519::*;
     pub use crate::signing::secp256k1::*;
-    pub use crate::signing::Signer;
+    pub use crate::signing::{Signer, PrivateKey};
 }
 
 // Extra things which this crate wants which upstream crates likely don't
@@ -31,4 +31,6 @@ pub(crate) mod internal_prelude {
 
     pub use crate::define_raw_transaction_payload;
     pub use crate::errors::*;
+    pub use crate::manifest::*;
+    pub use crate::validation::*;
 }
