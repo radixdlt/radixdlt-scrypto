@@ -2,13 +2,12 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::blueprints::package::PackageNativePackage;
+use crate::errors::SystemUpstreamError;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
-    SystemModuleError,
+    SystemError, SystemModuleError,
 };
-use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
@@ -37,8 +36,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, Condition, InstanceSchema,
-    KeyValueStoreSchema,
+    BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::hash_map::Entry;
@@ -145,69 +143,6 @@ pub enum FunctionSchemaIdent {
     Output,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum BlueprintSchemaIdent {
-    Field(u8),
-    KeyValueStore {
-        collection_index: u8,
-        schema_ident: KeyValueStoreSchemaIdent,
-    },
-    Function {
-        ident: String,
-        schema_ident: FunctionSchemaIdent,
-    },
-    Event(String),
-}
-
-impl BlueprintSchemaIdent {
-    pub fn get_pointer(
-        &self,
-        blueprint_interface: &BlueprintInterface,
-    ) -> Option<(TypePointer, bool)> {
-        match self {
-            BlueprintSchemaIdent::Field(field_index) => {
-                let (_partition, fields) = blueprint_interface.state.fields.clone()?;
-                let field_schema = fields.get(field_index.clone() as usize)?;
-                Some((field_schema.field.clone(), true))
-            }
-            BlueprintSchemaIdent::KeyValueStore {
-                collection_index,
-                schema_ident,
-            } => {
-                let (_partition, schema) = blueprint_interface
-                    .state
-                    .collections
-                    .get(collection_index.clone() as usize)?;
-                match schema {
-                    BlueprintCollectionSchema::KeyValueStore(key_value_store) => match schema_ident
-                    {
-                        KeyValueStoreSchemaIdent::Key => Some((key_value_store.key.clone(), false)),
-                        KeyValueStoreSchemaIdent::Value => {
-                            Some((key_value_store.value.clone(), key_value_store.can_own))
-                        }
-                    },
-                    _ => None,
-                }
-            }
-            BlueprintSchemaIdent::Function {
-                ident,
-                schema_ident,
-            } => {
-                let schema = blueprint_interface.functions.get(ident)?;
-                match schema_ident {
-                    FunctionSchemaIdent::Input => Some((schema.input.clone(), true)),
-                    FunctionSchemaIdent::Output => Some((schema.output.clone(), true)),
-                }
-            }
-            BlueprintSchemaIdent::Event(event_name) => blueprint_interface
-                .events
-                .get(event_name)
-                .cloned()
-                .map(|p| (p, false)),
-        }
-    }
-}
-
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -220,7 +155,6 @@ where
         }
     }
 
-    // TODO: Move into Package Package
     fn validate_payload<'s>(
         &mut self,
         payload: &[u8],
@@ -238,25 +172,20 @@ where
         )
     }
 
-    // TODO: Move into Package Package
-    pub fn validate_schema_pointer(
+    pub fn validate_payload_at_type_pointer(
         &mut self,
         blueprint_id: &BlueprintId,
         instance_schema: &Option<InstanceSchema>,
-        schema_pointer: TypePointer,
+        type_pointer: TypePointer,
         payload: &[u8],
         cache: Option<&mut SchemaCache>,
     ) -> Result<(), RuntimeError> {
         let mut local_cache = SchemaCache::new();
         let schema_cache = cache.unwrap_or(&mut local_cache);
 
-        match schema_pointer {
+        match type_pointer {
             TypePointer::Package(hash, index) => {
-                self.ensure_schema_loaded(
-                    blueprint_id.package_address.as_node_id(),
-                    &hash,
-                    schema_cache,
-                )?;
+                self.ensure_schema_loaded(blueprint_id.package_address, &hash, schema_cache)?;
                 let schema = schema_cache.cache.get(&hash).unwrap();
 
                 self.validate_payload(
@@ -266,21 +195,19 @@ where
                     SchemaOrigin::Blueprint(blueprint_id.clone()),
                 )
                 .map_err(|err| {
-                    RuntimeError::SystemModuleError(
-                        SystemModuleError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::SchemaValidationError(
-                                err.error_message(schema),
-                            ),
+                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                        PayloadValidationAgainstSchemaError::SchemaValidationError(
+                            err.error_message(schema),
                         ),
-                    )
+                    ))
                 })?;
             }
             TypePointer::Instance(instance_index) => {
                 let instance_schema = match instance_schema.as_ref() {
                     Some(instance_schema) => instance_schema,
                     None => {
-                        return Err(RuntimeError::SystemModuleError(
-                            SystemModuleError::PayloadValidationAgainstSchemaError(
+                        return Err(RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
                                 PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
                             ),
                         ));
@@ -299,13 +226,11 @@ where
                     SchemaOrigin::Instance,
                 )
                 .map_err(|err| {
-                    RuntimeError::SystemModuleError(
-                        SystemModuleError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::SchemaValidationError(
-                                err.error_message(&instance_schema.schema),
-                            ),
+                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                        PayloadValidationAgainstSchemaError::SchemaValidationError(
+                            err.error_message(&instance_schema.schema),
                         ),
-                    )
+                    ))
                 })?;
             }
         }
@@ -313,60 +238,38 @@ where
         Ok(())
     }
 
-    // TODO: Move into Package Package
     pub fn validate_payload_against_blueprint_schema<'s>(
         &'s mut self,
         blueprint_id: &BlueprintId,
         instance_schema: &'s Option<InstanceSchema>,
-        payloads: &[(&Vec<u8>, BlueprintSchemaIdent)],
-    ) -> Result<Vec<(TypePointer, bool)>, RuntimeError> {
-        let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
-            blueprint_id.package_address.as_node_id(),
-            blueprint_id.blueprint_name.as_str(),
-            self.api,
-        )?;
-
-        let mut schema_pointers = Vec::new();
-
-        // TODO: Move this cache into actor
+        payloads: &[(&Vec<u8>, TypePointer)],
+    ) -> Result<(), RuntimeError> {
         let mut schema_cache = SchemaCache::new();
 
-        for (payload, schema_ident) in payloads {
-            let (schema_pointer, can_own) = schema_ident
-                .get_pointer(&blueprint_interface)
-                .ok_or_else(|| {
-                    RuntimeError::SystemModuleError(
-                        SystemModuleError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::DoesNotExist(schema_ident.clone()),
-                        ),
-                    )
-                })?;
-
-            self.validate_schema_pointer(
+        for (payload, type_pointer) in payloads {
+            self.validate_payload_at_type_pointer(
                 blueprint_id,
                 instance_schema,
-                schema_pointer,
+                type_pointer.clone(),
                 payload,
                 Some(&mut schema_cache),
             )?;
-
-            schema_pointers.push((schema_pointer, can_own));
         }
 
-        Ok(schema_pointers)
+        Ok(())
     }
 
     // TODO: A hack for now
     pub fn ensure_schema_loaded(
         &mut self,
-        node_id: &NodeId,
+        package_address: PackageAddress,
         schema_hash: &Hash,
         schema_cache: &mut SchemaCache,
     ) -> Result<(), RuntimeError> {
         let entry = schema_cache.cache.entry(schema_hash.clone());
         match entry {
             Entry::Vacant(e) => {
-                let schema = PackageNativePackage::get_schema(node_id, schema_hash, self.api)?;
+                let schema = self.get_schema(package_address, schema_hash)?;
                 e.insert(schema);
             }
             Entry::Occupied(..) => {}
@@ -375,7 +278,6 @@ where
         Ok(())
     }
 
-    // TODO: Move into Package Package
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -390,10 +292,9 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
-            blueprint_id.package_address.as_node_id(),
+        let blueprint_interface = self.get_blueprint_default_interface(
+            blueprint_id.package_address,
             blueprint_id.blueprint_name.as_str(),
-            self.api,
         )?;
 
         // Validate features
@@ -438,7 +339,7 @@ where
                 )));
             }
 
-            if let Some((offset, field_schemas)) = blueprint_interface.state.fields {
+            if let Some((offset, field_schemas)) = &blueprint_interface.state.fields {
                 let mut partition = BTreeMap::new();
 
                 let mut fields_to_check = Vec::new();
@@ -451,7 +352,17 @@ where
                         }
                     }
 
-                    fields_to_check.push((field, BlueprintSchemaIdent::Field(i as u8)));
+                    let pointer = blueprint_interface
+                        .get_field_type_pointer(i as u8)
+                        .ok_or_else(|| {
+                            RuntimeError::SystemError(
+                                SystemError::PayloadValidationAgainstSchemaError(
+                                    PayloadValidationAgainstSchemaError::FieldDoesNotExist(i as u8),
+                                ),
+                            )
+                        })?;
+
+                    fields_to_check.push((field, pointer));
                 }
 
                 self.validate_payload_against_blueprint_schema(
@@ -474,7 +385,7 @@ where
                     );
                 }
 
-                partitions.insert(offset, partition);
+                partitions.insert(offset.clone(), partition);
             }
         }
 
@@ -484,25 +395,30 @@ where
                 let mut partition = BTreeMap::new();
 
                 for (key, (value, freeze)) in entries {
-                    let schema_pointers = self.validate_payload_against_blueprint_schema(
+                    let key_type_pointer = blueprint_interface
+                        .get_kv_key_type_pointer(collection_index)
+                        .ok_or_else(|| {
+                            RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
+                            ),
+                        )
+                        })?;
+
+                    let (value_type_pointer, value_can_own) = blueprint_interface
+                        .get_kv_value_type_pointer(collection_index)
+                        .ok_or_else(|| {
+                            RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
+                            ),
+                        )
+                        })?;
+
+                    self.validate_payload_against_blueprint_schema(
                         &blueprint_id,
                         instance_schema,
-                        &[
-                            (
-                                &key,
-                                BlueprintSchemaIdent::KeyValueStore {
-                                    collection_index,
-                                    schema_ident: KeyValueStoreSchemaIdent::Key,
-                                },
-                            ),
-                            (
-                                &value,
-                                BlueprintSchemaIdent::KeyValueStore {
-                                    collection_index,
-                                    schema_ident: KeyValueStoreSchemaIdent::Value,
-                                },
-                            ),
-                        ],
+                        &[(&key, key_type_pointer), (&value, value_type_pointer)],
                     )?;
 
                     let value: ScryptoValue = scrypto_decode(&value).unwrap();
@@ -514,7 +430,7 @@ where
 
                     let value = IndexedScryptoValue::from_typed(&kv_entry);
 
-                    if !schema_pointers[1].1 {
+                    if value_can_own {
                         if !value.owned_nodes().is_empty() {
                             return Err(RuntimeError::SystemError(
                                 SystemError::InvalidKeyValueStoreOwnership,
@@ -530,11 +446,9 @@ where
                     .collections
                     .get(collection_index as usize)
                     .ok_or_else(|| {
-                        RuntimeError::SystemModuleError(
-                            SystemModuleError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::CollectionDoesNotExist,
-                            ),
-                        )
+                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::CollectionDoesNotExist,
+                        ))
                     })?
                     .0;
 
@@ -553,6 +467,118 @@ where
         let parent_blueprint = blueprint_interface.outer_blueprint.clone();
 
         Ok((parent_blueprint, partitions))
+    }
+
+    pub fn get_schema(
+        &mut self,
+        package_address: PackageAddress,
+        schema_hash: &Hash,
+    ) -> Result<ScryptoSchema, RuntimeError> {
+        let def = self
+            .api
+            .kernel_get_system_state()
+            .system
+            .schema_cache
+            .get(schema_hash);
+        if let Some(schema) = def {
+            return Ok(schema.clone());
+        }
+
+        let handle = self.api.kernel_lock_substate_with_default(
+            package_address.as_node_id(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
+            }),
+            SystemLockData::default(),
+        )?;
+
+        let substate: KeyValueEntrySubstate<ScryptoSchema> =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        self.api.kernel_drop_lock(handle)?;
+
+        let schema = substate.value.unwrap();
+
+        self.api
+            .kernel_get_system_state()
+            .system
+            .schema_cache
+            .insert(schema_hash.clone(), schema.clone());
+
+        Ok(schema)
+    }
+
+    pub fn get_blueprint_default_interface(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> Result<BlueprintInterface, RuntimeError> {
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint_name.to_string());
+        Ok(self
+            .get_blueprint_definition(package_address, &bp_version_key)?
+            .interface)
+    }
+
+    pub fn get_blueprint_definition(
+        &mut self,
+        package_address: PackageAddress,
+        bp_version_key: &BlueprintVersionKey,
+    ) -> Result<BlueprintDefinition, RuntimeError> {
+        let canonical_bp_id = CanonicalBlueprintId {
+            address: package_address,
+            blueprint: bp_version_key.blueprint.to_string(),
+            version: bp_version_key.version.clone(),
+        };
+
+        let def = self
+            .api
+            .kernel_get_system_state()
+            .system
+            .blueprint_cache
+            .get(&canonical_bp_id);
+        if let Some(definition) = def {
+            return Ok(definition.clone());
+        }
+
+        let handle = self.api.kernel_lock_substate_with_default(
+            package_address.as_node_id(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
+            }),
+            SystemLockData::default(),
+        )?;
+
+        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        self.api.kernel_drop_lock(handle)?;
+
+        let definition = match substate.value {
+            Some(definition) => definition,
+            None => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::BlueprintDoesNotExist(canonical_bp_id),
+                ))
+            }
+        };
+
+        self.api
+            .kernel_get_system_state()
+            .system
+            .blueprint_cache
+            .insert(canonical_bp_id, definition.clone());
+
+        Ok(definition)
     }
 
     pub fn prepare_global_address(
@@ -754,10 +780,9 @@ where
                 let address = method.module_object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
 
-                let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
-                    info.blueprint_id.package_address.as_node_id(),
+                let blueprint_interface = self.get_blueprint_default_interface(
+                    info.blueprint_id.package_address,
                     info.blueprint_id.blueprint_name.as_str(),
-                    self.api,
                 )?;
 
                 Ok((
@@ -771,10 +796,9 @@ where
                 let node_id = method.node_id;
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
-                let blueprint_interface = PackageNativePackage::get_blueprint_default_interface(
-                    info.blueprint_id.package_address.as_node_id(),
+                let blueprint_interface = self.get_blueprint_default_interface(
+                    info.blueprint_id.package_address,
                     info.blueprint_id.blueprint_name.as_str(),
-                    self.api,
                 )?;
                 Ok((
                     node_id,
@@ -1057,10 +1081,9 @@ where
             }
         };
 
-        let interface = PackageNativePackage::get_blueprint_default_interface(
-            blueprint_id.package_address.as_node_id(),
+        let interface = self.get_blueprint_default_interface(
+            blueprint_id.package_address,
             blueprint_id.blueprint_name.as_str(),
-            self.api,
         )?;
 
         let num_main_partitions = interface.state.num_partitions();
@@ -1120,10 +1143,9 @@ where
                     };
 
                     // Move and drop
-                    let interface = PackageNativePackage::get_blueprint_default_interface(
-                        blueprint_id.package_address.as_node_id(),
+                    let interface = self.get_blueprint_default_interface(
+                        blueprint_id.package_address,
                         blueprint_id.blueprint_name.as_str(),
-                        self.api,
                     )?;
                     let num_partitions = interface.state.num_partitions();
 
@@ -1193,7 +1215,7 @@ where
                 blueprint_id,
                 schema_pointer,
             }) => {
-                self.validate_schema_pointer(
+                self.validate_payload_at_type_pointer(
                     &blueprint_id,
                     &None, // TODO: Change to Some, once support for generic fields is implemented
                     schema_pointer,
@@ -1263,10 +1285,9 @@ where
     ) -> Result<(), RuntimeError> {
         // Move and drop
         let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
-        let interface = PackageNativePackage::get_blueprint_default_interface(
-            blueprint_id.package_address.as_node_id(),
+        let interface = self.get_blueprint_default_interface(
+            blueprint_id.package_address,
             blueprint_id.blueprint_name.as_str(),
-            self.api,
         )?;
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
         for offset in 0u8..interface.state.num_partitions {
@@ -1634,7 +1655,7 @@ where
                 schema_pointer,
                 can_own,
             }) => {
-                self.validate_schema_pointer(
+                self.validate_payload_at_type_pointer(
                     &blueprint_id,
                     &instance_schema,
                     schema_pointer,
@@ -2389,7 +2410,7 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Locking the package info substate associated with the emitter's package
-        let schema_pointer = {
+        let type_pointer = {
             let actor = self.api.kernel_get_system_state().current;
 
             // Getting the package address and blueprint name associated with the actor
@@ -2411,12 +2432,26 @@ where
                 }
             };
 
+            let blueprint_interface = self.get_blueprint_default_interface(
+                blueprint_id.package_address,
+                blueprint_id.blueprint_name.as_str(),
+            )?;
+
+            let type_pointer = blueprint_interface
+                .get_event_type_pointer(event_name.as_str())
+                .ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                        PayloadValidationAgainstSchemaError::EventDoesNotExist(event_name.clone()),
+                    ))
+                })?;
+
             self.validate_payload_against_blueprint_schema(
                 &blueprint_id,
                 &instance_schema,
-                &[(&event_data, BlueprintSchemaIdent::Event(event_name.clone()))],
-            )?[0]
-                .0
+                &[(&event_data, type_pointer.clone())],
+            )?;
+
+            type_pointer
         };
 
         // Construct the event type identifier based on the current actor
@@ -2426,7 +2461,7 @@ where
                 node_id, module_id, ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id.clone(), module_id.clone()),
-                schema_pointer,
+                type_pointer,
             )),
             Actor::Function {
                 blueprint_id: ref blueprint,
@@ -2437,7 +2472,7 @@ where
                     ObjectModuleId::Main,
                     blueprint.blueprint_name.to_string(),
                 ),
-                schema_pointer,
+                type_pointer,
             )),
             _ => Err(RuntimeError::SystemModuleError(
                 SystemModuleError::EventError(Box::new(EventError::InvalidActor)),

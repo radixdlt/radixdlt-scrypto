@@ -72,6 +72,8 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
             return Err(PackageError::TooManySubstateSchemas);
         }
 
+        // FIXME: Add validation for valid local_type_index of all schema'd things
+
         let num_generics = bp_init.generics.len() as u8;
 
         for field in &bp_init.state.fields {
@@ -110,6 +112,36 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
                 BlueprintCollectionSchema::Index(..) => {}
             }
         }
+
+        for (_name, event) in &bp_init.events.event_schema {
+            match event {
+                TypeRef::Static(..) => {}
+                TypeRef::Generic(generic_id) => {
+                    if *generic_id >= num_generics {
+                        return Err(PackageError::InvalidGenericId(*generic_id));
+                    }
+                }
+            }
+        }
+
+        for (_name, function) in &bp_init.functions.functions {
+            match function.input {
+                TypeRef::Static(..) => {}
+                TypeRef::Generic(generic_id) => {
+                    if generic_id >= num_generics {
+                        return Err(PackageError::InvalidGenericId(generic_id));
+                    }
+                }
+            }
+            match function.output {
+                TypeRef::Static(..) => {}
+                TypeRef::Generic(generic_id) => {
+                    if generic_id >= num_generics {
+                        return Err(PackageError::InvalidGenericId(generic_id));
+                    }
+                }
+            }
+        }
     }
 
     Ok(())
@@ -130,7 +162,9 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
             let local_type_index = match local_type_index {
                 TypeRef::Static(type_index) => type_index,
                 TypeRef::Generic(..) => {
-                    return Err(PackageError::WasmUnsupported("Generics not supported".to_string()));
+                    return Err(PackageError::WasmUnsupported(
+                        "Generics not supported".to_string(),
+                    ));
                 }
             };
 
@@ -188,7 +222,7 @@ fn globalize_package<Y, L: Default>(
 
     package_royalties: BTreeMap<String, RoyaltyConfig>,
 
-    blueprint_auth_template: BTreeMap<String, AuthConfig>,
+    auth_configs: BTreeMap<String, AuthConfig>,
 
     metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
@@ -326,7 +360,7 @@ where
     };
 
     {
-        let auth_partition = blueprint_auth_template
+        let auth_partition = auth_configs
             .into_iter()
             .map(|(blueprint, auth_template)| {
                 let key = BlueprintVersionKey {
@@ -1095,124 +1129,6 @@ impl PackageNativePackage {
             api,
         )
     }
-
-    pub fn get_schema<Y, V>(
-        receiver: &NodeId,
-        schema_hash: &Hash,
-        api: &mut Y,
-    ) -> Result<ScryptoSchema, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
-    {
-        let def = api
-            .kernel_get_system_state()
-            .system
-            .schema_cache
-            .get(schema_hash);
-        if let Some(schema) = def {
-            return Ok(schema.clone());
-        }
-
-        let handle = api.kernel_lock_substate_with_default(
-            receiver,
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                .unwrap(),
-            &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
-            LockFlags::read_only(),
-            Some(|| {
-                let kv_entry = KeyValueEntrySubstate::<()>::default();
-                IndexedScryptoValue::from_typed(&kv_entry)
-            }),
-            SystemLockData::default(),
-        )?;
-
-        let substate: KeyValueEntrySubstate<ScryptoSchema> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
-
-        let schema = substate.value.unwrap();
-
-        api.kernel_get_system_state()
-            .system
-            .schema_cache
-            .insert(schema_hash.clone(), schema.clone());
-
-        Ok(schema)
-    }
-
-    pub fn get_blueprint_default_interface<Y, V>(
-        receiver: &NodeId,
-        blueprint_name: &str,
-        api: &mut Y,
-    ) -> Result<BlueprintInterface, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
-    {
-        let bp_version_key = BlueprintVersionKey::new_default(blueprint_name.to_string());
-        Ok(Self::get_blueprint_definition(receiver, &bp_version_key, api)?.interface)
-    }
-
-    pub fn get_blueprint_definition<Y, V>(
-        receiver: &NodeId,
-        bp_version_key: &BlueprintVersionKey,
-        api: &mut Y,
-    ) -> Result<BlueprintDefinition, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
-    {
-        let package_bp_version_id = PackageBlueprintVersionId {
-            address: PackageAddress::new_or_panic(receiver.0.clone()),
-            blueprint: bp_version_key.blueprint.to_string(),
-            version: bp_version_key.version.clone(),
-        };
-
-        let def = api
-            .kernel_get_system_state()
-            .system
-            .blueprint_cache
-            .get(&package_bp_version_id);
-        if let Some(definition) = def {
-            return Ok(definition.clone());
-        }
-
-        let handle = api.kernel_lock_substate_with_default(
-            receiver,
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                .unwrap(),
-            &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
-            LockFlags::read_only(),
-            Some(|| {
-                let kv_entry = KeyValueEntrySubstate::<()>::default();
-                IndexedScryptoValue::from_typed(&kv_entry)
-            }),
-            SystemLockData::default(),
-        )?;
-
-        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
-
-        let definition = match substate.value {
-            Some(definition) => definition,
-            None => {
-                return Err(RuntimeError::SystemError(
-                    SystemError::BlueprintDoesNotExist(package_bp_version_id),
-                ))
-            }
-        };
-
-        api.kernel_get_system_state()
-            .system
-            .blueprint_cache
-            .insert(package_bp_version_id, definition.clone());
-
-        Ok(definition)
-    }
 }
 
 pub struct PackageRoyaltyNativeBlueprint;
@@ -1344,7 +1260,7 @@ impl PackageAuthNativeBlueprint {
         Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     {
-        let package_bp_version_id = PackageBlueprintVersionId {
+        let package_bp_version_id = CanonicalBlueprintId {
             address: PackageAddress::new_or_panic(receiver.0.clone()),
             blueprint: bp_version_key.blueprint.to_string(),
             version: bp_version_key.version.clone(),

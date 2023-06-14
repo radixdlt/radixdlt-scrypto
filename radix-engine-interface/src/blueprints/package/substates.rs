@@ -94,7 +94,7 @@ impl Default for BlueprintVersion {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Ord, PartialOrd, Hash)]
-pub struct PackageBlueprintVersionId {
+pub struct CanonicalBlueprintId {
     pub address: PackageAddress,
     pub blueprint: String,
     pub version: BlueprintVersion,
@@ -168,6 +168,52 @@ impl BlueprintInterface {
             }
         }
         None
+    }
+
+    pub fn get_field_type_pointer(&self, field_index: u8) -> Option<TypePointer> {
+        let (_partition, fields) = self.state.fields.clone()?;
+        let field_schema = fields.get(field_index.clone() as usize)?;
+        Some(field_schema.field.clone())
+    }
+
+    pub fn get_kv_key_type_pointer(&self, collection_index: u8) -> Option<TypePointer> {
+        let (_partition, schema) = self
+            .state
+            .collections
+            .get(collection_index.clone() as usize)?;
+        match schema {
+            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
+                Some(key_value_store.key.clone())
+            }
+            _ => None,
+        }
+    }
+
+    pub fn get_kv_value_type_pointer(&self, collection_index: u8) -> Option<(TypePointer, bool)> {
+        let (_partition, schema) = self
+            .state
+            .collections
+            .get(collection_index.clone() as usize)?;
+        match schema {
+            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
+                Some((key_value_store.value.clone(), key_value_store.can_own))
+            }
+            _ => None,
+        }
+    }
+
+    pub fn get_function_input_type_pointer(&self, ident: &str) -> Option<TypePointer> {
+        let schema = self.functions.get(ident)?;
+        Some(schema.input.clone())
+    }
+
+    pub fn get_function_output_type_pointer(&self, ident: &str) -> Option<TypePointer> {
+        let schema = self.functions.get(ident)?;
+        Some(schema.output.clone())
+    }
+
+    pub fn get_event_type_pointer(&self, event_name: &str) -> Option<TypePointer> {
+        self.events.get(event_name).cloned()
     }
 }
 

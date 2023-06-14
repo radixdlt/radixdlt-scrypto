@@ -1,5 +1,4 @@
 use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
@@ -9,9 +8,7 @@ use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system::{
-    BlueprintSchemaIdent, FunctionSchemaIdent, KeyValueEntrySubstate, SystemService,
-};
+use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::track::interface::StoreAccessInfo;
@@ -71,9 +68,9 @@ impl SystemLockData {
 
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
-    pub blueprint_cache: NonIterMap<PackageBlueprintVersionId, BlueprintDefinition>,
+    pub blueprint_cache: NonIterMap<CanonicalBlueprintId, BlueprintDefinition>,
     pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
-    pub auth_cache: NonIterMap<PackageBlueprintVersionId, AuthConfig>,
+    pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
 }
 
@@ -328,24 +325,26 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_drop_lock(handle)?;
 
             //  Validate input
-            let definition = PackageNativePackage::get_blueprint_definition(
-                blueprint_id.package_address.as_node_id(),
+            let definition = system.get_blueprint_definition(
+                blueprint_id.package_address,
                 &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-                system.api,
             )?;
 
             let export = match &ident {
                 FnIdent::Application(ident) => {
+                    let input_type_pointer = definition
+                        .interface
+                        .get_function_input_type_pointer(ident.as_str())
+                        .ok_or_else(|| {
+                            RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
+                                ident.to_string(),
+                            ))
+                        })?;
+
                     system.validate_payload_against_blueprint_schema(
                         &blueprint_id,
                         &None,
-                        &[(
-                            input.as_vec_ref(),
-                            BlueprintSchemaIdent::Function {
-                                ident: ident.to_string(),
-                                schema_ident: FunctionSchemaIdent::Input,
-                            },
-                        )],
+                        &[(input.as_vec_ref(), input_type_pointer)],
                     )?;
 
                     let function_schema = definition
@@ -397,16 +396,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Validate output
             match ident {
                 FnIdent::Application(ident) => {
+                    let output_type_pointer = definition
+                        .interface
+                        .get_function_output_type_pointer(ident.as_str())
+                        .expect("Schema verification should enforce that this exists.");
+
                     system.validate_payload_against_blueprint_schema(
                         &blueprint_id,
                         &None,
-                        &[(
-                            output.as_vec_ref(),
-                            BlueprintSchemaIdent::Function {
-                                ident,
-                                schema_ident: FunctionSchemaIdent::Output,
-                            },
-                        )],
+                        &[(output.as_vec_ref(), output_type_pointer)],
                     )?;
                 }
                 FnIdent::System(..) => {

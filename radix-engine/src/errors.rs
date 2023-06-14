@@ -19,7 +19,6 @@ use crate::kernel::call_frame::{
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
-use crate::system::system::BlueprintSchemaIdent;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::events::EventError;
@@ -29,7 +28,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::PackageBlueprintVersionId;
+use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -230,13 +229,14 @@ pub enum SystemError {
     InvalidInstanceSchema,
     InvalidFeature(String),
     AssertAccessRuleFailed,
-    BlueprintDoesNotExist(PackageBlueprintVersionId),
-    AuthTemplateDoesNotExist(PackageBlueprintVersionId),
+    BlueprintDoesNotExist(CanonicalBlueprintId),
+    AuthTemplateDoesNotExist(CanonicalBlueprintId),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
     InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
+    PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -276,7 +276,6 @@ pub enum CreateObjectError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemModuleError {
-    PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
@@ -288,7 +287,10 @@ pub enum SystemModuleError {
 pub enum PayloadValidationAgainstSchemaError {
     BlueprintDoesNotExist(BlueprintId),
     CollectionDoesNotExist,
-    DoesNotExist(BlueprintSchemaIdent),
+    FieldDoesNotExist(u8),
+    KeyValueStoreKeyDoesNotExist,
+    KeyValueStoreValueDoesNotExist,
+    EventDoesNotExist(String),
     SchemaValidationError(String),
     InstanceSchemaDoesNotExist,
 }

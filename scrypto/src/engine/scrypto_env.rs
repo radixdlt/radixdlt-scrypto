@@ -192,6 +192,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _node_id: &NodeId,
     ) -> Result<GlobalAddress, ClientApiError> {
+        // FIXME: Implement this for Scrypto
         todo!()
     }
 

@@ -1,6 +1,6 @@
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
-    ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError, SystemModuleError,
+    ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
 use radix_engine::kernel::call_frame::{CreateNodeError, TakeNodeError, UnlockSubstateError};
 use radix_engine::types::*;
@@ -31,9 +31,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(
-                SystemModuleError::PayloadValidationAgainstSchemaError(..)
-            )
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
         )
     });
 }
@@ -65,9 +63,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(
-                SystemModuleError::PayloadValidationAgainstSchemaError(..)
-            )
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
         )
     });
 }

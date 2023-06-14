@@ -586,7 +586,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         let mut event_schema = BTreeMap::new();
                         #({
                             let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
-                            event_schema.insert(#event_type_names.to_owned(), local_type_index);
+                            event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_index));
                         })*
                         BlueprintEventSchemaInit {
                             event_schema,

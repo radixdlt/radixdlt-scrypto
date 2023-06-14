@@ -38,8 +38,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "invalid_output".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<()>(),
-            output: aggregator.add_child_type_and_descendents::<u8>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<u8>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -47,8 +47,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "unit".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<()>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -56,8 +56,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "bool".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<bool>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<bool>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -65,8 +65,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "i8".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<i8>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<i8>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -74,8 +74,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "i16".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<i16>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<i16>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -83,8 +83,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "i32".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<i32>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<i32>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -92,8 +92,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "i64".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<i64>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<i64>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -101,8 +101,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "i128".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<i128>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<i128>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -110,8 +110,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "u8".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<u8>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<u8>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -119,8 +119,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "u16".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<u16>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<u16>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -128,8 +128,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "u32".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<u32>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<u32>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -137,8 +137,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "u64".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<u64>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<u64>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -146,8 +146,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "u128".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<u128>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<u128>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -155,8 +155,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "result".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<Result<(), ()>>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<Result<(), ()>>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -164,8 +164,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "tree_map".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<BTreeMap<(), ()>>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<BTreeMap<(), ()>>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );
@@ -173,8 +173,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "hash_set".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: aggregator.add_child_type_and_descendents::<HashSet<()>>(),
-            output: aggregator.add_child_type_and_descendents::<()>(),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<HashSet<()>>()),
+            output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
     );

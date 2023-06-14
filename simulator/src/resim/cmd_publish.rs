@@ -146,7 +146,15 @@ impl Publish {
                     .events
                     .event_schema
                     .into_iter()
-                    .map(|(key, index)| (key, TypePointer::Package(schema_hash, index)))
+                    .map(|(key, index)| {
+                        (
+                            key,
+                            match index {
+                                TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                            },
+                        )
+                    })
                     .collect();
 
                 let def = BlueprintDefinition {

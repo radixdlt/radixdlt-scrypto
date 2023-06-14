@@ -1,5 +1,5 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError, VmError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
@@ -224,9 +224,7 @@ fn bad_function_schema_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(
-                SystemModuleError::PayloadValidationAgainstSchemaError(..)
-            )
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
         )
     });
 }
