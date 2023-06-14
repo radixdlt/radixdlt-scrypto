@@ -8,6 +8,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_queries::typed_substate_layout::ValidatorRewardAppliedEvent;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand_chacha;
@@ -2361,4 +2362,57 @@ fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
         Emitter::Method(node_id, _) => node_id,
     }
     .clone()
+}
+
+#[test]
+fn test_tips_and_fee_distribution_single_validator() {
+    let initial_epoch = Epoch::of(5);
+    let initial_stake_amount = dec!("100");
+    let emission_xrd_per_epoch = dec!("0");
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        initial_stake_amount,
+        validator_account,
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Do some transaction
+    let receipt1 = test_runner
+        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+    let result1 = receipt1.expect_commit_success();
+
+    // Advance epoch
+    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let result2 = receipt2.expect_commit_success();
+
+    // Assert: no emission
+    let event = test_runner
+        .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result2)
+        .remove(0);
+    assert_eq!(event.epoch, initial_epoch);
+    assert_close_to!(event.starting_stake_pool_xrd, initial_stake_amount);
+    assert_close_to!(event.stake_pool_added_xrd, 0);
+    assert_close_to!(event.validator_fee_xrd, 0);
+    assert_eq!(event.proposals_made, 1);
+    assert_eq!(event.proposals_missed, 0);
+
+    // Assert: rewards
+    let event = test_runner
+        .extract_events_of_type::<ValidatorRewardAppliedEvent>(result2)
+        .remove(0);
+    assert_eq!(event.epoch, initial_epoch);
+    assert_close_to!(
+        event.amount,
+        result1.fee_summary.expected_reward_if_single_validator()
+    );
 }
