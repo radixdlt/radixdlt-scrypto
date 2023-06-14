@@ -830,11 +830,10 @@ impl ValidatorBlueprint {
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
         let starting_stake_pool_xrd = stake_xrd_vault.amount(api)?;
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
-        let post_reward_stake_pool_xrd = starting_stake_pool_xrd + total_reward_xrd;
         let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             total_reward_xrd,
-            post_reward_stake_pool_xrd,
+            starting_stake_pool_xrd,
             total_stake_unit_supply,
         );
         let new_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
