@@ -80,7 +80,12 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for FnIdentifier {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        write!(f, "{}:{:?}", self.blueprint_id.display(*context), self.ident,)
+        write!(
+            f,
+            "{}:{:?}",
+            self.blueprint_id.display(*context),
+            self.ident,
+        )
     }
 }
 

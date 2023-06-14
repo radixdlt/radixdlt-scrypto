@@ -32,10 +32,10 @@ use crate::method_auth_template;
 use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::auth::AuthError;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
-use crate::system::system_modules::auth::AuthError;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -988,20 +988,30 @@ impl PackageNativePackage {
         )
     }
 
-    pub fn get_schema_hash<Y>(
+    pub fn get_schema<Y, V>(
         receiver: &NodeId,
-        hash: &Hash,
+        schema_hash: &Hash,
         api: &mut Y,
     ) -> Result<ScryptoSchema, RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData>,
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
     {
+        let def = api
+            .kernel_get_system_state()
+            .system
+            .schema_cache
+            .get(schema_hash);
+        if let Some(schema) = def {
+            return Ok(schema.clone());
+        }
+
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
                 .unwrap(),
-            &SubstateKey::Map(scrypto_encode(hash).unwrap()),
+            &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -1016,6 +1026,11 @@ impl PackageNativePackage {
 
         let schema = substate.value.unwrap();
 
+        api.kernel_get_system_state()
+            .system
+            .schema_cache
+            .insert(schema_hash.clone(), schema.clone());
+
         Ok(schema)
     }
 
@@ -1024,9 +1039,9 @@ impl PackageNativePackage {
         blueprint_name: &str,
         api: &mut Y,
     ) -> Result<BlueprintInterface, RuntimeError>
-        where
-            Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
-            V: SystemCallbackObject,
+    where
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
     {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_name.to_string());
         Ok(Self::get_blueprint_definition(receiver, &bp_version_key, api)?.interface)
@@ -1076,11 +1091,14 @@ impl PackageNativePackage {
 
         let definition = match substate.value {
             Some(definition) => definition,
-            None => return Err(RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(package_bp_version_id))),
+            None => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::BlueprintDoesNotExist(package_bp_version_id),
+                ))
+            }
         };
 
-        api
-            .kernel_get_system_state()
+        api.kernel_get_system_state()
             .system
             .blueprint_cache
             .insert(package_bp_version_id, definition.clone());
@@ -1189,9 +1207,9 @@ impl PackageAuthNativeBlueprint {
         ident: &str,
         api: &mut Y,
     ) -> Result<AccessRule, RuntimeError>
-        where
-            Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
-            V: SystemCallbackObject,
+    where
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
     {
         let auth_template = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
         let access_rule = auth_template.function_auth.get(ident);
@@ -1253,12 +1271,14 @@ impl PackageAuthNativeBlueprint {
 
         let template = match auth_template.value {
             Some(template) => template,
-            None => return
-                Err(RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(package_bp_version_id))),
+            None => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::BlueprintTemplateDoesNotExist(package_bp_version_id),
+                ))
+            }
         };
 
-        api
-            .kernel_get_system_state()
+        api.kernel_get_system_state()
             .system
             .auth_cache
             .insert(package_bp_version_id, template.clone());

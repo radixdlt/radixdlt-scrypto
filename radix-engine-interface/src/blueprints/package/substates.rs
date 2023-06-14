@@ -7,7 +7,7 @@ use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
-use sbor::{LocalTypeIndex, Schema};
+use sbor::LocalTypeIndex;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;

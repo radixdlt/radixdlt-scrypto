@@ -54,14 +54,18 @@ impl Actor {
             Actor::Method(MethodActor { node_id, ident, .. }) => {
                 node_id.as_ref().len() + ident.len()
             }
-            Actor::Function { blueprint_id: blueprint, ident } => {
+            Actor::Function {
+                blueprint_id: blueprint,
+                ident,
+            } => {
                 blueprint.package_address.as_ref().len()
                     + blueprint.blueprint_name.len()
                     + ident.len()
             }
-            Actor::VirtualLazyLoad { blueprint_id: blueprint, .. } => {
-                blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1
-            }
+            Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1,
         }
     }
 
@@ -102,11 +106,17 @@ impl Actor {
         match self {
             Actor::Root => panic!("Should never be called"),
             Actor::Method(method_actor) => method_actor.fn_identifier(),
-            Actor::Function { blueprint_id: blueprint, ident } => FnIdentifier {
+            Actor::Function {
+                blueprint_id: blueprint,
+                ident,
+            } => FnIdentifier {
                 blueprint_id: blueprint.clone(),
                 ident: FnIdent::Application(ident.to_string()),
             },
-            Actor::VirtualLazyLoad { blueprint_id: blueprint, ident } => FnIdentifier {
+            Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ident,
+            } => FnIdentifier {
                 blueprint_id: blueprint.clone(),
                 ident: FnIdent::System(*ident),
             },
@@ -124,8 +134,14 @@ impl Actor {
                     },
                 ..
             })
-            | Actor::Function { blueprint_id: blueprint, .. }
-            | Actor::VirtualLazyLoad { blueprint_id: blueprint, .. } => blueprint.eq(&BlueprintId::new(
+            | Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint.eq(&BlueprintId::new(
                 &TRANSACTION_PROCESSOR_PACKAGE,
                 TRANSACTION_PROCESSOR_BLUEPRINT,
             )),
@@ -142,7 +158,10 @@ impl Actor {
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
             Actor::Method(actor) => actor.global_address.map(|address| address.into()),
-            Actor::Function { blueprint_id: blueprint, .. } => Some(blueprint.clone().into()),
+            Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            } => Some(blueprint.clone().into()),
             _ => None,
         }
     }
@@ -166,8 +185,14 @@ impl Actor {
                     },
                 ..
             })
-            | Actor::Function { blueprint_id: blueprint, .. }
-            | Actor::VirtualLazyLoad { blueprint_id: blueprint, .. } => blueprint,
+            | Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint,
             Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
         }
     }
@@ -198,8 +223,14 @@ impl Actor {
                     },
                 ..
             }) => blueprint,
-            Actor::Function { blueprint_id: blueprint, .. } => blueprint,
-            Actor::VirtualLazyLoad { blueprint_id: blueprint, .. } => blueprint,
+            Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint,
+            Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint,
             Actor::Root => return &PACKAGE_PACKAGE, // TODO: Should we mock this with something better?
         };
 
@@ -216,8 +247,14 @@ impl Actor {
                     },
                 ..
             })
-            | Actor::Function { blueprint_id: blueprint, .. }
-            | Actor::VirtualLazyLoad { blueprint_id: blueprint, .. } => blueprint.blueprint_name.as_str(),
+            | Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint.blueprint_name.as_str(),
             Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
         }
     }
@@ -243,10 +280,16 @@ impl Actor {
     }
 
     pub fn function(blueprint: BlueprintId, ident: String) -> Self {
-        Self::Function { blueprint_id: blueprint, ident }
+        Self::Function {
+            blueprint_id: blueprint,
+            ident,
+        }
     }
 
     pub fn virtual_lazy_load(blueprint: BlueprintId, ident: u8) -> Self {
-        Self::VirtualLazyLoad { blueprint_id: blueprint, ident }
+        Self::VirtualLazyLoad {
+            blueprint_id: blueprint,
+            ident,
+        }
     }
 }

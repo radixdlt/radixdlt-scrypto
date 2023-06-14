@@ -1,4 +1,5 @@
 use super::Authorization;
+use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::{AuthZone, VaultUtil};
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
@@ -18,7 +19,6 @@ use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVer
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
-use crate::blueprints::package::PackageAuthNativeBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -123,19 +123,21 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
-            callee.node_object_info.blueprint_id.package_address.as_node_id(),
-            &BlueprintVersionKey::new_default(callee.node_object_info.blueprint_id.blueprint_name.as_str()),
+            callee
+                .node_object_info
+                .blueprint_id
+                .package_address
+                .as_node_id(),
+            &BlueprintVersionKey::new_default(
+                callee.node_object_info.blueprint_id.blueprint_name.as_str(),
+            ),
             api.api,
         )?;
 
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
-            ObjectKey::SELF => {
-                auth_template.method_auth.auth()
-            }
-            ObjectKey::InnerBlueprint(_blueprint_name) => {
-                auth_template.method_auth.outer_auth()
-            }
+            ObjectKey::SELF => auth_template.method_auth.auth(),
+            ObjectKey::InnerBlueprint(_blueprint_name) => auth_template.method_auth.outer_auth(),
         };
 
         let permission = match method_key.module_id {
@@ -238,7 +240,10 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
                 }
-                Actor::Function { blueprint_id, ident } => {
+                Actor::Function {
+                    blueprint_id,
+                    ident,
+                } => {
                     let access_rule = PackageAuthNativeBlueprint::get_bp_function_access_rule(
                         blueprint_id.package_address.as_node_id(),
                         &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),

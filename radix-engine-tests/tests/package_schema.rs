@@ -1,4 +1,4 @@
-use radix_engine::errors::{RuntimeError, SystemModuleError, SystemUpstreamError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -31,7 +31,9 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..))
+                    RuntimeError::SystemModuleError(
+                        SystemModuleError::BlueprintSchemaValidationError(..)
+                    )
                 )
             });
         }
@@ -39,7 +41,9 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..))
+                    RuntimeError::SystemModuleError(
+                        SystemModuleError::BlueprintSchemaValidationError(..)
+                    )
                 )
             });
         }

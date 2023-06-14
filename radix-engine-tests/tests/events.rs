@@ -10,7 +10,6 @@ use radix_engine::errors::{
 use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system::BlueprintSchemaIdent;
-use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
