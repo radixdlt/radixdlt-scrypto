@@ -1,5 +1,5 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
@@ -202,4 +202,23 @@ fn test_basic_package_missing_export() {
             ))
         )
     });
+}
+
+// FIXME: Change test to check that schema type_index is viable
+#[test]
+fn bad_function_schema_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(package, "BadFunctionSchema", "f", manifest_args!())
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(..))));
 }
