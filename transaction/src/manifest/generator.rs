@@ -485,7 +485,7 @@ where
                 package_address,
                 blueprint_name,
                 function_name,
-                args: to_manifest_value(&args),
+                args,
             }
         }
         ast::Instruction::CallMethod {
