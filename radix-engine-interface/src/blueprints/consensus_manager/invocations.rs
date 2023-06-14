@@ -21,6 +21,7 @@ pub struct ConsensusManagerCreateInput {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
 }
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
@@ -30,6 +31,7 @@ pub struct ConsensusManagerCreateManifestInput {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]

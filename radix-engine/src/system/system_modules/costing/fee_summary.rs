@@ -40,4 +40,14 @@ impl FeeSummary {
         (self.cost_unit_price * Decimal::from(self.tip_percentage) / Decimal::from(100u32))
             * Decimal::from(self.execution_cost_sum)
     }
+
+    // For testing only
+    pub fn expected_reward_if_single_validator(&self) -> Decimal {
+        self.tips_to_distribute()
+            * (TIPS_PROPOSER_SHARE_PERCENTAGE + TIPS_VALIDATOR_SET_SHARE_PERCENTAGE)
+            / dec!(100)
+            + self.fees_to_distribute()
+                * (FEES_PROPOSER_SHARE_PERCENTAGE + FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
+                / dec!(100)
+    }
 }

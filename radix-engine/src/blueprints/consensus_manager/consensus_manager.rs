@@ -200,6 +200,7 @@ impl ConsensusManagerBlueprint {
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
+        initial_current_leader: Option<ValidatorIndex>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -236,7 +237,7 @@ impl ConsensusManagerBlueprint {
                 epoch: initial_epoch,
                 epoch_start_milli: initial_time_milli,
                 round: Round::zero(),
-                current_leader: None,
+                current_leader: initial_current_leader,
             };
             let validator_rewards = ValidatorRewardsSubstate {
                 proposer_rewards: IndexMap::new(),
@@ -745,14 +746,18 @@ impl ConsensusManagerBlueprint {
         //===========================
         // Distribute rewards (fees)
         //===========================
-        let reward_per_staked_xrd = validator_rewards.rewards_vault.amount(api)? / stake_sum_xrd;
+        let total_individual_amount: Decimal =
+            validator_rewards.proposer_rewards.values().cloned().sum();
+        let reward_per_staked_xrd = (validator_rewards.rewards_vault.amount(api)?
+            - total_individual_amount)
+            / stake_sum_xrd;
         for (index, validator_info) in validator_infos {
-            let from_pool = validator_info.effective_stake_xrd * reward_per_staked_xrd;
             let from_self = validator_rewards
                 .proposer_rewards
                 .remove(&index)
                 .unwrap_or_default();
-            let reward_amount = from_pool + from_self;
+            let from_pool = validator_info.effective_stake_xrd * reward_per_staked_xrd;
+            let reward_amount = from_self + from_pool;
 
             // Note that dusted xrd (due to rounding) are kept in the vault and will
             // become retrievable next time.

@@ -132,6 +132,7 @@ pub struct CustomGenesis {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
 }
 
 impl CustomGenesis {
@@ -188,6 +189,7 @@ impl CustomGenesis {
             initial_epoch,
             initial_config,
             initial_time_ms: 0,
+            initial_current_leader: Some(0),
         }
     }
 }
@@ -232,6 +234,7 @@ impl TestRunnerBuilder {
                     custom_genesis.initial_epoch,
                     custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
+                    custom_genesis.initial_current_leader,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),

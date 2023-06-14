@@ -399,6 +399,7 @@ impl ConsensusManagerNativePackage {
                     input.initial_epoch,
                     input.initial_config,
                     input.initial_time_ms,
+                    input.initial_current_leader,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
