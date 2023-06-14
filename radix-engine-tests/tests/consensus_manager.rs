@@ -2256,7 +2256,11 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             .get(&validator_address)
             .unwrap()
             .stake,
-        Decimal::from(9) + result1.fee_summary.expected_reward_if_single_validator()
+        // The validator isn't eligible for the validator set rewards because it's `reliability_factor` is zero.
+        Decimal::from(9)
+            + result1
+                .fee_summary
+                .expected_reward_as_proposer_if_single_validator()
     );
 }
 

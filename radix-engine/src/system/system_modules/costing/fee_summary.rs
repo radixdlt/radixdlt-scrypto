@@ -43,11 +43,15 @@ impl FeeSummary {
 
     // For testing only
     pub fn expected_reward_if_single_validator(&self) -> Decimal {
-        self.tips_to_distribute()
-            * (TIPS_PROPOSER_SHARE_PERCENTAGE + TIPS_VALIDATOR_SET_SHARE_PERCENTAGE)
-            / dec!(100)
-            + self.fees_to_distribute()
-                * (FEES_PROPOSER_SHARE_PERCENTAGE + FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
-                / dec!(100)
+        self.expected_reward_as_proposer_if_single_validator()
+            + self.expected_reward_as_active_validator_if_single_validator()
+    }
+    pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
+        self.tips_to_distribute() * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+            + self.fees_to_distribute() * (FEES_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+    }
+    pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
+        self.tips_to_distribute() * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+            + self.fees_to_distribute() * (FEES_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
     }
 }
