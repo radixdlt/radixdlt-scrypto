@@ -48,6 +48,7 @@ fn test_bootstrap_receipt_should_match_constants() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Decimal::zero(),
         )
         .unwrap();
 
@@ -104,6 +105,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Decimal::zero(),
         )
         .unwrap();
 
@@ -163,6 +165,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Decimal::zero(),
         )
         .unwrap();
 
@@ -198,7 +201,6 @@ fn test_genesis_resource_with_initial_allocation() {
     let allocation_amount = dec!("105");
     let genesis_resource = GenesisResource {
         address_bytes_without_entity_id,
-        initial_supply: allocation_amount,
         metadata: vec![(
             "symbol".to_string(),
             MetadataValue::String("TST".to_string()),
@@ -228,6 +230,7 @@ fn test_genesis_resource_with_initial_allocation() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Decimal::zero(),
         )
         .unwrap();
 
@@ -333,6 +336,7 @@ fn test_genesis_stake_allocation() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Decimal::zero(),
         )
         .unwrap();
 
@@ -418,6 +422,7 @@ fn test_genesis_time() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
+            Decimal::zero(),
         )
         .unwrap();
 

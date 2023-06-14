@@ -16,6 +16,7 @@ use crate::transaction::{
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::ScryptoVm;
+use lazy_static::lazy_static;
 use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -38,13 +39,17 @@ const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
-const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
+
+lazy_static! {
+    pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub accept_delegated_stake: bool,
     pub is_registered: bool,
+    pub fee_factor: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: ComponentAddress,
 }
@@ -57,6 +62,7 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
             key,
             accept_delegated_stake: true,
             is_registered: true,
+            fee_factor: Decimal::zero(),
             metadata: vec![(
                 "url".to_string(),
                 MetadataValue::Url(Url(format!("http://test.local?validator={:?}", key))),
@@ -75,7 +81,6 @@ pub struct GenesisStakeAllocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct GenesisResource {
     pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
-    pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
@@ -153,6 +158,7 @@ where
                 num_fee_increase_delay_epochs: 1,
             },
             1,
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
         )
     }
 
@@ -162,6 +168,7 @@ where
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
+        faucet_supply: Decimal,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
@@ -181,7 +188,7 @@ where
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up();
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(faucet_supply);
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -246,8 +253,8 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction();
+    fn execute_genesis_wrap_up(&mut self, faucet_supply: Decimal) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction(faucet_supply);
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -276,7 +283,6 @@ pub fn create_system_bootstrap_transaction(
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
 
-    let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = index_set_new();
 
@@ -419,7 +425,6 @@ pub fn create_system_bootstrap_transaction(
                 rule!(deny_all),
             ),
         );
-        let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.into();
         pre_allocated_ids.insert(RADIX_TOKEN.into());
         instructions.push(InstructionV1::CallFunction {
@@ -432,7 +437,7 @@ pub fn create_system_bootstrap_transaction(
                     divisibility: 18,
                     metadata,
                     access_rules,
-                    initial_supply,
+                    initial_supply: Decimal::zero(),
                     resource_address,
                 },
             ),
@@ -809,13 +814,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Create GenesisHelper
     {
-        let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
-        instructions.push(
-            InstructionV1::TakeAllFromWorktop {
-                resource_address: RADIX_TOKEN,
-            }
-            .into(),
-        );
         pre_allocated_ids.insert(GENESIS_HELPER.into());
         let address_bytes = GENESIS_HELPER.as_node_id().0;
         instructions.push(InstructionV1::CallFunction {
@@ -824,7 +822,6 @@ pub fn create_system_bootstrap_transaction(
             function_name: "new".to_string(),
             args: manifest_args!(
                 address_bytes,
-                whole_lotta_xrd,
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
             ),
@@ -870,7 +867,7 @@ pub fn create_genesis_data_ingestion_transaction(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
+pub fn create_genesis_wrap_up_transaction(faucet_supply: Decimal) -> SystemTransactionV1 {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
@@ -879,6 +876,15 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
         method_name: "wrap_up".to_string(),
         args: manifest_args!(),
     });
+
+    instructions.push(
+        InstructionV1::CallMethod {
+            address: RADIX_TOKEN.clone().into(),
+            method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: manifest_args!(faucet_supply),
+        }
+        .into(),
+    );
 
     instructions.push(
         InstructionV1::TakeAllFromWorktop {

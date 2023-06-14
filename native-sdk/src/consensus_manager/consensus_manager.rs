@@ -6,6 +6,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
 
@@ -16,6 +17,7 @@ impl ConsensusManager {
     pub fn create_validator<Y, E: Debug + ScryptoDecode>(
         &self,
         key: EcdsaSecp256k1PublicKey,
+        fee_factor: Decimal,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), E>
     where
@@ -24,7 +26,7 @@ impl ConsensusManager {
         let rtn = api.call_method(
             self.0.as_node_id(),
             CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
-            scrypto_encode(&ConsensusManagerCreateValidatorInput { key }).unwrap(),
+            scrypto_encode(&ConsensusManagerCreateValidatorInput { key, fee_factor }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

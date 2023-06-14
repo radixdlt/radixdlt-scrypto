@@ -1,5 +1,5 @@
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::{ClientApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -23,7 +23,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientBlueprintApi<E>,
     {
         let result = api
             .call_function(
@@ -50,7 +50,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
-        Y: ClientApi<E>,
+        Y: ClientBlueprintApi<E>,
     {
         let result = api
             .call_function(
@@ -78,7 +78,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientBlueprintApi<E>,
     {
         let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
         let result = api.call_function(
@@ -105,7 +105,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientBlueprintApi<E>,
     {
         let result = api.call_function(
             RESOURCE_PACKAGE,
@@ -131,7 +131,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
@@ -152,7 +152,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -169,7 +169,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<T, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -183,7 +183,7 @@ impl ResourceManager {
 
     pub fn resource_type<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<ResourceType, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -200,7 +200,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -216,7 +216,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -228,7 +228,7 @@ impl ResourceManager {
 
     pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -240,7 +240,7 @@ impl ResourceManager {
 
     pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

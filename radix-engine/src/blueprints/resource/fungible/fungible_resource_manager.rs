@@ -3,7 +3,9 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
+use lazy_static::lazy_static;
 use native_sdk::runtime::Runtime;
+use num_traits::pow::Pow;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
@@ -13,6 +15,10 @@ use radix_engine_interface::types::{FungibleResourceManagerField, NodeId};
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
+
+lazy_static! {
+    static ref MAX_MINT_AMOUNT: Decimal = Decimal(BnumI256::from(2).pow(160)); // 2^160 subunits
+}
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -49,7 +55,7 @@ fn check_new_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeErro
     }
 
     // TODO: refactor this into mint function
-    if amount > dec!("1000000000000000000") {
+    if amount > *MAX_MINT_AMOUNT {
         return Err(RuntimeError::ApplicationError(
             ApplicationError::ResourceManagerError(
                 FungibleResourceManagerError::MaxMintAmountExceeded,

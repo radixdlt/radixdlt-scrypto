@@ -221,6 +221,7 @@ pub const CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ConsensusManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
+    pub fee_factor: Decimal,
 }
 
 pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket);
