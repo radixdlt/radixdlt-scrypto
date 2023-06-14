@@ -351,6 +351,24 @@ pub fn export_package_schema(
     Ok(blueprints)
 }
 
+pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+    let type_info = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            component_address.as_node_id(),
+            TYPE_INFO_FIELD_PARTITION,
+            &SubstateKey::Fields(0u8),
+        )
+        .ok_or(Error::ComponentNotFound(component_address))?;
+    match type_info {
+        TypeInfoSubstate::Object(object_info) => Ok(object_info),
+        _ => Err(Error::ComponentNotFound(component_address)),
+    }
+}
+
 pub fn export_schema(
     package_address: PackageAddress,
     schema_hash: Hash,

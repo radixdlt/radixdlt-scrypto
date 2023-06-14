@@ -28,6 +28,7 @@ pub enum Error {
     SchemaNotFound(PackageAddress, Hash),
     BlueprintNotFound(PackageAddress, String),
     ComponentNotFound(ComponentAddress),
+    InstanceSchemaNot(ComponentAddress, u8),
 
     IOError(io::Error),
 

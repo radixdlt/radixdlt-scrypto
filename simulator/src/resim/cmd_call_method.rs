@@ -123,7 +123,22 @@ impl CallMethod {
                 (schema, index)
             }
             SchemaPointer::Instance(instance_index) => {
-                todo!()
+                let object_info = export_object_info(component_address)?;
+                match object_info.instance_schema {
+                    None => {
+                        return Err(Error::InstanceSchemaNot(component_address, instance_index))
+                    }
+                    Some(instance_schema) => {
+                        let index = instance_schema
+                            .type_index
+                            .get(instance_index as usize)
+                            .ok_or_else(|| {
+                                Error::InstanceSchemaNot(component_address, instance_index)
+                            })?
+                            .clone();
+                        (instance_schema.schema, index)
+                    }
+                }
             }
         };
 

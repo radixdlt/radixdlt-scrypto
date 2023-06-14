@@ -251,7 +251,7 @@ macro_rules! substate_key {
     ($t:ty) => {
         impl From<$t> for SubstateKey {
             fn from(value: $t) -> Self {
-                SubstateKey::Tuple(value as u8)
+                SubstateKey::Fields(value as u8)
             }
         }
 
@@ -266,7 +266,7 @@ macro_rules! substate_key {
 
             fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
                 match key {
-                    SubstateKey::Tuple(x) => Self::from_repr(*x).ok_or(()),
+                    SubstateKey::Fields(x) => Self::from_repr(*x).ok_or(()),
                     _ => Err(()),
                 }
             }

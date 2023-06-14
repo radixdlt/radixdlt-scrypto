@@ -467,7 +467,7 @@ where
                         }
                     }
                     partition.insert(
-                        SubstateKey::Tuple(i as u8),
+                        SubstateKey::Fields(i as u8),
                         IndexedScryptoValue::from_vec(field)
                             .expect("Checked by payload-schema validation"),
                     );
@@ -2126,7 +2126,7 @@ where
         self.api.kernel_lock_substate(
             &node_id,
             partition_num,
-            &SubstateKey::Tuple(field_index),
+            &SubstateKey::Fields(field_index),
             flags,
             SystemLockData::Field(lock_data),
         )
