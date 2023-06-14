@@ -27,6 +27,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
+use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
@@ -42,7 +43,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         transaction_hash: &'a Hash,
         runtime_validations: &'a [RuntimeValidationRequest],
         manifest_encoded_instructions: &'a [u8],
-        pre_allocated_addresses: &'a Vec<(BlueprintId, GlobalAddress)>,
+        pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
         references: &'a IndexSet<Reference>,
         blobs: &'a IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -127,7 +128,11 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
-        for (blueprint_id, address) in pre_allocated_addresses {
+        for PreAllocatedAddress {
+            blueprint_id,
+            address,
+        } in pre_allocated_addresses
+        {
             let mut system = SystemService::new(&mut kernel);
             let global_address_reservation =
                 system.prepare_global_address(blueprint_id.clone(), address.clone())?;
@@ -214,7 +219,7 @@ where
                 blueprint_id: blueprint,
                 ..
             } => {
-                // TODO: Josh comment: what's the purpose of this?
+                // FIXME: combine this with reference check of invocation
                 self.current_frame
                     .get_node_visibility(blueprint.package_address.as_node_id())
                     .can_be_invoked(false)
@@ -352,6 +357,7 @@ where
 
         Ok(())
     }
+    // FIXME: Add costing rules for moving module and listing modules.
 
     fn kernel_move_module(
         &mut self,
@@ -360,8 +366,6 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        // FIXME: costing!
-
         self.current_frame
             .move_module(
                 src_node_id,
@@ -622,7 +626,7 @@ where
             }
         };
 
-        // TODO: pass the right size
+        // FIXME: pass the right size
         M::after_lock_substate(lock_handle, 0, &store_access, self)?;
 
         Ok(lock_handle)
@@ -665,7 +669,7 @@ where
             .map_err(KernelError::CallFrameError)?;
         let mut value_size = value.len();
 
-        // TODO: replace this overwrite with proper packing costing rule
+        // FIXME: revisit package special costing rules
         let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
         if lock_info.node_id.is_global_package() {
             store_access.clear();
@@ -820,7 +824,7 @@ where
         let rtn = self.invoke(invocation)?;
 
         M::after_invoke(
-            0, // TODO: Pass the right size
+            0, // FIXME: Pass the right size
             self,
         )?;
 

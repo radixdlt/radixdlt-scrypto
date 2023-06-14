@@ -12,7 +12,7 @@ use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
-// TODO: Refactor structure to be able to remove this
+// FIXME: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActingLocation {
     AtBarrier,
@@ -138,7 +138,7 @@ impl Authorization {
             auth_zone_id,
             api,
             |auth_zone, _, _, api| {
-                // FIXME: Need to check the composite max amount rather than just each proof individually
+                // TODO: revisit this and decide if we need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
                     if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
                         && p.amount(api)? >= amount

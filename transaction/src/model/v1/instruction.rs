@@ -215,7 +215,6 @@ pub enum InstructionV1 {
     #[sbor(discriminator(INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR))]
     ClearAuthZone,
 
-    // TODO: do we need `CreateProofFromWorktop`, to avoid taking resource out and then creating proof?
     /// Creates a proof from the auth zone
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR))]
     CreateProofFromAuthZone { resource_address: ResourceAddress },

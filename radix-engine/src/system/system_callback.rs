@@ -71,8 +71,6 @@ impl SystemLockData {
 
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
-    // TODO: We should be able to make this a more generic cache for
-    // TODO: immutable substates
     pub blueprint_cache: NonIterMap<PackageBlueprintVersionId, BlueprintDefinition>,
     pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
     pub auth_cache: NonIterMap<PackageBlueprintVersionId, AuthTemplate>,
@@ -261,7 +259,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         } = system.actor_get_fn_identifier()?;
 
         let output = if blueprint_id.package_address.eq(&PACKAGE_PACKAGE) {
-            // TODO: Clean this up
+            // FIXME: check invocation against schema
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
             let export_name = match ident {
@@ -273,7 +271,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }
             };
 
-            // TODO: Load dependent resources/components
+            // FIXME: Load dependent resources/components
 
             let mut vm_instance =
                 { NativeVm::create_instance(&blueprint_id.package_address, &[PACKAGE_CODE_ID])? };
@@ -284,8 +282,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             .package_address
             .eq(&TRANSACTION_PROCESSOR_PACKAGE)
         {
-            // TODO: the above special rule can be removed if we move schema validation
-            // into a kernel model, and turn it off for genesis.
+            // FIXME: check invocation against schema
 
             let export_name = match ident {
                 FnIdent::Application(ident) => ident,
@@ -296,7 +293,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }
             };
 
-            // TODO: Load dependent resources/components
+            // FIXME: Load dependent resources/components
 
             let mut vm_instance = {
                 NativeVm::create_instance(
@@ -413,7 +410,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     )?;
                 }
                 FnIdent::System(..) => {
-                    // TODO: Validate against virtual schema
+                    // FIXME: Validate against virtual schema
                 }
             }
 

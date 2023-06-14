@@ -258,7 +258,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use_statements.push(item);
         }
 
-        // TODO: remove
         let contains_super_import = use_statements
             .iter()
             .map(|x| quote! { #(#x) }.to_string())
@@ -356,7 +355,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #auth_macro
             }
         } else {
-            // TODO: Use AllPublicMethod Template instead
+            // FIXME: Use AllPublicMethod Template instead
             quote! {
                 fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                     btreemap!(
@@ -467,7 +466,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     #auth_macro
                 }
             } else {
-                // TODO: Use AllPublicFunctions Template instead
+                // FIXME: Use AllPublicFunctions Template instead
                 quote! {
                     fn function_auth() -> BTreeMap<String, AccessRule> {
                         btreemap!(
@@ -495,7 +494,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     #royalties_macro
                 }
             } else {
-                // TODO: Use AllPublicFunctions Template instead
+                // FIXME: Use AllPublicFunctions Template instead
                 quote! {
                     fn package_royalty_config() -> RoyaltyConfig {
                         let royalties = btreemap!(

@@ -50,7 +50,7 @@ pub enum SubstateMutability {
     Immutable,
 }
 
-// TODO: Extend this use into substate fields
+// FIXME: Extend this use into substate fields
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct DynSubstate<E> {
     pub value: E,
@@ -1300,7 +1300,7 @@ where
         Ok(global_address_reservation)
     }
 
-    // FIXME ensure that only the package actor can globalize its own blueprints
+    // FIXME: ensure that only the package actor can globalize its own blueprints
 
     #[trace_resources]
     fn globalize(
@@ -1372,14 +1372,12 @@ where
                 let global_address = if receiver_info.global {
                     Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                 } else {
+                    // FIXME: Have a correct implementation of tracking global address
                     // See if we have a parent
-
-                    // TODO: Cleanup, this is a rather crude way of trying to figure out
-                    // TODO: whether the node reference is a child of the current parent
-                    // TODO: this should be cleaned up once call_frame is refactored
+                    // Cleanup, this is a rather crude way of trying to figure out
+                    // whether the node reference is a child of the current parent
+                    // this should be cleaned up once call_frame is refactored
                     let node_visibility = self.api.kernel_get_node_visibility(receiver);
-                    // FIXME I believe this logic is incorrect/inconsistent with design, it's
-                    // to duplicate previous logic.
                     if node_visibility.0.iter().any(|v| v.is_normal())
                         && !node_visibility
                             .0
@@ -1399,7 +1397,7 @@ where
 
                 (receiver_info.clone(), global_address)
             }
-            // TODO: Check if type has these object modules
+            // FIXME: verify whether we need to check the modules or not
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
                 ObjectInfo {
                     global: receiver_info.global,
@@ -1432,6 +1430,7 @@ where
                 None => None,
                 Some(blueprint_parent) => {
                     // TODO: do this recursively until global?
+                    // FIXME: is unwrap safe?
                     let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
                     Some(InstanceContext {
                         outer_object: blueprint_parent.clone(),
@@ -1492,7 +1491,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let mut is_drop_allowed = false;
 
-        // TODO: what's the right model, trading off between flexibility and security?
+        // FIXME: what's the right model, trading off between flexibility and security?
 
         // If the actor is the object's outer object
         if let Some(outer_object) = info.outer_object {
@@ -1558,7 +1557,7 @@ where
         })
     }
 
-    // TODO: Should this release lock or continue allow to mutate entry until lock released?
+    // FIXME: Should this release lock or continue allow to mutate entry until lock released?
     fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
@@ -2365,7 +2364,6 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Locking the package info substate associated with the emitter's package
@@ -2441,7 +2439,6 @@ where
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
@@ -2482,8 +2479,9 @@ where
             .generate_uuid())
     }
 
+    // FIXME: update costing for runtime data, such as logs, error messages and events.
+
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        // FIXME: update costing rule
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         Err(RuntimeError::ApplicationError(ApplicationError::Panic(

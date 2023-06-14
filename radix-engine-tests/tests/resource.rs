@@ -189,7 +189,11 @@ fn mint_too_much_should_fail() {
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
-            manifest_args!(0u8, dec!("1000000000000000001")),
+            manifest_args!(
+                0u8,
+                // 2^160 subunits rounded up to full units (so should exceed the limit)
+                dec!("1461501637330902918203684832717")
+            ),
         )
         .call_method(
             account,

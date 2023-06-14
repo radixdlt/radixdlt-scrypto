@@ -30,7 +30,7 @@ pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMutableFieldsSubstate {
-    pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
+    pub mutable_fields: BTreeSet<String>, // FIXME double check the behavior of invalid field name
 }
 
 pub type NonFungibleResourceManagerTotalSupplySubstate = Decimal;
@@ -427,8 +427,8 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let id = {
-            // TODO: Is this enough bits to prevent hash collisions?
-            // TODO: Possibly use an always incrementing timestamp
+            // FIXME: Is this enough bits to prevent hash collisions?
+            // Possibly use an always incrementing timestamp
             let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
             let non_fungibles = btreemap!(id.clone() => value);
 

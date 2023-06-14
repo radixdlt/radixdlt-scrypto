@@ -104,7 +104,7 @@ pub trait ClientObjectApi<E> {
 
     fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
-    // TODO: Combine this with globalization process and/or find the right abstraction
+    // FIXME: Combine this with globalization process and/or find the right abstraction
     fn attach_access_rules(
         &mut self,
         node_id: &NodeId,
@@ -162,7 +162,6 @@ pub trait ClientObjectApi<E> {
         self.call_method_advanced(receiver, true, ObjectModuleId::Main, method_name, args)
     }
 
-    // TODO: Add Object Module logic
     /// Calls a method on an object module
     fn call_method_advanced(
         &mut self,

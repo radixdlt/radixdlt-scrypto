@@ -308,7 +308,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // TODO: only allow a certain amount to be returned
+        // FIXME: only allow a certain amount to be returned
         let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
@@ -353,7 +353,7 @@ impl NonFungibleVault {
             ));
         }
 
-        // TODO: Fix/Cleanup
+        // FIXME: Fix/Cleanup
         if substate_ref.amount > Decimal::from(u32::MAX) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::ResourceError(

@@ -156,7 +156,7 @@ impl Heap {
 
             substates
         } else {
-            vec![] // TODO: should this just be an error instead?
+            vec![] // FIXME: should this just be an error instead?
         }
     }
 
@@ -186,7 +186,7 @@ impl Heap {
 
             items
         } else {
-            vec![] // TODO: should this just be an error instead?
+            vec![] // FIXME: should this just be an error instead?
         }
     }
 

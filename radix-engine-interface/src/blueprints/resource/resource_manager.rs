@@ -28,7 +28,6 @@ pub const UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE: &str = "update_non_fungible_data
 pub const SET_METADATA_ROLE: &str = "set_metadata";
 pub const SET_METADATA_UPDATE_ROLE: &str = "set_metadata_update";
 
-// TODO: Remove?
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceMethodAuthKey {
@@ -41,6 +40,48 @@ pub enum ResourceMethodAuthKey {
     Recall,
     Freeze,
     Unfreeze,
+}
+
+pub const ALL_RESOURCE_AUTH_KEYS: [ResourceMethodAuthKey; 9] = [
+    ResourceMethodAuthKey::Mint,
+    ResourceMethodAuthKey::Burn,
+    ResourceMethodAuthKey::UpdateNonFungibleData,
+    ResourceMethodAuthKey::UpdateMetadata,
+    ResourceMethodAuthKey::Withdraw,
+    ResourceMethodAuthKey::Deposit,
+    ResourceMethodAuthKey::Recall,
+    ResourceMethodAuthKey::Freeze,
+    ResourceMethodAuthKey::Unfreeze,
+];
+
+impl ResourceMethodAuthKey {
+    pub fn action_role_key(&self) -> RoleKey {
+        match self {
+            Self::Mint => RoleKey::new(MINT_ROLE),
+            Self::Burn => RoleKey::new(BURN_ROLE),
+            Self::UpdateNonFungibleData => RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_ROLE),
+            Self::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
+            Self::Withdraw => RoleKey::new(WITHDRAW_ROLE),
+            Self::Deposit => RoleKey::new(DEPOSIT_ROLE),
+            Self::Recall => RoleKey::new(RECALL_ROLE),
+            Self::Freeze => RoleKey::new(FREEZE_ROLE),
+            Self::Unfreeze => RoleKey::new(UNFREEZE_ROLE),
+        }
+    }
+
+    pub fn updater_role_key(&self) -> RoleKey {
+        match self {
+            Self::Mint => RoleKey::new(MINT_UPDATE_ROLE),
+            Self::Burn => RoleKey::new(BURN_UPDATE_ROLE),
+            Self::UpdateNonFungibleData => RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE),
+            Self::UpdateMetadata => RoleKey::new(SET_METADATA_UPDATE_ROLE),
+            Self::Withdraw => RoleKey::new(WITHDRAW_UPDATE_ROLE),
+            Self::Deposit => RoleKey::new(DEPOSIT_UPDATE_ROLE),
+            Self::Recall => RoleKey::new(RECALL_UPDATE_ROLE),
+            Self::Freeze => RoleKey::new(FREEZE_UPDATE_ROLE),
+            Self::Unfreeze => RoleKey::new(UNFREEZE_UPDATE_ROLE),
+        }
+    }
 }
 
 pub const RESOURCE_MANAGER_BURN_IDENT: &str = "burn";

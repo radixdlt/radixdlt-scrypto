@@ -88,7 +88,7 @@ fn test_scrypto_panic() {
     }
 }
 
-// TODO: add length tests when adding event/log/panic message length limit.
+// FIXME: add length tests when adding event/log/panic message length limit.
 
 #[test]
 fn test_assert_length_5() {

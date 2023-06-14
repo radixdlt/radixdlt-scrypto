@@ -352,7 +352,7 @@ impl<O: HasStub> DerefMut for Global<O> {
 }
 
 impl<O: HasStub> Global<O> {
-    // TODO: Change to GlobalAddress?
+    // FIXME: Change to GlobalAddress?
     pub fn component_address(&self) -> ComponentAddress {
         ComponentAddress::new_or_panic(self.handle().as_node_id().0)
     }

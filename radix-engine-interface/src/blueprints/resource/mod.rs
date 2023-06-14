@@ -35,6 +35,5 @@ pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
 }
 
 pub fn check_non_fungible_amount(amount: &Decimal) -> bool {
-    // TODO: consider checking the max
     !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
 }

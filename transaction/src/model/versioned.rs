@@ -55,7 +55,7 @@ pub enum VersionedTransactionPayload {
     SystemTransactionV1 {
         instructions: InstructionsV1,
         blobs: BlobsV1,
-        pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
+        pre_allocated_addresses: Vec<PreAllocatedAddress>,
         hash_for_execution: Hash,
     },
 }
@@ -319,10 +319,10 @@ mod tests {
         .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
-        let pre_allocated_addresses_v1 = vec![(
-            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            XRD.into(),
-        )];
+        let pre_allocated_addresses_v1 = vec![PreAllocatedAddress {
+            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            address: XRD.into(),
+        }];
         let expected_preallocated_addresses_hash =
             hash_manifest_encoded_without_prefix_byte(&pre_allocated_addresses_v1);
 

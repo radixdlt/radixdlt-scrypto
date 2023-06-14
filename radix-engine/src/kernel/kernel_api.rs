@@ -157,7 +157,7 @@ pub trait KernelSubstateApi<L> {
 
 #[derive(Debug)]
 pub struct KernelInvocation {
-    /// TODO: redo actor generification
+    /// FIXME: redo actor generification
     /// Temporarily restored as there's a large conflict with `develop` branch
     pub actor: Actor,
     pub args: IndexedScryptoValue,

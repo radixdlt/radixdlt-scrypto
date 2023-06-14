@@ -689,7 +689,7 @@ impl TransactionProcessor {
                 Ok(())
             }
             RuntimeValidation::IntentHashUniqueness { .. } => {
-                // TODO - Add intent hash replay prevention here
+                // FIXME - Add intent hash replay prevention here
                 // This will to enable its removal from the node
                 Ok(())
             }

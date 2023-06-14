@@ -14,6 +14,7 @@ transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
 colored = { version = "2.0.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
+num-traits = { version = "0.2.15", default-features = false }
 bitflags = { version = "1.3" }
 lru = { version = "0.8.1", default-features = false, optional = true}
 moka = { version = "0.9.4", features = ["sync"], default-features = false, optional = true }
@@ -24,19 +25,21 @@ resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-
 paste = "1.0.12"
 
 # WASM de-/serialization
-parity-wasm = { version = "0.42.2" }
+parity-wasm = { version = "0.42.2", features = ["sign_ext"] }
 
 # WASM validation
-wasmi-validation =  { version = "0.4.1" }
+# Currently wasmparser does not support 'no_std` - https://github.com/bytecodealliance/wasmtime/issues/3495
+# Thus using a wasmparser fork with 'no_std' support: https://crates.io/crates/wasmparser-nostd
+wasmparser = { version = "0.100.1", package = "wasmparser-nostd", default-features = false }
 
 # WASM instrumentation
-wasm-instrument = { version = "0.1.0" }
+wasm-instrument = { version = "0.1.0", features = ["sign_ext"] }
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
 # - Wasmer is a WASM engine with multiple backends: `singlepass` (linear time), `LLVM` and `cranelift`
 
-# FIXME: fetch wasmi from a forker repo until issue https://github.com/paritytech/wasmi/issues/631 is not fixed
+# TODO: use official wasmi package when the issue https://github.com/paritytech/wasmi/issues/631 is fixed
 wasmi = {  git = "https://github.com/radixdlt/wasmi.git", branch = "v0.23.0_store_clone"  }
 wasmer = { version = "2.2.1", optional = true }
 wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
@@ -50,7 +53,7 @@ wabt = { version = "0.10.0" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std", "wasmparser/std"]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
@@ -70,6 +73,10 @@ resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resou
 # This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
 # to prevent non-determinism when fuzzing
 radix_engine_fuzzing = []
+
+# This flag enables code parts used only for testing. Using "test" config option is not enough in cases,
+# when external crate is used for tests (eg. radix-engine-tests)
+radix_engine_tests = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

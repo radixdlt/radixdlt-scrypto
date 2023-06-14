@@ -192,7 +192,7 @@ impl AccountBlueprint {
         Ok((address, bucket))
     }
 
-    // TODO: Remove
+    // FIXME: Remove
     pub fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,

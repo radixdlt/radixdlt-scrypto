@@ -146,7 +146,6 @@ impl NonFungibleProofBlueprint {
         Ok(ids)
     }
 
-    // TODO: Remove in favor of an API get_parent()
     pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,

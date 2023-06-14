@@ -389,7 +389,6 @@ impl ValidatorBlueprint {
         let resource_address = validator.unstake_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
-        // TODO: Move this check into a more appropriate place
         if !resource_address.eq(&bucket.resource_address(api)?) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(ValidatorError::InvalidClaimResource),

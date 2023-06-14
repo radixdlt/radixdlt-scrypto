@@ -18,7 +18,6 @@ use radix_engine_interface::blueprints::identity::{
 #[derive(Debug, Clone)]
 pub struct VirtualizationModule;
 
-// TODO: Move into a lower layer
 impl VirtualizationModule {
     pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemConfig<C>>, C: SystemCallbackObject>(
         node_id: NodeId,
@@ -27,7 +26,7 @@ impl VirtualizationModule {
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match node_id.entity_type() {
-            // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
+            // FIXME: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
             Some(entity_type) => {
                 // Lazy create component if missing
                 let (blueprint, virtual_func_id) = match entity_type {

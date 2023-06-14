@@ -6,7 +6,7 @@ use crate::model::{AuthZoneParams, Executable};
 pub struct SystemTransactionV1 {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
-    pub pre_allocated_addresses: Vec<(BlueprintId, GlobalAddress)>,
+    pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub hash_for_execution: Hash,
 }
 
@@ -16,14 +16,14 @@ impl TransactionPayload for SystemTransactionV1 {
     type Raw = RawSystemTransaction;
 }
 
-type PreparedPreAllocatedIds = SummarizedRawFullBody<Vec<(BlueprintId, GlobalAddress)>>;
+type PreparedPreAllocatedAddresses = SummarizedRawFullBody<Vec<PreAllocatedAddress>>;
 type PreparedHash = SummarizedHash;
 
 pub struct PreparedSystemTransactionV1 {
     pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
     pub blobs: PreparedBlobsV1,
-    pub pre_allocated_addresses: PreparedPreAllocatedIds,
+    pub pre_allocated_addresses: PreparedPreAllocatedAddresses,
     pub hash_for_execution: PreparedHash,
     pub summary: Summary,
 }
@@ -48,7 +48,7 @@ impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
             ConcatenatedDigest::prepare_from_transaction_payload_enum::<(
                 PreparedInstructionsV1,
                 PreparedBlobsV1,
-                PreparedPreAllocatedIds,
+                PreparedPreAllocatedAddresses,
                 PreparedHash,
             )>(decoder, TransactionDiscriminator::V1System)?;
         Ok(Self {
@@ -68,7 +68,7 @@ impl TransactionFullChildPreparable for PreparedSystemTransactionV1 {
             ConcatenatedDigest::prepare_from_transaction_child_struct::<(
                 PreparedInstructionsV1,
                 PreparedBlobsV1,
-                PreparedPreAllocatedIds,
+                PreparedPreAllocatedAddresses,
                 PreparedHash,
             )>(decoder, TransactionDiscriminator::V1System)?;
         Ok(Self {
