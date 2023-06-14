@@ -28,7 +28,12 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup, SchemaPointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET, MethodAuthTemplate};
+use radix_engine_interface::blueprints::package::{
+    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, PackageSetup,
+    SchemaPointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    PACKAGE_SCHEMAS_PARTITION_OFFSET,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -1672,7 +1677,9 @@ pub fn single_function_package_definition(
                     type_validations: vec![],
                 },
                 state: BlueprintStateSchemaInit {
-                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(UNIT_ID))],
+                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
+                        UNIT_ID,
+                    ))],
                     collections: vec![],
                 },
                 events: BlueprintEventSchemaInit::default(),

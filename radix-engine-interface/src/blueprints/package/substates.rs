@@ -69,7 +69,7 @@ pub struct PackageRoyaltyAccumulatorSubstate {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum SchemaPointer {
     Package(Hash, LocalTypeIndex), // For static types
-    Instance(u8), // For generics
+    Instance(u8),                  // For generics
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -180,7 +180,9 @@ impl IndexedBlueprintStateSchema {
                 .into_iter()
                 .map(|field_schema| {
                     let pointer = match field_schema.field {
-                        TypeRef::Static(type_index) => SchemaPointer::Package(schema_hash, type_index),
+                        TypeRef::Static(type_index) => {
+                            SchemaPointer::Package(schema_hash, type_index)
+                        }
                         TypeRef::Generic(instance_index) => SchemaPointer::Instance(instance_index),
                     };
                     FieldSchema {
@@ -195,13 +197,10 @@ impl IndexedBlueprintStateSchema {
 
         let mut collections = Vec::new();
         for collection_schema in schema.collections {
-            let schema = collection_schema
-                .map(|type_ref| {
-                    match type_ref {
-                        TypeRef::Static(type_index) => SchemaPointer::Package(schema_hash, type_index),
-                        TypeRef::Generic(instance_index) => SchemaPointer::Instance(instance_index),
-                    }
-                });
+            let schema = collection_schema.map(|type_ref| match type_ref {
+                TypeRef::Static(type_index) => SchemaPointer::Package(schema_hash, type_index),
+                TypeRef::Generic(instance_index) => SchemaPointer::Instance(instance_index),
+            });
             collections.push((PartitionOffset(partition_offset), schema));
             partition_offset += 1;
         }

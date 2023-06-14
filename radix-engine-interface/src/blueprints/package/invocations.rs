@@ -1,3 +1,6 @@
+use crate::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
@@ -9,7 +12,6 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::BlueprintSchemaInit;
-use crate::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -112,7 +114,6 @@ impl Default for BlueprintDefinitionInit {
     }
 }
 
-
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct AuthTemplate {
     pub function_auth: BTreeMap<String, AccessRule>,
@@ -132,9 +133,15 @@ impl MethodAuthTemplate {
         match self {
             MethodAuthTemplate::Static { auth, .. } => {
                 if !auth.contains_key(&MethodKey::metadata(METADATA_GET_IDENT)) {
-                    auth.insert(MethodKey::metadata(METADATA_GET_IDENT), MethodPermission::Public);
+                    auth.insert(
+                        MethodKey::metadata(METADATA_GET_IDENT),
+                        MethodPermission::Public,
+                    );
                     auth.insert(MethodKey::metadata(METADATA_SET_IDENT), [OWNER_ROLE].into());
-                    auth.insert(MethodKey::metadata(METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
+                    auth.insert(
+                        MethodKey::metadata(METADATA_REMOVE_IDENT),
+                        [OWNER_ROLE].into(),
+                    );
                 }
             }
         }
@@ -142,13 +149,13 @@ impl MethodAuthTemplate {
 
     pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
         match self {
-            MethodAuthTemplate::Static { auth, .. } => auth
+            MethodAuthTemplate::Static { auth, .. } => auth,
         }
     }
 
     pub fn outer_auth(self) -> BTreeMap<MethodKey, MethodPermission> {
         match self {
-            MethodAuthTemplate::Static { outer_auth, .. } => outer_auth
+            MethodAuthTemplate::Static { outer_auth, .. } => outer_auth,
         }
     }
 }

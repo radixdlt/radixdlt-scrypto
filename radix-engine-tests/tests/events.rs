@@ -4,9 +4,12 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
+use radix_engine::errors::{
+    ApplicationError, BlueprintSchemaValidationError, RuntimeError, SystemModuleError,
+};
 use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
+use radix_engine::system::system::BlueprintSchemaIdent;
 use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -55,13 +58,9 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::EventError(err)) => {
-            if let EventError::SchemaNotFoundError { .. } = **err {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
+            BlueprintSchemaValidationError::DoesNotExist(BlueprintSchemaIdent::Event(event)),
+        )) if event.eq("UnregisteredEvent") => true,
         _ => false,
     });
 }

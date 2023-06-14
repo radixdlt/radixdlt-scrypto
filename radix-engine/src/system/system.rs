@@ -3,7 +3,10 @@ use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::blueprints::package::{PackageAuthNativeBlueprint, PackageNativePackage};
-use crate::errors::{ApplicationError, BlueprintSchemaValidationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError};
+use crate::errors::{
+    ApplicationError, BlueprintSchemaValidationError, CannotGlobalizeError, CreateObjectError,
+    InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, RuntimeError, SystemModuleError,
+};
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
@@ -31,7 +34,10 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema, TypeRef};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, Condition, InstanceSchema,
+    KeyValueStoreSchema, TypeRef,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::hash_map::Entry;
 use sbor::rust::string::ToString;
@@ -125,6 +131,7 @@ impl SchemaCache {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum KeyValueStoreIdent {
     Key,
     Value,
@@ -132,22 +139,40 @@ pub enum KeyValueStoreIdent {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BlueprintSchemaIdent {
-    /*
     KeyValueStore {
-        collection_index: usize,
-        value: KeyValueStoreIdent,
+        collection_index: u8,
+        ident: KeyValueStoreIdent,
     },
-     */
     Event(String),
 }
 
 impl BlueprintSchemaIdent {
-    pub fn get_pointer(&self, blueprint_interface: &BlueprintInterface) -> Option<SchemaPointer> {
+    pub fn get_pointer(
+        &self,
+        blueprint_interface: &BlueprintInterface,
+    ) -> Option<(SchemaPointer, bool)> {
         match self {
-            BlueprintSchemaIdent::Event(event_name) => {
-                blueprint_interface.events.get(event_name).cloned()
-
-            }
+            BlueprintSchemaIdent::Event(event_name) => blueprint_interface
+                .events
+                .get(event_name)
+                .cloned()
+                .map(|p| (p, false)),
+            BlueprintSchemaIdent::KeyValueStore {
+                collection_index,
+                ident,
+            } => blueprint_interface
+                .state
+                .collections
+                .get(collection_index.clone() as usize)
+                .and_then(|(_partition, schema)| match schema {
+                    BlueprintCollectionSchema::KeyValueStore(key_value_store) => match ident {
+                        KeyValueStoreIdent::Key => Some((key_value_store.key.clone(), false)),
+                        KeyValueStoreIdent::Value => {
+                            Some((key_value_store.value.clone(), key_value_store.can_own))
+                        }
+                    },
+                    _ => None,
+                }),
         }
     }
 }
@@ -186,32 +211,41 @@ where
         blueprint_id: &BlueprintId,
         instance_schema: &'s Option<InstanceSchema>,
         payloads: Vec<(&Vec<u8>, BlueprintSchemaIdent)>,
-    ) -> Result<Vec<SchemaPointer>, RuntimeError> {
+    ) -> Result<Vec<(SchemaPointer, bool)>, RuntimeError> {
         let blueprint_interface = self.get_blueprint_definition(blueprint_id)?.interface;
 
         let mut schema_pointers = Vec::new();
 
         for (payload, schema_ident) in payloads {
-            let schema_pointer = schema_ident.get_pointer(&blueprint_interface)
+            let (schema_pointer, can_own) = schema_ident
+                .get_pointer(&blueprint_interface)
                 .ok_or_else(|| {
-                    RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
-                        BlueprintSchemaValidationError::DoesNotExist(schema_ident)
-                    ))
+                    RuntimeError::SystemModuleError(
+                        SystemModuleError::BlueprintSchemaValidationError(
+                            BlueprintSchemaValidationError::DoesNotExist(schema_ident),
+                        ),
+                    )
                 })?;
 
             match schema_pointer {
                 SchemaPointer::Package(hash, index) => {
-                    let schema = self.get_schema(blueprint_id.package_address.as_node_id(), &hash)?;
+                    let schema =
+                        self.get_schema(blueprint_id.package_address.as_node_id(), &hash)?;
 
                     self.validate_payload(
                         payload,
                         &schema,
                         index,
                         SchemaOrigin::Blueprint(blueprint_id.clone()),
-                    ).map_err(|err| {
-                        RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
-                            BlueprintSchemaValidationError::SchemaValidationError(err.error_message(&schema))
-                        ))
+                    )
+                    .map_err(|err| {
+                        RuntimeError::SystemModuleError(
+                            SystemModuleError::BlueprintSchemaValidationError(
+                                BlueprintSchemaValidationError::SchemaValidationError(
+                                    err.error_message(&schema),
+                                ),
+                            ),
+                        )
                     })?;
                 }
                 SchemaPointer::Instance(instance_index) => {
@@ -220,10 +254,10 @@ where
                         None => {
                             return Err(RuntimeError::SystemModuleError(
                                 SystemModuleError::BlueprintSchemaValidationError(
-                                    BlueprintSchemaValidationError::InstanceSchemaDoesNotExist
-                                )
+                                    BlueprintSchemaValidationError::InstanceSchemaDoesNotExist,
+                                ),
                             ));
-                        },
+                        }
                     };
                     let index = instance_schema
                         .type_index
@@ -236,14 +270,19 @@ where
                         &instance_schema.schema,
                         index,
                         SchemaOrigin::Instance,
-                    ).map_err(|err| {
-                        RuntimeError::SystemModuleError(SystemModuleError::BlueprintSchemaValidationError(
-                            BlueprintSchemaValidationError::SchemaValidationError(err.error_message(&instance_schema.schema))
-                        ))
+                    )
+                    .map_err(|err| {
+                        RuntimeError::SystemModuleError(
+                            SystemModuleError::BlueprintSchemaValidationError(
+                                BlueprintSchemaValidationError::SchemaValidationError(
+                                    err.error_message(&instance_schema.schema),
+                                ),
+                            ),
+                        )
                     })?;
                 }
             }
-            schema_pointers.push(schema_pointer);
+            schema_pointers.push((schema_pointer, can_own));
         }
 
         Ok(schema_pointers)
@@ -258,7 +297,8 @@ where
         for (payload, schema_pointer) in payloads {
             match schema_pointer {
                 SchemaPointer::Package(hash, index) => {
-                    let schema = self.get_schema(blueprint_id.package_address.as_node_id(), hash)
+                    let schema = self
+                        .get_schema(blueprint_id.package_address.as_node_id(), hash)
                         .map_err(|e| e.to_string())?;
 
                     self.validate_payload(
@@ -266,7 +306,8 @@ where
                         &schema,
                         *index,
                         SchemaOrigin::Blueprint(blueprint_id.clone()),
-                    ).map_err(|err| err.error_message(&schema))?;
+                    )
+                    .map_err(|err| err.error_message(&schema))?;
                 }
                 SchemaPointer::Instance(instance_index) => {
                     let instance_schema = match instance_schema.as_ref() {
@@ -284,7 +325,8 @@ where
                         &instance_schema.schema,
                         index,
                         SchemaOrigin::Instance,
-                    ).map_err(|err| err.error_message(&instance_schema.schema))?;
+                    )
+                    .map_err(|err| err.error_message(&instance_schema.schema))?;
                 }
             }
         }
@@ -586,7 +628,7 @@ where
         features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<
         (
             Option<String>,
@@ -644,7 +686,6 @@ where
                 let mut partition = BTreeMap::new();
 
                 for (i, field) in fields.into_iter().enumerate() {
-
                     // Check for any feature conditions
                     if let Condition::IfFeature(feature) = &field_schemas[i].condition {
                         if !features.contains(feature) {
@@ -693,71 +734,73 @@ where
 
         // Collections
         {
-            for (index, (offset, blueprint_partition_schema)) in blueprint_interface
-                .state
-                .collections
-                .iter()
-                .enumerate()
-            {
-                let index = index as u8;
+            for (collection_index, entries) in kv_entries {
                 let mut partition = BTreeMap::new();
-                match blueprint_partition_schema {
-                    BlueprintCollectionSchema::KeyValueStore(blueprint_kv_schema) => {
-                        let entries = kv_entries.remove(&index);
-                        if let Some(entries) = entries {
-                            for (key, (value, freeze)) in entries {
-                                self.validate_payload_against_blueprint_schema(
-                                    blueprint_id,
-                                    [
-                                        (&key, &blueprint_kv_schema.key),
-                                        (&value, &blueprint_kv_schema.value),
-                                    ],
-                                    instance_schema,
-                                )
-                                .map_err(|err| {
-                                    RuntimeError::SystemError(SystemError::CreateObjectError(
-                                        Box::new(CreateObjectError::InvalidSubstateWrite(err)),
-                                    ))
-                                })?;
 
-                                let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                                let kv_entry = if freeze {
-                                    KeyValueEntrySubstate::immutable_entry(value)
-                                } else {
-                                    KeyValueEntrySubstate::entry(value)
-                                };
+                for (key, (value, freeze)) in entries {
+                    let schema_pointers = self.validate_payload_against_blueprint_schema2(
+                        &blueprint_id,
+                        instance_schema,
+                        vec![
+                            (
+                                &key,
+                                BlueprintSchemaIdent::KeyValueStore {
+                                    collection_index,
+                                    ident: KeyValueStoreIdent::Key,
+                                },
+                            ),
+                            (
+                                &value,
+                                BlueprintSchemaIdent::KeyValueStore {
+                                    collection_index,
+                                    ident: KeyValueStoreIdent::Value,
+                                },
+                            ),
+                        ],
+                    )?;
 
-                                let value = IndexedScryptoValue::from_typed(&kv_entry);
+                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                    let kv_entry = if freeze {
+                        KeyValueEntrySubstate::immutable_entry(value)
+                    } else {
+                        KeyValueEntrySubstate::entry(value)
+                    };
 
-                                if !blueprint_kv_schema.can_own {
-                                    if !value.owned_nodes().is_empty() {
-                                        return Err(RuntimeError::SystemError(
-                                            SystemError::InvalidKeyValueStoreOwnership,
-                                        ));
-                                    }
-                                }
+                    let value = IndexedScryptoValue::from_typed(&kv_entry);
 
-                                partition.insert(SubstateKey::Map(key), value);
-                            }
+                    if !schema_pointers[1].1 {
+                        if !value.owned_nodes().is_empty() {
+                            return Err(RuntimeError::SystemError(
+                                SystemError::InvalidKeyValueStoreOwnership,
+                            ));
                         }
                     }
-                    _ => {
-                        let entries = kv_entries.remove(&index);
-                        if entries.is_some() {
-                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                                Box::new(CreateObjectError::InvalidModule),
-                            )));
-                        }
-                    }
+
+                    partition.insert(SubstateKey::Map(key), value);
                 }
 
-                partitions.insert(offset.clone(), partition);
+                let partition_offset = blueprint_interface
+                    .state
+                    .collections
+                    .get(collection_index as usize)
+                    .ok_or_else(|| {
+                        RuntimeError::SystemModuleError(
+                            SystemModuleError::BlueprintSchemaValidationError(
+                                BlueprintSchemaValidationError::CollectionDoesNotExist,
+                            ),
+                        )
+                    })?
+                    .0;
+
+                partitions.insert(partition_offset, partition);
             }
 
-            if !kv_entries.is_empty() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::InvalidModule),
-                )));
+            for (offset, _blueprint_partition_schema) in
+                blueprint_interface.state.collections.iter()
+            {
+                if !partitions.contains_key(offset) {
+                    partitions.insert(offset.clone(), BTreeMap::new());
+                }
             }
         }
 
@@ -830,8 +873,11 @@ where
         let (node_id, base_partition, info, definition) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, field_schema) =
-            definition.interface.state.field(field_index).ok_or_else(|| {
+        let (partition_offset, field_schema) = definition
+            .interface
+            .state
+            .field(field_index)
+            .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                     info.blueprint_id.clone(),
                     field_index,
@@ -1144,7 +1190,10 @@ where
                         );
 
                     // Move and drop
-                    let schema = self.get_blueprint_definition(&blueprint_id)?.interface.state;
+                    let schema = self
+                        .get_blueprint_definition(&blueprint_id)?
+                        .interface
+                        .state;
                     let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..schema.num_partitions {
                         let src = MAIN_BASE_PARTITION
@@ -1281,7 +1330,10 @@ where
     ) -> Result<(), RuntimeError> {
         // Move and drop
         let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
-        let schema = self.get_blueprint_definition(&blueprint_id)?.interface.state;
+        let schema = self
+            .get_blueprint_definition(&blueprint_id)?
+            .interface
+            .state;
         let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
         for offset in 0u8..schema.num_partitions {
             let src = MAIN_BASE_PARTITION
@@ -2409,16 +2461,17 @@ where
             // Getting the package address and blueprint name associated with the actor
             let (instance_schema, blueprint_id) = match actor {
                 Actor::Method(MethodActor {
-                    module_object_info,
-                    ..
-                }) => {
-                    (module_object_info.instance_schema.clone(),
-                    module_object_info.blueprint_id.clone())
-                },
+                    module_object_info, ..
+                }) => (
+                    module_object_info.instance_schema.clone(),
+                    module_object_info.blueprint_id.clone(),
+                ),
                 Actor::Function { ref blueprint, .. } => (None, blueprint.clone()),
-                _ => return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
-                )),
+                _ => {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
+                    ))
+                }
             };
 
             self.validate_payload_against_blueprint_schema2(
@@ -2426,6 +2479,7 @@ where
                 &instance_schema,
                 vec![(&event_data, BlueprintSchemaIdent::Event(event_name.clone()))],
             )?[0]
+                .0
         };
 
         // Construct the event type identifier based on the current actor

@@ -19,6 +19,7 @@ use crate::kernel::call_frame::{
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::system::BlueprintSchemaIdent;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::events::EventError;
@@ -28,7 +29,6 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use crate::system::system::BlueprintSchemaIdent;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -283,6 +283,7 @@ pub enum SystemModuleError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BlueprintSchemaValidationError {
     BlueprintDoesNotExist(BlueprintId),
+    CollectionDoesNotExist,
     DoesNotExist(BlueprintSchemaIdent),
     SchemaValidationError(String),
     InstanceSchemaDoesNotExist,

@@ -101,7 +101,7 @@ impl BlueprintFunctionsTemplateInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum TypeRef<T> {
-    Static(T), // Type is defined by blueprint
+    Static(T),   // Type is defined by blueprint
     Generic(u8), // Type is defined per instance
 }
 

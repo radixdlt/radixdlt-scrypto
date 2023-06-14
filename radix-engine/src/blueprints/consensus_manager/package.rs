@@ -10,7 +10,9 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintFunctionsTemplateInit, BlueprintSchemaInit,

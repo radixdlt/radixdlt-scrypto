@@ -69,7 +69,10 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintVersionKey, SchemaPointer, PACKAGE_SCHEMAS_PARTITION_OFFSET, BlueprintInterface};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, SchemaPointer,
+    PACKAGE_SCHEMAS_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;

@@ -11,7 +11,9 @@ use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission};
 use radix_engine_interface::rule;
@@ -337,7 +339,7 @@ impl PoolNativePackage {
                             MethodKey::main(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
                         },
                         outer_auth: btreemap!(),
-                    }
+                    },
                 },
             }
         };

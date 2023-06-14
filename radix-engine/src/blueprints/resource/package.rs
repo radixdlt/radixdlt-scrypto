@@ -12,7 +12,9 @@ use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::{AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    AuthTemplate, BlueprintDefinitionInit, MethodAuthTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema};
 use radix_engine_interface::schema::{
@@ -152,8 +154,8 @@ impl ResourceManagerNativePackage {
                     ),
             ));
             fields.push(FieldSchema::if_feature(
-                aggregator.add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
-
+                aggregator
+                    .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
                 TRACK_TOTAL_SUPPLY_FEATURE,
             ));
 
@@ -332,7 +334,7 @@ impl ResourceManagerNativePackage {
                             MethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => MethodPermission::Public;
                         },
                         outer_auth: btreemap!(),
-                    }
+                    },
                 },
             }
         };
@@ -839,7 +841,7 @@ impl ResourceManagerNativePackage {
                             MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
                             MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
                         },
-                    }
+                    },
                 },
             }
         };
@@ -1262,7 +1264,7 @@ impl ResourceManagerNativePackage {
                             MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
                             MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
                         },
-                    }
+                    },
                 },
             }
         };
@@ -1636,7 +1638,7 @@ impl ResourceManagerNativePackage {
                             MethodKey::main(PROOF_GET_AMOUNT_IDENT) => MethodPermission::Public;
                             MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => MethodPermission::Public;
                         ),
-                    }
+                    },
                 },
             }
         };

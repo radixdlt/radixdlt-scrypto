@@ -486,9 +486,7 @@ impl PackageNativePackage {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<AuthTemplate>(),
-                ),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<AuthTemplate>()),
                 can_own: false,
             },
         ));

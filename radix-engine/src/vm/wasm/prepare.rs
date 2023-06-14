@@ -1261,7 +1261,9 @@ mod tests {
                         type_validations: vec![],
                     },
                     state: BlueprintStateSchemaInit {
-                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(UNIT_ID))],
+                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
+                            UNIT_ID,
+                        ))],
                         collections: vec![],
                     },
                     events: Default::default(),

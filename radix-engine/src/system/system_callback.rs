@@ -31,14 +31,13 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
 ) -> Result<PackageExport, RuntimeError> {
-    let function_schema =
-        blueprint_definition
-            .interface
-            .functions
-            .get(fn_ident)
-            .ok_or(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::FnNotFound(fn_ident.to_string()),
-            ))?;
+    let function_schema = blueprint_definition
+        .interface
+        .functions
+        .get(fn_ident)
+        .ok_or(RuntimeError::SystemUpstreamError(
+            SystemUpstreamError::FnNotFound(fn_ident.to_string()),
+        ))?;
 
     match (&function_schema.receiver, with_receiver.as_ref()) {
         (Some(receiver_info), Some((_, direct_access))) => {

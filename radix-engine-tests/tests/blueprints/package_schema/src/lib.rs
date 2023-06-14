@@ -222,7 +222,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::Static {
                 auth: btreemap!(),
                 outer_auth: btreemap!(),
-            }
+            },
         },
     };
 
