@@ -132,9 +132,15 @@ impl SchemaCache {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum KeyValueStoreIdent {
+pub enum KeyValueStoreSchemaIdent {
     Key,
     Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum FunctionSchemaIdent {
+    Input,
+    Output,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -142,7 +148,11 @@ pub enum BlueprintSchemaIdent {
     Field(u8),
     KeyValueStore {
         collection_index: u8,
-        ident: KeyValueStoreIdent,
+        schema_ident: KeyValueStoreSchemaIdent,
+    },
+    Function {
+        ident: String,
+        schema_ident: FunctionSchemaIdent,
     },
     Event(String),
 }
@@ -160,20 +170,29 @@ impl BlueprintSchemaIdent {
             }
             BlueprintSchemaIdent::KeyValueStore {
                 collection_index,
-                ident,
-            } => blueprint_interface
-                .state
-                .collections
-                .get(collection_index.clone() as usize)
-                .and_then(|(_partition, schema)| match schema {
-                    BlueprintCollectionSchema::KeyValueStore(key_value_store) => match ident {
-                        KeyValueStoreIdent::Key => Some((key_value_store.key.clone(), false)),
-                        KeyValueStoreIdent::Value => {
+                schema_ident,
+            } => {
+                let (_partition, schema) = blueprint_interface
+                    .state
+                    .collections
+                    .get(collection_index.clone() as usize)?;
+                match schema {
+                    BlueprintCollectionSchema::KeyValueStore(key_value_store) => match schema_ident {
+                        KeyValueStoreSchemaIdent::Key => Some((key_value_store.key.clone(), false)),
+                        KeyValueStoreSchemaIdent::Value => {
                             Some((key_value_store.value.clone(), key_value_store.can_own))
                         }
                     },
                     _ => None,
-                }),
+                }
+            },
+            BlueprintSchemaIdent::Function { ident, schema_ident, } => {
+                let schema = blueprint_interface.functions.get(ident)?;
+                match schema_ident {
+                    FunctionSchemaIdent::Input => Some((schema.input.clone(), true)),
+                    FunctionSchemaIdent::Output => Some((schema.output.clone(), true)),
+                }
+            }
             BlueprintSchemaIdent::Event(event_name) => blueprint_interface
                 .events
                 .get(event_name)
@@ -212,7 +231,7 @@ where
         )
     }
 
-    fn validate_schema_pointer(
+    pub fn validate_schema_pointer(
         &mut self,
         blueprint_id: &BlueprintId,
         instance_schema: &Option<InstanceSchema>,
@@ -286,7 +305,7 @@ where
         Ok(())
     }
 
-    fn validate_payload_against_blueprint_schema<'s>(
+    pub fn validate_payload_against_blueprint_schema<'s>(
         &'s mut self,
         blueprint_id: &BlueprintId,
         instance_schema: &'s Option<InstanceSchema>,
@@ -296,6 +315,7 @@ where
 
         let mut schema_pointers = Vec::new();
 
+        // TODO: Move this cache into actor
         let mut schema_cache = SchemaCache::new();
 
         for (payload, schema_ident) in payloads {
@@ -530,7 +550,7 @@ where
         } else {
             Err(RuntimeError::SystemModuleError(
                 SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
-                    blueprint: blueprint.clone(),
+                    blueprint_id: blueprint.clone(),
                     ident: FnIdent::Application(ident.to_string()),
                 })),
             ))
@@ -656,8 +676,6 @@ where
 
         let mut partitions = BTreeMap::new();
 
-        let schema_cache = SchemaCache::new();
-
         // Fields
         {
             let expected_num_fields = blueprint_interface.state.num_fields();
@@ -725,14 +743,14 @@ where
                                 &key,
                                 BlueprintSchemaIdent::KeyValueStore {
                                     collection_index,
-                                    ident: KeyValueStoreIdent::Key,
+                                    schema_ident: KeyValueStoreSchemaIdent::Key,
                                 },
                             ),
                             (
                                 &value,
                                 BlueprintSchemaIdent::KeyValueStore {
                                     collection_index,
-                                    ident: KeyValueStoreIdent::Value,
+                                    schema_ident: KeyValueStoreSchemaIdent::Value,
                                 },
                             ),
                         ],

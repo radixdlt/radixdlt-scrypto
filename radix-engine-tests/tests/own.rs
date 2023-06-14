@@ -32,5 +32,5 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("InputSchemaNotMatch"))
+    assert!(error_message.contains("ValidationError"))
 }

@@ -68,7 +68,7 @@ impl Debug for FnIdent {
 
 #[derive(Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FnIdentifier {
-    pub blueprint: BlueprintId,
+    pub blueprint_id: BlueprintId,
     pub ident: FnIdent,
 }
 
@@ -80,7 +80,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for FnIdentifier {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        write!(f, "{}:{:?}", self.blueprint.display(*context), self.ident,)
+        write!(f, "{}:{:?}", self.blueprint_id.display(*context), self.ident,)
     }
 }
 

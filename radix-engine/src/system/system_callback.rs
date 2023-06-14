@@ -9,7 +9,7 @@ use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system::{KeyValueEntrySubstate, SystemService};
+use crate::system::system::{BlueprintSchemaIdent, FunctionSchemaIdent, KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::track::interface::StoreAccessInfo;
@@ -22,112 +22,6 @@ use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
-
-fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-    service: &mut SystemService<'a, Y, V>,
-    blueprint_id: BlueprintId,
-    blueprint_definition: &BlueprintDefinition,
-    fn_ident: &str,
-    with_receiver: Option<(NodeId, bool)>,
-    input: &IndexedScryptoValue,
-) -> Result<PackageExport, RuntimeError> {
-    let function_schema = blueprint_definition
-        .interface
-        .functions
-        .get(fn_ident)
-        .ok_or(RuntimeError::SystemUpstreamError(
-            SystemUpstreamError::FnNotFound(fn_ident.to_string()),
-        ))?;
-
-    match (&function_schema.receiver, with_receiver.as_ref()) {
-        (Some(receiver_info), Some((_, direct_access))) => {
-            if *direct_access != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS) {
-                return Err(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
-                ));
-            }
-        }
-        (None, None) => {}
-        _ => {
-            return Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
-            ));
-        }
-    }
-
-    let (schema, index) = match function_schema.input {
-        SchemaPointer::Package(schema_hash, index) => {
-            let schema =
-                service.get_schema(blueprint_id.package_address.as_node_id(), &schema_hash)?;
-            (schema, index)
-        }
-
-        SchemaPointer::Instance(instance_index) => {
-            todo!()
-        }
-    };
-
-    service
-        .validate_payload(
-            input.as_slice(),
-            &schema,
-            index,
-            SchemaOrigin::Blueprint(blueprint_id),
-        )
-        .map_err(|err| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
-                fn_ident.to_string(),
-                err.error_message(&schema),
-            ))
-        })?;
-
-    let package_export = blueprint_definition.function_exports.get(fn_ident).ok_or(
-        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(fn_ident.to_string())),
-    )?;
-
-    Ok(package_export.clone())
-}
-
-fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-    service: &mut SystemService<'a, Y, V>,
-    blueprint_id: BlueprintId,
-    blueprint_definition: &BlueprintDefinition,
-    fn_ident: &str,
-    output: &IndexedScryptoValue,
-) -> Result<(), RuntimeError> {
-    let output_schema_pointer = blueprint_definition
-        .interface
-        .functions
-        .get(fn_ident)
-        .expect("Checked by `validate_input`");
-
-    let (schema, index) = match &output_schema_pointer.output {
-        SchemaPointer::Package(schema_hash, index) => {
-            let schema =
-                service.get_schema(blueprint_id.package_address.as_node_id(), schema_hash)?;
-            (schema, index.clone())
-        }
-        SchemaPointer::Instance(instance_index) => {
-            todo!()
-        }
-    };
-
-    service
-        .validate_payload(
-            output.as_slice(),
-            &schema,
-            index,
-            SchemaOrigin::Blueprint(blueprint_id),
-        )
-        .map_err(|err| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
-                fn_ident.to_string(),
-                err.error_message(&schema),
-            ))
-        })?;
-
-    Ok(())
-}
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -351,7 +245,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn invoke_upstream<Y>(
-        args: &IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -359,9 +253,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let mut system = SystemService::new(api);
         let receiver = system.actor_get_receiver_node_id();
-        let FnIdentifier { blueprint, ident } = system.actor_get_fn_identifier()?;
+        let FnIdentifier { blueprint_id, ident } = system.actor_get_fn_identifier()?;
 
-        let output = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
+        let output = if blueprint_id.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
@@ -377,11 +271,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // TODO: Load dependent resources/components
 
             let mut vm_instance =
-                { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
-            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
+                { NativeVm::create_instance(&blueprint_id.package_address, &[PACKAGE_CODE_ID])? };
+            let output = { vm_instance.invoke(&export_name, input, &mut system)? };
 
             output
-        } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
+        } else if blueprint_id.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
 
@@ -398,24 +292,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance = {
                 NativeVm::create_instance(
-                    &blueprint.package_address,
+                    &blueprint_id.package_address,
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
+            let output = { vm_instance.invoke(&export_name, input, &mut system)? };
 
             output
         } else {
-            let definition = system.get_blueprint_definition(&blueprint)?;
 
             // Make dependent resources/components visible
             let key = BlueprintVersionKey {
-                blueprint: blueprint.blueprint_name.clone(),
+                blueprint: blueprint_id.blueprint_name.clone(),
                 version: BlueprintVersion::default(),
             };
 
             let handle = system.kernel_lock_substate_with_default(
-                blueprint.package_address.as_node_id(),
+                blueprint_id.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
                     .unwrap(),
@@ -431,17 +324,35 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_drop_lock(handle)?;
 
             //  Validate input
+            let definition = system.get_blueprint_definition(&blueprint_id)?;
             let export = match &ident {
                 FnIdent::Application(ident) => {
-                    let export = validate_input(
-                        &mut system,
-                        blueprint.clone(),
-                        &definition,
-                        &ident,
-                        receiver,
-                        &args,
+                    system.validate_payload_against_blueprint_schema(
+                        &blueprint_id,
+                        &None,
+                        &[(input.as_vec_ref(), BlueprintSchemaIdent::Function { ident: ident.to_string(), schema_ident: FunctionSchemaIdent::Input })]
                     )?;
-                    export
+
+                    let function_schema = definition.interface.functions
+                        .get(ident).expect("Should exist due to schema check");
+
+                    match (&function_schema.receiver, receiver) {
+                        (Some(receiver_info), Some((_, direct_access))) => {
+                            if direct_access != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS) {
+                                return Err(RuntimeError::SystemUpstreamError(
+                                    SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
+                                ));
+                            }
+                        }
+                        (None, None) => {}
+                        _ => {
+                            return Err(RuntimeError::SystemUpstreamError(
+                                SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
+                            ));
+                        }
+                    }
+
+                    definition.function_exports.get(ident).expect("Schema should have validated this exists").clone()
                 }
                 FnIdent::System(system_func_id) => {
                     if let Some(package_export) =
@@ -457,12 +368,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             };
 
             // Execute
-            let output = { C::invoke(&blueprint.package_address, export, args, &mut system)? };
+            let output = { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
             // Validate output
             match ident {
                 FnIdent::Application(ident) => {
-                    validate_output(&mut system, blueprint, &definition, &ident, &output)?
+                    system.validate_payload_against_blueprint_schema(
+                        &blueprint_id,
+                        &None,
+                        &[(output.as_vec_ref(), BlueprintSchemaIdent::Function { ident, schema_ident: FunctionSchemaIdent::Output })]
+                    )?;
                 }
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema

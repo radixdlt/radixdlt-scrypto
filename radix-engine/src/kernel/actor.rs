@@ -27,7 +27,7 @@ pub struct MethodActor {
 impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
-            blueprint: self.module_object_info.blueprint_id.clone(),
+            blueprint_id: self.module_object_info.blueprint_id.clone(),
             ident: FnIdent::Application(self.ident.to_string()),
         }
     }
@@ -103,11 +103,11 @@ impl Actor {
             Actor::Root => panic!("Should never be called"),
             Actor::Method(method_actor) => method_actor.fn_identifier(),
             Actor::Function { blueprint, ident } => FnIdentifier {
-                blueprint: blueprint.clone(),
+                blueprint_id: blueprint.clone(),
                 ident: FnIdent::Application(ident.to_string()),
             },
             Actor::VirtualLazyLoad { blueprint, ident } => FnIdentifier {
-                blueprint: blueprint.clone(),
+                blueprint_id: blueprint.clone(),
                 ident: FnIdent::System(*ident),
             },
         }

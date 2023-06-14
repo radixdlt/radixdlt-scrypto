@@ -132,7 +132,7 @@ fn cannot_pass_bucket_for_proof_argument() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("InputSchemaNotMatch"))
+    assert!(error_message.contains("DataValidation"))
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn cannot_pass_proof_for_bucket_argument() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("InputSchemaNotMatch"))
+    assert!(error_message.contains("DataValidation"))
 }
 
 #[test]
@@ -190,7 +190,7 @@ fn cannot_return_proof_for_bucket() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("OutputSchemaNotMatch"))
+    assert!(error_message.contains("SchemaValidationError"))
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn cannot_return_bucket_for_proof() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("OutputSchemaNotMatch"))
+    assert!(error_message.contains("SchemaValidationError"))
 }
 
 #[test]
@@ -345,5 +345,5 @@ fn test_receive_reference_not_of_specific_blueprint() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("InputSchemaNotMatch"))
+    assert!(error_message.contains("DataValidation"))
 }

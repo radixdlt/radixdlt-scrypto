@@ -123,7 +123,7 @@ impl FeeTable {
                 input_size,
                 actor: identifier,
             } => {
-                let FnIdentifier { blueprint, ident } = identifier.fn_identifier();
+                let FnIdentifier { blueprint_id: blueprint, ident } = identifier.fn_identifier();
                 match &ident {
                     FnIdent::Application(fn_name) => {
                         match (blueprint.blueprint_name.as_str(), fn_name.as_str()) {
