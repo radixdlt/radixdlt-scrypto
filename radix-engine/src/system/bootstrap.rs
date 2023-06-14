@@ -200,6 +200,7 @@ where
                 num_fee_increase_delay_epochs: 1,
             },
             1,
+            Some(0),
         )
     }
 
@@ -209,6 +210,7 @@ where
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
+        initial_current_leader: Option<ValidatorIndex>,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
@@ -219,8 +221,12 @@ where
             );
 
         if xrd_info.is_none() {
-            let system_bootstrap_receipt =
-                self.execute_system_bootstrap(initial_epoch, initial_config, initial_time_ms);
+            let system_bootstrap_receipt = self.execute_system_bootstrap(
+                initial_epoch,
+                initial_config,
+                initial_time_ms,
+                initial_current_leader,
+            );
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -245,9 +251,14 @@ where
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
+        initial_current_leader: Option<ValidatorIndex>,
     ) -> TransactionReceipt {
-        let transaction =
-            create_system_bootstrap_transaction(initial_epoch, initial_config, initial_time_ms);
+        let transaction = create_system_bootstrap_transaction(
+            initial_epoch,
+            initial_config,
+            initial_time_ms,
+            initial_current_leader,
+        );
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -319,6 +330,7 @@ pub fn create_system_bootstrap_transaction(
     initial_epoch: Epoch,
     initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
+    initial_current_leader: Option<ValidatorIndex>,
 ) -> SystemTransactionV1 {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
@@ -867,6 +879,7 @@ pub fn create_system_bootstrap_transaction(
                 initial_epoch,
                 initial_config,
                 initial_time_ms,
+                initial_current_leader,
             }),
         });
     }

@@ -808,15 +808,18 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::Main,
             )))?;
-        self.api
+        if let Some(module) = self
+            .api
             .kernel_get_system_state()
             .system
             .modules
-            .events
-            .add_replacement(
+            .events_module()
+        {
+            module.add_replacement(
                 (node_id, ObjectModuleId::Main),
                 (*global_address.as_node_id(), ObjectModuleId::Main),
             );
+        };
         let lock_handle = self.api.kernel_lock_substate(
             &node_id,
             TYPE_INFO_FIELD_PARTITION,
@@ -895,15 +898,18 @@ where
                         )));
                     }
 
-                    self.api
+                    if let Some(module) = self
+                        .api
                         .kernel_get_system_state()
                         .system
                         .modules
-                        .events
-                        .add_replacement(
+                        .events_module()
+                    {
+                        module.add_replacement(
                             (node_id, ObjectModuleId::Main),
                             (*global_address.as_node_id(), module_id),
                         );
+                    };
 
                     // Move and drop
                     self.kernel_move_module(
@@ -1752,13 +1758,8 @@ where
         units: u32,
         reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        // No costing applied
-
-        self.api
-            .kernel_get_system()
-            .modules
-            .costing
-            .apply_execution_cost(
+        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
+            module.apply_execution_cost(
                 match reason {
                     ClientCostingReason::RunWasm => CostingReason::RunWasm,
                     ClientCostingReason::RunNative => CostingReason::RunNative,
@@ -1767,6 +1768,9 @@ where
                 |_| units,
                 5,
             )
+        } else {
+            Ok(())
+        }
     }
 
     #[trace_resources]
@@ -1778,51 +1782,51 @@ where
     ) -> Result<LiquidFungibleResource, RuntimeError> {
         // No costing applied
 
-        self.api
-            .kernel_get_system()
-            .modules
-            .costing
-            .credit_cost_units(vault_id, locked_fee, contingent)
+        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
+            module.credit_cost_units(vault_id, locked_fee, contingent)
+        } else {
+            Ok(locked_fee)
+        }
     }
 
     fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
-        Ok(self
-            .api
-            .kernel_get_system()
-            .modules
-            .costing
-            .fee_reserve
-            .cost_unit_limit())
+        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
+            Ok(module.fee_reserve.cost_unit_limit())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
     }
 
     fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
-        Ok(self
-            .api
-            .kernel_get_system()
-            .modules
-            .costing
-            .fee_reserve
-            .cost_unit_price())
+        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
+            Ok(module.fee_reserve.cost_unit_price())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
     }
 
     fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
-        Ok(self
-            .api
-            .kernel_get_system()
-            .modules
-            .costing
-            .fee_reserve
-            .tip_percentage())
+        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
+            Ok(module.fee_reserve.tip_percentage())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
     }
 
     fn fee_balance(&mut self) -> Result<Decimal, RuntimeError> {
-        Ok(self
-            .api
-            .kernel_get_system()
-            .modules
-            .costing
-            .fee_reserve
-            .fee_balance())
+        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
+            Ok(module.fee_reserve.fee_balance())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
     }
 }
 
@@ -2035,29 +2039,21 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let auth_zone_id = self
-            .api
-            .kernel_get_system()
-            .modules
-            .auth
-            .last_auth_zone()
-            .expect("Auth zone missing");
-
-        Ok(auth_zone_id.into())
+        if let Some(module) = self.api.kernel_get_system().modules.auth_module() {
+            let auth_zone_id = module.last_auth_zone().expect("Auth zone missing");
+            Ok(auth_zone_id.into())
+        } else {
+            Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
+        }
     }
 
     #[trace_resources]
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
+        // FIXME: possibly non-constant costing
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Fetch the tip auth zone
-        let auth_zone_id = self
-            .api
-            .kernel_get_system()
-            .modules
-            .auth
-            .last_auth_zone()
-            .expect("Missing auth zone");
+        let auth_zone_id = self.get_auth_zone()?;
 
         // Authorize
         let auth_result = Authorization::check_authorization_against_access_rule(
@@ -2085,11 +2081,17 @@ where
         // No costing applied
 
         let current_depth = self.api.kernel_get_current_depth();
-        self.api
+        if let Some(module) = self
+            .api
             .kernel_get_system()
             .modules
-            .transaction_limits
-            .update_wasm_memory_usage(current_depth, consumed_memory)
+            .transaction_limits_module()
+        {
+            module.update_wasm_memory_usage(current_depth, consumed_memory)?;
+            Ok(())
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -2102,12 +2104,17 @@ where
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
-        self.api
+        if let Some(module) = self
+            .api
             .kernel_get_system()
             .modules
-            .execution_trace
-            .update_instruction_index(new_index);
-        Ok(())
+            .execution_trace_module()
+        {
+            module.update_instruction_index(new_index);
+            Ok(())
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -2189,11 +2196,9 @@ where
         })?;
 
         // Adding the event to the event store
-        self.api
-            .kernel_get_system()
-            .modules
-            .events
-            .add_event(event_type_identifier, event_data);
+        if let Some(module) = self.api.kernel_get_system().modules.events_module() {
+            module.add_event(event_type_identifier, event_data);
+        }
 
         Ok(())
     }
@@ -2207,12 +2212,12 @@ where
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        self.api
-            .kernel_get_system()
-            .modules
-            .logger
-            .add(level, message);
-        Ok(())
+        if let Some(module) = self.api.kernel_get_system().modules.logger_module() {
+            module.add(level, message);
+            Ok(())
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -2225,24 +2230,36 @@ where
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self
+        if let Some(module) = self
             .api
             .kernel_get_system()
             .modules
-            .transaction_runtime
-            .transaction_hash())
+            .transaction_runtime_module()
+        {
+            Ok(module.transaction_hash())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::TransactionRuntimeModuleNotEnabled,
+            ))
+        }
     }
 
     #[trace_resources]
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self
+        if let Some(module) = self
             .api
             .kernel_get_system()
             .modules
-            .transaction_runtime
-            .generate_uuid())
+            .transaction_runtime_module()
+        {
+            Ok(module.generate_uuid())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::TransactionRuntimeModuleNotEnabled,
+            ))
+        }
     }
 
     // FIXME: update costing for runtime data, such as logs, error messages and events.

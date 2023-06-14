@@ -229,6 +229,9 @@ pub enum SystemError {
     BlueprintDoesNotExist(BlueprintId),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
     InvalidScryptoValue(DecodeError),
+    CostingModuleNotEnabled,
+    AuthModuleNotEnabled,
+    TransactionRuntimeModuleNotEnabled,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

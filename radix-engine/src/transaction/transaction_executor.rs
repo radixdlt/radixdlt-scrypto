@@ -1,3 +1,4 @@
+use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
@@ -246,11 +247,17 @@ where
                 output
             });
 
-        let mut fee_reserve = system.modules.costing.fee_reserve();
-        let mut application_events = system.modules.events.events();
-        let application_logs = system.modules.logger.logs();
-
         // Finalize
+        let (
+            costing_module,
+            events_module,
+            logger_module,
+            execution_trace_module,
+            transaction_limits_module,
+        ) = system.modules.unpack();
+        let mut fee_reserve = costing_module.fee_reserve();
+        let mut application_events = events_module.events();
+        let application_logs = logger_module.logs();
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
         let transaction_result = match result_type {
             TransactionResultType::Commit(outcome) => {
@@ -296,11 +303,8 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
-        let execution_metrics = system
-            .modules
-            .transaction_limits
-            .finalize(&transaction_result);
+        let execution_trace = execution_trace_module.finalize(&transaction_result);
+        let execution_metrics = transaction_limits_module.finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
@@ -591,6 +595,77 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         };
     }
 
-    // FIXME: distribute fees
+    let tips_to_distribute = fee_summary.tips_to_distribute();
+    let fees_to_distribute = fee_summary.fees_to_distribute();
+
+    if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
+        // Fetch current leader
+        // TODO: maybe we should move current leader into validator rewards?
+        let handle = track
+            .acquire_lock(
+                CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+                LockFlags::read_only(),
+            )
+            .unwrap()
+            .0;
+        let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
+        let current_leader = substate.current_leader;
+        track.release_lock(handle);
+
+        // Update validator rewards
+        let handle = track
+            .acquire_lock(
+                CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ValidatorRewards.into(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap()
+            .0;
+        let mut substate: ValidatorRewardsSubstate =
+            track.read_substate(handle).0.as_typed().unwrap();
+        let proposer_rewards = if let Some(current_leader) = current_leader {
+            let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
+                + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
+            substate
+                .proposer_rewards
+                .entry(current_leader)
+                .or_default()
+                .add_assign(rewards);
+            rewards
+        } else {
+            Decimal::ZERO
+        };
+        let validator_set_rewards = {
+            tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+                + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+        };
+        let vault_node_id = substate.rewards_vault.0 .0;
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
+
+        // Put validator rewards into the vault
+        let handle = track
+            .acquire_lock(
+                &vault_node_id,
+                OBJECT_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap()
+            .0;
+        let mut substate: LiquidFungibleResource =
+            track.read_substate(handle).0.as_typed().unwrap();
+        substate
+            .put(LiquidFungibleResource::new(
+                proposer_rewards + validator_set_rewards,
+            ))
+            .unwrap();
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
+    }
+
     (fee_summary, fee_payments)
 }
