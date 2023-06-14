@@ -471,7 +471,7 @@ impl ExecutionTraceModule {
                     blueprint_name: object_info.blueprint_id.blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
-                Actor::Function { blueprint, ident } => {
+                Actor::Function { blueprint_id: blueprint, ident } => {
                     Origin::ScryptoFunction(ApplicationFnIdentifier {
                         package_address: blueprint.package_address.clone(),
                         blueprint_name: blueprint.blueprint_name.clone(),

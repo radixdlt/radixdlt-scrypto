@@ -74,7 +74,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     // TODO: immutable substates
     pub blueprint_cache: NonIterMap<PackageBlueprintVersionId, BlueprintDefinition>,
     pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
-    pub auth_cache: NonIterMap<BlueprintId, AuthTemplate>,
+    pub auth_cache: NonIterMap<PackageBlueprintVersionId, AuthTemplate>,
     pub modules: SystemModuleMixer,
 }
 

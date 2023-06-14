@@ -321,7 +321,7 @@ impl<L: Clone> CallFrame<L> {
                     additional_global_refs.push(instance_context.outer_object.clone());
                 }
             }
-            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
+            Actor::Function { blueprint_id: blueprint, .. } | Actor::VirtualLazyLoad { blueprint_id: blueprint, .. } => {
                 additional_global_refs.push(blueprint.package_address.clone().into());
             }
         }

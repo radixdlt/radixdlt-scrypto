@@ -29,6 +29,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::blueprints::package::PackageBlueprintVersionId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -229,8 +230,8 @@ pub enum SystemError {
     InvalidInstanceSchema,
     InvalidFeature(String),
     AssertAccessRuleFailed,
-    BlueprintDoesNotExist(BlueprintId),
-    BlueprintTemplateDoesNotExist(BlueprintId),
+    BlueprintDoesNotExist(PackageBlueprintVersionId),
+    BlueprintTemplateDoesNotExist(PackageBlueprintVersionId),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
     InvalidScryptoValue(DecodeError),
 }

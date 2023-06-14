@@ -512,55 +512,6 @@ where
     }
 
     // TODO: Move cache management into PackageNativePackage
-    pub fn get_bp_auth_template(
-        &mut self,
-        blueprint: &BlueprintId,
-    ) -> Result<AuthTemplate, RuntimeError> {
-        let auth_template = self
-            .api
-            .kernel_get_system_state()
-            .system
-            .auth_cache
-            .get(blueprint);
-        if let Some(auth_template) = auth_template {
-            return Ok(auth_template.clone());
-        }
-
-        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.clone());
-        let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
-            blueprint.package_address.as_node_id(),
-            &bp_version_key,
-            self.api,
-        )?;
-
-        self.api
-            .kernel_get_system_state()
-            .system
-            .auth_cache
-            .insert(blueprint.clone(), auth_template.clone());
-
-        Ok(auth_template)
-    }
-
-    pub fn get_bp_function_access_rule(
-        &mut self,
-        blueprint: &BlueprintId,
-        ident: &str,
-    ) -> Result<AccessRule, RuntimeError> {
-        let auth_template = self.get_bp_auth_template(blueprint)?;
-        let access_rule = auth_template.function_auth.get(ident);
-        if let Some(access_rule) = access_rule {
-            Ok(access_rule.clone())
-        } else {
-            Err(RuntimeError::SystemModuleError(
-                SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
-                    blueprint_id: blueprint.clone(),
-                    ident: FnIdent::Application(ident.to_string()),
-                })),
-            ))
-        }
-    }
-
     pub fn get_schema(
         &mut self,
         node_id: &NodeId,
@@ -1562,7 +1513,7 @@ where
             }
         }
         // If the actor is a function within the same blueprint
-        if let Actor::Function { blueprint, .. } = actor {
+        if let Actor::Function { blueprint_id: blueprint, .. } = actor {
             if blueprint.eq(&info.blueprint_id) {
                 is_drop_allowed = true;
             }
@@ -2435,7 +2386,7 @@ where
                     module_object_info.instance_schema.clone(),
                     module_object_info.blueprint_id.clone(),
                 ),
-                Actor::Function { ref blueprint, .. } => (None, blueprint.clone()),
+                Actor::Function { blueprint_id: ref blueprint, .. } => (None, blueprint.clone()),
                 _ => {
                     return Err(RuntimeError::SystemModuleError(
                         SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
@@ -2460,7 +2411,7 @@ where
                 Emitter::Method(node_id.clone(), module_id.clone()),
                 schema_pointer,
             )),
-            Actor::Function { ref blueprint, .. } => Ok(EventTypeIdentifier(
+            Actor::Function { blueprint_id: ref blueprint, .. } => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
                     ObjectModuleId::Main,

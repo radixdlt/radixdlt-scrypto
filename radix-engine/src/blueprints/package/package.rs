@@ -35,6 +35,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
+use crate::system::system_modules::auth::AuthError;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -1040,17 +1041,17 @@ impl PackageNativePackage {
         Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     {
-        let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-        let package_bp_version_key = PackageBlueprintVersionId {
-            address: package_address,
+        let package_bp_version_id = PackageBlueprintVersionId {
+            address: PackageAddress::new_or_panic(receiver.0.clone()),
             blueprint: bp_version_key.blueprint.to_string(),
             version: bp_version_key.version.clone(),
         };
+
         let def = api
             .kernel_get_system_state()
             .system
             .blueprint_cache
-            .get(&package_bp_version_key);
+            .get(&package_bp_version_id);
         if let Some(definition) = def {
             return Ok(definition.clone());
         }
@@ -1073,17 +1074,16 @@ impl PackageNativePackage {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
-        let definition = substate.value.ok_or_else(|| {
-            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
-            RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint_id))
-        })?;
+        let definition = match substate.value {
+            Some(definition) => definition,
+            None => return Err(RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(package_bp_version_id))),
+        };
 
         api
             .kernel_get_system_state()
             .system
             .blueprint_cache
-            .insert(package_bp_version_key, definition.clone());
+            .insert(package_bp_version_id, definition.clone());
 
         Ok(definition)
     }
@@ -1183,14 +1183,56 @@ impl PackageRoyaltyNativeBlueprint {
 pub struct PackageAuthNativeBlueprint;
 
 impl PackageAuthNativeBlueprint {
-    pub fn get_bp_auth_template<Y>(
+    pub fn get_bp_function_access_rule<Y, V>(
+        receiver: &NodeId,
+        bp_version_key: &BlueprintVersionKey,
+        ident: &str,
+        api: &mut Y,
+    ) -> Result<AccessRule, RuntimeError>
+        where
+            Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+            V: SystemCallbackObject,
+    {
+        let auth_template = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
+        let access_rule = auth_template.function_auth.get(ident);
+        if let Some(access_rule) = access_rule {
+            Ok(access_rule.clone())
+        } else {
+            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
+            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
+            Err(RuntimeError::SystemModuleError(
+                SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
+                    blueprint_id,
+                    ident: FnIdent::Application(ident.to_string()),
+                })),
+            ))
+        }
+    }
+
+    pub fn get_bp_auth_template<Y, V>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<AuthTemplate, RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData>,
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
     {
+        let package_bp_version_id = PackageBlueprintVersionId {
+            address: PackageAddress::new_or_panic(receiver.0.clone()),
+            blueprint: bp_version_key.blueprint.to_string(),
+            version: bp_version_key.version.clone(),
+        };
+
+        let auth_template = api
+            .kernel_get_system_state()
+            .system
+            .auth_cache
+            .get(&package_bp_version_id);
+        if let Some(auth_template) = auth_template {
+            return Ok(auth_template.clone());
+        }
+
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
@@ -1209,11 +1251,17 @@ impl PackageAuthNativeBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
-        let template = auth_template.value.ok_or_else(|| {
-            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
-            RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(blueprint_id))
-        })?;
+        let template = match auth_template.value {
+            Some(template) => template,
+            None => return
+                Err(RuntimeError::SystemError(SystemError::BlueprintTemplateDoesNotExist(package_bp_version_id))),
+        };
+
+        api
+            .kernel_get_system_state()
+            .system
+            .auth_cache
+            .insert(package_bp_version_id, template.clone());
 
         Ok(template)
     }

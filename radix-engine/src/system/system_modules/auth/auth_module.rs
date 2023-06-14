@@ -14,10 +14,11 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::BlueprintVersion;
+use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
+use crate::blueprints::package::PackageAuthNativeBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -121,19 +122,19 @@ impl AuthModule {
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
+        let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
+            callee.node_object_info.blueprint_id.package_address.as_node_id(),
+            &BlueprintVersionKey::new_default(callee.node_object_info.blueprint_id.blueprint_name.as_str()),
+            api.api,
+        )?;
+
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
-                let template = api
-                    .get_bp_auth_template(&callee.node_object_info.blueprint_id)?
-                    .clone();
-                template.method_auth.auth()
+                auth_template.method_auth.auth()
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
-                let template = api
-                    .get_bp_auth_template(&callee.node_object_info.blueprint_id)?
-                    .clone();
-                template.method_auth.outer_auth()
+                auth_template.method_auth.outer_auth()
             }
         };
 
@@ -237,10 +238,14 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
                 }
-                Actor::Function { blueprint, ident } => {
-                    let access_rule = system
-                        .get_bp_function_access_rule(blueprint, ident.as_str())?
-                        .clone();
+                Actor::Function { blueprint_id, ident } => {
+                    let access_rule = PackageAuthNativeBlueprint::get_bp_function_access_rule(
+                        blueprint_id.package_address.as_node_id(),
+                        &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                        ident.as_str(),
+                        system.api,
+                    )?;
+
                     let acting_location = ActingLocation::AtBarrier;
 
                     // Verify authorization
