@@ -837,8 +837,7 @@ where
         (
             NodeId,
             PartitionNumber,
-            ScryptoSchema,
-            LocalTypeIndex,
+            SchemaPointer,
             ObjectInfo,
         ),
         RuntimeError,
@@ -857,6 +856,7 @@ where
                 ))
             })?;
 
+
         if let Condition::IfFeature(feature) = field_schema.condition {
             if !info.features.contains(&feature) {
                 return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
@@ -872,17 +872,8 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        match pointer {
-            SchemaPointer::Package(schema_hash, type_index) => {
-                let schema =
-                    self.get_schema(info.blueprint_id.package_address.as_node_id(), &schema_hash)?;
 
-                Ok((node_id, partition_num, schema, type_index, info))
-            }
-            SchemaPointer::Instance(_instance_index) => {
-                todo!()
-            }
-        }
+        Ok((node_id, partition_num, pointer, info))
     }
 
     fn get_actor_kv_partition(
@@ -1230,16 +1221,16 @@ where
 
         match data {
             SystemLockData::Field(FieldLockData::Write {
-                index,
-                schema,
-                schema_origin,
+                blueprint_id,
+                schema_pointer,
             }) => {
-                self.validate_payload(&buffer, &schema, index, schema_origin)
-                    .map_err(|e| {
-                        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
-                            e.error_message(&schema),
-                        ))
-                    })?;
+                self.validate_schema_pointer(
+                    &blueprint_id,
+                    &None, // TODO: Change to Some, once support for generic fields is implemented
+                    schema_pointer,
+                    &buffer,
+                    None
+                )?;
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteLock));
@@ -2137,7 +2128,7 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema, type_index, object_info) =
+        let (node_id, partition_num, schema_pointer, object_info) =
             self.get_actor_field(actor_object_type, field_index)?;
 
         // TODO: Remove
@@ -2157,9 +2148,8 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
-                schema_origin: SchemaOrigin::Blueprint(object_info.blueprint_id),
-                schema,
-                index: type_index,
+                blueprint_id: object_info.blueprint_id,
+                schema_pointer,
             }
         } else {
             FieldLockData::Read

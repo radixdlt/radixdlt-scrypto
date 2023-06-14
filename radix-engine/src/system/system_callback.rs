@@ -157,9 +157,8 @@ pub enum KeyValueEntryLockData {
 pub enum FieldLockData {
     Read,
     Write {
-        schema_origin: SchemaOrigin,
-        schema: ScryptoSchema,
-        index: LocalTypeIndex,
+        blueprint_id: BlueprintId,
+        schema_pointer: SchemaPointer,
     },
 }
 

@@ -269,7 +269,7 @@ fn cannot_update_substate_with_mismatching_data() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("InvalidSubstateWrite"))
+    assert!(error_message.contains("DataValidation"))
 }
 
 /// Note that payload validation after pushing call frame.
