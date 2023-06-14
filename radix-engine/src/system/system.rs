@@ -139,6 +139,7 @@ pub enum KeyValueStoreIdent {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BlueprintSchemaIdent {
+    Field(u8),
     KeyValueStore {
         collection_index: u8,
         ident: KeyValueStoreIdent,
@@ -152,11 +153,11 @@ impl BlueprintSchemaIdent {
         blueprint_interface: &BlueprintInterface,
     ) -> Option<(SchemaPointer, bool)> {
         match self {
-            BlueprintSchemaIdent::Event(event_name) => blueprint_interface
-                .events
-                .get(event_name)
-                .cloned()
-                .map(|p| (p, false)),
+            BlueprintSchemaIdent::Field(field_index) => {
+                let (_partition, fields) = blueprint_interface.state.fields.clone()?;
+                let field_schema = fields.get(field_index.clone() as usize)?;
+                Some((field_schema.field.clone(), true))
+            }
             BlueprintSchemaIdent::KeyValueStore {
                 collection_index,
                 ident,
@@ -173,6 +174,11 @@ impl BlueprintSchemaIdent {
                     },
                     _ => None,
                 }),
+            BlueprintSchemaIdent::Event(event_name) => blueprint_interface
+                .events
+                .get(event_name)
+                .cloned()
+                .map(|p| (p, false)),
         }
     }
 }
@@ -206,71 +212,65 @@ where
         )
     }
 
-    fn validate_payload_against_blueprint_schema2<'s>(
-        &'s mut self,
+    fn validate_schema_pointer(
+        &mut self,
         blueprint_id: &BlueprintId,
-        instance_schema: &'s Option<InstanceSchema>,
-        payloads: Vec<(&Vec<u8>, BlueprintSchemaIdent)>,
-    ) -> Result<Vec<(SchemaPointer, bool)>, RuntimeError> {
-        let blueprint_interface = self.get_blueprint_definition(blueprint_id)?.interface;
+        instance_schema: &Option<InstanceSchema>,
+        schema_pointer: SchemaPointer,
+        payload: &[u8],
+        cache: Option<&mut SchemaCache>,
+    ) -> Result<(), RuntimeError> {
+        let mut local_cache = SchemaCache::new();
+        let schema_cache = cache.unwrap_or(&mut local_cache);
 
-        let mut schema_pointers = Vec::new();
+        match schema_pointer {
+            SchemaPointer::Package(hash, index) => {
+                self.ensure_schema_loaded(
+                    blueprint_id.package_address.as_node_id(),
+                    &hash,
+                    schema_cache,
+                )?;
+                let schema = schema_cache.cache.get(&hash).unwrap();
 
-        for (payload, schema_ident) in payloads {
-            let (schema_pointer, can_own) = schema_ident
-                .get_pointer(&blueprint_interface)
-                .ok_or_else(|| {
-                    RuntimeError::SystemModuleError(
-                        SystemModuleError::BlueprintSchemaValidationError(
-                            BlueprintSchemaValidationError::DoesNotExist(schema_ident),
-                        ),
-                    )
-                })?;
-
-            match schema_pointer {
-                SchemaPointer::Package(hash, index) => {
-                    let schema =
-                        self.get_schema(blueprint_id.package_address.as_node_id(), &hash)?;
-
-                    self.validate_payload(
-                        payload,
-                        &schema,
-                        index,
-                        SchemaOrigin::Blueprint(blueprint_id.clone()),
-                    )
+                self.validate_payload(
+                    payload,
+                    schema,
+                    index,
+                    SchemaOrigin::Blueprint(blueprint_id.clone()),
+                )
                     .map_err(|err| {
                         RuntimeError::SystemModuleError(
                             SystemModuleError::BlueprintSchemaValidationError(
                                 BlueprintSchemaValidationError::SchemaValidationError(
-                                    err.error_message(&schema),
+                                    err.error_message(schema),
                                 ),
                             ),
                         )
                     })?;
-                }
-                SchemaPointer::Instance(instance_index) => {
-                    let instance_schema = match instance_schema.as_ref() {
-                        Some(instance_schema) => instance_schema,
-                        None => {
-                            return Err(RuntimeError::SystemModuleError(
-                                SystemModuleError::BlueprintSchemaValidationError(
-                                    BlueprintSchemaValidationError::InstanceSchemaDoesNotExist,
-                                ),
-                            ));
-                        }
-                    };
-                    let index = instance_schema
-                        .type_index
-                        .get(instance_index as usize)
-                        .unwrap()
-                        .clone();
+            }
+            SchemaPointer::Instance(instance_index) => {
+                let instance_schema = match instance_schema.as_ref() {
+                    Some(instance_schema) => instance_schema,
+                    None => {
+                        return Err(RuntimeError::SystemModuleError(
+                            SystemModuleError::BlueprintSchemaValidationError(
+                                BlueprintSchemaValidationError::InstanceSchemaDoesNotExist,
+                            ),
+                        ));
+                    }
+                };
+                let index = instance_schema
+                    .type_index
+                    .get(instance_index as usize)
+                    .unwrap()
+                    .clone();
 
-                    self.validate_payload(
-                        payload,
-                        &instance_schema.schema,
-                        index,
-                        SchemaOrigin::Instance,
-                    )
+                self.validate_payload(
+                    payload,
+                    &instance_schema.schema,
+                    index,
+                    SchemaOrigin::Instance,
+                )
                     .map_err(|err| {
                         RuntimeError::SystemModuleError(
                             SystemModuleError::BlueprintSchemaValidationError(
@@ -280,58 +280,41 @@ where
                             ),
                         )
                     })?;
-                }
-            }
-            schema_pointers.push((schema_pointer, can_own));
-        }
-
-        Ok(schema_pointers)
-    }
-
-    fn validate_payload_against_blueprint_schema<'s, const N: usize>(
-        &'s mut self,
-        blueprint_id: &BlueprintId,
-        payloads: [(&Vec<u8>, &SchemaPointer); N],
-        instance_schema: &'s Option<InstanceSchema>,
-    ) -> Result<(), String> {
-        for (payload, schema_pointer) in payloads {
-            match schema_pointer {
-                SchemaPointer::Package(hash, index) => {
-                    let schema = self
-                        .get_schema(blueprint_id.package_address.as_node_id(), hash)
-                        .map_err(|e| e.to_string())?;
-
-                    self.validate_payload(
-                        payload,
-                        &schema,
-                        *index,
-                        SchemaOrigin::Blueprint(blueprint_id.clone()),
-                    )
-                    .map_err(|err| err.error_message(&schema))?;
-                }
-                SchemaPointer::Instance(instance_index) => {
-                    let instance_schema = match instance_schema.as_ref() {
-                        Some(instance_schema) => instance_schema,
-                        None => return Err("Instance schema does not exist".to_string()),
-                    };
-                    let index = instance_schema
-                        .type_index
-                        .get(*instance_index as usize)
-                        .unwrap()
-                        .clone();
-
-                    self.validate_payload(
-                        payload,
-                        &instance_schema.schema,
-                        index,
-                        SchemaOrigin::Instance,
-                    )
-                    .map_err(|err| err.error_message(&instance_schema.schema))?;
-                }
             }
         }
 
         Ok(())
+    }
+
+    fn validate_payload_against_blueprint_schema<'s>(
+        &'s mut self,
+        blueprint_id: &BlueprintId,
+        instance_schema: &'s Option<InstanceSchema>,
+        payloads: &[(&Vec<u8>, BlueprintSchemaIdent)],
+    ) -> Result<Vec<(SchemaPointer, bool)>, RuntimeError> {
+        let blueprint_interface = self.get_blueprint_definition(blueprint_id)?.interface;
+
+        let mut schema_pointers = Vec::new();
+
+        let mut schema_cache = SchemaCache::new();
+
+        for (payload, schema_ident) in payloads {
+            let (schema_pointer, can_own) = schema_ident
+                .get_pointer(&blueprint_interface)
+                .ok_or_else(|| {
+                    RuntimeError::SystemModuleError(
+                        SystemModuleError::BlueprintSchemaValidationError(
+                            BlueprintSchemaValidationError::DoesNotExist(schema_ident.clone()),
+                        ),
+                    )
+                })?;
+
+            self.validate_schema_pointer(blueprint_id, instance_schema, schema_pointer, payload, Some(&mut schema_cache))?;
+
+            schema_pointers.push((schema_pointer, can_own));
+        }
+
+        Ok(schema_pointers)
     }
 
     pub fn prepare_global_address(
@@ -667,7 +650,7 @@ where
 
         let mut partitions = BTreeMap::new();
 
-        let mut schema_cache = SchemaCache::new();
+        let schema_cache = SchemaCache::new();
 
         // Fields
         {
@@ -685,7 +668,9 @@ where
             if let Some((offset, field_schemas)) = blueprint_interface.state.fields {
                 let mut partition = BTreeMap::new();
 
-                for (i, field) in fields.into_iter().enumerate() {
+                let mut fields_to_check = Vec::new();
+
+                for (i, field) in fields.iter().enumerate() {
                     // Check for any feature conditions
                     if let Condition::IfFeature(feature) = &field_schemas[i].condition {
                         if !features.contains(feature) {
@@ -693,34 +678,22 @@ where
                         }
                     }
 
-                    let pointer = field_schemas[i].field.clone();
+                    fields_to_check.push((field, BlueprintSchemaIdent::Field(i as u8)));
+                }
 
-                    let (schema, field_type_index) = match pointer {
-                        SchemaPointer::Package(hash, index) => {
-                            self.ensure_schema_loaded(
-                                blueprint_id.package_address.as_node_id(),
-                                &hash,
-                                &mut schema_cache,
-                            )?;
-                            (schema_cache.cache.get(&hash).unwrap(), index)
+                self.validate_payload_against_blueprint_schema(
+                    &blueprint_id,
+                    instance_schema,
+                    &fields_to_check,
+                )?;
+
+                for (i, field) in fields.into_iter().enumerate() {
+                    // Check for any feature conditions
+                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
+                        if !features.contains(feature) {
+                            continue;
                         }
-                        SchemaPointer::Instance(_instance_index) => {
-                            todo!()
-                        }
-                    };
-
-                    self.validate_payload(
-                        &field,
-                        schema,
-                        field_type_index,
-                        SchemaOrigin::Blueprint(blueprint_id.clone()),
-                    )
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                            CreateObjectError::InvalidSubstateWrite(err.error_message(schema)),
-                        )))
-                    })?;
-
+                    }
                     partition.insert(
                         SubstateKey::Tuple(i as u8),
                         IndexedScryptoValue::from_vec(field)
@@ -738,10 +711,10 @@ where
                 let mut partition = BTreeMap::new();
 
                 for (key, (value, freeze)) in entries {
-                    let schema_pointers = self.validate_payload_against_blueprint_schema2(
+                    let schema_pointers = self.validate_payload_against_blueprint_schema(
                         &blueprint_id,
                         instance_schema,
-                        vec![
+                        &[
                             (
                                 &key,
                                 BlueprintSchemaIdent::KeyValueStore {
@@ -2474,10 +2447,10 @@ where
                 }
             };
 
-            self.validate_payload_against_blueprint_schema2(
+            self.validate_payload_against_blueprint_schema(
                 &blueprint_id,
                 &instance_schema,
-                vec![(&event_data, BlueprintSchemaIdent::Event(event_name.clone()))],
+                &[(&event_data, BlueprintSchemaIdent::Event(event_name.clone()))],
             )?[0]
                 .0
         };

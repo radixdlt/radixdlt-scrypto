@@ -243,7 +243,7 @@ fn cannot_create_object_with_mismatching_data() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("InvalidSubstateWrite"))
+    assert!(error_message.contains("DataValidation"))
 }
 
 #[test]
