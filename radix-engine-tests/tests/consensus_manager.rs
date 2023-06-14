@@ -2416,3 +2416,57 @@ fn test_tips_and_fee_distribution_single_validator() {
         result1.fee_summary.expected_reward_if_single_validator()
     );
 }
+
+#[test]
+fn test_tips_and_fee_distribution_two_validators() {
+    let initial_epoch = Epoch::of(5);
+    let initial_stake_amount1 = dec!("300");
+    let initial_stake_amount2 = dec!("100");
+    let emission_xrd_per_epoch = dec!("0");
+    let validator1_key = Secp256k1PrivateKey::from_u64(5u64).unwrap().public_key();
+    let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
+    let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
+    let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
+    let genesis = CustomGenesis::two_validators_and_single_staker(
+        validator1_key,
+        validator2_key,
+        (initial_stake_amount1, initial_stake_amount2),
+        staker_account,
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Do some transaction
+    let receipt1 = test_runner
+        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+    let result1 = receipt1.expect_commit_success();
+
+    // Advance epoch
+    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let result2 = receipt2.expect_commit_success();
+
+    // Assert
+    let events = test_runner.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
+    assert_eq!(events[0].epoch, initial_epoch);
+    assert_close_to!(
+        events[0].amount,
+        result1.fee_summary.tips_to_distribute()
+            + result1.fee_summary.fees_to_distribute() * dec!("0.25")
+            + result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount1
+                / (initial_stake_amount1 + initial_stake_amount2)
+    );
+    assert_eq!(events[1].epoch, initial_epoch);
+    assert_close_to!(
+        events[1].amount,
+        result1.fee_summary.tips_to_distribute()
+            + result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount2
+                / (initial_stake_amount1 + initial_stake_amount2)
+    );
+}

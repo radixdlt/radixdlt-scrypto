@@ -192,6 +192,47 @@ impl CustomGenesis {
             initial_current_leader: Some(0),
         }
     }
+
+    pub fn two_validators_and_single_staker(
+        validator1_public_key: Secp256k1PublicKey,
+        validator2_public_key: Secp256k1PublicKey,
+        stake_xrd_amount: (Decimal, Decimal),
+        staker_account: ComponentAddress,
+        initial_epoch: Epoch,
+        initial_config: ConsensusManagerConfig,
+    ) -> CustomGenesis {
+        let genesis_validator1: GenesisValidator = validator1_public_key.clone().into();
+        let genesis_validator2: GenesisValidator = validator2_public_key.clone().into();
+        let genesis_data_chunks = vec![
+            GenesisDataChunk::Validators(vec![genesis_validator1, genesis_validator2]),
+            GenesisDataChunk::Stakes {
+                accounts: vec![staker_account],
+                allocations: vec![
+                    (
+                        validator1_public_key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount.0,
+                        }],
+                    ),
+                    (
+                        validator2_public_key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount.1,
+                        }],
+                    ),
+                ],
+            },
+        ];
+        CustomGenesis {
+            genesis_data_chunks,
+            initial_epoch,
+            initial_config,
+            initial_time_ms: 0,
+            initial_current_leader: Some(0),
+        }
+    }
 }
 
 pub struct TestRunnerBuilder {
