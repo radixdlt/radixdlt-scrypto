@@ -27,6 +27,7 @@ pub const VALIDATOR_ROLE: &str = "validator";
 pub const START_ROLE: &str = "start";
 
 pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
+pub const VALIDATOR_APPLY_REWARD_AUTHORITY: &str = "apply_reward";
 
 pub struct ConsensusManagerNativePackage;
 
@@ -36,11 +37,15 @@ impl ConsensusManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
+
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>(),
             ));
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
+            ));
+            fields.push(FieldSchema::static_field(
+                aggregator.add_child_type_and_descendents::<ValidatorRewardsSubstate>(),
             ));
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
@@ -323,6 +328,16 @@ impl ConsensusManagerNativePackage {
                     export: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
                 },
             );
+            functions.insert(
+                VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
+                    export: VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+                },
+            );
 
             let event_schema = event_schema! {
                 aggregator,
@@ -333,7 +348,8 @@ impl ConsensusManagerNativePackage {
                     UnstakeEvent,
                     ClaimXrdEvent,
                     UpdateAcceptingStakeDelegationStateEvent,
-                    ValidatorEmissionAppliedEvent
+                    ValidatorEmissionAppliedEvent,
+                    ValidatorRewardAppliedEvent
                 ]
             };
 
@@ -377,6 +393,7 @@ impl ConsensusManagerNativePackage {
                             MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
                             MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
                             MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+                            MethodKey::main(VALIDATOR_APPLY_REWARD_IDENT) => [VALIDATOR_APPLY_REWARD_AUTHORITY];
                         },
                         outer_auth: btreemap!(),
                     },
@@ -414,6 +431,7 @@ impl ConsensusManagerNativePackage {
                     input.initial_epoch,
                     input.initial_config,
                     input.initial_time_ms,
+                    input.initial_current_leader,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -613,6 +631,15 @@ impl ConsensusManagerNativePackage {
                     input.proposals_missed,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_APPLY_REWARD_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorApplyRewardInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::apply_reward(input.xrd_bucket, input.epoch, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::ApplicationError(

@@ -50,7 +50,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsTemplateInit {
+        functions: BlueprintFunctionsSchemaInit {
             functions,
             virtual_lazy_load_functions: BTreeMap::default(),
         },
@@ -112,7 +112,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsTemplateInit {
+        functions: BlueprintFunctionsSchemaInit {
             functions,
             virtual_lazy_load_functions: BTreeMap::default(),
         },
@@ -166,7 +166,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsTemplateInit {
+        functions: BlueprintFunctionsSchemaInit {
             functions,
             virtual_lazy_load_functions: BTreeMap::default(),
         },
@@ -226,13 +226,14 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema: BlueprintSchemaInit {
+            generics: vec![],
             schema: empty_schema,
             state: BlueprintStateSchemaInit {
                 fields: vec![],
                 collections: vec![],
             },
             events: BlueprintEventSchemaInit::default(),
-            functions: BlueprintFunctionsTemplateInit {
+            functions: BlueprintFunctionsSchemaInit {
                 functions,
                 virtual_lazy_load_functions: BTreeMap::default(),
             },

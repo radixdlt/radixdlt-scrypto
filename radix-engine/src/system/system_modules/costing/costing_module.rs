@@ -146,7 +146,8 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
 ) -> Result<(), RuntimeError> {
     api.kernel_get_system()
         .modules
-        .costing
+        .costing_module()
+        .unwrap()
         .fee_reserve
         .consume_royalty(royalty_amount, recipient, recipient_vault_id)
         .map_err(|e| {
@@ -158,7 +159,7 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let costing = &mut api.kernel_get_system().modules.costing;
+        let costing = &mut api.kernel_get_system().modules.costing_module().unwrap();
         let fee_reserve = &mut costing.fee_reserve;
         let fee_table = &costing.fee_table;
 
@@ -190,7 +191,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
+        if current_depth
+            == api
+                .kernel_get_system()
+                .modules
+                .costing_module()
+                .unwrap()
+                .max_call_depth
+        {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::CostingError(CostingError::MaxCallDepthLimitReached),
             ));
@@ -199,7 +207,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         if current_depth > 0 {
             api.kernel_get_system()
                 .modules
-                .costing
+                .costing_module()
+                .unwrap()
                 .apply_execution_cost(
                     CostingReason::Invoke,
                     |fee_table| {
@@ -277,7 +286,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::CreateNode,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { node_id }),
@@ -286,14 +296,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::CreateNode, store_access)
     }
 
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::DropNode,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode),
@@ -311,7 +323,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::LockSubstate,
                 |fee_table| {
@@ -334,7 +347,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::LockSubstate, store_access)
     }
 
@@ -347,7 +361,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part + value size costing
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::ReadSubstate,
                 |fee_table| {
@@ -360,7 +375,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::ReadSubstate, store_access)
     }
 
@@ -373,7 +389,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part + value size costing
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::WriteSubstate,
                 |fee_table| {
@@ -386,7 +403,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::WriteSubstate, store_access)
     }
 
@@ -398,7 +416,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::DropLock,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
@@ -407,7 +426,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::DropLock, store_access)
     }
 
@@ -418,7 +438,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::ScanSubstate,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::ScanSubstate),
@@ -427,7 +448,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::ScanSubstate, store_access)
     }
 
@@ -438,7 +460,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::SetSubstate,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::SetSubstate),
@@ -447,7 +470,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::SetSubstate, store_access)
     }
 
@@ -458,7 +482,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::TakeSubstate,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::TakeSubstate),
@@ -467,7 +492,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::TakeSubstate, store_access)
     }
 
@@ -477,7 +503,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::AllocateNodeId,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::AllocateNodeId),

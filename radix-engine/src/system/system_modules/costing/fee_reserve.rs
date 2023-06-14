@@ -472,7 +472,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         let royalty_cost_breakdown = self.royalty_cost();
         let total_royalty_cost_xrd = royalty_cost_breakdown.values().map(|x| x.1).sum();
 
-        FeeSummary {
+        let fee_summary = FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_price: transmute_u128_as_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
@@ -483,7 +483,14 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             execution_cost_breakdown,
             execution_cost_sum: self.execution_committed_sum,
             royalty_cost_breakdown,
-        }
+        };
+
+        // Sanity check
+        assert_eq!(
+            total_execution_cost_xrd,
+            fee_summary.fees_to_distribute() + fee_summary.tips_to_distribute()
+        );
+        fee_summary
     }
 }
 

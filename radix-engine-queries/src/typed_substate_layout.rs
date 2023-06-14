@@ -467,6 +467,7 @@ pub enum TypedNonFungibleVaultFieldValue {
 pub enum TypedConsensusManagerFieldValue {
     Config(ConsensusManagerConfigSubstate),
     ConsensusManager(ConsensusManagerSubstate),
+    ValidatorRewards(ValidatorRewardsSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
     CurrentProposalStatistic(CurrentProposalStatisticSubstate),
     CurrentTimeRoundedToMinutes(ProposerMinuteTimestampSubstate),
@@ -644,6 +645,9 @@ fn to_typed_object_substate_value(
                 }
                 ConsensusManagerField::ConsensusManager => {
                     TypedConsensusManagerFieldValue::ConsensusManager(scrypto_decode(data)?)
+                }
+                ConsensusManagerField::ValidatorRewards => {
+                    TypedConsensusManagerFieldValue::ValidatorRewards(scrypto_decode(data)?)
                 }
                 ConsensusManagerField::CurrentValidatorSet => {
                     TypedConsensusManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)

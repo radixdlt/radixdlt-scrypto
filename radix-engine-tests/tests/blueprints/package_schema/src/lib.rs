@@ -187,7 +187,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsTemplateInit {
+        functions: BlueprintFunctionsSchemaInit {
             functions,
             virtual_lazy_load_functions: BTreeMap::default(),
         },

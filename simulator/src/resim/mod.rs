@@ -524,6 +524,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
             epoch: Epoch::zero(),
             epoch_start_milli: 0,
             round: Round::zero(),
+            current_leader: Some(0),
         });
 
     consensus_manager_substate.epoch = epoch;

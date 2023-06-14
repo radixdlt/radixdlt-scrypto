@@ -140,6 +140,7 @@ impl Publish {
 
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
+                        generics: s.schema.generics,
                         outer_blueprint: s.outer_blueprint,
                         features: s.feature_set,
                         functions,
