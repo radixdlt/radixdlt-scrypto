@@ -12,11 +12,12 @@ const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
 const MAX_SIZE: usize = 4 * 1024 * 1024;
 /// Range step
-const SIZE_STEP: usize = 100 * 1024;
+const SIZE_STEP: usize = 25 * 1024;
 /// Each step write and read
 const COUNT: usize = 20;
 /// Multiplication of each step read (COUNT * READ_REPEATS)
 const READ_REPEATS: usize = 100;
+const READ_MAX_SIZE: usize = MAX_SIZE;
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
@@ -46,6 +47,10 @@ fn test_read() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => COUNT,
     };
+    let read_max_size = match std::env::var("READ_MAX_SIZE") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => READ_MAX_SIZE,
+    };
 
     // RocksDB part
     let path = PathBuf::from(r"/tmp/radix-scrypto-db");
@@ -64,6 +69,8 @@ fn test_read() {
             false,
         )
     };
+
+    let data_index_vector = data_index_vector.into_iter().filter(|x| x.2 <= read_max_size).collect();
 
     // reopen database
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path);
@@ -111,6 +118,9 @@ fn test_read() {
         prepare_db_write_count,
         false,
     );
+
+    let data_index_vector = data_index_vector.into_iter().filter(|x| x.2 <= read_max_size).collect();
+
     run_read_test(&mut substate_db, &data_index_vector, read_repeats);
     // run read not found test
     run_read_not_found_test(&mut substate_db, read_repeats, prepare_db_write_count);
