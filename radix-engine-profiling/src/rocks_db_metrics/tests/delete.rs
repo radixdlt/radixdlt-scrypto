@@ -154,7 +154,7 @@ fn test_delete_per_partition() {
         ),
         &rocksdb_data,
         &rocksdb_data_output,
-        "/tmp/scrypto_delete_per_partition.png",
+        "/tmp/scrypto_delete_per_partition_rocksdb.png",
         "95th percentile of deletion",
         &rocksdb_data_original,
         axis_ranges,
