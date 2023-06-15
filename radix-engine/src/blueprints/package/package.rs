@@ -829,7 +829,7 @@ impl PackageNativePackage {
                         features: definition_init.feature_set,
                         functions,
                         events,
-                        state: IndexedBlueprintStateSchema::from_schema(
+                        state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,
                         ),
@@ -1083,7 +1083,7 @@ impl PackageNativePackage {
                         features: definition_init.feature_set,
                         functions,
                         events,
-                        state: IndexedBlueprintStateSchema::from_schema(
+                        state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,
                         ),

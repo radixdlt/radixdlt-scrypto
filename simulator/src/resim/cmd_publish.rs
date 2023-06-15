@@ -3,8 +3,8 @@ use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedBlueprintStateSchema,
-    PackageExport, TypePointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
+    TypePointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
     PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
@@ -164,10 +164,7 @@ impl Publish {
                         features: s.feature_set,
                         functions,
                         events,
-                        state: IndexedBlueprintStateSchema::from_schema(
-                            schema_hash,
-                            s.schema.state,
-                        ),
+                        state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
                     },
                     function_exports,
                     virtual_lazy_load_functions: s

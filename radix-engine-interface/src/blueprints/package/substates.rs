@@ -146,7 +146,7 @@ pub struct BlueprintInterface {
     pub outer_blueprint: Option<String>,
     pub generics: Vec<Generic>,
     pub features: BTreeSet<String>,
-    pub state: IndexedBlueprintStateSchema,
+    pub state: IndexedStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
     pub events: BTreeMap<String, TypePointer>,
 }
@@ -218,13 +218,13 @@ impl BlueprintInterface {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct IndexedBlueprintStateSchema {
+pub struct IndexedStateSchema {
     pub fields: Option<(PartitionOffset, Vec<FieldSchema<TypePointer>>)>,
     pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema<TypePointer>)>,
     pub num_partitions: u8,
 }
 
-impl IndexedBlueprintStateSchema {
+impl IndexedStateSchema {
     pub fn from_schema(schema_hash: Hash, schema: BlueprintStateSchemaInit) -> Self {
         let mut partition_offset = 0u8;
 
