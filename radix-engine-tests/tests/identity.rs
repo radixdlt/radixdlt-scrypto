@@ -23,7 +23,7 @@ fn cannot_securify_in_advanced_mode() {
         .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
+            args: to_manifest_value_safe!(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -59,7 +59,7 @@ fn can_securify_from_virtual_identity() {
         .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
+            args: to_manifest_value_safe!(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -86,7 +86,7 @@ fn cannot_securify_twice() {
         .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
+            args: to_manifest_value_safe!(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -105,7 +105,7 @@ fn cannot_securify_twice() {
         .add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
+            args: to_manifest_value_safe!(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -139,7 +139,7 @@ fn can_set_metadata_after_securify() {
         .add_instruction(InstructionV1::CallMethod {
             address: identity_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
+            args: to_manifest_value_safe!(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(

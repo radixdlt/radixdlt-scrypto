@@ -1,6 +1,7 @@
 use radix_engine::blueprints::pool::one_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
+use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -270,7 +271,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             POOL_PACKAGE,
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
             ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
-            to_manifest_value(&OneResourcePoolInstantiateManifestInput {
+            to_manifest_value_safe!(&OneResourcePoolInstantiateManifestInput {
                 resource_address: non_fungible_resource,
                 pool_manager_rule: rule!(allow_all),
             }),
@@ -463,7 +464,7 @@ impl TestEnvironment {
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                     ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    to_manifest_value(&OneResourcePoolInstantiateManifestInput {
+                    to_manifest_value_safe!(&OneResourcePoolInstantiateManifestInput {
                         resource_address,
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                     }),
@@ -503,7 +504,7 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                    to_manifest_value(&OneResourcePoolContributeManifestInput { bucket }),
+                    to_manifest_value_safe!(&OneResourcePoolContributeManifestInput { bucket }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -522,7 +523,7 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value(&OneResourcePoolRedeemManifestInput { bucket }),
+                    to_manifest_value_safe!(&OneResourcePoolRedeemManifestInput { bucket }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -537,7 +538,9 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    to_manifest_value(&OneResourcePoolProtectedDepositManifestInput { bucket }),
+                    to_manifest_value_safe!(&OneResourcePoolProtectedDepositManifestInput {
+                        bucket
+                    }),
                 )
             })
             .build();
@@ -553,7 +556,7 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                to_manifest_value(&OneResourcePoolProtectedWithdrawManifestInput {
+                to_manifest_value_safe!(&OneResourcePoolProtectedWithdrawManifestInput {
                     amount: amount.into(),
                 }),
             )
@@ -571,7 +574,7 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
-                to_manifest_value(&OneResourcePoolGetRedemptionValueManifestInput {
+                to_manifest_value_safe!(&OneResourcePoolGetRedemptionValueManifestInput {
                     amount_of_pool_units: amount_of_pool_units.into(),
                 }),
             )
@@ -586,7 +589,7 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
-                to_manifest_value(&OneResourcePoolGetVaultAmountManifestInput),
+                to_manifest_value_safe!(&OneResourcePoolGetVaultAmountManifestInput),
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);

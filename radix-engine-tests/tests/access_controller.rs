@@ -213,7 +213,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_address,
             "stop_timed_recovery",
-            to_manifest_value(&AccessControllerStopTimedRecoveryInput {
+            to_manifest_value_safe!(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
                     primary_role: rule!(require(RADIX_TOKEN)),
                     recovery_role: rule!(require(RADIX_TOKEN)),
@@ -326,7 +326,9 @@ pub fn confirmation_role_cant_initiate_a_badge_withdraw_attempt_as_primary_or_re
             .call_method(
                 test_runner.access_controller_address,
                 ident,
-                to_manifest_value(&AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput),
+                to_manifest_value_safe!(
+                    &AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput
+                ),
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest);
@@ -1700,7 +1702,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "create_proof",
-                to_manifest_value(&AccessControllerCreateProofInput {}),
+                to_manifest_value_safe!(&AccessControllerCreateProofInput {}),
             )
             .pop_from_auth_zone(|builder, _| builder)
             .build();
@@ -1726,7 +1728,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value(&AccessControllerInitiateRecoveryAsPrimaryInput {
+                to_manifest_value_safe!(&AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1760,7 +1762,9 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value(&AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput {}),
+                to_manifest_value_safe!(
+                    &AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput {}
+                ),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1795,7 +1799,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value(
+                to_manifest_value_safe!(
                     &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
                         rule_set: RuleSet {
                             primary_role: proposed_primary_role,
@@ -1803,7 +1807,7 @@ impl AccessControllerTestRunner {
                             confirmation_role: proposed_confirmation_role,
                         },
                         timed_recovery_delay_in_minutes,
-                    },
+                    }
                 ),
             )
             .build();
@@ -1835,8 +1839,8 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value(
-                    &AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput {},
+                to_manifest_value_safe!(
+                    &AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput {}
                 ),
             )
             .build();
@@ -1856,7 +1860,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
-                to_manifest_value(&AccessControllerTimedConfirmRecoveryInput {
+                to_manifest_value_safe!(&AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1881,7 +1885,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value(&AccessControllerCancelPrimaryRoleRecoveryProposalInput),
+                to_manifest_value_safe!(&AccessControllerCancelPrimaryRoleRecoveryProposalInput),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1899,7 +1903,9 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value(&AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput),
+                to_manifest_value_safe!(
+                    &AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput
+                ),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1911,7 +1917,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "lock_primary_role",
-                to_manifest_value(&AccessControllerLockPrimaryRoleInput {}),
+                to_manifest_value_safe!(&AccessControllerLockPrimaryRoleInput {}),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1923,7 +1929,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "unlock_primary_role",
-                to_manifest_value(&AccessControllerUnlockPrimaryRoleInput {}),
+                to_manifest_value_safe!(&AccessControllerUnlockPrimaryRoleInput {}),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1942,7 +1948,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "stop_timed_recovery",
-                to_manifest_value(&AccessControllerStopTimedRecoveryInput {
+                to_manifest_value_safe!(&AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1965,7 +1971,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT,
-                to_manifest_value(&AccessControllerMintRecoveryBadgesInput {
+                to_manifest_value_safe!(&AccessControllerMintRecoveryBadgesInput {
                     non_fungible_local_ids,
                 }),
             )
@@ -1984,7 +1990,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
-                to_manifest_value(&AccessControllerPostInstantiationInput),
+                to_manifest_value_safe!(&AccessControllerPostInstantiationInput),
             )
             .build();
         self.execute_manifest(manifest)

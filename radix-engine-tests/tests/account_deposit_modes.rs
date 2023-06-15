@@ -1,6 +1,7 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
 use scrypto::prelude::*;
@@ -531,7 +532,7 @@ impl AccountDepositModesTestRunner {
             .call_method(
                 self.component_address,
                 ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-                to_manifest_value(&AccountChangeDefaultDepositRuleInput {
+                to_manifest_value_safe!(&AccountChangeDefaultDepositRuleInput {
                     default_deposit_rule,
                 }),
             )
@@ -549,7 +550,7 @@ impl AccountDepositModesTestRunner {
             .call_method(
                 self.component_address,
                 ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
-                to_manifest_value(&AccountConfigureResourceDepositRuleInput {
+                to_manifest_value_safe!(&AccountConfigureResourceDepositRuleInput {
                     resource_address,
                     resource_deposit_configuration,
                 }),

@@ -125,7 +125,7 @@ fn test_non_existent_blob_hash() {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+            args: to_manifest_value_safe!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef([0; 32]),
                 setup: PackageDefinition {
                     blueprints: btreemap!(),

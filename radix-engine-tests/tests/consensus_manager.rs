@@ -2344,7 +2344,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerCreateManifestInput {
+            args: to_manifest_value_safe!(&ConsensusManagerCreateManifestInput {
                 validator_owner_token_address: ManifestAddressReservation(0),
                 component_address: ManifestAddressReservation(1),
                 initial_epoch: Epoch::of(1),
