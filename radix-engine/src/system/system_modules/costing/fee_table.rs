@@ -333,20 +333,26 @@ impl FeeTable {
                 actor: _,
             } => 10 * input_size,
             CostingEntry::SubstateReadFromDb { size } => {
-                // f(size) = 0.00032494246163410686 * size + 4752.641725974398
-                let mut value: u64 = *size as u64;
-                value *= 21; // ~0.00032494246163410686 << 16
-                value += (value >> 16) + 4753; // ~4752.641725974398
-                value as u32
+                if *size <= 16 * 1024 {
+                    // apply constant value
+                    932u32
+                } else {
+                    // apply function: f(size) = 0.00091925974 * size + 68.1824
+                    // approximated integer representation: f(size) = (60 * size) / 2^16 + 68
+                    let mut value: u64 = *size as u64;
+                    value *= 60; // 0.00091925974 << 16
+                    value += (value >> 16) + 68;
+                    value.try_into().unwrap_or(u32::MAX)
+                }
             }
-            CostingEntry::SubstateReadFromDbNotFound => 3000, // average value from benchmark
+            CostingEntry::SubstateReadFromDbNotFound => 805, // average value from benchmark
             // FIXME: update numbers below
             CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new,
-            } => 10 * size_new,
+            } => 10 * size_new, // todo: determine correct value
             _ => 0,
         }) as u64
             * COSTING_COEFFICENT_STORAGE
