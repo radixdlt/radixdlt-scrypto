@@ -10,22 +10,28 @@ use std::{io::Write, path::PathBuf};
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
-const MAX_SIZE: usize = 4 * 1024 * 1024;
+const MAX_SIZE: usize = 1024 * 1024;
 /// Range step
-const SIZE_STEP: usize = 25 * 1024;
+const SIZE_STEP: usize = 16 * 1024;
 /// Each step write and read
-const COUNT: usize = 20;
+const COUNT: usize = 40;
 /// Multiplication of each step read (COUNT * READ_REPEATS)
 const READ_REPEATS: usize = 100;
+/// Max size of read substates to use
 const READ_MAX_SIZE: usize = MAX_SIZE;
+/// Filter to use to discard spikes (only range median +/- filter value is used)
+const FILTER: f32 = 500f32;
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
-/// Outputs are genered in png files: /tmp/scrypto_rocksdb_1.png, /tmp/scrypto_inmem_1.png, /tmp/scrypto_diff_1.png
+/// Outputs are genered in png files: /tmp/scrypto_read_rocksdb.png, /tmp/scrypto_read_inmem.png, /tmp/scrypto_read_diff.png
 /// point list is printed to stdout.
-/// To run test casea use command:
-/// cargo test -p radix-engine-profilings -p radix-engine-stores --features rocksdb test_store_db --release -- --nocapture
+/// To run the test case use command:
+///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_read --release -- --nocapture
+/// or
+///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_read
 /// from main radixdlt-scrypto folder.
+/// Test can be parametrized using environment variables: READ_REPEATS, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT, READ_MAX_SIZE, FILTER
 fn test_read() {
     let read_repeats = match std::env::var("READ_REPEATS") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -51,6 +57,10 @@ fn test_read() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => READ_MAX_SIZE,
     };
+    let filter = match std::env::var("FILTER") {
+        Ok(v) => f32::from_str(&v).unwrap(),
+        _ => FILTER,
+    };
 
     // RocksDB part
     let path = PathBuf::from(r"/tmp/radix-scrypto-db");
@@ -70,7 +80,10 @@ fn test_read() {
         )
     };
 
-    let data_index_vector = data_index_vector.into_iter().filter(|x| x.2 <= read_max_size).collect();
+    let data_index_vector = data_index_vector
+        .into_iter()
+        .filter(|x| x.2 <= read_max_size)
+        .collect();
 
     // reopen database
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path);
@@ -80,7 +93,7 @@ fn test_read() {
     run_read_not_found_test(&mut substate_db, read_repeats, prepare_db_write_count);
 
     // prepare data for linear approximation
-    discard_spikes(&mut substate_db.read_metrics.borrow_mut(), 200f32);
+    discard_spikes(&mut substate_db.read_metrics.borrow_mut(), filter);
     let rocksdb_output_data =
         calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 
@@ -119,14 +132,17 @@ fn test_read() {
         false,
     );
 
-    let data_index_vector = data_index_vector.into_iter().filter(|x| x.2 <= read_max_size).collect();
+    let data_index_vector = data_index_vector
+        .into_iter()
+        .filter(|x| x.2 <= read_max_size)
+        .collect();
 
     run_read_test(&mut substate_db, &data_index_vector, read_repeats);
     // run read not found test
     run_read_not_found_test(&mut substate_db, read_repeats, prepare_db_write_count);
 
     // prepare data for linear approximation
-    discard_spikes(&mut substate_db.read_metrics.borrow_mut(), 200f32);
+    discard_spikes(&mut substate_db.read_metrics.borrow_mut(), filter);
     let inmem_output_data =
         calculate_percent_to_max_points(&mut substate_db.read_metrics.borrow_mut(), 95f32);
 

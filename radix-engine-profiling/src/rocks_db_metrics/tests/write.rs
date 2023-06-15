@@ -23,8 +23,15 @@ const SIZE_STEP: usize = 100 * 1024;
 const PREPARE_DB_WRITE_REPEATS: usize = 10;
 
 #[test]
-// to run this test use following command in the main repository folder:
-// cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_size
+/// Database is created in /tmp/radix-scrypto-db folder.
+/// Outputs are genered in png files: /tmp/scrypto_commit_per_size_rocksdb.png, /tmp/scrypto_commit_per_size_rocksdb_JMT.png, /tmp/scrypto_commit_per_size_rocksdb_diff.png
+/// point list is printed to stdout.
+/// To run the test case use command:
+///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_commit_per_size --release -- --nocapture
+/// or
+///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_size
+/// from main radixdlt-scrypto folder.
+/// Test can be parametrized using environment variables: ROUNDS_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP
 fn test_commit_per_size() {
     let rounds_count = match std::env::var("ROUNDS_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -120,8 +127,14 @@ fn test_commit_per_size() {
 }
 
 #[test]
-// to run this test use following command in the main repository folder:
-// cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_partition
+/// Database is created in /tmp/radix-scrypto-db folder.
+/// Outputs are genered in png files: /tmp/scrypto_commit_per_partition_rocksdb.png, /tmp/scrypto_commit_per_partition_rocksdb_JMT.png, /tmp/scrypto_commit_per_partition_rocksdb_diff.png
+/// point list is printed to stdout.
+/// To run the test case use command:
+///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_commit_per_partition --release -- --nocapture
+/// or
+///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_partition
+/// from main radixdlt-scrypto folder.
 fn test_commit_per_partition() {
     const N: usize = 100;
     const ROUNDS_COUNT: usize = 100;
@@ -282,7 +295,6 @@ where
 
     println!("");
     // prepare output data
-    //drop_highest_and_lowest_value(&substate_db, 3);
     let rocksdb_data_output =
         calculate_percent_to_max_points(&mut rocksdb_data_intermediate, 95f32);
     // prepare data for plot

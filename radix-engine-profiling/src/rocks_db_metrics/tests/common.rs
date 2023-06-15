@@ -171,7 +171,7 @@ pub fn export_one_graph(
         .y_desc("Duration [microseconds]")
         .axis_desc_style(("sans-serif", 16))
         .draw()?;
-    // 1. draw all points
+    // Draw all points
     scatter_ctx
         .draw_series(
             data.iter()
@@ -428,8 +428,8 @@ pub fn export_graph_and_print_summary_for_two_series(
     let (lin_slope_2, lin_intercept_2): (f32, f32) = linear_regression_of(&v2).unwrap();
 
     // calculate axis max/min values
-    let y_ofs = 0f32; //10f32;
-    let x_ofs = 0f32; //5000f32;
+    let y_ofs = 0f32;
+    let x_ofs = 0f32;
     let x_min = -x_ofs;
     let x_max = data_series1.iter().map(|i| i.0 as i32).max().unwrap() as f32 + x_ofs;
     let y_min = 0f32;
@@ -607,7 +607,7 @@ pub fn export_graph_two_series(
         )?
         .label(label2)
         .legend(|(x, y)| Circle::new((x + 10, y), 2, BLUE.filled()));
-    //4. draw linear approximetion line
+    // 3. draw linear approximetion line
     scatter_ctx
         .draw_series(LineSeries::new(
             lin_x_axis
