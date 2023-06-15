@@ -473,17 +473,18 @@ impl ExecutionTraceModule {
                     ident,
                     ..
                 }) => Origin::ScryptoMethod(ApplicationFnIdentifier {
-                    package_address: object_info.blueprint.package_address.clone(),
-                    blueprint_name: object_info.blueprint.blueprint_name.clone(),
+                    package_address: object_info.blueprint_id.package_address.clone(),
+                    blueprint_name: object_info.blueprint_id.blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
-                Actor::Function { blueprint, ident } => {
-                    Origin::ScryptoFunction(ApplicationFnIdentifier {
-                        package_address: blueprint.package_address.clone(),
-                        blueprint_name: blueprint.blueprint_name.clone(),
-                        ident: ident.clone(),
-                    })
-                }
+                Actor::Function {
+                    blueprint_id: blueprint,
+                    ident,
+                } => Origin::ScryptoFunction(ApplicationFnIdentifier {
+                    package_address: blueprint.package_address.clone(),
+                    blueprint_name: blueprint.blueprint_name.clone(),
+                    ident: ident.clone(),
+                }),
                 Actor::VirtualLazyLoad { .. } | Actor::Root => {
                     return;
                 }
@@ -505,7 +506,7 @@ impl ExecutionTraceModule {
                 module_object_info: object_info,
                 ident,
                 ..
-            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
+            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint_id)
                 && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, current_actor, node_id)
@@ -515,7 +516,7 @@ impl ExecutionTraceModule {
                 module_object_info: object_info,
                 ident,
                 ..
-            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
+            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint_id)
                 && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
                 self.handle_vault_lock_fee_input(current_actor, node_id)
@@ -537,7 +538,7 @@ impl ExecutionTraceModule {
                 module_object_info: object_info,
                 ident,
                 ..
-            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
+            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint_id)
                 && ident.eq(VAULT_TAKE_IDENT) =>
             {
                 self.handle_vault_take_output(&resource_summary, &caller, node_id)

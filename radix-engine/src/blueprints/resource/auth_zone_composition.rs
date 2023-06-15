@@ -156,12 +156,16 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     for proof in proofs {
         let info = api.get_object_info(proof.0.as_node_id())?;
 
-        if info.blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) {
+        if info
+            .blueprint_id
+            .blueprint_name
+            .eq(FUNGIBLE_PROOF_BLUEPRINT)
+        {
             let proof_resource = ResourceAddress::new_or_panic(info.outer_object.unwrap().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleProofField::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
@@ -205,7 +209,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     for proof in proofs {
         let info = api.get_object_info(proof.0.as_node_id())?;
         if info
-            .blueprint
+            .blueprint_id
             .blueprint_name
             .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
         {
@@ -213,7 +217,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleProofField::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
@@ -259,7 +263,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -348,7 +352,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),

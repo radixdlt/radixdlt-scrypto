@@ -212,6 +212,8 @@ where
         let mut id_allocator = IdAllocator::new(executable.transaction_hash().clone());
         let mut system = SystemConfig {
             blueprint_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
+            schema_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
@@ -542,7 +544,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         let (handle, _store_access) = track
             .acquire_lock(
                 &node_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &substate_key,
                 LockFlags::MUTABLE,
             )
@@ -579,7 +581,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
             let (handle, _store_access) = track
                 .acquire_lock(
                     &vault_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                     LockFlags::MUTABLE,
                 )
@@ -604,7 +606,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         let handle = track
             .acquire_lock(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )
@@ -618,7 +620,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         let handle = track
             .acquire_lock(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ValidatorRewards.into(),
                 LockFlags::MUTABLE,
             )
@@ -650,7 +652,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         let handle = track
             .acquire_lock(
                 &vault_node_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )

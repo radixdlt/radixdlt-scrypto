@@ -61,21 +61,17 @@ impl CallMethod {
             })?;
         }
 
-        let blueprint = get_blueprint(self.component_address.0)?;
-
         let manifest = manifest_builder
             .lock_fee(FAUCET, 100.into())
             .borrow_mut(|builder| {
-                add_call_method_instruction_with_schema(
+                self.add_call_method_instruction_with_schema(
                     builder,
                     &bech32_decoder,
                     self.component_address.0,
-                    &self.method_name,
+                    self.method_name.clone(),
                     self.arguments.clone(),
                     Some(default_account),
-                    &export_blueprint_schema(blueprint.package_address, &blueprint.blueprint_name)?,
-                )
-                .map_err(Error::TransactionConstructionError)?;
+                );
                 Ok(builder)
             })?
             .call_method(
@@ -94,5 +90,72 @@ impl CallMethod {
             out,
         )
         .map(|_| ())
+    }
+
+    /// Calls a method.
+    ///
+    /// The implementation will automatically prepare the arguments based on the
+    /// method SCHEMA, including resource buckets and proofs.
+    ///
+    /// If an Account component address is provided, resources will be withdrawn from the given account;
+    /// otherwise, they will be taken from transaction worktop.
+    pub fn add_call_method_instruction_with_schema<'a>(
+        &self,
+        builder: &'a mut ManifestBuilder,
+        bech32_decoder: &Bech32Decoder,
+        component_address: ComponentAddress,
+        method_name: String,
+        args: Vec<String>,
+        account: Option<ComponentAddress>,
+    ) -> Result<&'a mut ManifestBuilder, Error> {
+        let bp_id = get_blueprint_id(component_address)?;
+        let bp_def = export_blueprint_interface(bp_id.package_address, &bp_id.blueprint_name)?;
+
+        let function_schema = bp_def.find_method(method_name.as_str()).ok_or_else(|| {
+            Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(
+                method_name.clone(),
+            ))
+        })?;
+
+        let (schema, index) = match function_schema.input {
+            TypePointer::Package(schema_hash, index) => {
+                let schema = export_schema(bp_id.package_address, schema_hash)?;
+                (schema, index)
+            }
+            TypePointer::Instance(instance_index) => {
+                let object_info = export_object_info(component_address)?;
+                match object_info.instance_schema {
+                    None => {
+                        return Err(Error::InstanceSchemaNot(component_address, instance_index))
+                    }
+                    Some(instance_schema) => {
+                        let index = instance_schema
+                            .type_index
+                            .get(instance_index as usize)
+                            .ok_or_else(|| {
+                                Error::InstanceSchemaNot(component_address, instance_index)
+                            })?
+                            .clone();
+                        (instance_schema.schema, index)
+                    }
+                }
+            }
+        };
+
+        let (builder, built_args) =
+            build_call_arguments(builder, bech32_decoder, &schema, index, args, account).map_err(
+                |e| {
+                    Error::TransactionConstructionError(
+                        BuildCallInstructionError::FailedToBuildArguments(e),
+                    )
+                },
+            )?;
+
+        builder.add_instruction(InstructionV1::CallMethod {
+            address: component_address.into(),
+            method_name,
+            args: built_args,
+        });
+        Ok(builder)
     }
 }

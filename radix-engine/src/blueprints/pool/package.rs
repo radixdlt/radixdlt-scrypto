@@ -12,9 +12,10 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission};
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::*;
 use radix_engine_interface::types::*;
@@ -26,13 +27,13 @@ pub const POOL_MANAGER_ROLE: &'static str = "pool_manager_role";
 
 pub struct PoolNativePackage;
 impl PoolNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         // One Resource Pool
-        let one_resource_pool_blueprint_schema = {
+        let one_resource_pool_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<OneResourcePoolSubstate>(),
             ));
 
@@ -42,90 +43,103 @@ impl PoolNativePackage {
 
             functions.insert(
                 ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
+                    ),
                     export: ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 ONE_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
+                    ),
                     export: ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 ONE_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
+                    ),
                     export: ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>()),
                     export: ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>()),
                     export: ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(
-                        ),
+                        )),
                     export: ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(
+                            ),
+                    ),
                     export: ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
-
-            let virtual_lazy_load_functions = BTreeMap::new();
 
             let event_schema = event_schema! {
                 aggregator,
@@ -138,25 +152,62 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
+
+            BlueprintDefinitionInit {
                 outer_blueprint: None,
-                schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions,
-                event_schema,
                 dependencies: btreeset!(),
-                features: btreeset!(),
+                feature_set: btreeset!(),
+
+                schema: BlueprintSchemaInit {
+                    generics: vec![],
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsSchemaInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
+                },
+
+                royalty_config: RoyaltyConfig::default(),
+                auth_config: AuthConfig {
+                    function_auth: btreemap!(
+                        ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template! {
+                            // Metadata Module rules
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
+
+                            // Royalty Module rules
+                            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
+                            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
+
+                            // Main Module rules
+                            MethodKey::main(ONE_RESOURCE_POOL_REDEEM_IDENT) => MethodPermission::Public;
+                            MethodKey::main(ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT) => MethodPermission::Public;
+                            MethodKey::main(ONE_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::main(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::main(ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                        },
+                        outer_auth: btreemap!(),
+                    },
+                },
             }
         };
 
         // Two Resource Pool
-        let two_resource_pool_blueprint_schema = {
+        let two_resource_pool_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<TwoResourcePoolSubstate>(),
             ));
 
@@ -166,90 +217,104 @@ impl PoolNativePackage {
 
             functions.insert(
                 TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
+                    ),
                     export: TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 TWO_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
+                    ),
                     export: TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 TWO_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
+                    ),
                     export: TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>()),
                     export: TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>()),
                     export: TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
-                        ),
+                        )),
                     export: TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(
+                            ),
+                    ),
                     export: TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );
-
-            let virtual_lazy_load_functions = BTreeMap::new();
 
             let event_schema = event_schema! {
                 aggregator,
@@ -262,25 +327,62 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
+
+            BlueprintDefinitionInit {
                 outer_blueprint: None,
-                schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions,
-                event_schema,
                 dependencies: btreeset!(),
-                features: btreeset!(),
+                feature_set: btreeset!(),
+
+                schema: BlueprintSchemaInit {
+                    generics: vec![],
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsSchemaInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
+                },
+
+                royalty_config: RoyaltyConfig::default(),
+                auth_config: AuthConfig {
+                    function_auth: btreemap!(
+                        TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template! {
+                            // Metadata Module rules
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
+
+                            // Royalty Module rules
+                            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
+                            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
+
+                            // Main Module rules
+                            MethodKey::main(TWO_RESOURCE_POOL_REDEEM_IDENT) => MethodPermission::Public;
+                            MethodKey::main(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(TWO_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::main(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::main(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                        },
+                        outer_auth: btreemap!(),
+                    },
+                },
             }
         };
 
         // Multi Resource Pool
-        let multi_resource_pool_blueprint_schema = {
+        let multi_resource_pool_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(FieldSchema::normal(
+            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<MultiResourcePoolSubstate>(),
             ));
 
@@ -290,94 +392,103 @@ impl PoolNativePackage {
 
             functions.insert(
                 MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
+                    ),
                     export: MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
+                    ),
                     export: MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 MULTI_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
+                    ),
                     export: MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>(),
-                    output: aggregator
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>()),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(
-                        ),
+                        )),
                     export: MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawOutput>(
-                        ),
+                        )),
                     export: MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
+                    input: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueInput>(
-                        ),
-                    output: aggregator
+                        )),
+                    output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueOutput>(
-                        ),
+                        )),
                     export: MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
                 },
             );
 
             functions.insert(
                 MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
-                FunctionSchema {
+                FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
-                    input: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>(),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>()),
                     export: MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
                 },
             );
-
-            let virtual_lazy_load_functions = BTreeMap::new();
 
             let event_schema = event_schema! {
                 aggregator,
@@ -390,108 +501,62 @@ impl PoolNativePackage {
             };
 
             let schema = generate_full_schema(aggregator);
-            BlueprintSchema {
+
+            BlueprintDefinitionInit {
                 outer_blueprint: None,
-                schema,
-                fields,
-                collections,
-                functions,
-                virtual_lazy_load_functions,
-                event_schema,
                 dependencies: btreeset!(),
-                features: btreeset!(),
+                feature_set: btreeset!(),
+
+                schema: BlueprintSchemaInit {
+                    generics: vec![],
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections,
+                    },
+                    events: event_schema,
+                    functions: BlueprintFunctionsSchemaInit {
+                        functions,
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
+                },
+                royalty_config: RoyaltyConfig::default(),
+                auth_config: AuthConfig {
+                    function_auth: btreemap!(
+                        MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth_template! {
+                            // Metadata Module rules
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
+
+                            // Royalty Module rules
+                            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
+                            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
+
+                            // Main Module rules
+                            MethodKey::main(MULTI_RESOURCE_POOL_REDEEM_IDENT) => MethodPermission::Public;
+                            MethodKey::main(MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => MethodPermission::Public;
+                            MethodKey::main(MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => MethodPermission::Public;
+                            MethodKey::main(MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::main(MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
+                            MethodKey::main(MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                        },
+                        outer_auth: btreemap!(),
+                    },
+                },
             }
         };
 
         let blueprints = btreemap!(
-            ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: one_resource_pool_blueprint_schema,
-                function_auth: btreemap!(
-                    ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    outer_method_auth_template: btreemap!(),
-
-                    method_auth_template: method_auth_template! {
-                        // Metadata Module rules
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-                        // Royalty Module rules
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-
-                        // Main Module rules
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
-                    },
-                }
-            },
-            TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: two_resource_pool_blueprint_schema,
-                function_auth: btreemap!(
-                    TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: method_auth_template! {
-                        // Metadata Module rules
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-                        // Royalty Module rules
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-
-                        // Main Module rules
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
-                    },
-                    outer_method_auth_template: btreemap!(),
-                }
-            },
-            MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => BlueprintSetup {
-                schema: multi_resource_pool_blueprint_schema,
-                function_auth: btreemap!(
-                    MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                ),
-                royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template: method_auth_template! {
-                        // Metadata Module rules
-                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-
-                        // Royalty Module rules
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-                        SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-
-                        // Main Module rules
-                        SchemaMethodKey::main(MULTI_RESOURCE_POOL_REDEEM_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => SchemaMethodPermission::Public;
-                        SchemaMethodKey::main(MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                        SchemaMethodKey::main(MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
-                    },
-                    outer_method_auth_template: btreemap!(),
-                }
-            }
+            ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => one_resource_pool_blueprint,
+            TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => two_resource_pool_blueprint,
+            MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => multi_resource_pool_blueprint,
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

@@ -216,7 +216,7 @@ impl NonFungibleResourceManagerBlueprint {
 
             non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
-                scrypto_encode(&value).unwrap(),
+                (scrypto_encode(&value).unwrap(), false),
             );
         }
 
@@ -273,7 +273,7 @@ impl NonFungibleResourceManagerBlueprint {
             ids.insert(id.clone());
             non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
-                scrypto_encode(&entry).unwrap(),
+                (scrypto_encode(&entry).unwrap(), false),
             );
         }
 

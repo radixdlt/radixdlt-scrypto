@@ -1,5 +1,5 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::types::{MapKey, ScryptoValue, SubstateKey, TupleKey};
+use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
@@ -9,8 +9,8 @@ use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
     AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
     ObjectInfo, PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField,
-    ACCESS_RULES_FIELD_PARTITION, METADATA_KV_STORE_PARTITION, OBJECT_BASE_PARTITION,
-    ROYALTY_FIELD_PARTITION, TYPE_INFO_FIELD_PARTITION,
+    ACCESS_RULES_BASE_PARTITION, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
+    ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::{
@@ -105,14 +105,14 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     .substate_db
                     .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, MapKey>(
                         &node_id,
-                        OBJECT_BASE_PARTITION,
+                        MAIN_BASE_PARTITION,
                     )
                 {
                     let (_, owned_nodes, _) =
                         IndexedScryptoValue::from_scrypto_value(value).unpack();
                     for child_node_id in owned_nodes {
                         self.traverse_recursive(
-                            Some(&(node_id, OBJECT_BASE_PARTITION, substate_key.clone())),
+                            Some(&(node_id, MAIN_BASE_PARTITION, substate_key.clone())),
                             child_node_id,
                             depth + 1,
                         );
@@ -120,7 +120,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 }
             }
             TypeInfoSubstate::Object(ObjectInfo {
-                blueprint,
+                blueprint_id: blueprint,
+                version: _,
                 outer_object,
                 global: _,
                 instance_schema: _,
@@ -133,7 +134,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             &node_id,
-                            OBJECT_BASE_PARTITION,
+                            MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
                         )
                         .expect("Broken database");
@@ -150,7 +151,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                             &node_id,
-                            OBJECT_BASE_PARTITION,
+                            MAIN_BASE_PARTITION,
                             &NonFungibleVaultField::LiquidNonFungible.into(),
                         )
                         .expect("Broken database");
@@ -165,9 +166,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                             &node_id,
-                            OBJECT_BASE_PARTITION
-                                .at_offset(PartitionOffset(1u8))
-                                .unwrap(),
+                            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
                         );
                     for (_key, non_fungible_local_id) in entries {
                         self.visitor.visit_non_fungible(
@@ -179,10 +178,10 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else {
                     for partition_num in [
                         TYPE_INFO_FIELD_PARTITION,
-                        ROYALTY_FIELD_PARTITION,
-                        ACCESS_RULES_FIELD_PARTITION,
+                        ROYALTY_BASE_PARTITION,
+                        ACCESS_RULES_BASE_PARTITION,
                     ] {
-                        self.traverse_substates::<TupleKey>(node_id, partition_num, depth)
+                        self.traverse_substates::<FieldKey>(node_id, partition_num, depth)
                     }
                     for partition_num in [METADATA_KV_STORE_PARTITION] {
                         self.traverse_substates::<MapKey>(node_id, partition_num, depth)
@@ -193,7 +192,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     {
                         self.traverse_substates::<MapKey>(
                             node_id,
-                            OBJECT_BASE_PARTITION
+                            MAIN_BASE_PARTITION
                                 .at_offset(
                                     AccountPartitionOffset::AccountVaultsByResourceAddress.into(),
                                 )
@@ -202,7 +201,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         );
                         self.traverse_substates::<MapKey>(
                             node_id,
-                            OBJECT_BASE_PARTITION
+                            MAIN_BASE_PARTITION
                                 .at_offset(
                                     AccountPartitionOffset::AccountResourceDepositRuleByAddress
                                         .into(),
@@ -211,7 +210,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             depth,
                         )
                     } else {
-                        self.traverse_substates::<TupleKey>(node_id, OBJECT_BASE_PARTITION, depth)
+                        self.traverse_substates::<FieldKey>(node_id, MAIN_BASE_PARTITION, depth)
                     }
                 }
             }

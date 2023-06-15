@@ -93,7 +93,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
-        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
+        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
@@ -186,6 +186,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_reservation_address(
+        &mut self,
+        _node_id: &NodeId,
+    ) -> Result<GlobalAddress, ClientApiError> {
+        // FIXME: Implement this for Scrypto
+        todo!()
     }
 
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {

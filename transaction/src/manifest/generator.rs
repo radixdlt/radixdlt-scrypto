@@ -27,11 +27,9 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
+use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
-use radix_engine_interface::blueprints::package::{
-    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -721,11 +719,6 @@ where
         ast::Instruction::MintUuidNonFungible { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetPackageRoyaltyConfig { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
-            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
@@ -1427,7 +1420,7 @@ mod tests {
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::schema::BlueprintSchema;
+    use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, RoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
@@ -1660,7 +1653,7 @@ mod tests {
                         .try_into()
                         .unwrap()
                     ),
-                    BTreeMap::<String, BlueprintSchema>::new(),
+                    BTreeMap::<String, BlueprintStateSchemaInit>::new(),
                     BTreeMap::<String, RoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
                     Roles::new()
@@ -1995,13 +1988,14 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Decimal("1");
             "#,
             InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 args: to_manifest_value(&ConsensusManagerCreateValidatorInput {
                     key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
+                    fee_factor: Decimal::ONE,
                 }),
             },
         );

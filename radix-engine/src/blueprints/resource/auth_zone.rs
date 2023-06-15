@@ -1,12 +1,13 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node_init::ModuleInit;
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::NativeProof;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
@@ -95,14 +96,17 @@ impl AuthZoneBlueprint {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                        OBJECT_BASE_PARTITION => composed_proof.into(),
-                        TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                            blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                        MAIN_BASE_PARTITION => composed_proof.into(),
+                        TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                             global: false,
+
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                            version: BlueprintVersion::default(),
+
                             outer_object: Some(resource_address.into()),
                             instance_schema: None,
                             features: btreeset!(),
-                        })).to_substates()
+                        })),
                     ),
                 )?;
             }
@@ -110,15 +114,17 @@ impl AuthZoneBlueprint {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                        OBJECT_BASE_PARTITION => composed_proof.into(),
-                        TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                            blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                            global: false,
-                            outer_object: Some(resource_address.into()),
-                            instance_schema: None,
-                            features: btreeset!(),
-                        })).to_substates()
-                    ),
+                    MAIN_BASE_PARTITION => composed_proof.into(),
+                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                        global: false,
+
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        version: BlueprintVersion::default(),
+
+                        outer_object: Some(resource_address.into()),
+                        instance_schema: None,
+                        features: btreeset!(),
+                    }))),
                 )?;
             }
         }
@@ -150,14 +156,17 @@ impl AuthZoneBlueprint {
         api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                MAIN_BASE_PARTITION => composed_proof.into(),
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
+
+                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    version: BlueprintVersion::default(),
+
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
                     features: btreeset!(),
-                })).to_substates()
+                }))
             ),
         )?;
 
@@ -191,14 +200,17 @@ impl AuthZoneBlueprint {
         api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                MAIN_BASE_PARTITION => composed_proof.into(),
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
+
+                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                    version: BlueprintVersion::default(),
+
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
                     features: btreeset!(),
-                })).to_substates()
+                }))
             ),
         )?;
 
@@ -278,7 +290,7 @@ impl AuthZoneBlueprint {
         // Detach proofs from the auth zone
         let handle = api.kernel_lock_substate(
             input.auth_zone.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
             SystemLockData::Default,

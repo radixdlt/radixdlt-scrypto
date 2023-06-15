@@ -1,3 +1,4 @@
+use crate::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
 use crate::ScryptoSbor;
 use core::fmt;
 use core::fmt::Formatter;
@@ -11,11 +12,24 @@ use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
-    pub blueprint: BlueprintId,
     pub global: bool,
+
+    pub blueprint_id: BlueprintId,
+    pub version: BlueprintVersion,
+
+    // Blueprint arguments
     pub outer_object: Option<GlobalAddress>,
     pub instance_schema: Option<InstanceSchema>,
     pub features: BTreeSet<String>,
+}
+
+impl ObjectInfo {
+    pub fn blueprint_version_key(&self) -> BlueprintVersionKey {
+        BlueprintVersionKey {
+            blueprint: self.blueprint_id.blueprint_name.clone(),
+            version: self.version,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

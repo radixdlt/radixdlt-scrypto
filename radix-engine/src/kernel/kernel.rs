@@ -99,7 +99,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             kernel.store.release_lock(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint, global, ..
+                    blueprint_id: blueprint,
+                    global,
+                    ..
                 }) => {
                     if global {
                         kernel
@@ -209,7 +211,14 @@ where
                 .current_frame
                 .get_node_visibility(&node_id)
                 .can_be_invoked(*is_direct_access),
-            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
+            Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => {
                 // FIXME: combine this with reference check of invocation
                 self.current_frame
                     .get_node_visibility(blueprint.package_address.as_node_id())
@@ -370,17 +379,6 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
-
-    fn kernel_list_modules(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
-        self.current_frame
-            .list_modules(node_id, &mut self.heap)
-            .map_err(CallFrameError::ListNodeModuleError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
-    }
 }
 
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
@@ -420,7 +418,7 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint,
+                    blueprint_id: blueprint,
                     outer_object,
                     ..
                 }) if blueprint.package_address == RESOURCE_PACKAGE
@@ -446,7 +444,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
@@ -461,7 +459,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
@@ -482,10 +480,12 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_PACKAGE
-                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_id: blueprint,
+                    ..
+                }) if blueprint.package_address == RESOURCE_PACKAGE
+                    && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                        || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                 {
                     blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }
@@ -514,7 +514,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
@@ -541,7 +541,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();

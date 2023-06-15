@@ -54,7 +54,7 @@ impl VirtualizationModule {
 
                 let invocation = KernelInvocation {
                     actor: Actor::VirtualLazyLoad {
-                        blueprint: blueprint.clone(),
+                        blueprint_id: blueprint.clone(),
                         ident: virtual_func_id,
                     },
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),

@@ -728,9 +728,8 @@ impl AccountBlueprint {
         )?;
 
         let resource_deposit_configuration = {
-            let entry = api.key_value_entry_get_typed::<AccountResourceDepositRuleEntry>(
-                kv_store_entry_lock_handle,
-            )?;
+            let entry =
+                api.key_value_entry_get_typed::<ResourceDepositRule>(kv_store_entry_lock_handle)?;
 
             match entry {
                 Option::Some(resource_deposit_configuration) => resource_deposit_configuration,

@@ -5,7 +5,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -937,7 +937,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         self,
         blueprints: I,
     ) -> Result<Self, PrepareError> {
@@ -945,11 +945,10 @@ impl WasmModule {
             .module
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
-        for blueprint_schema in blueprints {
-            for func in blueprint_schema.functions.values() {
-                let export_name = &func.export;
+        for blueprint_def_init in blueprints {
+            for export_name in blueprint_def_init.schema.functions.exports() {
                 if !exports.entries().iter().any(|x| {
-                    x.field().eq(export_name) && {
+                    x.field().eq(&export_name) && {
                         if let Internal::Function(func_index) = x.internal() {
                             Self::function_matches(
                                 &self.module,
@@ -1104,7 +1103,10 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
+    use radix_engine_interface::schema::{
+        BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+        FunctionSchemaInit, TypeRef,
+    };
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
@@ -1262,27 +1264,40 @@ mod tests {
         let mut blueprints = BTreeMap::new();
         blueprints.insert(
             "Test".to_string(),
-            BlueprintSchema {
+            BlueprintDefinitionInit {
                 outer_blueprint: None,
-                schema: ScryptoSchema {
-                    type_kinds: vec![],
-                    type_metadata: vec![],
-                    type_validations: vec![],
-                },
-                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
-                collections: vec![],
-                functions: btreemap!(
-                    "f".to_string() => FunctionSchema {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(UNIT_ID),
-                        export: "Test_f".to_string(),
-                    }
-                ),
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
                 dependencies: btreeset!(),
-                features: btreeset!(),
+                feature_set: btreeset!(),
+
+                schema: BlueprintSchemaInit {
+                    generics: vec![],
+                    schema: ScryptoSchema {
+                        type_kinds: vec![],
+                        type_metadata: vec![],
+                        type_validations: vec![],
+                    },
+                    state: BlueprintStateSchemaInit {
+                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
+                            UNIT_ID,
+                        ))],
+                        collections: vec![],
+                    },
+                    events: Default::default(),
+                    functions: BlueprintFunctionsSchemaInit {
+                        functions: btreemap!(
+                            "f".to_string() => FunctionSchemaInit {
+                                receiver: Option::None,
+                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                output: TypeRef::Static(LocalTypeIndex::WellKnown(UNIT_ID)),
+                                export: "Test_f".to_string(),
+                            }
+                        ),
+                        virtual_lazy_load_functions: btreemap!(),
+                    },
+                },
+
+                royalty_config: Default::default(),
+                auth_config: Default::default(),
             },
         );
 

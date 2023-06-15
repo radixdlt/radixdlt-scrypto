@@ -21,10 +21,9 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltiesInput, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PackageSetRoyaltyInput, PackageSetup, PACKAGE_BLUEPRINT,
-    PACKAGE_CLAIM_ROYALTIES_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
-    PACKAGE_SET_ROYALTY_IDENT,
+    PackageClaimRoyaltiesInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
+    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -557,11 +556,11 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_validator(&mut self, key: Secp256k1PublicKey) -> &mut Self {
+    pub fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerCreateValidatorInput { key }),
+            args: to_manifest_value(&ConsensusManagerCreateValidatorInput { key, fee_factor }),
         });
         self
     }
@@ -655,25 +654,6 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn set_package_royalty<S: ToString>(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint: S,
-        fn_name: S,
-        royalty: RoyaltyAmount,
-    ) -> &mut Self {
-        self.add_instruction(InstructionV1::CallMethod {
-            address: package_address.into(),
-            method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&PackageSetRoyaltyInput {
-                blueprint: blueprint.to_string(),
-                fn_name: fn_name.to_string(),
-                royalty,
-            }),
-        })
-        .0
-    }
-
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
@@ -763,7 +743,7 @@ impl ManifestBuilder {
     pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> &mut Self {
@@ -786,7 +766,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package with an owner badge.
-    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageSetup) -> &mut Self {
+    pub fn publish_package(&mut self, code: Vec<u8>, definition: PackageDefinition) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
@@ -807,7 +787,7 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);

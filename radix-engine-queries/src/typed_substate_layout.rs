@@ -67,7 +67,7 @@ pub use radix_engine_interface::api::node_modules::royalty::*;
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
     TypeInfoModuleField(TypeInfoField),
-    AccessRulesModuleField(AccessRulesField),
+    AccessRulesModule(TypedAccessRulesSubstateKey),
     RoyaltyModuleField(RoyaltyField),
     MetadataModuleEntryKey(String),
     MainModule(TypedMainModuleSubstateKey),
@@ -90,11 +90,23 @@ impl TypedSubstateKey {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum TypedAccessRulesSubstateKey {
+    Rule(RoleKey),
+    Mutability(RoleKey),
+}
+
 /// Doesn't include non-object modules, nor transient nodes.
 #[derive(Debug, Clone)]
 pub enum TypedMainModuleSubstateKey {
     // Objects
     PackageField(PackageField),
+    PackageBlueprintKey(BlueprintVersionKey),
+    PackageBlueprintDependenciesKey(BlueprintVersionKey),
+    PackageSchemaKey(Hash),
+    PackageCodeKey(Hash),
+    PackageRoyaltyKey(BlueprintVersionKey),
+    PackageAuthTemplateKey(BlueprintVersionKey),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
     NonFungibleResourceData(NonFungibleLocalId),
@@ -156,16 +168,29 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        ROYALTY_FIELD_PARTITION => TypedSubstateKey::RoyaltyModuleField(
+        ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModuleField(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
-        ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModuleField(
-            AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
-        ),
-        partition_num @ _ if partition_num >= OBJECT_BASE_PARTITION => {
+        ACCESS_RULES_BASE_PARTITION => {
+            let key = substate_key
+                .for_map()
+                .ok_or_else(|| error("Access Rules key"))?;
+            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
+                scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
+            ))
+        }
+        ACCESS_RULES_MUTABILITY_PARTITION => {
+            let key = substate_key
+                .for_map()
+                .ok_or_else(|| error("Access Rules Mutability key"))?;
+            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(
+                scrypto_decode(&key).map_err(|_| error("Access Rules Mutability key"))?,
+            ))
+        }
+        partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
             TypedSubstateKey::MainModule(to_typed_object_module_substate_key(
                 entity_type,
-                partition_num.0 - OBJECT_BASE_PARTITION.0,
+                partition_num.0 - MAIN_BASE_PARTITION.0,
                 substate_key,
             )?)
         }
@@ -200,7 +225,48 @@ fn to_typed_object_substate_key_internal(
             )?)
         }
         EntityType::GlobalPackage => {
-            TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
+            let partition_offset = PackagePartitionOffset::try_from(partition_offset)?;
+            match partition_offset {
+                PackagePartitionOffset::Fields => {
+                    TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
+                }
+                PackagePartitionOffset::Blueprints => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageBlueprintKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                PackagePartitionOffset::BlueprintDependencies => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                PackagePartitionOffset::Schemas => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageSchemaKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                PackagePartitionOffset::Code => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageCodeKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                PackagePartitionOffset::RoyaltyConfig => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageRoyaltyKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                PackagePartitionOffset::AuthConfig => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::PackageAuthTemplateKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+            }
         }
         EntityType::GlobalFungibleResourceManager => {
             TypedMainModuleSubstateKey::FungibleResourceField(
@@ -314,7 +380,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug, Clone)]
 pub enum TypedSubstateValue {
     TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue),
-    AccessRulesModuleFieldValue(TypedAccessRulesModuleFieldValue),
+    AccessRulesModule(TypedAccessRulesModule),
     RoyaltyModuleFieldValue(TypedRoyaltyModuleFieldValue),
     MetadataModuleEntryValue(MetadataValueSubstate),
     MainModule(TypedMainModuleSubstateValue),
@@ -326,13 +392,13 @@ pub enum TypedTypeInfoModuleFieldValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesModuleFieldValue {
-    MethodAccessRules(MethodAccessRulesSubstate),
+pub enum TypedAccessRulesModule {
+    Rule(KeyValueEntrySubstate<AccessRule>),
+    Mutability(KeyValueEntrySubstate<RoleList>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleFieldValue {
-    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
 }
 
@@ -341,6 +407,12 @@ pub enum TypedRoyaltyModuleFieldValue {
 pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
+    PackageBlueprint(KeyValueEntrySubstate<BlueprintDefinition>),
+    PackageBlueprintDependencies(KeyValueEntrySubstate<BlueprintDependencies>),
+    PackageSchema(KeyValueEntrySubstate<ScryptoSchema>),
+    PackageCode(KeyValueEntrySubstate<PackageCodeSubstate>),
+    PackageAuthTemplate(KeyValueEntrySubstate<AuthConfig>),
+    PackageRoyalty(KeyValueEntrySubstate<RoyaltyConfig>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
     NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
@@ -364,11 +436,8 @@ pub enum TypedMainModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedPackageFieldValue {
-    Info(PackageInfoSubstate),
-    CodeType(PackageCodeTypeSubstate),
     Code(PackageCodeSubstate),
-    Royalty(PackageRoyaltySubstate),
-    FunctionAccessRules(PackageFunctionAccessRulesSubstate),
+    Royalty(PackageRoyaltyAccumulatorSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -469,18 +538,16 @@ fn to_typed_substate_value_internal(
                 }
             })
         }
-        TypedSubstateKey::AccessRulesModuleField(access_rules_offset) => {
-            TypedSubstateValue::AccessRulesModuleFieldValue(match access_rules_offset {
-                AccessRulesField::AccessRules => {
-                    TypedAccessRulesModuleFieldValue::MethodAccessRules(scrypto_decode(data)?)
-                }
-            })
-        }
+        TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
+            TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
+                TypedAccessRulesModule::Rule(scrypto_decode(data)?),
+            ),
+            TypedAccessRulesSubstateKey::Mutability(_) => TypedSubstateValue::AccessRulesModule(
+                TypedAccessRulesModule::Mutability(scrypto_decode(data)?),
+            ),
+        },
         TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {
             TypedSubstateValue::RoyaltyModuleFieldValue(match royalty_offset {
-                RoyaltyField::RoyaltyConfig => {
-                    TypedRoyaltyModuleFieldValue::ComponentRoyaltyConfig(scrypto_decode(data)?)
-                }
                 RoyaltyField::RoyaltyAccumulator => {
                     TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(scrypto_decode(data)?)
                 }
@@ -503,14 +570,26 @@ fn to_typed_object_substate_value(
     let substate_value = match substate_key {
         TypedMainModuleSubstateKey::PackageField(offset) => {
             TypedMainModuleSubstateValue::Package(match offset {
-                PackageField::Info => TypedPackageFieldValue::Info(scrypto_decode(data)?),
-                PackageField::CodeType => TypedPackageFieldValue::CodeType(scrypto_decode(data)?),
-                PackageField::Code => TypedPackageFieldValue::Code(scrypto_decode(data)?),
                 PackageField::Royalty => TypedPackageFieldValue::Royalty(scrypto_decode(data)?),
-                PackageField::FunctionAccessRules => {
-                    TypedPackageFieldValue::FunctionAccessRules(scrypto_decode(data)?)
-                }
             })
+        }
+        TypedMainModuleSubstateKey::PackageBlueprintKey(_key) => {
+            TypedMainModuleSubstateValue::PackageBlueprint(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(..) => {
+            TypedMainModuleSubstateValue::PackageBlueprintDependencies(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::PackageSchemaKey(..) => {
+            TypedMainModuleSubstateValue::PackageSchema(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::PackageCodeKey(..) => {
+            TypedMainModuleSubstateValue::PackageCode(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::PackageRoyaltyKey(_fn_key) => {
+            TypedMainModuleSubstateValue::PackageRoyalty(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::PackageAuthTemplateKey(_fn_key) => {
+            TypedMainModuleSubstateValue::PackageAuthTemplate(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::FungibleResourceField(offset) => {
             TypedMainModuleSubstateValue::FungibleResource(match offset {

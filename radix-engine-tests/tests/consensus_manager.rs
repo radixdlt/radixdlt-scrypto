@@ -40,6 +40,7 @@ fn genesis_epoch_has_correct_initial_validators() {
             key: pub_key,
             accept_delegated_stake: true,
             is_registered: true,
+            fee_factor: Decimal::ONE,
             metadata: vec![],
             owner: validator_account_address,
         });
@@ -80,6 +81,7 @@ fn genesis_epoch_has_correct_initial_validators() {
             .with_max_validators(max_validators),
         initial_time_ms: 1,
         initial_current_leader: Some(0),
+        faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
     };
 
     // Act
@@ -582,6 +584,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd),
         initial_time_ms: 1,
         initial_current_leader: Some(0),
+        faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
     };
 
     // Act
@@ -1097,6 +1100,7 @@ fn create_custom_genesis(
             key: pub_key,
             accept_delegated_stake: true,
             is_registered: true,
+            fee_factor: Decimal::ONE,
             metadata: vec![],
             owner: validator_account_address,
         });
@@ -1146,6 +1150,7 @@ fn create_custom_genesis(
             }),
         initial_time_ms: 1,
         initial_current_leader: Some(0),
+        faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
     };
 
     (genesis, pub_key_accounts)
