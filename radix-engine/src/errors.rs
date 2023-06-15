@@ -293,6 +293,7 @@ pub enum PayloadValidationAgainstSchemaError {
     EventDoesNotExist(String),
     SchemaValidationError(String),
     InstanceSchemaDoesNotExist,
+    SchemaNotFound,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

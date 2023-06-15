@@ -1,7 +1,7 @@
 name: Benchmark PR
 
 on:
-  pull_request:
+  push:
     branches:
       - main
       - develop
@@ -9,6 +9,8 @@ on:
       - alphanet
       - betanet
       - release\/*
+  pull_request:
+    # Run on PR against any branch
 
 concurrency:
   group: benchmark-comparison-${{ github.ref }}
