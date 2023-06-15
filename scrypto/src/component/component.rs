@@ -291,16 +291,11 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn metadata_roles(mut self, metadata_roles: Roles) -> Self {
-        self.metadata_roles = metadata_roles;
-        self
-    }
-
-    pub fn metadata(mut self, metadata: Metadata) -> Self {
+    pub fn metadata(mut self, metadata: (Roles, Metadata)) -> Self {
         if self.metadata.is_some() {
             panic!("Metadata already set.");
         }
-        self.metadata = Some(metadata);
+        self.metadata = Some(metadata.1);
 
         self
     }

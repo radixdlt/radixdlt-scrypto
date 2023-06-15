@@ -398,9 +398,11 @@ macro_rules! module_permissions {
     ($permissions:expr, methods { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, Methods, main, $($method => $($permission),+ ;)*);
     });
+    /*
     ($permissions:expr, metadata { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, MetadataMethods, metadata, $($method => $($permission),+ ;)*);
     });
+     */
     ($permissions:expr, royalties { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, RoyaltyMethods, royalty, $($method => $($permission),+ ;)*);
     });
@@ -551,7 +553,7 @@ macro_rules! royalties {
 }
 
 #[macro_export]
-macro_rules! metadata {
+macro_rules! metadata_config {
     ( ) => ({
         ::scrypto::prelude::Metadata::new()
     });
@@ -567,31 +569,18 @@ macro_rules! metadata {
     });
 }
 
-/*
 #[macro_export]
-macro_rules! metadata_init {
-    (
+macro_rules! metadata {
+    {
         roles {
-            $($role:ident),*
+            $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)*
         },
-        $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
-    ) => ({
-        let roles = roles!()
+        init {
+            $($init:tt)*
+        }
+    } => ({
+        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*);
+        let metadata = metadata_config!($($init)*);
+        (metadata_roles, metadata)
     })
-
-    ( ) => ({
-        ::scrypto::prelude::Metadata::new()
-    });
-    ( $($key:expr => $value:expr),* ) => ({
-        let mut metadata = ::scrypto::prelude::Metadata::new();
-        $(
-            metadata.set($key, $value);
-        )*
-        metadata
-    });
-    ( $($key:expr => $value:expr,)* ) => ({
-        metadata!{$($key => $value),*}
-    });
 }
-
- */

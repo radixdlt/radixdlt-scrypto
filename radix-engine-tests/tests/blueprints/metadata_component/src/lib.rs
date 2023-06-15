@@ -2,14 +2,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata_component {
-    enable_method_auth! {
-        metadata {
-            set => PUBLIC;
-            remove => PUBLIC;
-            get => PUBLIC;
-        }
-    }
-
     struct MetadataComponent {}
 
     impl MetadataComponent {
@@ -18,7 +10,12 @@ mod metadata_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
-                    key.clone() => value.clone()
+                    roles {
+                        setter => rule!(allow_all);
+                    },
+                    init {
+                        key.clone() => value.clone()
+                    }
                 })
                 .globalize();
 
