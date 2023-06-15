@@ -99,7 +99,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             kernel.store.release_lock(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint, global, ..
+                    blueprint_id: blueprint,
+                    global,
+                    ..
                 }) => {
                     if global {
                         kernel
@@ -209,8 +211,15 @@ where
                 .current_frame
                 .get_node_visibility(&node_id)
                 .can_be_invoked(*is_direct_access),
-            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
-                // TODO: Josh comment: what's the purpose of this?
+            Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => {
+                // FIXME: combine this with reference check of invocation
                 self.current_frame
                     .get_node_visibility(blueprint.package_address.as_node_id())
                     .can_be_invoked(false)
@@ -348,6 +357,7 @@ where
 
         Ok(())
     }
+    // FIXME: Add costing rules for moving module and listing modules.
 
     fn kernel_move_module(
         &mut self,
@@ -356,8 +366,6 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        // FIXME: costing!
-
         self.current_frame
             .move_module(
                 src_node_id,
@@ -368,19 +376,6 @@ where
                 self.store,
             )
             .map_err(CallFrameError::MoveModuleError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
-    }
-
-    fn kernel_list_modules(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
-        // FIXME: costing!
-
-        self.current_frame
-            .list_modules(node_id, &mut self.heap)
-            .map_err(CallFrameError::ListNodeModuleError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
@@ -423,7 +418,7 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint,
+                    blueprint_id: blueprint,
                     outer_object,
                     ..
                 }) if blueprint.package_address == RESOURCE_PACKAGE
@@ -449,7 +444,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
@@ -464,7 +459,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
@@ -485,10 +480,12 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_PACKAGE
-                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_id: blueprint,
+                    ..
+                }) if blueprint.package_address == RESOURCE_PACKAGE
+                    && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                        || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                 {
                     blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }
@@ -517,7 +514,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
@@ -544,7 +541,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
@@ -629,7 +626,7 @@ where
             }
         };
 
-        // TODO: pass the right size
+        // FIXME: pass the right size
         M::after_lock_substate(lock_handle, 0, &store_access, self)?;
 
         Ok(lock_handle)
@@ -672,7 +669,7 @@ where
             .map_err(KernelError::CallFrameError)?;
         let mut value_size = value.len();
 
-        // TODO: replace this overwrite with proper packing costing rule
+        // FIXME: revisit package special costing rules
         let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
         if lock_info.node_id.is_global_package() {
             store_access.clear();
@@ -827,7 +824,7 @@ where
         let rtn = self.invoke(invocation)?;
 
         M::after_invoke(
-            0, // TODO: Pass the right size
+            0, // FIXME: Pass the right size
             self,
         )?;
 

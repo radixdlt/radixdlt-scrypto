@@ -69,7 +69,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             compose_fungible_proof(proofs, resource_address, amount, api).map(|(proof, handles)| {
                 ComposedProof::Fungible(
                     ProofMoveableSubstate {
-                        restricted: false, // TODO: follow existing impl, but need to revisit this
+                        restricted: false, // FIXME: follow existing impl, but need to revisit this
                     },
                     proof,
                     handles,
@@ -81,6 +81,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             resource_address,
             match amount {
                 Some(amount) => {
+                    // FIXME: add test
                     NonFungiblesSpecification::Some(amount.to_string().parse().map_err(|_| {
                         RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
                             AuthZoneError::ComposeProofError(ComposeProofError::InvalidAmount),
@@ -94,7 +95,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
         .map(|(proof, handles)| {
             ComposedProof::NonFungible(
                 ProofMoveableSubstate {
-                    restricted: false, // TODO: follow existing impl, but need to revisit this
+                    restricted: false, //  FIXME: verify this is sound
                 },
                 proof,
                 handles,
@@ -132,7 +133,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<Run
         .map(|(proof, handles)| {
             ComposedProof::NonFungible(
                 ProofMoveableSubstate {
-                    restricted: false, // TODO: follow existing impl, but need to revisit this
+                    restricted: false, // FIXME: verify this is sound
                 },
                 proof,
                 handles,
@@ -155,12 +156,16 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     for proof in proofs {
         let info = api.get_object_info(proof.0.as_node_id())?;
 
-        if info.blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) {
+        if info
+            .blueprint_id
+            .blueprint_name
+            .eq(FUNGIBLE_PROOF_BLUEPRINT)
+        {
             let proof_resource = ResourceAddress::new_or_panic(info.outer_object.unwrap().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleProofField::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
@@ -204,7 +209,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     for proof in proofs {
         let info = api.get_object_info(proof.0.as_node_id())?;
         if info
-            .blueprint
+            .blueprint_id
             .blueprint_name
             .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
         {
@@ -212,7 +217,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleProofField::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
@@ -251,14 +256,14 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
         ));
     }
 
-    // TODO: review resource container selection algorithm here
+    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = amount.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -340,14 +345,14 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
         ));
     }
 
-    // TODO: review resource container selection algorithm here
+    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = ids.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),

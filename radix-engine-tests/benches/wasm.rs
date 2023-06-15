@@ -14,10 +14,7 @@ fn bench_wasm_validation(c: &mut Criterion) {
     let definition = extract_definition(code).unwrap();
 
     c.bench_function("WASM::validate_wasm", |b| {
-        b.iter(|| {
-            WasmValidator::default()
-                .validate(code, definition.blueprints.values().map(|s| &s.schema))
-        })
+        b.iter(|| WasmValidator::default().validate(code, definition.blueprints.values()))
     });
 }
 

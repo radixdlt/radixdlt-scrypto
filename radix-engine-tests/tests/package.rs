@@ -1,11 +1,14 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{ApplicationError, RuntimeError, VmError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, VmError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, PackageDefinition,
 };
-use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
+use radix_engine_interface::schema::{
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
+};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -29,7 +32,7 @@ fn missing_memory_should_cause_error() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageSetup::default(),
+            PackageDefinition::default(),
             BTreeMap::new(),
             OwnerRole::None,
         )
@@ -142,35 +145,40 @@ fn test_basic_package_missing_export() {
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "Test".to_string(),
-        BlueprintSetup {
-            schema: BlueprintSchema {
-                outer_blueprint: None,
+        BlueprintDefinitionInit {
+            outer_blueprint: None,
+            dependencies: btreeset!(),
+            feature_set: btreeset!(),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
-                collections: vec![],
-                functions: btreemap!(
-                    "f".to_string() => FunctionSchema {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: "not_exist".to_string(),
-                    }
-                ),
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
-                dependencies: btreeset!(),
-                features: btreeset!(),
+                state: BlueprintStateSchemaInit {
+                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
+                        UNIT_ID,
+                    ))],
+                    collections: vec![],
+                },
+                events: BlueprintEventSchemaInit::default(),
+                functions: BlueprintFunctionsSchemaInit {
+                    functions: btreemap!(
+                        "f".to_string() => FunctionSchemaInit {
+                            receiver: Option::None,
+                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            export: "not_exist".to_string(),
+                        }
+                    ),
+                    virtual_lazy_load_functions: btreemap!(),
+                },
             },
-            function_auth: btreemap!(),
+
             royalty_config: RoyaltyConfig::default(),
-            template: BlueprintTemplate {
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: btreemap!(),
-            },
+            auth_config: AuthConfig::default(),
         },
     );
     // Act
@@ -179,7 +187,7 @@ fn test_basic_package_missing_export() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
-            PackageSetup { blueprints },
+            PackageDefinition { blueprints },
             BTreeMap::new(),
             OwnerRole::None,
         )
@@ -193,6 +201,30 @@ fn test_basic_package_missing_export() {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(PrepareError::MissingExport { .. })
             ))
+        )
+    });
+}
+
+// FIXME: Change test to check that schema type_index is viable
+#[test]
+fn bad_function_schema_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(package, "BadFunctionSchema", "f", manifest_args!())
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
         )
     });
 }

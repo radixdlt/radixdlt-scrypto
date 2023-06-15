@@ -2,6 +2,12 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod balance_changes_test {
+    enable_package_royalties! {
+        instantiate => Free,
+        put => Xrd(2.into()),
+        boom => Xrd(2.into()),
+    }
+
     enable_method_auth! {
         methods {
             put => PUBLIC;

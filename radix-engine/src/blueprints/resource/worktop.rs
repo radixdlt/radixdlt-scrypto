@@ -50,7 +50,7 @@ impl WorktopBlueprint {
         // Detach buckets from worktop
         let handle = api.kernel_lock_substate(
             input.worktop.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &WorktopField::Worktop.into(),
             LockFlags::MUTABLE,
             SystemLockData::Default,

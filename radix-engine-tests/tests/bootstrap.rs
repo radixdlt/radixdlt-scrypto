@@ -51,6 +51,7 @@ fn test_bootstrap_receipt_should_match_constants() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
             Decimal::zero(),
         )
         .unwrap();
@@ -108,6 +109,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
             Decimal::zero(),
         )
         .unwrap();
@@ -168,6 +170,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
             Decimal::zero(),
         )
         .unwrap();
@@ -235,6 +238,7 @@ fn test_genesis_resource_with_initial_allocation() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
             Decimal::zero(),
         )
         .unwrap();
@@ -242,7 +246,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let total_supply = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
         .unwrap();
@@ -354,6 +358,7 @@ fn test_genesis_stake_allocation() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
             Decimal::zero(),
         )
         .unwrap();
@@ -440,6 +445,7 @@ fn test_genesis_time() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
+            Some(0),
             Decimal::zero(),
         )
         .unwrap();
@@ -447,7 +453,7 @@ fn test_genesis_time() {
     let proposer_minute_timestamp = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, ProposerMinuteTimestampSubstate>(
             CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         )
         .unwrap();

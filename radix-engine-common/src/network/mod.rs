@@ -5,7 +5,6 @@ use sbor::*;
 /// Network Definition is intended to be the actual definition of a network
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct NetworkDefinition {
-    // TODO: we may be able to squeeze network identifier into the other fields, like the `v` byte in signature.
     pub id: u8,
     pub logical_name: String,
     pub hrp_suffix: String,
@@ -35,6 +34,14 @@ impl NetworkDefinition {
             id: 0x0b,
             logical_name: String::from("nebunet"),
             hrp_suffix: String::from("tdx_b_"),
+        }
+    }
+
+    pub fn kisharnet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 0x0c,
+            logical_name: String::from("kisharnet"),
+            hrp_suffix: String::from("tdx_c_"),
         }
     }
 

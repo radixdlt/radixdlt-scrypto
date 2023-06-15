@@ -58,6 +58,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -67,12 +68,10 @@ use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
-    IndexedBlueprintSchema, IndexedPackageSchema, PackageInfoSubstate,
+    BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
+    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
@@ -328,39 +327,87 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1Pr
 
 pub fn export_package_schema(
     package_address: PackageAddress,
-) -> Result<IndexedPackageSchema, Error> {
+) -> Result<BTreeMap<BlueprintVersionKey, BlueprintDefinition>, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
-    let package_info = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
+    let entries = substate_db
+        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>, MapKey>(
             package_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
-            &PackageField::Info.into(),
-        )
-        .ok_or(Error::PackageNotFound(package_address))?;
+            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+        );
 
-    Ok(package_info.schema)
+    let mut blueprints = BTreeMap::new();
+    for (key, blueprint_definition) in entries {
+        let bp_version_key: BlueprintVersionKey = match key {
+            SubstateKey::Map(v) => scrypto_decode(&v).unwrap(),
+            _ => panic!("Unexpected"),
+        };
+
+        blueprints.insert(bp_version_key, blueprint_definition.value.unwrap());
+    }
+
+    Ok(blueprints)
 }
 
-pub fn export_blueprint_schema(
+pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+    let type_info = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            component_address.as_node_id(),
+            TYPE_INFO_FIELD_PARTITION,
+            &SubstateKey::Field(0u8),
+        )
+        .ok_or(Error::ComponentNotFound(component_address))?;
+    match type_info {
+        TypeInfoSubstate::Object(object_info) => Ok(object_info),
+        _ => Err(Error::ComponentNotFound(component_address)),
+    }
+}
+
+pub fn export_schema(
+    package_address: PackageAddress,
+    schema_hash: Hash,
+) -> Result<ScryptoSchema, Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+    let schema = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+            package_address.as_node_id(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+        )
+        .ok_or(Error::SchemaNotFound(package_address, schema_hash))?
+        .value
+        .unwrap();
+
+    Ok(schema)
+}
+
+pub fn export_blueprint_interface(
     package_address: PackageAddress,
     blueprint_name: &str,
-) -> Result<IndexedBlueprintSchema, Error> {
-    let schema = export_package_schema(package_address)?
-        .blueprints
-        .get(blueprint_name)
+) -> Result<BlueprintInterface, Error> {
+    let interface = export_package_schema(package_address)?
+        .get(&BlueprintVersionKey::new_default(blueprint_name))
         .cloned()
         .ok_or(Error::BlueprintNotFound(
             package_address,
             blueprint_name.to_string(),
         ))?
-        .schema;
-    Ok(schema)
+        .interface;
+    Ok(interface)
 }
 
-pub fn get_blueprint(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
+pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
@@ -374,7 +421,10 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<BlueprintId,
         .ok_or(Error::ComponentNotFound(component_address))?;
 
     match type_info {
-        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
+        TypeInfoSubstate::Object(ObjectInfo {
+            blueprint_id: blueprint,
+            ..
+        }) => Ok(blueprint.clone()),
         _ => panic!("Unexpected"),
     }
 }
@@ -383,24 +433,12 @@ pub fn get_event_schema<S: SubstateDatabase>(
     substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
-    let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
-        EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
+    let (package_address, schema_pointer) = match event_type_identifier {
+        EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
             match node_module {
-                ObjectModuleId::AccessRules => (
-                    ACCESS_RULES_MODULE_PACKAGE,
-                    ACCESS_RULES_BLUEPRINT.into(),
-                    *local_type_index,
-                ),
-                ObjectModuleId::Royalty => (
-                    ROYALTY_MODULE_PACKAGE,
-                    COMPONENT_ROYALTY_BLUEPRINT.into(),
-                    *local_type_index,
-                ),
-                ObjectModuleId::Metadata => (
-                    METADATA_MODULE_PACKAGE,
-                    METADATA_BLUEPRINT.into(),
-                    *local_type_index,
-                ),
+                ObjectModuleId::AccessRules => (ACCESS_RULES_MODULE_PACKAGE, *schema_pointer),
+                ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, *schema_pointer),
+                ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Main => {
                     let type_info = substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
@@ -410,42 +448,40 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         )
                         .unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
-                            blueprint.package_address,
-                            blueprint.blueprint_name,
-                            *local_type_index,
-                        ),
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
+                            (blueprint_id.package_address, *schema_pointer)
+                        }
                         _ => return None,
                     }
                 }
             }
         }
-        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
+        EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
             PackageAddress::new_or_panic(node_id.clone().into()),
-            blueprint_name.to_owned(),
-            *local_type_index,
+            *schema_pointer,
         ),
     };
 
-    let package_info = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
-            package_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
-            &PackageField::Info.into(),
-        )
-        .unwrap();
+    match schema_pointer {
+        TypePointer::Package(schema_hash, index) => {
+            let schema = substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+                    package_address.as_node_id(),
+                    MAIN_BASE_PARTITION
+                        .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                        .unwrap(),
+                    &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+                )
+                .unwrap()
+                .value
+                .unwrap();
 
-    Some((
-        local_type_index,
-        package_info
-            .schema
-            .blueprints
-            .get(&blueprint_name)
-            .unwrap()
-            .schema
-            .schema
-            .clone(),
-    ))
+            Some((index, schema))
+        }
+        TypePointer::Instance(..) => {
+            todo!()
+        }
+    }
 }
 
 pub fn db_upsert_timestamps(
@@ -458,14 +494,14 @@ pub fn db_upsert_timestamps(
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
-        OBJECT_BASE_PARTITION,
+        MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTime.into(),
         &milli_timestamp,
     );
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
-        OBJECT_BASE_PARTITION,
+        MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         &minute_timestamp,
     );
@@ -481,20 +517,21 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let mut consensus_manager_substate = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
             &CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
         )
         .unwrap_or_else(|| ConsensusManagerSubstate {
             epoch: Epoch::zero(),
             epoch_start_milli: 0,
             round: Round::zero(),
+            current_leader: Some(0),
         });
 
     consensus_manager_substate.epoch = epoch;
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
-        OBJECT_BASE_PARTITION,
+        MAIN_BASE_PARTITION,
         &ConsensusManagerField::ConsensusManager.into(),
         &consensus_manager_substate,
     );

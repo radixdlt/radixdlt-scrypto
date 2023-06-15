@@ -27,7 +27,7 @@ pub struct MethodActor {
 impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
-            blueprint: self.module_object_info.blueprint.clone(),
+            blueprint_id: self.module_object_info.blueprint_id.clone(),
             ident: FnIdent::Application(self.ident.to_string()),
         }
     }
@@ -38,11 +38,11 @@ pub enum Actor {
     Root,
     Method(MethodActor),
     Function {
-        blueprint: BlueprintId,
+        blueprint_id: BlueprintId,
         ident: String,
     },
     VirtualLazyLoad {
-        blueprint: BlueprintId,
+        blueprint_id: BlueprintId,
         ident: u8,
     },
 }
@@ -54,14 +54,18 @@ impl Actor {
             Actor::Method(MethodActor { node_id, ident, .. }) => {
                 node_id.as_ref().len() + ident.len()
             }
-            Actor::Function { blueprint, ident } => {
+            Actor::Function {
+                blueprint_id: blueprint,
+                ident,
+            } => {
                 blueprint.package_address.as_ref().len()
                     + blueprint.blueprint_name.len()
                     + ident.len()
             }
-            Actor::VirtualLazyLoad { blueprint, .. } => {
-                blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1
-            }
+            Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1,
         }
     }
 
@@ -71,8 +75,14 @@ impl Actor {
                 module_object_info: object_info,
                 ..
             }) => {
-                object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
-                    && object_info.blueprint.blueprint_name.eq(AUTH_ZONE_BLUEPRINT)
+                object_info
+                    .blueprint_id
+                    .package_address
+                    .eq(&RESOURCE_PACKAGE)
+                    && object_info
+                        .blueprint_id
+                        .blueprint_name
+                        .eq(AUTH_ZONE_BLUEPRINT)
             }
             Actor::Function { .. } => false,
             Actor::VirtualLazyLoad { .. } => false,
@@ -96,12 +106,18 @@ impl Actor {
         match self {
             Actor::Root => panic!("Should never be called"),
             Actor::Method(method_actor) => method_actor.fn_identifier(),
-            Actor::Function { blueprint, ident } => FnIdentifier {
-                blueprint: blueprint.clone(),
+            Actor::Function {
+                blueprint_id: blueprint,
+                ident,
+            } => FnIdentifier {
+                blueprint_id: blueprint.clone(),
                 ident: FnIdent::Application(ident.to_string()),
             },
-            Actor::VirtualLazyLoad { blueprint, ident } => FnIdentifier {
-                blueprint: blueprint.clone(),
+            Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ident,
+            } => FnIdentifier {
+                blueprint_id: blueprint.clone(),
                 ident: FnIdent::System(*ident),
             },
         }
@@ -111,11 +127,21 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info:
+                    ObjectInfo {
+                        blueprint_id: blueprint,
+                        ..
+                    },
                 ..
             })
-            | Actor::Function { blueprint, .. }
-            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.eq(&BlueprintId::new(
+            | Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint.eq(&BlueprintId::new(
                 &TRANSACTION_PROCESSOR_PACKAGE,
                 TRANSACTION_PROCESSOR_BLUEPRINT,
             )),
@@ -132,7 +158,10 @@ impl Actor {
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
             Actor::Method(actor) => actor.global_address.map(|address| address.into()),
-            Actor::Function { blueprint, .. } => Some(blueprint.clone().into()),
+            Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            } => Some(blueprint.clone().into()),
             _ => None,
         }
     }
@@ -149,17 +178,27 @@ impl Actor {
     pub fn blueprint(&self) -> &BlueprintId {
         match self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info:
+                    ObjectInfo {
+                        blueprint_id: blueprint,
+                        ..
+                    },
                 ..
             })
-            | Actor::Function { blueprint, .. }
-            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
-            Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
+            | Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint,
+            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
 
     /// Proofs which exist only on the local call frame
-    /// TODO: Update abstractions such that it is based on local call frame
+    /// FIXME: Update abstractions such that it is based on local call frame
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
         btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
             *self.package_address()
@@ -177,12 +216,22 @@ impl Actor {
     pub fn package_address(&self) -> &PackageAddress {
         let blueprint = match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info:
+                    ObjectInfo {
+                        blueprint_id: blueprint,
+                        ..
+                    },
                 ..
             }) => blueprint,
-            Actor::Function { blueprint, .. } => blueprint,
-            Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
-            Actor::Root => return &PACKAGE_PACKAGE, // TODO: Should we mock this with something better?
+            Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint,
+            Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint,
+            Actor::Root => return &PACKAGE_PACKAGE, // FIXME: have the right interface
         };
 
         &blueprint.package_address
@@ -191,12 +240,22 @@ impl Actor {
     pub fn blueprint_name(&self) -> &str {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint, .. },
+                module_object_info:
+                    ObjectInfo {
+                        blueprint_id: blueprint,
+                        ..
+                    },
                 ..
             })
-            | Actor::Function { blueprint, .. }
-            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.blueprint_name.as_str(),
-            Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
+            | Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => blueprint.blueprint_name.as_str(),
+            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
 
@@ -221,10 +280,16 @@ impl Actor {
     }
 
     pub fn function(blueprint: BlueprintId, ident: String) -> Self {
-        Self::Function { blueprint, ident }
+        Self::Function {
+            blueprint_id: blueprint,
+            ident,
+        }
     }
 
     pub fn virtual_lazy_load(blueprint: BlueprintId, ident: u8) -> Self {
-        Self::VirtualLazyLoad { blueprint, ident }
+        Self::VirtualLazyLoad {
+            blueprint_id: blueprint,
+            ident,
+        }
     }
 }

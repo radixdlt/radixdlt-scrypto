@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_init::ModuleInit;
+use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
@@ -13,6 +13,7 @@ use native_sdk::runtime::{LocalAuthZone, Runtime};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use sbor::rust::prelude::*;
@@ -110,18 +111,21 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
                     WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
                 ),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
+
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                        version: BlueprintVersion::default(),
+
                         outer_object: None,
                         instance_schema: None,
                         features: btreeset!(),
                     })
-                ).to_substates()
+                )
             ),
         )?;
         let worktop = Worktop(Own(worktop_node_id));
@@ -616,8 +620,8 @@ impl TransactionProcessor {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
             match info {
                 TypeInfoSubstate::Object(info) => match (
-                    info.blueprint.package_address,
-                    info.blueprint.blueprint_name.as_str(),
+                    info.blueprint_id.package_address,
+                    info.blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
@@ -685,7 +689,7 @@ impl TransactionProcessor {
                 Ok(())
             }
             RuntimeValidation::IntentHashUniqueness { .. } => {
-                // TODO - Add intent hash replay prevention here
+                // FIXME - Add intent hash replay prevention here
                 // This will to enable its removal from the node
                 Ok(())
             }

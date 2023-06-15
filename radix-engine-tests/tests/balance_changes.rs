@@ -23,18 +23,6 @@ fn test_balance_changes_when_success() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "put",
-                RoyaltyAmount::Xrd(2.into()),
-            )
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "boom",
-                RoyaltyAmount::Xrd(2.into()),
-            )
             .call_function(
                 package_address,
                 "BalanceChangesTest",
@@ -62,20 +50,25 @@ fn test_balance_changes_when_success() {
     );
 
     let result = receipt.expect_commit(true);
+
+    assert_eq!(result.balance_changes().len(), 5usize);
     assert_eq!(
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
             ),
+            account.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(dec!("-1"))
+            ),
+            component_address.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(dec!("2")) // 1 for put another 1 for component royalties
+            ),
             package_address.into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(dec!("2"))
             ),
-            component_address.into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(dec!("2"))
-            ),
-            account.into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(dec!("-1"))
+            CONSENSUS_MANAGER.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())
             )
         )
     );
@@ -101,18 +94,6 @@ fn test_balance_changes_when_failure() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "put",
-                RoyaltyAmount::Xrd(2.into()),
-            )
-            .set_package_royalty(
-                package_address,
-                "BalanceChangesTest",
-                "boom",
-                RoyaltyAmount::Xrd(2.into()),
-            )
             .call_function(
                 package_address,
                 "BalanceChangesTest",
@@ -146,6 +127,9 @@ fn test_balance_changes_when_failure() {
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
+            ),
+            CONSENSUS_MANAGER.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())
             )
         )
     )
@@ -188,6 +172,9 @@ fn test_balance_changes_when_recall() {
             other_account.into() => indexmap!(
                 recallable_token => BalanceChange::Fungible(dec!("1"))
             ),
+            CONSENSUS_MANAGER.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())
+            )
         )
     );
     assert_eq!(
@@ -234,7 +221,8 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         hashset![
             account.into(),
             other_account.into(),
-            test_runner.faucet_component().into()
+            test_runner.faucet_component().into(),
+            CONSENSUS_MANAGER.into(),
         ]
     );
 
@@ -257,7 +245,9 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd;
     assert_eq!(
         faucet_changes,
-        &indexmap!(RADIX_TOKEN => BalanceChange::Fungible(-total_cost_xrd)),
+        &indexmap!(
+            RADIX_TOKEN => BalanceChange::Fungible(-total_cost_xrd),
+        ),
     );
 
     assert!(result.direct_vault_updates().is_empty())

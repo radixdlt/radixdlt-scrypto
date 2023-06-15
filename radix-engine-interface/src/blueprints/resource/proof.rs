@@ -42,8 +42,6 @@ pub type ProofCloneOutput = Proof;
 // Stub
 //========
 
-// TODO: update schema type
-
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub Own);
 

@@ -1,3 +1,6 @@
+use crate::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
@@ -5,9 +8,10 @@ use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
+use scrypto_schema::BlueprintSchemaInit;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -16,14 +20,14 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -35,7 +39,7 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub code: Vec<u8>,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -44,7 +48,7 @@ pub struct PackagePublishWasmAdvancedInput {
 pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub code: ManifestBlobRef,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub owner_rule: OwnerRole,
 }
@@ -57,7 +61,7 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub native_package_code_id: u8,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
@@ -65,24 +69,11 @@ pub struct PackagePublishNativeInput {
 pub struct PackagePublishNativeManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub native_package_code_id: u8,
-    pub setup: PackageSetup,
+    pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 pub type PackagePublishNativeOutput = PackageAddress;
-
-pub const PACKAGE_SET_ROYALTY_IDENT: &str = "PackageRoyalty_set_royalty";
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
-pub struct PackageSetRoyaltyInput {
-    pub blueprint: String,
-    pub fn_name: String,
-    pub royalty: RoyaltyAmount,
-}
-
-pub type PackageSetRoyaltyOutput = ();
 
 pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties";
 
@@ -94,22 +85,86 @@ pub struct PackageClaimRoyaltiesInput {}
 pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct PackageSetup {
-    pub blueprints: BTreeMap<String, BlueprintSetup>,
+pub struct PackageDefinition {
+    pub blueprints: BTreeMap<String, BlueprintDefinitionInit>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintSetup {
-    pub schema: BlueprintSchema,
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintDefinitionInit {
+    pub outer_blueprint: Option<String>,
+    pub feature_set: BTreeSet<String>,
+    pub dependencies: BTreeSet<GlobalAddress>,
 
-    pub function_auth: BTreeMap<String, AccessRule>,
+    pub schema: BlueprintSchemaInit,
+
     pub royalty_config: RoyaltyConfig,
+    pub auth_config: AuthConfig,
+}
 
-    pub template: BlueprintTemplate,
+impl Default for BlueprintDefinitionInit {
+    fn default() -> Self {
+        Self {
+            outer_blueprint: None,
+            dependencies: BTreeSet::default(),
+            feature_set: BTreeSet::default(),
+            schema: BlueprintSchemaInit::default(),
+            royalty_config: RoyaltyConfig::default(),
+            auth_config: AuthConfig::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintTemplate {
-    pub method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-    pub outer_method_auth_template: BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
+pub struct AuthConfig {
+    pub function_auth: BTreeMap<String, AccessRule>,
+    pub method_auth: MethodAuthTemplate,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum MethodAuthTemplate {
+    Static {
+        auth: BTreeMap<MethodKey, MethodPermission>,
+        outer_auth: BTreeMap<MethodKey, MethodPermission>,
+    },
+}
+
+impl MethodAuthTemplate {
+    pub fn add_metadata_default_if_not_specified(&mut self) {
+        match self {
+            MethodAuthTemplate::Static { auth, .. } => {
+                if !auth.contains_key(&MethodKey::metadata(METADATA_GET_IDENT)) {
+                    auth.insert(
+                        MethodKey::metadata(METADATA_GET_IDENT),
+                        MethodPermission::Public,
+                    );
+                    auth.insert(MethodKey::metadata(METADATA_SET_IDENT), [OWNER_ROLE].into());
+                    auth.insert(
+                        MethodKey::metadata(METADATA_REMOVE_IDENT),
+                        [OWNER_ROLE].into(),
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
+        match self {
+            MethodAuthTemplate::Static { auth, .. } => auth,
+        }
+    }
+
+    pub fn outer_auth(self) -> BTreeMap<MethodKey, MethodPermission> {
+        match self {
+            MethodAuthTemplate::Static { outer_auth, .. } => outer_auth,
+        }
+    }
+}
+
+impl Default for MethodAuthTemplate {
+    fn default() -> Self {
+        MethodAuthTemplate::Static {
+            auth: BTreeMap::default(),
+            outer_auth: BTreeMap::default(),
+        }
+    }
 }

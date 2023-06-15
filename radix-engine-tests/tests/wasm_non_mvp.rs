@@ -29,6 +29,8 @@ macro_rules! assert_sign_extensions {
                         .replace("${value_kind}", &value_kind)
                         .replace("${slice_len}", &slice_len));
 
+                assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops());
+
                 let mut test_runner = TestRunner::builder().build();
                 let package_address = test_runner.publish_package(
                     code,
@@ -55,14 +57,6 @@ assert_sign_extensions!(i32, "extend16_s", 0x44332211, 0x2211);
 assert_sign_extensions!(i64, "extend8_s", 0x665544332211, 0x11);
 assert_sign_extensions!(i64, "extend16_s", 0x665544332211, 0x2211);
 assert_sign_extensions!(i64, "extend32_s", 0x665544332211, 0x44332211);
-
-#[test]
-fn test_wasm_non_mvp_expect_sign_ext_from_rust_code() {
-    // Arrange
-    let (code, _) = Compile::compile("./tests/blueprints/wasm_non_mvp");
-
-    assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops())
-}
 
 #[test]
 fn test_wasm_non_mvp_mutable_globals_import() {

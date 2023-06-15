@@ -146,7 +146,6 @@ impl NonFungibleProofBlueprint {
         Ok(ids)
     }
 
-    // TODO: Remove in favor of an API get_parent()
     pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -165,7 +164,7 @@ impl NonFungibleProofBlueprint {
         // Notify underlying buckets/vaults
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::Default,

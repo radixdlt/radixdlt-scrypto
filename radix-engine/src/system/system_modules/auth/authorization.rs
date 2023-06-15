@@ -1,6 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
@@ -11,7 +12,7 @@ use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
-// TODO: Refactor structure to be able to remove this
+// FIXME: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActingLocation {
     AtBarrier,
@@ -73,7 +74,7 @@ impl Authorization {
             // Load auth zone
             let handle = api.kernel_lock_substate(
                 &current_auth_zone_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -137,7 +138,7 @@ impl Authorization {
             auth_zone_id,
             api,
             |auth_zone, _, _, api| {
-                // FIXME: Need to check the composite max amount rather than just each proof individually
+                // TODO: revisit this and decide if we need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
                     if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
                         && p.amount(api)? >= amount
@@ -341,23 +342,34 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: Option<&NodeId>,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
+        access_rules_of: &NodeId,
         key: &RoleKey,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.eq(SELF_ROLE) {
-            if let Some(access_rules_of) = access_rules_of {
-                rule!(require(global_caller(GlobalAddress::new_or_panic(
-                    access_rules_of.0
-                ))))
-            } else {
-                return Ok(AuthorizationCheckResult::Failed(vec![]));
-            }
+            // FIXME: Prevent panics of node id, this may be triggered by vaults and auth zone
+            rule!(require(global_caller(GlobalAddress::new_or_panic(
+                access_rules_of.0
+            ))))
         } else {
-            match access_rules.get(key) {
-                Some(access_rule) => access_rule.clone(),
+            let handle = api.kernel_lock_substate_with_default(
+                access_rules_of,
+                ACCESS_RULES_BASE_PARTITION,
+                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
+                LockFlags::read_only(),
+                Some(|| {
+                    let kv_entry = KeyValueEntrySubstate::<()>::default();
+                    IndexedScryptoValue::from_typed(&kv_entry)
+                }),
+                SystemLockData::default(),
+            )?;
+            let substate: KeyValueEntrySubstate<AccessRule> =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_drop_lock(handle)?;
+
+            match substate.value {
+                Some(access_rule) => access_rule,
                 None => {
                     return Ok(AuthorizationCheckResult::Failed(vec![]));
                 }
@@ -367,7 +379,7 @@ impl Authorization {
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,
-            access_rules_of,
+            Some(access_rules_of),
             &access_rule,
             already_verified_authorities,
             api,
@@ -433,7 +445,6 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: &NodeId,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
         role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {
@@ -445,8 +456,7 @@ impl Authorization {
             let result = Self::check_authorization_against_role_key_internal(
                 acting_location,
                 auth_zone_id,
-                Some(access_rules_of),
-                access_rules,
+                access_rules_of,
                 key,
                 &mut already_verified_authorities,
                 api,

@@ -8,15 +8,17 @@ use sbor::rust::prelude::*;
 
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
 pub const METADATA_KV_STORE_PARTITION: PartitionNumber = PartitionNumber(1u8);
-pub const ROYALTY_FIELD_PARTITION: PartitionNumber = PartitionNumber(2u8);
-pub const ACCESS_RULES_FIELD_PARTITION: PartitionNumber = PartitionNumber(3u8);
-pub const OBJECT_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccessRulesField {
-    AccessRules,
-}
+pub const ROYALTY_BASE_PARTITION: PartitionNumber = PartitionNumber(2u8);
+pub const ROYALTY_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
+pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+
+pub const ACCESS_RULES_BASE_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ACCESS_RULES_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+
+pub const ACCESS_RULES_MUTABILITY_PARTITION: PartitionNumber = PartitionNumber(5u8);
+
+pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -27,7 +29,6 @@ pub enum TypeInfoField {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum RoyaltyField {
-    RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
@@ -40,11 +41,7 @@ pub enum ComponentField {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum PackageField {
-    Info,
-    CodeType,
-    Code,
     Royalty,
-    FunctionAccessRules,
 }
 
 #[repr(u8)]
@@ -52,6 +49,26 @@ pub enum PackageField {
 pub enum FungibleResourceManagerField {
     Divisibility,
     TotalSupply,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum PackagePartitionOffset {
+    Fields,
+    Blueprints,
+    BlueprintDependencies,
+    Schemas,
+    Code,
+    RoyaltyConfig,
+    AuthConfig,
+}
+
+impl TryFrom<u8> for PackagePartitionOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
 }
 
 #[repr(u8)]
@@ -126,6 +143,7 @@ impl TryFrom<u8> for ConsensusManagerPartitionOffset {
 pub enum ConsensusManagerField {
     Config,
     ConsensusManager,
+    ValidatorRewards,
     CurrentValidatorSet,
     CurrentProposalStatistic,
     CurrentTimeRoundedToMinutes,
@@ -234,7 +252,7 @@ macro_rules! substate_key {
     ($t:ty) => {
         impl From<$t> for SubstateKey {
             fn from(value: $t) -> Self {
-                SubstateKey::Tuple(value as u8)
+                SubstateKey::Field(value as u8)
             }
         }
 
@@ -249,7 +267,7 @@ macro_rules! substate_key {
 
             fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
                 match key {
-                    SubstateKey::Tuple(x) => Self::from_repr(*x).ok_or(()),
+                    SubstateKey::Field(x) => Self::from_repr(*x).ok_or(()),
                     _ => Err(()),
                 }
             }
@@ -257,7 +275,6 @@ macro_rules! substate_key {
     };
 }
 
-substate_key!(AccessRulesField);
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(ComponentField);

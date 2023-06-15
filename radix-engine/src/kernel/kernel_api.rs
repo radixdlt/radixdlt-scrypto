@@ -41,14 +41,6 @@ pub trait KernelNodeApi {
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError>;
-
-    /// Lists the modules under a node.
-    ///
-    /// Only allowed for heap nodes; otherwise a runtime error is returned.
-    fn kernel_list_modules(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError>;
 }
 
 /// Info regarding the substate locked as well as what type of lock
@@ -165,7 +157,7 @@ pub trait KernelSubstateApi<L> {
 
 #[derive(Debug)]
 pub struct KernelInvocation {
-    /// TODO: redo actor generification
+    /// FIXME: redo actor generification
     /// Temporarily restored as there's a large conflict with `develop` branch
     pub actor: Actor,
     pub args: IndexedScryptoValue,

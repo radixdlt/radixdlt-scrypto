@@ -92,8 +92,14 @@ pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 20_000;
 pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 5_000;
 
 /// The default maximum substate read and write size.
-/// TODO: Apply this limit in create_node too
+/// FIXME: Apply this limit in create_node too
 pub const DEFAULT_MAX_SUBSTATE_SIZE: usize = 4 * 1024 * 1024;
 
 /// The default maximum invoke input args size.
 pub const DEFAULT_MAX_INVOKE_INPUT_SIZE: usize = 4 * 1024 * 1024;
+
+/* Fees/tips distribution */
+pub const TIPS_PROPOSER_SHARE_PERCENTAGE: u8 = 100;
+pub const TIPS_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 0;
+pub const FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
+pub const FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;

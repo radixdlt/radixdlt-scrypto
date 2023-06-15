@@ -90,7 +90,7 @@ pub fn validate_call_arguments_to_native_components(
             }
         })?;
 
-        if let Some((local_type_index, schema)) = schema {
+        if let Some((TypeRef::Static(local_type_index), schema)) = schema {
             validate_payload_against_schema::<ManifestCustomExtension, _>(
                 &manifest_encode(&args).unwrap(),
                 schema,
@@ -113,18 +113,13 @@ pub fn validate_call_arguments_to_native_components(
 }
 
 fn get_blueprint_schema<'p>(
-    package_definition: &'p PackageSetup,
+    package_definition: &'p PackageDefinition,
     package_address: PackageAddress,
     blueprint: &str,
-) -> Result<&'p BlueprintSchema, InstructionSchemaValidationError> {
-    package_definition
-        .blueprints
-        .get(blueprint)
-        .map(|b| &b.schema)
-        .ok_or(InstructionSchemaValidationError::InvalidBlueprint(
-            package_address,
-            blueprint.to_owned(),
-        ))
+) -> Result<&'p BlueprintDefinitionInit, InstructionSchemaValidationError> {
+    package_definition.blueprints.get(blueprint).ok_or(
+        InstructionSchemaValidationError::InvalidBlueprint(package_address, blueprint.to_owned()),
+    )
 }
 
 /// * An `Err` is returned if something is invalid about the arguments given to this method. As an
@@ -134,7 +129,7 @@ fn get_blueprint_schema<'p>(
 fn get_arguments_schema<'s>(
     invocation: Invocation,
 ) -> Result<
-    Option<(LocalTypeIndex, &'s Schema<ScryptoCustomSchema>)>,
+    Option<(TypeRef<LocalTypeIndex>, &'s Schema<ScryptoCustomSchema>)>,
     InstructionSchemaValidationError,
 > {
     let entity_type = invocation.entity_type();
@@ -198,69 +193,56 @@ fn get_arguments_schema<'s>(
         Invocation::Function(..) => None,
         Invocation::Method(_, ObjectModuleId::Main, _) | Invocation::DirectMethod(..) => {
             match entity_type {
-                EntityType::GlobalPackage => PACKAGE_PACKAGE_DEFINITION
-                    .blueprints
-                    .get(PACKAGE_BLUEPRINT)
-                    .map(|b| &b.schema),
+                EntityType::GlobalPackage => {
+                    PACKAGE_PACKAGE_DEFINITION.blueprints.get(PACKAGE_BLUEPRINT)
+                }
 
                 EntityType::GlobalConsensusManager => CONSENSUS_MANAGER_PACKAGE_DEFINITION
                     .blueprints
-                    .get(CONSENSUS_MANAGER_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(CONSENSUS_MANAGER_BLUEPRINT),
                 EntityType::GlobalValidator => CONSENSUS_MANAGER_PACKAGE_DEFINITION
                     .blueprints
-                    .get(VALIDATOR_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(VALIDATOR_BLUEPRINT),
 
                 EntityType::GlobalAccount
                 | EntityType::InternalAccount
                 | EntityType::GlobalVirtualEd25519Account
-                | EntityType::GlobalVirtualSecp256k1Account => ACCOUNT_PACKAGE_DEFINITION
-                    .blueprints
-                    .get(ACCOUNT_BLUEPRINT)
-                    .map(|b| &b.schema),
+                | EntityType::GlobalVirtualSecp256k1Account => {
+                    ACCOUNT_PACKAGE_DEFINITION.blueprints.get(ACCOUNT_BLUEPRINT)
+                }
 
                 EntityType::GlobalIdentity
                 | EntityType::GlobalVirtualEd25519Identity
                 | EntityType::GlobalVirtualSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
                     .blueprints
-                    .get(IDENTITY_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(IDENTITY_BLUEPRINT),
 
                 EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION
                     .blueprints
-                    .get(ACCESS_CONTROLLER_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(ACCESS_CONTROLLER_BLUEPRINT),
 
                 EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION
                     .blueprints
-                    .get(ONE_RESOURCE_POOL_BLUEPRINT_IDENT)
-                    .map(|b| &b.schema),
+                    .get(ONE_RESOURCE_POOL_BLUEPRINT_IDENT),
                 EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION
                     .blueprints
-                    .get(TWO_RESOURCE_POOL_BLUEPRINT_IDENT)
-                    .map(|b| &b.schema),
+                    .get(TWO_RESOURCE_POOL_BLUEPRINT_IDENT),
                 EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION
                     .blueprints
-                    .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT)
-                    .map(|b| &b.schema),
+                    .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT),
 
                 EntityType::GlobalFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
-                    .get(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
                 EntityType::GlobalNonFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
-                    .get(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
                 EntityType::InternalFungibleVault => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
-                    .get(FUNGIBLE_VAULT_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(FUNGIBLE_VAULT_BLUEPRINT),
                 EntityType::InternalNonFungibleVault => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
-                    .get(NON_FUNGIBLE_VAULT_BLUEPRINT)
-                    .map(|b| &b.schema),
+                    .get(NON_FUNGIBLE_VAULT_BLUEPRINT),
 
                 EntityType::GlobalGenericComponent
                 | EntityType::InternalGenericComponent
@@ -269,26 +251,31 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Method(_, ObjectModuleId::Metadata, _) => METADATA_PACKAGE_DEFINITION
             .blueprints
-            .get(METADATA_BLUEPRINT)
-            .map(|b| &b.schema),
+            .get(METADATA_BLUEPRINT),
         Invocation::Method(_, ObjectModuleId::AccessRules, _) => ACCESS_RULES_PACKAGE_DEFINITION
             .blueprints
-            .get(ACCESS_RULES_BLUEPRINT)
-            .map(|b| &b.schema),
+            .get(ACCESS_RULES_BLUEPRINT),
         Invocation::Method(_, ObjectModuleId::Royalty, _) => ROYALTIES_PACKAGE_DEFINITION
             .blueprints
-            .get(COMPONENT_ROYALTY_BLUEPRINT)
-            .map(|b| &b.schema),
+            .get(COMPONENT_ROYALTY_BLUEPRINT),
     };
 
     if let Some(blueprint_schema) = blueprint_schema {
-        if let Some(function_schema) = blueprint_schema.functions.get(invocation.method()) {
+        if let Some(function_schema) = blueprint_schema
+            .schema
+            .functions
+            .functions
+            .get(invocation.method())
+        {
             if is_self_or_mut_self_receiver(&function_schema.receiver) && invocation.is_method()
                 || is_direct_access_receiver(&function_schema.receiver)
                     && invocation.is_direct_access_method()
                 || is_function_receiver(&function_schema.receiver) && invocation.is_function()
             {
-                Ok(Some((function_schema.input, &blueprint_schema.schema)))
+                Ok(Some((
+                    function_schema.input.clone(),
+                    &blueprint_schema.schema.schema,
+                )))
             } else {
                 Err(InstructionSchemaValidationError::InvalidReceiver)
             }

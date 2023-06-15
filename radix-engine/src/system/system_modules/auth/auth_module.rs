@@ -1,28 +1,22 @@
 use super::Authorization;
+use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::{AuthZone, VaultUtil};
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
-use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
-};
+use crate::system::node_init::type_info_partition;
+use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
-};
+use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{SchemaMethodKey, SchemaMethodPermission};
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -68,50 +62,6 @@ pub enum AuthorityListAuthorizationResult {
 }
 
 impl AuthModule {
-    fn function_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        blueprint: &BlueprintId,
-        ident: &str,
-        api: &mut SystemService<Y, V>,
-    ) -> Result<AccessRule, RuntimeError> {
-        let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-            // TODO: remove
-            if blueprint.blueprint_name.eq(PACKAGE_BLUEPRINT)
-                && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
-            {
-                AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
-                    ResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
-                )))
-            } else {
-                AccessRule::AllowAll
-            }
-        } else {
-            let handle = api.kernel_lock_substate(
-                blueprint.package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
-                &PackageField::FunctionAccessRules.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
-            let package_access_rules: FunctionAccessRulesSubstate =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let function_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
-
-            let access_rule = package_access_rules.access_rules.get(&function_key);
-            if let Some(access_rule) = access_rule {
-                access_rule.clone()
-            } else {
-                return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
-                        blueprint: blueprint.clone(),
-                        ident: FnIdent::Application(ident.to_string()),
-                    })),
-                ));
-            }
-        };
-
-        Ok(auth)
-    }
-
     fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_zone_id: &NodeId,
         callee: &MethodActor,
@@ -136,14 +86,14 @@ impl AuthModule {
                 auth_zone_id,
                 acting_location,
                 parent.as_node_id(),
-                ObjectKey::InnerBlueprint(info.blueprint.blueprint_name.clone()),
+                ObjectKey::InnerBlueprint(info.blueprint_id.blueprint_name.clone()),
                 method_key.clone(),
                 args,
                 api,
             )?;
         }
 
-        if info.global || VaultUtil::is_vault_blueprint(&info.blueprint) {
+        if info.global || VaultUtil::is_vault_blueprint(&info.blueprint_id) {
             Self::check_authorization_against_access_rules(
                 callee,
                 auth_zone_id,
@@ -172,27 +122,22 @@ impl AuthModule {
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let handle = api.kernel_lock_substate(
-            access_rules_of,
-            ACCESS_RULES_FIELD_PARTITION,
-            &AccessRulesField::AccessRules.into(),
-            LockFlags::read_only(),
-            SystemLockData::default(),
+        let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
+            callee
+                .node_object_info
+                .blueprint_id
+                .package_address
+                .as_node_id(),
+            &BlueprintVersionKey::new_default(
+                callee.node_object_info.blueprint_id.blueprint_name.as_str(),
+            ),
+            api.api,
         )?;
-        let access_rules: MethodAccessRulesSubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
 
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
-            ObjectKey::SELF => {
-                let def = api.get_blueprint_definition(&callee.node_object_info.blueprint)?;
-                def.template.method_auth_template
-            }
-            ObjectKey::InnerBlueprint(_blueprint_name) => {
-                let def = api.get_blueprint_definition(&callee.node_object_info.blueprint)?;
-                def.template.outer_method_auth_template
-            }
+            ObjectKey::SELF => auth_template.method_auth.auth(),
+            ObjectKey::InnerBlueprint(_blueprint_name) => auth_template.method_auth.outer_auth(),
         };
 
         let permission = match method_key.module_id {
@@ -209,17 +154,8 @@ impl AuthModule {
                 )?
             }
             _ => {
-                let method_key = SchemaMethodKey {
-                    ident: method_key.ident,
-                    module_id: method_key.module_id.to_u8(),
-                };
                 if let Some(permission) = node_authority_rules.get(&method_key) {
-                    match permission {
-                        SchemaMethodPermission::Public => MethodPermission::Public,
-                        SchemaMethodPermission::Protected(list) => {
-                            MethodPermission::Protected(list.clone().into())
-                        }
-                    }
+                    permission.clone()
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
@@ -245,7 +181,6 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             access_rules_of,
-            &access_rules.roles,
             &role_list,
             api,
         )?;
@@ -261,7 +196,6 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules_of: &NodeId,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
         role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
@@ -269,7 +203,6 @@ impl AuthModule {
             acting_location,
             *auth_zone_id,
             access_rules_of,
-            access_rules,
             role_list,
             api,
         )?;
@@ -299,7 +232,13 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
+        if let Some(auth_zone_id) = api
+            .kernel_get_system()
+            .modules
+            .auth_module()
+            .unwrap()
+            .last_auth_zone()
+        {
             let mut system = SystemService::new(api);
 
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
@@ -307,8 +246,17 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
                 }
-                Actor::Function { blueprint, ident } => {
-                    let access_rule = Self::function_auth(blueprint, ident.as_str(), &mut system)?;
+                Actor::Function {
+                    blueprint_id,
+                    ident,
+                } => {
+                    let access_rule = PackageAuthNativeBlueprint::get_bp_function_access_rule(
+                        blueprint_id.package_address.as_node_id(),
+                        &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                        ident.as_str(),
+                        system.api,
+                    )?;
+
                     let acting_location = ActingLocation::AtBarrier;
 
                     // Verify authorization
@@ -362,7 +310,7 @@ impl AuthModule {
         let is_barrier = callee.is_barrier();
         let is_transaction_processor = callee.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_system().modules.auth;
+            let auth_module = &api.kernel_get_system().modules.auth_module().unwrap();
             (
                 auth_module.params.virtual_resources.clone(),
                 auth_module.params.initial_proofs.clone(),
@@ -373,7 +321,8 @@ impl AuthModule {
         let parent = api
             .kernel_get_system()
             .modules
-            .auth
+            .auth_module()
+            .unwrap()
             .auth_zone_stack
             .last()
             .map(|x| Reference(x.clone().into()));
@@ -394,16 +343,19 @@ impl AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                OBJECT_BASE_PARTITION => btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
+
+                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    version: BlueprintVersion::default(),
+
                     outer_object: None,
                     instance_schema: None,
                     features: btreeset!(),
-                })).to_substates()
+                }))
             ),
         )?;
 
@@ -413,7 +365,8 @@ impl AuthModule {
         // Update auth zone stack
         api.kernel_get_system()
             .modules
-            .auth
+            .auth_module()
+            .unwrap()
             .auth_zone_stack
             .push(auth_zone_node_id);
 
@@ -437,7 +390,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         _dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         // update internal state
-        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
+        api.kernel_get_system()
+            .modules
+            .auth_module()
+            .unwrap()
+            .auth_zone_stack
+            .pop();
         Ok(())
     }
 }

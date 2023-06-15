@@ -50,9 +50,9 @@ impl ObjectModuleId {
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
             ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
-            ObjectModuleId::Royalty => ROYALTY_FIELD_PARTITION,
-            ObjectModuleId::AccessRules => ACCESS_RULES_FIELD_PARTITION,
-            ObjectModuleId::Main => OBJECT_BASE_PARTITION,
+            ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_PARTITION,
+            ObjectModuleId::Main => MAIN_BASE_PARTITION,
         }
     }
 
@@ -93,7 +93,7 @@ pub trait ClientObjectApi<E> {
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object
@@ -102,7 +102,9 @@ pub trait ClientObjectApi<E> {
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
-    // TODO: Combine this with globalization process and/or find the right abstraction
+    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
+
+    // FIXME: Combine this with globalization process and/or find the right abstraction
     fn attach_access_rules(
         &mut self,
         node_id: &NodeId,
@@ -160,7 +162,6 @@ pub trait ClientObjectApi<E> {
         self.call_method_advanced(receiver, true, ObjectModuleId::Main, method_name, args)
     }
 
-    // TODO: Add Object Module logic
     /// Calls a method on an object module
     fn call_method_advanced(
         &mut self,

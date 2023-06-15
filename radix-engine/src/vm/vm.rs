@@ -1,6 +1,7 @@
-use crate::blueprints::package::PackageCodeTypeSubstate;
+use crate::blueprints::package::VmType;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
+use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -17,7 +18,7 @@ pub struct Vm<'g, W: WasmEngine> {
 impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
     fn invoke<Y>(
         address: &PackageAddress,
-        export_name: &str,
+        export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -28,42 +29,36 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
             + KernelSubstateApi<SystemLockData>,
         W: WasmEngine,
     {
-        let code_type = {
-            let handle = api.kernel_lock_substate(
-                address.as_node_id(),
-                OBJECT_BASE_PARTITION,
-                &PackageField::CodeType.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
-            let code_type = api.kernel_read_substate(handle)?;
-            let code_type: PackageCodeTypeSubstate = code_type.as_typed().unwrap();
-            api.kernel_drop_lock(handle)?;
-            code_type
-        };
-
         let package_code = {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_lock_substate_with_default(
                 address.as_node_id(),
-                OBJECT_BASE_PARTITION,
-                &PackageField::Code.into(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
+                    .unwrap(),
+                &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
                 LockFlags::read_only(),
+                Some(|| {
+                    let kv_entry = KeyValueEntrySubstate::<()>::default();
+                    IndexedScryptoValue::from_typed(&kv_entry)
+                }),
                 SystemLockData::default(),
             )?;
             let code = api.kernel_read_substate(handle)?;
-            let package_code: PackageCodeSubstate = code.as_typed().unwrap();
+            let package_code: KeyValueEntrySubstate<PackageCodeSubstate> = code.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
             package_code
+                .value
+                .expect(&format!("Code not found: {:?}", export))
         };
 
-        let output = match code_type {
-            PackageCodeTypeSubstate::Native => {
+        let output = match package_code.vm_type {
+            VmType::Native => {
                 let mut vm_instance = { NativeVm::create_instance(address, &package_code.code)? };
-                let output = { vm_instance.invoke(&export_name, input, api)? };
+                let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
             }
-            PackageCodeTypeSubstate::Wasm => {
+            VmType::ScryptoV1 => {
                 let mut scrypto_vm_instance = {
                     api.kernel_get_system()
                         .callback_obj
@@ -71,7 +66,8 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .create_instance(address, &package_code.code)
                 };
 
-                let output = { scrypto_vm_instance.invoke(&export_name, input, api)? };
+                let output =
+                    { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
             }

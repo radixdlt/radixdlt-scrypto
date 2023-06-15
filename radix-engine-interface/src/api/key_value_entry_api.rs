@@ -11,9 +11,9 @@ pub trait ClientKeyValueEntryApi<E> {
     fn key_value_entry_get_typed<S: ScryptoDecode>(
         &mut self,
         handle: KeyValueEntryHandle,
-    ) -> Result<S, E> {
+    ) -> Result<Option<S>, E> {
         let buffer = self.key_value_entry_get(handle)?;
-        let value: S = scrypto_decode(&buffer).unwrap();
+        let value: Option<S> = scrypto_decode(&buffer).unwrap();
         Ok(value)
     }
 
