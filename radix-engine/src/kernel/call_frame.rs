@@ -321,7 +321,14 @@ impl<L: Clone> CallFrame<L> {
                     additional_global_refs.push(instance_context.outer_object.clone());
                 }
             }
-            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
+            Actor::Function {
+                blueprint_id: blueprint,
+                ..
+            }
+            | Actor::VirtualLazyLoad {
+                blueprint_id: blueprint,
+                ..
+            } => {
                 additional_global_refs.push(blueprint.package_address.clone().into());
             }
         }
@@ -515,7 +522,7 @@ impl<L: Clone> CallFrame<L> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
-            .ok_or(UnlockSubstateError::LockNotFound(lock_handle))?;
+            .ok_or_else(|| UnlockSubstateError::LockNotFound(lock_handle))?;
 
         let node_id = &substate_lock.node_id;
         let partition_num = substate_lock.partition_num;
@@ -877,23 +884,6 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn list_modules(
-        &mut self,
-        node_id: &NodeId,
-        heap: &mut Heap,
-    ) -> Result<BTreeSet<PartitionNumber>, ListNodeModuleError> {
-        // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(ListNodeModuleError::NodeNotVisible(node_id.clone()));
-        }
-
-        if let Some(modules) = heap.list_modules(node_id) {
-            Ok(modules)
-        } else {
-            return Err(ListNodeModuleError::NodeNotInHeap(node_id.clone()));
-        }
-    }
-
     pub fn add_global_reference(&mut self, address: GlobalAddress) {
         self.stable_references
             .insert(address.into_node_id(), StableReferenceType::Global);
@@ -1125,12 +1115,14 @@ impl<L: Clone> CallFrame<L> {
         } else {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                        if blueprint.package_address == RESOURCE_PACKAGE
-                            && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                                || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                                || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                                || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint_id: blueprint,
+                        ..
+                    }) if blueprint.package_address == RESOURCE_PACKAGE
+                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }

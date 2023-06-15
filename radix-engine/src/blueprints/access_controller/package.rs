@@ -19,11 +19,13 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, ReceiverInfo};
-use radix_engine_interface::schema::{FunctionSchema, SchemaMethodKey, SchemaMethodPermission};
+use radix_engine_interface::schema::{
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    FunctionSchemaInit, ReceiverInfo, TypeRef,
+};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
@@ -163,237 +165,269 @@ impl From<AccessControllerError> for RuntimeError {
 pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::normal(
+        fields.push(FieldSchema::static_field(
             aggregator.add_child_type_and_descendents::<AccessControllerSubstate>(),
         ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: None,
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                ),
                 export: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateProofOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerCreateProofOutput>(),
+                ),
                 export: ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryOutput>()),
                 export: ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
+                ),
                 export: ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>()),
                 export: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>(),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>()),
                 export: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
         functions.insert(
             ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(
+                        ),
+                ),
                 export: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
             },
         );
 
-        let event_schema = event_schema! {
+        let events = event_schema! {
             aggregator,
             [
                 InitiateRecoveryEvent,
@@ -408,65 +442,74 @@ impl AccessControllerNativePackage {
             ]
         };
 
-        let method_auth_template = method_auth_template!(
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
-            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+        let method_auth = method_auth_template!(
+            MethodKey::metadata(METADATA_SET_IDENT) => [SELF_ROLE];
+            MethodKey::metadata(METADATA_REMOVE_IDENT) => [SELF_ROLE];
+            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => MethodPermission::Public;
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"];
-            SchemaMethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"];
+            MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"];
+            MethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"];
 
-            SchemaMethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"];
+            MethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"];
         );
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-            ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: BlueprintSchema {
-                    outer_blueprint: None,
-                    schema,
-                    fields,
-                    collections: vec![],
-                    functions,
-                    virtual_lazy_load_functions: btreemap!(),
-                    event_schema,
-                    dependencies: btreeset!(
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                    ),
-                    features: btreeset!(),
-                },
-                function_auth: btreemap!(
-                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
+            ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
+                outer_blueprint: None,
+                dependencies: btreeset!(
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
+                feature_set: btreeset!(),
+
+                schema: BlueprintSchemaInit {
+                    generics: vec![],
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections: vec![],
+                    },
+                    events,
+                    functions: BlueprintFunctionsSchemaInit {
+                        virtual_lazy_load_functions: btreemap!(),
+                        functions,
+                    },
+                },
+
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
+                auth_config: AuthConfig {
+                    function_auth: btreemap!(
+                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth,
+                        outer_auth: btreemap!(),
+                    },
                 },
             }
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

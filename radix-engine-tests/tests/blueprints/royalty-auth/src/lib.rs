@@ -2,6 +2,15 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod royalty_test {
+    enable_package_royalties! {
+        paid_method => Xrd(2.into()),
+        paid_method_panic => Xrd(2.into()),
+        free_method => Free,
+        create_component_with_royalty_enabled => Free,
+        claim_package_royalty => Free,
+        claim_component_royalty => Free,
+    }
+
     enable_method_auth! {
         methods {
             paid_method => PUBLIC;
@@ -29,21 +38,6 @@ mod royalty_test {
             1
         }
 
-        // FIXME: remove this as the interface to set royalty has been removed
-        // Doesn't really work because of proof downstream movement limitation
-        // TODO: make it work by changing the rule to "1-barrier".
-
-        pub fn enable_royalty_for_package(package: Package, proof: Proof) {
-            proof.authorize(|| {
-                package.set_royalty("RoyaltyTest", "paid_method", RoyaltyAmount::Xrd(2.into()));
-                package.set_royalty(
-                    "RoyaltyTest",
-                    "paid_method_panic",
-                    RoyaltyAmount::Xrd(2.into()),
-                );
-            })
-        }
-
         pub fn create_component_with_royalty_enabled(
             badge: NonFungibleGlobalId,
         ) -> Global<RoyaltyTest> {
@@ -56,13 +50,6 @@ mod royalty_test {
                     free_method => Free,
                 })
                 .globalize()
-        }
-
-        pub fn disable_package_royalty(package: Package, proof: Proof) {
-            proof.authorize(|| {
-                package.set_royalty("RoyaltyTest", "paid_method", RoyaltyAmount::Free);
-                package.set_royalty("RoyaltyTest", "paid_method_panic", RoyaltyAmount::Free);
-            })
         }
 
         pub fn claim_package_royalty(package: Package, proof: Proof) -> Bucket {

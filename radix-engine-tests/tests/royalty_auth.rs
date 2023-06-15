@@ -29,32 +29,6 @@ fn set_up_package_and_component() -> (
     );
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
 
-    // Enable package royalty
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
-            .create_proof_from_account_of_non_fungibles(
-                account,
-                owner_badge_resource,
-                &btreeset!(NonFungibleLocalId::integer(1)),
-            )
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "paid_method",
-                RoyaltyAmount::Xrd(dec!(2)),
-            )
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "paid_method_panic",
-                RoyaltyAmount::Xrd(dec!(2)),
-            )
-            .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-    receipt.expect_commit_success();
-
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
@@ -88,52 +62,6 @@ fn set_up_package_and_component() -> (
         component_address,
         owner_badge_resource,
     )
-}
-
-#[test]
-fn test_only_package_owner_can_set_royalty_config() {
-    let (
-        mut test_runner,
-        account,
-        public_key,
-        package_address,
-        _component_address,
-        owner_badge_resource,
-    ) = set_up_package_and_component();
-
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 100.into())
-            .create_proof_from_account_of_non_fungibles(
-                account,
-                owner_badge_resource,
-                &btreeset!(NonFungibleLocalId::integer(1)),
-            )
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "some_method",
-                RoyaltyAmount::Free,
-            )
-            .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-    receipt.expect_commit_success();
-
-    // Negative case
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 100.into())
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "some_method",
-                RoyaltyAmount::Free,
-            )
-            .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-    receipt.expect_commit_failure();
 }
 
 #[test]

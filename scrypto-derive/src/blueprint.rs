@@ -357,10 +357,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         } else {
             // FIXME: Use AllPublicMethod Template instead
             quote! {
-                fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                     btreemap!(
                         #(
-                            scrypto::schema::SchemaMethodKey::main(#method_names) => scrypto::schema::SchemaMethodPermission::Public,
+                            MethodKey::main(#method_names) => MethodPermission::Public,
                         )*
                     )
                 }
@@ -555,63 +555,83 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 use ::sbor::schema::*;
                 use ::sbor::*;
 
-                let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+                let schema = {
+                    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-                // Aggregate fields
-                let mut fields = Vec::new();
-                let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                fields.push(FieldSchema::normal(type_index));
+                    // Aggregate fields
+                    let mut fields = Vec::new();
+                    let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
+                    fields.push(FieldSchema::static_field(type_index));
 
-                // Aggregate functions
-                let mut functions = BTreeMap::new();
-                #(
-                    functions.insert(#fn_names.to_string(), #fn_schemas);
-                )*
+                    let state = BlueprintStateSchemaInit {
+                        fields,
+                        collections: Vec::new(),
+                    };
 
-                // Aggregate event schemas
-                let mut event_schema = BTreeMap::new();
-                #({
-                    let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
-                    event_schema.insert(#event_type_names.to_owned(), local_type_index);
-                })*
+                    // Aggregate functions
+                    let functions = {
+                        let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
+                        #(
+                            functions.insert(#fn_names.to_string(), #fn_schemas);
+                        )*
+
+                        BlueprintFunctionsSchemaInit {
+                            functions,
+                            virtual_lazy_load_functions: BTreeMap::default(),
+                        }
+                    };
+
+                    // Aggregate event schemas
+                    let events = {
+                        let mut event_schema = BTreeMap::new();
+                        #({
+                            let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
+                            event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_index));
+                        })*
+                        BlueprintEventSchemaInit {
+                            event_schema,
+                        }
+                    };
+
+                    let schema = generate_full_schema(aggregator);
+
+                    BlueprintSchemaInit {
+                        generics: vec![],
+                        schema,
+                        state,
+                        events,
+                        functions,
+                    }
+                };
 
                 let mut dependencies = BTreeSet::new();
                 #({
                     dependencies.insert(#dependency_exprs.into());
                 })*
 
-                let mut method_auth_template = method_auth_template();
-                if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
-                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
-                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
-                    method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
-                }
+                let auth_config = {
+                    let auth = method_auth_template();
+                    let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
+                        auth,
+                        outer_auth: BTreeMap::new(),
+                    };
+                    method_auth.add_metadata_default_if_not_specified();
 
-                let schema = BlueprintSchema {
-                    outer_blueprint: None,
-                    schema: generate_full_schema(aggregator),
-                    fields,
-                    collections: Vec::new(),
-                    functions,
-                    virtual_lazy_load_functions: BTreeMap::new(),
-                    event_schema,
-                    dependencies,
-                    features: BTreeSet::new(),
+                    scrypto::blueprints::package::AuthConfig {
+                        method_auth,
+                        function_auth: function_auth(),
+                    }
                 };
 
-                let template = scrypto::blueprints::package::BlueprintTemplate {
-                    method_auth_template,
-                    outer_method_auth_template: BTreeMap::new(),
-                };
-
-                let function_auth = function_auth();
                 let royalty_config = package_royalty_config();
 
-                let return_data = scrypto::blueprints::package::BlueprintSetup {
+                let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
+                    outer_blueprint: None,
+                    dependencies,
+                    feature_set: BTreeSet::new(),
                     schema,
-                    function_auth,
+                    auth_config,
                     royalty_config,
-                    template,
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -1205,20 +1225,20 @@ fn generate_schema(
                     if receiver.is_none() {
                         function_idents.push(m.sig.ident.clone());
                         fn_schemas.push(parse_quote! {
-                            ::scrypto::schema::FunctionSchema {
+                            FunctionSchemaInit {
                                 receiver: Option::None,
-                                input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
-                                output: aggregator.add_child_type_and_descendents::<#output_type>(),
+                                input: TypeRef::Static(aggregator.add_child_type_and_descendents::<#input_struct_ident>()),
+                                output: TypeRef::Static(aggregator.add_child_type_and_descendents::<#output_type>()),
                                 export: #export_name.to_string(),
                             }
                         });
                     } else {
                         method_idents.push(m.sig.ident.clone());
                         fn_schemas.push(parse_quote! {
-                            ::scrypto::schema::FunctionSchema {
+                            FunctionSchemaInit {
                                 receiver: Option::Some(#receiver),
-                                input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
-                                output: aggregator.add_child_type_and_descendents::<#output_type>(),
+                                input: TypeRef::Static(aggregator.add_child_type_and_descendents::<#input_struct_ident>()),
+                                output: TypeRef::Static(aggregator.add_child_type_and_descendents::<#output_type>()),
                                 export: #export_name.to_string(),
                             }
                         });
@@ -1292,9 +1312,9 @@ mod tests {
                     use scrypto::prelude::MethodPermission::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
-                    fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
+                    fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                         btreemap!(
-                            scrypto::schema::SchemaMethodKey::main("x") => scrypto::schema::SchemaMethodPermission::Public,
+                            MethodKey::main("x") => MethodPermission::Public,
                         )
                     }
 
@@ -1433,64 +1453,88 @@ mod tests {
                         use ::sbor::rust::prelude::*;
                         use ::sbor::schema::*;
                         use ::sbor::*;
-                        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-                        let mut fields = Vec::new();
-                        let type_index = aggregator.add_child_type_and_descendents::<Test>();
-                        fields.push(FieldSchema::normal(type_index));
-                        let mut functions = BTreeMap::new();
-                        functions.insert(
-                            "x".to_string(),
-                            ::scrypto::schema::FunctionSchema {
-                                receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
-                                input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
-                                output: aggregator.add_child_type_and_descendents::<u32>(),
-                                export: "Test_x".to_string(),
+
+                        let schema = {
+                            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+                            let mut fields = Vec::new();
+                            let type_index = aggregator.add_child_type_and_descendents::<Test>();
+                            fields.push(FieldSchema::static_field(type_index));
+
+                            let state = BlueprintStateSchemaInit {
+                                fields,
+                                collections: Vec::new(),
+                            };
+
+                            let functions = {
+                                let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
+                                functions.insert(
+                                    "x".to_string(),
+                                    FunctionSchemaInit {
+                                        receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
+                                        input: TypeRef::Static(aggregator.add_child_type_and_descendents::<Test_x_Input>()),
+                                        output: TypeRef::Static(aggregator.add_child_type_and_descendents::<u32>()),
+                                        export: "Test_x".to_string(),
+                                    }
+                                );
+                                functions.insert(
+                                    "y".to_string(),
+                                    FunctionSchemaInit {
+                                        receiver: Option::None,
+                                        input: TypeRef::Static(aggregator.add_child_type_and_descendents::<Test_y_Input>()),
+                                        output: TypeRef::Static(aggregator.add_child_type_and_descendents::<u32>()),
+                                        export: "Test_y".to_string(),
+                                    }
+                                );
+
+                                BlueprintFunctionsSchemaInit {
+                                    functions,
+                                    virtual_lazy_load_functions: BTreeMap::default(),
+                                }
+                            };
+
+                            let events = {
+                                let mut event_schema = BTreeMap::new();
+                                BlueprintEventSchemaInit {
+                                    event_schema,
+                                }
+                            };
+
+                            let schema = generate_full_schema(aggregator);
+
+                            BlueprintSchemaInit {
+                                generics: vec![],
+                                schema,
+                                state,
+                                events,
+                                functions,
                             }
-                        );
-                        functions.insert(
-                            "y".to_string(),
-                            ::scrypto::schema::FunctionSchema {
-                                receiver: Option::None,
-                                input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
-                                output: aggregator.add_child_type_and_descendents::<u32>(),
-                                export: "Test_y".to_string(),
-                            }
-                        );
-                        let mut event_schema = BTreeMap::new();
+                        };
 
                         let mut dependencies = BTreeSet::new();
-                        let mut method_auth_template = method_auth_template();
-                        if !method_auth_template.contains_key(&SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT)) {
-                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_GET_IDENT), SchemaMethodPermission::Public);
-                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_SET_IDENT), [OWNER_ROLE].into());
-                            method_auth_template.insert(SchemaMethodKey::metadata(scrypto::api::node_modules::metadata::METADATA_REMOVE_IDENT), [OWNER_ROLE].into());
-                        }
 
-                        let schema = BlueprintSchema {
-                            outer_blueprint: None,
-                            schema: generate_full_schema(aggregator),
-                            fields,
-                            collections: Vec::new(),
-                            functions,
-                            virtual_lazy_load_functions: BTreeMap::new(),
-                            event_schema,
-                            dependencies,
-                            features: BTreeSet::new(),
+                        let auth_config = {
+                            let auth = method_auth_template();
+                            let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
+                                auth,
+                                outer_auth: BTreeMap::new(),
+                            };
+                            method_auth.add_metadata_default_if_not_specified();
+
+                            scrypto::blueprints::package::AuthConfig {
+                                method_auth,
+                                function_auth: function_auth(),
+                            }
                         };
 
-                        let template = scrypto::blueprints::package::BlueprintTemplate {
-                            method_auth_template,
-                            outer_method_auth_template: BTreeMap::new(),
-                        };
-
-                        let function_auth = function_auth();
                         let royalty_config = package_royalty_config();
 
-                        let return_data = scrypto::blueprints::package::BlueprintSetup {
+                        let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
+                            outer_blueprint: None,
+                            dependencies,
+                            feature_set: BTreeSet::new(),
                             schema,
-                            function_auth,
+                            auth_config,
                             royalty_config,
-                            template,
                         };
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

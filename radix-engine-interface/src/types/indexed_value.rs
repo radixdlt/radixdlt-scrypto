@@ -116,6 +116,10 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
+    pub fn as_vec_ref(&self) -> &Vec<u8> {
+        &self.bytes
+    }
+
     pub fn len(&self) -> usize {
         self.bytes.len()
     }

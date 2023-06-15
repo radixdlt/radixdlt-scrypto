@@ -217,10 +217,6 @@ pub enum Instruction {
     },
 
     /* call main method aliases */
-    SetPackageRoyaltyConfig {
-        address: Value,
-        args: Vec<Value>,
-    },
     ClaimPackageRoyalty {
         address: Value,
         args: Vec<Value>,

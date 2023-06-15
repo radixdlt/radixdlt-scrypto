@@ -4,10 +4,11 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
+use radix_engine::errors::{
+    ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
+};
 use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
-use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
@@ -55,13 +56,9 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::EventError(err)) => {
-            if let EventError::SchemaNotFoundError { .. } = **err {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+            PayloadValidationAgainstSchemaError::EventDoesNotExist(event),
+        )) if event.eq("UnregisteredEvent") => true,
         _ => false,
     });
 }
@@ -143,11 +140,12 @@ fn local_type_index_with_misleading_name_fails() {
     let mut test_runner = TestRunner::builder().without_trace().build();
 
     let (code, mut definition) = Compile::compile("./tests/blueprints/events");
-    let blueprint_schema = definition.blueprints.get_mut("ScryptoEvents").unwrap();
-    blueprint_schema.schema.event_schema.insert(
+    let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
+    blueprint_setup.schema.events.event_schema.insert(
         "HelloHelloEvent".to_string(),
-        blueprint_schema
+        blueprint_setup
             .schema
+            .events
             .event_schema
             .get("RegisteredEvent")
             .unwrap()
@@ -409,7 +407,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager create vault, vault fungible deposit
+        assert_eq!(events.len(), 3); // Four events: vault lock fee, vault fungible deposit
         assert!(match events.get(0) {
             Some((
                 event_identifier

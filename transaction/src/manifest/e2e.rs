@@ -433,12 +433,6 @@ CALL_METHOD
             vec![],
             apply_address_replacements(
                 r##"
-SET_PACKAGE_ROYALTY_CONFIG
-    Address("${package_address}")
-    "my_blueprint"
-    "my_function"
-    Enum<0u8>()
-;
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
     "my_method"

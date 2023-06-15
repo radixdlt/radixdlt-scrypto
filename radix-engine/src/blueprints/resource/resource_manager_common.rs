@@ -2,7 +2,6 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
@@ -197,14 +196,12 @@ where
     let resman_access_rules = AccessRules::create(roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let address = api.globalize_with_address(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
         ),
         resource_address_reservation,
     )?;
@@ -226,15 +223,15 @@ where
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+
+    let modules = btreemap!(
+        ObjectModuleId::Main => object_id,
+        ObjectModuleId::AccessRules => resman_access_rules.0,
+        ObjectModuleId::Metadata => metadata.0,
+    );
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
-        btreemap!(
-            ObjectModuleId::Main => object_id,
-            ObjectModuleId::AccessRules => resman_access_rules.0,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
-        ),
+        modules,
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
@@ -265,14 +262,12 @@ where
     let resman_access_rules = AccessRules::create(roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
         ),
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,

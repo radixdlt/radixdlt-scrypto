@@ -135,7 +135,7 @@ impl TxFuzzer {
                 .substate_db()
                 .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                     &vault,
-                    OBJECT_BASE_PARTITION
+                    MAIN_BASE_PARTITION
                         .at_offset(PartitionOffset(1u8))
                         .unwrap(),
                 );
@@ -641,23 +641,12 @@ impl TxFuzzer {
                         args: manifest_args!(key, value),
                     })
                 }
-                // SetPackageRoyaltyConfig
-                47 => {
-                    package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-                    let function = String::arbitrary(&mut unstructured).unwrap();
-                    let amount = RoyaltyAmount::arbitrary(&mut unstructured).unwrap();
-
-                    Some(InstructionV1::CallMethod {
-                        address: package_address.into(),
-                        method_name: PACKAGE_SET_ROYALTY_IDENT.to_string(),
-                        args: manifest_args!(function, amount),
-                    })
-                }
                 // TakeAllFromWorktop
-                48 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
+                46 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
+                // TakeAllFromWorktop
+                47 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
                 // TakeFromWorktop
-                49 => {
+                48 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::TakeFromWorktop {
@@ -666,12 +655,12 @@ impl TxFuzzer {
                     })
                 }
                 // TakeNonFungiblesFromWorktop
-                50 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
+                49 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
                 // UnfreezeVault
-                51 => {
+                50 => {
                     let vault_id = {
                         let vaults = self
                             .runner
@@ -693,7 +682,7 @@ impl TxFuzzer {
                     })
                 }
                 // UpdateRole
-                52 => {
+                51 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();

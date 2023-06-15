@@ -8,7 +8,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use radix_engine_common::prelude::replace_self_package_address;
-use radix_engine_common::types::{GlobalAddress, PackageAddress};
+use radix_engine_common::types::PackageAddress;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -40,80 +40,93 @@ impl KeyValueStoreSchema {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct SchemaMethodKey {
-    pub module_id: u8,
-    pub ident: String,
-}
-
-impl SchemaMethodKey {
-    pub fn main<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 0u8,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn metadata<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 1u8,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn royalty<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: 2u8,
-            ident: method_ident.to_string(),
-        }
-    }
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SchemaMethodPermission {
-    Public,
-    Protected(Vec<String>),
-}
-
-impl<const N: usize> From<[&str; N]> for SchemaMethodPermission {
-    fn from(value: [&str; N]) -> Self {
-        SchemaMethodPermission::Protected(
-            value.to_vec().into_iter().map(|s| s.to_string()).collect(),
-        )
-    }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum Generic {
+    Any,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintSchema {
-    pub outer_blueprint: Option<String>,
+pub struct BlueprintSchemaInit {
+    pub generics: Vec<Generic>,
     pub schema: ScryptoSchema,
-    /// State Schema
-    pub fields: Vec<FieldSchema>,
-    pub collections: Vec<BlueprintCollectionSchema>,
-    /// For each function, there is a [`FunctionSchema`]
-    pub functions: BTreeMap<String, FunctionSchema>,
-    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
-    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
+    pub state: BlueprintStateSchemaInit,
+    pub events: BlueprintEventSchemaInit,
+    pub functions: BlueprintFunctionsSchemaInit,
+}
 
-    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
-    pub event_schema: BTreeMap<String, LocalTypeIndex>,
-    pub dependencies: BTreeSet<GlobalAddress>,
-    pub features: BTreeSet<String>,
+impl Default for BlueprintSchemaInit {
+    fn default() -> Self {
+        Self {
+            generics: Vec::new(),
+            schema: ScryptoSchema {
+                type_kinds: Vec::new(),
+                type_metadata: Vec::new(),
+                type_validations: Vec::new(),
+            },
+            state: BlueprintStateSchemaInit::default(),
+            events: BlueprintEventSchemaInit::default(),
+            functions: BlueprintFunctionsSchemaInit::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintStateSchemaInit {
+    pub fields: Vec<FieldSchema<TypeRef<LocalTypeIndex>>>,
+    pub collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeIndex>>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct BlueprintEventSchemaInit {
+    pub event_schema: BTreeMap<String, TypeRef<LocalTypeIndex>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum TypeRef {
-    Blueprint(LocalTypeIndex),
-    Instance(u8),
+pub struct FunctionSchemaInit {
+    pub receiver: Option<ReceiverInfo>,
+    pub input: TypeRef<LocalTypeIndex>,
+    pub output: TypeRef<LocalTypeIndex>,
+    pub export: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintFunctionsSchemaInit {
+    pub functions: BTreeMap<String, FunctionSchemaInit>,
+    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
+}
+
+impl BlueprintFunctionsSchemaInit {
+    pub fn exports(&self) -> Vec<String> {
+        let mut exports: Vec<String> = self.functions.values().map(|t| t.export.clone()).collect();
+        for export in self.virtual_lazy_load_functions.values() {
+            exports.push(export.clone());
+        }
+        exports
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintKeyValueStoreSchema {
-    pub key: TypeRef,
-    pub value: TypeRef,
+pub enum TypeRef<T> {
+    Static(T),   // Type is defined by blueprint
+    Generic(u8), // Type bounds is defined by blueprint, the type itself is defined by the instance
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintKeyValueStoreSchema<T> {
+    pub key: T,
+    pub value: T,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+}
+
+impl<T> BlueprintKeyValueStoreSchema<T> {
+    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintKeyValueStoreSchema<U> {
+        BlueprintKeyValueStoreSchema {
+            key: f(self.key),
+            value: f(self.value),
+            can_own: self.can_own,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -123,39 +136,52 @@ pub struct BlueprintIndexSchema {}
 pub struct BlueprintSortedIndexSchema {}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum BlueprintCollectionSchema {
-    KeyValueStore(BlueprintKeyValueStoreSchema),
+pub enum BlueprintCollectionSchema<T> {
+    KeyValueStore(BlueprintKeyValueStoreSchema<T>),
     Index(BlueprintIndexSchema),
     SortedIndex(BlueprintSortedIndexSchema),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum FeaturedSchema<V> {
-    Normal { value: V },
-    Conditional { feature: String, value: V },
-}
-
-impl<V> FeaturedSchema<V> {
-    pub fn normal<I: Into<V>>(value: I) -> Self {
-        FeaturedSchema::Normal {
-            value: value.into(),
+impl<T> BlueprintCollectionSchema<T> {
+    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintCollectionSchema<U> {
+        match self {
+            BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema),
+            BlueprintCollectionSchema::SortedIndex(schema) => {
+                BlueprintCollectionSchema::SortedIndex(schema)
+            }
+            BlueprintCollectionSchema::KeyValueStore(schema) => {
+                BlueprintCollectionSchema::KeyValueStore(schema.map(f))
+            }
         }
     }
 }
 
-pub type FieldSchema = FeaturedSchema<LocalTypeIndex>;
-
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct FunctionSchema {
-    pub receiver: Option<ReceiverInfo>,
-    pub input: LocalTypeIndex,
-    pub output: LocalTypeIndex,
-    pub export: String,
+pub enum Condition {
+    Always,
+    IfFeature(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct VirtualLazyLoadSchema {
-    pub export_name: String,
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct FieldSchema<V> {
+    pub field: V,
+    pub condition: Condition,
+}
+
+impl FieldSchema<TypeRef<LocalTypeIndex>> {
+    pub fn if_feature<I: Into<LocalTypeIndex>, S: ToString>(value: I, feature: S) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::IfFeature(feature.to_string()),
+        }
+    }
+
+    pub fn static_field<I: Into<LocalTypeIndex>>(value: I) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::Always,
+        }
+    }
 }
 
 bitflags! {
@@ -192,26 +218,6 @@ impl ReceiverInfo {
 pub enum Receiver {
     SelfRef,
     SelfRefMut,
-}
-
-impl Default for BlueprintSchema {
-    fn default() -> Self {
-        Self {
-            outer_blueprint: None,
-            schema: ScryptoSchema {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            },
-            fields: Vec::default(),
-            collections: Vec::default(),
-            functions: BTreeMap::default(),
-            virtual_lazy_load_functions: BTreeMap::default(),
-            event_schema: BTreeMap::default(),
-            dependencies: BTreeSet::default(),
-            features: BTreeSet::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -28,6 +28,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -198,6 +199,8 @@ pub enum SystemError {
     InvalidObjectHandle,
     NodeIdNotExist,
     GlobalAddressDoesNotExist,
+    NoParent,
+    NotAnAddressReservation,
     NotAnObject,
     NotAMethod,
     OuterObjectDoesNotExist,
@@ -226,12 +229,14 @@ pub enum SystemError {
     InvalidInstanceSchema,
     InvalidFeature(String),
     AssertAccessRuleFailed,
-    BlueprintDoesNotExist(BlueprintId),
+    BlueprintDoesNotExist(CanonicalBlueprintId),
+    AuthTemplateDoesNotExist(CanonicalBlueprintId),
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
     InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
+    PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -276,6 +281,19 @@ pub enum SystemModuleError {
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
     EventError(Box<EventError>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum PayloadValidationAgainstSchemaError {
+    BlueprintDoesNotExist(BlueprintId),
+    CollectionDoesNotExist,
+    FieldDoesNotExist(u8),
+    KeyValueStoreKeyDoesNotExist,
+    KeyValueStoreValueDoesNotExist,
+    EventDoesNotExist(String),
+    SchemaValidationError(String),
+    InstanceSchemaDoesNotExist,
+    SchemaNotFound,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

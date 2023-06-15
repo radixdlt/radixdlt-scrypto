@@ -18,12 +18,14 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageSetup,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::ReceiverInfo;
-use radix_engine_interface::schema::{BlueprintSchema, SchemaMethodKey, SchemaMethodPermission};
-use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
+use radix_engine_interface::schema::{
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
+    TypeRef,
+};
+use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
@@ -32,7 +34,7 @@ const IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed2551
 pub struct IdentityNativePackage;
 
 impl IdentityNativePackage {
-    pub fn definition() -> PackageSetup {
+    pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let fields = Vec::new();
@@ -40,86 +42,102 @@ impl IdentityNativePackage {
         let mut functions = BTreeMap::new();
         functions.insert(
             IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
-                output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
+                ),
                 export: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             },
         );
         functions.insert(
             IDENTITY_CREATE_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
-                output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                ),
                 export: IDENTITY_CREATE_IDENT.to_string(),
             },
         );
         functions.insert(
             IDENTITY_SECURIFY_IDENT.to_string(),
-            FunctionSchema {
+            FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
+                ),
                 export: IDENTITY_SECURIFY_IDENT.to_string(),
             },
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
-            },
-            IDENTITY_CREATE_VIRTUAL_ED25519_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
-            }
+            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
+            IDENTITY_CREATE_VIRTUAL_ED25519_ID => IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
         );
 
-        let method_auth_template = method_auth_template! {
-            SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-            SchemaMethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+        let method_auth = method_auth_template! {
+            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
+            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
+            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
 
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-            SchemaMethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
+            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
 
-            SchemaMethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
+            MethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
         };
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-            IDENTITY_BLUEPRINT.to_string() => BlueprintSetup {
-                schema: BlueprintSchema {
-                    outer_blueprint: None,
-                    schema,
-                    fields,
-                    collections: vec![],
-                    functions,
-                    virtual_lazy_load_functions,
-                    event_schema: [].into(),
-                    dependencies: btreeset!(
-                        SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                        ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-                        IDENTITY_OWNER_BADGE.into(),
-                        PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                    ),
-                    features: btreeset!(),
-                },
-                function_auth: btreemap!(
-                    IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
-                    IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+            IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
+                outer_blueprint: None,
+                dependencies: btreeset!(
+                    SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                    ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                    IDENTITY_OWNER_BADGE.into(),
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
+                feature_set: btreeset!(),
+                schema: BlueprintSchemaInit {
+                    generics: vec![],
+                    schema,
+                    state: BlueprintStateSchemaInit {
+                        fields,
+                        collections: vec![],
+                    },
+                    events: BlueprintEventSchemaInit::default(),
+                    functions: BlueprintFunctionsSchemaInit {
+                        virtual_lazy_load_functions,
+                        functions,
+                    },
+                },
+
                 royalty_config: RoyaltyConfig::default(),
-                template: BlueprintTemplate {
-                    method_auth_template,
-                    outer_method_auth_template: btreemap!(),
-                }
+                auth_config: AuthConfig {
+                    function_auth: btreemap!(
+                        IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
+                        IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                    ),
+                    method_auth: MethodAuthTemplate::Static {
+                        auth: method_auth,
+                        outer_auth: btreemap!(),
+                    },
+                },
             }
         );
 
-        PackageSetup { blueprints }
+        PackageDefinition { blueprints }
     }
 
     #[trace_resources(log=export_name)]

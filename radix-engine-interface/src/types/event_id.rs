@@ -1,10 +1,10 @@
 use crate::api::ObjectModuleId;
+use crate::blueprints::package::TypePointer;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use sbor::LocalTypeIndex;
 use utils::ContextualDisplay;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
@@ -16,7 +16,7 @@ use utils::ContextualDisplay;
 /// It is important to note that application events are always emitted by an RENode, meaning that
 /// there is always an emitter of some [`NodeId`].
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EventTypeIdentifier(pub Emitter, pub LocalTypeIndex);
+pub struct EventTypeIdentifier(pub Emitter, pub TypePointer);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Emitter {

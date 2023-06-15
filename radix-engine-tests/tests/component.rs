@@ -1,5 +1,4 @@
-use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -70,15 +69,5 @@ fn invalid_blueprint_name_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        if let RuntimeError::SystemModuleError(SystemModuleError::AuthError(
-            AuthError::NoFunction(FnIdentifier { blueprint, .. }),
-        )) = e
-        {
-            package_addr.eq(&blueprint.package_address)
-                && blueprint.blueprint_name.eq("NonExistentBlueprint")
-        } else {
-            false
-        }
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(..)));
 }

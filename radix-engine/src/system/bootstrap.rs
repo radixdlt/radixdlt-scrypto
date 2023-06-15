@@ -378,7 +378,7 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Royalty Package
+    // Access Rules Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -397,7 +397,7 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Access Rules Package
+    // Resource Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -416,7 +416,7 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Resource Package
+    // Royalty Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
