@@ -1,5 +1,4 @@
-use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto::NonFungibleData;
@@ -29,12 +28,7 @@ fn test_allocate_address_and_call_it() {
         (manifest, vec![code_blob])
     })
     .expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::NoFunction(
-            FnIdentifier {
-                ident: FnIdent::Application(name),
-                ..
-            },
-        ))) => name.eq("no_such_function"),
+        RuntimeError::SystemError(SystemError::AuthTemplateDoesNotExist(..)) => true,
         _ => false,
     });
 }

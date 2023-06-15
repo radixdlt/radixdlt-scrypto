@@ -4,7 +4,6 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::IndexedBlueprintSchema;
 use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::model::InstructionV1;
@@ -66,82 +65,6 @@ impl From<BuildCallArgumentError> for BuildCallArgumentsError {
     }
 }
 
-/// Calls a function.
-///
-/// The implementation will automatically prepare the arguments based on the
-/// function SCHEMA, including resource buckets and proofs.
-///
-/// If an Account component address is provided, resources will be withdrawn from the given account;
-/// otherwise, they will be taken from transaction worktop.
-pub fn add_call_function_instruction_with_schema<'a>(
-    builder: &'a mut ManifestBuilder,
-    bech32_decoder: &Bech32Decoder,
-    package_address: PackageAddress,
-    blueprint_name: &str,
-    function: &str,
-    args: Vec<String>,
-    account: Option<ComponentAddress>,
-    blueprint_schema: &IndexedBlueprintSchema,
-) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
-    let function_schema = blueprint_schema
-        .find_function(function)
-        .ok_or_else(|| BuildCallInstructionError::FunctionNotFound(function.to_owned()))?;
-
-    let (builder, built_args) = build_call_arguments(
-        builder,
-        bech32_decoder,
-        &blueprint_schema.schema,
-        function_schema.input,
-        args,
-        account,
-    )?;
-
-    builder.add_instruction(InstructionV1::CallFunction {
-        package_address: package_address.into(),
-        blueprint_name: blueprint_name.to_string(),
-        function_name: function.to_string(),
-        args: built_args,
-    });
-    Ok(builder)
-}
-
-/// Calls a method.
-///
-/// The implementation will automatically prepare the arguments based on the
-/// method SCHEMA, including resource buckets and proofs.
-///
-/// If an Account component address is provided, resources will be withdrawn from the given account;
-/// otherwise, they will be taken from transaction worktop.
-pub fn add_call_method_instruction_with_schema<'a>(
-    builder: &'a mut ManifestBuilder,
-    bech32_decoder: &Bech32Decoder,
-    component_address: ComponentAddress,
-    method_name: &str,
-    args: Vec<String>,
-    account: Option<ComponentAddress>,
-    blueprint_schema: &IndexedBlueprintSchema,
-) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
-    let function_schema = blueprint_schema
-        .find_method(method_name)
-        .ok_or_else(|| BuildCallInstructionError::MethodNotFound(method_name.to_owned()))?;
-
-    let (builder, built_args) = build_call_arguments(
-        builder,
-        bech32_decoder,
-        &blueprint_schema.schema,
-        function_schema.input,
-        args,
-        account,
-    )?;
-
-    builder.add_instruction(InstructionV1::CallMethod {
-        address: component_address.into(),
-        method_name: method_name.to_owned(),
-        args: built_args,
-    });
-    Ok(builder)
-}
-
 /// Creates resource proof from an account.
 pub fn create_proof_from_account<'a>(
     builder: &'a mut ManifestBuilder,
@@ -165,7 +88,7 @@ pub fn create_proof_from_account<'a>(
     Ok(builder)
 }
 
-fn build_call_arguments<'a>(
+pub fn build_call_arguments<'a>(
     mut builder: &'a mut ManifestBuilder,
     bech32_decoder: &Bech32Decoder,
     schema: &ScryptoSchema,
@@ -198,7 +121,7 @@ fn build_call_arguments<'a>(
                 built_args.push(tuple.1);
             }
         }
-        _ => panic!("Inconsistent schema"),
+        e @ _ => panic!("Inconsistent schema: {:?}", e),
     }
 
     Ok((

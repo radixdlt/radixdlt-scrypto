@@ -21,6 +21,7 @@ pub struct ConsensusManagerCreateInput {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
 }
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
@@ -30,6 +31,7 @@ pub struct ConsensusManagerCreateManifestInput {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -346,6 +348,18 @@ pub struct ValidatorApplyEmissionInput {
 }
 
 pub type ValidatorApplyEmissionOutput = ();
+
+pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorApplyRewardInput {
+    /// A bucket with the rewarded XRDs (from transaction fees) for this validator.
+    pub xrd_bucket: Bucket,
+    /// The *concluded* epoch's number. Informational-only.
+    pub epoch: Epoch,
+}
+
+pub type ValidatorApplyRewardOutput = ();
 
 pub const VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT: &str = "lock_owner_stake_units";
 

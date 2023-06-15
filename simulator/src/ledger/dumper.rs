@@ -3,8 +3,11 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::PackageCodeSubstate;
+use radix_engine_interface::blueprints::package::{
+    PackageCodeSubstate, PACKAGE_CODE_PARTITION_OFFSET,
+};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
 use radix_engine_store_interface::{
@@ -29,12 +32,14 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let substate = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, PackageCodeSubstate>(
+    let (_, substate) = substate_db
+        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<PackageCodeSubstate>, MapKey>(
             package_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
-            &PackageField::Code.into(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
+                .unwrap(),
         )
+        .next()
         .ok_or(EntityDumpError::PackageNotFound)?;
 
     writeln!(
@@ -47,7 +52,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.code.len()
+        substate.value.unwrap().code.len()
     );
     Ok(())
 }
@@ -69,7 +74,10 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint_id: blueprint,
+                ..
+            }) => blueprint,
             _ => {
                 panic!("Unexpected")
             }
@@ -143,7 +151,9 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         .ok_or(EntityDumpError::ResourceManagerNotFound)?;
 
     let info = match type_info {
-        TypeInfoSubstate::Object(info) if info.blueprint.package_address.eq(&RESOURCE_PACKAGE) => {
+        TypeInfoSubstate::Object(info)
+            if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) =>
+        {
             info
         }
         _ => {
@@ -154,14 +164,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     };
 
     if info
-        .blueprint
+        .blueprint_id
         .blueprint_name
         .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
     {
         let id_type = substate_db
             .get_mapped::<SpreadPrefixKeyMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &NonFungibleResourceManagerField::IdType.into(),
             )
             .ok_or(EntityDumpError::InvalidStore(
@@ -180,7 +190,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             let total_supply = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, Decimal>(
                     resource_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &NonFungibleResourceManagerField::TotalSupply.into(),
                 )
                 .ok_or(EntityDumpError::InvalidStore(
@@ -197,7 +207,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         let divisibility = substate_db
             .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &FungibleResourceManagerField::Divisibility.into(),
             )
             .ok_or(EntityDumpError::InvalidStore(
@@ -215,7 +225,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             let total_supply = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
                     resource_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &FungibleResourceManagerField::TotalSupply.into(),
                 )
                 .ok_or(EntityDumpError::InvalidStore(

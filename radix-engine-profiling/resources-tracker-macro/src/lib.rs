@@ -117,7 +117,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                     if let Ok(right) = syn::parse::<syn::Ident>(right_arg.clone().into()) {
                         // log variable
                         if right == "ret" {
-                            // todo: optimise basing on function return type
+                            // TODO: optimise basing on function return type
                             additional_items_after.push( quote!{ OutputParam { name: "ret".into(), value: OutputParamValue::Literal(format!("{:?}", ret).into())} } );
                         } else {
                             log_ident_after.push(right);

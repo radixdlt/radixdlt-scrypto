@@ -31,4 +31,27 @@ impl FeeSummary {
     pub fn loan_fully_repaid(&self) -> bool {
         self.total_bad_debt_xrd == 0.into()
     }
+
+    pub fn fees_to_distribute(&self) -> Decimal {
+        self.cost_unit_price * Decimal::from(self.execution_cost_sum)
+    }
+
+    pub fn tips_to_distribute(&self) -> Decimal {
+        (self.cost_unit_price * Decimal::from(self.tip_percentage) / Decimal::from(100u32))
+            * Decimal::from(self.execution_cost_sum)
+    }
+
+    // For testing only
+    pub fn expected_reward_if_single_validator(&self) -> Decimal {
+        self.expected_reward_as_proposer_if_single_validator()
+            + self.expected_reward_as_active_validator_if_single_validator()
+    }
+    pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
+        self.tips_to_distribute() * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+            + self.fees_to_distribute() * (FEES_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+    }
+    pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
+        self.tips_to_distribute() * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+            + self.fees_to_distribute() * (FEES_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+    }
 }

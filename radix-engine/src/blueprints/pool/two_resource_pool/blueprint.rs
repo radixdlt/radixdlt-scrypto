@@ -65,7 +65,7 @@ impl TwoResourcePoolBlueprint {
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // TODO: Pool unit resource metadata - one things is needed to do this:
+            // FIXME: Pool unit resource metadata - one things is needed to do this:
             // 1- A fix for the issue with references so that we can have the component address of
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
@@ -75,7 +75,7 @@ impl TwoResourcePoolBlueprint {
 
         // Creating the pool nodes
         let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
-        // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
+        // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
             btreemap!(

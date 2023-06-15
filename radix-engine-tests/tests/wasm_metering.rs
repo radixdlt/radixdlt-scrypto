@@ -26,7 +26,7 @@ fn test_loop() {
     receipt.expect_commit_success();
 }
 
-// TODO: investigate the case where cost_unit_limit < system_loan and transaction runs out of cost units.
+// FIXME: investigate the case where cost_unit_limit < system_loan and transaction runs out of cost units.
 
 #[test]
 fn test_loop_out_of_cost_unit() {

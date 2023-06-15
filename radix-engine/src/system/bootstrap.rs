@@ -16,6 +16,7 @@ use crate::transaction::{
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::ScryptoVm;
+use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -42,7 +43,10 @@ const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
-const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
+
+lazy_static! {
+    pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
+}
 
 //==========================================================================================
 // GENESIS CHUNK MODELS
@@ -90,7 +94,6 @@ pub struct GenesisStakeAllocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
     pub reserved_resource_address: ResourceAddress,
-    pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
@@ -140,7 +143,6 @@ pub enum ManifestGenesisDataChunk {
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct ManifestGenesisResource {
     pub resource_address_reservation: ManifestAddressReservation,
-    pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
@@ -202,6 +204,8 @@ where
                 num_fee_increase_delay_epochs: 1,
             },
             1,
+            Some(0),
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
         )
     }
 
@@ -211,6 +215,8 @@ where
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
+        initial_current_leader: Option<ValidatorIndex>,
+        faucet_supply: Decimal,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
@@ -221,8 +227,12 @@ where
             );
 
         if xrd_info.is_none() {
-            let system_bootstrap_receipt =
-                self.execute_system_bootstrap(initial_epoch, initial_config, initial_time_ms);
+            let system_bootstrap_receipt = self.execute_system_bootstrap(
+                initial_epoch,
+                initial_config,
+                initial_time_ms,
+                initial_current_leader,
+            );
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -230,7 +240,7 @@ where
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up();
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(faucet_supply);
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -247,9 +257,14 @@ where
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
+        initial_current_leader: Option<ValidatorIndex>,
     ) -> TransactionReceipt {
-        let transaction =
-            create_system_bootstrap_transaction(initial_epoch, initial_config, initial_time_ms);
+        let transaction = create_system_bootstrap_transaction(
+            initial_epoch,
+            initial_config,
+            initial_time_ms,
+            initial_current_leader,
+        );
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -295,8 +310,8 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction();
+    fn execute_genesis_wrap_up(&mut self, faucet_supply: Decimal) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction(faucet_supply);
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -321,6 +336,7 @@ pub fn create_system_bootstrap_transaction(
     initial_epoch: Epoch,
     initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
+    initial_current_leader: Option<ValidatorIndex>,
 ) -> SystemTransactionV1 {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
@@ -368,7 +384,7 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Royalty Package
+    // Access Rules Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -387,7 +403,7 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Access Rules Package
+    // Resource Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -406,7 +422,7 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Resource Package
+    // Royalty Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -455,7 +471,6 @@ pub fn create_system_bootstrap_transaction(
                 rule!(deny_all),
             ),
         );
-        let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(RADIX_TOKEN),
@@ -471,7 +486,7 @@ pub fn create_system_bootstrap_transaction(
                     divisibility: 18,
                     metadata,
                     access_rules,
-                    initial_supply,
+                    initial_supply: Decimal::zero(),
                     resource_address: id_allocator.new_address_reservation_id(),
                 },
             ),
@@ -825,8 +840,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Genesis helper package
     {
-        // TODO: Add authorization rules around preventing anyone else from
-        // TODO: calling genesis helper code
+        // FIXME: Add authorization rules around preventing anyone else from
+        // calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
         let genesis_helper_code_hash = hash(&genesis_helper_code);
@@ -869,19 +884,13 @@ pub fn create_system_bootstrap_transaction(
                 initial_epoch,
                 initial_config,
                 initial_time_ms,
+                initial_current_leader,
             }),
         });
     }
 
     // Create GenesisHelper
     {
-        let whole_lotta_xrd = id_allocator.new_bucket_id();
-        instructions.push(
-            InstructionV1::TakeAllFromWorktop {
-                resource_address: RADIX_TOKEN,
-            }
-            .into(),
-        );
         pre_allocated_addresses.push((
             BlueprintId::new(&GENESIS_HELPER_PACKAGE, GENESIS_HELPER_BLUEPRINT),
             GlobalAddress::from(GENESIS_HELPER),
@@ -892,7 +901,6 @@ pub fn create_system_bootstrap_transaction(
             function_name: "new".to_string(),
             args: manifest_args!(
                 id_allocator.new_address_reservation_id(),
-                whole_lotta_xrd,
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
             ),
@@ -957,7 +965,6 @@ fn map_address_allocations_for_manifest(
                 .map(|(index, resource)| {
                     let manifest_resource = ManifestGenesisResource {
                         resource_address_reservation: ManifestAddressReservation(index as u32),
-                        initial_supply: resource.initial_supply,
                         metadata: resource.metadata,
                         owner: resource.owner,
                     };
@@ -989,7 +996,7 @@ fn map_address_allocations_for_manifest(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
+pub fn create_genesis_wrap_up_transaction(faucet_supply: Decimal) -> SystemTransactionV1 {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
@@ -998,6 +1005,15 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
         method_name: "wrap_up".to_string(),
         args: manifest_args!(),
     });
+
+    instructions.push(
+        InstructionV1::CallMethod {
+            address: RADIX_TOKEN.clone().into(),
+            method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: manifest_args!(faucet_supply),
+        }
+        .into(),
+    );
 
     instructions.push(
         InstructionV1::TakeAllFromWorktop {

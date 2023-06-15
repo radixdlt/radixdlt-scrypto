@@ -2,8 +2,13 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, PackageInfoSubstate};
-use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
+    TypePointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+};
+use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
+use radix_engine_interface::schema::TypeRef;
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -56,7 +61,7 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let package_definition: PackageSetup = manifest_decode(
+        let package_definition: PackageDefinition = manifest_decode(
             &fs::read(&definition_path)
                 .map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
         )
@@ -69,38 +74,133 @@ impl Publish {
                 .bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let db_partition_key =
-                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_PARTITION);
-            let code_db_sort_key =
-                SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Code.into());
-            let package_code = PackageCodeSubstate { code };
+            let package_code = PackageCodeSubstate {
+                vm_type: VmType::ScryptoV1,
+                code,
+            };
 
-            let info_db_sort_key =
-                SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Info.into());
-            let package_info = PackageInfoSubstate {
-                schema: IndexedPackageSchema {
-                    blueprints: package_definition
-                        .blueprints
+            let blueprints_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let schemas_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let dependencies_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let mut blueprint_updates = index_map_new();
+            let mut dependency_updates = index_map_new();
+            let mut schema_updates = index_map_new();
+
+            let code_hash = hash(scrypto_encode(&package_code).unwrap());
+
+            for (b, s) in package_definition.blueprints {
+                let mut functions = BTreeMap::new();
+                let mut function_exports = BTreeMap::new();
+
+                let blueprint_schema = s.schema.clone();
+                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
+                    &scrypto_encode(&schema_hash).unwrap(),
+                );
+                let update = DatabaseUpdate::Set(scrypto_encode(&blueprint_schema).unwrap());
+                schema_updates.insert(key, update);
+
+                for (function, setup) in s.schema.functions.functions {
+                    functions.insert(
+                        function.clone(),
+                        FunctionSchema {
+                            receiver: setup.receiver,
+                            input: match setup.input {
+                                TypeRef::Static(type_index) => {
+                                    TypePointer::Package(schema_hash, type_index)
+                                }
+                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                            },
+                            output: match setup.output {
+                                TypeRef::Static(type_index) => {
+                                    TypePointer::Package(schema_hash, type_index)
+                                }
+                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                            },
+                        },
+                    );
+                    let export = PackageExport {
+                        code_hash,
+                        export_name: setup.export.clone(),
+                    };
+                    function_exports.insert(function, export);
+                }
+
+                let events = s
+                    .schema
+                    .events
+                    .event_schema
+                    .into_iter()
+                    .map(|(key, index)| {
+                        (
+                            key,
+                            match index {
+                                TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                            },
+                        )
+                    })
+                    .collect();
+
+                let def = BlueprintDefinition {
+                    interface: BlueprintInterface {
+                        generics: s.schema.generics,
+                        outer_blueprint: s.outer_blueprint,
+                        features: s.feature_set,
+                        functions,
+                        events,
+                        state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
+                    },
+                    function_exports,
+                    virtual_lazy_load_functions: s
+                        .schema
+                        .functions
+                        .virtual_lazy_load_functions
                         .into_iter()
-                        .map(|(b, s)| {
-                            let def = BlueprintDefinition {
-                                schema: s.schema.into(),
-                                template: s.template,
-                            };
-                            (b, def)
+                        .map(|(key, export_name)| {
+                            (
+                                key,
+                                PackageExport {
+                                    code_hash,
+                                    export_name,
+                                },
+                            )
                         })
                         .collect(),
-                },
-            };
+                };
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
+                let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
+                blueprint_updates.insert(key, update);
+
+                let config = BlueprintDependencies {
+                    dependencies: s.dependencies,
+                };
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
+                let update = DatabaseUpdate::Set(
+                    scrypto_encode(&KeyValueEntrySubstate::entry(config)).unwrap(),
+                );
+                dependency_updates.insert(key, update);
+            }
+
             let database_updates = indexmap!(
-                db_partition_key => indexmap!(
-                    code_db_sort_key => DatabaseUpdate::Set(
-                        scrypto_encode(&package_code).unwrap()
-                    ),
-                    info_db_sort_key => DatabaseUpdate::Set(
-                        scrypto_encode(&package_info).unwrap()
-                    )
-                )
+                blueprints_partition_key => blueprint_updates,
+                dependencies_partition_key => dependency_updates,
+                schemas_partition_key => schema_updates,
             );
 
             substate_db.commit(&database_updates);

@@ -19,7 +19,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringCo
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
+use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -29,16 +29,19 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintSetup, BlueprintTemplate, PackageInfoSubstate,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltySubstate, PackageSetup,
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
+use radix_engine_interface::schema::{
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
+};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -66,7 +69,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSetup) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -132,6 +135,8 @@ pub struct CustomGenesis {
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
+    pub faucet_supply: Decimal,
 }
 
 impl CustomGenesis {
@@ -188,6 +193,50 @@ impl CustomGenesis {
             initial_epoch,
             initial_config,
             initial_time_ms: 0,
+            initial_current_leader: Some(0),
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
+        }
+    }
+
+    pub fn two_validators_and_single_staker(
+        validator1_public_key: Secp256k1PublicKey,
+        validator2_public_key: Secp256k1PublicKey,
+        stake_xrd_amount: (Decimal, Decimal),
+        staker_account: ComponentAddress,
+        initial_epoch: Epoch,
+        initial_config: ConsensusManagerConfig,
+    ) -> CustomGenesis {
+        let genesis_validator1: GenesisValidator = validator1_public_key.clone().into();
+        let genesis_validator2: GenesisValidator = validator2_public_key.clone().into();
+        let genesis_data_chunks = vec![
+            GenesisDataChunk::Validators(vec![genesis_validator1, genesis_validator2]),
+            GenesisDataChunk::Stakes {
+                accounts: vec![staker_account],
+                allocations: vec![
+                    (
+                        validator1_public_key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount.0,
+                        }],
+                    ),
+                    (
+                        validator2_public_key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount.1,
+                        }],
+                    ),
+                ],
+            },
+        ];
+        CustomGenesis {
+            genesis_data_chunks,
+            initial_epoch,
+            initial_config,
+            initial_time_ms: 0,
+            initial_current_leader: Some(0),
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
         }
     }
 }
@@ -232,6 +281,8 @@ impl TestRunnerBuilder {
                     custom_genesis.initial_epoch,
                     custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
+                    custom_genesis.initial_current_leader,
+                    custom_genesis.faucet_supply,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
@@ -387,40 +438,33 @@ impl TestRunner {
         metadata_value
     }
 
-    pub fn inspect_component_royalty(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Option<Decimal> {
-        if let Some(output) = self
+    pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
+        let accumulator = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
-                ROYALTY_FIELD_PARTITION,
+                ROYALTY_BASE_PARTITION
+                    .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                    .unwrap(),
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
-        {
-            output
-                .royalty_vault
-                .and_then(|vault| {
-                    self.substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                            vault.as_node_id(),
-                            OBJECT_BASE_PARTITION,
-                            &FungibleVaultField::LiquidFungible.into(),
-                        )
-                })
-                .map(|r| r.amount())
-        } else {
-            None
-        }
+            .unwrap();
+        self.substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                accumulator.royalty_vault.0.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
+            )
+            .map(|r| r.amount())
+            .unwrap()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorSubstate>(
                 package_address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
             )
         {
@@ -430,7 +474,7 @@ impl TestRunner {
                     self.substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            OBJECT_BASE_PARTITION,
+                            MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
                         )
                 })
@@ -446,8 +490,14 @@ impl TestRunner {
         resource_address: ResourceAddress,
     ) -> Option<Decimal> {
         let vaults = self.get_component_vaults(account_address, resource_address);
+        let index = if resource_address.eq(&RADIX_TOKEN) {
+            // To account for royalty vault
+            1usize
+        } else {
+            0usize
+        };
         vaults
-            .get(0)
+            .get(index)
             .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
     }
 
@@ -476,7 +526,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                 &vault_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
             .map(|output| output.amount())
@@ -490,7 +540,7 @@ impl TestRunner {
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &NonFungibleVaultField::LiquidNonFungible.into(),
             )
             .map(|vault| vault.amount);
@@ -499,9 +549,7 @@ impl TestRunner {
             .substate_db()
             .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                 &vault_id,
-                OBJECT_BASE_PARTITION
-                    .at_offset(PartitionOffset(1u8))
-                    .unwrap(),
+                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
             );
         let id = substate_iter.next().map(|(_key, id)| id);
 
@@ -578,7 +626,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ValidatorField::Validator.into(),
             )
             .unwrap()
@@ -589,7 +637,7 @@ impl TestRunner {
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentValidatorSet.into(),
             )
             .unwrap();
@@ -678,7 +726,7 @@ impl TestRunner {
     pub fn publish_package_at_address(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         address: PackageAddress,
     ) {
         let code_hash = hash(&code);
@@ -718,7 +766,7 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
@@ -734,7 +782,7 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        definition: PackageSetup,
+        definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
@@ -762,7 +810,7 @@ impl TestRunner {
 
     pub fn compile_and_publish_retain_blueprints<
         P: AsRef<Path>,
-        F: FnMut(&String, &mut BlueprintSetup) -> bool,
+        F: FnMut(&String, &mut BlueprintDefinitionInit) -> bool,
     >(
         &mut self,
         package_dir: P,
@@ -1318,14 +1366,14 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
                 &CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();
         substate.epoch = epoch;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
-            OBJECT_BASE_PARTITION,
+            MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
             &substate,
         );
@@ -1458,7 +1506,7 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ProposerMilliTimestampSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentTime.into(),
             )
             .unwrap()
@@ -1481,24 +1529,14 @@ impl TestRunner {
         &self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> (LocalTypeIndex, ScryptoSchema) {
-        let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
-            EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
+        let (package_address, schema_pointer) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
                 match node_module {
-                    ObjectModuleId::AccessRules => (
-                        ACCESS_RULES_MODULE_PACKAGE,
-                        ACCESS_RULES_BLUEPRINT.into(),
-                        local_type_index.clone(),
-                    ),
-                    ObjectModuleId::Royalty => (
-                        ROYALTY_MODULE_PACKAGE,
-                        COMPONENT_ROYALTY_BLUEPRINT.into(),
-                        local_type_index.clone(),
-                    ),
-                    ObjectModuleId::Metadata => (
-                        METADATA_MODULE_PACKAGE,
-                        METADATA_BLUEPRINT.into(),
-                        local_type_index.clone(),
-                    ),
+                    ObjectModuleId::AccessRules => {
+                        (ACCESS_RULES_MODULE_PACKAGE, schema_pointer.clone())
+                    }
+                    ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, schema_pointer.clone()),
+                    ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, schema_pointer.clone()),
                     ObjectModuleId::Main => {
                         let type_info = self
                             .substate_db()
@@ -1510,11 +1548,10 @@ impl TestRunner {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
-                                blueprint.package_address,
-                                blueprint.blueprint_name,
-                                *local_type_index,
-                            ),
+                            TypeInfoSubstate::Object(ObjectInfo {
+                                blueprint_id: blueprint,
+                                ..
+                            }) => (blueprint.package_address, *schema_pointer),
                             _ => {
                                 panic!("No event schema.")
                             }
@@ -1522,32 +1559,33 @@ impl TestRunner {
                     }
                 }
             }
-            EventTypeIdentifier(
-                Emitter::Function(node_id, _, blueprint_name),
-                local_type_index,
-            ) => (
+            EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
                 PackageAddress::new_or_panic(node_id.0),
-                blueprint_name.to_owned(),
-                local_type_index.clone(),
+                schema_pointer.clone(),
             ),
         };
 
-        (
-            local_type_index,
-            self.substate_db()
-                .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
-                    package_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
-                    &PackageField::Info.into(),
-                )
-                .unwrap()
-                .schema
-                .blueprints
-                .remove(&blueprint_name)
-                .unwrap()
-                .schema
-                .schema,
-        )
+        match schema_pointer {
+            TypePointer::Package(schema_hash, index) => {
+                let schema = self
+                    .substate_db()
+                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+                        package_address.as_node_id(),
+                        MAIN_BASE_PARTITION
+                            .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                            .unwrap(),
+                        &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+                    )
+                    .unwrap()
+                    .value
+                    .unwrap();
+
+                (index, schema)
+            }
+            TypePointer::Instance(_instance_index) => {
+                todo!()
+            }
+        }
     }
 
     pub fn event_name(&self, event_type_identifier: &EventTypeIdentifier) -> String {
@@ -1689,44 +1727,55 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
-) -> PackageSetup {
+) -> PackageDefinition {
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         blueprint_name.to_string(),
-        BlueprintSetup {
-            schema: BlueprintSchema {
-                outer_blueprint: None,
+        BlueprintDefinitionInit {
+            outer_blueprint: None,
+            dependencies: btreeset!(),
+            feature_set: btreeset!(),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
-                collections: vec![],
-                functions: btreemap!(
-                function_name.to_string() => FunctionSchema {
-                        receiver: Option::None,
-                        input: LocalTypeIndex::WellKnown(ANY_ID),
-                        output: LocalTypeIndex::WellKnown(ANY_ID),
-                        export: format!("{}_{}", blueprint_name, function_name),
-                    }
-                ),
-                virtual_lazy_load_functions: btreemap!(),
-                event_schema: [].into(),
-                dependencies: btreeset!(),
-                features: btreeset!(),
+                state: BlueprintStateSchemaInit {
+                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
+                        UNIT_ID,
+                    ))],
+                    collections: vec![],
+                },
+                events: BlueprintEventSchemaInit::default(),
+                functions: BlueprintFunctionsSchemaInit {
+                    virtual_lazy_load_functions: btreemap!(),
+                    functions: btreemap!(
+                    function_name.to_string() => FunctionSchemaInit {
+                            receiver: Option::None,
+                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            export: format!("{}_{}", blueprint_name, function_name),
+                        }
+                    ),
+                },
             },
-            function_auth: btreemap!(
-                function_name.to_string() => rule!(allow_all),
-            ),
+
             royalty_config: RoyaltyConfig::default(),
-            template: BlueprintTemplate {
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: btreemap!(),
+            auth_config: AuthConfig {
+                function_auth: btreemap!(
+                    function_name.to_string() => rule!(allow_all),
+                ),
+                method_auth: MethodAuthTemplate::Static {
+                    auth: btreemap!(),
+                    outer_auth: btreemap!(),
+                },
             },
         },
     );
-    PackageSetup { blueprints }
+    PackageDefinition { blueprints }
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

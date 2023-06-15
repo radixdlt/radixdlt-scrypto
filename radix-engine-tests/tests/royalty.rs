@@ -38,11 +38,9 @@ fn test_component_royalty() {
     );
 
     let commit_result = receipt.expect_commit(true);
-    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("1"));
+    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("3"));
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
-    let component_royalty = test_runner
-        .inspect_component_royalty(component_address)
-        .unwrap();
+    let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
         commit_result.fee_summary.total_execution_cost_xrd
@@ -50,7 +48,7 @@ fn test_component_royalty() {
     );
     assert_eq!(
         component_royalty,
-        commit_result.fee_summary.total_royalty_cost_xrd
+        commit_result.fee_summary.total_royalty_cost_xrd - dec!("2"),
     );
 }
 
@@ -94,9 +92,7 @@ fn test_component_royalty_in_usd() {
         dec!("1") * transmute_u128_as_decimal(DEFAULT_USD_PRICE)
     );
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
-    let component_royalty = test_runner
-        .inspect_component_royalty(component_address)
-        .unwrap();
+    let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
         commit_result.fee_summary.total_execution_cost_xrd
@@ -135,18 +131,6 @@ fn set_up_package_and_component() -> (
                 account,
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
-            )
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "paid_method",
-                RoyaltyAmount::Xrd(2.into()),
-            )
-            .set_package_royalty(
-                package_address,
-                "RoyaltyTest",
-                "paid_method_panic",
-                RoyaltyAmount::Xrd(2.into()),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -207,9 +191,7 @@ fn test_package_royalty() {
     let package_royalty = test_runner
         .inspect_package_royalty(package_address)
         .unwrap();
-    let component_royalty = test_runner
-        .inspect_component_royalty(component_address)
-        .unwrap();
+    let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
         commit_result.fee_summary.total_execution_cost_xrd
@@ -245,7 +227,7 @@ fn test_royalty_accumulation_when_success() {
     );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("1"))
+        dec!("1")
     );
 }
 
@@ -272,7 +254,7 @@ fn test_royalty_accumulation_when_failure() {
     assert_eq!(test_runner.inspect_package_royalty(package_address), None);
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        None
+        dec!("0")
     );
 }
 
@@ -302,7 +284,7 @@ fn test_claim_royalty() {
     );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("1"))
+        dec!("1")
     );
 
     // Claim package royalty
@@ -347,6 +329,6 @@ fn test_claim_royalty() {
     );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("0"))
+        dec!("0")
     );
 }

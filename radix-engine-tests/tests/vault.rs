@@ -31,7 +31,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::CreateObjectError(_))
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
         )
     });
 }
@@ -63,7 +63,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
         )
     });
 }

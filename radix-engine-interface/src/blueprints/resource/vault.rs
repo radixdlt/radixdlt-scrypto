@@ -96,8 +96,6 @@ pub type VaultBurnOutput = ();
 // Stub
 //========
 
-// TODO: update schema type
-
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Vault(pub Own);
 

@@ -66,6 +66,8 @@ impl ClientCostingApi<ClientApiError> for ScryptoEnv {
     }
 }
 
+// FIXME: finalize API
+
 impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_simple_object(
         &mut self,
@@ -91,7 +93,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
-        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
+        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
@@ -112,7 +114,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _node_id: &NodeId,
         _access_rules_node_id: &NodeId,
     ) -> Result<(), ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn globalize(
@@ -186,6 +188,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
+    fn get_reservation_address(
+        &mut self,
+        _node_id: &NodeId,
+    ) -> Result<GlobalAddress, ClientApiError> {
+        // FIXME: Implement this for Scrypto
+        todo!()
+    }
+
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
         unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
 
@@ -226,14 +236,14 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn key_value_entry_freeze(
         &mut self,
         _handle: KeyValueEntryHandle,
     ) -> Result<(), ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn key_value_entry_release(
@@ -367,7 +377,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     }
 
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {

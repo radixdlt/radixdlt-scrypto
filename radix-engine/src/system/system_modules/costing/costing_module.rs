@@ -1,11 +1,12 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
+use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
-use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{StoreAccess, StoreAccessInfo};
 use crate::types::*;
@@ -13,10 +14,8 @@ use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
-use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
+use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 
@@ -139,7 +138,7 @@ impl CostingModule {
     }
 }
 
-fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     api: &mut Y,
     royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
@@ -147,7 +146,8 @@ fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 ) -> Result<(), RuntimeError> {
     api.kernel_get_system()
         .modules
-        .costing
+        .costing_module()
+        .unwrap()
         .fee_reserve
         .consume_royalty(royalty_amount, recipient, recipient_vault_id)
         .map_err(|e| {
@@ -159,7 +159,7 @@ fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let costing = &mut api.kernel_get_system().modules.costing;
+        let costing = &mut api.kernel_get_system().modules.costing_module().unwrap();
         let fee_reserve = &mut costing.fee_reserve;
         let fee_table = &costing.fee_table;
 
@@ -191,7 +191,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
+        if current_depth
+            == api
+                .kernel_get_system()
+                .modules
+                .costing_module()
+                .unwrap()
+                .max_call_depth
+        {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::CostingError(CostingError::MaxCallDepthLimitReached),
             ));
@@ -200,7 +207,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         if current_depth > 0 {
             api.kernel_get_system()
                 .modules
-                .costing
+                .costing_module()
+                .unwrap()
                 .apply_execution_cost(
                     CostingReason::Invoke,
                     |fee_table| {
@@ -248,82 +256,23 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         // Apply package royalty
         //===========================
-        let handle = api.kernel_lock_substate(
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.as_str());
+        PackageRoyaltyNativeBlueprint::charge_package_royalty(
             blueprint.package_address.as_node_id(),
-            OBJECT_BASE_PARTITION,
-            &PackageField::Royalty.into(),
-            LockFlags::MUTABLE,
-            SystemLockData::default(),
+            &bp_version_key,
+            ident,
+            api,
         )?;
-        let mut substate: PackageRoyaltySubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let royalty_charge = substate
-            .blueprint_royalty_configs
-            .get(blueprint.blueprint_name.as_str())
-            .map(|x| x.get_rule(ident).clone())
-            .unwrap_or(RoyaltyAmount::Free);
-        if royalty_charge.is_non_zero() {
-            let vault_id = if let Some(vault) = substate.royalty_vault {
-                vault
-            } else {
-                let mut system = SystemService::new(api);
-                let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
-                substate.royalty_vault = Some(new_vault);
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
-                new_vault
-            };
-            apply_royalty_cost(
-                api,
-                royalty_charge,
-                RoyaltyRecipient::Package(blueprint.package_address),
-                vault_id.0,
-            )?;
-        }
-        api.kernel_drop_lock(handle)?;
 
         //===========================
         // Apply component royalty
         //===========================
         if let Some(component_address) = optional_component {
-            let handle = api.kernel_lock_substate(
+            ComponentRoyaltyBlueprint::charge_component_royalty(
                 component_address.as_node_id(),
-                ROYALTY_FIELD_PARTITION,
-                &RoyaltyField::RoyaltyConfig.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
+                ident,
+                api,
             )?;
-            let substate: ComponentRoyaltyConfigSubstate =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let royalty_charge = substate.royalty_config.get_rule(ident).clone();
-            api.kernel_drop_lock(handle)?;
-
-            if royalty_charge.is_non_zero() {
-                let handle = api.kernel_lock_substate(
-                    component_address.as_node_id(),
-                    ROYALTY_FIELD_PARTITION,
-                    &RoyaltyField::RoyaltyAccumulator.into(),
-                    LockFlags::MUTABLE,
-                    SystemLockData::default(),
-                )?;
-                let mut substate: ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
-                let vault_id = if let Some(vault) = substate.royalty_vault {
-                    vault
-                } else {
-                    let mut system = SystemService::new(api);
-                    let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
-                    substate.royalty_vault = Some(new_vault);
-                    new_vault
-                };
-                apply_royalty_cost(
-                    api,
-                    royalty_charge,
-                    RoyaltyRecipient::Component(component_address.clone()),
-                    vault_id.into(),
-                )?;
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
-                api.kernel_drop_lock(handle)?;
-            }
         }
 
         Ok(())
@@ -337,7 +286,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::CreateNode,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { node_id }),
@@ -346,14 +296,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::CreateNode, store_access)
     }
 
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::DropNode,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode),
@@ -371,7 +323,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::LockSubstate,
                 |fee_table| {
@@ -394,7 +347,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::LockSubstate, store_access)
     }
 
@@ -407,7 +361,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part + value size costing
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::ReadSubstate,
                 |fee_table| {
@@ -420,7 +375,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::ReadSubstate, store_access)
     }
 
@@ -433,7 +389,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part + value size costing
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::WriteSubstate,
                 |fee_table| {
@@ -446,7 +403,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::WriteSubstate, store_access)
     }
 
@@ -458,7 +416,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::DropLock,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
@@ -467,7 +426,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::DropLock, store_access)
     }
 
@@ -478,7 +438,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::ScanSubstate,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::ScanSubstate),
@@ -487,7 +448,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::ScanSubstate, store_access)
     }
 
@@ -498,7 +460,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::SetSubstate,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::SetSubstate),
@@ -507,7 +470,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::SetSubstate, store_access)
     }
 
@@ -518,7 +482,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // CPU execution part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::TakeSubstate,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::TakeSubstate),
@@ -527,7 +492,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Storage usage part
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_access_store_costs(CostingReason::TakeSubstate, store_access)
     }
 
@@ -537,7 +503,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
-            .costing
+            .costing_module()
+            .unwrap()
             .apply_execution_cost(
                 CostingReason::AllocateNodeId,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::AllocateNodeId),
