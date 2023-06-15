@@ -214,7 +214,7 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
     let mut data_index_vector_2: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
     let mut rng = rand::thread_rng();
 
-    for _ in 0..COUNT {
+    for _ in 0..count {
         let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
         rng.fill(&mut node_id_value);
         let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
