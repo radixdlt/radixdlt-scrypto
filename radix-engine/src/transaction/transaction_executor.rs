@@ -30,12 +30,6 @@ pub struct FeeReserveConfig {
 
 impl Default for FeeReserveConfig {
     fn default() -> Self {
-        FeeReserveConfig::standard()
-    }
-}
-
-impl FeeReserveConfig {
-    pub fn standard() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE,
             usd_price: DEFAULT_USD_PRICE,
@@ -58,7 +52,7 @@ pub struct ExecutionConfig {
     pub max_invoke_input_size: usize,
 }
 
-impl Default for ExecutionConfig {
+impl ExecutionConfig {
     fn default() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
@@ -74,9 +68,7 @@ impl Default for ExecutionConfig {
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
         }
     }
-}
 
-impl ExecutionConfig {
     pub fn for_genesis_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
@@ -599,6 +591,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     let fees_to_distribute = fee_summary.fees_to_distribute();
 
     // Sanity check
+    println!("{:?}", fee_summary);
     assert_eq!(required, Decimal::ZERO);
     assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
     assert_eq!(

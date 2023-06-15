@@ -110,7 +110,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     let mut execution_config = ExecutionConfig::default();
     // lower substate reads limit to avoid Fee limit transaction result
     execution_config.max_substate_reads_per_transaction = 150;
-    let receipt = test_runner.execute_transaction_with_config(
+    let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         &fee_config,
         &execution_config,
@@ -150,7 +150,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     let mut execution_config = ExecutionConfig::default();
     // lower substate writes limit to avoid Fee limit transaction result
     execution_config.max_substate_writes_per_transaction = 100;
-    let receipt = test_runner.execute_transaction_with_config(
+    let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         &fee_config,
         &execution_config,
@@ -190,7 +190,7 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
     let mut execution_config = ExecutionConfig::default().with_kernel_trace(true);
     // Setting maximum substate size to small value to activate transaction limit
     execution_config.max_substate_size = 10;
-    let receipt = test_runner.execute_transaction_with_config(
+    let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         &fee_config,
         &execution_config,
@@ -231,7 +231,7 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default().with_kernel_trace(true);
     execution_config.max_substate_size = SIZE as usize + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
-    let receipt = test_runner.execute_transaction_with_config(
+    let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         &fee_config,
         &execution_config,
