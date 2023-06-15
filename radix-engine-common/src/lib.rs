@@ -62,9 +62,10 @@ pub mod prelude {
     pub use super::data::manifest::*;
     pub use super::data::scrypto::model::*;
     pub use super::data::scrypto::*;
+    pub use super::macros::*;
     pub use super::native_addresses::*;
     pub use super::network::*;
     pub use super::time::*;
     pub use super::types::*;
-    pub use crate::define_wrapped_hash;
+    pub use crate::{dec, define_wrapped_hash, manifest_args, pdec, scrypto_args};
 }
