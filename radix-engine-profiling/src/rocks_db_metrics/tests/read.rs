@@ -26,6 +26,27 @@ const READ_REPEATS: usize = 100;
 /// cargo test -p radix-engine-profilings -p radix-engine-stores --features rocksdb test_store_db --release -- --nocapture
 /// from main radixdlt-scrypto folder.
 fn test_read() {
+    let read_repeats = match std::env::var("READ_REPEATS") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => READ_REPEATS,
+    };
+    let min_size = match std::env::var("MIN_SIZE") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => MIN_SIZE,
+    };
+    let max_size = match std::env::var("MAX_SIZE") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => MAX_SIZE,
+    };
+    let size_step = match std::env::var("SIZE_STEP") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => SIZE_STEP,
+    };
+    let prepare_db_write_count = match std::env::var("COUNT") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => COUNT,
+    };
+
     // RocksDB part
     let path = PathBuf::from(r"/tmp/radix-scrypto-db");
     // clean database
@@ -33,23 +54,23 @@ fn test_read() {
 
     // prepare database
     let data_index_vector = {
-        let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path.clone());
+        let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path.clone());
         prepare_db(
             &mut substate_db,
-            MIN_SIZE,
-            MAX_SIZE,
-            SIZE_STEP,
-            COUNT,
+            min_size,
+            max_size,
+            size_step,
+            prepare_db_write_count,
             false,
         )
     };
 
     // reopen database
-    let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
+    let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path);
     // and run read test
-    run_read_test(&mut substate_db, &data_index_vector);
+    run_read_test(&mut substate_db, &data_index_vector, read_repeats);
     // run read not found test
-    run_read_not_found_test(&mut substate_db);
+    run_read_not_found_test(&mut substate_db, read_repeats, prepare_db_write_count);
 
     // prepare data for linear approximation
     discard_spikes(&mut substate_db.read_metrics.borrow_mut(), 200f32);
@@ -65,7 +86,7 @@ fn test_read() {
     }
 
     // export results
-    let axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None); //Some(100f32), Some(5000f32));
+    let axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     export_graph_and_print_summary(
         "RocksDB random reads",
         &rocksdb_data,
@@ -84,15 +105,15 @@ fn test_read() {
     let mut substate_db = SubstateStoreWithMetrics::new_inmem();
     let data_index_vector = prepare_db(
         &mut substate_db,
-        MIN_SIZE,
-        MAX_SIZE,
-        SIZE_STEP,
-        COUNT,
+        min_size,
+        max_size,
+        size_step,
+        prepare_db_write_count,
         false,
     );
-    run_read_test(&mut substate_db, &data_index_vector);
+    run_read_test(&mut substate_db, &data_index_vector, read_repeats);
     // run read not found test
-    run_read_not_found_test(&mut substate_db);
+    run_read_not_found_test(&mut substate_db, read_repeats, prepare_db_write_count);
 
     // prepare data for linear approximation
     discard_spikes(&mut substate_db.read_metrics.borrow_mut(), 200f32);
@@ -108,7 +129,7 @@ fn test_read() {
     }
 
     // export results
-    let axis_ranges = calculate_axis_ranges(&inmem_data, None, None); //Some(100f32), Some(5000f32));
+    let axis_ranges = calculate_axis_ranges(&inmem_data, None, None);
     export_graph_and_print_summary(
         "InMemoryDB random reads",
         &inmem_data,
@@ -136,13 +157,13 @@ fn test_read() {
 fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_db: &mut S,
     data_index_vector: &Vec<(DbPartitionKey, DbSortKey, usize)>,
+    read_repeats: usize,
 ) {
     println!("Random read start...");
 
     let mut rng = rand::thread_rng();
 
-    //let mut p_key_cnt = 1u32;
-    for i in 0..READ_REPEATS {
+    for i in 0..read_repeats {
         let time_start = std::time::Instant::now();
         let mut idx_vector: Vec<usize> = (0..data_index_vector.len()).collect();
 
@@ -174,16 +195,20 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
         println!(
             "\rRound {}/{}  read time: {} s, left: {} s\r",
             i + 1,
-            READ_REPEATS,
+            read_repeats,
             duration,
-            (READ_REPEATS - (i + 1)) * duration as usize
+            (read_repeats - (i + 1)) * duration as usize
         );
     }
 
     println!("Read done");
 }
 
-fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(substate_db: &mut S) {
+fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
+    substate_db: &mut S,
+    read_repeats: usize,
+    count: usize,
+) {
     println!("Read not found test start...");
 
     let mut data_index_vector_2: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
@@ -204,12 +229,12 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(su
         data_index_vector_2.push((partition_key.clone(), sort_key));
     }
 
-    for _ in 0..READ_REPEATS {
+    for _ in 0..read_repeats {
         for (p, s) in data_index_vector_2.iter() {
             let read_value = substate_db.get_substate(&p, &s);
             assert!(read_value.is_none());
         }
     }
 
-    println!("Read done");
+    println!("Read not found done");
 }

@@ -26,12 +26,29 @@ const PREPARE_DB_WRITE_REPEATS: usize = ROUNDS_COUNT * 2;
 // to run this test use following command in the main repository folder:
 // cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_delete_per_size
 fn test_delete_per_size() {
+    let rounds_count = match std::env::var("ROUNDS_COUNT") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => ROUNDS_COUNT,
+    };
+    let min_size = match std::env::var("MIN_SIZE") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => MIN_SIZE,
+    };
+    let max_size = match std::env::var("MAX_SIZE") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => MAX_SIZE,
+    };
+    let size_step = match std::env::var("SIZE_STEP") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => SIZE_STEP,
+    };
+
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_delete_per_size_internal(
-        ROUNDS_COUNT,
-        MIN_SIZE,
-        MAX_SIZE,
-        SIZE_STEP,
+        rounds_count,
+        min_size,
+        max_size,
+        size_step,
         PREPARE_DB_WRITE_REPEATS,
         |path| SubstateStoreWithMetrics::new_rocksdb(path),
     );
@@ -41,7 +58,7 @@ fn test_delete_per_size() {
 
     let axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     export_graph_and_print_summary(
-        &format!("RocksDB per size deletion, rounds: {}", ROUNDS_COUNT),
+        &format!("RocksDB per size deletion, rounds: {}", rounds_count),
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_delete_per_size_rocksdb.png",
@@ -55,10 +72,10 @@ fn test_delete_per_size() {
     println!("JMT part");
     let (jmt_rocksdb_data, jmt_rocksdb_data_output, jmt_rocksdb_data_original) =
         test_delete_per_size_internal(
-            ROUNDS_COUNT,
-            MIN_SIZE,
-            MAX_SIZE,
-            SIZE_STEP,
+            rounds_count,
+            min_size,
+            max_size,
+            size_step,
             PREPARE_DB_WRITE_REPEATS,
             |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path),
         );
@@ -70,7 +87,7 @@ fn test_delete_per_size() {
     export_graph_and_print_summary(
         &format!(
             "RocksDB per size deletion with JMT, rounds: {}",
-            ROUNDS_COUNT
+            rounds_count
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
@@ -85,7 +102,7 @@ fn test_delete_per_size() {
     export_graph_two_series(
         &format!(
             "95th percentile of deletion per size, rounds: {}",
-            ROUNDS_COUNT
+            rounds_count
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,

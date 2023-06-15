@@ -22,30 +22,6 @@ macro_rules! number_to_str {
     }};
 }
 
-pub fn drop_highest_and_lowest_value<S: SubstateDatabase + CommittableSubstateDatabase>(
-    substate_store: &SubstateStoreWithMetrics<S>,
-    count: usize,
-) {
-    if substate_store.read_metrics.borrow().len() >= 2 * count {
-        for (_, v) in substate_store.read_metrics.borrow_mut().iter_mut() {
-            v.sort();
-            for _ in 0..count {
-                v.pop();
-                v.remove(0);
-            }
-        }
-    }
-    if substate_store.commit_set_metrics.borrow().len() >= 2 * count {
-        for (_, v) in substate_store.commit_set_metrics.borrow_mut().iter_mut() {
-            v.sort();
-            for _ in 0..count {
-                v.pop();
-                v.remove(0);
-            }
-        }
-    }
-}
-
 pub fn calculate_percent_to_max_points(
     data: &mut BTreeMap<usize, Vec<Duration>>,
     percent: f32,
