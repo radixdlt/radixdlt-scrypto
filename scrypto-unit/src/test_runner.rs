@@ -35,7 +35,6 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
-use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{
@@ -738,7 +737,7 @@ impl TestRunner {
                     package_address: PACKAGE_PACKAGE.into(),
                     blueprint_name: PACKAGE_BLUEPRINT.to_string(),
                     function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-                    args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                    args: to_manifest_value_safe!(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         setup: definition,
                         metadata: btreemap!(),
@@ -1384,7 +1383,7 @@ impl TestRunner {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
+                args: to_manifest_value_safe!(&ConsensusManagerGetCurrentEpochInput),
             }],
             btreeset![AuthAddresses::validator_role()],
         );
@@ -1480,7 +1479,7 @@ impl TestRunner {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerNextRoundInput {
+                args: to_manifest_value_safe!(&ConsensusManagerNextRoundInput {
                     round,
                     proposer_timestamp_ms,
                     leader_proposal_history: LeaderProposalHistory {
@@ -1518,7 +1517,7 @@ impl TestRunner {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
+                args: to_manifest_value_safe!(&ConsensusManagerGetCurrentTimeInput { precision }),
             }],
             btreeset![AuthAddresses::validator_role()],
         );
