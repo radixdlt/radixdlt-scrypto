@@ -36,7 +36,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             .functions
             .get(fn_ident)
             .ok_or(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
+                SystemUpstreamError::FnNotFound(fn_ident.to_string()),
             ))?;
 
     match (&function_schema.receiver, with_receiver.as_ref()) {
@@ -69,7 +69,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             ))
         })?;
 
-    Ok(function_schema.export_name.clone())
+    Ok(function_schema.export.to_string())
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
@@ -143,9 +143,7 @@ impl SystemLockData {
 
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
-    // TODO: We should be able to make this a more generic cache for
-    // TODO: immutable substates
-    pub blueprint_schema_cache: NonIterMap<BlueprintId, IndexedBlueprintSchema>,
+    pub blueprint_cache: NonIterMap<BlueprintId, BlueprintDefinition>,
     pub modules: SystemModuleMixer,
 }
 
@@ -328,46 +326,38 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         let FnIdentifier { blueprint, ident } = system.actor_get_fn_identifier()?;
 
         let output = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-            // TODO: Clean this up
+            // FIXME: check invocation against schema
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
             let export_name = match ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
 
-            // TODO: Load dependent resources/components
+            // FIXME: Load dependent resources/components
 
             let mut vm_instance =
                 { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
-            // TODO: the above special rule can be removed if we move schema validation
-            // into a kernel model, and turn it off for genesis.
+            // FIXME: check invocation against schema
 
             let export_name = match ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::InvalidSystemCall,
+                        SystemUpstreamError::SystemFunctionCallNotAllowed,
                     ))
                 }
             };
 
-            // TODO: Load dependent resources/components
+            // FIXME: Load dependent resources/components
 
             let mut vm_instance = {
                 NativeVm::create_instance(
@@ -375,18 +365,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output = { vm_instance.invoke(&export_name, args, &mut system)? };
 
             output
         } else {
-            let schema = system.get_blueprint_schema(&blueprint)?;
+            let schema = system.get_blueprint_definition(&blueprint)?.schema;
 
             // Make dependent resources/components visible
 
@@ -418,22 +401,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         sys_func.export_name.to_string()
                     } else {
                         return Err(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::InvalidSystemCall,
+                            SystemUpstreamError::SystemFunctionCallNotAllowed,
                         ));
                     }
                 }
             };
 
             // Execute
-            let output = {
-                C::invoke(
-                    &blueprint.package_address,
-                    receiver.as_ref().map(|r| &r.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output =
+                { C::invoke(&blueprint.package_address, &export_name, args, &mut system)? };
 
             // Validate output
             match ident {
@@ -441,7 +417,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     validate_output(&mut system, blueprint, &schema, &ident, &output)?
                 }
                 FnIdent::System(..) => {
-                    // TODO: Validate against virtual schema
+                    // FIXME: Validate against virtual schema
                 }
             }
 
@@ -498,7 +474,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         }
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(_) => {}
+                _ => {}
             }
         }
 
@@ -509,10 +485,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         if let Some(auth_zone_id) = api
             .kernel_get_system()
             .modules
-            .auth
-            .auth_zone_stack
-            .last()
-            .cloned()
+            .auth_module()
+            .and_then(|auth| auth.auth_zone_stack.last().cloned())
         {
             let handle = api.kernel_lock_substate(
                 &auth_zone_id,
@@ -568,14 +542,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         VirtualizationModule::on_substate_lock_fault(node_id, partition_num, offset, api)
     }
 
-    fn on_allocate_node_id<Y>(
-        entity_type: Option<EntityType>,
-        virtual_node: bool,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_allocate_node_id(api, entity_type, virtual_node)
+        SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
 }

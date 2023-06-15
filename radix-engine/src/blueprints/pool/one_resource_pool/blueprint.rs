@@ -37,8 +37,10 @@ impl OneResourcePoolBlueprint {
 
         // Allocating the component address of the pool - this will be used later for the component
         // caller badge.
-        let node_id = api.kernel_allocate_node_id(EntityType::GlobalOneResourcePool)?;
-        let address = GlobalAddress::new_or_panic(node_id.0);
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: POOL_PACKAGE,
+            blueprint_name: ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
+        })?;
 
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
@@ -52,16 +54,16 @@ impl OneResourcePoolBlueprint {
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // TODO: Pool unit resource metadata - one things is needed to do this:
+            // FIXME: Pool unit resource metadata - one things is needed to do this:
             // 1- A fix for the issue with references so that we can have the component address of
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(18, Default::default(), access_rules, api)?
+            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
         };
 
         let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
-        // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
+        // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
             btreemap!(
@@ -91,7 +93,7 @@ impl OneResourcePoolBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address,
+            address_reservation,
         )?;
 
         Ok(ComponentAddress::new_or_panic(address.as_node_id().0))
@@ -135,7 +137,9 @@ impl OneResourcePoolBlueprint {
          */
 
         let reserves = vault.amount(api)?;
-        let pool_unit_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_unit_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let amount_of_contributed_resources = bucket.amount(api)?;
 
         let pool_units_to_mint = match (
@@ -193,7 +197,9 @@ impl OneResourcePoolBlueprint {
 
         // Calculating the amount owed based on the passed pool units.
         let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)
@@ -286,7 +292,9 @@ impl OneResourcePoolBlueprint {
         };
 
         let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)

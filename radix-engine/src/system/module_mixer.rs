@@ -83,21 +83,25 @@ impl EnabledModules {
     }
 }
 
+// TODO: use option instead of defaults?
+#[allow(dead_code)]
 pub struct SystemModuleMixer {
     /* flags */
-    pub enabled_modules: EnabledModules,
+    // TODO: check if the original assumption is still true.
+    // The reason for using bit flags, rather than Option<T>, was to improve method dispatching performance.
+    enabled_modules: EnabledModules,
 
     /* states */
-    pub kernel_trace: KernelDebugModule,
-    pub costing: CostingModule,
-    pub node_move: NodeMoveModule,
-    pub auth: AuthModule,
-    pub logger: LoggerModule,
-    pub transaction_runtime: TransactionRuntimeModule,
-    pub execution_trace: ExecutionTraceModule,
-    pub transaction_limits: TransactionLimitsModule,
-    pub events: EventsModule,
-    pub virtualization: VirtualizationModule,
+    kernel_trace: KernelDebugModule,
+    costing: CostingModule,
+    node_move: NodeMoveModule,
+    auth: AuthModule,
+    logger: LoggerModule,
+    transaction_runtime: TransactionRuntimeModule,
+    execution_trace: ExecutionTraceModule,
+    transaction_limits: TransactionLimitsModule,
+    events: EventsModule,
+    virtualization: VirtualizationModule,
 }
 
 // Macro generates default modules dispatches call based on passed function name and arguments.
@@ -181,6 +185,89 @@ impl SystemModuleMixer {
             events: EventsModule::default(),
             virtualization: VirtualizationModule,
         }
+    }
+
+    pub fn costing_module(&mut self) -> Option<&mut CostingModule> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            Some(&mut self.costing)
+        } else {
+            None
+        }
+    }
+
+    pub fn events_module(&mut self) -> Option<&mut EventsModule> {
+        if self.enabled_modules.contains(EnabledModules::EVENTS) {
+            Some(&mut self.events)
+        } else {
+            None
+        }
+    }
+
+    pub fn logger_module(&mut self) -> Option<&mut LoggerModule> {
+        if self.enabled_modules.contains(EnabledModules::LOGGER) {
+            Some(&mut self.logger)
+        } else {
+            None
+        }
+    }
+
+    pub fn auth_module(&mut self) -> Option<&mut AuthModule> {
+        if self.enabled_modules.contains(EnabledModules::AUTH) {
+            Some(&mut self.auth)
+        } else {
+            None
+        }
+    }
+
+    pub fn execution_trace_module(&mut self) -> Option<&mut ExecutionTraceModule> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::EXECUTION_TRACE)
+        {
+            Some(&mut self.execution_trace)
+        } else {
+            None
+        }
+    }
+
+    pub fn transaction_runtime_module(&mut self) -> Option<&mut TransactionRuntimeModule> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            Some(&mut self.transaction_runtime)
+        } else {
+            None
+        }
+    }
+
+    pub fn transaction_limits_module(&mut self) -> Option<&mut TransactionLimitsModule> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_LIMITS)
+        {
+            Some(&mut self.transaction_limits)
+        } else {
+            None
+        }
+    }
+
+    pub fn unpack(
+        self,
+    ) -> (
+        CostingModule,
+        EventsModule,
+        LoggerModule,
+        ExecutionTraceModule,
+        TransactionLimitsModule,
+    ) {
+        (
+            self.costing,
+            self.events,
+            self.logger,
+            self.execution_trace,
+            self.transaction_limits,
+        )
     }
 }
 
@@ -296,10 +383,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources(log=entity_type)]
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        entity_type: Option<EntityType>,
-        virtual_node: bool,
+        entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_allocate_node_id(api, entity_type, virtual_node))
+        internal_call_dispatch!(api, on_allocate_node_id(api, entity_type))
     }
 
     #[trace_resources]

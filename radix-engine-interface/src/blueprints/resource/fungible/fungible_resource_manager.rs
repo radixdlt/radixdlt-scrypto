@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
@@ -14,6 +15,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceManagerCreateInput {
+    pub track_total_supply: bool,
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -27,6 +29,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
+    pub track_total_supply: bool,
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -38,13 +41,24 @@ pub type FungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddress
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
     "create_with_initial_supply_and_address";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+    pub track_total_supply: bool,
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
-    pub resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
+    pub resource_address: GlobalAddressReservation,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
+    pub track_total_supply: bool,
+    pub divisibility: u8,
+    pub metadata: BTreeMap<String, MetadataValue>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub initial_supply: Decimal,
+    pub resource_address: ManifestAddressReservation,
 }
 
 pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);

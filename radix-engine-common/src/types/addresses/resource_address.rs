@@ -1,5 +1,6 @@
 use crate::address::Bech32Decoder;
 use crate::address::{AddressDisplayContext, EncodeBech32AddressError, NO_NETWORK};
+use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;
 use crate::data::scrypto::*;
@@ -9,6 +10,7 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use sbor::rust::prelude::*;
+use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 /// Address to a global resource
@@ -110,6 +112,14 @@ impl TryFrom<&[u8]> for ResourceAddress {
     }
 }
 
+impl TryFrom<GlobalAddress> for ResourceAddress {
+    type Error = ParseResourceAddressError;
+
+    fn try_from(address: GlobalAddress) -> Result<Self, Self::Error> {
+        ResourceAddress::try_from(Into::<[u8; NodeId::LENGTH]>::into(address))
+    }
+}
+
 impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()
@@ -128,9 +138,9 @@ impl From<ResourceAddress> for Reference {
     }
 }
 
-impl From<ResourceAddress> for crate::data::manifest::model::ManifestAddress {
+impl From<ResourceAddress> for ManifestAddress {
     fn from(value: ResourceAddress) -> Self {
-        Self(value.into())
+        Self::Static(value.into())
     }
 }
 
@@ -167,11 +177,42 @@ well_known_scrypto_custom_type!(
     resource_address_type_data
 );
 
-manifest_type!(
-    ResourceAddress,
-    ManifestCustomValueKind::Address,
-    NodeId::LENGTH
-);
+impl Categorize<ManifestCustomValueKind> for ResourceAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for ResourceAddress {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_discriminator(0)?;
+        encoder.write_slice(self.as_ref())?;
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for ResourceAddress {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        match decoder.read_discriminator()? {
+            0 => {
+                let slice = decoder.read_slice(NodeId::LENGTH)?;
+                Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
+            }
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
 
 //========
 // text

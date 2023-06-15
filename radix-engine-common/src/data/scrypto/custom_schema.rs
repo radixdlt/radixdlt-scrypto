@@ -41,29 +41,57 @@ pub enum OwnValidation {
     IsProof,
     IsVault,
     IsKeyValueStore,
+    IsGlobalAddressReservation,
     IsTypedObject(Option<PackageAddress>, String),
 }
 
 impl OwnValidation {
-    pub fn could_match_bucket(&self) -> bool {
+    pub fn could_match_manifest_bucket(&self) -> bool {
         match self {
             OwnValidation::IsBucket => true,
             OwnValidation::IsProof => false,
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsGlobalAddressReservation => false,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
         }
     }
 
-    pub fn could_match_proof(&self) -> bool {
+    pub fn could_match_manifest_proof(&self) -> bool {
         match self {
             OwnValidation::IsBucket => false,
             OwnValidation::IsProof => true,
             OwnValidation::IsVault => false,
             OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsGlobalAddressReservation => false,
             // Hard to validate without knowing package addresses from engine, assume fine
             OwnValidation::IsTypedObject(_, _) => true,
+        }
+    }
+
+    pub fn could_match_manifest_address_reservation(&self) -> bool {
+        match self {
+            OwnValidation::IsBucket => false,
+            OwnValidation::IsProof => false,
+            OwnValidation::IsVault => false,
+            OwnValidation::IsKeyValueStore => false,
+            OwnValidation::IsGlobalAddressReservation => true,
+            OwnValidation::IsTypedObject(_, _) => false,
+        }
+    }
+}
+
+impl ReferenceValidation {
+    pub fn could_match_manifest_address(&self) -> bool {
+        match self {
+            ReferenceValidation::IsGlobal => true,
+            ReferenceValidation::IsGlobalPackage => true,
+            ReferenceValidation::IsGlobalComponent => true,
+            ReferenceValidation::IsGlobalResourceManager => true,
+            ReferenceValidation::IsGlobalTyped(_, _) => true,
+            ReferenceValidation::IsInternal => true,
+            ReferenceValidation::IsInternalTyped(_, _) => true,
         }
     }
 }

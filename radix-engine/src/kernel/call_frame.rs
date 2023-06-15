@@ -119,7 +119,7 @@ pub struct CallFrame<L> {
     /// The frame id
     depth: usize,
 
-    /// TODO: redo actor generification
+    /// FIXME: redo actor generification
     actor: Actor,
 
     /// Owned nodes which by definition must live on heap
@@ -712,9 +712,8 @@ impl<L: Clone> CallFrame<L> {
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
+        push_to_store: bool,
     ) -> Result<StoreAccessInfo, CreateNodeError> {
-        let push_to_store = node_id.is_global();
-
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 //==============
@@ -789,7 +788,7 @@ impl<L: Clone> CallFrame<L> {
                 // Process own
                 //=============
                 for own in substate_value.owned_nodes() {
-                    // FIXME This is problematic, as owned node must have been locked
+                    // FIXME: This is problematic, as owned node must have been locked
                     // In general, we'd like to move node locking/borrowing to heap.
                     self.owned_root_nodes.insert(own.clone(), 0);
                 }
@@ -800,7 +799,8 @@ impl<L: Clone> CallFrame<L> {
                 for reference in substate_value.references() {
                     if reference.is_global() {
                         // Expand stable references
-                        // TODO: not sure if this is the right abstraction; exists due to heritage.
+                        // We keep all global references even if the owning substates are dropped.
+                        // Revisit this if the reference model is changed.
                         self.stable_references
                             .insert(reference.clone(), StableReferenceType::Global);
                     } else {
@@ -994,7 +994,7 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    // TODO: check if non-global reference is needed
+                    // FIXME: check if non-global reference is needed
                 }
             }
         }
@@ -1033,7 +1033,7 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    // TODO: check if non-global reference is needed
+                    // FIXME: check if non-global reference is needed
                 }
             }
         }
@@ -1060,7 +1060,9 @@ impl<L: Clone> CallFrame<L> {
         }
 
         let (substates, store_access) = if heap.contains_node(node_id) {
-            todo!()
+            // This should never be triggered because sorted index store is
+            // used by consensus manager only.
+            panic!("Unexpected code path")
         } else {
             store.scan_sorted_substates(node_id, partition_num, count)
         };
@@ -1071,7 +1073,7 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    // TODO: check if non-global reference is needed
+                    // FIXME: check if non-global reference is needed
                 }
             }
         }
@@ -1117,7 +1119,7 @@ impl<L: Clone> CallFrame<L> {
         store: &mut S,
         node_id: &NodeId,
     ) -> Result<(), PersistNodeError> {
-        // FIXME: Clean this up
+        // FIXME: Use unified approach to node configuration
         let can_be_stored = if node_id.is_global() {
             true
         } else {

@@ -1,6 +1,5 @@
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::schema::BlueprintSchema;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::blueprints::package::{BlueprintSetup, PackageSetup};
+use sbor::rust::iter;
 
 use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
@@ -22,7 +21,7 @@ impl From<PrepareError> for ExtractSchemaError {
     }
 }
 
-pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchemaError> {
+pub fn extract_definition(code: &[u8]) -> Result<PackageSetup, ExtractSchemaError> {
     let function_exports = WasmModule::init(code)
         .and_then(WasmModule::to_bytes)?
         .1
@@ -38,7 +37,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         ),
         code: Arc::new(
             validator
-                .validate(&code, &PackageSchema::default())
+                .validate(&code, iter::empty())
                 .map_err(|e| ExtractSchemaError::InvalidWasm(e))?
                 .0,
         ),
@@ -50,22 +49,16 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
-    let mut blueprints_function_auth = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance
             .invoke_export(&function_export, vec![], &mut runtime)
             .map_err(ExtractSchemaError::RunSchemaGenError)?;
 
         let name = function_export.replace("_schema", "").to_string();
-        let (schema, function_auth): (BlueprintSchema, BTreeMap<String, AccessRule>) =
+        let blueprint_setup: BlueprintSetup =
             scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
-
-        blueprints.insert(name.clone(), schema);
-        blueprints_function_auth.insert(name.clone(), function_auth);
+        blueprints.insert(name.clone(), blueprint_setup);
     }
 
-    Ok(PackageDefinition {
-        schema: PackageSchema { blueprints },
-        function_access_rules: blueprints_function_auth,
-    })
+    Ok(PackageSetup { blueprints })
 }

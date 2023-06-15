@@ -126,6 +126,7 @@ impl TryFrom<u8> for ConsensusManagerPartitionOffset {
 pub enum ConsensusManagerField {
     Config,
     ConsensusManager,
+    ValidatorRewards,
     CurrentValidatorSet,
     CurrentProposalStatistic,
     CurrentTimeRoundedToMinutes,

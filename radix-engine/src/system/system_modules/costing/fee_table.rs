@@ -24,9 +24,7 @@ pub enum CostingEntry<'a> {
         node_id: &'a NodeId,
     },
     DropNode,
-    AllocateNodeId {
-        virtual_node: bool,
-    },
+    AllocateNodeId,
 
     /* substate */
     LockSubstate {
@@ -58,7 +56,7 @@ pub enum CostingEntry<'a> {
         size_old: u32,
         size_new: u32,
     },
-    // TODO: more costing after API becomes stable.
+    // FIXME: more costing after API becomes stable.
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -99,13 +97,7 @@ impl FeeTable {
     /// and transformed (classified and groupped) using convert.py script.
     fn kernel_api_cost_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         ((match entry {
-            CostingEntry::AllocateNodeId { virtual_node } => {
-                if *virtual_node {
-                    113
-                } else {
-                    212
-                }
-            }
+            CostingEntry::AllocateNodeId => 212,
             CostingEntry::CreateNode { node_id } => match node_id.entity_type() {
                 Some(EntityType::GlobalAccessController) => 1736,
                 Some(EntityType::GlobalAccount) => 1640,
@@ -307,16 +299,17 @@ impl FeeTable {
                     }
                 }
             }
+            // FIXME update numbers below
             CostingEntry::LockSubstate {
                 node_id: _,
                 partition_num: _,
                 substate_key: _,
-            } => 100, // todo: determine correct value
-            CostingEntry::ScanSubstate => 16, // todo: determine correct value
-            CostingEntry::SetSubstate => 16,  // todo: determine correct value
-            CostingEntry::TakeSubstate => 16, // todo: determine correct value
-            CostingEntry::ReadSubstate { size: _ } => 174, // todo: determine correct value size dependent
-            CostingEntry::WriteSubstate { size: _ } => 126, // todo: determine correct value size dependent
+            } => 100,
+            CostingEntry::ScanSubstate => 16,
+            CostingEntry::SetSubstate => 16,
+            CostingEntry::TakeSubstate => 16,
+            CostingEntry::ReadSubstate { size: _ } => 174,
+            CostingEntry::WriteSubstate { size: _ } => 126,
 
             // following variants are used in storage usage part only
             CostingEntry::SubstateReadFromDb { size: _ } => 0,
@@ -347,12 +340,13 @@ impl FeeTable {
                 value as u32
             }
             CostingEntry::SubstateReadFromDbNotFound => 3000, // average value from benchmark
+            // FIXME: update numbers below
             CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new,
-            } => 10 * size_new, // todo: determine correct value
+            } => 10 * size_new,
             _ => 0,
         }) as u64
             * COSTING_COEFFICENT_STORAGE

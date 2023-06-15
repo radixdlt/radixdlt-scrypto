@@ -43,7 +43,7 @@ mod simple {
             Proof,
             Vault,
         ) {
-            todo!()
+            unreachable!()
         }
     }
 }

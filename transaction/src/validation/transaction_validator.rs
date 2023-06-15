@@ -150,19 +150,13 @@ impl NotarizedTransactionValidator {
         for inst in instructions {
             match inst {
                 InstructionV1::TakeAllFromWorktop { .. } => {
-                    id_validator
-                        .new_bucket()
-                        .map_err(TransactionValidationError::IdValidationError)?;
+                    id_validator.new_bucket();
                 }
                 InstructionV1::TakeFromWorktop { .. } => {
-                    id_validator
-                        .new_bucket()
-                        .map_err(TransactionValidationError::IdValidationError)?;
+                    id_validator.new_bucket();
                 }
                 InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                    id_validator
-                        .new_bucket()
-                        .map_err(TransactionValidationError::IdValidationError)?;
+                    id_validator.new_bucket();
                 }
                 InstructionV1::ReturnToWorktop { bucket_id } => {
                     id_validator
@@ -243,7 +237,6 @@ impl NotarizedTransactionValidator {
                 | InstructionV1::CallRoyaltyMethod { args, .. }
                 | InstructionV1::CallMetadataMethod { args, .. }
                 | InstructionV1::CallAccessRulesMethod { args, .. } => {
-                    // TODO: decode into Value
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
@@ -253,6 +246,10 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CallDirectVaultMethod { .. } => {}
+                InstructionV1::AllocateGlobalAddress { .. } => {
+                    id_validator.new_address_reservation();
+                    id_validator.new_named_address();
+                }
             }
         }
 
@@ -359,7 +356,7 @@ mod tests {
     use super::*;
     use crate::{
         builder::ManifestBuilder, builder::TransactionBuilder,
-        ecdsa_secp256k1::EcdsaSecp256k1PrivateKey,
+        signing::secp256k1::Secp256k1PrivateKey,
     };
 
     macro_rules! assert_invalid_tx {
@@ -441,7 +438,7 @@ mod tests {
         signers: Vec<u64>,
         notary: u64,
     ) -> NotarizedTransactionV1 {
-        let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(notary).unwrap();
+        let sk_notary = Secp256k1PrivateKey::from_u64(notary).unwrap();
 
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeaderV1 {
@@ -456,7 +453,7 @@ mod tests {
             .manifest(ManifestBuilder::new().clear_auth_zone().build());
 
         for signer in signers {
-            builder = builder.sign(&EcdsaSecp256k1PrivateKey::from_u64(signer).unwrap());
+            builder = builder.sign(&Secp256k1PrivateKey::from_u64(signer).unwrap());
         }
         builder = builder.notarize(&sk_notary);
 

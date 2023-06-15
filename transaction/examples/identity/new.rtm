@@ -1,3 +1,4 @@
 CREATE_IDENTITY_ADVANCED
-    Map<String, Tuple>();                  # Authority Rules
+    Enum<OwnerRole::None>();
+
 CREATE_IDENTITY;

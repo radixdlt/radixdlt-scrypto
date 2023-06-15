@@ -1,10 +1,11 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
+use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
@@ -65,6 +66,8 @@ impl ClientCostingApi<ClientApiError> for ScryptoEnv {
     }
 }
 
+// FIXME: finalize API
+
 impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_simple_object(
         &mut self,
@@ -87,11 +90,23 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_object(
         &mut self,
         _blueprint_ident: &str,
+        _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
+    }
+
+    fn allocate_global_address(
+        &mut self,
+        blueprint_id: BlueprintId,
+    ) -> Result<(GlobalAddressReservation, GlobalAddress), ClientApiError> {
+        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
+        let bytes = copy_buffer(unsafe {
+            allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn attach_access_rules(
@@ -99,12 +114,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _node_id: &NodeId,
         _access_rules_node_id: &NodeId,
     ) -> Result<(), ClientApiError> {
-        todo!()
-    }
-
-    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
-        let bytes = copy_buffer(unsafe { preallocate_global_address() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        unimplemented!("Not available for Scrypto")
     }
 
     fn globalize(
@@ -120,30 +130,30 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
-    ) -> Result<(), ClientApiError> {
+        address_reservation: GlobalAddressReservation,
+    ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
-        let address = scrypto_encode(&address).unwrap();
+        let address_reservation = scrypto_encode(&address_reservation).unwrap();
 
-        unsafe {
+        let bytes = copy_buffer(unsafe {
             globalize_with_address(
                 modules.as_ptr(),
                 modules.len(),
-                address.as_ptr(),
-                address.len(),
+                address_reservation.as_ptr(),
+                address_reservation.len(),
             )
-        }
-        Ok(())
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         _modules: BTreeMap<ObjectModuleId, NodeId>,
-        _address: GlobalAddress,
+        _address_reservation: GlobalAddressReservation,
         _inner_object_blueprint: &str,
         _inner_object_fields: Vec<Vec<u8>>,
-    ) -> Result<NodeId, ClientApiError> {
-        todo!("Unsupported")
+    ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
+        unimplemented!("Not available for Scrypto")
     }
 
     fn call_method_advanced(
@@ -184,6 +194,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         // TODO: remove return
         Ok(Vec::new())
     }
+
+    fn allocate_virtual_global_address(
+        &mut self,
+        _blueprint_id: BlueprintId,
+        _global_address: GlobalAddress,
+    ) -> Result<GlobalAddressReservation, ClientApiError> {
+        unimplemented!()
+    }
 }
 
 impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
@@ -204,6 +222,20 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
         unsafe { kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
 
         Ok(())
+    }
+
+    fn key_value_entry_remove(
+        &mut self,
+        _handle: KeyValueEntryHandle,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
+    fn key_value_entry_freeze(
+        &mut self,
+        _handle: KeyValueEntryHandle,
+    ) -> Result<(), ClientApiError> {
+        unimplemented!("Not available for Scrypto")
     }
 
     fn key_value_entry_release(
@@ -337,7 +369,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     }
 
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
-        todo!()
+        unimplemented!("Not available for Scrypto")
     }
 
     fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
@@ -433,6 +465,13 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         let actor = copy_buffer(unsafe { generate_uuid() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), ClientApiError> {
+        unsafe {
+            panic(message.as_ptr(), message.len());
+        };
+        Ok(())
     }
 }
 

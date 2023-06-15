@@ -15,30 +15,25 @@ pub struct MultiLine {
     indent: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct ManifestDecompilationDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
+    pub address_reservation_names: Option<&'a NonIterMap<ManifestAddressReservation, String>>,
+    pub address_names: Option<&'a NonIterMap<u32, String>>,
     pub multi_line: Option<MultiLine>,
 }
 
 impl<'a> ManifestDecompilationDisplayContext<'a> {
     pub fn no_context() -> Self {
-        Self {
-            bech32_encoder: None,
-            bucket_names: None,
-            proof_names: None,
-            multi_line: None,
-        }
+        Self::default()
     }
 
     pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
             bech32_encoder,
-            bucket_names: None,
-            proof_names: None,
-            multi_line: None,
+            ..Default::default()
         }
     }
 
@@ -46,12 +41,16 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
         bech32_encoder: Option<&'a Bech32Encoder>,
         bucket_names: &'a NonIterMap<ManifestBucket, String>,
         proof_names: &'a NonIterMap<ManifestProof, String>,
+        address_reservation_names: &'a NonIterMap<ManifestAddressReservation, String>,
+        address_names: &'a NonIterMap<u32, String>,
     ) -> Self {
         Self {
             bech32_encoder,
             bucket_names: Some(bucket_names),
             proof_names: Some(proof_names),
-            multi_line: None,
+            address_reservation_names: Some(address_reservation_names),
+            address_names: Some(address_names),
+            ..Default::default()
         }
     }
 
@@ -68,6 +67,19 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
     pub fn get_proof_name(&self, proof_id: &ManifestProof) -> Option<&str> {
         self.proof_names
             .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_address_reservation_name(
+        &self,
+        address_reservation_id: &ManifestAddressReservation,
+    ) -> Option<&str> {
+        self.address_reservation_names
+            .and_then(|names| names.get(address_reservation_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_address_name(&self, address_id: &u32) -> Option<&str> {
+        self.address_names
+            .and_then(|names| names.get(address_id).map(|s| s.as_str()))
     }
 
     pub fn get_indent(&self, depth: usize) -> String {
@@ -168,7 +180,7 @@ pub fn format_manifest_value<F: fmt::Write>(
             if fields.len() == 2 {
                 if let (
                     ManifestValue::Custom {
-                        value: ManifestCustomValue::Address(address),
+                        value: ManifestCustomValue::Address(ManifestAddress::Static(address)),
                     },
                     ManifestValue::Custom {
                         value: ManifestCustomValue::NonFungibleLocalId(id),
@@ -363,24 +375,47 @@ pub fn format_custom_value<F: fmt::Write>(
     depth: usize,
 ) -> fmt::Result {
     match value {
-        ManifestCustomValue::Address(value) => {
-            write_with_indent!(
-                f,
-                context,
-                indent_start,
-                depth,
-                "Address(\"{}\")",
-                if let Some(encoder) = context.bech32_encoder {
-                    if let Ok(bech32) = encoder.encode(value.0.as_ref()) {
-                        bech32
+        ManifestCustomValue::Address(value) => match value {
+            ManifestAddress::Static(node_id) => {
+                write_with_indent!(
+                    f,
+                    context,
+                    indent_start,
+                    depth,
+                    "Address(\"{}\")",
+                    if let Some(encoder) = context.bech32_encoder {
+                        if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
+                            bech32
+                        } else {
+                            hex::encode(node_id.as_ref())
+                        }
                     } else {
-                        hex::encode(value.0.as_ref())
+                        hex::encode(node_id.as_ref())
                     }
+                )?;
+            }
+            ManifestAddress::Named(address_id) => {
+                if let Some(name) = context.get_address_name(&address_id) {
+                    write_with_indent!(
+                        f,
+                        context,
+                        indent_start,
+                        depth,
+                        "NamedAddress(\"{}\")",
+                        name
+                    )?;
                 } else {
-                    hex::encode(value.0.as_ref())
+                    write_with_indent!(
+                        f,
+                        context,
+                        indent_start,
+                        depth,
+                        "NamedAddress({}u32)",
+                        address_id
+                    )?;
                 }
-            )?;
-        }
+            }
+        },
         ManifestCustomValue::Bucket(value) => {
             if let Some(name) = context.get_bucket_name(&value) {
                 write_with_indent!(f, context, indent_start, depth, "Bucket(\"{}\")", name)?;
@@ -393,6 +428,27 @@ pub fn format_custom_value<F: fmt::Write>(
                 write_with_indent!(f, context, indent_start, depth, "Proof(\"{}\")", name)?;
             } else {
                 write_with_indent!(f, context, indent_start, depth, "Proof({}u32)", value.0)?;
+            }
+        }
+        ManifestCustomValue::AddressReservation(value) => {
+            if let Some(name) = context.get_address_reservation_name(&value) {
+                write_with_indent!(
+                    f,
+                    context,
+                    indent_start,
+                    depth,
+                    "AddressReservation(\"{}\")",
+                    name
+                )?;
+            } else {
+                write_with_indent!(
+                    f,
+                    context,
+                    indent_start,
+                    depth,
+                    "AddressReservation({}u32)",
+                    value.0
+                )?;
             }
         }
         ManifestCustomValue::Expression(value) => {
@@ -479,6 +535,7 @@ pub fn format_value_kind(value_kind: &ManifestValueKind) -> &str {
             ManifestCustomValueKind::Decimal => "Decimal",
             ManifestCustomValueKind::PreciseDecimal => "PreciseDecimal",
             ManifestCustomValueKind::NonFungibleLocalId => "NonFungibleLocalId",
+            ManifestCustomValueKind::AddressReservation => "AddressReservation",
         },
     }
 }

@@ -13,23 +13,32 @@ impl SerializableCustomExtension for ManifestCustomExtension {
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
-            ManifestCustomValue::Address(value) => {
-                if let Some(encoder) = context.custom_context.bech32_encoder {
-                    if let Ok(bech32) = encoder.encode(value.0.as_ref()) {
-                        (SerializableType::String(bech32), false)
+            ManifestCustomValue::Address(value) => match value {
+                ManifestAddress::Static(node_id) => {
+                    if let Some(encoder) = context.custom_context.bech32_encoder {
+                        if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
+                            (SerializableType::String(bech32), false)
+                        } else {
+                            (
+                                SerializableType::String(hex::encode(node_id.as_ref())),
+                                true,
+                            )
+                        }
                     } else {
                         (
-                            SerializableType::String(hex::encode(value.0.as_ref())),
+                            SerializableType::String(hex::encode(node_id.as_ref())),
                             true,
                         )
                     }
-                } else {
-                    (
-                        SerializableType::String(hex::encode(value.0.as_ref())),
-                        true,
-                    )
                 }
-            }
+                ManifestAddress::Named(address_id) => {
+                    if let Some(name) = context.custom_context.get_address_name(&address_id) {
+                        (SerializableType::String(name.to_string()), true)
+                    } else {
+                        (SerializableType::String(address_id.to_string()), true)
+                    }
+                }
+            },
             ManifestCustomValue::Bucket(value) => {
                 if let Some(name) = context.custom_context.get_bucket_name(&value) {
                     (SerializableType::String(name.to_string()), true)
@@ -39,6 +48,13 @@ impl SerializableCustomExtension for ManifestCustomExtension {
             }
             ManifestCustomValue::Proof(value) => {
                 if let Some(name) = context.custom_context.get_proof_name(&value) {
+                    (SerializableType::String(name.to_string()), true)
+                } else {
+                    (SerializableType::String(value.0.to_string()), true)
+                }
+            }
+            ManifestCustomValue::AddressReservation(value) => {
+                if let Some(name) = context.custom_context.get_address_reservation_name(&value) {
                     (SerializableType::String(name.to_string()), true)
                 } else {
                     (SerializableType::String(value.0.to_string()), true)
@@ -105,8 +121,9 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value =
-            ManifestCustomValue::Address(ManifestAddress(FUNGIBLE_RESOURCE.as_node_id().clone()));
+        let value = ManifestCustomValue::Address(ManifestAddress::Static(
+            FUNGIBLE_RESOURCE.as_node_id().clone(),
+        ));
 
         let expected_natural = json!({
             "kind": "Address",
@@ -132,8 +149,9 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value =
-            ManifestCustomValue::Address(ManifestAddress(FUNGIBLE_RESOURCE.as_node_id().clone()));
+        let value = ManifestCustomValue::Address(ManifestAddress::Static(
+            FUNGIBLE_RESOURCE.as_node_id().clone(),
+        ));
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_natural = json!(FUNGIBLE_RESOURCE_SIM_ADDRESS);
@@ -152,7 +170,7 @@ mod tests {
         let encoder = Bech32Encoder::for_simulator();
         let value = (
             ManifestValue::Custom {
-                value: ManifestCustomValue::Address(ManifestAddress(
+                value: ManifestCustomValue::Address(ManifestAddress::Static(
                     FUNGIBLE_RESOURCE.as_node_id().clone(),
                 )),
             },

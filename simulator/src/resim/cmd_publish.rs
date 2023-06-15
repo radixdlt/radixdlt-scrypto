@@ -2,8 +2,8 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::blueprints::package::PackageInfoSubstate;
-use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, PackageInfoSubstate};
+use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageSetup};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -56,7 +56,7 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let package_definition: PackageDefinition = manifest_decode(
+        let package_definition: PackageSetup = manifest_decode(
             &fs::read(&definition_path)
                 .map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
         )
@@ -78,7 +78,19 @@ impl Publish {
             let info_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Info.into());
             let package_info = PackageInfoSubstate {
-                schema: package_definition.schema.into(),
+                schema: IndexedPackageSchema {
+                    blueprints: package_definition
+                        .blueprints
+                        .into_iter()
+                        .map(|(b, s)| {
+                            let def = BlueprintDefinition {
+                                schema: s.schema.into(),
+                                template: s.template,
+                            };
+                            (b, def)
+                        })
+                        .collect(),
+                },
             };
             let database_updates = indexmap!(
                 db_partition_key => indexmap!(

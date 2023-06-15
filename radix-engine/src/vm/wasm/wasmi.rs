@@ -253,12 +253,21 @@ fn new_key_value_store(
         .map(|buffer| buffer.0)
 }
 
-fn preallocate_global_address(
-    caller: Caller<'_, HostState>,
+fn allocate_global_address(
+    mut caller: Caller<'_, HostState>,
+    blueprint_id_ptr: u32,
+    blueprint_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.preallocate_global_address().map(|buffer| buffer.0)
+    runtime
+        .allocate_global_address(read_memory(
+            caller.as_context_mut(),
+            memory,
+            blueprint_id_ptr,
+            blueprint_id_len,
+        )?)
+        .map(|buffer| buffer.0)
 }
 
 fn cost_unit_limit(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
@@ -308,13 +317,15 @@ fn globalize_object_with_address(
     modules_len: u32,
     address_ptr: u32,
     address_len: u32,
-) -> Result<(), InvokeError<WasmRuntimeError>> {
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.globalize_object_with_address(
-        read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
-        read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
-    )
+    runtime
+        .globalize_object_with_address(
+            read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
+            read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
+        )
+        .map(|buffer| buffer.0)
 }
 
 fn get_object_info(
@@ -543,6 +554,18 @@ fn log_message(
 
     runtime.log_message(level, message)
 }
+
+fn panic(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+
+    runtime.panic(message)
+}
 // native functions ends
 
 macro_rules! linker_define {
@@ -700,10 +723,14 @@ impl WasmiModule {
             },
         );
 
-        let host_preallocate_global_address = Func::wrap(
+        let host_allocate_global_address = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                preallocate_global_address(caller).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>,
+             blueprint_id_ptr: u32,
+             blueprint_id_len: u32|
+             -> Result<u64, Trap> {
+                allocate_global_address(caller, blueprint_id_ptr, blueprint_id_len)
+                    .map_err(|e| e.into())
             },
         );
 
@@ -752,7 +779,7 @@ impl WasmiModule {
              modules_len: u32,
              address_ptr: u32,
              address_len: u32|
-             -> Result<(), Trap> {
+             -> Result<u64, Trap> {
                 globalize_object_with_address(
                     caller,
                     modules_ptr,
@@ -940,7 +967,7 @@ impl WasmiModule {
             },
         );
 
-        let host_log = Func::wrap(
+        let host_log_message = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              level_ptr: u32,
@@ -950,6 +977,16 @@ impl WasmiModule {
              -> Result<(), Trap> {
                 log_message(caller, level_ptr, level_len, message_ptr, message_len)
                     .map_err(|e| e.into())
+            },
+        );
+
+        let host_panic = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32|
+             -> Result<(), Trap> {
+                panic(caller, message_ptr, message_len).map_err(|e| e.into())
             },
         );
 
@@ -968,6 +1005,7 @@ impl WasmiModule {
         );
 
         let mut linker = <Linker<HostState>>::new();
+
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
@@ -975,8 +1013,8 @@ impl WasmiModule {
 
         linker_define!(
             linker,
-            PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
-            host_preallocate_global_address
+            ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
+            host_allocate_global_address
         );
         linker_define!(linker, COST_UNIT_LIMIT_FUNCTION_NAME, host_cost_unit_limit);
         linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);
@@ -1054,13 +1092,17 @@ impl WasmiModule {
             host_consume_cost_units
         );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
-        linker_define!(linker, LOG_FUNCTION_NAME, host_log);
+        linker_define!(linker, LOG_MESSAGE_FUNCTION_NAME, host_log_message);
+        linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,
             GET_TRANSACTION_HASH_FUNCTION_NAME,
             host_get_transaction_hash
         );
         linker_define!(linker, GENERATE_UUID_FUNCTION_NAME, host_generate_uuid);
+
+        let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);
+        linker_define!(linker, "test_global_mutable_value", global_value);
 
         linker.instantiate(store.as_context_mut(), &module)
     }
@@ -1133,7 +1175,7 @@ impl WasmiInstance {
             .get_export(self.store.as_context_mut(), name)
             .and_then(Extern::into_func)
             .ok_or_else(|| {
-                InvokeError::SelfError(WasmRuntimeError::UnknownWasmFunction(name.to_string()))
+                InvokeError::SelfError(WasmRuntimeError::UnknownExport(name.to_string()))
             })
     }
 }
@@ -1148,10 +1190,10 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
                 if let Some(invoke_err) = trap.downcast_ref::<InvokeError<WasmRuntimeError>>() {
                     invoke_err.clone()
                 } else {
-                    InvokeError::SelfError(WasmRuntimeError::Trap(format!("{:?}", trap)))
+                    InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str))
                 }
             }
-            _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
+            _ => InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str)),
         }
     }
 }
@@ -1165,7 +1207,7 @@ impl WasmInstance for WasmiInstance {
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
             // set up runtime pointer
-            // FIXME: Triple casting to workaround this error message:
+            // Using triple casting is to workaround this error message:
             // error[E0521]: borrowed data escapes outside of associated function
             //  `runtime` escapes the associated function body here argument requires that `'r` must outlive `'static`
             self.store
@@ -1288,5 +1330,133 @@ impl WasmEngine for WasmiEngine {
         }
 
         instance
+    }
+}
+
+// Below tests verify WASM "mutable-global" feature, which allows importing/exporting mutable globals.
+// more details:
+// - https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md
+
+// NOTE!
+//  We test only WASM code, because Rust currently does not use the WASM "global" construct for globals
+//  (it places them into the linear memory instead).
+//  more details:
+//  - https://github.com/rust-lang/rust/issues/60825
+//  - https://github.com/rust-lang/rust/issues/65987
+#[cfg(not(feature = "wasmer"))]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wabt::{wat2wasm, wat2wasm_with_features, ErrorKind, Features};
+
+    static MODULE_MUTABLE_GLOBALS: &str = r#"
+            (module
+                ;; below line is invalid if feature 'Import/Export mutable globals' is disabled
+                ;; see: https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md
+                (global $g (import "env" "global_mutable_value") (mut i32))
+
+                ;; Simple function that always returns `0`
+                (func $increase_global_value (param $step i32) (result i32)
+
+                    (global.set $g
+                        (i32.add
+                            (global.get $g)
+                            (local.get $step)))
+
+                    (i32.const 0)
+                )
+                (memory $0 1)
+                (export "memory" (memory $0))
+                (export "increase_global_value" (func $increase_global_value))
+            )
+        "#;
+
+    // This test is not wasmi-specific, but decided to put it here along with next one
+    #[test]
+    fn test_wasm_non_mvp_mutable_globals_build_with_feature_disabled() {
+        let mut features = Features::new();
+        features.disable_mutable_globals();
+
+        assert!(
+            match wat2wasm_with_features(MODULE_MUTABLE_GLOBALS, features) {
+                Err(err) => {
+                    match err.kind() {
+                        ErrorKind::Validate(msg) => {
+                            msg.contains("mutable globals cannot be imported")
+                        }
+                        _ => false,
+                    }
+                }
+                Ok(_) => false,
+            }
+        )
+    }
+    pub fn run_module_with_mutable_global(
+        engine: &Engine,
+        mut store: StoreContextMut<WasmiInstanceEnv>,
+        code: &[u8],
+        func_name: &str,
+        global_name: &str,
+        global_value: &Global,
+        step: i32,
+    ) {
+        let module = Module::new(&engine, code).unwrap();
+
+        let mut linker = <Linker<HostState>>::new();
+        linker_define!(linker, global_name, *global_value);
+
+        let instance = linker
+            .instantiate(store.as_context_mut(), &module)
+            .unwrap()
+            .ensure_no_start(store.as_context_mut())
+            .unwrap();
+
+        let func = instance
+            .get_export(store.as_context_mut(), func_name)
+            .and_then(Extern::into_func)
+            .unwrap();
+
+        let input = [Value::I32(step)];
+        let mut ret = [Value::I32(0)];
+
+        let _ = func.call(store.as_context_mut(), &input, &mut ret);
+    }
+
+    #[test]
+    fn test_wasm_non_mvp_mutable_globals_execute_code() {
+        // wat2wasm has "mutable-globals" enabled by default
+        let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
+
+        let engine = Engine::default();
+        let mut store = Store::new(&engine, WasmiInstanceEnv::new());
+
+        // Value of this Global shall be updated by the below WASM module calls
+        let global_value = Global::new(store.as_context_mut(), Value::I32(100), Mutability::Var);
+
+        run_module_with_mutable_global(
+            &engine,
+            store.as_context_mut(),
+            &code,
+            "increase_global_value",
+            "global_mutable_value",
+            &global_value,
+            1000,
+        );
+        let updated_value = global_value.get(store.as_context());
+        let val = i32::try_from(updated_value).unwrap();
+        assert_eq!(val, 1100);
+
+        run_module_with_mutable_global(
+            &engine,
+            store.as_context_mut(),
+            &code,
+            "increase_global_value",
+            "global_mutable_value",
+            &global_value,
+            10000,
+        );
+        let updated_value = global_value.get(store.as_context());
+        let val = i32::try_from(updated_value).unwrap();
+        assert_eq!(val, 11100);
     }
 }

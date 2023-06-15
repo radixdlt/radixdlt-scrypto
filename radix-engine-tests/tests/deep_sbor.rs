@@ -1,4 +1,4 @@
-use radix_engine::errors::{KernelError, RuntimeError, SystemUpstreamError};
+use radix_engine::errors::{RuntimeError, SystemUpstreamError, VmError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -36,12 +36,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|f| {
-        matches!(
-            f,
-            RuntimeError::KernelError(KernelError::WasmRuntimeError(_))
-        )
-    });
+    receipt.expect_specific_failure(|f| matches!(f, RuntimeError::VmError(VmError::Wasm(_))));
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
     //         It's an error when it's put in the substate
@@ -86,12 +81,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|f| {
-        matches!(
-            f,
-            RuntimeError::KernelError(KernelError::WasmRuntimeError(_))
-        )
-    });
+    receipt.expect_specific_failure(|f| matches!(f, RuntimeError::VmError(VmError::Wasm(_))));
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
     //         It's an error when it's put in the substate
@@ -131,7 +121,6 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),
-        BTreeMap::new(),
         BTreeMap::new(),
         OwnerRole::None,
     );

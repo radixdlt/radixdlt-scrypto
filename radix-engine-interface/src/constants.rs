@@ -11,7 +11,7 @@ pub use radix_engine_common::native_addresses::*;
 // To avoid creating references from various places, a list of well-known nodes is crafted
 // and added to every call frame, as a temporary solution.
 //
-// TODO: to remove it, we will have to:
+// FIXME: to remove it, we will have to:
 // - Add Scrypto support for declaring dependencies
 // - Split bootstrapping into state flushing and transaction execution (the "chicken-and-egg" problem)
 //
@@ -20,8 +20,8 @@ lazy_static! {
         btreeset![
             // resource managers
             RADIX_TOKEN.into(),
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+            SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+            ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
             SYSTEM_TRANSACTION_BADGE.into(),
             PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
             GLOBAL_CALLER_VIRTUAL_BADGE.into(),

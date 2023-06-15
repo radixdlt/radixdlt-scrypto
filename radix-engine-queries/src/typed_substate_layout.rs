@@ -6,7 +6,7 @@ pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-use radix_engine::blueprints::pool::multi_resource_pool::*;
+pub use radix_engine::blueprints::pool::multi_resource_pool::*;
 pub use radix_engine::blueprints::pool::one_resource_pool::*;
 pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::resource::*;
@@ -14,6 +14,8 @@ pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
+use radix_engine::system::system::KeyValueEntrySubstate;
+pub use radix_engine_interface::api::node_modules::royalty::*;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -341,7 +343,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(Option<ScryptoOwnedRawValue>),
+    NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
@@ -350,14 +352,14 @@ pub enum TypedMainModuleSubstateValue {
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
-    AccountVaultIndex(AccountVaultIndexEntry),
+    AccountVaultIndex(KeyValueEntrySubstate<Own>),
     AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
+    GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -396,6 +398,7 @@ pub enum TypedNonFungibleVaultFieldValue {
 pub enum TypedConsensusManagerFieldValue {
     Config(ConsensusManagerConfigSubstate),
     ConsensusManager(ConsensusManagerSubstate),
+    ValidatorRewards(ValidatorRewardsSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
     CurrentProposalStatistic(CurrentProposalStatisticSubstate),
     CurrentTimeRoundedToMinutes(ProposerMinuteTimestampSubstate),
@@ -563,6 +566,9 @@ fn to_typed_object_substate_value(
                 }
                 ConsensusManagerField::ConsensusManager => {
                     TypedConsensusManagerFieldValue::ConsensusManager(scrypto_decode(data)?)
+                }
+                ConsensusManagerField::ValidatorRewards => {
+                    TypedConsensusManagerFieldValue::ValidatorRewards(scrypto_decode(data)?)
                 }
                 ConsensusManagerField::CurrentValidatorSet => {
                     TypedConsensusManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)

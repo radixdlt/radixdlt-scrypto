@@ -1,13 +1,14 @@
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
 };
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_queries::typed_substate_layout::ValidatorRewardAppliedEvent;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand_chacha;
@@ -15,8 +16,8 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scrypto_unit::*;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::InstructionV1;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -27,9 +28,9 @@ fn genesis_epoch_has_correct_initial_validators() {
     let mut stake_allocations = Vec::new();
     let mut validators = Vec::new();
     let mut accounts = Vec::new();
-    let mut keys = BTreeMap::<EcdsaSecp256k1PublicKey, usize>::new();
+    let mut keys = BTreeMap::<Secp256k1PublicKey, usize>::new();
     for k in 1usize..=150usize {
-        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k.try_into().unwrap())
+        let pub_key = Secp256k1PrivateKey::from_u64(k.try_into().unwrap())
             .unwrap()
             .public_key();
         keys.insert(pub_key.clone(), k);
@@ -78,6 +79,7 @@ fn genesis_epoch_has_correct_initial_validators() {
         initial_config: CustomGenesis::default_consensus_manager_config()
             .with_max_validators(max_validators),
         initial_time_ms: 1,
+        initial_current_leader: Some(0),
     };
 
     // Act
@@ -168,7 +170,10 @@ fn next_round_without_supervisor_auth_fails() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError { .. }))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError { .. })
+        )
     });
 }
 
@@ -284,9 +289,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
 fn register_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
@@ -317,9 +320,7 @@ fn register_validator_with_auth_succeeds() {
 fn register_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
@@ -340,7 +341,10 @@ fn register_validator_without_auth_fails() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     });
 }
 
@@ -348,9 +352,7 @@ fn register_validator_without_auth_fails() {
 fn unregister_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
@@ -381,9 +383,7 @@ fn unregister_validator_with_auth_succeeds() {
 fn unregister_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
@@ -404,16 +404,17 @@ fn unregister_validator_without_auth_fails() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+        )
     });
 }
 
 fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
@@ -470,7 +471,9 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+                RuntimeError::SystemModuleError(SystemModuleError::AuthError(
+                    AuthError::Unauthorized { .. }
+                ))
             )
         });
     }
@@ -537,8 +540,8 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let b_initial_stake = dec!("7.5");
     let both_initial_stake = a_initial_stake + b_initial_stake;
 
-    let a_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let b_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key();
+    let a_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let b_key = Secp256k1PrivateKey::from_u64(2).unwrap().public_key();
     let validators = vec![GenesisValidator::from(a_key), GenesisValidator::from(b_key)];
     let allocations = vec![
         (
@@ -578,6 +581,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
             })
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd),
         initial_time_ms: 1,
+        initial_current_leader: Some(0),
     };
 
     // Act
@@ -678,7 +682,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let epoch_emissions_xrd = dec!("10");
     let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
     let min_required_reliability = dec!("0.2"); // ...which barely meets the threshold
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let validator_initial_stake = dec!("500.0");
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -759,7 +763,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     let epoch_emissions_xrd = dec!("10");
     let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
     let min_required_reliability = dec!("0.3"); // ...which does NOT meet the threshold
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let validator_stake = dec!("500.0");
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -817,6 +821,14 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     );
 }
 
+macro_rules! assert_close_to {
+    ($a:expr, $b:expr) => {
+        if ($a - $b).abs() > dec!("0.0001") {
+            panic!("{} is not close to {}", $a, $b);
+        }
+    };
+}
+
 #[test]
 fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     // Arrange
@@ -824,9 +836,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     let initial_stake_amount = dec!("4000.0"); // big and round numbers
     let emission_xrd_per_epoch = dec!("1000.0"); // to avoid rounding errors
     let next_epoch_fee_factor = dec!("0.25"); // for easier asserts
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -854,20 +864,19 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             manifest_args!(next_epoch_fee_factor),
         )
         .build();
-    test_runner
-        .execute_manifest(
-            manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
-        )
-        .expect_commit_success();
+    let receipt1 = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+    let result1 = receipt1.expect_commit_success();
 
     // Act: change epoch
-    let receipt = test_runner.advance_to_round(Round::of(1));
+    let receipt2 = test_runner.advance_to_round(Round::of(1));
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during that epoch)
-    let result = receipt.expect_commit_success();
+    let result2 = receipt2.expect_commit_success();
     assert_eq!(
-        test_runner.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result),
+        test_runner.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result2),
         vec![ValidatorEmissionAppliedEvent {
             epoch: initial_epoch,
             starting_stake_pool_xrd: initial_stake_amount,
@@ -878,52 +887,62 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             proposals_missed: 0,
         },]
     );
-    let first_epoch_fee_xrd = emission_xrd_per_epoch; // the entire emission was raked...
+    let emission_and_tx1_rewards =
+        emission_xrd_per_epoch + result1.fee_summary.expected_reward_if_single_validator();
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
-    assert_eq!(
-        test_runner.inspect_vault_balance(validator_substate.stake_xrd_vault_id.0),
-        Some(initial_stake_amount + first_epoch_fee_xrd) // ... and it also was auto-staked...
+    assert_close_to!(
+        test_runner
+            .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
+            .unwrap(),
+        initial_stake_amount + emission_and_tx1_rewards
     );
-    assert_eq!(
-        test_runner.inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0),
-        Some(first_epoch_fee_xrd) // ... and locked in the internal owner's vault
+    assert_close_to!(
+        test_runner
+            .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
+            .unwrap(),
+        emission_and_tx1_rewards
     );
 
     // Act: change epoch
-    let receipt = test_runner.advance_to_round(Round::of(1));
+    let receipt3 = test_runner.advance_to_round(Round::of(1));
 
     // Assert: during that next epoch, the `next_epoch_fee_factor` was already effective
-    let result = receipt.expect_commit_success();
-    let next_epoch_start_stake_xrd = initial_stake_amount + emission_xrd_per_epoch;
+    let result3 = receipt3.expect_commit_success();
+    let next_epoch_start_stake_xrd = initial_stake_amount + emission_and_tx1_rewards;
     let next_epoch_fee_xrd = emission_xrd_per_epoch * next_epoch_fee_factor;
     let next_epoch_net_emission_xrd = emission_xrd_per_epoch - next_epoch_fee_xrd;
-    assert_eq!(
-        test_runner.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result),
-        vec![ValidatorEmissionAppliedEvent {
-            epoch: initial_epoch.next(),
-            starting_stake_pool_xrd: next_epoch_start_stake_xrd,
-            stake_pool_added_xrd: next_epoch_net_emission_xrd,
-            total_stake_unit_supply: next_epoch_start_stake_xrd, // we auto-staked 100%, so the rate is still 1:1
-            validator_fee_xrd: next_epoch_fee_xrd,
-            proposals_made: 1,
-            proposals_missed: 0,
-        },]
-    );
+    let event = test_runner
+        .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result3)
+        .pop()
+        .unwrap();
+    assert_eq!(event.epoch, initial_epoch.next());
+    assert_close_to!(event.starting_stake_pool_xrd, next_epoch_start_stake_xrd);
+    assert_close_to!(event.stake_pool_added_xrd, next_epoch_net_emission_xrd);
+    assert_close_to!(event.total_stake_unit_supply, next_epoch_start_stake_xrd); // we auto-staked 100%, so the rate is still 1 ,1
+    assert_close_to!(event.validator_fee_xrd, next_epoch_fee_xrd);
+    assert_eq!(event.proposals_made, 1);
+    assert_eq!(event.proposals_missed, 0,);
+
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
-    assert_eq!(
-        test_runner.inspect_vault_balance(validator_substate.stake_xrd_vault_id.0),
-        Some(initial_stake_amount + dec!("2") * emission_xrd_per_epoch) // everything still goes into stake, by various means
+    assert_close_to!(
+        test_runner
+            .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
+            .unwrap(),
+        initial_stake_amount
+            + result1.fee_summary.expected_reward_if_single_validator()
+            + result2.fee_summary.expected_reward_if_single_validator()
+            + dec!("2") * emission_xrd_per_epoch // everything still goes into stake, by various means
     );
     // the new fee goes into internal owner's vault (as stake units)
-    let stake_unit_exchange_rate =
-        next_epoch_start_stake_xrd / (next_epoch_start_stake_xrd + next_epoch_net_emission_xrd);
-    assert_eq!(
-        precise_enough(
-            test_runner
-                .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
-                .unwrap()
-        ),
-        precise_enough(first_epoch_fee_xrd + next_epoch_fee_xrd * stake_unit_exchange_rate)
+    let stake_unit_exchange_rate = event.starting_stake_pool_xrd
+        / (event.starting_stake_pool_xrd + next_epoch_net_emission_xrd);
+    assert_close_to!(
+        test_runner
+            .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
+            .unwrap(),
+        emission_and_tx1_rewards
+            + (result2.fee_summary.expected_reward_if_single_validator() + next_epoch_fee_xrd)
+                * stake_unit_exchange_rate
     );
 }
 
@@ -935,9 +954,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let initial_stake_amount = dec!("9.0");
     let emission_xrd_per_epoch = dec!("2.0");
     let increased_fee_factor = dec!("0.25");
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -961,7 +978,10 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         .0;
 
     // we have to first request some fee decrease...
-    test_runner
+    let mut total_rewards = Decimal::ZERO;
+    let mut last_reward;
+
+    last_reward = test_runner
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(test_runner.faucet_component(), 10.into())
@@ -974,16 +994,22 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
         )
-        .expect_commit_success();
+        .expect_commit_success()
+        .fee_summary
+        .expected_reward_if_single_validator();
+    total_rewards += last_reward;
 
     // ... and wait 1 epoch to make it effective
-    test_runner
+    last_reward = test_runner
         .advance_to_round(Round::of(1))
-        .expect_commit_success();
+        .expect_commit_success()
+        .fee_summary
+        .expected_reward_if_single_validator();
+    total_rewards += last_reward;
     let current_epoch = initial_epoch.next();
 
     // Act: request the fee increase
-    test_runner
+    last_reward = test_runner
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(test_runner.faucet_component(), 10.into())
@@ -996,29 +1022,32 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
         )
-        .expect_commit_success();
+        .expect_commit_success()
+        .fee_summary
+        .expected_reward_if_single_validator();
+    total_rewards += last_reward;
     let increase_effective_at_epoch = current_epoch.after(fee_increase_delay_epochs);
 
     // advance a few epochs (just 1 short of the increase being effective)
     // Note: we deliberately do not use `set_current_epoch()`, since we want the "next epoch" engine logic to execute
     for _ in current_epoch.number()..increase_effective_at_epoch.number() {
-        test_runner
+        last_reward = test_runner
             .advance_to_round(Round::of(1))
-            .expect_commit_success();
+            .expect_commit_success()
+            .fee_summary
+            .expected_reward_if_single_validator();
+        total_rewards += last_reward;
     }
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during all these epochs)
     let num_epochs_with_default_fee = increase_effective_at_epoch.number() - initial_epoch.number();
-    assert_eq!(
-        precise_enough(
-            test_runner
-                .inspect_vault_balance(stake_xrd_vault_id)
-                .unwrap()
-        ),
-        precise_enough(
-            initial_stake_amount
-                + Decimal::from(num_epochs_with_default_fee) * emission_xrd_per_epoch
-        )
+    let starting_stake_pool = test_runner
+        .inspect_vault_balance(stake_xrd_vault_id)
+        .unwrap();
+    assert_close_to!(
+        starting_stake_pool,
+        initial_stake_amount + total_rewards - last_reward
+            + Decimal::from(num_epochs_with_default_fee) * emission_xrd_per_epoch
     );
 
     // Act: advance one more epoch
@@ -1026,36 +1055,23 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 
     // Assert: during that next epoch, the `increased_fee_factor` was already effective
     let result = receipt.expect_commit_success();
+    last_reward = result.fee_summary.expected_reward_if_single_validator();
+    total_rewards += last_reward;
     let event = test_runner
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result)
         .remove(0);
-    let rounded_amounts_event = ValidatorEmissionAppliedEvent {
-        epoch: event.epoch,
-        starting_stake_pool_xrd: precise_enough(event.starting_stake_pool_xrd),
-        stake_pool_added_xrd: precise_enough(event.stake_pool_added_xrd),
-        total_stake_unit_supply: precise_enough(event.total_stake_unit_supply),
-        validator_fee_xrd: precise_enough(event.validator_fee_xrd),
-        proposals_made: event.proposals_made,
-        proposals_missed: event.proposals_missed,
-    };
-    assert_eq!(
-        rounded_amounts_event,
-        ValidatorEmissionAppliedEvent {
-            epoch: increase_effective_at_epoch,
-            starting_stake_pool_xrd: precise_enough(
-                initial_stake_amount
-                    + Decimal::from(num_epochs_with_default_fee) * emission_xrd_per_epoch
-            ),
-            stake_pool_added_xrd: precise_enough(
-                emission_xrd_per_epoch * (Decimal::one() - increased_fee_factor)
-            ),
-            // note: we staked (i.e. minted stake units) only during the first round; later a fee of 0% was effective, until now
-            total_stake_unit_supply: precise_enough(initial_stake_amount + emission_xrd_per_epoch),
-            validator_fee_xrd: precise_enough(emission_xrd_per_epoch * increased_fee_factor),
-            proposals_made: 1,
-            proposals_missed: 0,
-        }
+    assert_eq!(event.epoch, increase_effective_at_epoch);
+    assert_close_to!(event.starting_stake_pool_xrd, starting_stake_pool);
+    assert_close_to!(
+        event.stake_pool_added_xrd,
+        emission_xrd_per_epoch * (Decimal::one() - increased_fee_factor)
     );
+    assert_close_to!(
+        event.validator_fee_xrd,
+        emission_xrd_per_epoch * increased_fee_factor
+    );
+    assert_eq!(event.proposals_made, 1);
+    assert_eq!(event.proposals_missed, 0);
 }
 
 fn create_custom_genesis(
@@ -1066,15 +1082,12 @@ fn create_custom_genesis(
     initial_stakes: Decimal,
     accounts_xrd_balance: Decimal,
     num_accounts: usize,
-) -> (
-    CustomGenesis,
-    Vec<(EcdsaSecp256k1PublicKey, ComponentAddress)>,
-) {
+) -> (CustomGenesis, Vec<(Secp256k1PublicKey, ComponentAddress)>) {
     let mut stake_allocations = Vec::new();
     let mut validators = Vec::new();
     let mut accounts = Vec::new();
     for k in 1usize..=num_initial_validators {
-        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k.try_into().unwrap())
+        let pub_key = Secp256k1PrivateKey::from_u64(k.try_into().unwrap())
             .unwrap()
             .public_key();
         let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
@@ -1103,11 +1116,10 @@ fn create_custom_genesis(
     let mut pub_key_accounts = Vec::new();
 
     for i in 0..num_accounts {
-        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(
-            (validator_account_index + 1 + i).try_into().unwrap(),
-        )
-        .unwrap()
-        .public_key();
+        let pub_key =
+            Secp256k1PrivateKey::from_u64((validator_account_index + 1 + i).try_into().unwrap())
+                .unwrap()
+                .public_key();
         let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
         pub_key_accounts.push((pub_key, account_address));
         xrd_balances.push((account_address, accounts_xrd_balance));
@@ -1133,6 +1145,7 @@ fn create_custom_genesis(
                 target_duration_millis: 0,
             }),
         initial_time_ms: 1,
+        initial_current_leader: Some(0),
     };
 
     (genesis, pub_key_accounts)
@@ -1248,7 +1261,7 @@ impl RegisterAndStakeTransactionType {
 
 fn register_and_stake_new_validator(
     register_and_stake_txn_type: RegisterAndStakeTransactionType,
-    pub_key: EcdsaSecp256k1PublicKey,
+    pub_key: Secp256k1PublicKey,
     account_address: ComponentAddress,
     stake_amount: Decimal,
     test_runner: &mut TestRunner,
@@ -1438,9 +1451,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let rounds_per_epoch = 2;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
@@ -1487,9 +1498,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let rounds_per_epoch = 2;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
@@ -1507,9 +1516,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let next_validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(3u64)
-        .unwrap()
-        .public_key();
+    let next_validator_pub_key = Secp256k1PrivateKey::from_u64(3u64).unwrap().public_key();
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
@@ -1547,12 +1554,8 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
 fn cannot_claim_unstake_immediately() {
     // Arrange
     let initial_epoch = Epoch::of(5);
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -1605,12 +1608,8 @@ fn can_claim_unstake_after_epochs() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let num_unstake_epochs = 7;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -1673,9 +1672,7 @@ fn owner_can_lock_stake_units() {
     // Arrange
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -1730,9 +1727,7 @@ fn owner_can_start_unlocking_stake_units() {
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amount = dec!("0.1");
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -1816,9 +1811,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amounts = vec![dec!("0.1"), dec!("0.3"), dec!("1.2")];
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -1908,9 +1901,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     let stake_units_to_unlock_amount = dec!("0.2");
     let stake_units_to_unlock_next_amount = dec!("0.03");
     let total_to_unlock_amount = stake_units_to_unlock_amount + stake_units_to_unlock_next_amount;
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -2012,9 +2003,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amount = dec!("0.1");
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -2117,9 +2106,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amount = dec!("0.1");
-    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
@@ -2214,12 +2201,8 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let rounds_per_epoch = 2;
-    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
-        .unwrap()
-        .public_key();
-    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
 
     let genesis = CustomGenesis::single_validator_and_staker(
@@ -2254,29 +2237,31 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt1 = test_runner.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
-    receipt.expect_commit_success();
+    let result1 = receipt1.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt2 = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
-    let result = receipt.expect_commit_success();
-    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    let result2 = receipt2.expect_commit_success();
+    let next_epoch = result2.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, initial_epoch.next());
-    assert_eq!(
+    assert_close_to!(
         next_epoch
             .validator_set
             .validators_by_stake_desc
             .get(&validator_address)
-            .unwrap(),
-        &Validator {
-            key: validator_pub_key,
-            stake: Decimal::from(9),
-        }
+            .unwrap()
+            .stake,
+        // The validator isn't eligible for the validator set rewards because it's `reliability_factor` is zero.
+        Decimal::from(9)
+            + result1
+                .fee_summary
+                .expected_reward_as_proposer_if_single_validator()
     );
 }
 
@@ -2286,12 +2271,24 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_ids = index_set_new();
-    pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
-    pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
+    let mut pre_allocated_addresses = vec![];
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER),
+        )
+            .into(),
+    );
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+        )
+            .into(),
+    );
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE,
+            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             args: manifest_args!(
@@ -2304,12 +2301,15 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
         }],
         // No validator proofs
         btreeset![],
-        pre_allocated_ids,
+        pre_allocated_addresses,
     );
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError { .. }))
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError { .. })
+        )
     });
 }
 
@@ -2319,24 +2319,37 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_ids = index_set_new();
-    pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
-    pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
+    let mut pre_allocated_addresses = vec![];
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
+        )
+            .into(),
+    );
+    pre_allocated_addresses.push(
+        (
+            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
+            GlobalAddress::from(CONSENSUS_MANAGER),
+        )
+            .into(),
+    );
     let receipt = test_runner.execute_system_transaction_with_preallocation(
         vec![InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE,
+            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: manifest_args!(
-                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-                Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
-                Epoch::of(1),
-                CustomGenesis::default_consensus_manager_config(),
-                120000i64
-            ),
+            args: to_manifest_value(&ConsensusManagerCreateManifestInput {
+                validator_owner_token_address: ManifestAddressReservation(0),
+                component_address: ManifestAddressReservation(1),
+                initial_epoch: Epoch::of(1),
+                initial_config: CustomGenesis::default_consensus_manager_config(),
+                initial_time_ms: 120000i64,
+                initial_current_leader: Some(0),
+            }),
         }],
         btreeset![AuthAddresses::system_role()],
-        pre_allocated_ids,
+        pre_allocated_addresses,
     );
 
     // Assert
@@ -2351,8 +2364,109 @@ fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
     .clone()
 }
 
-/// Applies an arbitrary rounding of the given decimal, so that simple `==` comparison is meaningful
-/// enough for test purposes.
-fn precise_enough(exact: Decimal) -> Decimal {
-    exact.round(15, RoundingMode::AwayFromZero)
+#[test]
+fn test_tips_and_fee_distribution_single_validator() {
+    let initial_epoch = Epoch::of(5);
+    let initial_stake_amount = dec!("100");
+    let emission_xrd_per_epoch = dec!("0");
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        initial_stake_amount,
+        validator_account,
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Do some transaction
+    let receipt1 = test_runner
+        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+    let result1 = receipt1.expect_commit_success();
+
+    // Advance epoch
+    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let result2 = receipt2.expect_commit_success();
+
+    // Assert: no emission
+    let event = test_runner
+        .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result2)
+        .remove(0);
+    assert_eq!(event.epoch, initial_epoch);
+    assert_close_to!(event.starting_stake_pool_xrd, initial_stake_amount);
+    assert_close_to!(event.stake_pool_added_xrd, 0);
+    assert_close_to!(event.validator_fee_xrd, 0);
+    assert_eq!(event.proposals_made, 1);
+    assert_eq!(event.proposals_missed, 0);
+
+    // Assert: rewards
+    let event = test_runner
+        .extract_events_of_type::<ValidatorRewardAppliedEvent>(result2)
+        .remove(0);
+    assert_eq!(event.epoch, initial_epoch);
+    assert_close_to!(
+        event.amount,
+        result1.fee_summary.expected_reward_if_single_validator()
+    );
+}
+
+#[test]
+fn test_tips_and_fee_distribution_two_validators() {
+    let initial_epoch = Epoch::of(5);
+    let initial_stake_amount1 = dec!("300");
+    let initial_stake_amount2 = dec!("100");
+    let emission_xrd_per_epoch = dec!("0");
+    let validator1_key = Secp256k1PrivateKey::from_u64(5u64).unwrap().public_key();
+    let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
+    let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
+    let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
+    let genesis = CustomGenesis::two_validators_and_single_staker(
+        validator1_key,
+        validator2_key,
+        (initial_stake_amount1, initial_stake_amount2),
+        staker_account,
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Do some transaction
+    let receipt1 = test_runner
+        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+    let result1 = receipt1.expect_commit_success();
+
+    // Advance epoch
+    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let result2 = receipt2.expect_commit_success();
+
+    // Assert
+    let events = test_runner.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
+    assert_eq!(events[0].epoch, initial_epoch);
+    assert_close_to!(
+        events[0].amount,
+        result1.fee_summary.tips_to_distribute()
+            + result1.fee_summary.fees_to_distribute() * dec!("0.25")
+            + result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount1
+                / (initial_stake_amount1 + initial_stake_amount2)
+    );
+    assert_eq!(events[1].epoch, initial_epoch);
+    assert_close_to!(
+        events[1].amount,
+        result1.fee_summary.tips_to_distribute()
+            + result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount2
+                / (initial_stake_amount1 + initial_stake_amount2)
+    );
 }

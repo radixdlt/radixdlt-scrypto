@@ -9,7 +9,7 @@ use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey};
+use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -70,15 +70,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelDebugModul
 
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_type: Option<EntityType>,
-        virtual_node: bool,
+        entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Allocating node id: type = {:?}  virtual = {}",
-            node_type,
-            virtual_node
-        );
+        log!(api, "Allocating node id: entity_type = {:?}", entity_type);
         Ok(())
     }
 

@@ -1,8 +1,9 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use radix_engine_common::address::Bech32Decoder;
-use syn::parse::Parser;
+use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
+use syn::token::{Brace, Comma};
 use syn::*;
 
 use crate::ast;
@@ -12,6 +13,199 @@ macro_rules! trace {
         #[cfg(feature = "trace")]
         println!($($arg),*);
     }};
+}
+
+pub struct GlobalComponent {
+    pub ident: Ident,
+    pub comma: Comma,
+    pub address: Expr,
+}
+
+impl Parse for GlobalComponent {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let ident = input.parse()?;
+        let comma = input.parse()?;
+        let address = input.parse()?;
+        Ok(Self {
+            ident,
+            comma,
+            address,
+        })
+    }
+}
+
+pub struct ImportBlueprintFn {
+    pub sig: Signature,
+    pub semi_token: Token![;],
+}
+
+impl Parse for ImportBlueprintFn {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let sig = input.parse()?;
+        let semi_token = input.parse()?;
+        Ok(Self { sig, semi_token })
+    }
+}
+
+pub struct ImportBlueprint {
+    pub package: Expr,
+    pub comma0: Comma,
+    pub blueprint: Ident,
+    pub rename: Option<(Token![as], Ident)>,
+    pub brace: Brace,
+    pub functions: Vec<ImportBlueprintFn>,
+}
+
+impl Parse for ImportBlueprint {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        let package = input.parse()?;
+        let comma0 = input.parse()?;
+        let blueprint = input.parse()?;
+        let rename = if input.peek(Token![as]) {
+            Some((input.parse()?, input.parse()?))
+        } else {
+            None
+        };
+        let brace = braced!(content in input);
+
+        let functions = {
+            let mut functions = Vec::new();
+            while content.peek(Token![fn]) {
+                functions.push(content.call(ImportBlueprintFn::parse)?)
+            }
+            functions
+        };
+
+        Ok(Self {
+            package,
+            comma0,
+            blueprint,
+            rename,
+            brace,
+            functions,
+        })
+    }
+}
+
+pub fn replace_macros_in_body(block: &mut Block, dependency_exprs: &mut Vec<Expr>) -> Result<()> {
+    for stmt in &mut block.stmts {
+        match stmt {
+            Stmt::Expr(expr) => {
+                replace_macros(expr, dependency_exprs)?;
+            }
+            Stmt::Semi(expr, ..) => {
+                replace_macros(expr, dependency_exprs)?;
+            }
+            Stmt::Item(..) => {}
+            Stmt::Local(local) => {
+                if let Some((_, expr)) = &mut local.init {
+                    replace_macros(expr, dependency_exprs)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Result<()> {
+    match expr {
+        Expr::Macro(m) => {
+            let macro_ident = m.mac.path.get_ident().unwrap();
+            if macro_ident.eq(&Ident::new("global_component", Span::call_site())) {
+                let global_component: GlobalComponent = m.mac.clone().parse_body()?;
+
+                let blueprint = global_component.ident;
+                let address = &global_component.address;
+                let lit_str: LitStr = parse_quote!( #address );
+
+                let (_hrp, _entity_type, address) =
+                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                        .unwrap();
+
+                dependency_exprs.push(parse_quote! {
+                    GlobalAddress :: new_or_panic([ #(#address),* ])
+                });
+
+                *expr = parse_quote! {
+                    Global::<#blueprint>(#blueprint {
+                        handle: ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))
+                    })
+                };
+            } else if macro_ident.eq(&Ident::new("resource_manager", Span::call_site())) {
+                let address: Expr = m.mac.clone().parse_body()?;
+                let lit_str: LitStr = parse_quote!( #address );
+
+                let (_hrp, _entity_type, address) =
+                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                        .unwrap();
+
+                dependency_exprs.push(parse_quote! {
+                    GlobalAddress :: new_or_panic([ #(#address),* ])
+                });
+
+                *expr = parse_quote! {
+                    ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                };
+            } else if macro_ident.eq(&Ident::new("package", Span::call_site())) {
+                let address: Expr = m.mac.clone().parse_body()?;
+                let lit_str: LitStr = parse_quote!( #address );
+
+                let (_hrp, _entity_type, address) =
+                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                        .unwrap();
+
+                dependency_exprs.push(parse_quote! {
+                    PackageAddress :: new_or_panic([ #(#address),* ])
+                });
+
+                *expr = parse_quote! {
+                    Global::<PackageStub>(PackageStub(ObjectStubHandle::Global(GlobalAddress :: new_or_panic([ #(#address),* ]))))
+                };
+            }
+        }
+        Expr::Tuple(tuple) => {
+            for expr in &mut tuple.elems {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        Expr::Assign(assign) => {
+            replace_macros(assign.left.as_mut(), dependency_exprs)?;
+            replace_macros(assign.right.as_mut(), dependency_exprs)?;
+        }
+        Expr::AssignOp(assign_op) => {
+            replace_macros(assign_op.left.as_mut(), dependency_exprs)?;
+            replace_macros(assign_op.right.as_mut(), dependency_exprs)?;
+        }
+        Expr::Type(ty) => {
+            replace_macros(&mut ty.expr, dependency_exprs)?;
+        }
+        Expr::MethodCall(method_call) => {
+            replace_macros(method_call.receiver.as_mut(), dependency_exprs)?;
+            for expr in &mut method_call.args {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        Expr::ForLoop(for_loop) => replace_macros_in_body(&mut for_loop.body, dependency_exprs)?,
+        Expr::Call(call) => {
+            replace_macros(call.func.as_mut(), dependency_exprs)?;
+            for expr in &mut call.args {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        Expr::Reference(reference) => {
+            replace_macros(reference.expr.as_mut(), dependency_exprs)?;
+        }
+        Expr::Array(array) => {
+            for expr in &mut array.elems {
+                replace_macros(expr, dependency_exprs)?;
+            }
+        }
+        _ => {}
+    }
+
+    Ok(())
 }
 
 pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
@@ -64,7 +258,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use_statements.push(item);
         }
 
-        // TODO: remove
         let contains_super_import = use_statements
             .iter()
             .map(|x| quote! { #(#x) }.to_string())
@@ -77,12 +270,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         {
             let item: ItemUse = parse_quote! { use scrypto::prelude::MethodPermission::*; };
             use_statements.push(item);
-            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodRoyalty::*; };
+            let item: ItemUse = parse_quote! { use scrypto::prelude::RoyaltyAmount::*; };
             use_statements.push(item);
         }
 
         use_statements
     };
+
+    let mut dependency_exprs = Vec::new();
 
     let const_statements = {
         let mut const_statements = bp.const_statements.clone();
@@ -90,49 +285,52 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         // Bech32 decode constant dependencies
         for item in &mut const_statements {
             let ty = item.ty.as_ref();
+            let ident = item.ident.clone();
             let type_string = quote! { #ty }.to_string();
-            if !type_string.contains("ResourceAddress")
-                && !type_string.contains("ComponentAddress")
-                && !type_string.contains("PackageAddress")
-                && !type_string.contains("GlobalAddress")
+            if type_string.contains("ResourceAddress")
+                || type_string.contains("ComponentAddress")
+                || type_string.contains("PackageAddress")
+                || type_string.contains("GlobalAddress")
             {
-                continue;
-            }
+                match item.expr.as_mut() {
+                    Expr::Macro(m) => {
+                        if !m
+                            .mac
+                            .path
+                            .get_ident()
+                            .unwrap()
+                            .eq(&Ident::new("address", Span::call_site()))
+                        {
+                            continue;
+                        }
 
-            match item.expr.as_mut() {
-                Expr::Macro(m) => {
-                    if !m
-                        .mac
-                        .path
-                        .get_ident()
-                        .unwrap()
-                        .eq(&Ident::new("address", Span::call_site()))
-                    {
-                        continue;
+                        let tokens = &m.mac.tokens;
+                        let lit_str: LitStr = parse_quote!( #tokens );
+
+                        let (_hrp, _entity_type, address) =
+                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                .unwrap();
+
+                        let expr: Expr = parse_quote! {
+                            #ty :: new_or_panic([ #(#address),* ])
+                        };
+                        item.expr = Box::new(expr);
                     }
-
-                    let tokens = &m.mac.tokens;
-                    let lit_str: LitStr = parse_quote!( #tokens );
-
-                    //let value:  = quote! { #tokens }.to_string();
-                    let (_hrp, _entity_type, address) =
-                        Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                            .unwrap();
-
-                    let expr = parse_quote! {
-                        #ty :: new_or_panic([ #(#address),* ])
-                    };
-
-                    item.expr = Box::new(expr);
+                    _ => {}
                 }
-                _ => {}
+
+                let expr: Expr = parse_quote! { #ident };
+                dependency_exprs.push(expr);
+            } else {
+                replace_macros(item.expr.as_mut(), &mut dependency_exprs)?;
             }
         }
 
         const_statements
     };
 
-    let generated_schema_info = generate_schema(bp_ident, bp_items)?;
+    let generated_schema_info = generate_schema(bp_ident, bp_items, &mut dependency_exprs)?;
+    let fn_idents = generated_schema_info.fn_idents;
     let method_idents = generated_schema_info.method_idents;
     let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
     let function_idents = generated_schema_info.function_idents;
@@ -157,7 +355,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #auth_macro
             }
         } else {
-            // TODO: Use AllPublicMethod Template instead
+            // FIXME: Use AllPublicMethod Template instead
             quote! {
                 fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
                     btreemap!(
@@ -168,6 +366,85 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
             }
         }
+    };
+
+    let import_statements = {
+        let mut import_statements = Vec::new();
+        let import_blueprint_index = macro_statements.iter().position(|item| {
+            item.mac
+                .path
+                .get_ident()
+                .unwrap()
+                .eq(&Ident::new("extern_blueprint", Span::call_site()))
+        });
+        if let Some(import_blueprint_index) = import_blueprint_index {
+            let import_macro = macro_statements.remove(import_blueprint_index);
+            let import_blueprint: ImportBlueprint = import_macro.mac.parse_body()?;
+
+            let package_expr = {
+                let package = import_blueprint.package;
+                match package {
+                    Expr::Lit(..) => {
+                        let lit_str: LitStr = parse_quote!( #package );
+                        let (_hrp, _entity_type, address) =
+                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                .unwrap();
+                        let package_expr: Expr = parse_quote! {
+                            PackageAddress :: new_or_panic([ #(#address),* ])
+                        };
+                        package_expr
+                    }
+                    _ => package,
+                }
+            };
+
+            dependency_exprs.push(package_expr.clone());
+
+            let blueprint_name = import_blueprint.blueprint.to_string();
+            let blueprint = if let Some((_, rename)) = import_blueprint.rename {
+                rename
+            } else {
+                import_blueprint.blueprint
+            };
+
+            let owned_typed_name = format!("Owned{}", blueprint.to_string());
+            let global_typed_name = format!("Global{}", blueprint.to_string());
+            let blueprint_functions_ident = format_ident!("{}Functions", blueprint);
+
+            let mut methods = Vec::new();
+            let mut functions = Vec::new();
+            for function in import_blueprint.functions {
+                let is_method = function
+                    .sig
+                    .inputs
+                    .iter()
+                    .find(|arg| matches!(arg, FnArg::Receiver(..)))
+                    .is_some();
+                if is_method {
+                    methods.push(function.sig);
+                } else {
+                    functions.push(function.sig);
+                }
+            }
+
+            let import_statement = quote! {
+                extern_blueprint_internal! {
+                    #package_expr,
+                    #blueprint,
+                    #blueprint_name,
+                    #owned_typed_name,
+                    #global_typed_name,
+                    #blueprint_functions_ident {
+                        #(#functions;)*
+                    },
+                    {
+                        #(#methods;)*
+                    }
+                }
+            };
+            import_statements.push(import_statement);
+        }
+        import_statements
     };
 
     #[cfg(feature = "no-schema")]
@@ -189,7 +466,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     #auth_macro
                 }
             } else {
-                // TODO: Use AllPublicFunctions Template instead
+                // FIXME: Use AllPublicFunctions Template instead
                 quote! {
                     fn function_auth() -> BTreeMap<String, AccessRule> {
                         btreemap!(
@@ -202,12 +479,35 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         };
 
-        let raw_package_dependencies: Vec<Ident> = {
-            let const_statements = bp.const_statements;
-            const_statements
-                .iter()
-                .map(|stmt| stmt.ident.clone())
-                .collect()
+        let fn_names: Vec<String> = fn_idents.iter().map(|i| i.to_string()).collect();
+        let package_royalties_statements = {
+            let package_royalties_index = macro_statements.iter().position(|item| {
+                item.mac
+                    .path
+                    .get_ident()
+                    .unwrap()
+                    .eq(&Ident::new("enable_package_royalties", Span::call_site()))
+            });
+            if let Some(package_royalties_index) = package_royalties_index {
+                let royalties_macro = macro_statements.remove(package_royalties_index);
+                quote! {
+                    #royalties_macro
+                }
+            } else {
+                // FIXME: Use AllPublicFunctions Template instead
+                quote! {
+                    fn package_royalty_config() -> RoyaltyConfig {
+                        let royalties = btreemap!(
+                            #(
+                                #fn_names.to_string() => Free,
+                            )*
+                        );
+                        RoyaltyConfig {
+                            rules: royalties,
+                        }
+                    }
+                }
+            }
         };
 
         let schema_ident = format_ident!("{}_schema", bp_ident);
@@ -246,6 +546,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! {
             #function_auth_statements
 
+            #package_royalties_statements
+
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
                 use ::scrypto::schema::*;
@@ -258,7 +560,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 // Aggregate fields
                 let mut fields = Vec::new();
                 let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                fields.push(type_index);
+                fields.push(FieldSchema::normal(type_index));
 
                 // Aggregate functions
                 let mut functions = BTreeMap::new();
@@ -275,7 +577,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let mut dependencies = BTreeSet::new();
                 #({
-                    dependencies.insert(#raw_package_dependencies.into());
+                    dependencies.insert(#dependency_exprs.into());
                 })*
 
                 let mut method_auth_template = method_auth_template();
@@ -294,14 +596,23 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
                     dependencies,
+                    features: BTreeSet::new(),
+                };
+
+                let template = scrypto::blueprints::package::BlueprintTemplate {
                     method_auth_template,
                     outer_method_auth_template: BTreeMap::new(),
                 };
 
-
                 let function_auth = function_auth();
+                let royalty_config = package_royalty_config();
 
-                let return_data = (schema, function_auth);
+                let return_data = scrypto::blueprints::package::BlueprintSetup {
+                    schema,
+                    function_auth,
+                    royalty_config,
+                    template,
+                };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
@@ -326,7 +637,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         impl HasMethods for #bp_ident {
             type Permissions = Methods<MethodPermission>;
-            type Royalties = Methods<MethodRoyalty>;
+            type Royalties = Methods<RoyaltyAmount>;
         }
 
         impl HasTypeInfo for #bp_ident {
@@ -339,6 +650,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let methods_struct = generate_methods_struct(method_idents);
     let functions_struct = generate_functions_struct(function_idents);
+    let fns_struct = generate_fns_struct(fn_idents);
 
     trace!("Generated mod: \n{}", quote! { #output_original_code });
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
@@ -359,6 +671,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             #(#const_statements)*
 
+            #(#import_statements)*
+
             #(#macro_statements)*
 
             #method_auth_statements
@@ -368,6 +682,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #methods_struct
 
             #functions_struct
+
+            #fns_struct
 
             #output_dispatcher
 
@@ -462,6 +778,43 @@ fn generate_functions_struct(function_idents: Vec<Ident>) -> TokenStream {
                     vec![
                         #(
                             (#function_names.to_string(), self.#function_idents)
+                        ,
+                        )*
+                    ]
+                }
+            }
+        }
+    }
+}
+
+fn generate_fns_struct(fn_idents: Vec<Ident>) -> TokenStream {
+    let fn_names: Vec<String> = fn_idents.iter().map(|i| i.to_string()).collect();
+
+    if fn_idents.is_empty() {
+        quote! {
+            pub struct Fns<T> {
+                t: PhantomData<T>,
+            }
+
+            impl<T> FnMapping<T> for Fns<T> {
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![]
+                }
+            }
+        }
+    } else {
+        quote! {
+            pub struct Fns<T> {
+                #(
+                    #fn_idents: T,
+                )*
+            }
+
+            impl<T> FnMapping<T> for Fns<T> {
+                fn to_mapping(self) -> Vec<(String, T)> {
+                    vec![
+                        #(
+                            (#fn_names.to_string(), self.#fn_idents)
                         ,
                         )*
                     ]
@@ -671,8 +1024,8 @@ fn generate_stubs(
     bp_ident: &Ident,
     items: &[ImplItem],
 ) -> Result<TokenStream> {
-    let bp_name = bp_ident.to_string();
     let mut functions = Vec::<ImplItem>::new();
+    let mut function_traits = Vec::<ImplItem>::new();
     let mut methods = Vec::<ImplItem>::new();
 
     for item in items {
@@ -721,24 +1074,18 @@ fn generate_stubs(
                     };
 
                     if mutable.is_none() {
+                        function_traits.push(parse_quote! {
+                            fn #ident(#(#input_args: #input_types),*) -> #output;
+                        });
                         functions.push(parse_quote! {
                             fn #ident(#(#input_args: #input_types),*) -> #output {
-                                ::scrypto::runtime::Runtime::call_function(
-                                    ::scrypto::runtime::Runtime::package_address(),
-                                    #bp_name,
-                                    #name,
-                                    scrypto_args!(#(#input_args),*)
-                                )
+                                Self::call_function_raw(#name, scrypto_args!(#(#input_args),*))
                             }
                         });
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.call_raw(#name, scrypto_args!(
-                                    #(
-                                       #input_args
-                                    ),*
-                                ))
+                                self.call_raw(#name, scrypto_args!(#(#input_args),*))
                             }
                         });
                     }
@@ -776,10 +1123,11 @@ fn generate_stubs(
         }
 
         pub trait #functions_ident {
-            #(#functions)*
+            #(#function_traits)*
         }
 
         impl #functions_ident for ::scrypto::component::Blueprint<#bp_ident> {
+            #(#functions)*
         }
     };
 
@@ -790,14 +1138,20 @@ fn generate_stubs(
 struct GeneratedSchemaInfo {
     fn_names: Vec<String>,
     fn_schemas: Vec<Expr>,
+    fn_idents: Vec<Ident>,
     method_idents: Vec<Ident>,
     function_idents: Vec<Ident>,
 }
 
 #[allow(dead_code)]
-fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<GeneratedSchemaInfo> {
+fn generate_schema(
+    bp_ident: &Ident,
+    items: &mut [ImplItem],
+    dependency_exprs: &mut Vec<Expr>,
+) -> Result<GeneratedSchemaInfo> {
     let mut fn_names = Vec::<String>::new();
     let mut fn_schemas = Vec::<Expr>::new();
+    let mut fn_idents = Vec::<Ident>::new();
     let mut method_idents = Vec::<Ident>::new();
     let mut function_idents = Vec::<Ident>::new();
 
@@ -843,26 +1197,29 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                     let export_name = format!("{}_{}", bp_ident, m.sig.ident);
                     validate_type_name(&export_name, bp_ident.span())?;
 
+                    replace_macros_in_body(&mut m.block, dependency_exprs)?;
+
+                    fn_names.push(function_name);
+                    fn_idents.push(m.sig.ident.clone());
+
                     if receiver.is_none() {
                         function_idents.push(m.sig.ident.clone());
-                        fn_names.push(function_name);
                         fn_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
-                                export_name: #export_name.to_string(),
+                                export: #export_name.to_string(),
                             }
                         });
                     } else {
                         method_idents.push(m.sig.ident.clone());
-                        fn_names.push(function_name);
                         fn_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
                                 receiver: Option::Some(#receiver),
                                 input: aggregator.add_child_type_and_descendents::<#input_struct_ident>(),
                                 output: aggregator.add_child_type_and_descendents::<#output_type>(),
-                                export_name: #export_name.to_string(),
+                                export: #export_name.to_string(),
                             }
                         });
                     }
@@ -880,6 +1237,7 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
     Ok(GeneratedSchemaInfo {
         fn_names,
         fn_schemas,
+        fn_idents,
         method_idents,
         function_idents,
     })
@@ -932,7 +1290,7 @@ mod tests {
                     use scrypto::prelude::*;
                     use super::*;
                     use scrypto::prelude::MethodPermission::*;
-                    use scrypto::prelude::MethodRoyalty::*;
+                    use scrypto::prelude::RoyaltyAmount::*;
 
                     fn method_auth_template() -> BTreeMap<scrypto::schema::SchemaMethodKey, scrypto::schema::SchemaMethodPermission> {
                         btreemap!(
@@ -965,7 +1323,7 @@ mod tests {
 
                     impl HasMethods for Test {
                         type Permissions = Methods<MethodPermission>;
-                        type Royalties = Methods<MethodRoyalty>;
+                        type Royalties = Methods<RoyaltyAmount>;
                     }
 
                     impl HasTypeInfo for Test {
@@ -1000,6 +1358,20 @@ mod tests {
                     impl<T> FnMapping<T> for Functions<T> {
                         fn to_mapping(self) -> Vec<(String, T)> {
                             vec![
+                                ("y".to_string(), self.y),
+                            ]
+                        }
+                    }
+
+                    pub struct Fns<T> {
+                        x: T,
+                        y: T,
+                    }
+
+                    impl<T> FnMapping<T> for Fns<T> {
+                        fn to_mapping(self) -> Vec<(String, T)> {
+                            vec![
+                                ("x".to_string(), self.x),
                                 ("y".to_string(), self.y),
                             ]
                         }
@@ -1045,6 +1417,16 @@ mod tests {
                         )
                     }
 
+                    fn package_royalty_config() -> RoyaltyConfig {
+                        let royalties = btreemap!(
+                            "x".to_string() => Free,
+                            "y".to_string() => Free,
+                        );
+                        RoyaltyConfig {
+                            rules: royalties,
+                        }
+                    }
+
                     #[no_mangle]
                     pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
                         use ::scrypto::schema::*;
@@ -1054,7 +1436,7 @@ mod tests {
                         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
                         let mut fields = Vec::new();
                         let type_index = aggregator.add_child_type_and_descendents::<Test>();
-                        fields.push(type_index);
+                        fields.push(FieldSchema::normal(type_index));
                         let mut functions = BTreeMap::new();
                         functions.insert(
                             "x".to_string(),
@@ -1062,7 +1444,7 @@ mod tests {
                                 receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
                                 input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
                                 output: aggregator.add_child_type_and_descendents::<u32>(),
-                                export_name: "Test_x".to_string(),
+                                export: "Test_x".to_string(),
                             }
                         );
                         functions.insert(
@@ -1071,7 +1453,7 @@ mod tests {
                                 receiver: Option::None,
                                 input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
                                 output: aggregator.add_child_type_and_descendents::<u32>(),
-                                export_name: "Test_y".to_string(),
+                                export: "Test_y".to_string(),
                             }
                         );
                         let mut event_schema = BTreeMap::new();
@@ -1093,13 +1475,23 @@ mod tests {
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
                             dependencies,
+                            features: BTreeSet::new(),
+                        };
+
+                        let template = scrypto::blueprints::package::BlueprintTemplate {
                             method_auth_template,
                             outer_method_auth_template: BTreeMap::new(),
                         };
 
                         let function_auth = function_auth();
+                        let royalty_config = package_royalty_config();
 
-                        let return_data = (schema, function_auth);
+                        let return_data = scrypto::blueprints::package::BlueprintSetup {
+                            schema,
+                            function_auth,
+                            royalty_config,
+                            template,
+                        };
 
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
@@ -1128,12 +1520,14 @@ mod tests {
                     }
 
                     pub trait TestFunctions {
-                        fn y(i: u32) -> u32 {
-                            ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(i))
-                        }
+                        fn y(i: u32) -> u32;
                     }
 
-                    impl TestFunctions for ::scrypto::component::Blueprint<Test> {}
+                    impl TestFunctions for ::scrypto::component::Blueprint<Test> {
+                        fn y(i: u32) -> u32 {
+                            Self::call_function_raw("y", scrypto_args!(i))
+                        }
+                    }
                 }
             },
         );

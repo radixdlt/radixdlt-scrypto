@@ -1,32 +1,32 @@
 use scrypto::prelude::*;
 
 #[derive(Sbor, PartialEq)]
-struct ExtraStruct {
+pub struct ExtraStruct {
     field_one: String,
 }
 
 #[derive(Sbor, PartialEq)]
-enum ExtraEnum {
+pub enum ExtraEnum {
     EntryOne,
     EntryTwo,
 }
 
-external_blueprint! {
-    ExternalBlueprintTarget {
-        fn create() -> ComponentAddress;
-        fn get_value_via_package_call() -> String;
-    }
-}
-
-external_component! {
-    ExternalComponentTarget {
-        fn get_value_via_ref(&self) -> ExtraStruct;
-        fn get_value_via_mut_ref(&mut self) -> ExtraEnum;
-    }
-}
-
 #[blueprint]
 mod external_blueprint_caller {
+    const TARGET_PACKAGE_ADDRESS: PackageAddress = PackageAddress::new_or_panic([
+        13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+    ]);
+
+    extern_blueprint!(
+        TARGET_PACKAGE_ADDRESS,
+        ExternalBlueprintTarget {
+            fn create() -> Global<ExternalBlueprintTarget>;
+            fn get_value_via_package_call() -> String;
+            fn get_value_via_ref(&self) -> ExtraStruct;
+            fn get_value_via_mut_ref(&mut self) -> ExtraEnum;
+        }
+    );
+
     struct ExternalBlueprintCaller {}
 
     impl ExternalBlueprintCaller {
@@ -37,18 +37,15 @@ mod external_blueprint_caller {
                 .globalize()
         }
 
-        pub fn run_tests_with_external_blueprint(&self, package_address: PackageAddress) {
-            let external_blueprint =
-                ExternalBlueprintTarget::at(package_address, "ExternalBlueprintTarget");
-
+        pub fn run_tests_with_external_blueprint(&self) {
             // NB - These values should match those defined in ../../component/src/external_blueprint_target.rs
             assert!(
-                external_blueprint.get_value_via_package_call() == "SUCCESS",
+                Blueprint::<ExternalBlueprintTarget>::get_value_via_package_call() == "SUCCESS",
                 "Package call failed"
             );
 
-            let component_address = external_blueprint.create();
-            let mut target = ExternalComponentTarget::at(component_address);
+            let mut target: Global<ExternalBlueprintTarget> =
+                Blueprint::<ExternalBlueprintTarget>::create();
 
             assert!(
                 target.get_value_via_ref()
@@ -63,10 +60,10 @@ mod external_blueprint_caller {
             );
         }
 
-        pub fn run_tests_with_external_component(&self, component_address: ComponentAddress) {
-            // NB - These values should match those defined in ../../component/src/external_blueprint_target.rs
-            let mut target = ExternalComponentTarget::from(component_address);
-
+        pub fn run_tests_with_external_component(
+            &self,
+            mut target: Global<ExternalBlueprintTarget>,
+        ) {
             assert!(
                 target.get_value_via_ref()
                     == ExtraStruct {

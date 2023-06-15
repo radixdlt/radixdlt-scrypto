@@ -23,16 +23,6 @@ fn bench_radiswap(c: &mut Criterion) {
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
-        btreemap!(
-            "Radiswap".to_owned() => {
-                let mut config = RoyaltyConfig::default();
-                config.set_rule("instantiate_pool", RoyaltyAmount::Xrd(5.into()));
-                config.set_rule("add_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("remove_liquidity", RoyaltyAmount::Xrd(1.into()));
-                config.set_rule("swap", RoyaltyAmount::Xrd(2.into()));
-                config
-            }
-        ),
         btreemap!(),
         OwnerRole::Updateable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );

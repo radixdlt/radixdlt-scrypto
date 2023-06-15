@@ -1,4 +1,4 @@
-use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
+use radix_engine::errors::{KernelError, RejectionError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
@@ -29,7 +29,7 @@ fn non_existing_vault_should_cause_error() {
     // Assert
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(
-            RuntimeError::KernelError(KernelError::NodeNotFound(
+            RuntimeError::KernelError(KernelError::InvalidReference(
                 non_existing_address.as_node_id().clone(),
             )),
         ))
@@ -65,7 +65,9 @@ fn cannot_take_on_non_recallable_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. },))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(
+                AuthError::Unauthorized { .. },
+            ))
         )
     });
 }

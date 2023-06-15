@@ -39,7 +39,7 @@ if [[ ${ledger_state} != *"2023-01-27T13:01:00Z"* ]];then
 fi
 
 # Test - show account
-# FIXME: renable after showing resource metadata in component dump
+# TODO: renable after showing resource metadata in component dump
 # account_dump=`$resim show $account`
 # if [[ ${account_dump} != *"XRD"* ]];then
 #     echo "XRD not present!"

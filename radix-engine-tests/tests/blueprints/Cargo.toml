@@ -2,6 +2,7 @@
 members = [
     "access_rules",
     "address",
+    "allocated_address",
     "arguments",
     "balance_changes",
     "bucket",
@@ -46,7 +47,8 @@ members = [
     "transaction_runtime",
     "events",
     "events_invalid",
-    "logger"
+    "logger",
+    "wasm_non_mvp"
 ]
 
 [profile.release]

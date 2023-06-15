@@ -3,32 +3,31 @@ pub mod actor_index_api;
 pub mod actor_key_value_entry_api;
 pub mod actor_sorted_index_api;
 pub mod blueprint_api;
-pub mod component;
 pub mod field_lock_api;
-pub mod kernel_modules;
 pub mod key_value_entry_api;
 pub mod key_value_store_api;
 pub mod node_modules;
 pub mod object_api;
+pub mod system_modules;
 
 // Re-exports
-pub use crate::api::actor_sorted_index_api::ClientActorSortedIndexApi;
 pub use actor_api::ClientActorApi;
+use actor_index_api::ClientActorIndexApi;
 pub use actor_key_value_entry_api::ClientActorKeyValueEntryApi;
+pub use actor_sorted_index_api::ClientActorSortedIndexApi;
 pub use blueprint_api::ClientBlueprintApi;
 pub use field_lock_api::ClientFieldLockApi;
 pub use field_lock_api::LockFlags;
-pub use kernel_modules::auth_api::ClientAuthApi;
-pub use kernel_modules::costing_api::ClientCostingApi;
-pub use kernel_modules::event_api::ClientEventApi;
-pub use kernel_modules::execution_trace_api::ClientExecutionTraceApi;
-pub use kernel_modules::logger_api::ClientLoggerApi;
-pub use kernel_modules::transaction_limits_api::ClientTransactionLimitsApi;
-pub use kernel_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
+use key_value_entry_api::ClientKeyValueEntryApi;
+use key_value_store_api::ClientKeyValueStoreApi;
 pub use object_api::*;
-use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
-use radix_engine_interface::api::key_value_entry_api::ClientKeyValueEntryApi;
-use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+pub use system_modules::auth_api::ClientAuthApi;
+pub use system_modules::costing_api::ClientCostingApi;
+pub use system_modules::event_api::ClientEventApi;
+pub use system_modules::execution_trace_api::ClientExecutionTraceApi;
+pub use system_modules::logger_api::ClientLoggerApi;
+pub use system_modules::transaction_limits_api::ClientTransactionLimitsApi;
+pub use system_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 
 pub type ObjectHandle = u32;
 

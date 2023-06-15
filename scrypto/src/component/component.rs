@@ -3,9 +3,8 @@ use crate::modules::{AccessRules, Attachable, Royalty};
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
-    component_address_type_data, COMPONENT_ADDRESS_ID,
+    component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
 };
 use radix_engine_common::prelude::{
     OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
@@ -26,6 +25,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
+use sbor::rust::ops::DerefMut;
 use sbor::rust::prelude::*;
 use sbor::*;
 use sbor::{
@@ -41,7 +41,24 @@ pub trait HasTypeInfo {
     const GLOBAL_TYPE_NAME: &'static str;
 }
 
-pub struct Blueprint<C>(PhantomData<C>);
+pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
+
+impl<C: HasTypeInfo> Blueprint<C> {
+    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(
+            package_address,
+            C::BLUEPRINT_NAME,
+            function_name,
+            scrypto_encode(args).unwrap(),
+        )
+    }
+
+    pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
+        let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        Runtime::call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
+    }
+}
 
 pub trait HasStub {
     type Stub: ObjectStub;
@@ -49,7 +66,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type Permissions: MethodMapping<MethodPermission>;
-    type Royalties: MethodMapping<MethodRoyalty>;
+    type Royalties: MethodMapping<RoyaltyAmount>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -66,7 +83,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct AnyComponent(ObjectStubHandle);
+pub struct AnyComponent(pub(crate) ObjectStubHandle);
 
 impl HasStub for AnyComponent {
     type Stub = Self;
@@ -90,6 +107,12 @@ impl<C: HasStub> Deref for Owned<C> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<C: HasStub> DerefMut for Owned<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -158,15 +181,9 @@ impl<C: HasStub + HasMethods> Owned<C> {
             metadata: None,
             royalty: RoyaltyConfig::default(),
             roles,
-            address: None,
+            address_reservation: None,
         }
     }
-}
-
-pub enum MethodRoyalty {
-    Free,
-    Xrd(Decimal),
-    Usd(Decimal),
 }
 
 pub trait FnMapping<T> {
@@ -209,7 +226,7 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
     }
 }
 
-pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
+pub struct RoyaltiesConfig<R: MethodMapping<RoyaltyAmount>> {
     pub method_royalties: R,
 }
 
@@ -245,7 +262,7 @@ pub struct Globalizing<C: HasStub> {
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub roles: Roles,
-    pub address: Option<ComponentAddress>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -273,18 +290,14 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn royalties(mut self, royalties: C::Royalties) -> Self {
         for (method, royalty) in royalties.to_mapping() {
-            match royalty {
-                MethodRoyalty::Xrd(x) => self.royalty.set_rule(method, RoyaltyAmount::Xrd(x)),
-                MethodRoyalty::Usd(x) => self.royalty.set_rule(method, RoyaltyAmount::Usd(x)),
-                MethodRoyalty::Free => {}
-            }
+            self.royalty.set_rule(method, royalty);
         }
 
         self
     }
 
-    pub fn with_address(mut self, address: ComponentAddress) -> Self {
-        self.address = Some(address);
+    pub fn with_address(mut self, address_reservation: GlobalAddressReservation) -> Self {
+        self.address_reservation = Some(address_reservation);
         self
     }
 
@@ -301,10 +314,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
         );
 
-        let address = if let Some(address) = self.address {
-            let address: GlobalAddress = address.into();
-            ScryptoEnv.globalize_with_address(modules, address).unwrap();
-            address
+        let address = if let Some(address_reservation) = self.address_reservation {
+            ScryptoEnv
+                .globalize_with_address(modules, address_reservation)
+                .unwrap()
         } else {
             ScryptoEnv.globalize(modules).unwrap()
         };
@@ -332,8 +345,14 @@ impl<O: HasStub> Deref for Global<O> {
     }
 }
 
+impl<O: HasStub> DerefMut for Global<O> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl<O: HasStub> Global<O> {
-    // TODO: Change to GlobalAddress?
+    // FIXME: Change to GlobalAddress?
     pub fn component_address(&self) -> ComponentAddress {
         ComponentAddress::new_or_panic(self.handle().as_node_id().0)
     }
@@ -434,6 +453,16 @@ impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         component_address_type_data()
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}
+
+impl Describe<ScryptoCustomTypeKind> for Owned<AnyComponent> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        own_type_data()
     }
 
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}

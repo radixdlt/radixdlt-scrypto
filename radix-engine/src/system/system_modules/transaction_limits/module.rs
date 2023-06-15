@@ -7,8 +7,8 @@ use crate::track::interface::StoreAccessInfo;
 use crate::transaction::{ExecutionMetrics, TransactionResult};
 use crate::types::*;
 use crate::{
-    errors::ModuleError,
     errors::RuntimeError,
+    errors::SystemModuleError,
     kernel::{call_frame::Message, kernel_api::KernelApi},
     types::Vec,
 };
@@ -121,8 +121,8 @@ impl TransactionLimitsModule {
             .expect("Call frames stack (Wasm memory) should not be empty.");
         if current_call_frame.wasm_memory_usage > self.limits_config.max_wasm_memory_per_call_frame
         {
-            return Err(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxWasmInstanceMemoryExceeded(
                         current_call_frame.wasm_memory_usage,
                     ),
@@ -144,10 +144,10 @@ impl TransactionLimitsModule {
 
         // validate if limit was exceeded
         if max_value > self.limits_config.max_wasm_memory {
-            Err(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(TransactionLimitsError::MaxWasmMemoryExceeded(
-                    max_value,
-                )),
+            Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxWasmMemoryExceeded(max_value),
+                ),
             ))
         } else {
             Ok(())
@@ -162,8 +162,8 @@ impl TransactionLimitsModule {
     ) -> Result<(), RuntimeError> {
         if let Some(size) = read_size {
             if size > self.limits_config.max_substate_size {
-                return Err(RuntimeError::ModuleError(
-                    ModuleError::TransactionLimitsError(
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
                     ),
                 ));
@@ -171,8 +171,8 @@ impl TransactionLimitsModule {
         }
         if let Some(size) = write_size {
             if size > self.limits_config.max_substate_size {
-                return Err(RuntimeError::ModuleError(
-                    ModuleError::TransactionLimitsError(
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::MaxSubstateWriteSizeExceeded(size),
                     ),
                 ));
@@ -180,14 +180,14 @@ impl TransactionLimitsModule {
         }
 
         if self.substate_db_read_count > self.limits_config.max_substate_read_count {
-            Err(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(
+            Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxSubstateReadCountExceeded,
                 ),
             ))
         } else if self.substate_db_write_count > self.limits_config.max_substate_write_count {
-            Err(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(
+            Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxSubstateWriteCountExceeded,
                 ),
             ))
@@ -225,15 +225,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api
+            .kernel_get_system()
+            .modules
+            .transaction_limits_module()
+            .unwrap();
         let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
             tlimit.invoke_payload_max_size = input_size;
         }
 
         if input_size > tlimit.limits_config.max_invoke_payload_size {
-            Err(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(
+            Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxInvokePayloadSizeExceeded(input_size),
                 ),
             ))
@@ -251,7 +255,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         // push new empty wasm memory value refencing current call frame to internal stack
         api.kernel_get_system()
             .modules
-            .transaction_limits
+            .transaction_limits_module()
+            .unwrap()
             .call_frames_stack
             .push(CallFrameLimitInfo::default());
         Ok(())
@@ -264,7 +269,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         // pop from internal stack
         api.kernel_get_system()
             .modules
-            .transaction_limits
+            .transaction_limits_module()
+            .unwrap()
             .call_frames_stack
             .pop();
         Ok(())
@@ -276,7 +282,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api
+            .kernel_get_system()
+            .modules
+            .transaction_limits_module()
+            .unwrap();
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
@@ -294,7 +304,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api
+            .kernel_get_system()
+            .modules
+            .transaction_limits_module()
+            .unwrap();
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;

@@ -1,22 +1,21 @@
-use radix_engine::{transaction::TransactionReceipt, types::*};
+use radix_engine::{
+    errors::{ApplicationError, RuntimeError},
+    transaction::TransactionReceipt,
+    types::*,
+};
 use radix_engine_interface::types::Level;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-fn log_message<S: AsRef<str>>(message: S, panic_log: bool) -> TransactionReceipt {
+fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/logger");
-
-    let method_name = match panic_log {
-        true => "panic_log",
-        false => "no_panic_log",
-    };
 
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "Logger",
-            method_name,
+            function_name,
             manifest_args!(message.as_ref().to_owned()),
         )
         .build();
@@ -26,13 +25,13 @@ fn log_message<S: AsRef<str>>(message: S, panic_log: bool) -> TransactionReceipt
 }
 
 #[test]
-fn log_messages_from_transaction_with_no_panic_shows_up_in_receipts() {
+fn test_log_message() {
     // Arrange
-    let message = "Hello World";
-    let panic = false;
+    let function_name = "log_message";
+    let message = "Hello";
 
     // Act
-    let receipt = log_message(message, panic);
+    let receipt = call(function_name, message);
 
     // Assert
     {
@@ -46,25 +45,68 @@ fn log_messages_from_transaction_with_no_panic_shows_up_in_receipts() {
 }
 
 #[test]
-fn log_messages_from_transaction_with_panic_shows_up_in_receipts() {
+fn test_rust_panic() {
     // Arrange
-    let message = "Hey Hey World";
-    let panic = true;
+    let function_name = "rust_panic";
+    let message = "Hey";
 
     // Act
-    let receipt = log_message(message, panic);
+    let receipt = call(function_name, message);
 
     // Assert
     {
         let logs = receipt.expect_commit(false).application_logs.clone();
-        let expected_logs = vec![
-            (Level::Info, message.to_owned()),
-            (
-                Level::Error,
-                "Panicked at 'I'm panicking!', logger/src/lib.rs:16:13".to_owned(),
-            ),
-        ];
+        assert!(logs.is_empty());
 
-        assert_eq!(expected_logs, logs)
+        receipt.expect_specific_failure(|e| match e {
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => {
+                e.eq("Hey @ logger/src/lib.rs:15:13")
+            }
+            _ => false,
+        })
+    }
+}
+
+#[test]
+fn test_scrypto_panic() {
+    // Arrange
+    let function_name = "scrypto_panic";
+    let message = "Hi";
+
+    // Act
+    let receipt = call(function_name, message);
+
+    // Assert
+    {
+        let logs = receipt.expect_commit(false).application_logs.clone();
+        assert!(logs.is_empty());
+
+        receipt.expect_specific_failure(|e| match e {
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq(message),
+            _ => false,
+        })
+    }
+}
+
+// FIXME: add length tests when adding event/log/panic message length limit.
+
+#[test]
+fn test_assert_length_5() {
+    // Arrange
+    let function_name = "assert_length_5";
+    let message = "!5";
+
+    // Act
+    let receipt = call(function_name, message);
+
+    // Assert
+    {
+        let logs = receipt.expect_commit(false).application_logs.clone();
+        assert!(logs.is_empty());
+
+        receipt.expect_specific_failure(|e| match e {
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
+            _ => false,
+        })
     }
 }

@@ -1,4 +1,4 @@
-use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -16,7 +16,6 @@ fn cannot_set_package_metadata_with_no_owner() {
         .publish_package_advanced(
             code,
             single_function_package_definition("Test", "f"),
-            BTreeMap::new(),
             BTreeMap::new(),
             OwnerRole::None,
         )
@@ -39,7 +38,9 @@ fn cannot_set_package_metadata_with_no_owner() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(
+                AuthError::Unauthorized { .. }
+            ))
         )
     });
     let value = test_runner.get_metadata(package_address.into(), "name");

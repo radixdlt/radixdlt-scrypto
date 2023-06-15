@@ -18,6 +18,7 @@ pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
     pub fn new_fungible<Y, E: Debug + ScryptoDecode>(
+        track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -26,24 +27,25 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
-        let result = api
-            .call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                scrypto_encode(&FungibleResourceManagerCreateInput {
-                    metadata,
-                    access_rules,
-                    divisibility,
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        let result = api.call_function(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateInput {
+                track_total_supply,
+                metadata,
+                access_rules,
+                divisibility,
+            })
+            .unwrap(),
+        )?;
+
         let resource_address = scrypto_decode(result.as_slice()).unwrap();
         Ok(ResourceManager(resource_address))
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
+        track_total_supply: bool,
         divisibility: u8,
         amount: Decimal,
         metadata: BTreeMap<String, MetadataValue>,
@@ -53,20 +55,19 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
-        let result = api
-            .call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    metadata,
-                    access_rules,
-                    divisibility,
-                    initial_supply: amount,
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        let result = api.call_function(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                track_total_supply,
+                metadata,
+                access_rules,
+                divisibility,
+                initial_supply: amount,
+            })
+            .unwrap(),
+        )?;
         let (resource_address, bucket): (ResourceAddress, Bucket) =
             scrypto_decode(result.as_slice()).unwrap();
         Ok((ResourceManager(resource_address), bucket))
@@ -74,6 +75,7 @@ impl ResourceManager {
 
     pub fn new_non_fungible<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
@@ -88,6 +90,7 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateInput {
                 id_type,
+                track_total_supply,
                 non_fungible_schema,
                 metadata,
                 access_rules,
@@ -100,9 +103,10 @@ impl ResourceManager {
 
     pub fn new_non_fungible_with_address<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        address: [u8; NodeId::LENGTH], // TODO: Clean this up
+        address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -114,10 +118,11 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type,
+                track_total_supply,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
                 metadata,
                 access_rules,
-                resource_address: address,
+                resource_address: address_reservation,
             })
             .unwrap(),
         )?;
@@ -211,7 +216,26 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
+    pub fn package_burn<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
+            scrypto_encode(&ResourceManagerPackageBurnInput { bucket }).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn total_supply<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Option<Decimal>, E>
     where
         Y: ClientApi<E>,
     {

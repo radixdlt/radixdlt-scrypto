@@ -30,7 +30,6 @@ use transaction::model::AuthZoneParams;
 pub enum AuthError {
     NoFunction(FnIdentifier),
     NoMethod(FnIdentifier),
-    UsedReservedRole(String),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
@@ -38,7 +37,7 @@ pub enum AuthError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FailedAccessRules {
-    AuthorityList(Vec<(RoleKey, Vec<AccessRule>)>),
+    RoleList(Vec<(RoleKey, Vec<AccessRule>)>),
     AccessRule(Vec<AccessRule>),
 }
 
@@ -75,7 +74,7 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
     ) -> Result<AccessRule, RuntimeError> {
         let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-            // TODO: remove
+            // FIXME: remove
             if blueprint.blueprint_name.eq(PACKAGE_BLUEPRINT)
                 && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {
@@ -101,12 +100,12 @@ impl AuthModule {
             if let Some(access_rule) = access_rule {
                 access_rule.clone()
             } else {
-                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::NoFunction(FnIdentifier {
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
                         blueprint: blueprint.clone(),
                         ident: FnIdent::Application(ident.to_string()),
-                    }),
-                )));
+                    })),
+                ));
             }
         };
 
@@ -187,12 +186,12 @@ impl AuthModule {
         // TODO: Cleanup logic here
         let node_authority_rules = match &object_key {
             ObjectKey::SELF => {
-                let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
-                schema.method_permissions_instance
+                let def = api.get_blueprint_definition(&callee.node_object_info.blueprint)?;
+                def.template.method_auth_template
             }
             ObjectKey::InnerBlueprint(_blueprint_name) => {
-                let schema = api.get_blueprint_schema(&callee.node_object_info.blueprint)?;
-                schema.outer_method_permissions_instance
+                let def = api.get_blueprint_definition(&callee.node_object_info.blueprint)?;
+                def.template.outer_method_auth_template
             }
         };
 
@@ -224,9 +223,11 @@ impl AuthModule {
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::NoMethod(callee.fn_identifier()),
-                            )));
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::AuthError(AuthError::NoMethod(
+                                    callee.fn_identifier(),
+                                )),
+                            ));
                         }
                         _ => return Ok(()),
                     }
@@ -275,12 +276,12 @@ impl AuthModule {
         match result {
             AuthorityListAuthorizationResult::Authorized => Ok(()),
             AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
-                Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized {
-                        failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
+                Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
+                        failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
                         fn_identifier,
-                    })),
-                )))
+                    }))),
+                ))
             }
         }
     }
@@ -298,7 +299,13 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
+        if let Some(auth_zone_id) = api
+            .kernel_get_system()
+            .modules
+            .auth_module()
+            .unwrap()
+            .last_auth_zone()
+        {
             let mut system = SystemService::new(api);
 
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
@@ -320,14 +327,16 @@ impl AuthModule {
                     match auth_result {
                         AuthorizationCheckResult::Authorized => {}
                         AuthorizationCheckResult::Failed(access_rule_stack) => {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::Unauthorized(Box::new(Unauthorized {
-                                    failed_access_rules: FailedAccessRules::AccessRule(
-                                        access_rule_stack,
-                                    ),
-                                    fn_identifier: callee.fn_identifier(),
-                                })),
-                            )));
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(
+                                    Unauthorized {
+                                        failed_access_rules: FailedAccessRules::AccessRule(
+                                            access_rule_stack,
+                                        ),
+                                        fn_identifier: callee.fn_identifier(),
+                                    },
+                                ))),
+                            ));
                         }
                     }
                 }
@@ -359,7 +368,7 @@ impl AuthModule {
         let is_barrier = callee.is_barrier();
         let is_transaction_processor = callee.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_system().modules.auth;
+            let auth_module = &api.kernel_get_system().modules.auth_module().unwrap();
             (
                 auth_module.params.virtual_resources.clone(),
                 auth_module.params.initial_proofs.clone(),
@@ -370,7 +379,8 @@ impl AuthModule {
         let parent = api
             .kernel_get_system()
             .modules
-            .auth
+            .auth_module()
+            .unwrap()
             .auth_zone_stack
             .last()
             .map(|x| Reference(x.clone().into()));
@@ -399,6 +409,7 @@ impl AuthModule {
                     global: false,
                     outer_object: None,
                     instance_schema: None,
+                    features: btreeset!(),
                 })).to_substates()
             ),
         )?;
@@ -409,7 +420,8 @@ impl AuthModule {
         // Update auth zone stack
         api.kernel_get_system()
             .modules
-            .auth
+            .auth_module()
+            .unwrap()
             .auth_zone_stack
             .push(auth_zone_node_id);
 
@@ -433,7 +445,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         _dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         // update internal state
-        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
+        api.kernel_get_system()
+            .modules
+            .auth_module()
+            .unwrap()
+            .auth_zone_stack
+            .pop();
         Ok(())
     }
 }

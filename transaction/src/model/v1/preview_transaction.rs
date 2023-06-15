@@ -32,8 +32,8 @@ impl ValidatedPreviewIntent {
 
         let mut virtual_resources = BTreeSet::new();
         if self.flags.assume_all_signature_proofs {
-            virtual_resources.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE);
-            virtual_resources.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE);
+            virtual_resources.insert(SECP256K1_SIGNATURE_VIRTUAL_BADGE);
+            virtual_resources.insert(ED25519_SIGNATURE_VIRTUAL_BADGE);
         }
 
         let header = &intent.header.inner;
@@ -72,7 +72,7 @@ impl ValidatedPreviewIntent {
                     }
                     .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
                 ],
-                pre_allocated_ids: index_set_new(),
+                pre_allocated_addresses: vec![],
             },
         )
     }

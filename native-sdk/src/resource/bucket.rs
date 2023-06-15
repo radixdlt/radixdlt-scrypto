@@ -48,6 +48,13 @@ pub trait NativeBucket {
     where
         Y: ClientApi<E>;
 
+    fn package_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
+
     fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: ClientApi<E>,
@@ -210,17 +217,30 @@ impl NativeBucket for Bucket {
         ResourceManager(resource_address).burn(Bucket(self.0), api)
     }
 
+    fn package_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let resource_address = self.resource_address(api)?;
+        ResourceManager(resource_address).package_burn(Bucket(self.0), api)
+    }
+
     fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            BUCKET_GET_RESOURCE_ADDRESS_IDENT,
-            scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let resource_address = ResourceAddress::new_or_panic(
+            api.get_object_info(self.0.as_node_id())?
+                .outer_object
+                .expect("Bucket should have an outer object")
+                .into(),
+        );
+
+        Ok(resource_address)
     }
 
     fn create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(

@@ -17,11 +17,7 @@ PUBLISH_PACKAGE_ADVANCED
     None
     Blob("${code_blob_hash}")
     Tuple(
-        Tuple(
-            Map<String, Tuple>()
-        ),
-        Map<String, Map>()
+        Map<String, Tuple>()
     )
-    Map<String, Tuple>()       # Royalty Configuration
     Map<String, Enum>()        # Metadata
     Enum<0u8>();               # Owner AccessRule

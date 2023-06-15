@@ -89,11 +89,11 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use transaction::model::{SystemTransactionV1, TransactionPayload};
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -184,7 +184,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
             blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
         },
         hash_for_execution: hash(format!("Simulator system transaction: {}", nonce)),
-        pre_allocated_ids: index_set_new(),
+        pre_allocated_addresses: vec![],
     };
 
     let receipt = execute_and_commit_transaction(
@@ -305,9 +305,7 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt
     }
 }
 
-pub fn get_signing_keys(
-    signing_keys: &Option<String>,
-) -> Result<Vec<EcdsaSecp256k1PrivateKey>, Error> {
+pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1PrivateKey>, Error> {
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
@@ -316,11 +314,11 @@ pub fn get_signing_keys(
                 hex::decode(key)
                     .map_err(|_| Error::InvalidPrivateKey)
                     .and_then(|bytes| {
-                        EcdsaSecp256k1PrivateKey::from_bytes(&bytes)
+                        Secp256k1PrivateKey::from_bytes(&bytes)
                             .map_err(|_| Error::InvalidPrivateKey)
                     })
             })
-            .collect::<Result<Vec<EcdsaSecp256k1PrivateKey>, Error>>()?
+            .collect::<Result<Vec<Secp256k1PrivateKey>, Error>>()?
     } else {
         vec![get_default_private_key()?]
     };
@@ -357,7 +355,8 @@ pub fn export_blueprint_schema(
         .ok_or(Error::BlueprintNotFound(
             package_address,
             blueprint_name.to_string(),
-        ))?;
+        ))?
+        .schema;
     Ok(schema)
 }
 
@@ -416,7 +415,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                        _ => return None,
                     }
                 }
             }
@@ -443,6 +442,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
             .blueprints
             .get(&blueprint_name)
             .unwrap()
+            .schema
             .schema
             .clone(),
     ))
@@ -488,6 +488,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
             epoch: Epoch::zero(),
             epoch_start_milli: 0,
             round: Round::zero(),
+            current_leader: Some(0),
         });
 
     consensus_manager_substate.epoch = epoch;

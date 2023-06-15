@@ -1,9 +1,10 @@
 use crate::api::actor_sorted_index_api::SortedKey;
 use crate::blueprints::resource::*;
 use crate::*;
+use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::crypto::Secp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -15,11 +16,22 @@ pub const CONSENSUS_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ConsensusManagerCreateInput {
-    pub validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
-    pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
+    pub validator_owner_token_address: GlobalAddressReservation,
+    pub component_address: GlobalAddressReservation,
     pub initial_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ConsensusManagerCreateManifestInput {
+    pub validator_owner_token_address: ManifestAddressReservation,
+    pub component_address: ManifestAddressReservation,
+    pub initial_epoch: Epoch,
+    pub initial_config: ConsensusManagerConfig,
+    pub initial_time_ms: i64,
+    pub initial_current_leader: Option<ValidatorIndex>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -220,7 +232,7 @@ pub const CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ConsensusManagerCreateValidatorInput {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
 }
 
 pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket);
@@ -232,7 +244,7 @@ pub enum UpdateSecondaryIndex {
     Create {
         index_key: SortedKey,
         primary: ComponentAddress,
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
         stake: Decimal,
     },
     UpdateStake {
@@ -242,7 +254,7 @@ pub enum UpdateSecondaryIndex {
     },
     UpdatePublicKey {
         index_key: SortedKey,
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
     },
     Remove {
         index_key: SortedKey,
@@ -294,7 +306,7 @@ pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorUpdateKeyInput {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
 }
 
 pub type ValidatorUpdateKeyOutput = ();
@@ -335,6 +347,18 @@ pub struct ValidatorApplyEmissionInput {
 }
 
 pub type ValidatorApplyEmissionOutput = ();
+
+pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorApplyRewardInput {
+    /// A bucket with the rewarded XRDs (from transaction fees) for this validator.
+    pub xrd_bucket: Bucket,
+    /// The *concluded* epoch's number. Informational-only.
+    pub epoch: Epoch,
+}
+
+pub type ValidatorApplyRewardOutput = ();
 
 pub const VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT: &str = "lock_owner_stake_units";
 

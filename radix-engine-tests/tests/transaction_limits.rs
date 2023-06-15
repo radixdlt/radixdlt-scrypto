@@ -1,11 +1,11 @@
 use radix_engine::{
-    errors::{ModuleError, RejectionError, RuntimeError},
+    errors::{RejectionError, RuntimeError, SystemModuleError},
     system::system_modules::transaction_limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
     vm::wasm::WASM_MEMORY_PAGE_SIZE,
 };
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::PackageSetup;
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TestTransaction};
 
@@ -23,7 +23,6 @@ fn transaction_limit_call_frame_memory_exceeded() {
         code,
         single_function_package_definition("Test", "f"),
         BTreeMap::new(),
-        BTreeMap::new(),
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
@@ -35,7 +34,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
     // Assert, exceeded memory should be larger by 1 memory page than the limit
     let expected_mem = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME + WASM_MEMORY_PAGE_SIZE as usize;
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxWasmInstanceMemoryExceeded(x),
         )) => *x == expected_mem,
         _ => false,
@@ -81,7 +80,7 @@ fn transaction_limit_memory_exceeded() {
     assert!((DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / call_frame_mem + 1) < DEFAULT_MAX_CALL_DEPTH);
 
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxWasmMemoryExceeded(x),
         )) => *x == expected_mem,
         _ => false,
@@ -121,7 +120,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
                 TransactionLimitsError::MaxSubstateReadCountExceeded
             ))
         )
@@ -161,7 +160,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
                 TransactionLimitsError::MaxSubstateWriteCountExceeded
             ))
         )
@@ -199,8 +198,8 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
 
     // Assert
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-            ModuleError::TransactionLimitsError(
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::SystemModuleError(
+            SystemModuleError::TransactionLimitsError(
                 TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
             ),
         )) => *size > execution_config.max_substate_size,
@@ -240,9 +239,9 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxSubstateWriteSizeExceeded(x),
-        )) => *x == SIZE as usize + 8, /* SBOR prefix */
+        )) => *x == SIZE as usize + 13, /* SBOR prefix + Substate wrapper */
         _ => false,
     })
 }
@@ -267,8 +266,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     let manifest = ManifestBuilder::new()
         .publish_package_advanced(
             code,
-            PackageDefinition::default(),
-            BTreeMap::new(),
+            PackageSetup::default(),
             BTreeMap::new(),
             OwnerRole::None,
         )
@@ -280,42 +278,11 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                ModuleError::TransactionLimitsError(
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxInvokePayloadSizeExceeded(_)
                 )
             ))
         )
     })
-}
-
-#[test]
-fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
-    // Arrange
-    let data: Vec<u8> = (0..DEFAULT_MAX_INVOKE_INPUT_SIZE).map(|_| 0).collect();
-    let blueprint_name = "test_blueprint";
-    let function_name = "test_fn";
-    let package_address = PACKAGE_PACKAGE;
-
-    // Act
-    let ret =
-        TestRunner::kernel_invoke_function(package_address, blueprint_name, function_name, &data);
-
-    // Assert
-    let err = ret.expect_err("Expected failure but was success");
-
-    let size = scrypto_args!(data).len()
-        + blueprint_name.len()
-        + function_name.len()
-        + package_address.as_ref().len();
-
-    match err {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
-        )) => assert_eq!(x, size),
-        x => panic!(
-            "Expected specific failure but was different error:\n{:?}",
-            x
-        ),
-    }
 }

@@ -9,7 +9,7 @@ macro_rules! known_enum {
     };
 }
 
-// TODO: we need a final sanity check before mainnet launch!
+// FIXME: we need a final sanity check before mainnet launch!
 lazy_static! {
     pub static ref KNOWN_ENUM_DISCRIMINATORS: NonIterMap<&'static str, u8> = {
         let mut m = NonIterMap::new();
@@ -165,6 +165,24 @@ lazy_static! {
             enum PublicKeyHash {
                 Secp256k1 = 0;
                 Ed25519 = 1;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum RoyaltyAmount {
+                Free = 0;
+                Xrd = 1;
+                Usd = 2;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum OwnerRole {
+                None = 0;
+                Fixed = 1;
+                Updateable = 2;
             }
         );
 

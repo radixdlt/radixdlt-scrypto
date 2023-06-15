@@ -1,17 +1,16 @@
+use crate::types::*;
+use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use parity_wasm::elements::{
     External, FunctionType,
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::BlueprintSchema;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
 };
-use wasmi_validation::{validate_module, PlainValidator};
-
-use crate::types::*;
-use crate::vm::wasm::{constants::*, errors::*, PrepareError};
+use wasmparser::Validator;
 
 use super::WasmiModule;
 #[derive(Debug, PartialEq)]
@@ -26,7 +25,9 @@ impl WasmModule {
             .map_err(|_| PrepareError::DeserializationError)?;
 
         // validate
-        validate_module::<PlainValidator>(&module).map_err(|_| PrepareError::ValidationError)?;
+        Validator::new()
+            .validate_all(code)
+            .map_err(|_| PrepareError::ValidationError)?;
 
         Ok(Self { module })
     }
@@ -645,19 +646,19 @@ impl WasmModule {
                             }
                         }
 
-                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
+                        ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![],
+                                    vec![ValueType::I32, ValueType::I32],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
+                                        ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -690,7 +691,7 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                     ],
-                                    vec![],
+                                    vec![ValueType::I64],
                                 ) {
                                     continue;
                                 }
@@ -769,7 +770,7 @@ impl WasmModule {
                                 }
                             }
                         }
-                        LOG_FUNCTION_NAME => {
+                        LOG_MESSAGE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -780,6 +781,18 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                     ],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        PANIC_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
                                     vec![],
                                 ) {
                                     continue;
@@ -910,7 +923,7 @@ impl WasmModule {
             }
         }
 
-        // TODO: do we need to enforce limit on the number of locals and parameters?
+        // FIXME: do we need to enforce limit on the number of locals and parameters?
 
         Ok(self)
     }
@@ -924,16 +937,19 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints(self, schema: &PackageSchema) -> Result<Self, PrepareError> {
+    pub fn enforce_export_constraints<'a, I: Iterator<Item = &'a BlueprintSchema>>(
+        self,
+        blueprints: I,
+    ) -> Result<Self, PrepareError> {
         let exports = self
             .module
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
-        for (_, blueprint_schema) in &schema.blueprints {
+        for blueprint_schema in blueprints {
             for func in blueprint_schema.functions.values() {
-                let func_name = &func.export_name;
+                let export_name = &func.export;
                 if !exports.entries().iter().any(|x| {
-                    x.field().eq(func_name) && {
+                    x.field().eq(export_name) && {
                         if let Internal::Function(func_index) = x.internal() {
                             Self::function_matches(
                                 &self.module,
@@ -947,7 +963,7 @@ impl WasmModule {
                     }
                 }) {
                     return Err(PrepareError::MissingExport {
-                        export_name: func_name.to_string(),
+                        export_name: export_name.to_string(),
                     });
                 }
             }
@@ -1068,13 +1084,27 @@ impl WasmModule {
             .map(|ty| ty == &Type::Function(FunctionType::new(params, results)))
             .unwrap_or(false)
     }
+
+    #[cfg(feature = "radix_engine_tests")]
+    pub fn contains_sign_ext_ops(self) -> bool {
+        if let Some(code) = self.module.code_section() {
+            for func_body in code.bodies() {
+                for op in func_body.code().elements() {
+                    if let SignExt(_) = op {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
 }
 
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
+    use radix_engine_interface::schema::{BlueprintSchema, FieldSchema, FunctionSchema};
     use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
@@ -1229,8 +1259,8 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut package_schema = PackageSchema::default();
-        package_schema.blueprints.insert(
+        let mut blueprints = BTreeMap::new();
+        blueprints.insert(
             "Test".to_string(),
             BlueprintSchema {
                 outer_blueprint: None,
@@ -1239,21 +1269,20 @@ mod tests {
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                fields: vec![FieldSchema::normal(LocalTypeIndex::WellKnown(UNIT_ID))],
                 collections: vec![],
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,
                         input: LocalTypeIndex::WellKnown(ANY_ID),
                         output: LocalTypeIndex::WellKnown(UNIT_ID),
-                        export_name: "Test_f".to_string(),
+                        export: "Test_f".to_string(),
                     }
                 ),
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: btreemap!(),
+                features: btreeset!(),
             },
         );
 
@@ -1263,7 +1292,7 @@ mod tests {
             )
             "#,
             PrepareError::NoExportSection,
-            |x| WasmModule::enforce_export_constraints(x, &package_schema)
+            |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
         // symbol not found
         assert_invalid_wasm!(
@@ -1277,7 +1306,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &package_schema)
+            |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
         // signature does not match
         assert_invalid_wasm!(
@@ -1291,7 +1320,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &package_schema)
+            |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
     }
 }

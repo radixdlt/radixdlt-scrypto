@@ -4,6 +4,7 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -16,15 +17,15 @@ use radix_engine_store_interface::{
 };
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::CustomGenesis;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = EcdsaSecp256k1PublicKey([0; 33]);
+    let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
     let stake = GenesisStakeAllocation {
         account_index: 0,
@@ -50,6 +51,7 @@ fn test_bootstrap_receipt_should_match_constants() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
         )
         .unwrap();
 
@@ -78,9 +80,9 @@ fn test_bootstrap_receipt_should_match_constants() {
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = EcdsaSecp256k1PublicKey([0; 33]);
+    let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
     let stake = GenesisStakeAllocation {
         account_index: 0,
@@ -106,6 +108,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
         )
         .unwrap();
 
@@ -144,9 +147,9 @@ fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitRe
 fn test_genesis_xrd_allocation_to_accounts() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let account_public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let account_public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let account_component_address = ComponentAddress::virtual_account_from_public_key(
-        &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
+        &PublicKey::Secp256k1(account_public_key.clone()),
     );
     let allocation_amount = dec!("100");
     let genesis_data_chunks = vec![GenesisDataChunk::XrdBalances(vec![(
@@ -165,6 +168,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
         )
         .unwrap();
 
@@ -186,24 +190,22 @@ fn test_genesis_xrd_allocation_to_accounts() {
 fn test_genesis_resource_with_initial_allocation() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let token_holder = ComponentAddress::virtual_account_from_public_key(
-        &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
-    );
-    let address_bytes_without_entity_id = hash(vec![1, 2, 3]).lower_bytes();
+    let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
+        Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    ));
     let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
             EntityType::GlobalFungibleResourceManager as u8,
-            &address_bytes_without_entity_id,
+            &hash(vec![1, 2, 3]).lower_bytes(),
         )
         .0,
     );
-
     let resource_owner = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(2).unwrap().public_key(),
     );
     let allocation_amount = dec!("105");
     let genesis_resource = GenesisResource {
-        address_bytes_without_entity_id,
+        reserved_resource_address: resource_address,
         initial_supply: allocation_amount,
         metadata: vec![(
             "symbol".to_string(),
@@ -234,6 +236,7 @@ fn test_genesis_resource_with_initial_allocation() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
         )
         .unwrap();
 
@@ -248,12 +251,13 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
             &resource_address.as_node_id(),
             METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
-        .unwrap();
+        .unwrap()
+        .value;
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -264,12 +268,14 @@ fn test_genesis_resource_with_initial_allocation() {
     let allocation_receipt = data_ingestion_receipts.pop().unwrap();
     let resource_creation_receipt = data_ingestion_receipts.pop().unwrap();
 
+    println!("{:?}", resource_creation_receipt);
+
     let created_owner_badge = resource_creation_receipt
         .expect_commit_success()
-        .new_resource_addresses()[0];
+        .new_resource_addresses()[1];
     let created_resource = resource_creation_receipt
         .expect_commit_success()
-        .new_resource_addresses()[1];
+        .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
     assert_eq!(
         resource_creation_receipt
             .expect_commit_success()
@@ -302,13 +308,13 @@ fn test_genesis_stake_allocation() {
     // There are two genesis validators
     // - one with two stakers (0 and 1)
     // - one with one staker (just 1)
-    let validator_0_key = EcdsaSecp256k1PrivateKey::from_u64(10).unwrap().public_key();
-    let validator_1_key = EcdsaSecp256k1PrivateKey::from_u64(11).unwrap().public_key();
+    let validator_0_key = Secp256k1PrivateKey::from_u64(10).unwrap().public_key();
+    let validator_1_key = Secp256k1PrivateKey::from_u64(11).unwrap().public_key();
     let staker_0 = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(4).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(4).unwrap().public_key(),
     );
     let staker_1 = ComponentAddress::virtual_account_from_public_key(
-        &EcdsaSecp256k1PrivateKey::from_u64(5).unwrap().public_key(),
+        &Secp256k1PrivateKey::from_u64(5).unwrap().public_key(),
     );
     let validator_0_allocations = vec![
         GenesisStakeAllocation {
@@ -349,6 +355,7 @@ fn test_genesis_stake_allocation() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             1,
+            Some(0),
         )
         .unwrap();
 
@@ -403,13 +410,13 @@ fn test_genesis_stake_allocation() {
             .enumerate()
         {
             let validator_url_entry = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
+                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
                     &new_validators[index].as_node_id(),
                     METADATA_KV_STORE_PARTITION,
                     &SubstateKey::Map(scrypto_encode("url").unwrap()),
                 )
                 .unwrap();
-            if let Some(MetadataValue::Url(url)) = validator_url_entry {
+            if let Some(MetadataValue::Url(url)) = validator_url_entry.value {
                 assert_eq!(
                     url,
                     Url(format!("http://test.local?validator={:?}", validator_key))
@@ -434,6 +441,7 @@ fn test_genesis_time() {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
+            Some(0),
         )
         .unwrap();
 

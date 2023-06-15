@@ -2,7 +2,6 @@ use crate::blueprints::consensus_manager::*;
 use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -46,7 +45,7 @@ pub struct ValidatorSubstate {
     pub sorted_key: Option<SortedKey>,
 
     /// This validator's public key.
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
 
     /// Whether this validator is currently interested in participating in the consensus.
     pub is_registered: bool,
@@ -186,7 +185,7 @@ impl ValidatorBlueprint {
             let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
                 xrd_bucket_amount,
                 xrd_vault.amount(api)?,
-                stake_unit_resman.total_supply(api)?,
+                stake_unit_resman.total_supply(api)?.unwrap(),
             );
 
             let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
@@ -233,7 +232,7 @@ impl ValidatorBlueprint {
             let mut stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
 
             let active_stake_amount = stake_vault.amount(api)?;
-            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
             let xrd_amount = if total_stake_unit_supply.is_zero() {
                 Decimal::zero()
             } else {
@@ -390,7 +389,6 @@ impl ValidatorBlueprint {
         let resource_address = validator.unstake_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
-        // TODO: Move this check into a more appropriate place
         if !resource_address.eq(&bucket.resource_address(api)?) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(ValidatorError::InvalidClaimResource),
@@ -435,7 +433,7 @@ impl ValidatorBlueprint {
         Ok(claimed_bucket)
     }
 
-    pub fn update_key<Y>(key: EcdsaSecp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn update_key<Y>(key: Secp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -771,7 +769,7 @@ impl ValidatorBlueprint {
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
         let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
         let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
-        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             validator_fee_xrd,
             post_emission_stake_pool_xrd,
@@ -803,6 +801,62 @@ impl ValidatorBlueprint {
                 validator_fee_xrd,
                 proposals_made,
                 proposals_missed,
+            },
+        )?;
+
+        Ok(())
+    }
+
+    pub fn apply_reward<Y>(
+        xrd_bucket: Bucket,
+        concluded_epoch: Epoch,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // begin the read+modify+write of the validator substate...
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        // Get the total reward amount
+        let total_reward_xrd = xrd_bucket.amount(api)?;
+
+        // Stake it
+        let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
+        let starting_stake_pool_xrd = stake_xrd_vault.amount(api)?;
+        let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
+        let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
+            total_reward_xrd,
+            starting_stake_pool_xrd,
+            total_stake_unit_supply,
+        );
+        let new_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
+        stake_xrd_vault.put(xrd_bucket, api)?;
+
+        // Lock these new stake units in the internal owner's "public display" vault
+        Vault(substate.locked_owner_stake_unit_vault_id).put(new_stake_unit_bucket, api)?;
+
+        // Update the index, since the stake increased (because of staking of the reward)
+        let new_stake_xrd = starting_stake_pool_xrd + total_reward_xrd;
+        let new_index_key =
+            Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
+
+        // Flush validator substate changes
+        substate.sorted_key = new_index_key;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
+
+        Runtime::emit_event(
+            api,
+            ValidatorRewardAppliedEvent {
+                epoch: concluded_epoch,
+                amount: total_reward_xrd,
             },
         )?;
 
@@ -943,6 +997,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
         btreemap!(
             RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
+            RoleKey::new(VALIDATOR_APPLY_REWARD_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
             RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { mutable: [SELF_ROLE].into(), mutable_mutable: false },
         )
     }
@@ -970,8 +1025,13 @@ impl ValidatorCreator {
         stake_unit_resource_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let stake_unit_resman =
-            ResourceManager::new_fungible(18, BTreeMap::new(), stake_unit_resource_auth, api)?;
+        let stake_unit_resman = ResourceManager::new_fungible(
+            true,
+            18,
+            BTreeMap::new(),
+            stake_unit_resource_auth,
+            api,
+        )?;
 
         Ok(stake_unit_resman.0)
     }
@@ -998,6 +1058,7 @@ impl ValidatorCreator {
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
             NonFungibleIdType::UUID,
+            true,
             BTreeMap::new(),
             unstake_nft_auth,
             api,
@@ -1007,16 +1068,17 @@ impl ValidatorCreator {
     }
 
     pub fn create<Y>(
-        key: EcdsaSecp256k1PublicKey,
+        key: Secp256k1PublicKey,
         is_registered: bool,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let address = GlobalAddress::new_or_panic(
-            api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
-        );
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: CONSENSUS_MANAGER_PACKAGE,
+            blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+        })?;
 
         let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;
         let pending_xrd_withdraw_vault = Vault::create(RADIX_TOKEN, api)?;
@@ -1058,7 +1120,7 @@ impl ValidatorCreator {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address,
+            address_reservation,
         )?;
 
         Ok((

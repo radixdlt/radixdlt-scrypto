@@ -57,3 +57,11 @@ pub struct ValidatorEmissionAppliedEvent {
     /// A number of proposals missed by this validator during the emission period.
     pub proposals_missed: u64,
 }
+
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
+pub struct ValidatorRewardAppliedEvent {
+    /// An epoch number of the *concluded* epoch (i.e. for which this reward applies).
+    pub epoch: Epoch,
+    /// The reward amount
+    pub amount: Decimal,
+}

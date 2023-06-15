@@ -48,10 +48,10 @@ impl MultiResourcePoolBlueprint {
 
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
-        let address = {
-            let node_id = api.kernel_allocate_node_id(EntityType::GlobalMultiResourcePool)?;
-            GlobalAddress::new_or_panic(node_id.0)
-        };
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: POOL_PACKAGE,
+            blueprint_name: MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
+        })?;
 
         // Creating the pool unit resource
         let pool_unit_resource_manager = {
@@ -66,17 +66,17 @@ impl MultiResourcePoolBlueprint {
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // TODO: Pool unit resource metadata - one things is needed to do this:
+            // FIXME: Pool unit resource metadata - one things is needed to do this:
             // 1- A fix for the issue with references so that we can have the component address of
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(18, Default::default(), access_rules, api)?
+            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
         };
 
         // Creating the pool nodes
         let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
-        // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
+        // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
             btreemap!(
@@ -110,7 +110,7 @@ impl MultiResourcePoolBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address,
+            address_reservation,
         )?;
 
         Ok(ComponentAddress::new_or_panic(address.as_node_id().0))
@@ -232,7 +232,10 @@ impl MultiResourcePoolBlueprint {
             resource_bucket_amount_mapping
         };
 
-        let pool_unit_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
+        let pool_unit_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         // Case: New Pool
         let (pool_units, change) = if pool_unit_total_supply.is_zero() {
             // Regarding the unwrap here, there are two cases here where this unwrap could panic:
@@ -388,7 +391,10 @@ impl MultiResourcePoolBlueprint {
         }
 
         let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
@@ -502,7 +508,10 @@ impl MultiResourcePoolBlueprint {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = substate.pool_unit_resource_manager.total_supply(api)?;
+        let pool_units_total_supply = substate
+            .pool_unit_resource_manager
+            .total_supply(api)?
+            .expect("Total supply is always enabled for pool unit resource.");
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;

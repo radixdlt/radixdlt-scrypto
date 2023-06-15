@@ -95,27 +95,30 @@ impl AuthZoneBlueprint {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
-                    global: false,
-                    outer_object: Some(resource_address.into()),
-                    instance_schema: None,
-                })).to_substates()
-            ),
+                        OBJECT_BASE_PARTITION => composed_proof.into(),
+                        TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                            blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                            global: false,
+                            outer_object: Some(resource_address.into()),
+                            instance_schema: None,
+                            features: btreeset!(),
+                        })).to_substates()
+                    ),
                 )?;
             }
             ComposedProof::NonFungible(..) => {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                    global: false,
-                    outer_object: Some(resource_address.into()),
-                    instance_schema: None,
-                })).to_substates()),
+                        OBJECT_BASE_PARTITION => composed_proof.into(),
+                        TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                            blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                            global: false,
+                            outer_object: Some(resource_address.into()),
+                            instance_schema: None,
+                            features: btreeset!(),
+                        })).to_substates()
+                    ),
                 )?;
             }
         }
@@ -153,6 +156,7 @@ impl AuthZoneBlueprint {
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
+                    features: btreeset!(),
                 })).to_substates()
             ),
         )?;
@@ -193,6 +197,7 @@ impl AuthZoneBlueprint {
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
+                    features: btreeset!(),
                 })).to_substates()
             ),
         )?;
@@ -266,9 +271,9 @@ impl AuthZoneBlueprint {
     {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
-        let input: AuthZoneDropInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        let input: AuthZoneDropInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Detach proofs from the auth zone
         let handle = api.kernel_lock_substate(

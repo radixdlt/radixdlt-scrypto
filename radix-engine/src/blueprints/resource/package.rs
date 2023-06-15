@@ -1,4 +1,5 @@
 use crate::blueprints::resource::*;
+use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -6,14 +7,17 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
 use crate::{event_schema, method_auth_template};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::package::{
+    BlueprintSetup, BlueprintTemplate, PackageSetup,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, PackageSchema, SchemaMethodKey, SchemaMethodPermission,
+    BlueprintCollectionSchema, FieldSchema, SchemaMethodKey, SchemaMethodPermission,
 };
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeRef};
@@ -26,6 +30,8 @@ const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME: &str =
     "create_with_initial_supply_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME: &str =
+    "package_burn_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
     "create_empty_vault_FungibleResourceManager";
@@ -42,6 +48,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungib
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
     "create_with_initial_supply_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME: &str =
+    "package_burn_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
     "mint_uuid_NonFungibleResourceManager";
@@ -67,6 +75,7 @@ const FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
     "create_proof_of_amount_FungibleVault";
 const FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleVault";
 const FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleVault";
+const FUNGIBLE_VAULT_BURN_EXPORT_NAME: &str = "burn_FungibleVault";
 
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
@@ -80,6 +89,7 @@ const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
 const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str = "unlock_fungibles_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_non_fungibles_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME: &str = "burn_NonFungibleVault";
 
 const FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_FungibleBucket";
 const FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_FungibleBucket";
@@ -128,22 +138,23 @@ const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition() -> PackageSetup {
         //====================================================================================
 
         let fungible_resource_manager_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(
+            fields.push(FieldSchema::normal(
                 aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(
                     ),
-            );
-            fields.push(
-                aggregator
+            ));
+            fields.push(FieldSchema::Conditional {
+                feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                value: aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
-            );
+            });
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -154,7 +165,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -165,7 +176,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -176,7 +187,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -188,7 +199,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerMintOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -198,7 +209,18 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -210,8 +232,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
-                        .to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -222,8 +243,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME
-                        .to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -235,8 +255,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME
-                        .to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -247,7 +266,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -258,8 +277,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME
-                        .to_string(),
+                    export: FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -272,20 +290,6 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
-            let method_permissions_instance = method_auth_template! {
-                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
-
-                SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
-                SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
-                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
-            };
-
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -296,8 +300,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
-                method_auth_template: method_permissions_instance,
-                outer_method_auth_template: btreemap!(),
+                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
             }
         };
 
@@ -307,16 +310,21 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(
+            fields.push(FieldSchema::normal(
                 aggregator
                     .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
+            ));
+            fields.push(
+                FieldSchema::normal(aggregator
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
+                    )),
             );
             fields.push(
-                aggregator
-                    .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
-                    ),
+                FieldSchema::Conditional {
+                    feature: TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    value: aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>(),
+                }
             );
-            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -338,7 +346,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -349,7 +357,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -360,7 +368,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -371,7 +379,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
 
@@ -383,7 +391,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -395,7 +403,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
                 },
             );
 
@@ -407,7 +415,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -418,7 +426,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerExistsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerExistsOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
                 },
             );
 
@@ -432,7 +440,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -443,10 +451,21 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
                 },
             );
 
+            functions.insert(
+                RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME.to_string(),
+                },
+            );
             functions.insert(
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
                 FunctionSchema {
@@ -454,7 +473,7 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -465,7 +484,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
                         .to_string(),
                 },
             );
@@ -477,7 +496,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME
                         .to_string(),
                 },
             );
@@ -490,8 +509,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME
-                        .to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -502,8 +520,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME
-                        .to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -514,8 +531,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME
-                        .to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -528,25 +544,6 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
-            let method_permissions_instance = method_auth_template! {
-                SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
-
-                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
-                SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
-                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => SchemaMethodPermission::Public;
-            };
-
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -557,8 +554,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
-                method_auth_template: method_permissions_instance,
-                outer_method_auth_template: btreemap!(),
+                features: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
             }
         };
 
@@ -567,9 +563,12 @@ impl ResourceManagerNativePackage {
         let fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
-            fields
-                .push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -578,7 +577,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
-                    export_name: FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -587,7 +586,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
-                    export_name: FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -596,7 +595,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
-                    export_name: FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -606,7 +605,7 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFeeOutput>(),
-                    export_name: FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
+                    export: FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -618,7 +617,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
-                    export_name: FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -630,7 +629,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
-                    export_name: FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -642,7 +641,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
-                    export_name: FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -651,7 +650,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                    export_name: FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -662,7 +661,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export_name: FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -673,7 +672,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountOutput>(),
-                    export_name: FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -685,7 +684,16 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(
                         ),
-                    export_name: FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    export: FUNGIBLE_VAULT_BURN_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -701,37 +709,6 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let method_auth_template = method_auth_template! {
-                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
-            };
-
-            let outer_method_auth_template = method_auth_template! {
-                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
-                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
-                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
-                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
-                SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
-                SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
-                SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
-            };
-
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -741,8 +718,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
-                method_auth_template,
-                outer_method_auth_template,
+                features: btreeset!(),
             }
         };
 
@@ -751,10 +727,12 @@ impl ResourceManagerNativePackage {
         let non_fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut fields = Vec::new();
-            fields.push(
+            fields.push(FieldSchema::normal(
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
-            );
-            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+            ));
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::Index(BlueprintIndexSchema {}));
@@ -766,7 +744,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -777,7 +755,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+                    export: NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -789,7 +767,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -801,7 +779,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -813,7 +791,7 @@ impl ResourceManagerNativePackage {
                     }),
                     input: aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -829,7 +807,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+                    export: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -838,7 +816,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -847,7 +825,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -858,7 +836,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                    export: NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -867,7 +845,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -878,7 +856,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -889,7 +867,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+                    export: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -900,7 +878,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -913,7 +891,27 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_BURN_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                    export: NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesOutput>(),
+                    export: NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
 
@@ -929,43 +927,6 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let method_auth_template = method_auth_template! {
-                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
-            };
-
-            let outer_method_auth_template = method_auth_template! {
-                SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
-                SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
-                SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
-                SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
-                SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-            };
-
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -975,8 +936,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
                 dependencies: btreeset!(),
-                method_auth_template,
-                outer_method_auth_template,
+                features: btreeset!(),
             }
         };
 
@@ -986,8 +946,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
-            fields.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LiquidFungibleResource>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -996,7 +960,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
-                    export_name: FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1005,7 +969,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
-                    export_name: FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1014,7 +978,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
-                    export_name: FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1025,7 +989,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
-                    export_name: FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1034,7 +998,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
-                    export_name: FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1045,7 +1009,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    export_name: FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1056,7 +1020,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
-                    export_name: FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1067,7 +1031,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleBucketLockAmountOutput>(),
-                    export_name: FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1078,22 +1042,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountOutput>(),
-                    export_name: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
-
-            let outer_method_permissions_instance = method_auth_template! {
-                SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"];
-                SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"];
-            };
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
@@ -1105,8 +1056,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                features: btreeset!(),
             }
         };
 
@@ -1116,8 +1066,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1126,7 +1080,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1135,7 +1089,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -1145,7 +1099,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1156,7 +1110,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1165,7 +1119,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1176,7 +1130,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1185,7 +1139,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesInput>(),
                     output: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1196,7 +1150,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1207,7 +1161,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1218,8 +1172,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME
-                        .to_string(),
+                    export: NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1231,7 +1184,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1242,24 +1195,9 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
-
-            let outer_method_permissions_instance = method_auth_template! {
-                SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
-
-                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
-            };
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
@@ -1271,8 +1209,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                features: btreeset!(),
             }
         };
 
@@ -1280,8 +1217,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<FungibleProofSubstate>());
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<FungibleProofSubstate>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1290,7 +1231,7 @@ impl ResourceManagerNativePackage {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
-                    export_name: FUNGIBLE_PROOF_DROP_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_PROOF_DROP_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1299,7 +1240,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
-                    export_name: FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1308,7 +1249,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
-                    export_name: FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1319,15 +1260,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                    export_name: FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
+                    export: FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
-            );
-
-            let outer_method_permissions_instance = method_auth_template!(
-                SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
             );
 
             let schema = generate_full_schema(aggregator);
@@ -1340,8 +1274,7 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                features: btreeset!(),
             }
         };
 
@@ -1349,8 +1282,12 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>());
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
+            ));
+            fields.push(FieldSchema::normal(
+                aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1359,7 +1296,7 @@ impl ResourceManagerNativePackage {
                     receiver: None,
                     input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
-                    export_name: NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1368,7 +1305,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
-                    export_name: NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1377,7 +1314,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
-                    export_name: NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1388,7 +1325,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                    export_name: NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -1400,16 +1337,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsOutput>(),
-                    export_name: NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
+                    export: NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 },
-            );
-
-            let outer_method_permissions_instance = method_auth_template!(
-                SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
-                SchemaMethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
             );
 
             let schema = generate_full_schema(aggregator);
@@ -1422,15 +1351,16 @@ impl ResourceManagerNativePackage {
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
                 dependencies: btreeset!(),
-                method_auth_template: btreemap!(),
-                outer_method_auth_template: outer_method_permissions_instance,
+                features: btreeset!(),
             }
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<WorktopSubstate>());
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -1439,7 +1369,7 @@ impl ResourceManagerNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
-                export_name: WORKTOP_DROP_IDENT.to_string(),
+                export: WORKTOP_DROP_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1448,7 +1378,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
-                export_name: WORKTOP_PUT_IDENT.to_string(),
+                export: WORKTOP_PUT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1457,7 +1387,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
-                export_name: WORKTOP_TAKE_IDENT.to_string(),
+                export: WORKTOP_TAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1467,7 +1397,7 @@ impl ResourceManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
-                export_name: WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+                export: WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1476,7 +1406,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
-                export_name: WORKTOP_TAKE_ALL_IDENT.to_string(),
+                export: WORKTOP_TAKE_ALL_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1485,7 +1415,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
-                export_name: WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
+                export: WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1496,7 +1426,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
-                export_name: WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
+                export: WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1507,7 +1437,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesOutput>(),
-                export_name: WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
+                export: WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1516,7 +1446,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
-                export_name: WORKTOP_DRAIN_IDENT.to_string(),
+                export: WORKTOP_DRAIN_IDENT.to_string(),
             },
         );
         let schema = generate_full_schema(aggregator);
@@ -1529,14 +1459,15 @@ impl ResourceManagerNativePackage {
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
             dependencies: btreeset!(),
-            method_auth_template: btreemap!(),
-            outer_method_auth_template: btreemap!(),
+            features: btreeset!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<AuthZone>());
+        fields.push(FieldSchema::normal(
+            aggregator.add_child_type_and_descendents::<AuthZone>(),
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -1545,7 +1476,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
-                export_name: AUTH_ZONE_POP_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_POP_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1554,7 +1485,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
-                export_name: AUTH_ZONE_PUSH_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_PUSH_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1563,7 +1494,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_CREATE_PROOF_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1574,7 +1505,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1585,7 +1516,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1595,7 +1526,7 @@ impl ResourceManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1604,7 +1535,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
-                export_name: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1615,7 +1546,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
-                export_name: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1624,7 +1555,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
-                export_name: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1633,7 +1564,7 @@ impl ResourceManagerNativePackage {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
-                export_name: AUTH_ZONE_DROP_EXPORT_NAME.to_string(),
+                export: AUTH_ZONE_DROP_EXPORT_NAME.to_string(),
             },
         );
 
@@ -1647,58 +1578,262 @@ impl ResourceManagerNativePackage {
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
             dependencies: btreeset!(),
-            method_auth_template: btreemap!(),
-            outer_method_auth_template: btreemap!(),
+            features: btreeset!(),
         };
 
-        let schema = PackageSchema {
-            blueprints: btreemap!(
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
-                FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_schema,
-                NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => non_fungible_vault_schema,
-                FUNGIBLE_BUCKET_BLUEPRINT.to_string() => fungible_bucket_schema,
-                NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => non_fungible_bucket_schema,
-                FUNGIBLE_PROOF_BLUEPRINT.to_string() => fungible_proof_schema,
-                NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => non_fungible_proof_schema,
-                WORKTOP_BLUEPRINT.to_string() => worktop_schema,
-                AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
-            ),
-        };
+        let blueprints = btreemap!(
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: fungible_resource_manager_schema,
+                function_auth: btreemap!(
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
 
-        let function_access_rules = btreemap!(
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-            ),
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => btreemap!(
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-            ),
-            WORKTOP_BLUEPRINT.to_string() => btreemap!(
-                WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
-            ),
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => btreemap!(
-                PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-            ),
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => btreemap!(
-                PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-            ),
+                        SchemaMethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
+                    },
+                    outer_method_auth_template: btreemap!(),
+                }
+            },
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: non_fungible_resource_manager_schema,
+                function_auth: btreemap!(
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::metadata(METADATA_GET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
+                        SchemaMethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_PACKAGE_BURN_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => SchemaMethodPermission::Public;
+                    },
+                    outer_method_auth_template: btreemap!(),
+                }
+            },
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: fungible_vault_schema,
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    // This is the mapping from Vault methods to Vault roles
+                    // NOTE: This is an extra filter on top of the ResourceManager filter
+                    // This is for use with the freezing feature
+                    // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                    },
+                    // This is the mapping to ResourceManager roles
+                    // NOTE: This is an extra filter on top of the Vault filter
+                    outer_method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                    },
+                }
+            },
+            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: non_fungible_vault_schema,
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    // This is the mapping from Vault methods to Vault roles
+                    // NOTE: This is an extra filter on top of the ResourceManager filter
+                    // This is for use with the freezing feature
+                    // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
+                    method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [VAULT_WITHDRAW_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [VAULT_WITHDRAW_ROLE];
+                    },
+                    // This is the mapping to ResourceManager roles
+                    // NOTE: This is an extra filter on top of the Vault filter
+                    outer_method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(VAULT_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_ROLE];
+                        SchemaMethodKey::main(VAULT_RECALL_IDENT) => [RECALL_ROLE];
+                        SchemaMethodKey::main(VAULT_FREEZE_IDENT) => [FREEZE_ROLE];
+                        SchemaMethodKey::main(VAULT_UNFREEZE_IDENT) => [UNFREEZE_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_ROLE];
+                        SchemaMethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_ROLE];
+                        SchemaMethodKey::main(VAULT_BURN_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT) => [BURN_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                    },
+                }
+            },
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: fungible_bucket_schema,
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: method_auth_template! {
+                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+
+                        SchemaMethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                        SchemaMethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                    }
+                }
+            },
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: non_fungible_bucket_schema,
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: method_auth_template! {
+                                        SchemaMethodKey::main(BUCKET_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_PUT_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(BUCKET_TAKE_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => SchemaMethodPermission::Public;
+
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                SchemaMethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => [RESOURCE_PACKAGE_ROLE];
+                    }
+                }
+            },
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: fungible_proof_schema,
+                function_auth: btreemap!(
+                    PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: method_auth_template!(
+                        SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                    )
+                }
+            },
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: non_fungible_proof_schema,
+                function_auth: btreemap!(
+                    PROOF_DROP_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: method_auth_template!(
+                        SchemaMethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_CLONE_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_DROP_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(PROOF_GET_AMOUNT_IDENT) => SchemaMethodPermission::Public;
+                        SchemaMethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => SchemaMethodPermission::Public;
+                    )
+                }
+            },
+            WORKTOP_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: worktop_schema,
+                function_auth: btreemap!(
+                    WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
+                ),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: btreemap!(),
+                },
+            },
+            AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSetup {
+                schema: auth_zone_schema,
+                function_auth: btreemap!(),
+                royalty_config: RoyaltyConfig::default(),
+                template: BlueprintTemplate {
+                    method_auth_template: btreemap!(),
+                    outer_method_auth_template: btreemap!(),
+                },
+            }
         );
 
-        PackageDefinition {
-            schema,
-            function_access_rules,
-        }
+        PackageSetup { blueprints }
     }
 
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1709,15 +1844,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: FungibleResourceManagerCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
+                    input.track_total_supply,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
@@ -1728,16 +1859,12 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: FungibleResourceManagerCreateWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.track_total_supply,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
@@ -1749,16 +1876,12 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: FungibleResourceManagerCreateWithInitialSupplyAndAddressInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(
+                    input.track_total_supply,
                     input.divisibility,
                     input.metadata,
                     input.access_rules,
@@ -1772,7 +1895,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: FungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::mint(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1781,16 +1904,25 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::burn(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerPackageBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::package_burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ResourceManagerDropEmptyBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1800,7 +1932,7 @@ impl ResourceManagerNativePackage {
 
                 let _input: ResourceManagerCreateEmptyVaultInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_empty_vault(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1810,7 +1942,7 @@ impl ResourceManagerNativePackage {
 
                 let _input: ResourceManagerCreateEmptyBucketInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
                 let rtn = FungibleResourceManagerBlueprint::create_empty_bucket(api)?;
@@ -1821,7 +1953,7 @@ impl ResourceManagerNativePackage {
 
                 let _input: ResourceManagerGetResourceTypeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::get_resource_type(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1830,7 +1962,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::get_total_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1838,17 +1970,13 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: NonFungibleResourceManagerCreateInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
                     input.id_type,
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
@@ -1859,17 +1987,13 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: NonFungibleResourceManagerCreateWithAddressInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_address(
                     input.id_type,
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
@@ -1881,17 +2005,13 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
                 let input: NonFungibleResourceManagerCreateWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_initial_supply(
                     input.id_type,
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
@@ -1903,18 +2023,13 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
                 let input: NonFungibleResourceManagerCreateUuidWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_uuid_with_initial_supply(
+                    input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
@@ -1928,7 +2043,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: NonFungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     NonFungibleResourceManagerBlueprint::mint_non_fungible(input.entries, api)?;
@@ -1939,7 +2054,7 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleResourceManagerMintUuidInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_uuid_non_fungible(
                     input.entries,
@@ -1952,7 +2067,7 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleResourceManagerMintSingleUuidInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_single_uuid_non_fungible(
                     input.entry,
@@ -1964,16 +2079,25 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::burn(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerPackageBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleResourceManagerBlueprint::package_burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ResourceManagerDropEmptyBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
                     NonFungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
@@ -1984,7 +2108,7 @@ impl ResourceManagerNativePackage {
 
                 let _input: ResourceManagerCreateEmptyBucketInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_empty_bucket(api)?;
@@ -1995,7 +2119,7 @@ impl ResourceManagerNativePackage {
 
                 let _input: ResourceManagerCreateEmptyVaultInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_empty_vault(api)?;
 
@@ -2006,7 +2130,7 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleResourceManagerUpdateDataInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::update_non_fungible_data(
                     input.id,
@@ -2021,7 +2145,7 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleResourceManagerExistsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2031,7 +2155,7 @@ impl ResourceManagerNativePackage {
 
                 let _input: ResourceManagerGetResourceTypeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_resource_type(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2040,7 +2164,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_total_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2050,7 +2174,7 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleResourceManagerGetNonFungibleInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_non_fungible(input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2059,19 +2183,17 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleVaultLockFeeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                FungibleVaultBlueprint::lock_fee(receiver, input.amount, input.contingent, api)
+                FungibleVaultBlueprint::lock_fee(&receiver, input.amount, input.contingent, api)
             }
             FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2080,7 +2202,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VaultRecallInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::recall(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2089,7 +2211,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::freeze(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2098,7 +2220,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::unfreeze(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2107,7 +2229,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VaultPutInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2116,7 +2238,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2124,39 +2246,33 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::create_proof(receiver, api)?;
+                let rtn = FungibleVaultBlueprint::create_proof(&receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
-                    FungibleVaultBlueprint::create_proof_of_amount(receiver, input.amount, api)?;
+                    FungibleVaultBlueprint::create_proof_of_amount(&receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleVaultLockFungibleAmountInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = FungibleVaultBlueprint::lock_amount(receiver, input.amount, api)?;
+                let rtn = FungibleVaultBlueprint::lock_amount(&receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME => {
@@ -2164,9 +2280,18 @@ impl ResourceManagerNativePackage {
 
                 let input: FungibleVaultUnlockFungibleAmountInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleVaultBlueprint::unlock_amount(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_VAULT_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: VaultBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::burn(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
@@ -2174,7 +2299,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2184,7 +2309,7 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleVaultTakeNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
                     input.non_fungible_local_ids,
@@ -2196,7 +2321,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VaultRecallInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::recall(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2205,7 +2330,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::freeze(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2214,7 +2339,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::unfreeze(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2224,7 +2349,7 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleVaultRecallNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::recall_non_fungibles(
                     input.non_fungible_local_ids,
@@ -2236,7 +2361,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let input: VaultPutInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2245,7 +2370,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2255,7 +2380,7 @@ impl ResourceManagerNativePackage {
 
                 let _input: NonFungibleVaultGetNonFungibleLocalIdsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2263,55 +2388,50 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof(receiver, api)?;
+                let rtn = NonFungibleVaultBlueprint::create_proof(&receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn =
-                    NonFungibleVaultBlueprint::create_proof_of_amount(receiver, input.amount, api)?;
+                let rtn = NonFungibleVaultBlueprint::create_proof_of_amount(
+                    &receiver,
+                    input.amount,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(
-                    receiver, input.ids, api,
+                    &receiver, input.ids, api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleVaultLockNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn =
-                    NonFungibleVaultBlueprint::lock_non_fungibles(receiver, input.local_ids, api)?;
+                    NonFungibleVaultBlueprint::lock_non_fungibles(&receiver, input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
@@ -2319,16 +2439,38 @@ impl ResourceManagerNativePackage {
 
                 let input: NonFungibleVaultUnlockNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(input.local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: VaultBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::burn(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: NonFungibleVaultBurnNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleVaultBlueprint::burn_non_fungibles(
+                    input.non_fungible_local_ids,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
             FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
                 let _input: ProofCloneInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::clone(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2336,7 +2478,7 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
                 let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2345,7 +2487,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = FungibleProofBlueprint::get_resource_address(api)?;
@@ -2355,7 +2497,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ProofDropInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::drop(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2363,7 +2505,7 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
                 let _input: ProofCloneInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::clone(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2371,7 +2513,7 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
                 let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2379,7 +2521,7 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
                 let _input: NonFungibleProofGetLocalIdsInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::get_local_ids(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2389,7 +2531,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let rtn = NonFungibleProofBlueprint::get_resource_address(api)?;
@@ -2399,7 +2541,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ProofDropInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::drop(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2419,7 +2561,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let amount = FungibleBucketBlueprint::get_amount(api)?;
@@ -2433,45 +2575,37 @@ impl ResourceManagerNativePackage {
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleBucketBlueprint::create_proof(receiver, api)?;
+                let rtn = FungibleBucketBlueprint::create_proof(&receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: BucketCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
-                    FungibleBucketBlueprint::create_proof_of_amount(receiver, input.amount, api)?;
+                    FungibleBucketBlueprint::create_proof_of_amount(&receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleBucketBlueprint::create_proof_of_all(receiver, api)?;
+                let rtn = FungibleBucketBlueprint::create_proof_of_all(&receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                FungibleBucketBlueprint::lock_amount(receiver, input, api)
+                let receiver = Runtime::get_node_id(api)?;
+                FungibleBucketBlueprint::lock_amount(&receiver, input, api)
             }
             FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2493,7 +2627,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let amount = NonFungibleBucketBlueprint::get_amount(api)?;
@@ -2508,26 +2642,22 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleBucketBlueprint::create_proof(receiver, api)?;
+                let rtn = NonFungibleBucketBlueprint::create_proof(&receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: BucketCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleBucketBlueprint::create_proof_of_amount(
-                    receiver,
+                    &receiver,
                     input.amount,
                     api,
                 )?;
@@ -2536,28 +2666,24 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleBucketCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleBucketBlueprint::create_proof_of_non_fungibles(
-                    receiver, input.ids, api,
+                    &receiver, input.ids, api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
+                let receiver = Runtime::get_node_id(api)?;
                 let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleBucketBlueprint::create_proof_of_all(receiver, api)?;
+                let rtn = NonFungibleBucketBlueprint::create_proof_of_all(&receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
@@ -2574,10 +2700,8 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                NonFungibleBucketBlueprint::lock_non_fungibles(receiver, input, api)
+                let receiver = Runtime::get_node_id(api)?;
+                NonFungibleBucketBlueprint::lock_non_fungibles(&receiver, input, api)
             }
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2587,12 +2711,6 @@ impl ResourceManagerNativePackage {
 
             WORKTOP_DROP_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
 
                 WorktopBlueprint::drop(input, api)
             }
@@ -2640,7 +2758,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: AuthZonePopInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let proof = AuthZoneBlueprint::pop(api)?;
@@ -2651,7 +2769,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: AuthZonePushInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 AuthZoneBlueprint::push(input.proof, api)?;
@@ -2662,7 +2780,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: AuthZoneCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let proof = AuthZoneBlueprint::create_proof(input.resource_address, api)?;
@@ -2673,7 +2791,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: AuthZoneCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let proof = AuthZoneBlueprint::create_proof_of_amount(
@@ -2689,7 +2807,7 @@ impl ResourceManagerNativePackage {
 
                 let input: AuthZoneCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
                 let proof = AuthZoneBlueprint::create_proof_of_non_fungibles(
@@ -2704,7 +2822,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let input: AuthZoneCreateProofOfAllInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let proof = AuthZoneBlueprint::create_proof_of_all(input.resource_address, api)?;
@@ -2715,7 +2833,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 AuthZoneBlueprint::clear(api)?;
@@ -2726,7 +2844,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 AuthZoneBlueprint::clear_signature_proofs(api)?;
@@ -2737,7 +2855,7 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let _input: AuthZoneDrainInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
                 let proofs = AuthZoneBlueprint::drain(api)?;
@@ -2749,8 +2867,8 @@ impl ResourceManagerNativePackage {
 
                 AuthZoneBlueprint::drop(input, api)
             }
-            _ => Err(RuntimeError::SystemUpstreamError(
-                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

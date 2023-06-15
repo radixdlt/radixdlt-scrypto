@@ -1,4 +1,5 @@
 mod manifest_address;
+mod manifest_address_reservation;
 mod manifest_blob;
 mod manifest_bucket;
 mod manifest_decimal;
@@ -8,6 +9,7 @@ mod manifest_precise_decimal;
 mod manifest_proof;
 
 pub use manifest_address::*;
+pub use manifest_address_reservation::*;
 pub use manifest_blob::*;
 pub use manifest_bucket::*;
 pub use manifest_decimal::*;

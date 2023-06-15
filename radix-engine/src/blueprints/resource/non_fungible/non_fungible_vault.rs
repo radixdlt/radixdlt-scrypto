@@ -3,6 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
+use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesUpdateRoleInput, ACCESS_RULES_UPDATE_ROLE_IDENT,
@@ -220,6 +221,25 @@ impl NonFungibleVaultBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
+    pub fn burn<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        Self::take(&amount, api)?.package_burn(api)?;
+        Ok(())
+    }
+
+    pub fn burn_non_fungibles<Y>(
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        Self::take_non_fungibles(non_fungible_local_ids, api)?.package_burn(api)?;
+        Ok(())
+    }
+
     //===================
     // Protected method
     //===================
@@ -288,7 +308,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // TODO: only allow a certain amount to be returned
+        // FIXME: only allow a certain amount to be returned
         let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
@@ -333,7 +353,7 @@ impl NonFungibleVault {
             ));
         }
 
-        // TODO: Fix/Cleanup
+        // FIXME: Fix/Cleanup
         if substate_ref.amount > Decimal::from(u32::MAX) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::ResourceError(
@@ -402,6 +422,7 @@ impl NonFungibleVault {
         }
 
         Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
+        api.field_lock_write_typed(handle, &substate_ref)?;
         api.field_lock_release(handle)?;
 
         Ok(LiquidNonFungibleResource::new(ids.clone()))

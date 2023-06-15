@@ -11,7 +11,6 @@ use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
-use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 
 /// Represents an error when accessing a bucket.
@@ -31,7 +30,7 @@ pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMutableFieldsSubstate {
-    pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
+    pub mutable_fields: BTreeSet<String>, // FIXME double check the behavior of invalid field name
 }
 
 pub type NonFungibleResourceManagerTotalSupplySubstate = Decimal;
@@ -96,6 +95,7 @@ pub struct NonFungibleResourceManagerBlueprint;
 impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -104,25 +104,29 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
+
         Self::create_with_address(
             id_type,
+            track_total_supply,
             non_fungible_schema,
             metadata,
             access_rules,
-            resource_address.into(),
+            address_reservation,
             api,
         )
     }
 
     pub(crate) fn create_with_address<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
+        resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -137,8 +141,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -148,14 +158,18 @@ impl NonFungibleResourceManagerBlueprint {
             btreemap!(),
         )?;
 
-        let resource_address = ResourceAddress::new_or_panic(resource_address);
-        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
-
-        Ok(resource_address)
+        globalize_resource_manager(
+            object_id,
+            resource_address_reservation,
+            access_rules,
+            metadata,
+            api,
+        )
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
         id_type: NonFungibleIdType,
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -178,9 +192,10 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
 
         let supply: Decimal = Decimal::from(entries.len());
 
@@ -210,8 +225,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
@@ -220,9 +241,9 @@ impl NonFungibleResourceManagerBlueprint {
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            resource_address,
+            address_reservation,
             access_rules,
             metadata,
             ids,
@@ -233,6 +254,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_uuid_with_initial_supply<Y>(
+        track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -259,17 +281,24 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
+        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
+            package_address: RESOURCE_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+        })?;
 
         let instance_schema = InstanceSchema {
             schema: non_fungible_schema.schema,
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
+        let mut features = Vec::new();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features,
             Some(instance_schema),
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
@@ -278,9 +307,9 @@ impl NonFungibleResourceManagerBlueprint {
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(
+        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             object_id,
-            resource_address,
+            address_reservation,
             access_rules,
             metadata,
             ids,
@@ -318,6 +347,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update total supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -376,6 +410,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update Total Supply
+        // TODO: Could be further cleaned up by using event
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -388,8 +427,8 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let id = {
-            // TODO: Is this enough bits to prevent hash collisions?
-            // TODO: Possibly use an always incrementing timestamp
+            // FIXME: Is this enough bits to prevent hash collisions?
+            // Possibly use an always incrementing timestamp
             let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
             let non_fungibles = btreemap!(id.clone() => value);
 
@@ -436,6 +475,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         // Update total supply
+        // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -626,6 +670,21 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::burn_internal(bucket, api)
+    }
+
+    /// Only callable within this package - this is to allow the burning of tokens from a vault.
+    pub(crate) fn package_burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::burn_internal(bucket, api)
+    }
+
+    fn burn_internal<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
         // Drop the bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -639,6 +698,10 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -653,11 +716,17 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                api.actor_remove_key_value_entry(
+                let handle = api.actor_lock_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
                     &id.to_key(),
+                    LockFlags::MUTABLE,
                 )?;
+                api.key_value_entry_remove(handle)?;
+                // Tombstone the non fungible
+                // TODO: UUID non fungibles with no data don't need to go through this process
+                api.key_value_entry_freeze(handle)?;
+                api.key_value_entry_release(handle)?;
             }
         }
 
@@ -697,15 +766,17 @@ impl NonFungibleResourceManagerBlueprint {
             ],
         )?;
 
+        // These roles define an extra filter on top of the roles defined on the resource manager
+        // The purpose of these roles is to enable freezing of individual vaults
         // TODO: Figure out how to use SELF_ROLE rather than package
         let mut roles = Roles::new();
         roles.define_role(
-            "this_package",
+            RESOURCE_PACKAGE_ROLE,
             RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         );
         roles.define_role(
             VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, ["this_package"], true),
+            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
         );
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
@@ -731,16 +802,24 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::TotalSupply.into(),
-            LockFlags::read_only(),
-        )?;
-        let total_supply: Decimal = api.field_lock_read_typed(handle)?;
-        Ok(total_supply)
+        if api
+            .actor_get_info()?
+            .features
+            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
+        {
+            let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                NonFungibleResourceManagerField::TotalSupply.into(),
+                LockFlags::read_only(),
+            )?;
+            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            Ok(Some(total_supply))
+        } else {
+            Ok(None)
+        }
     }
 }
