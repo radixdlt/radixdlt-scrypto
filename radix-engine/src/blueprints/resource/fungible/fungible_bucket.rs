@@ -75,11 +75,7 @@ impl FungibleBucket {
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
-        substate.put(resource).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceError(e),
-            ))
-        })?;
+        substate.put(resource);
         api.field_lock_write_typed(handle, &substate)?;
         api.field_lock_release(handle)?;
         Ok(())

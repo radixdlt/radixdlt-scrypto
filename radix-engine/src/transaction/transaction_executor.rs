@@ -551,7 +551,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
             .unwrap();
         let (substate_value, _store_access) = track.read_substate(handle);
         let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
-        substate.put(LiquidFungibleResource::new(amount)).unwrap();
+        substate.put(LiquidFungibleResource::new(amount));
         track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);
     }
@@ -559,8 +559,8 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     // Take fee payments
     let fee_summary = fee_reserve.finalize();
     let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
-    let mut required = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
-        - fee_summary.total_bad_debt_xrd;
+    let mut required = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd;
+    let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
     for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
         let amount = if contingent {
             if is_success {
@@ -573,32 +573,38 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         };
 
         // Take fees
-        locked.take_by_amount(amount).unwrap();
+        collected_fees.put(locked.take_by_amount(amount).unwrap());
         required -= amount;
 
-        if let Some(vault_id) = vault_id {
-            // Refund overpayment
-            let (handle, _store_access) = track
-                .acquire_lock(
-                    &vault_id,
-                    MAIN_BASE_PARTITION,
-                    &FungibleVaultField::LiquidFungible.into(),
-                    LockFlags::MUTABLE,
-                )
-                .unwrap();
-            let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
-            substate.put(locked).unwrap();
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.release_lock(handle);
+        // Refund overpayment
+        let (handle, _store_access) = track
+            .acquire_lock(
+                &vault_id,
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap();
+        let (substate_value, _store_access) = track.read_substate(handle);
+        let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
+        substate.put(locked);
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
 
-            // Record final payments
-            *fee_payments.entry(vault_id).or_default() += amount;
-        };
+        // Record final payments
+        *fee_payments.entry(vault_id).or_default() += amount;
     }
 
     let tips_to_distribute = fee_summary.tips_to_distribute();
     let fees_to_distribute = fee_summary.fees_to_distribute();
+
+    // Sanity check
+    assert_eq!(required, Decimal::ZERO);
+    assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
+    assert_eq!(
+        tips_to_distribute + fees_to_distribute,
+        collected_fees.amount() - fee_summary.total_royalty_cost_xrd
+    );
 
     if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
         // Fetch current leader
@@ -660,11 +666,11 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
             .0;
         let mut substate: LiquidFungibleResource =
             track.read_substate(handle).0.as_typed().unwrap();
-        substate
-            .put(LiquidFungibleResource::new(
-                proposer_rewards + validator_set_rewards,
-            ))
-            .unwrap();
+        substate.put(
+            collected_fees
+                .take_by_amount(proposer_rewards + validator_set_rewards)
+                .unwrap(),
+        );
         track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);
     }

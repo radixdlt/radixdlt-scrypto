@@ -18,7 +18,7 @@ pub struct FeeSummary {
     /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
     pub total_bad_debt_xrd: Decimal,
     /// The vaults locked for XRD payment
-    pub locked_fees: Vec<(Option<NodeId>, LiquidFungibleResource, bool)>,
+    pub locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
     /// The execution cost breakdown
     pub execution_cost_breakdown: BTreeMap<CostingReason, u32>,
     /// The total number of cost units consumed (excluding royalties).
@@ -41,15 +41,20 @@ impl FeeSummary {
             * Decimal::from(self.execution_cost_sum)
     }
 
+    //===================
     // For testing only
+    //===================
+
     pub fn expected_reward_if_single_validator(&self) -> Decimal {
         self.expected_reward_as_proposer_if_single_validator()
             + self.expected_reward_as_active_validator_if_single_validator()
     }
+
     pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
         self.tips_to_distribute() * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
             + self.fees_to_distribute() * (FEES_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
     }
+
     pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
         self.tips_to_distribute() * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
             + self.fees_to_distribute() * (FEES_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
