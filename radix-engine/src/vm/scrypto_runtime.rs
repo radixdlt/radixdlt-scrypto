@@ -167,11 +167,15 @@ where
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,
+        template_args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
-        let object_address = self.api.globalize(modules)?;
+        let template_args = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&template_args)
+            .map_err(WasmRuntimeError::InvalidTemplateArgs)?;
+
+        let object_address = self.api.globalize(modules, template_args)?;
         let object_address_encoded =
             scrypto_encode(&object_address).expect("Failed to encode object address");
 
@@ -542,6 +546,7 @@ impl WasmRuntime for NopWasmRuntime {
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,
+        template_args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

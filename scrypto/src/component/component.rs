@@ -176,11 +176,18 @@ impl<C: HasStub + HasMethods> Owned<C> {
         let mut roles = Roles::new();
         roles.define_role(OWNER_ROLE, owner_entry.to_role_entry(OWNER_ROLE));
 
+        let metadata_roles = Roles::new();
+
         Globalizing {
             stub: self.0,
+
             metadata: None,
+            metadata_roles,
+
             royalty: RoyaltyConfig::default(),
+
             roles,
+
             address_reservation: None,
         }
     }
@@ -259,9 +266,14 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
+
     pub metadata: Option<Metadata>,
+    pub metadata_roles: Roles,
+
     pub royalty: RoyaltyConfig,
+
     pub roles: Roles,
+
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
@@ -276,6 +288,11 @@ impl<C: HasStub> Deref for Globalizing<C> {
 impl<C: HasStub + HasMethods> Globalizing<C> {
     pub fn roles(mut self, roles: Roles) -> Self {
         self.roles = roles;
+        self
+    }
+
+    pub fn metadata_roles(mut self, metadata_roles: Roles) -> Self {
+        self.metadata_roles = metadata_roles;
         self
     }
 
@@ -319,7 +336,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
                 .globalize_with_address(modules, address_reservation)
                 .unwrap()
         } else {
-            ScryptoEnv.globalize(modules).unwrap()
+            ScryptoEnv.globalize(modules, btreemap!()).unwrap()
         };
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))

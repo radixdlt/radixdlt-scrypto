@@ -1307,6 +1307,7 @@ where
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
+        template_args: BTreeMap<u8, Vec<u8>>,
     ) -> Result<GlobalAddress, RuntimeError> {
         let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
 

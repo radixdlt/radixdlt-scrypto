@@ -172,7 +172,7 @@ impl AccountBlueprint {
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, btreemap!())?;
 
         Ok(address)
     }
@@ -187,7 +187,7 @@ impl AccountBlueprint {
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, btreemap!())?;
 
         Ok((address, bucket))
     }

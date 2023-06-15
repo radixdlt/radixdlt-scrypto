@@ -298,16 +298,16 @@ fn globalize_object(
     mut caller: Caller<'_, HostState>,
     modules_ptr: u32,
     modules_len: u32,
+    template_args_ptr: u32,
+    template_args_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .globalize_object(read_memory(
-            caller.as_context_mut(),
-            memory,
-            modules_ptr,
-            modules_len,
-        )?)
+        .globalize_object(
+            read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
+         read_memory(caller.as_context_mut(), memory, template_args_ptr, template_args_len)?,
+        )
         .map(|buffer| buffer.0)
 }
 
@@ -766,9 +766,13 @@ impl WasmiModule {
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              modules_ptr: u32,
-             modules_len: u32|
+             modules_len: u32,
+             template_args_ptr: u32,
+             template_args_len: u32,
+            |
              -> Result<u64, Trap> {
-                globalize_object(caller, modules_ptr, modules_len).map_err(|e| e.into())
+                globalize_object(caller, modules_ptr, modules_len, template_args_ptr, template_args_len)
+                    .map_err(|e| e.into())
             },
         );
 

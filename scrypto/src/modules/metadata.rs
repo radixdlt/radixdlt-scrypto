@@ -124,3 +124,13 @@ impl Metadata {
         rtn
     }
 }
+
+pub struct MetadataRoles<T> {
+    pub setter: T,
+}
+
+impl<T> MetadataRoles<T> {
+    pub fn list(self) -> Vec<(&'static str, T)> {
+        vec![("setter", self.setter)]
+    }
+}

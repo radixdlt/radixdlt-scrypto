@@ -10,11 +10,6 @@ mod metadata {
             get_string => PUBLIC;
             get_address => PUBLIC;
             get_array => PUBLIC;
-        },
-        metadata {
-            set => PUBLIC;
-            remove => PUBLIC;
-            get => PUBLIC;
         }
     }
 
@@ -25,6 +20,9 @@ mod metadata {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
+                .metadata_roles(metadata_roles! {
+                    setter => rule!(allow_all);
+                })
                 .globalize()
         }
 

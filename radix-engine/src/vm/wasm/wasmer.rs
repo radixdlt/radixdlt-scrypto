@@ -344,11 +344,16 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             modules_ptr: u32,
             modules_len: u32,
+            template_args_ptr: u32,
+            template_args_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .globalize_object(read_memory(&instance, modules_ptr, modules_len)?)
+                .globalize_object(
+                    read_memory(&instance, modules_ptr, modules_len)?,
+                    read_memory(&instance, template_args_ptr, template_args_ptr)?,
+                )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
