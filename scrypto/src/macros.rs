@@ -398,14 +398,12 @@ macro_rules! module_permissions {
     ($permissions:expr, methods { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, Methods, main, $($method => $($permission),+ ;)*);
     });
-    /*
     ($permissions:expr, metadata { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, MetadataMethods, metadata, $($method => $($permission),+ ;)*);
     });
     ($permissions:expr, royalties { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, RoyaltyMethods, royalty, $($method => $($permission),+ ;)*);
     });
-     */
 }
 
 #[macro_export]
@@ -512,6 +510,7 @@ macro_rules! roles {
     });
 }
 
+/*
 #[macro_export]
 macro_rules! metadata_roles {
     ( $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)* ) => ({
@@ -527,6 +526,7 @@ macro_rules! metadata_roles {
         roles
     });
 }
+ */
 
 #[macro_export]
 macro_rules! royalties {
