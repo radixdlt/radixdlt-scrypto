@@ -22,6 +22,7 @@ use radix_engine_store_interface::{
 };
 use transaction::model::*;
 
+#[derive(Debug, Clone)]
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
     pub usd_price: u128,
@@ -38,6 +39,7 @@ impl Default for FeeReserveConfig {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     pub enabled_modules: EnabledModules,
     pub max_execution_trace_depth: usize,
