@@ -348,6 +348,7 @@ impl Authorization {
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.eq(SELF_ROLE) {
+            // FIXME: Prevent panics of node id, this may be triggered by vaults and auth zone
             rule!(require(global_caller(GlobalAddress::new_or_panic(
                 access_rules_of.0
             ))))
