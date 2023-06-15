@@ -556,7 +556,8 @@ impl ConsensusManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = ConsensusManagerBlueprint::create_validator(input.key, api)?;
+                let rtn =
+                    ConsensusManagerBlueprint::create_validator(input.key, input.fee_factor, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
