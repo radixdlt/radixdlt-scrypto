@@ -300,8 +300,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn royalties(mut self, royalties: C::Royalties) -> Self {
-        for (method, royalty) in royalties.to_mapping() {
+    pub fn royalties(mut self, royalties: (Roles, C::Royalties)) -> Self {
+        for (method, royalty) in royalties.1.to_mapping() {
             self.royalty.set_rule(method, royalty);
         }
 

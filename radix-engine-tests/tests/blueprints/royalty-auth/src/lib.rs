@@ -11,18 +11,6 @@ mod royalty_test {
         claim_component_royalty => Free,
     }
 
-    enable_method_auth! {
-        methods {
-            paid_method => PUBLIC;
-            paid_method_panic => PUBLIC;
-            free_method => PUBLIC;
-        },
-        royalties {
-            claim_royalty => OWNER;
-            set_royalty_config => OWNER;
-        }
-    }
-
     struct RoyaltyTest {}
 
     impl RoyaltyTest {
@@ -45,9 +33,14 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge))))
                 .royalties(royalties! {
-                    paid_method => Xrd(1.into()),
-                    paid_method_panic => Xrd(1.into()),
-                    free_method => Free,
+                    roles {
+                        owner => rule!(allow_all);
+                    },
+                    init {
+                        paid_method => Xrd(1.into()),
+                        paid_method_panic => Xrd(1.into()),
+                        free_method => Free,
+                    }
                 })
                 .globalize()
         }

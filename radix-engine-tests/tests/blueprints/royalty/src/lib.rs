@@ -16,10 +16,6 @@ mod royalty_test {
             paid_method_usd => PUBLIC;
             paid_method_panic => PUBLIC;
             free_method => PUBLIC;
-        },
-        royalties {
-            claim_royalty => PUBLIC;
-            set_royalty_config => OWNER;
         }
     }
 
@@ -47,10 +43,15 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .royalties(royalties! {
-                    free_method => Free,
-                    paid_method => Xrd(1.into()),
-                    paid_method_usd => Usd(1.into()),
-                    paid_method_panic => Xrd(1.into()),
+                    roles {
+                        owner => rule!(allow_all);
+                    },
+                    init {
+                        free_method => Free,
+                        paid_method => Xrd(1.into()),
+                        paid_method_usd => Usd(1.into()),
+                        paid_method_panic => Xrd(1.into()),
+                    }
                 })
                 .globalize()
         }

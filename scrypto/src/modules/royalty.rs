@@ -67,3 +67,13 @@ impl Royalty {
         )
     }
 }
+
+pub struct RoyaltyRoles<T> {
+    pub owner: T,
+}
+
+impl<T> RoyaltyRoles<T> {
+    pub fn list(self) -> Vec<(&'static str, T)> {
+        vec![("owner", self.owner)]
+    }
+}

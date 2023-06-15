@@ -402,10 +402,10 @@ macro_rules! module_permissions {
     ($permissions:expr, metadata { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, MetadataMethods, metadata, $($method => $($permission),+ ;)*);
     });
-     */
     ($permissions:expr, royalties { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, RoyaltyMethods, royalty, $($method => $($permission),+ ;)*);
     });
+     */
 }
 
 #[macro_export]
@@ -539,7 +539,7 @@ macro_rules! metadata_roles {
  */
 
 #[macro_export]
-macro_rules! royalties {
+macro_rules! royalty_config {
     ($($method:ident => $royalty:expr),*) => ({
         Methods::<RoyaltyAmount> {
             $(
@@ -548,7 +548,7 @@ macro_rules! royalties {
         }
     });
     ($($method:ident => $royalty:expr,)*) => ({
-        royalties!($($method => $royalty),*)
+        royalty_config!($($method => $royalty),*)
     });
 }
 
@@ -576,11 +576,36 @@ macro_rules! metadata {
             $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)*
         },
         init {
-            $($init:tt)*
+            $($key:expr => $value:expr),*
         }
     } => ({
         let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*);
-        let metadata = metadata_config!($($init)*);
+        let metadata = metadata_config!($($key => $value),*);
         (metadata_roles, metadata)
+    });
+
+    {
+        init {
+            $($key:expr => $value:expr),*
+        }
+    } => ({
+        let metadata = metadata_config!($($key => $value),*);
+        (Roles::new(), metadata)
+    });
+}
+
+#[macro_export]
+macro_rules! royalties {
+    {
+        roles {
+            $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)*
+        },
+        init {
+            $($init:tt)*
+        }
+    } => ({
+        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*);
+        let royalties = royalty_config!($($init)*);
+        (royalty_roles, royalties)
     })
 }
