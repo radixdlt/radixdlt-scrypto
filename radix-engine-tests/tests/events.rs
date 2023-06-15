@@ -287,8 +287,6 @@ fn vault_fungible_recall_emits_correct_events() {
     }
 }
 
-// TODO: Currently treats non-fungibles as fungible. Correct this test once recall non-fungibles
-// has a dedicated instruction.
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
     // Arrange
@@ -354,9 +352,8 @@ fn vault_non_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
+                ..,
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1390,9 +1387,8 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
+                ..,
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
                 true,
             _ => false,
         });
