@@ -81,6 +81,8 @@ pub fn to_manifest_value<T: ManifestEncode + ?Sized>(
 
 pub fn from_manifest_value<T: ManifestDecode>(
     manifest_value: &ManifestValue,
-) -> Result<T, DecodeError> {
-    manifest_decode(&manifest_encode(manifest_value).unwrap())
+) -> Result<T, ValueConversionError> {
+    let encoded = manifest_encode(manifest_value).map_err(ValueConversionError::EncodeError)?;
+
+    manifest_decode(&encoded).map_err(ValueConversionError::DecodeError)
 }
