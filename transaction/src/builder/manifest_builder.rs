@@ -34,9 +34,7 @@ use radix_engine_interface::constants::{
 use radix_engine_interface::crypto::{hash, Hash, Secp256k1PublicKey};
 #[cfg(feature = "dump_manifest_to_file")]
 use radix_engine_interface::data::manifest::manifest_encode;
-use radix_engine_interface::data::manifest::{
-    model::*, to_manifest_value, ManifestEncode, ManifestValue,
-};
+use radix_engine_interface::data::manifest::{model::*, ManifestEncode, ManifestValue};
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
@@ -452,20 +450,22 @@ impl ManifestBuilder {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    divisibility,
-                    track_total_supply,
-                    metadata,
-                    access_rules,
-                    initial_supply,
-                }),
+                args: to_manifest_value_safe!(
+                    &FungibleResourceManagerCreateWithInitialSupplyInput {
+                        divisibility,
+                        track_total_supply,
+                        metadata,
+                        access_rules,
+                        initial_supply,
+                    }
+                ),
             });
         } else {
             self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_safe!(&FungibleResourceManagerCreateInput {
                     divisibility,
                     track_total_supply,
                     metadata,
@@ -499,7 +499,7 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
-                .map(|(id, e)| (id, (to_manifest_value(&e),)))
+                .map(|(id, e)| (id, (to_manifest_value_safe!(&e),)))
                 .collect();
 
             self.add_instruction(InstructionV1::CallFunction {
@@ -507,7 +507,7 @@ impl ManifestBuilder {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(
+                args: to_manifest_value_safe!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type,
                         track_total_supply,
@@ -515,7 +515,7 @@ impl ManifestBuilder {
                         metadata,
                         access_rules,
                         entries,
-                    },
+                    }
                 ),
             });
         } else {
@@ -523,7 +523,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                args: to_manifest_value_safe!(&NonFungibleResourceManagerCreateInput {
                     id_type,
                     track_total_supply,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
@@ -541,7 +541,7 @@ impl ManifestBuilder {
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateAdvancedInput { owner_rule }),
+            args: to_manifest_value_safe!(&IdentityCreateAdvancedInput { owner_rule }),
         });
         self
     }
@@ -551,7 +551,7 @@ impl ManifestBuilder {
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput {}),
+            args: to_manifest_value_safe!(&IdentityCreateInput {}),
         });
         self
     }
@@ -560,7 +560,10 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerCreateValidatorInput { key, fee_factor }),
+            args: to_manifest_value_safe!(&ConsensusManagerCreateValidatorInput {
+                key,
+                fee_factor
+            }),
         });
         self
     }
@@ -634,7 +637,7 @@ impl ManifestBuilder {
             package_address: package_address.into(),
             blueprint_name: blueprint_name.to_string(),
             function_name: function_name.to_string(),
-            args: to_manifest_value(&args),
+            args: to_manifest_value_safe!(&args),
         });
         self
     }
@@ -658,7 +661,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-            args: to_manifest_value(&PackageClaimRoyaltiesInput {}),
+            args: to_manifest_value_safe!(&PackageClaimRoyaltiesInput {}),
         })
         .0
     }
@@ -672,7 +675,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&ComponentSetRoyaltyInput {
+            args: to_manifest_value_safe!(&ComponentSetRoyaltyInput {
                 method: method.to_string(),
                 amount,
             }),
@@ -684,7 +687,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-            args: to_manifest_value(&ComponentClaimRoyaltiesInput {}),
+            args: to_manifest_value_safe!(&ComponentClaimRoyaltiesInput {}),
         })
         .0
     }
@@ -698,7 +701,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesUpdateRoleInput {
+            args: to_manifest_value_safe!(&AccessRulesUpdateRoleInput {
                 role_key,
                 rule: Some(rule),
                 mutability: None,
@@ -716,7 +719,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesUpdateRoleInput {
+            args: to_manifest_value_safe!(&AccessRulesUpdateRoleInput {
                 role_key,
                 rule: None,
                 mutability: Some(mutability),
@@ -734,7 +737,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_SET_IDENT.to_string(),
-            args: to_manifest_value(&MetadataSetInput { key, value }),
+            args: to_manifest_value_safe!(&MetadataSetInput { key, value }),
         })
         .0
     }
@@ -754,7 +757,7 @@ impl ManifestBuilder {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+            args: to_manifest_value_safe!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
                 metadata,
@@ -774,7 +777,7 @@ impl ManifestBuilder {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmManifestInput {
+            args: to_manifest_value_safe!(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
                 metadata: BTreeMap::new(),
@@ -797,7 +800,7 @@ impl ManifestBuilder {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+            args: to_manifest_value_safe!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
@@ -919,7 +922,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMethod {
             address: resource_address.into(),
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-            args: to_manifest_value(&FungibleResourceManagerMintInput { amount }),
+            args: to_manifest_value_safe!(&FungibleResourceManagerMintInput { amount }),
         });
         self
     }
@@ -935,13 +938,13 @@ impl ManifestBuilder {
     {
         let entries = entries
             .into_iter()
-            .map(|(id, e)| (id, (to_manifest_value(&e),)))
+            .map(|(id, e)| (id, (to_manifest_value_safe!(&e),)))
             .collect();
 
         self.add_instruction(InstructionV1::CallMethod {
             address: resource_address.into(),
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput { entries }),
+            args: to_manifest_value_safe!(&NonFungibleResourceManagerMintManifestInput { entries }),
         });
         self
     }
@@ -957,13 +960,15 @@ impl ManifestBuilder {
     {
         let entries = entries
             .into_iter()
-            .map(|e| (to_manifest_value(&e),))
+            .map(|e| (to_manifest_value_safe!(&e),))
             .collect();
 
         self.add_instruction(InstructionV1::CallMethod {
             address: resource_address.into(),
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput { entries }),
+            args: to_manifest_value_safe!(&NonFungibleResourceManagerMintUuidManifestInput {
+                entries
+            }),
         });
         self
     }
@@ -972,7 +977,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_RECALL_IDENT.to_string(),
-            args: to_manifest_value(&VaultRecallInput { amount }),
+            args: to_manifest_value_safe!(&VaultRecallInput { amount }),
         });
         self
     }
@@ -981,7 +986,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
-            args: to_manifest_value(&VaultFreezeInput {}),
+            args: to_manifest_value_safe!(&VaultFreezeInput {}),
         });
         self
     }
@@ -990,7 +995,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
-            args: to_manifest_value(&VaultUnfreezeInput {}),
+            args: to_manifest_value_safe!(&VaultUnfreezeInput {}),
         });
         self
     }
@@ -1015,7 +1020,7 @@ impl ManifestBuilder {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateAdvancedInput { owner_role }),
+            args: to_manifest_value_safe!(&AccountCreateAdvancedInput { owner_role }),
         })
         .0
     }
@@ -1027,7 +1032,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountLockFeeAndWithdrawInput {
+        let args = to_manifest_value_safe!(&AccountLockFeeAndWithdrawInput {
             resource_address,
             amount,
             amount_to_lock,
@@ -1048,7 +1053,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountLockFeeAndWithdrawNonFungiblesInput {
+        let args = to_manifest_value_safe!(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
             ids,
@@ -1064,7 +1069,7 @@ impl ManifestBuilder {
 
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee<A: Into<GlobalAddress>>(&mut self, account: A, amount: Decimal) -> &mut Self {
-        let args = to_manifest_value(&AccountLockFeeInput { amount });
+        let args = to_manifest_value_safe!(&AccountLockFeeInput { amount });
 
         self.add_instruction(InstructionV1::CallMethod {
             address: account.into().into(),
@@ -1075,7 +1080,7 @@ impl ManifestBuilder {
     }
 
     pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let args = to_manifest_value(&AccountLockContingentFeeInput { amount });
+        let args = to_manifest_value_safe!(&AccountLockContingentFeeInput { amount });
 
         self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
@@ -1092,7 +1097,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountWithdrawInput {
+        let args = to_manifest_value_safe!(&AccountWithdrawInput {
             resource_address,
             amount,
         });
@@ -1112,7 +1117,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountWithdrawNonFungiblesInput {
+        let args = to_manifest_value_safe!(&AccountWithdrawNonFungiblesInput {
             ids: ids.clone(),
             resource_address,
         });
@@ -1131,7 +1136,7 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountCreateProofInput { resource_address });
+        let args = to_manifest_value_safe!(&AccountCreateProofInput { resource_address });
 
         self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
@@ -1148,7 +1153,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountCreateProofOfAmountInput {
+        let args = to_manifest_value_safe!(&AccountCreateProofOfAmountInput {
             resource_address,
             amount,
         });
@@ -1168,7 +1173,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountCreateProofOfNonFungiblesInput {
+        let args = to_manifest_value_safe!(&AccountCreateProofOfNonFungiblesInput {
             resource_address,
             ids: ids.clone(),
         });

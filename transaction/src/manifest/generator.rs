@@ -51,6 +51,7 @@ use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
+use radix_engine_interface::*;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str::FromStr;
@@ -1698,7 +1699,7 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                args: to_manifest_value_safe!(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -1743,7 +1744,7 @@ mod tests {
                     package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                    args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                    args: to_manifest_value_safe!(&NonFungibleResourceManagerCreateInput {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
@@ -1800,7 +1801,7 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(
+                args: to_manifest_value_safe!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
@@ -1821,7 +1822,7 @@ mod tests {
                         ]),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
-                            (to_manifest_value(&(
+                            (to_manifest_value_safe!(&(
                                 String::from("Hello World"),
                                 dec!("12")
                             )),),
@@ -1856,7 +1857,7 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_safe!(&FungibleResourceManagerCreateInput {
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: BTreeMap::from([(
@@ -1904,25 +1905,27 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    track_total_supply: false,
-                    divisibility: 18,
-                    metadata: BTreeMap::from([(
-                        "name".to_string(),
-                        MetadataValue::String("Token".to_string())
-                    )]),
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceMethodAuthKey::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                        (
-                            ResourceMethodAuthKey::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                    ]),
-                    initial_supply: "500".parse().unwrap()
-                })
+                args: to_manifest_value_safe!(
+                    &FungibleResourceManagerCreateWithInitialSupplyInput {
+                        track_total_supply: false,
+                        divisibility: 18,
+                        metadata: BTreeMap::from([(
+                            "name".to_string(),
+                            MetadataValue::String("Token".to_string())
+                        )]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                        ]),
+                        initial_supply: "500".parse().unwrap()
+                    }
+                )
             },
         );
     }
@@ -1945,10 +1948,10 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
+                args: to_manifest_value_safe!(&NonFungibleResourceManagerMintManifestInput {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
-                        (to_manifest_value(&(
+                        (to_manifest_value_safe!(&(
                             String::from("Hello World"),
                             dec!("12")
                         )),)
@@ -1978,8 +1981,8 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput {
-                    entries: Vec::from([(to_manifest_value(&(
+                args: to_manifest_value_safe!(&NonFungibleResourceManagerMintUuidManifestInput {
+                    entries: Vec::from([(to_manifest_value_safe!(&(
                         String::from("Hello World"),
                         dec!("12")
                     )),),])
@@ -1997,7 +2000,7 @@ mod tests {
             InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerCreateValidatorInput {
+                args: to_manifest_value_safe!(&ConsensusManagerCreateValidatorInput {
                     key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
                     fee_factor: Decimal::ONE,
                 }),
