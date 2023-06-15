@@ -556,11 +556,11 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_validator(&mut self, key: Secp256k1PublicKey) -> &mut Self {
+    pub fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerCreateValidatorInput { key }),
+            args: to_manifest_value(&ConsensusManagerCreateValidatorInput { key, fee_factor }),
         });
         self
     }

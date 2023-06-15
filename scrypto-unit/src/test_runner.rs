@@ -136,6 +136,7 @@ pub struct CustomGenesis {
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
     pub initial_current_leader: Option<ValidatorIndex>,
+    pub faucet_supply: Decimal,
 }
 
 impl CustomGenesis {
@@ -193,6 +194,7 @@ impl CustomGenesis {
             initial_config,
             initial_time_ms: 0,
             initial_current_leader: Some(0),
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
         }
     }
 
@@ -234,6 +236,7 @@ impl CustomGenesis {
             initial_config,
             initial_time_ms: 0,
             initial_current_leader: Some(0),
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
         }
     }
 }
@@ -279,6 +282,7 @@ impl TestRunnerBuilder {
                     custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
                     custom_genesis.initial_current_leader,
+                    custom_genesis.faucet_supply,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
@@ -707,7 +711,7 @@ impl TestRunner {
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 10.into())
-            .create_validator(pub_key)
+            .create_validator(pub_key, Decimal::ONE)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
