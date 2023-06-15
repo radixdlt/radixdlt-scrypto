@@ -53,6 +53,12 @@ impl<T: for<'a> Encode<ManifestCustomValueKind, ManifestEncoder<'a>> + ?Sized> M
 {
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ValueConversionError {
+    DecodeError(DecodeError),
+    EncodeError(EncodeError),
+}
+
 pub fn manifest_encode<T: ManifestEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
     let encoder = ManifestEncoder::new(&mut buf, MANIFEST_SBOR_V1_MAX_DEPTH);
@@ -65,8 +71,12 @@ pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> 
         .decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
 }
 
-pub fn to_manifest_value<T: ManifestEncode + ?Sized>(value: &T) -> ManifestValue {
-    manifest_decode(&manifest_encode(value).unwrap()).unwrap()
+pub fn to_manifest_value<T: ManifestEncode + ?Sized>(
+    value: &T,
+) -> Result<ManifestValue, ValueConversionError> {
+    let encoded = manifest_encode(value).map_err(ValueConversionError::EncodeError)?;
+
+    manifest_decode(&encoded).map_err(ValueConversionError::DecodeError)
 }
 
 pub fn from_manifest_value<T: ManifestDecode>(
