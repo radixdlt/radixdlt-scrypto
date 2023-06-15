@@ -1,5 +1,6 @@
 use native_sdk::account::*;
 use native_sdk::consensus_manager::*;
+use native_sdk::resource::ResourceManager;
 use scrypto::api::node_modules::metadata::*;
 use scrypto::api::object_api::ObjectModuleId;
 use scrypto::api::ClientObjectApi;
@@ -25,7 +26,6 @@ pub struct GenesisStakeAllocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
     pub address_reservation: GlobalAddressReservation,
-    pub initial_supply: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
     pub owner: Option<ComponentAddress>,
 }
@@ -69,22 +69,17 @@ mod genesis_helper {
 
     struct GenesisHelper {
         consensus_manager: ComponentAddress,
-        xrd_vault: Vault,
-        resource_vaults: KeyValueStore<ResourceAddress, Vault>,
         validators: KeyValueStore<Secp256k1PublicKey, ComponentAddress>,
     }
 
     impl GenesisHelper {
         pub fn new(
             address_reservation: GlobalAddressReservation,
-            whole_lotta_xrd: Bucket,
             consensus_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
         ) -> Global<GenesisHelper> {
             Self {
                 consensus_manager,
-                xrd_vault: Vault::with_bucket(whole_lotta_xrd),
-                resource_vaults: KeyValueStore::new(),
                 validators: KeyValueStore::new(),
             }
             .instantiate()
@@ -158,6 +153,16 @@ mod genesis_helper {
             accounts: Vec<ComponentAddress>,
             allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
         ) {
+            let xrd_needed: Decimal = allocations
+                .iter()
+                .flat_map(|(_, allocations)| {
+                    allocations.iter().map(|alloc| alloc.xrd_amount.clone())
+                })
+                .sum();
+            let mut xrd_bucket = ResourceManager(RADIX_TOKEN)
+                .mint_fungible(xrd_needed, &mut ScryptoEnv)
+                .expect("XRD mint for genesis stake allocation failed");
+
             for (validator_key, stake_allocations) in allocations.into_iter() {
                 let validator_address = self.validators.get(&validator_key).unwrap();
                 for GenesisStakeAllocation {
@@ -166,7 +171,7 @@ mod genesis_helper {
                 } in stake_allocations.into_iter()
                 {
                     let staker_account_address = accounts[account_index as usize].clone();
-                    let stake_xrd_bucket = self.xrd_vault.take(xrd_amount);
+                    let stake_xrd_bucket = xrd_bucket.take(xrd_amount);
                     let stake_unit_bucket = Validator(validator_address.clone())
                         .stake(stake_xrd_bucket, &mut ScryptoEnv)
                         .unwrap();
@@ -175,17 +180,17 @@ mod genesis_helper {
                         .unwrap();
                 }
             }
+
+            xrd_bucket.drop_empty();
         }
 
         fn create_resources(&mut self, resources: Vec<GenesisResource>) {
             for resource in resources {
-                let (resource_address, initial_supply_bucket) = Self::create_resource(resource);
-                self.resource_vaults
-                    .insert(resource_address, Vault::with_bucket(initial_supply_bucket));
+                Self::create_resource(resource);
             }
         }
 
-        fn create_resource(resource: GenesisResource) -> (ResourceAddress, Bucket) {
+        fn create_resource(resource: GenesisResource) -> () {
             let metadata: BTreeMap<String, MetadataValue> = resource.metadata.into_iter().collect();
 
             let mut access_rules = BTreeMap::new();
@@ -238,25 +243,23 @@ mod genesis_helper {
                     .unwrap();
             }
 
-            let (resource_address, initial_supply_bucket): (ResourceAddress, Bucket) =
-                Runtime::call_function(
-                    RESOURCE_PACKAGE,
-                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
-                    scrypto_encode(
-                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
-                            track_total_supply: true,
-                            divisibility: 18,
-                            metadata,
-                            access_rules,
-                            initial_supply: resource.initial_supply,
-                            resource_address: resource.address_reservation,
-                        },
-                    )
-                    .unwrap(),
-                );
-
-            (resource_address, initial_supply_bucket)
+            let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
+                RESOURCE_PACKAGE,
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
+                scrypto_encode(
+                    &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                        track_total_supply: true,
+                        divisibility: 18,
+                        metadata,
+                        access_rules,
+                        initial_supply: Decimal::zero(),
+                        resource_address: resource.address_reservation,
+                    },
+                )
+                .unwrap(),
+            );
+            initial_supply_bucket.drop_empty();
         }
 
         fn allocate_resources(
@@ -265,40 +268,46 @@ mod genesis_helper {
             allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
         ) {
             for (resource_address, allocations) in allocations.into_iter() {
-                let mut resource_vault = self.resource_vaults.get_mut(&resource_address).unwrap();
+                let amount_needed = allocations.iter().map(|alloc| alloc.amount.clone()).sum();
+                let mut resource_bucket = ResourceManager(resource_address)
+                    .mint_fungible(amount_needed, &mut ScryptoEnv)
+                    .expect("Resource mint for genesis allocation failed");
+
                 for GenesisResourceAllocation {
                     account_index,
                     amount,
                 } in allocations.into_iter()
                 {
                     let account_address = accounts[account_index as usize].clone();
-                    let allocation_bucket = resource_vault.take(amount);
+                    let allocation_bucket = resource_bucket.take(amount);
                     let _: () = Account(account_address)
                         .deposit(allocation_bucket, &mut ScryptoEnv)
                         .unwrap();
                 }
+                resource_bucket.drop_empty();
             }
         }
 
         fn allocate_xrd(&mut self, allocations: Vec<(ComponentAddress, Decimal)>) {
+            let xrd_needed = allocations.iter().map(|(_, amount)| amount.clone()).sum();
+            let mut xrd_bucket = ResourceManager(RADIX_TOKEN)
+                .mint_fungible(xrd_needed, &mut ScryptoEnv)
+                .expect("XRD mint for genesis allocation failed");
+
             for (account_address, amount) in allocations.into_iter() {
-                let bucket = self.xrd_vault.take(amount);
+                let bucket = xrd_bucket.take(amount);
                 let _: () = Account(account_address)
                     .deposit(bucket, &mut ScryptoEnv)
                     .unwrap();
             }
+
+            xrd_bucket.drop_empty();
         }
 
-        pub fn wrap_up(&mut self) -> Bucket {
+        pub fn wrap_up(&mut self) -> () {
             ConsensusManager(self.consensus_manager)
                 .start(&mut ScryptoEnv)
                 .unwrap();
-
-            // TODO: assert all resource vaults are empty
-            // i.e. that for all resources: initial_supply == sum(allocations)
-
-            // return any unused XRD
-            self.xrd_vault.take_all()
         }
     }
 }
