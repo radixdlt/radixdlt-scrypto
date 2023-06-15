@@ -593,7 +593,6 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     let fees_to_distribute = fee_summary.fees_to_distribute();
 
     // Sanity check
-    println!("{:?}", fee_summary);
     assert_eq!(required, Decimal::ZERO);
     assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
     assert_eq!(
