@@ -495,9 +495,9 @@ macro_rules! role_definition_entry {
 }
 
 #[macro_export]
-macro_rules! roles {
-    ( $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)* ) => ({
-        let method_roles = MethodRoles::<RoleEntry> {
+macro_rules! roles_internal {
+    ($module_roles:ident, $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)* ) => ({
+        let method_roles = $module_roles::<RoleEntry> {
             $($role: role_definition_entry!($rule $(, mutable_by: $($mutators),+)?)),*
         };
 
@@ -507,6 +507,14 @@ macro_rules! roles {
         }
 
         roles
+    });
+}
+
+
+#[macro_export]
+macro_rules! roles {
+    ( $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)* ) => ({
+        roles_internal!(MethodRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*)
     });
 }
 
@@ -558,3 +566,32 @@ macro_rules! metadata {
         metadata!{$($key => $value),*}
     });
 }
+
+/*
+#[macro_export]
+macro_rules! metadata_init {
+    (
+        roles {
+            $($role:ident),*
+        },
+        $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
+    ) => ({
+        let roles = roles!()
+    })
+
+    ( ) => ({
+        ::scrypto::prelude::Metadata::new()
+    });
+    ( $($key:expr => $value:expr),* ) => ({
+        let mut metadata = ::scrypto::prelude::Metadata::new();
+        $(
+            metadata.set($key, $value);
+        )*
+        metadata
+    });
+    ( $($key:expr => $value:expr,)* ) => ({
+        metadata!{$($key => $value),*}
+    });
+}
+
+ */
