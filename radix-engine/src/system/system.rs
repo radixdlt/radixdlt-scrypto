@@ -39,7 +39,6 @@ use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema,
 };
 use resources_tracker_macro::trace_resources;
-use sbor::rust::collections::hash_map::Entry;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -119,18 +118,6 @@ impl TryFrom<ObjectHandle> for ActorObjectType {
     }
 }
 
-pub struct SchemaCache {
-    cache: NonIterMap<Hash, ScryptoSchema>,
-}
-
-impl SchemaCache {
-    pub fn new() -> Self {
-        Self {
-            cache: NonIterMap::new(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum KeyValueStoreSchemaIdent {
     Key,
@@ -178,26 +165,21 @@ where
         instance_schema: &Option<InstanceSchema>,
         type_pointer: TypePointer,
         payload: &[u8],
-        cache: Option<&mut SchemaCache>,
     ) -> Result<(), RuntimeError> {
-        let mut local_cache = SchemaCache::new();
-        let schema_cache = cache.unwrap_or(&mut local_cache);
-
         match type_pointer {
             TypePointer::Package(hash, index) => {
-                self.ensure_schema_loaded(blueprint_id.package_address, &hash, schema_cache)?;
-                let schema = schema_cache.cache.get(&hash).unwrap();
+                let schema = self.get_schema(blueprint_id.package_address, &hash)?;
 
                 self.validate_payload(
                     payload,
-                    schema,
+                    &schema,
                     index,
                     SchemaOrigin::Blueprint(blueprint_id.clone()),
                 )
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
                         PayloadValidationAgainstSchemaError::SchemaValidationError(
-                            err.error_message(schema),
+                            err.error_message(&schema),
                         ),
                     ))
                 })?;
@@ -244,35 +226,13 @@ where
         instance_schema: &'s Option<InstanceSchema>,
         payloads: &[(&Vec<u8>, TypePointer)],
     ) -> Result<(), RuntimeError> {
-        let mut schema_cache = SchemaCache::new();
-
         for (payload, type_pointer) in payloads {
             self.validate_payload_at_type_pointer(
                 blueprint_id,
                 instance_schema,
                 type_pointer.clone(),
                 payload,
-                Some(&mut schema_cache),
             )?;
-        }
-
-        Ok(())
-    }
-
-    // TODO: A hack for now
-    pub fn ensure_schema_loaded(
-        &mut self,
-        package_address: PackageAddress,
-        schema_hash: &Hash,
-        schema_cache: &mut SchemaCache,
-    ) -> Result<(), RuntimeError> {
-        let entry = schema_cache.cache.entry(schema_hash.clone());
-        match entry {
-            Entry::Vacant(e) => {
-                let schema = self.get_schema(package_address, schema_hash)?;
-                e.insert(schema);
-            }
-            Entry::Occupied(..) => {}
         }
 
         Ok(())
@@ -1220,7 +1180,6 @@ where
                     &None, // TODO: Change to Some, once support for generic fields is implemented
                     schema_pointer,
                     &buffer,
-                    None,
                 )?;
             }
             _ => {
@@ -1660,7 +1619,6 @@ where
                     &instance_schema,
                     schema_pointer,
                     &buffer,
-                    None,
                 )?;
 
                 can_own
