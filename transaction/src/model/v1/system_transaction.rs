@@ -113,7 +113,7 @@ impl PreparedSystemTransactionV1 {
                 },
                 fee_payment: FeePayment {
                     tip_percentage: 0,
-                    free_credit_in_xrd: DEFAULT_FREE_CREDIT_IN_XRD,
+                    free_credit_in_xrd: 0,
                 },
                 runtime_validations: vec![],
                 pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
