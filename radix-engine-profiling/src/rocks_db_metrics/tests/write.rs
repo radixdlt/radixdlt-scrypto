@@ -351,7 +351,7 @@ where
         size_vector.push(size);
     }
 
-    // repeat 1 commit of substate of various size into different nodes and partitions n-times 
+    // repeat 1 commit of substate of various size into different nodes and partitions n-times
     for i in 0..rounds_count {
         print!("Round {}/{}\r", i + 1, rounds_count);
         std::io::stdout().flush().ok();
@@ -359,7 +359,8 @@ where
         let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
         rng.fill(&mut node_id_value);
         let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
-        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
+        let partition_key =
+            SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
         let mut idx_vector = size_vector.clone();
 

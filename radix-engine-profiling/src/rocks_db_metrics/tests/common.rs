@@ -77,7 +77,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     min_size: usize,
     max_size: usize,
     step: usize,
-    writes_count: usize
+    writes_count: usize,
 ) -> Vec<(DbPartitionKey, DbSortKey, usize)> {
     let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> =
         Vec::with_capacity(max_size);
@@ -95,7 +95,8 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
         let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
         rng.fill(&mut node_id_value);
         let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
-        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
+        let partition_key =
+            SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
         let mut partition = PartitionUpdates::new();
 
         for size in (min_size..=max_size).step_by(step) {
