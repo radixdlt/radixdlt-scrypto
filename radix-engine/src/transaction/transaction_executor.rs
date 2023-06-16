@@ -362,7 +362,7 @@ where
                         .acquire_lock(
                             INTENT_HASH_STORE.as_node_id(),
                             MAIN_BASE_PARTITION,
-                            &ConsensusManagerField::ConsensusManager.into(),
+                            &IntentHashStoreField::IntentHashStore.into(),
                             LockFlags::read_only(),
                         )
                         .unwrap()

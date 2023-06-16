@@ -152,6 +152,12 @@ pub enum ConsensusManagerField {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum IntentHashStoreField {
+    IntentHashStore,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ValidatorField {
     Validator,
 }
@@ -294,6 +300,7 @@ substate_key!(AccountField);
 substate_key!(OneResourcePoolField);
 substate_key!(TwoResourcePoolField);
 substate_key!(MultiResourcePoolField);
+substate_key!(IntentHashStoreField);
 
 // Transient
 substate_key!(WorktopField);
