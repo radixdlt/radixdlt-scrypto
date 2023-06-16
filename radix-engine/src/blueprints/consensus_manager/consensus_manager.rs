@@ -289,7 +289,7 @@ impl ConsensusManagerBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            component_address_reservation,
+            Some(component_address_reservation),
         )?;
 
         Ok(())

@@ -208,7 +208,7 @@ where
 
         let address = self
             .api
-            .globalize_with_address(modules, address_reservation)?;
+            .globalize_with_address(modules, Some(address_reservation))?;
 
         let address_encoded = scrypto_encode(&address).expect("Failed to encode object address");
 

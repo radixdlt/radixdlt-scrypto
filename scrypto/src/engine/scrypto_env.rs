@@ -139,7 +139,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: GlobalAddressReservation,
+        address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
         let address_reservation = scrypto_encode(&address_reservation).unwrap();

@@ -136,7 +136,7 @@ pub trait ClientObjectApi<E> {
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: GlobalAddressReservation,
+        address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address_and_create_inner_object(

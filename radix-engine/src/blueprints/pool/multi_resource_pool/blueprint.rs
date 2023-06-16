@@ -111,7 +111,7 @@ impl MultiResourcePoolBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_reservation,
+            Some(address_reservation),
         )?;
 
         Ok(ComponentAddress::new_or_panic(address.as_node_id().0))

@@ -330,7 +330,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         let address = if let Some(address_reservation) = self.address_reservation {
             ScryptoEnv
-                .globalize_with_address(modules, address_reservation)
+                .globalize_with_address(modules, Some(address_reservation))
                 .unwrap()
         } else {
             ScryptoEnv.globalize(modules, btreemap!()).unwrap()

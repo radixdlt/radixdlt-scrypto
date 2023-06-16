@@ -1324,9 +1324,22 @@ where
     fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: GlobalAddressReservation,
+        address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, RuntimeError> {
-        self.globalize_with_address_internal(modules, address_reservation)
+
+        // TODO: optimize by skipping address allocation
+        let (global_address_reservation, global_address) =
+            if let Some(reservation) = address_reservation {
+                let address = self.get_reservation_address(reservation.0.as_node_id())?;
+                (reservation, address)
+            } else {
+                let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
+                self.allocate_global_address(blueprint_id)?
+            };
+
+        self.globalize_with_address_internal(modules, global_address_reservation)?;
+
+        Ok(global_address)
     }
 
     #[trace_resources]

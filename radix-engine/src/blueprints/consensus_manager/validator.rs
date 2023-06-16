@@ -1129,7 +1129,7 @@ impl ValidatorCreator {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_reservation,
+            Some(address_reservation),
         )?;
 
         Ok((

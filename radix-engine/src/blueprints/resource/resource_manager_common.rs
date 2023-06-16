@@ -211,7 +211,7 @@ where
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
         ),
-        resource_address_reservation,
+        Some(resource_address_reservation),
     )?;
 
     Ok(ResourceAddress::new_or_panic(address.into()))
