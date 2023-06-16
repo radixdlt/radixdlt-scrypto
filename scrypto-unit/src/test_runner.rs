@@ -908,7 +908,7 @@ impl TestRunner {
             execution_config,
             &executable,
         );
-        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+        if let TransactionResult::Commit(commit) = &transaction_receipt.transaction_result {
             self.substate_db
                 .commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
