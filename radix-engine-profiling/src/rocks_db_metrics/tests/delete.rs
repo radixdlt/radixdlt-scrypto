@@ -226,9 +226,26 @@ where
     // clean database
     std::fs::remove_dir_all(path.clone()).ok();
 
-    // prepare database with maxium size
+    // prepare database
+
+    // Stage 1: fill db with substates to prepare base db size
+    // this will prevent from decreasing db size to 0 when deleting substates
+    {
+        let mut substate_db = create_store(path.clone());
+
+        prepare_db(
+            &mut substate_db,
+            min_size,
+            max_size,
+            size_step,
+            prepare_db_write_repeats,
+        );
+    }
+
+    // Stage 2: reopen database and fill db with additional substates which will be deleted in next step
     let data: Vec<(DbPartitionKey, DbSortKey, usize)> = {
         let mut substate_db = create_store(path.clone());
+
         prepare_db(
             &mut substate_db,
             min_size,
@@ -315,6 +332,7 @@ where
     let data_per_round: Vec<Vec<(DbPartitionKey, Vec<DbSortKey>)>> = {
         let mut substate_db = create_store(path.clone());
         // fill db with 1_000_000 substates of size 100 bytes under random partitions
+        // this will prepare base db size
         prepare_db(&mut substate_db, 100, 100, 1, 1000000);
 
         // fill db with additional substates which will be deleted in next step
