@@ -400,7 +400,7 @@ pub enum TypedTypeInfoModuleFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModule {
     OwnerRole(OwnerRole),
-    Rule(KeyValueEntrySubstate<AccessRule>),
+    Rule(KeyValueEntrySubstate<RoleRule>),
     Mutability(KeyValueEntrySubstate<RoleList>),
 }
 

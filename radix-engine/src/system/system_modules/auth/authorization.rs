@@ -357,12 +357,30 @@ impl Authorization {
                 }),
                 SystemLockData::default(),
             )?;
-            let substate: KeyValueEntrySubstate<AccessRule> =
+            let substate: KeyValueEntrySubstate<RoleRule> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
 
             match substate.value {
-                Some(access_rule) => access_rule,
+                Some(RoleRule::Rule(access_rule)) => access_rule,
+                Some(RoleRule::UseOwner) => {
+                    let handle = api.kernel_lock_substate(
+                        access_rules_of,
+                        ACCESS_RULES_BASE_PARTITION.at_offset(ACCESS_RULES_FIELDS_PARTITION_OFFSET).unwrap(),
+                        &SubstateKey::Field(0u8),
+                        LockFlags::read_only(),
+                        SystemLockData::default(),
+                    )?;
+
+                    let owner_role: OwnerRole = api.kernel_read_substate(handle)?.as_typed().unwrap();
+                    api.kernel_drop_lock(handle)?;
+                    match owner_role {
+                        OwnerRole::None => return Ok(AuthorizationCheckResult::Failed(vec![])),
+                        OwnerRole::Updateable(rule) | OwnerRole::Fixed(rule) => {
+                            rule
+                        }
+                    }
+                }
                 None => {
                     return Ok(AuthorizationCheckResult::Failed(vec![]));
                 }
