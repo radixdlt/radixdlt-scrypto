@@ -17,6 +17,11 @@ pub enum SetSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum DeletePartitionError {
+    PartitionNotFound(NodeId, PartitionNumber),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeSubstateError {
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
@@ -131,6 +136,9 @@ pub trait SubstateStore {
         handle: u32,
         substate_value: IndexedScryptoValue,
     ) -> StoreAccessInfo;
+
+    /// Note: unstable interface, for intent hash intent store only
+    fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
 }
 
 #[derive(Clone)]

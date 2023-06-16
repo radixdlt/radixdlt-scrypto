@@ -366,6 +366,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     substate_db: &'s S,
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
+    deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
     next_lock_id: u32,
@@ -378,6 +379,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             substate_db,
             force_write_tracked_nodes: index_map_new(),
             tracked_nodes: index_map_new(),
+            deleted_partitions: index_set_new(),
             locks: index_map_new(),
             next_lock_id: 0,
             phantom_data: PhantomData::default(),
@@ -1086,5 +1088,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         };
 
         store_access
+    }
+
+    fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber) {
+        self.deleted_partitions.insert((*node_id, partition_num));
     }
 }

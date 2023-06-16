@@ -178,6 +178,17 @@ impl IntentHashStoreSubstate {
 
         Some(partition_number as u8)
     }
+
+    pub fn advance(&mut self) -> u8 {
+        let old_start_partition = self.start_partition;
+        self.start_epoch += self.epochs_per_partition;
+        self.start_partition = if self.start_partition == self.partition_range_end {
+            self.partition_range_start
+        } else {
+            self.start_partition + 1
+        };
+        old_start_partition
+    }
 }
 
 pub struct IntentHashStoreBlueprint;
@@ -235,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_partition_calculation() {
-        let store = IntentHashStoreSubstate {
+        let mut store = IntentHashStoreSubstate {
             start_epoch: 256,
             start_partition: 70,
             partition_range_start: PARTITION_RANGE_START,
@@ -256,5 +267,9 @@ mod tests {
             store.partition_of(256 + EPOCHS_PER_PARTITION * num_partitions),
             None,
         );
+
+        store.advance();
+        assert_eq!(store.start_epoch, 256 + EPOCHS_PER_PARTITION);
+        assert_eq!(store.start_partition, 71);
     }
 }

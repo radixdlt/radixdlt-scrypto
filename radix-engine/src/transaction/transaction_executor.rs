@@ -204,7 +204,7 @@ where
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
         // Perform runtime validation.
-        let current_epoch = Self::read_current_epoch(&mut track);
+        let current_epoch = Self::read_epoch(&mut track);
         let validation_result = if let Some(current_epoch) = current_epoch {
             if let Some(range) = executable.epoch_range() {
                 Self::validate_epoch_range(
@@ -268,10 +268,10 @@ where
                             Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
 
                         // Update intent hash status
-                        if let Some(current_epoch) = current_epoch {
+                        if let Some(next_epoch) = Self::read_epoch(&mut track) {
                             Self::update_intent_hash_store(
                                 &mut track,
-                                current_epoch,
+                                next_epoch,
                                 executable.intent_hash().clone(),
                                 executable.epoch_range().map(|x| x.end_epoch_exclusive),
                                 is_success,
@@ -343,7 +343,7 @@ where
         receipt
     }
 
-    fn read_current_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
+    fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
         let handle = match track.acquire_lock(
@@ -708,12 +708,75 @@ where
 
     fn update_intent_hash_store(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
-        current_epoch: Epoch,
+        next_epoch: Epoch,
         intent_hash: Hash,
         expiry_epoch: Option<Epoch>,
         is_success: bool,
     ) {
-        // FIXME here
+        // Read the intent hash store
+        let handle = track
+            .acquire_lock(
+                INTENT_HASH_STORE.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &IntentHashStoreField::IntentHashStore.into(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap()
+            .0;
+        let mut substate: IntentHashStoreSubstate =
+            track.read_substate(handle).0.as_typed().unwrap();
+
+        // Update the status of the intent hash
+        if let Some(expiry_epoch) = expiry_epoch {
+            if let Some(partition_number) = substate.partition_of(expiry_epoch.number()) {
+                let handle = track
+                    .acquire_lock_virtualize(
+                        INTENT_HASH_STORE.as_node_id(),
+                        PartitionNumber(partition_number),
+                        &SubstateKey::Map(intent_hash.to_vec()),
+                        LockFlags::MUTABLE,
+                        || {
+                            Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
+                                value: Option::<IntentHashStatus>::None,
+                                mutability: SubstateMutability::Mutable,
+                            }))
+                        },
+                    )
+                    .unwrap()
+                    .0;
+                track.update_substate(
+                    handle,
+                    IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
+                        value: Some(if is_success {
+                            IntentHashStatus::CommittedSuccess
+                        } else {
+                            IntentHashStatus::CommittedFailure
+                        }),
+                        // TODO: maybe make it immutable, but how does this affect partition deletion?
+                        mutability: SubstateMutability::Mutable,
+                    }),
+                );
+                track.release_lock(handle);
+            }
+        }
+
+        loop {
+            // TODO: how do we align this with TransactionValidator?
+            if substate
+                .partition_of(next_epoch.after(DEFAULT_MAX_EPOCH_RANGE).number())
+                .is_none()
+            {
+                let discarded_partition = substate.advance();
+                track.delete_partition(
+                    INTENT_HASH_STORE.as_node_id(),
+                    PartitionNumber(discarded_partition),
+                );
+            } else {
+                break;
+            }
+        }
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
     }
 
     #[cfg(not(feature = "alloc"))]
