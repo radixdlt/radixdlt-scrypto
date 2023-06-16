@@ -12,12 +12,6 @@ use utils::ContextualDisplay;
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodIdentifier(pub NodeId, pub ObjectModuleId, pub String);
 
-impl MethodIdentifier {
-    pub fn method_key(&self) -> MethodKey {
-        MethodKey::new(self.1, self.2.as_str())
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FunctionIdentifier(pub BlueprintId, pub String);
 

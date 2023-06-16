@@ -69,7 +69,6 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let node_id = callee.node_id;
-        let module_id = callee.module_id;
         let ident = callee.ident.as_str();
         let acting_location = if callee.module_object_info.global {
             ActingLocation::AtBarrier
@@ -78,7 +77,7 @@ impl AuthModule {
         };
 
         let info = api.get_object_info(&node_id)?;
-        let method_key = MethodKey::new(module_id, ident);
+        let method_key = MethodKey::new(ident);
 
         if let Some(parent) = info.outer_object {
             Self::check_authorization_against_access_rules(
@@ -142,7 +141,7 @@ impl AuthModule {
             ObjectKey::InnerBlueprint(_blueprint_name) => auth_template.outer_auth(),
         };
 
-        let (permission, module) = match method_key.module_id {
+        let (permission, module) = match callee.module_id {
             ObjectModuleId::AccessRules => {
                 match &object_key {
                     ObjectKey::SELF => {}

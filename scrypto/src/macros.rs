@@ -385,10 +385,10 @@ macro_rules! method_permissions {
 
 #[macro_export]
 macro_rules! main_permissions {
-    ($permissions:expr, $module_methods:ident, $key:ident, $($method:ident => $($permission:ident),+ ;)*) => ({
+    ($permissions:expr, $module_methods:ident, $($method:ident => $($permission:ident),+ ;)*) => ({
         let permissions = method_permissions!($module_methods, $($method => $($permission),+ ;)*);
         for (method, permission) in permissions.to_mapping() {
-            $permissions.insert(MethodKey::$key(method), permission);
+            $permissions.insert(MethodKey::new(method), permission);
         }
     })
 }
@@ -396,7 +396,7 @@ macro_rules! main_permissions {
 #[macro_export]
 macro_rules! module_permissions {
     ($permissions:expr, methods { $($method:ident => $($permission:ident),+ ;)* }) => ({
-        main_permissions!($permissions, Methods, main, $($method => $($permission),+ ;)*);
+        main_permissions!($permissions, Methods, $($method => $($permission),+ ;)*);
     });
     /*
     ($permissions:expr, metadata { $($method:ident => $($permission:ident),+ ;)* }) => ({

@@ -360,7 +360,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                     btreemap!(
                         #(
-                            MethodKey::main(#method_names) => MethodPermission::Public,
+                            MethodKey::new(#method_names) => MethodPermission::Public,
                         )*
                     )
                 }
@@ -1314,7 +1314,7 @@ mod tests {
 
                     fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                         btreemap!(
-                            MethodKey::main("x") => MethodPermission::Public,
+                            MethodKey::new("x") => MethodPermission::Public,
                         )
                     }
 

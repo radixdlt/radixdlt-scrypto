@@ -32,39 +32,22 @@ impl ObjectKey {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
 pub struct MethodKey {
-    // TODO: Remove `ObjectModuleId::AccessRules`?
-    pub module_id: ObjectModuleId,
     pub ident: String,
 }
 
 impl MethodKey {
-    pub fn new<S: ToString>(module_id: ObjectModuleId, method_ident: S) -> Self {
+    pub fn new<S: ToString>(method_ident: S) -> Self {
         Self {
-            module_id,
             ident: method_ident.to_string(),
         }
     }
+}
 
-    pub fn metadata<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: ObjectModuleId::Metadata,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn royalty<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: ObjectModuleId::Royalty,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn main<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: ObjectModuleId::Main,
-            ident: method_ident.to_string(),
-        }
+impl From<&str> for MethodKey {
+    fn from(value: &str) -> Self {
+        MethodKey::new(value)
     }
 }
 

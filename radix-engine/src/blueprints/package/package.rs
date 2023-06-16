@@ -652,11 +652,7 @@ impl PackageNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
-                            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-
-                            MethodKey::main(PACKAGE_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
+                            PACKAGE_CLAIM_ROYALTIES_IDENT => [OWNER_ROLE];
                         },
                         outer_auth: method_auth_template!(),
                     }

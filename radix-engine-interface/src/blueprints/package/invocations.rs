@@ -130,6 +130,7 @@ pub enum MethodAuthTemplate {
 
 impl MethodAuthTemplate {
     pub fn add_metadata_default_if_not_specified(&mut self) {
+        /*
         match self {
             MethodAuthTemplate::Static { auth, .. } => {
                 if !auth.contains_key(&MethodKey::metadata(METADATA_GET_IDENT)) {
@@ -145,6 +146,7 @@ impl MethodAuthTemplate {
                 }
             }
         }
+         */
     }
 
     pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {

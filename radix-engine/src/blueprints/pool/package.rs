@@ -179,22 +179,13 @@ impl PoolNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
-                            // Metadata Module rules
-                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-
-                            // Royalty Module rules
-                            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-                            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-
                             // Main Module rules
-                            MethodKey::main(ONE_RESOURCE_POOL_REDEEM_IDENT) => MethodPermission::Public;
-                            MethodKey::main(ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => MethodPermission::Public;
-                            MethodKey::main(ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT) => MethodPermission::Public;
-                            MethodKey::main(ONE_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::main(ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::main(ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                            ONE_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
+                            ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
+                            ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT => MethodPermission::Public;
+                            ONE_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
                         },
                         outer_auth: btreemap!(),
                     },
@@ -354,22 +345,13 @@ impl PoolNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
-                            // Metadata Module rules
-                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-
-                            // Royalty Module rules
-                            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-                            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-
                             // Main Module rules
-                            MethodKey::main(TWO_RESOURCE_POOL_REDEEM_IDENT) => MethodPermission::Public;
-                            MethodKey::main(TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => MethodPermission::Public;
-                            MethodKey::main(TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => MethodPermission::Public;
-                            MethodKey::main(TWO_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::main(TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::main(TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                            TWO_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
+                            TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
+                            TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodPermission::Public;
+                            TWO_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
                         },
                         outer_auth: btreemap!(),
                     },
@@ -527,22 +509,13 @@ impl PoolNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
-                            // Metadata Module rules
-                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::metadata(METADATA_SET_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-
-                            // Royalty Module rules
-                            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [];
-                            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [];
-
                             // Main Module rules
-                            MethodKey::main(MULTI_RESOURCE_POOL_REDEEM_IDENT) => MethodPermission::Public;
-                            MethodKey::main(MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT) => MethodPermission::Public;
-                            MethodKey::main(MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT) => MethodPermission::Public;
-                            MethodKey::main(MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::main(MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT) => [POOL_MANAGER_ROLE];
-                            MethodKey::main(MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT) => [POOL_MANAGER_ROLE];
+                            MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
+                            MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
+                            MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodPermission::Public;
+                            MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
                         },
                         outer_auth: btreemap!(),
                     },

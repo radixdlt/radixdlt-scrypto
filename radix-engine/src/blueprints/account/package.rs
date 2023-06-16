@@ -421,31 +421,27 @@ impl AccountNativePackage {
         */
 
         let method_auth = method_auth_template!(
-            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+            ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+            ACCOUNT_CREATE_PROOF_IDENT => [OWNER_ROLE];
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+            ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
+            ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
+            ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
+            ACCOUNT_BURN_IDENT => [OWNER_ROLE];
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
 
-            MethodKey::main(ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => [SECURIFY_ROLE];
-            MethodKey::main(ACCOUNT_DEPOSIT_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_BURN_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_BURN_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT) => MethodPermission::Public;
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT) => MethodPermission::Public;
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT) => MethodPermission::Public;
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT) => MethodPermission::Public;
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodPermission::Public;
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodPermission::Public;
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodPermission::Public;
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodPermission::Public;
         );
 
         let schema = generate_full_schema(aggregator);
