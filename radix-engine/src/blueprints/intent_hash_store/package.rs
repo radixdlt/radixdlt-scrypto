@@ -176,6 +176,9 @@ impl IntentHashStoreSubstate {
             partition_number -= num_partitions as u64;
         }
 
+        assert!(partition_number >= self.partition_range_start as u64);
+        assert!(partition_number <= self.partition_range_end as u64);
+
         Some(partition_number as u8)
     }
 
