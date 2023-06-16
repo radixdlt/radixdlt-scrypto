@@ -348,7 +348,7 @@ impl Authorization {
         } else {
             let handle = api.kernel_lock_substate_with_default(
                 access_rules_of,
-                ACCESS_RULES_BASE_PARTITION,
+                ACCESS_RULES_BASE_PARTITION.at_offset(ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET).unwrap(),
                 &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {

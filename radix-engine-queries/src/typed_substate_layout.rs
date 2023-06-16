@@ -92,6 +92,7 @@ impl TypedSubstateKey {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesSubstateKey {
+    AccessRulesField(AccessRulesField),
     Rule(ModuleRoleKey),
     Mutability(ModuleRoleKey),
 }
@@ -171,7 +172,12 @@ pub fn to_typed_substate_key(
         ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModuleField(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
-        ACCESS_RULES_BASE_PARTITION => {
+        ACCESS_RULES_FIELDS_PARTITION => TypedSubstateKey::AccessRulesModule(
+            TypedAccessRulesSubstateKey::AccessRulesField(
+                AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
+            )
+        ),
+        ACCESS_RULES_ROLE_DEF_PARTITION => {
             let key = substate_key
                 .for_map()
                 .ok_or_else(|| error("Access Rules key"))?;
@@ -393,6 +399,7 @@ pub enum TypedTypeInfoModuleFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModule {
+    OwnerRole(OwnerRole),
     Rule(KeyValueEntrySubstate<AccessRule>),
     Mutability(KeyValueEntrySubstate<RoleList>),
 }
@@ -539,6 +546,13 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
+            TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => match access_rules_field_offset {
+                AccessRulesField::OwnerRole => {
+                    TypedSubstateValue::AccessRulesModule(
+                        TypedAccessRulesModule::OwnerRole(scrypto_decode(data)?),
+                    )
+                }
+            }
             TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
                 TypedAccessRulesModule::Rule(scrypto_decode(data)?),
             ),
