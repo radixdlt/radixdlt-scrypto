@@ -41,7 +41,7 @@ impl ValidatedNotarizedTransactionV1 {
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
-                transaction_hash: intent_hash.into_hash(),
+                intent_hash: intent_hash.into_hash(),
                 payload_size: summary.effective_length,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: AuthAddresses::signer_set(&self.signer_keys),

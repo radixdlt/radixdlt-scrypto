@@ -54,7 +54,7 @@ impl ValidatedPreviewIntent {
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
-                transaction_hash: intent_hash.into_hash(),
+                intent_hash: intent_hash.into_hash(),
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,

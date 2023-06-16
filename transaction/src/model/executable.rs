@@ -9,7 +9,7 @@ pub struct AuthZoneParams {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
-    pub transaction_hash: Hash,
+    pub intent_hash: Hash,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
@@ -82,12 +82,12 @@ impl<'a> Executable<'a> {
         }
     }
 
-    pub fn transaction_hash(&self) -> &Hash {
-        &self.context.transaction_hash
+    pub fn intent_hash(&self) -> &Hash {
+        &self.context.intent_hash
     }
 
-    pub fn overwrite_transaction_hash(&mut self, hash: Hash) {
-        self.context.transaction_hash = hash;
+    pub fn overwrite_intent_hash(&mut self, hash: Hash) {
+        self.context.intent_hash = hash;
     }
 
     pub fn fee_payment(&self) -> &FeePayment {

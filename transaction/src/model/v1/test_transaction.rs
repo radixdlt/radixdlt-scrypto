@@ -57,7 +57,7 @@ impl PreparedTestTransaction {
             &self.references,
             &self.blobs,
             ExecutionContext {
-                transaction_hash: self.hash,
+                intent_hash: self.hash,
                 payload_size: self.encoded_instructions.len(),
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,

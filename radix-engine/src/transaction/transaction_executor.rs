@@ -189,7 +189,7 @@ where
             .contains(EnabledModules::KERNEL_TRACE)
         {
             println!("{:-^80}", "Transaction Metadata");
-            println!("Transaction hash: {}", executable.transaction_hash());
+            println!("Transaction hash: {}", executable.intent_hash());
             println!("Payload size: {}", executable.payload_size());
             println!("Fee payment: {:?}", executable.fee_payment());
             println!(
@@ -209,7 +209,7 @@ where
 
         // Prepare
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
-        let mut id_allocator = IdAllocator::new(executable.transaction_hash().clone());
+        let mut id_allocator = IdAllocator::new(executable.intent_hash().clone());
         let mut system = SystemConfig {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
@@ -219,7 +219,7 @@ where
             },
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,
-                executable.transaction_hash().clone(),
+                executable.intent_hash().clone(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
@@ -237,7 +237,7 @@ where
 
         let invoke_result = kernel_boot
             .call_transaction_processor(
-                executable.transaction_hash(),
+                executable.intent_hash(),
                 executable.runtime_validations(),
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),

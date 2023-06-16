@@ -105,7 +105,7 @@ impl PreparedSystemTransactionV1 {
             &self.references,
             &self.blobs.blobs_by_hash,
             ExecutionContext {
-                transaction_hash: self.hash_for_execution.hash,
+                intent_hash: self.hash_for_execution.hash,
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
