@@ -200,11 +200,12 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        // Prepare track
+        // Create a track
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
         // Perform runtime validation.
-        let validation_result = Self::perform_runtime_validation(executable.runtime_validations());
+        let validation_result =
+            Self::perform_runtime_validation(&mut track, executable.runtime_validations());
 
         // Run manifest
         let result = match validation_result {
@@ -315,7 +316,10 @@ where
         receipt
     }
 
-    fn perform_runtime_validation(validations: &[RuntimeValidation]) -> Result<(), RejectionError> {
+    fn perform_runtime_validation(
+        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        validations: &[RuntimeValidation],
+    ) -> Result<(), RejectionError> {
         for validation in validations {
             match validation {
                 RuntimeValidation::CheckEpochRange {
@@ -324,8 +328,20 @@ where
                 } => {
                     // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                     //        Which could allow for better caching of transaction validity over epoch boundaries
-                    let current_epoch = Epoch::zero(); // FIXME
+                    let handle = track
+                        .acquire_lock(
+                            CONSENSUS_MANAGER.as_node_id(),
+                            MAIN_BASE_PARTITION,
+                            &ConsensusManagerField::ConsensusManager.into(),
+                            LockFlags::read_only(),
+                        )
+                        .unwrap()
+                        .0;
+                    let substate: ConsensusManagerSubstate =
+                        track.read_substate(handle).0.as_typed().unwrap();
+                    track.release_lock(handle);
 
+                    let current_epoch = substate.epoch;
                     if current_epoch < *start_epoch_inclusive {
                         return Err(RejectionError::TransactionEpochNotYetValid {
                             valid_from: *start_epoch_inclusive,
