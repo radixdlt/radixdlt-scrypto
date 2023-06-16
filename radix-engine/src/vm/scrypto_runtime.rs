@@ -203,12 +203,12 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
-        let address_reservation = scrypto_decode::<GlobalAddressReservation>(&address_reservation)
+        let address_reservation = scrypto_decode::<Option<GlobalAddressReservation>>(&address_reservation)
             .map_err(|_| WasmRuntimeError::InvalidGlobalAddressReservation)?;
 
         let address = self
             .api
-            .globalize_with_address(modules, Some(address_reservation))?;
+            .globalize_with_address(modules, address_reservation)?;
 
         let address_encoded = scrypto_encode(&address).expect("Failed to encode object address");
 
