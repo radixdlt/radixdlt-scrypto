@@ -303,6 +303,7 @@ CALL_METADATA_METHOD
 CALL_ACCESS_RULES_METHOD
     Address("${component_address}")
     "get_role"
+    0u8
     "hello"
 ;
 "##,
@@ -627,6 +628,7 @@ REMOVE_METADATA
                 r##"
 UPDATE_ROLE
     Address("${resource_address}")
+    0u8
     "hello"
     Enum<0u8>()
     Enum<0u8>()

@@ -22,12 +22,13 @@ impl Action {
         match self {
             Action::Mint => (0u8, RoleKey::new(MINT_ROLE)),
             Action::Burn => (0u8, RoleKey::new(BURN_ROLE)),
-            Action::UpdateMetadata => (1u8, RoleKey::new(METADATA_SETTER_ROLE)),
             Action::Withdraw => (0u8, RoleKey::new(WITHDRAW_ROLE)),
             Action::Deposit => (0u8, RoleKey::new(DEPOSIT_ROLE)),
             Action::Recall => (0u8, RoleKey::new(RECALL_ROLE)),
             Action::Freeze => (0u8, RoleKey::new(FREEZE_ROLE)),
             Action::Unfreeze => (0u8, RoleKey::new(UNFREEZE_ROLE)),
+
+            Action::UpdateMetadata => (1u8, RoleKey::new(METADATA_SETTER_ROLE)),
         }
     }
 }

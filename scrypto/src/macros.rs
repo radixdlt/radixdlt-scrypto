@@ -592,6 +592,17 @@ macro_rules! metadata {
         let metadata = metadata_config!($($key => $value),*);
         (metadata, Roles::new())
     });
+
+    {
+        roles {
+            $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)*
+        }
+    } => ({
+        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*);
+        let metadata = metadata_config!();
+        (metadata, metadata_roles)
+    });
+
 }
 
 #[macro_export]

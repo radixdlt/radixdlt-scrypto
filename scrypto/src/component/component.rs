@@ -9,9 +9,7 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
 use radix_engine_common::prelude::{
     OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, METADATA_SETTER_ROLE};
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
@@ -312,7 +310,9 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn globalize(mut self) -> Global<C> {
         let (metadata, metadata_roles) = self.metadata_config.take()
-            .unwrap_or_else(|| (Metadata::new(), Roles::new()));
+            .unwrap_or_else(|| {
+                (Metadata::new(), Roles::new())
+            });
 
         let (royalty_config, royalty_roles) = self.royalty_config.take()
             .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));

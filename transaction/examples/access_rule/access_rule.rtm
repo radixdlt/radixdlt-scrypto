@@ -1,5 +1,6 @@
 UPDATE_ROLE
     Address("${resource_address}")
+    0u8
     "hello"     # The name of the role to update the access rule for.
     None        # The rule associated with the role, can either be Some `AccessRule` or none.
     None;       # The mutability of the role, `None` means that its immutable while `Some` means that it's mutable.

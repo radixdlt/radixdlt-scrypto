@@ -23,7 +23,7 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     NoFunction(FnIdentifier),
-    NoMethod(FnIdentifier),
+    NoMethodMapping(FnIdentifier),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
@@ -123,14 +123,12 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             callee
-                .node_object_info
-                //.module_object_info
+                .module_object_info
                 .blueprint_id
                 .package_address
                 .as_node_id(),
             &BlueprintVersionKey::new_default(
-                //callee.module_object_info.blueprint_id.blueprint_name.as_str(),
-                callee.node_object_info.blueprint_id.blueprint_name.as_str(),
+                callee.module_object_info.blueprint_id.blueprint_name.as_str(),
             ),
             api.api,
         )?.method_auth;
@@ -161,7 +159,7 @@ impl AuthModule {
                     match &object_key {
                         ObjectKey::SELF => {
                             return Err(RuntimeError::SystemModuleError(
-                                SystemModuleError::AuthError(AuthError::NoMethod(
+                                SystemModuleError::AuthError(AuthError::NoMethodMapping(
                                     callee.fn_identifier(),
                                 )),
                             ));

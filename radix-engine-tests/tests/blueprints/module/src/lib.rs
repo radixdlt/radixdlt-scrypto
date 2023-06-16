@@ -45,7 +45,7 @@ mod component_module {
                     ACCESS_RULES_BLUEPRINT,
                     ACCESS_RULES_CREATE_IDENT,
                     scrypto_encode(&AccessRulesCreateInput {
-                        roles: Roles::new(),
+                        roles: BTreeMap::new()
                     })
                     .unwrap(),
                 )
@@ -58,7 +58,7 @@ mod component_module {
                     ObjectModuleId::AccessRules => metadata.0,
                     ObjectModuleId::Metadata => royalty.0,
                     ObjectModuleId::Royalty => access_rules.0,
-                ))
+                ), btreemap!())
                 .unwrap();
 
             ComponentAddress::new_or_panic(address.into())

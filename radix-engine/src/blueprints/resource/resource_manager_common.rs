@@ -162,10 +162,11 @@ fn build_access_rules(
         .unwrap_or((DenyAll, DenyAll));
     let metadata_roles = {
         let mut metadata_roles = Roles::new();
+
         metadata_roles.define_role(
             METADATA_SETTER_ROLE,
             RoleEntry::new(
-                update_metadata_mutability,
+                update_metadata_access_rule,
                 [METADATA_SETTER_UPDATER_ROLE],
                 false,
             ),
@@ -174,7 +175,7 @@ fn build_access_rules(
         metadata_roles.define_role(
             METADATA_SETTER_UPDATER_ROLE,
             RoleEntry::new(
-                update_metadata_access_rule,
+                update_metadata_mutability,
                 [METADATA_SETTER_UPDATER_ROLE],
                 false,
             ),

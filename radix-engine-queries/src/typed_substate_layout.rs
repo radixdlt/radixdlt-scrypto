@@ -92,8 +92,8 @@ impl TypedSubstateKey {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesSubstateKey {
-    Rule(RoleKey),
-    Mutability(RoleKey),
+    Rule(ModuleRoleKey),
+    Mutability(ModuleRoleKey),
 }
 
 /// Doesn't include non-object modules, nor transient nodes.

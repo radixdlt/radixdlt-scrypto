@@ -11,6 +11,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use utils::btreemap;
+use crate::blueprints::package::MethodAuthTemplate;
 
 use super::AccessRule;
 
@@ -247,8 +248,8 @@ impl Roles {
         Self { roles: btreemap!() }
     }
 
-    pub fn define_role<K: Into<RoleKey>>(&mut self, authority: K, entry: RoleEntry) {
-        self.roles.insert(authority.into(), entry);
+    pub fn define_role<K: Into<RoleKey>>(&mut self, role: K, entry: RoleEntry) {
+        self.roles.insert(role.into(), entry);
     }
 }
 
@@ -256,6 +257,7 @@ impl Roles {
 pub fn resource_access_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
 ) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+
     let mut access_rules = BTreeMap::new();
     access_rules.insert(
         ResourceMethodAuthKey::Withdraw,

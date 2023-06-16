@@ -615,7 +615,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         auth,
                         outer_auth: BTreeMap::new(),
                     };
-                    method_auth.add_metadata_default_if_not_specified();
 
                     scrypto::blueprints::package::AuthConfig {
                         method_auth,
@@ -1518,7 +1517,6 @@ mod tests {
                                 auth,
                                 outer_auth: BTreeMap::new(),
                             };
-                            method_auth.add_metadata_default_if_not_specified();
 
                             scrypto::blueprints::package::AuthConfig {
                                 method_auth,

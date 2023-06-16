@@ -535,6 +535,7 @@ impl ValidatorBlueprint {
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_GET_ROLE_IDENT,
                 scrypto_encode(&AccessRulesGetRoleInput {
+                    module: 0u8,
                     role_key: RoleKey::new(OWNER_ROLE),
                 })
                 .unwrap(),
