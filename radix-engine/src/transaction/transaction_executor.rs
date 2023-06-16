@@ -15,7 +15,9 @@ use crate::vm::{ScryptoVm, Vm};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::blueprints::transaction_processor::{
+    InstructionOutput, RuntimeValidation,
+};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::*,
@@ -207,6 +209,8 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
+        // FIXME: pre-transaction validation
+
         // Prepare
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(executable.intent_hash().clone());
@@ -229,6 +233,7 @@ where
             ),
         };
 
+
         let kernel_boot = KernelBoot {
             id_allocator: &mut id_allocator,
             callback: &mut system,
@@ -238,7 +243,6 @@ where
         let invoke_result = kernel_boot
             .call_transaction_processor(
                 executable.intent_hash(),
-                executable.runtime_validations(),
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),
@@ -324,6 +328,8 @@ where
             resources_usage,
         };
 
+        // FIXME: post-transaction update
+
         #[cfg(not(feature = "alloc"))]
         if execution_config
             .enabled_modules
@@ -333,6 +339,39 @@ where
         }
 
         receipt
+    }
+
+    fn apply_runtime_validation(&self, request: &RuntimeValidation) -> Result<(), RejectionError> {
+        match request {
+            RuntimeValidation::WithinEpochRange {
+                start_epoch_inclusive,
+                end_epoch_exclusive,
+            } => {
+                // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
+                //        Which could allow for better caching of transaction validity over epoch boundaries
+                let current_epoch = Epoch::zero(); // FIXME
+
+                if current_epoch < *start_epoch_inclusive {
+                    return Err(RejectionError::TransactionEpochNotYetValid {
+                        valid_from: *start_epoch_inclusive,
+                        current_epoch,
+                    });
+                }
+                if current_epoch >= *end_epoch_exclusive {
+                    return Err(RejectionError::TransactionEpochNoLongerValid {
+                        valid_until: end_epoch_exclusive.previous(),
+                        current_epoch,
+                    });
+                }
+
+                Ok(())
+            }
+            RuntimeValidation::IntentHashUniqueness { .. } => {
+                // FIXME - Add intent hash replay prevention here
+                // This will to enable its removal from the node
+                Ok(())
+            }
+        }
     }
 
     #[cfg(not(feature = "alloc"))]

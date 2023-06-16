@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine_interface::blueprints::transaction_processor::RuntimeValidationRequest;
+use radix_engine_interface::blueprints::transaction_processor::RuntimeValidation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AuthZoneParams {
@@ -14,7 +14,7 @@ pub struct ExecutionContext {
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
-    pub runtime_validations: Vec<RuntimeValidationRequest>,
+    pub runtime_validations: Vec<RuntimeValidation>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -118,7 +118,7 @@ impl<'a> Executable<'a> {
         self.context.payload_size
     }
 
-    pub fn runtime_validations(&self) -> &Vec<RuntimeValidationRequest> {
+    pub fn runtime_validations(&self) -> &Vec<RuntimeValidation> {
         &self.context.runtime_validations
     }
 }

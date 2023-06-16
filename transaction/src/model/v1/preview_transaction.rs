@@ -7,8 +7,8 @@ use radix_engine_interface::{
 pub struct PreviewFlags {
     pub use_free_credit: bool,
     pub assume_all_signature_proofs: bool,
-    pub permit_duplicate_intent_hash: bool,
-    pub permit_invalid_header_epoch: bool,
+    pub skip_intent_hash_check: bool,
+    pub skip_epoch_check: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -49,6 +49,19 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.intent_hash();
 
+        let mut runtime_validations = vec![];
+        if !flags.skip_intent_hash_check {
+            runtime_validations.push(RuntimeValidation::IntentHashUniqueness {
+                intent_hash: intent_hash.into_hash(),
+            });
+        }
+        if !flags.skip_intent_hash_check {
+            runtime_validations.push(RuntimeValidation::WithinEpochRange {
+                start_epoch_inclusive: header.start_epoch_inclusive,
+                end_epoch_exclusive: header.end_epoch_exclusive,
+            });
+        }
+
         Executable::new(
             &self.encoded_instructions,
             &intent.instructions.references,
@@ -61,17 +74,7 @@ impl ValidatedPreviewIntent {
                     virtual_resources,
                 },
                 fee_payment,
-                runtime_validations: vec![
-                    RuntimeValidation::IntentHashUniqueness {
-                        intent_hash: intent_hash.into_hash(),
-                    }
-                    .with_skipped_assertion_if(flags.permit_duplicate_intent_hash),
-                    RuntimeValidation::WithinEpochRange {
-                        start_epoch_inclusive: header.start_epoch_inclusive,
-                        end_epoch_exclusive: header.end_epoch_exclusive,
-                    }
-                    .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
-                ],
+                runtime_validations,
                 pre_allocated_addresses: vec![],
             },
         )

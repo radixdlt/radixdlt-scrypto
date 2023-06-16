@@ -54,13 +54,11 @@ impl ValidatedNotarizedTransactionV1 {
                 runtime_validations: vec![
                     RuntimeValidation::IntentHashUniqueness {
                         intent_hash: intent_hash.into_hash(),
-                    }
-                    .enforced(),
+                    },
                     RuntimeValidation::WithinEpochRange {
                         start_epoch_inclusive: header.start_epoch_inclusive,
                         end_epoch_exclusive: header.end_epoch_exclusive,
-                    }
-                    .enforced(),
+                    },
                 ],
                 pre_allocated_addresses: vec![],
             },
