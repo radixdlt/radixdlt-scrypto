@@ -65,7 +65,7 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
 {
     let fee_reserve_config = FeeReserveConfig::default();
-    let execution_config = ExecutionConfig::default();
+    let execution_config = ExecutionConfig::for_test_transaction();
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
