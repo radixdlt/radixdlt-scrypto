@@ -54,31 +54,22 @@ pub fn discard_spikes(data: &mut BTreeMap<usize, Vec<Duration>>, delta_range: f3
 }
 
 pub fn generate_commit_data(
+    partition: &mut PartitionUpdates,
     rng: &mut ThreadRng,
     value_size: usize,
-) -> (
-    DbPartitionKey,
-    DbSortKey,
-    IndexMap<DbSortKey, DatabaseUpdate>,
-) {
+) -> DbSortKey {
     let mut value_data: DbSubstateValue = vec![0u8; value_size];
     rng.fill(value_data.as_mut_slice());
     let value = DatabaseUpdate::Set(value_data);
-
-    let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
-    rng.fill(&mut node_id_value);
-    let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
-    let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
     let mut substate_key_value = [0u8; NodeId::LENGTH];
     rng.fill(&mut substate_key_value);
     let sort_key =
         SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(substate_key_value.into()));
 
-    let mut partition = PartitionUpdates::new();
     partition.insert(sort_key.clone(), value);
 
-    (partition_key, sort_key, partition)
+    sort_key
 }
 
 pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
@@ -86,8 +77,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     min_size: usize,
     max_size: usize,
     step: usize,
-    writes_count: usize,
-    random_size: bool,
+    writes_count: usize
 ) -> Vec<(DbPartitionKey, DbSortKey, usize)> {
     let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> =
         Vec::with_capacity(max_size);
@@ -99,38 +89,25 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     std::io::stdout().flush().ok();
     let mut rng = rand::thread_rng();
 
-    if random_size {
-        println!("");
-        let batch_size = writes_count / 100;
-        for i in 0..writes_count / batch_size {
-            let mut input_data = DatabaseUpdates::with_capacity(batch_size);
-            for _ in 0..batch_size {
-                print!("\rRound {}/{}", i + 1, writes_count / batch_size);
-                std::io::stdout().flush().ok();
+    for _ in 0..writes_count {
+        let mut input_data = DatabaseUpdates::new();
 
-                let size = rng.gen_range(min_size..=max_size);
+        let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+        rng.fill(&mut node_id_value);
+        let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
+        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
+        let mut partition = PartitionUpdates::new();
 
-                let (partition_key, sort_key, partition) = generate_commit_data(&mut rng, size);
-
-                data_index_vector.push((partition_key.clone(), sort_key, size));
-
-                input_data.insert(partition_key, partition);
-            }
-            substate_db.commit(&input_data);
-        }
-    } else {
         for size in (min_size..=max_size).step_by(step) {
-            let mut input_data = DatabaseUpdates::new();
-            for _ in 0..writes_count {
-                let (partition_key, sort_key, partition) = generate_commit_data(&mut rng, size);
+            let sort_key = generate_commit_data(&mut partition, &mut rng, size);
 
-                data_index_vector.push((partition_key.clone(), sort_key, size));
-
-                input_data.insert(partition_key, partition);
-            }
-            substate_db.commit(&input_data);
+            data_index_vector.push((partition_key.clone(), sort_key, size));
         }
+        input_data.insert(partition_key.clone(), partition.clone());
+
+        substate_db.commit(&input_data);
     }
+
     println!("  done");
 
     data_index_vector

@@ -76,7 +76,6 @@ fn test_read() {
             max_size,
             size_step,
             prepare_db_write_count,
-            false,
         )
     };
 
@@ -129,7 +128,6 @@ fn test_read() {
         max_size,
         size_step,
         prepare_db_write_count,
-        false,
     );
 
     let data_index_vector = data_index_vector

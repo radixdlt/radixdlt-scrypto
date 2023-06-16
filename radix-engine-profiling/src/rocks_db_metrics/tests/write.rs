@@ -231,7 +231,7 @@ where
     {
         let mut substate_db = create_store(path.clone());
         // 1_000_000 substates of size 100 bytes under random partitions
-        prepare_db(&mut substate_db, 100, 100, 1, 1000000, false);
+        prepare_db(&mut substate_db, 100, 100, 1, 1000000);
     }
 
     // reopen database and measure commit times
@@ -338,7 +338,6 @@ where
             MAX_SIZE,
             SIZE_STEP,
             prepare_db_write_repeats,
-            false,
         );
     }
 
@@ -352,24 +351,30 @@ where
         size_vector.push(size);
     }
 
-    // repeat 1 substate commit n-times
+    // repeat 1 commit of substate of various size into different nodes and partitions n-times 
     for i in 0..rounds_count {
         print!("Round {}/{}\r", i + 1, rounds_count);
         std::io::stdout().flush().ok();
+
+        let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+        rng.fill(&mut node_id_value);
+        let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
+        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
         let mut idx_vector = size_vector.clone();
 
         for _ in 0..size_vector.len() {
             assert!(!idx_vector.is_empty());
+
             // randomize substate size
             let idx = rng.gen_range(0..idx_vector.len());
 
             let mut input_data = DatabaseUpdates::new();
+            let mut partition = PartitionUpdates::new();
 
-            let (partition_key, _sort_key, partition) =
-                generate_commit_data(&mut rng, idx_vector[idx]);
+            generate_commit_data(&mut partition, &mut rng, idx_vector[idx]);
 
-            input_data.insert(partition_key, partition);
+            input_data.insert(partition_key.clone(), partition);
 
             substate_db.commit(&input_data);
 
