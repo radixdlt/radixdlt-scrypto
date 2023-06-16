@@ -309,7 +309,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             .unwrap_or_else(|| {
                 (Metadata::new(), Roles::new())
             });
-
         let (royalty_config, royalty_roles) = self.royalty_config.take()
             .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));
         let royalty = Royalty::new(royalty_config);
