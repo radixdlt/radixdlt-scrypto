@@ -976,7 +976,9 @@ impl WasmModule {
         mut self,
         rules: &R,
     ) -> Result<Self, PrepareError> {
-        self.module = gas_metering::inject(self.module, rules, MODULE_ENV_NAME)
+        let backend =
+            gas_metering::host_function::Injector::new(MODULE_ENV_NAME, CONSUME_GAS_FUNCTION_NAME);
+        self.module = gas_metering::inject(self.module, backend, rules)
             .map_err(|_| PrepareError::RejectedByInstructionMetering)?;
 
         Ok(self)

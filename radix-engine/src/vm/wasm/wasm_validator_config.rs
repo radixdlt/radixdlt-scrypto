@@ -9,6 +9,7 @@ use super::InstructionWeights;
 pub struct WasmValidatorConfigV1 {
     weights: InstructionWeights,
     max_stack_size: u32,
+    call_per_local_cost: u32,
 }
 
 impl WasmValidatorConfigV1 {
@@ -16,6 +17,7 @@ impl WasmValidatorConfigV1 {
         Self {
             weights: InstructionWeights::default(),
             max_stack_size: 1024,
+            call_per_local_cost: 1,
         }
     }
 
@@ -212,6 +214,10 @@ impl Rules for WasmValidatorConfigV1 {
         // Similarly, Radix Engine enforces `DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME`.
         // Thus, no additional costing is applied.
         MemoryGrowCost::Free
+    }
+
+    fn call_per_local_cost(&self) -> u32 {
+        self.call_per_local_cost
     }
 }
 

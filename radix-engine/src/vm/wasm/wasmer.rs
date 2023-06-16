@@ -576,11 +576,13 @@ impl WasmerModule {
 
         fn consume_wasm_execution_units(
             env: &WasmerInstanceEnv,
-            n: u32,
+            n: u64,
         ) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
+            // TODO: wasm-instrument uses u64 for cost units. We need to decide if we want to move from u32
+            // to u64 as well.
             runtime
-                .consume_wasm_execution_units(n)
+                .consume_wasm_execution_units(n as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 

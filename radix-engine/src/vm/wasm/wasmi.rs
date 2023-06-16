@@ -451,10 +451,13 @@ fn assert_access_rule(
 
 fn consume_wasm_execution_units(
     caller: Caller<'_, HostState>,
-    n: u32,
+    n: u64,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.consume_wasm_execution_units(n)
+
+    // TODO: wasm-instrument uses u64 for cost units. We need to decide if we want to move from u32
+    // to u64 as well.
+    runtime.consume_wasm_execution_units(n as u32)
 }
 
 fn emit_event(
@@ -883,7 +886,7 @@ impl WasmiModule {
 
         let host_consume_wasm_execution_units = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>, n: u32| -> Result<(), Trap> {
+            |caller: Caller<'_, HostState>, n: u64| -> Result<(), Trap> {
                 consume_wasm_execution_units(caller, n).map_err(|e| e.into())
             },
         );
