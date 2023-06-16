@@ -318,7 +318,7 @@ where
     fn perform_runtime_validation(validations: &[RuntimeValidation]) -> Result<(), RejectionError> {
         for validation in validations {
             match validation {
-                RuntimeValidation::WithinEpochRange {
+                RuntimeValidation::CheckEpochRange {
                     start_epoch_inclusive,
                     end_epoch_exclusive,
                 } => {
@@ -339,7 +339,7 @@ where
                         });
                     }
                 }
-                RuntimeValidation::IntentHashUniqueness { .. } => {
+                RuntimeValidation::CheckIntentHash { .. } => {
                     // FIXME - Add intent hash replay prevention here
                     // This will to enable its removal from the node
                 }
