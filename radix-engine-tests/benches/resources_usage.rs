@@ -242,7 +242,12 @@ fn transfer_test(c: &mut Criterion) {
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
 
-            fwk.add_measurement(&receipt.execution_trace.resources_usage);
+            fwk.add_measurement(
+                &receipt
+                    .expect_commit_success()
+                    .execution_trace
+                    .resources_usage,
+            );
 
             receipt.expect_commit_success();
             nonce += 1;

@@ -155,7 +155,7 @@ fn do_swap(
     let mut executable = validated.get_executable();
 
     // Execute & commit
-    executable.overwrite_transaction_hash(hash(nonce.to_le_bytes()));
+    executable.overwrite_intent_hash(hash(nonce.to_le_bytes()));
     let receipt = test_runner.execute_transaction(executable);
     receipt.expect_commit_success();
 

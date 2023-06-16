@@ -41,11 +41,25 @@ fn test_trace_resource_transfers() {
 
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
-    println!("{:?}", receipt.execution_trace.resource_changes);
-    assert_eq!(2, receipt.execution_trace.resource_changes.len()); // Two instructions
+    println!(
+        "{:?}",
+        receipt
+            .expect_commit_success()
+            .execution_trace
+            .resource_changes
+    );
+    assert_eq!(
+        2,
+        receipt
+            .expect_commit_success()
+            .execution_trace
+            .resource_changes
+            .len()
+    ); // Two instructions
     assert_eq!(
         1,
         receipt
+            .expect_commit_success()
             .execution_trace
             .resource_changes
             .get(&0)
@@ -55,6 +69,7 @@ fn test_trace_resource_transfers() {
     assert_eq!(
         2,
         receipt
+            .expect_commit_success()
             .execution_trace
             .resource_changes
             .get(&1)
@@ -68,6 +83,7 @@ fn test_trace_resource_transfers() {
 
     // Source vault withdrawal
     assert!(receipt
+        .expect_commit_success()
         .execution_trace
         .resource_changes
         .iter()
@@ -78,6 +94,7 @@ fn test_trace_resource_transfers() {
 
     // Target vault deposit
     assert!(receipt
+        .expect_commit_success()
         .execution_trace
         .resource_changes
         .iter()
@@ -88,6 +105,7 @@ fn test_trace_resource_transfers() {
 
     // Fee withdrawal
     assert!(receipt
+        .expect_commit_success()
         .execution_trace
         .resource_changes
         .iter()
@@ -137,7 +155,10 @@ fn test_trace_fee_payments() {
     let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
 
     // Assert
-    let resource_changes = &receipt.execution_trace.resource_changes;
+    let resource_changes = &receipt
+        .expect_commit_success()
+        .execution_trace
+        .resource_changes;
     let fee_summary = receipt.expect_commit(true).fee_summary.clone();
     let total_fee_paid = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
         - fee_summary.total_bad_debt_xrd;
@@ -175,9 +196,11 @@ fn test_instruction_traces() {
 
     let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
 
-    receipt.expect_commit_success();
-
-    let mut traces: Vec<ExecutionTrace> = receipt.execution_trace.execution_traces;
+    let mut traces: Vec<ExecutionTrace> = receipt
+        .expect_commit_success()
+        .execution_trace
+        .execution_traces
+        .clone();
 
     // Expecting a single root trace
     assert_eq!(1, traces.len());
@@ -426,7 +449,10 @@ fn test_worktop_changes() {
     {
         receipt.expect_commit_success();
 
-        let worktop_changes = receipt.execution_trace.worktop_changes();
+        let worktop_changes = receipt
+            .expect_commit_success()
+            .execution_trace
+            .worktop_changes();
 
         // Lock fee
         assert_eq!(worktop_changes.get(&0), None);
