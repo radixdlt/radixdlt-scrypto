@@ -436,8 +436,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    pub fn finalize(self) -> IndexMap<NodeId, TrackedNode> {
-        self.tracked_nodes
+    pub fn finalize(
+        self,
+    ) -> (
+        IndexMap<NodeId, TrackedNode>,
+        IndexSet<(NodeId, PartitionNumber)>,
+    ) {
+        (self.tracked_nodes, self.deleted_partitions)
     }
 
     fn get_tracked_partition(

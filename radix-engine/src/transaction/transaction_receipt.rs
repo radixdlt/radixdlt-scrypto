@@ -13,6 +13,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
+use radix_engine_store_interface::interface::DbPartitionKey;
 use sbor::representations::*;
 use utils::ContextualDisplay;
 
@@ -79,6 +80,9 @@ impl TransactionResult {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
     pub state_updates: StateUpdates,
+    /// Unstable, for intent hash intent only;
+    /// Must be applied after committing the state updates above.
+    pub partition_deletions: IndexSet<DbPartitionKey>,
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,

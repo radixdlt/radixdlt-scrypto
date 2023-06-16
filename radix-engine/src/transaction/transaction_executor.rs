@@ -22,6 +22,7 @@ use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
@@ -285,14 +286,21 @@ where
                             transaction_limits_module.finalize(fee_summary.execution_cost_sum);
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
-                        let tracked_nodes = track.finalize();
+                        let (tracked_nodes, partition_deletions) = track.finalize();
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
-                        let track_updates =
+                        let state_updates =
                             to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes);
+                        let partition_deletions = partition_deletions
+                            .into_iter()
+                            .map(|(node_id, partition_num)| {
+                                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num)
+                            })
+                            .collect();
 
                         TransactionResult::Commit(CommitResult {
-                            state_updates: track_updates,
+                            state_updates,
+                            partition_deletions,
                             state_update_summary,
                             outcome: match outcome {
                                 Ok(o) => TransactionOutcome::Success(o),
