@@ -217,6 +217,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         MutableAccessRulesTestRunner::manifest_builder()
             .update_role(
                 test_runner.component_address.into(),
+                0u8,
                 RoleKey::new("borrow_funds_auth"),
                 to_rule,
             )
@@ -413,7 +414,7 @@ impl MutableAccessRulesTestRunner {
         access_rule: AccessRule,
     ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .update_role(self.component_address.into(), authority_key, access_rule)
+            .update_role(self.component_address.into(), 0u8, authority_key, access_rule)
             .build();
         self.execute_manifest(manifest)
     }
@@ -422,6 +423,7 @@ impl MutableAccessRulesTestRunner {
         let manifest = Self::manifest_builder()
             .update_role_mutability(
                 self.component_address.into(),
+                0u8,
                 role_key,
                 (RoleList::none(), false),
             )

@@ -176,15 +176,12 @@ impl<C: HasStub + HasMethods> Owned<C> {
         let mut roles = Roles::new();
         roles.define_role(OWNER_ROLE, owner_entry.to_role_entry(OWNER_ROLE));
 
-        let metadata_roles = Roles::new();
-
         Globalizing {
             stub: self.0,
 
-            metadata: None,
-            metadata_roles,
+            metadata_config: None,
 
-            royalty: RoyaltyConfig::default(),
+            royalty_config: None,
 
             roles,
 
@@ -267,14 +264,11 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
 
-    pub metadata: Option<Metadata>,
-    pub metadata_roles: Roles,
-
-    pub royalty: RoyaltyConfig,
+    pub metadata_config: Option<(Metadata, Roles)>,
+    pub royalty_config: Option<(RoyaltyConfig, Roles)>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 
     pub roles: Roles,
-
-    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -291,19 +285,22 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn metadata(mut self, metadata: (Roles, Metadata)) -> Self {
-        if self.metadata.is_some() {
+    pub fn metadata(mut self, metadata: (Metadata, Roles)) -> Self {
+        if self.metadata_config.is_some() {
             panic!("Metadata already set.");
         }
-        self.metadata = Some(metadata.1);
+        self.metadata_config = Some(metadata);
 
         self
     }
 
-    pub fn royalties(mut self, royalties: (Roles, C::Royalties)) -> Self {
-        for (method, royalty) in royalties.1.to_mapping() {
-            self.royalty.set_rule(method, royalty);
+    pub fn royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
+        let mut royalty_config = RoyaltyConfig::default();
+        for (method, royalty) in royalties.0.to_mapping() {
+            royalty_config.set_rule(method, royalty);
         }
+
+        self.royalty_config = Some((royalty_config, royalties.1));
 
         self
     }
@@ -314,10 +311,19 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
-        let royalty = Royalty::new(self.royalty);
+        let (metadata, metadata_roles) = self.metadata_config.take()
+            .unwrap_or_else(|| (Metadata::new(), Roles::new()));
 
-        let access_rules = AccessRules::new(self.roles);
+        let (royalty_config, royalty_roles) = self.royalty_config.take()
+            .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));
+        let royalty = Royalty::new(royalty_config);
+        let access_rules = AccessRules::new(
+            btreemap!(
+                0u8 => self.roles,
+                1u8 => metadata_roles,
+                2u8 => royalty_roles,
+            )
+        );
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),

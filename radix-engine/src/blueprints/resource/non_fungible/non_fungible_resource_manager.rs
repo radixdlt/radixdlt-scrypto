@@ -778,6 +778,7 @@ impl NonFungibleResourceManagerBlueprint {
             VAULT_WITHDRAW_ROLE,
             RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
         );
+        let roles = btreemap!(0u8 => roles);
         let access_rules = AccessRules::create(roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
 

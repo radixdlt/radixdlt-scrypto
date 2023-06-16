@@ -116,6 +116,22 @@ pub enum AttachedModule {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct ModuleRoleKey {
+    pub module: u8,
+    pub key: RoleKey,
+}
+
+impl ModuleRoleKey {
+    pub fn new<K: Into<RoleKey>>(module: u8, key: K) -> Self {
+        Self {
+            module,
+            key: key.into(),
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct RoleKey {
     pub key: String,

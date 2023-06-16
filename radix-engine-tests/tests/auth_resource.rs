@@ -1,7 +1,7 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_SETTER_ROLE, MetadataValue};
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -18,16 +18,16 @@ enum Action {
 }
 
 impl Action {
-    fn get_role(&self) -> RoleKey {
+    fn get_role(&self) -> (u8, RoleKey) {
         match self {
-            Action::Mint => RoleKey::new(MINT_ROLE),
-            Action::Burn => RoleKey::new(BURN_ROLE),
-            Action::UpdateMetadata => RoleKey::new(SET_METADATA_ROLE),
-            Action::Withdraw => RoleKey::new(WITHDRAW_ROLE),
-            Action::Deposit => RoleKey::new(DEPOSIT_ROLE),
-            Action::Recall => RoleKey::new(RECALL_ROLE),
-            Action::Freeze => RoleKey::new(FREEZE_ROLE),
-            Action::Unfreeze => RoleKey::new(UNFREEZE_ROLE),
+            Action::Mint => (0u8, RoleKey::new(MINT_ROLE)),
+            Action::Burn => (0u8, RoleKey::new(BURN_ROLE)),
+            Action::UpdateMetadata => (1u8, RoleKey::new(METADATA_SETTER_ROLE)),
+            Action::Withdraw => (0u8, RoleKey::new(WITHDRAW_ROLE)),
+            Action::Deposit => (0u8, RoleKey::new(DEPOSIT_ROLE)),
+            Action::Recall => (0u8, RoleKey::new(RECALL_ROLE)),
+            Action::Freeze => (0u8, RoleKey::new(FREEZE_ROLE)),
+            Action::Unfreeze => (0u8, RoleKey::new(UNFREEZE_ROLE)),
         }
     }
 }
@@ -50,11 +50,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
-        let role_key = action.get_role();
+        let (module, role_key) = action.get_role();
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .update_role(token_address.into(), role_key, rule!(require(updated_auth)))
+            .update_role(token_address.into(), module, role_key, rule!(require(updated_auth)))
             .build();
         test_runner
             .execute_manifest(

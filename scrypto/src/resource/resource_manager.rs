@@ -9,6 +9,7 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, Scry
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SETTER_ROLE;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::ops::Deref;
 use sbor::rust::string::ToString;
@@ -98,11 +99,6 @@ impl ResourceManager {
         access_rules.update_role_rule(UNFREEZE_ROLE, access_rule);
     }
 
-    pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.update_role_rule(SET_METADATA_ROLE, access_rule);
-    }
-
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
         access_rules.update_role_rule(UPDATE_NON_FUNGIBLE_DATA_ROLE, access_rule);
@@ -116,11 +112,6 @@ impl ResourceManager {
     pub fn lock_burnable(&self) {
         let access_rules = self.0.access_rules();
         access_rules.update_role_mutability(BURN_ROLE, RoleList::none());
-    }
-
-    pub fn lock_updateable_metadata(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(SET_METADATA_ROLE, RoleList::none());
     }
 
     pub fn lock_updateable_non_fungible_data(&self) {
@@ -151,6 +142,16 @@ impl ResourceManager {
     pub fn lock_unfreezeable(&self) {
         let access_rules = self.0.access_rules();
         access_rules.update_role_mutability(UNFREEZE_ROLE, RoleList::none());
+    }
+
+    pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_metadata_role_rule(METADATA_SETTER_ROLE, access_rule);
+    }
+
+    pub fn lock_updateable_metadata(&self) {
+        let access_rules = self.0.access_rules();
+        access_rules.update_metadata_role_mutability(METADATA_SETTER_ROLE, RoleList::none());
     }
 }
 

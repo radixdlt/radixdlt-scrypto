@@ -15,7 +15,7 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn create<Y, E: Debug + ScryptoDecode>(roles: Roles, api: &mut Y) -> Result<Self, E>
+    pub fn create<Y, E: Debug + ScryptoDecode>(roles: BTreeMap<u8, Roles>, api: &mut Y) -> Result<Self, E>
     where
         Y: ClientApi<E>,
     {
@@ -51,6 +51,7 @@ pub trait AccessRulesObject {
 
     fn update_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
         &self,
+        module: u8,
         role_key: R,
         entry: RoleEntry,
         api: &mut Y,
@@ -62,6 +63,7 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
+                module,
                 role_key: role_key.into(),
                 rule: Some(entry.rule),
                 mutability: Some((entry.mutable, entry.mutable_mutable)),
@@ -79,6 +81,7 @@ pub trait AccessRulesObject {
         A: Into<AccessRule>,
     >(
         &self,
+        module: u8,
         role_key: R,
         entry: A,
         api: &mut Y,
@@ -90,6 +93,7 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
+                module,
                 role_key: role_key.into(),
                 rule: Some(entry.into()),
                 mutability: None,

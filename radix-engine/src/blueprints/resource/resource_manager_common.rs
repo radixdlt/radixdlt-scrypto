@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE, MetadataValue};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -11,12 +11,12 @@ use radix_engine_interface::*;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> Roles {
-    let mut roles = Roles::new();
+) -> BTreeMap<u8, Roles> {
+    let mut main_roles = Roles::new();
 
     // Meta roles
     {
-        roles.define_role(
+        main_roles.define_role(
             RESOURCE_PACKAGE_ROLE,
             RoleEntry::immutable(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         );
@@ -29,11 +29,11 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Mint)
             .unwrap_or((DenyAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 MINT_UPDATE_ROLE,
                 RoleEntry::new(mint_mutability, [MINT_UPDATE_ROLE], false),
             );
-            roles.define_role(
+            main_roles.define_role(
                 MINT_ROLE,
                 RoleEntry::new(mint_access_rule, [MINT_UPDATE_ROLE], false),
             );
@@ -44,11 +44,11 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Burn)
             .unwrap_or((DenyAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 BURN_UPDATE_ROLE,
                 RoleEntry::new(burn_mutability, [BURN_UPDATE_ROLE], false),
             );
-            roles.define_role(
+            main_roles.define_role(
                 BURN_ROLE,
                 RoleEntry::new(burn_access_rule, [BURN_UPDATE_ROLE], false),
             );
@@ -60,7 +60,7 @@ fn build_access_rules(
                 .remove(&ResourceMethodAuthKey::UpdateNonFungibleData)
                 .unwrap_or((AllowAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
                 RoleEntry::new(
                     update_non_fungible_data_mutability,
@@ -69,7 +69,7 @@ fn build_access_rules(
                 ),
             );
 
-            roles.define_role(
+            main_roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_ROLE,
                 RoleEntry::new(
                     update_non_fungible_data_access_rule,
@@ -79,40 +79,17 @@ fn build_access_rules(
             );
         }
 
-        // Metadata
-        let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::UpdateMetadata)
-            .unwrap_or((DenyAll, DenyAll));
-        {
-            roles.define_role(
-                SET_METADATA_UPDATE_ROLE,
-                RoleEntry::new(
-                    update_metadata_mutability,
-                    [SET_METADATA_UPDATE_ROLE],
-                    false,
-                ),
-            );
-
-            roles.define_role(
-                SET_METADATA_ROLE,
-                RoleEntry::new(
-                    update_metadata_access_rule,
-                    [SET_METADATA_UPDATE_ROLE],
-                    false,
-                ),
-            );
-        }
 
         // Withdraw
         let (withdraw_access_rule, withdraw_mutability) = access_rules_map
             .remove(&ResourceMethodAuthKey::Withdraw)
             .unwrap_or((AllowAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 WITHDRAW_ROLE,
                 RoleEntry::new(withdraw_access_rule, [WITHDRAW_UPDATE_ROLE], false),
             );
-            roles.define_role(
+            main_roles.define_role(
                 WITHDRAW_UPDATE_ROLE,
                 RoleEntry::new(withdraw_mutability, [WITHDRAW_UPDATE_ROLE], false),
             );
@@ -123,11 +100,11 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Recall)
             .unwrap_or((DenyAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 RECALL_ROLE,
                 RoleEntry::new(recall_access_rule, [RECALL_UPDATE_ROLE], false),
             );
-            roles.define_role(
+            main_roles.define_role(
                 RECALL_UPDATE_ROLE,
                 RoleEntry::new(recall_mutability, [RECALL_UPDATE_ROLE], false),
             );
@@ -138,11 +115,11 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Freeze)
             .unwrap_or((DenyAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 FREEZE_ROLE,
                 RoleEntry::new(freeze_access_rule, [FREEZE_UPDATE_ROLE], false),
             );
-            roles.define_role(
+            main_roles.define_role(
                 FREEZE_UPDATE_ROLE,
                 RoleEntry::new(freeze_mutability, [FREEZE_UPDATE_ROLE], false),
             );
@@ -153,11 +130,11 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Unfreeze)
             .unwrap_or((DenyAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 UNFREEZE_ROLE,
                 RoleEntry::new(unfreeze_access_rule, [UNFREEZE_UPDATE_ROLE], false),
             );
-            roles.define_role(
+            main_roles.define_role(
                 UNFREEZE_UPDATE_ROLE,
                 RoleEntry::new(unfreeze_mutability, [UNFREEZE_UPDATE_ROLE], false),
             );
@@ -168,18 +145,48 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Deposit)
             .unwrap_or((AllowAll, DenyAll));
         {
-            roles.define_role(
+            main_roles.define_role(
                 DEPOSIT_ROLE,
                 RoleEntry::new(deposit_access_rule, [DEPOSIT_UPDATE_ROLE], false),
             );
-            roles.define_role(
+            main_roles.define_role(
                 DEPOSIT_UPDATE_ROLE,
                 RoleEntry::new(deposit_mutability, [DEPOSIT_UPDATE_ROLE], false),
             );
         }
     }
 
-    roles
+    // Metadata
+    let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
+        .remove(&ResourceMethodAuthKey::UpdateMetadata)
+        .unwrap_or((DenyAll, DenyAll));
+    let metadata_roles = {
+        let mut metadata_roles = Roles::new();
+        metadata_roles.define_role(
+            METADATA_SETTER_ROLE,
+            RoleEntry::new(
+                update_metadata_mutability,
+                [METADATA_SETTER_UPDATER_ROLE],
+                false,
+            ),
+        );
+
+        metadata_roles.define_role(
+            METADATA_SETTER_UPDATER_ROLE,
+            RoleEntry::new(
+                update_metadata_access_rule,
+                [METADATA_SETTER_UPDATER_ROLE],
+                false,
+            ),
+        );
+
+        metadata_roles
+    };
+
+    btreemap!(
+        0u8 => main_roles,
+        1u8 => metadata_roles,
+    )
 }
 
 pub fn globalize_resource_manager<Y>(

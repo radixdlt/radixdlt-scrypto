@@ -548,6 +548,7 @@ impl ValidatorBlueprint {
             ObjectModuleId::AccessRules,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
+                module: 0u8,
                 role_key: RoleKey::new(STAKE_ROLE),
                 rule: Some(rule),
                 mutability: None,

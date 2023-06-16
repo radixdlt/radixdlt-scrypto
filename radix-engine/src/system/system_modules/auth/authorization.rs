@@ -290,7 +290,6 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules_of: Option<&NodeId>,
         auth_rule: &AccessRuleNode,
-        already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
@@ -308,7 +307,6 @@ impl Authorization {
                         auth_zone_id,
                         access_rules_of,
                         r,
-                        already_verified_authorities,
                         api,
                     )?;
                     if matches!(rtn, AuthorizationCheckResult::Authorized) {
@@ -324,7 +322,6 @@ impl Authorization {
                         auth_zone_id,
                         access_rules_of,
                         r,
-                        already_verified_authorities,
                         api,
                     )?;
                     if matches!(rtn, AuthorizationCheckResult::Failed(..)) {
@@ -343,11 +340,10 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: &NodeId,
-        key: &RoleKey,
-        already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
+        key: &ModuleRoleKey,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        let access_rule = if key.key.eq(SELF_ROLE) {
+        let access_rule = if key.key.key.eq(SELF_ROLE) {
             // FIXME: Prevent panics of node id, this may be triggered by vaults and auth zone
             rule!(require(global_caller(GlobalAddress::new_or_panic(
                 access_rules_of.0
@@ -381,7 +377,6 @@ impl Authorization {
             auth_zone_id,
             Some(access_rules_of),
             &access_rule,
-            already_verified_authorities,
             api,
         )
     }
@@ -393,7 +388,6 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules_of: Option<&NodeId>,
         rule: &AccessRule,
-        already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {
@@ -403,7 +397,6 @@ impl Authorization {
                     auth_zone_id,
                     access_rules_of,
                     rule_node,
-                    already_verified_authorities,
                     api,
                 )?;
                 match &mut rtn {
@@ -427,14 +420,12 @@ impl Authorization {
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        let mut already_verified_authorities = NonIterMap::new();
 
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,
             None,
             rule,
-            &mut already_verified_authorities,
             api,
         )
     }
@@ -445,20 +436,19 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: &NodeId,
+        module: u8,
         role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {
-        let mut already_verified_authorities = NonIterMap::new();
-
         let mut failed = Vec::new();
 
         for key in &role_list.list {
+            let module_role_key = ModuleRoleKey::new(module, key.key.as_str());
             let result = Self::check_authorization_against_role_key_internal(
                 acting_location,
                 auth_zone_id,
                 access_rules_of,
-                key,
-                &mut already_verified_authorities,
+                &module_role_key,
                 api,
             )?;
             match result {

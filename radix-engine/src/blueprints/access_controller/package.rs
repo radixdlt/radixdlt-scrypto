@@ -749,6 +749,7 @@ impl AccessControllerNativePackage {
         )?;
 
         let roles = init_roles_from_rule_set(input.rule_set);
+        let roles = btreemap!(0u8 => roles);
         let access_rules = AccessRules::create(roles, api)?.0;
 
         let metadata = Metadata::create(api)?;
@@ -1420,13 +1421,20 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.update_role_rules(RoleKey::new("primary"), rule_set.primary_role.clone(), api)?;
     attached.update_role_rules(
+        0u8,
+        RoleKey::new("primary"),
+        rule_set.primary_role.clone(),
+        api,
+    )?;
+    attached.update_role_rules(
+        0u8,
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
     attached.update_role_rules(
+        0u8,
         RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,

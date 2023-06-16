@@ -19,7 +19,7 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(roles: Roles) -> Self {
+    pub fn new(roles: BTreeMap<u8, Roles>) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
@@ -36,6 +36,7 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
+                module: 0u8,
                 role_key: RoleKey::new(name),
                 rule: Some(entry.into()),
                 mutability: None,
@@ -47,6 +48,31 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
+                module: 0u8,
+                role_key: RoleKey::new(name),
+                rule: None,
+                mutability: Some((mutability.into(), true)),
+            },
+        );
+    }
+
+    pub fn update_metadata_role_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
+                module: 1u8,
+                role_key: RoleKey::new(name),
+                rule: Some(entry.into()),
+                mutability: None,
+            },
+        );
+    }
+
+    pub fn update_metadata_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
+                module: 1u8,
                 role_key: RoleKey::new(name),
                 rule: None,
                 mutability: Some((mutability.into(), true)),
@@ -69,7 +95,7 @@ impl Attachable for AccessRules {
 
 impl Default for AccessRules {
     fn default() -> Self {
-        AccessRules::new(Roles::new())
+        AccessRules::new(BTreeMap::new())
     }
 }
 

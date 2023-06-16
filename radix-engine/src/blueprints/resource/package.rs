@@ -8,9 +8,7 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use crate::{event_schema, method_auth_template};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, METADATA_SETTER_ROLE};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
@@ -356,9 +354,11 @@ impl ResourceManagerNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
+                            /*
                             MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-                            MethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+                            MethodKey::metadata(METADATA_SET_IDENT) => [METADATA_SETTER_ROLE];
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [METADATA_SETTER_ROLE];
+                             */
 
                             MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
                             MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_ROLE];
@@ -676,8 +676,8 @@ impl ResourceManagerNativePackage {
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
                             MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-                            MethodKey::metadata(METADATA_SET_IDENT) => [SET_METADATA_ROLE];
-                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [SET_METADATA_ROLE];
+                            MethodKey::metadata(METADATA_SET_IDENT) => [METADATA_SETTER_ROLE];
+                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [METADATA_SETTER_ROLE];
 
                             MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_ROLE];
                             MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_ROLE];

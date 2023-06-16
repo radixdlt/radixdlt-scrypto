@@ -17,14 +17,18 @@ fn ensure_auth_updater_is_immutable(action: ResourceMethodAuthKey) {
     let mut test_runner = TestRunner::builder().build();
     let resource_address = test_runner.create_everything_allowed_non_fungible_resource();
 
+
     // Act - check that despite everything being allowed, you cannot update the role mutability
     // In other words, both roles are always set to have mutability always be the updater role
+    let (module, role_key) = action.action_role_key();
+    let (updater_module, updater_role_key) = action.updater_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .update_role_mutability(
                     resource_address.into(),
-                    action.action_role_key(),
+                    module,
+                    role_key,
                     (RoleList::none(), false),
                 )
                 .build(),
@@ -36,7 +40,8 @@ fn ensure_auth_updater_is_immutable(action: ResourceMethodAuthKey) {
             ManifestBuilder::new()
                 .update_role_mutability(
                     resource_address.into(),
-                    action.updater_role_key(),
+                    updater_module,
+                    updater_role_key,
                     (RoleList::none(), false),
                 )
                 .build(),
@@ -60,18 +65,22 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
     let admin_auth = test_runner.create_non_fungible_resource(account);
 
     // Act 1 - Show that updating both the action_role_key and updater_role_key is initially possible
+    let (module, role_key) = action.action_role_key();
+    let (updater_module, updater_role_key) = action.updater_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address.into(),
-                    action.action_role_key(),
+                    module,
+                    role_key,
                     rule!(require(admin_auth)),
                 )
                 .update_role(
                     token_address.into(),
-                    action.updater_role_key(),
+                    updater_module,
+                    updater_role_key,
                     rule!(require(admin_auth)),
                 )
                 .build(),
@@ -80,18 +89,22 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
         .expect_commit_success();
 
     // Act 2 - Double check that the previous updating the action auth still lets us update
+    let (module, role_key) = action.action_role_key();
+    let (updater_module, updater_role_key) = action.updater_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address.into(),
-                    action.action_role_key(),
+                    module,
+                    role_key,
                     rule!(require(admin_auth)),
                 )
                 .update_role(
                     token_address.into(),
-                    action.updater_role_key(),
+                    updater_module,
+                    updater_role_key,
                     rule!(require(admin_auth)),
                 )
                 .build(),
@@ -101,13 +114,15 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
 
     // Arrange - We now use the updater role to update the updater role's rule to DenyAll
     {
+        let (module, role_key) = action.updater_role_key();
         test_runner
             .execute_manifest_ignoring_fee(
                 ManifestBuilder::new()
                     .create_proof_from_account(account, admin_auth)
                     .update_role(
                         token_address.into(),
-                        action.updater_role_key(),
+                        module,
+                        role_key,
                         AccessRule::DenyAll,
                     )
                     .build(),
@@ -117,26 +132,31 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
     }
 
     // Act 3 - After locking, now attempting to update the action or updater role should fail
+    let (module, role_key) = action.action_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address.into(),
-                    action.action_role_key(),
+                    module,
+                    role_key,
                     rule!(require(admin_auth)),
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&public_key)],
         )
         .expect_auth_failure();
+
+    let (module, role_key) = action.updater_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address.into(),
-                    action.updater_role_key(),
+                    module,
+                    role_key,
                     rule!(require(admin_auth)),
                 )
                 .build(),

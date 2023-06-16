@@ -74,7 +74,8 @@ impl TwoResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
+        let roles = btreemap!(0u8 => roles(pool_manager_rule));
+        let access_rules = AccessRules::create(roles, api)?.0;
         // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(

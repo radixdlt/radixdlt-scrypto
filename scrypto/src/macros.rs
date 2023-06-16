@@ -581,7 +581,7 @@ macro_rules! metadata {
     } => ({
         let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*);
         let metadata = metadata_config!($($key => $value),*);
-        (metadata_roles, metadata)
+        (metadata, metadata_roles)
     });
 
     {
@@ -590,7 +590,7 @@ macro_rules! metadata {
         }
     } => ({
         let metadata = metadata_config!($($key => $value),*);
-        (Roles::new(), metadata)
+        (metadata, Roles::new())
     });
 }
 
@@ -606,6 +606,6 @@ macro_rules! royalties {
     } => ({
         let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*);
         let royalties = royalty_config!($($init)*);
-        (royalty_roles, royalties)
+        (royalties, royalty_roles)
     })
 }

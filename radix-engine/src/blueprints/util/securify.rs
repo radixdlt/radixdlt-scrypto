@@ -54,6 +54,9 @@ pub trait SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let owner_role_entry = owner_rule.to_role_entry(OWNER_ROLE);
         let roles = Self::create_roles(owner_role_entry, false);
+        let roles  = btreemap!(
+            0u8 => roles,
+        );
         let access_rules = AccessRules::create(roles, api)?;
         Ok(access_rules)
     }
@@ -73,6 +76,9 @@ pub trait SecurifiedAccessRules {
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let (bucket, owner_entry) = Self::create_securified_badge(api)?;
         let roles = Self::create_roles(owner_entry, false);
+        let roles = btreemap!(
+            0u8 => roles,
+        );
         let access_rules = AccessRules::create(roles, api)?;
         Ok((access_rules, bucket))
     }
@@ -87,6 +93,9 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
             RoleEntry::new(rule!(require(owner_id)), [SELF_ROLE], true),
             true,
         );
+        let roles = btreemap!(
+            0u8 => roles,
+        );
         let access_rules = AccessRules::create(roles, api)?;
         Ok(access_rules)
     }
@@ -97,12 +106,12 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<Bucket, RuntimeError> {
         let access_rules = AttachedAccessRules(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            access_rules.update_role(RoleKey::new(securify_role), RoleEntry::disabled(), api)?;
+            access_rules.update_role(0u8, RoleKey::new(securify_role), RoleEntry::disabled(), api)?;
         }
 
         let (bucket, owner_entry) = Self::create_securified_badge(api)?;
 
-        access_rules.update_role(RoleKey::new(OWNER_ROLE), owner_entry, api)?;
+        access_rules.update_role(0u8, RoleKey::new(OWNER_ROLE), owner_entry, api)?;
 
         Ok(bucket)
     }
