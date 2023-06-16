@@ -90,18 +90,11 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase
         let duration = start.elapsed();
 
         if let Some(value) = ret {
-            let exists = self.read_metrics.borrow().get(&value.len()).is_some();
-            if exists {
-                self.read_metrics
-                    .borrow_mut()
-                    .get_mut(&value.len())
-                    .unwrap()
-                    .push(duration);
-            } else {
-                self.read_metrics
-                    .borrow_mut()
-                    .insert(value.len(), vec![duration]);
-            }
+            self.commit_delete_metrics
+                .borrow_mut()
+                .entry(value.len())
+                .or_default()
+                .push(duration);
             Some(value)
         } else {
             self.read_not_found_metrics.borrow_mut().push(duration);
@@ -179,37 +172,18 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
         let db_update = &partition_update[0];
         match db_update {
             DatabaseUpdate::Set(value) => {
-                let exists = self.commit_set_metrics.borrow().get(&value.len()).is_some();
-                if exists {
-                    self.commit_set_metrics
-                        .borrow_mut()
-                        .get_mut(&value.len())
-                        .unwrap()
-                        .push(duration / database_updates.len() as u32);
-                } else {
-                    self.commit_set_metrics
-                        .borrow_mut()
-                        .insert(value.len(), vec![duration / database_updates.len() as u32]);
-                }
+                self.commit_set_metrics
+                    .borrow_mut()
+                    .entry(value.len())
+                    .or_default()
+                    .push(duration / database_updates.len() as u32);
             }
             DatabaseUpdate::Delete => {
-                let exists = self
-                    .commit_delete_metrics
-                    .borrow()
-                    .get(&delete_value_len)
-                    .is_some();
-                if exists {
-                    self.commit_delete_metrics
-                        .borrow_mut()
-                        .get_mut(&delete_value_len)
-                        .unwrap()
-                        .push(duration / database_updates.len() as u32);
-                } else {
-                    self.commit_delete_metrics.borrow_mut().insert(
-                        delete_value_len,
-                        vec![duration / database_updates.len() as u32],
-                    );
-                }
+                self.commit_delete_metrics
+                    .borrow_mut()
+                    .entry(delete_value_len)
+                    .or_default()
+                    .push(duration / database_updates.len() as u32);
             }
         }
     }
