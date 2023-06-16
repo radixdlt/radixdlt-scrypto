@@ -958,13 +958,16 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        let substate = tracked
-            .get_runtime_substate_mut()
-            .ok_or(AcquireLockError::NotFound(
-                *node_id,
-                partition_num,
-                substate_key.clone(),
-            ))?;
+        let substate = match tracked.get_runtime_substate_mut() {
+            Some(x) => x,
+            None => {
+                return Err(AcquireLockError::NotFound(
+                    *node_id,
+                    partition_num,
+                    substate_key.clone(),
+                ));
+            }
+        };
 
         // Check read/write permission
         substate.lock_state.try_lock(flags).map_err(|_| {
