@@ -458,9 +458,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 }
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
-    fn finalize(mut self) -> FeeSummary {
-        let _ignored = self.repay_all();
-
+    fn finalize(self) -> FeeSummary {
         let execution_cost_breakdown = self.execution_cost();
         let total_execution_cost_xrd = transmute_u128_as_decimal(
             self.effective_execution_price * self.execution_committed_sum as u128,
