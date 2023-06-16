@@ -17,11 +17,6 @@ pub enum SetSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum DeletePartitionError {
-    PartitionNotFound(NodeId, PartitionNumber),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeSubstateError {
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
