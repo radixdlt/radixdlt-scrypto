@@ -1,10 +1,11 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::intent_hash_store::IntentHashStoreSubstate;
+use crate::blueprints::intent_hash_store::{IntentHashStatus, IntentHashStoreSubstate};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::{EnabledModules, SystemModuleMixer};
+use crate::system::system::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::events::EventsModule;
@@ -369,6 +370,42 @@ where
                     let substate: IntentHashStoreSubstate =
                         track.read_substate(handle).0.as_typed().unwrap();
                     track.release_lock(handle);
+
+                    let partition_number = substate
+                        .partition_of(expiry_epoch.number())
+                        .ok_or(RejectionError::IntentHashExpiryEpochOutOfRange)?;
+
+                    let handle = track
+                        .acquire_lock_virtualize(
+                            INTENT_HASH_STORE.as_node_id(),
+                            PartitionNumber(partition_number),
+                            &SubstateKey::Map(intent_hash.to_vec()),
+                            LockFlags::read_only(),
+                            || {
+                                Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
+                                    value: Option::<IntentHashStatus>::None,
+                                    mutability: SubstateMutability::Mutable,
+                                }))
+                            },
+                        )
+                        .unwrap()
+                        .0;
+                    let substate: KeyValueEntrySubstate<IntentHashStatus> =
+                        track.read_substate(handle).0.as_typed().unwrap();
+                    track.release_lock(handle);
+
+                    match substate.value {
+                        Some(status) => match status {
+                            IntentHashStatus::CommittedSuccess
+                            | IntentHashStatus::CommittedFailure => {
+                                return Err(RejectionError::IntentHashCommitted);
+                            }
+                            IntentHashStatus::Cancelled => {
+                                return Err(RejectionError::IntentHashCancelled);
+                            }
+                        },
+                        None => {}
+                    }
                 }
             }
         }
