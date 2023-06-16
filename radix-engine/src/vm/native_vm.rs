@@ -2,6 +2,7 @@ use crate::blueprints::access_controller::AccessControllerNativePackage;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::intent_hash_store::IntentHashStoreNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
@@ -73,7 +74,10 @@ impl VmInvoke for NativeVmInstance {
             ACCESS_RULES_CODE_ID => {
                 AccessRulesNativePackage::invoke_export(export_name, input, api)
             }
-            POOL_ID => PoolNativePackage::invoke_export(export_name, input, api),
+            POOL_CODE_ID => PoolNativePackage::invoke_export(export_name, input, api),
+            INTENT_HASH_STORE_CODE_ID => {
+                IntentHashStoreNativePackage::invoke_export(export_name, input, api)
+            }
             _ => {
                 return Err(RuntimeError::VmError(VmError::Native(
                     NativeRuntimeError::InvalidCodeId,

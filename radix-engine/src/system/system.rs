@@ -694,6 +694,7 @@ where
         );
 
         for (offset, partition) in user_substates.into_iter() {
+            println!(" {:?}", offset);
             let partition_num = MAIN_BASE_PARTITION
                 .at_offset(offset)
                 .expect("Module number overflow");

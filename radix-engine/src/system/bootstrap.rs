@@ -2,6 +2,9 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::intent_hash_store::{
+    IntentHashStoreNativePackage, INTENT_HASH_STORE_CREATE_IDENT,
+};
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
@@ -718,7 +721,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: PoolNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                native_package_code_id: POOL_ID,
+                native_package_code_id: POOL_CODE_ID,
             }),
         });
     }
@@ -904,6 +907,39 @@ pub fn create_system_bootstrap_transaction(
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
             ),
+        });
+    }
+
+    // Intent Hash Store package
+    {
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(INTENT_HASH_STORE_PACKAGE),
+        ));
+        instructions.push(InstructionV1::CallFunction {
+            package_address: PACKAGE_PACKAGE.into(),
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_address_reservation_id()),
+                native_package_code_id: INTENT_HASH_STORE_CODE_ID,
+                setup: IntentHashStoreNativePackage::definition(),
+                metadata: BTreeMap::new(),
+            }),
+        });
+    }
+
+    // Intent Hash Store component
+    {
+        pre_allocated_addresses.push((
+            BlueprintId::new(&INTENT_HASH_STORE_PACKAGE, INTENT_HASH_STORE_BLUEPRINT),
+            GlobalAddress::from(INTENT_HASH_STORE),
+        ));
+        instructions.push(InstructionV1::CallFunction {
+            package_address: INTENT_HASH_STORE_PACKAGE.into(),
+            blueprint_name: INTENT_HASH_STORE_BLUEPRINT.to_string(),
+            function_name: INTENT_HASH_STORE_CREATE_IDENT.to_string(),
+            args: manifest_args!(id_allocator.new_address_reservation_id()),
         });
     }
 
