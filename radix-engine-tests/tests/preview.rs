@@ -22,7 +22,6 @@ fn test_transaction_preview_cost_estimate() {
         use_free_credit: true,
         assume_all_signature_proofs: false,
         skip_epoch_check: false,
-        skip_intent_hash_check: false,
     };
     let (notarized_transaction, preview_intent) = prepare_matching_test_tx_and_preview_intent(
         &mut test_runner,
@@ -62,7 +61,6 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         use_free_credit: true,
         assume_all_signature_proofs: true,
         skip_epoch_check: false,
-        skip_intent_hash_check: false,
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone

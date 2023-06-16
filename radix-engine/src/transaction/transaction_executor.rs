@@ -204,17 +204,18 @@ where
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
         // Perform runtime validation.
+        let current_epoch = Self::read_current_epoch(&mut track);
         let validation_result = if let Some(range) = executable.epoch_range() {
             Self::validate_epoch_range(
-                &mut track,
-                &range.start_epoch_inclusive,
-                &range.end_epoch_exclusive,
+                current_epoch,
+                range.start_epoch_inclusive,
+                range.end_epoch_exclusive,
             )
             .and_then(|_| {
                 Self::validate_intent_hash(
                     &mut track,
-                    executable.intent_hash(),
-                    &range.end_epoch_exclusive,
+                    executable.intent_hash().clone(),
+                    range.end_epoch_exclusive,
                 )
             })
         } else {
@@ -265,8 +266,9 @@ where
                         // Update intent hash status
                         Self::update_intent_hash_store(
                             &mut track,
-                            executable.intent_hash(),
-                            executable.epoch_range().map(|x| &x.end_epoch_exclusive),
+                            current_epoch,
+                            executable.intent_hash().clone(),
+                            executable.epoch_range().map(|x| x.end_epoch_exclusive),
                             is_success,
                         );
 
@@ -335,11 +337,7 @@ where
         receipt
     }
 
-    fn validate_epoch_range(
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
-        start_epoch_inclusive: &Epoch,
-        end_epoch_exclusive: &Epoch,
-    ) -> Result<(), RejectionError> {
+    fn read_current_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Epoch {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
         let handle = track
@@ -354,14 +352,21 @@ where
         let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
         track.release_lock(handle);
 
-        let current_epoch = substate.epoch;
-        if current_epoch < *start_epoch_inclusive {
+        substate.epoch
+    }
+
+    fn validate_epoch_range(
+        current_epoch: Epoch,
+        start_epoch_inclusive: Epoch,
+        end_epoch_exclusive: Epoch,
+    ) -> Result<(), RejectionError> {
+        if current_epoch < start_epoch_inclusive {
             return Err(RejectionError::TransactionEpochNotYetValid {
-                valid_from: *start_epoch_inclusive,
+                valid_from: start_epoch_inclusive,
                 current_epoch,
             });
         }
-        if current_epoch >= *end_epoch_exclusive {
+        if current_epoch >= end_epoch_exclusive {
             return Err(RejectionError::TransactionEpochNoLongerValid {
                 valid_until: end_epoch_exclusive.previous(),
                 current_epoch,
@@ -373,8 +378,8 @@ where
 
     fn validate_intent_hash(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
-        intent_hash: &Hash,
-        expiry_epoch: &Epoch,
+        intent_hash: Hash,
+        expiry_epoch: Epoch,
     ) -> Result<(), RejectionError> {
         let handle = track
             .acquire_lock(
@@ -696,8 +701,9 @@ where
 
     fn update_intent_hash_store(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
-        intent_hash: &Hash,
-        expiry_epoch: Option<&Epoch>,
+        current_epoch: Epoch,
+        intent_hash: Hash,
+        expiry_epoch: Option<Epoch>,
         is_success: bool,
     ) {
         // FIXME here
