@@ -10,7 +10,9 @@ use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::types::NonFungibleData;
-use sbor::rust::collections::{BTreeMap, BTreeSet};
+#[cfg(not(feature = "indexmap"))]
+use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -26,7 +28,13 @@ pub struct NonFungibleResourceManagerCreateInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
+    #[cfg(feature = "indexmap")]
+    pub metadata: sbor::prelude::IndexMap<String, MetadataValue>,
+    #[cfg(not(feature = "indexmap"))]
     pub metadata: BTreeMap<String, MetadataValue>,
+    #[cfg(feature = "indexmap")]
+    pub access_rules: sbor::prelude::IndexMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(not(feature = "indexmap"))]
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
@@ -41,8 +49,17 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
+    #[cfg(feature = "indexmap")]
+    pub metadata: sbor::prelude::IndexMap<String, MetadataValue>,
+    #[cfg(not(feature = "indexmap"))]
     pub metadata: BTreeMap<String, MetadataValue>,
+    #[cfg(feature = "indexmap")]
+    pub access_rules: sbor::prelude::IndexMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(not(feature = "indexmap"))]
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(feature = "indexmap")]
+    pub entries: sbor::prelude::IndexMap<NonFungibleLocalId, (ManifestValue,)>,
+    #[cfg(not(feature = "indexmap"))]
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
 }
 
@@ -52,8 +69,17 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
+    #[cfg(feature = "indexmap")]
+    pub metadata: sbor::prelude::IndexMap<String, MetadataValue>,
+    #[cfg(not(feature = "indexmap"))]
     pub metadata: BTreeMap<String, MetadataValue>,
+    #[cfg(feature = "indexmap")]
+    pub access_rules: sbor::prelude::IndexMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(not(feature = "indexmap"))]
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(feature = "indexmap")]
+    pub entries: sbor::prelude::IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+    #[cfg(not(feature = "indexmap"))]
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
 }
 
@@ -68,7 +94,13 @@ pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
+    #[cfg(feature = "indexmap")]
+    pub metadata: sbor::prelude::IndexMap<String, MetadataValue>,
+    #[cfg(not(feature = "indexmap"))]
     pub metadata: BTreeMap<String, MetadataValue>,
+    #[cfg(feature = "indexmap")]
+    pub access_rules: sbor::prelude::IndexMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(not(feature = "indexmap"))]
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub resource_address: GlobalAddressReservation,
 }
@@ -79,7 +111,13 @@ pub struct NonFungibleResourceManagerCreateWithAddressManifestInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
+    #[cfg(feature = "indexmap")]
+    pub metadata: sbor::prelude::IndexMap<String, MetadataValue>,
+    #[cfg(not(feature = "indexmap"))]
     pub metadata: BTreeMap<String, MetadataValue>,
+    #[cfg(feature = "indexmap")]
+    pub access_rules: sbor::prelude::IndexMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(not(feature = "indexmap"))]
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub resource_address: ManifestAddressReservation,
 }
@@ -94,7 +132,13 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &
 pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
+    #[cfg(feature = "indexmap")]
+    pub metadata: sbor::prelude::IndexMap<String, MetadataValue>,
+    #[cfg(not(feature = "indexmap"))]
     pub metadata: BTreeMap<String, MetadataValue>,
+    #[cfg(feature = "indexmap")]
+    pub access_rules: sbor::prelude::IndexMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    #[cfg(not(feature = "indexmap"))]
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: Vec<(ScryptoValue,)>,
 }
@@ -135,11 +179,17 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintManifestInput {
+    #[cfg(feature = "indexmap")]
+    pub entries: sbor::prelude::IndexMap<NonFungibleLocalId, (ManifestValue,)>,
+    #[cfg(not(feature = "indexmap"))]
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintInput {
+    #[cfg(feature = "indexmap")]
+    pub entries: sbor::prelude::IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+    #[cfg(not(feature = "indexmap"))]
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
 }
 

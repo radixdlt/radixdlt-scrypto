@@ -32,6 +32,11 @@ trace = ["radix-engine-derive/trace"]
 # to let fuzzing work
 radix_engine_fuzzing = ["arbitrary"]
 
+# Controls whether the various structs defined in the Radix Engine interface use a BTreeMap or an
+# IndexMap. When enabled an IndexMap is used, when disabled a BTreeMap is used. This is needed by
+# the toolkit to match the behavior of the manifest compiler.
+indexmap = []
+
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
 bench = false

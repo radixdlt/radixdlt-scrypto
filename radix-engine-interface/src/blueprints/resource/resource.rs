@@ -137,10 +137,21 @@ impl LiquidNonFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LockedFungibleResource {
     /// The locked amounts and the corresponding times of being locked.
+    #[cfg(feature = "indexmap")]
+    pub amounts: sbor::prelude::IndexMap<Decimal, usize>,
+    #[cfg(not(feature = "indexmap"))]
     pub amounts: BTreeMap<Decimal, usize>,
 }
 
 impl LockedFungibleResource {
+    #[cfg(feature = "indexmap")]
+    pub fn default() -> Self {
+        Self {
+            amounts: sbor::prelude::index_map::new(),
+        }
+    }
+
+    #[cfg(not(feature = "indexmap"))]
     pub fn default() -> Self {
         Self {
             amounts: BTreeMap::new(),
@@ -151,6 +162,16 @@ impl LockedFungibleResource {
         !self.amounts.is_empty()
     }
 
+    #[cfg(feature = "indexmap")]
+    pub fn amount(&self) -> Decimal {
+        self.amounts
+            .last()
+            .map(|(k, _)| k)
+            .cloned()
+            .unwrap_or(Decimal::zero())
+    }
+
+    #[cfg(not(feature = "indexmap"))]
     pub fn amount(&self) -> Decimal {
         self.amounts
             .last_key_value()
@@ -163,10 +184,21 @@ impl LockedFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LockedNonFungibleResource {
     /// The locked non-fungible ids and the corresponding times of being locked.
+    #[cfg(feature = "indexmap")]
+    pub ids: sbor::prelude::IndexMap<NonFungibleLocalId, usize>,
+    #[cfg(not(feature = "indexmap"))]
     pub ids: BTreeMap<NonFungibleLocalId, usize>,
 }
 
 impl LockedNonFungibleResource {
+    #[cfg(feature = "indexmap")]
+    pub fn default() -> Self {
+        Self {
+            ids: sbor::prelude::index_map::new(),
+        }
+    }
+
+    #[cfg(not(feature = "indexmap"))]
     pub fn default() -> Self {
         Self {
             ids: BTreeMap::new(),

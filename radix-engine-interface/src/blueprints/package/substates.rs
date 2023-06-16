@@ -137,7 +137,13 @@ pub struct BlueprintDefinition {
     // There is an implicit variant that must be maintained in that the key set in `function_exports`
     // matches that of the `functions` under `interface`. This is currently maintained since the
     // `publish` interface uses `BlueprintDefinitionInit` rather than `BlueprintDefinition`.
+    #[cfg(feature = "indexmap")]
+    pub function_exports: sbor::prelude::IndexMap<String, PackageExport>,
+    #[cfg(not(feature = "indexmap"))]
     pub function_exports: BTreeMap<String, PackageExport>,
+    #[cfg(feature = "indexmap")]
+    pub virtual_lazy_load_functions: sbor::prelude::IndexMap<u8, PackageExport>,
+    #[cfg(not(feature = "indexmap"))]
     pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,
 }
 
@@ -147,7 +153,13 @@ pub struct BlueprintInterface {
     pub generics: Vec<Generic>,
     pub features: BTreeSet<String>,
     pub state: IndexedStateSchema,
+    #[cfg(feature = "indexmap")]
+    pub functions: sbor::prelude::IndexMap<String, FunctionSchema>,
+    #[cfg(not(feature = "indexmap"))]
     pub functions: BTreeMap<String, FunctionSchema>,
+    #[cfg(feature = "indexmap")]
+    pub events: sbor::prelude::IndexMap<String, TypePointer>,
+    #[cfg(not(feature = "indexmap"))]
     pub events: BTreeMap<String, TypePointer>,
 }
 

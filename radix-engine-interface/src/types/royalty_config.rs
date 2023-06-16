@@ -9,10 +9,21 @@ use crate::*;
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct RoyaltyConfig {
+    #[cfg(feature = "indexmap")]
+    pub rules: sbor::prelude::IndexMap<String, RoyaltyAmount>,
+    #[cfg(not(feature = "indexmap"))]
     pub rules: BTreeMap<String, RoyaltyAmount>,
 }
 
 impl Default for RoyaltyConfig {
+    #[cfg(feature = "indexmap")]
+    fn default() -> Self {
+        Self {
+            rules: sbor::prelude::index_map::new(),
+        }
+    }
+
+    #[cfg(not(feature = "indexmap"))]
     fn default() -> Self {
         Self {
             rules: BTreeMap::new(),

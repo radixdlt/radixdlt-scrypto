@@ -140,6 +140,23 @@ jobs:
     - name: Build and test hello-world
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/hello-world
+  radix-engine-interface:
+    name: Build Radix Engine Interface
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - name: Build with default features
+      run: cargo build
+      working-directory: radix-engine-interface
+    - name: Build with indexmap feature
+      run: cargo build --features indexmap
+      working-directory: radix-engine-interface
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}

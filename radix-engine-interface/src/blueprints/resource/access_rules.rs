@@ -10,6 +10,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+#[cfg(not(feature = "indexmap"))]
 use utils::btreemap;
 
 use super::AccessRule;
@@ -237,13 +238,24 @@ impl OwnerRole {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
+    #[cfg(feature = "indexmap")]
+    pub roles: sbor::prelude::IndexMap<RoleKey, RoleEntry>,
+    #[cfg(not(feature = "indexmap"))]
     pub roles: BTreeMap<RoleKey, RoleEntry>,
 }
 
 impl Roles {
+    #[cfg(feature = "indexmap")]
+    pub fn new() -> Self {
+        Self {
+            roles: sbor::prelude::index_map::new(),
+        }
+    }
+
+    #[cfg(not(feature = "indexmap"))]
     pub fn new() -> Self {
         Self { roles: btreemap!() }
     }
