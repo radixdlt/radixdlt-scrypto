@@ -62,7 +62,7 @@ pub trait SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let owner_role_entry = owner_rule.to_role_entry(OWNER_ROLE);
         let roles = Self::create_roles(owner_role_entry, false);
-        let access_rules = AccessRules::create(roles, api)?;
+        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         Ok(access_rules)
     }
 
@@ -81,7 +81,7 @@ pub trait SecurifiedAccessRules {
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let (bucket, owner_entry) = Self::create_securified_badge(api)?;
         let roles = Self::create_roles(owner_entry.clone(), false);
-        let access_rules = AccessRules::create(roles, api)?;
+        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         Ok((access_rules, bucket))
     }
 }
@@ -95,7 +95,8 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
             RoleEntry::new(rule!(require(owner_id)), [SELF_ROLE], true),
             true,
         );
-        let access_rules = AccessRules::create(roles, api)?;
+
+        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         Ok(access_rules)
     }
 

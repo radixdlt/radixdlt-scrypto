@@ -746,7 +746,7 @@ impl AccessControllerNativePackage {
 
         let roles = init_roles_from_rule_set(input.rule_set);
         let roles = btreemap!(0u8 => roles);
-        let access_rules = AccessRules::create(roles, api)?.0;
+        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;

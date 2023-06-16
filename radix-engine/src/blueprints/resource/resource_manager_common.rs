@@ -201,7 +201,7 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let roles = build_access_rules(access_rules);
-    let resman_access_rules = AccessRules::create(roles, api)?.0;
+    let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata, api)?;
 
@@ -229,7 +229,7 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let roles = build_access_rules(access_rules);
-    let resman_access_rules = AccessRules::create(roles, api)?.0;
+    let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata, api)?;
 
     let modules = btreemap!(
@@ -267,7 +267,7 @@ where
 {
     let roles = build_access_rules(access_rules);
 
-    let resman_access_rules = AccessRules::create(roles, api)?.0;
+    let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata, api)?;
 

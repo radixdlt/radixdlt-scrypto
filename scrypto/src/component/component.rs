@@ -170,19 +170,14 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Owned<T> {
 }
 
 impl<C: HasStub + HasMethods> Owned<C> {
-    pub fn prepare_to_globalize(self, owner_entry: OwnerRole) -> Globalizing<C> {
-        let mut roles = Roles::new();
-        roles.define_role(OWNER_ROLE, owner_entry.to_role_entry(OWNER_ROLE));
+    pub fn prepare_to_globalize(self, owner_role: OwnerRole) -> Globalizing<C> {
 
         Globalizing {
             stub: self.0,
-
+            owner_role,
             metadata_config: None,
-
             royalty_config: None,
-
-            roles,
-
+            roles: Roles::new(),
             address_reservation: None,
         }
     }
@@ -262,6 +257,7 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
 
+    pub owner_role: OwnerRole,
     pub metadata_config: Option<(Metadata, Roles)>,
     pub royalty_config: Option<(RoyaltyConfig, Roles)>,
     pub address_reservation: Option<GlobalAddressReservation>,
@@ -318,6 +314,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));
         let royalty = Royalty::new(royalty_config);
         let access_rules = AccessRules::new(
+            self.owner_role,
             btreemap!(
                 0u8 => self.roles,
                 1u8 => metadata_roles,

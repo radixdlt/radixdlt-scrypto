@@ -363,7 +363,7 @@ impl Authorization {
 
             match substate.value {
                 Some(RoleRule::Rule(access_rule)) => access_rule,
-                Some(RoleRule::UseOwner) => {
+                Some(RoleRule::UseOwner) | None => {
                     let handle = api.kernel_lock_substate(
                         access_rules_of,
                         ACCESS_RULES_BASE_PARTITION.at_offset(ACCESS_RULES_FIELDS_PARTITION_OFFSET).unwrap(),
@@ -380,9 +380,6 @@ impl Authorization {
                             rule
                         }
                     }
-                }
-                None => {
-                    return Ok(AuthorizationCheckResult::Failed(vec![]));
                 }
             }
         };

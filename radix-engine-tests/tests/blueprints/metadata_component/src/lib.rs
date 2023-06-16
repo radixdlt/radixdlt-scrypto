@@ -27,13 +27,7 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let global = MetadataComponent {}
                 .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
-                // FIXME: Remove, required for now as metadata defaults not implemented
-                .metadata(metadata! {
-                    roles {
-                        setter => rule!(allow_all);
-                    }
-                })
+                .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
                 .globalize();
 
             let metadata = global.metadata();
