@@ -59,7 +59,7 @@ mod component_module {
                     ObjectModuleId::AccessRules => metadata.0,
                     ObjectModuleId::Metadata => royalty.0,
                     ObjectModuleId::Royalty => access_rules.0,
-                ), btreemap!())
+                ), None)
                 .unwrap();
 
             ComponentAddress::new_or_panic(address.into())

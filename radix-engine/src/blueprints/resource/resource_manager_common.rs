@@ -205,7 +205,7 @@ where
 
     let metadata = Metadata::create_with_data(metadata, api)?;
 
-    let address = api.globalize_with_address(
+    let address = api.globalize(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,

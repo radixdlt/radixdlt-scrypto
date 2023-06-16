@@ -344,32 +344,13 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             modules_ptr: u32,
             modules_len: u32,
-            template_args_ptr: u32,
-            template_args_len: u32,
-        ) -> Result<u64, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .globalize_object(
-                    read_memory(&instance, modules_ptr, modules_len)?,
-                    read_memory(&instance, template_args_ptr, template_args_ptr)?,
-                )
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn globalize_object_with_address(
-            env: &WasmerInstanceEnv,
-            modules_ptr: u32,
-            modules_len: u32,
             address_ptr: u32,
             address_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .globalize_object_with_address(
+                .globalize_object(
                     read_memory(&instance, modules_ptr, modules_len)?,
                     read_memory(&instance, address_ptr, address_len)?,
                 )
@@ -701,7 +682,6 @@ impl WasmerModule {
                 TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),
                 FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), fee_balance),
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
-                GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object_with_address),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
                 ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_lock_field),

@@ -54,12 +54,6 @@ pub trait WasmRuntime {
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,
-        template_args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn globalize_object_with_address(
-        &mut self,
-        modules: Vec<u8>,
         address: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

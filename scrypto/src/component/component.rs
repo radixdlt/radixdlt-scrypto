@@ -328,13 +328,9 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
         );
 
-        let address = if let Some(address_reservation) = self.address_reservation {
-            ScryptoEnv
-                .globalize_with_address(modules, Some(address_reservation))
-                .unwrap()
-        } else {
-            ScryptoEnv.globalize(modules, btreemap!()).unwrap()
-        };
+        let address = ScryptoEnv
+            .globalize(modules, self.address_reservation)
+            .unwrap();
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }

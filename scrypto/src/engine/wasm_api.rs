@@ -60,14 +60,7 @@ extern "C" {
 
     pub fn allocate_global_address(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
 
-    pub fn globalize_object(
-        modules_ptr: *const u8,
-        modules_len: usize,
-        template_args_ptr: *const u8,
-        template_args_len: usize,
-    ) -> Buffer;
-
-    pub fn globalize_with_address(
+    pub fn globalize(
         _modules_ptr: *const u8,
         _modules_len: usize,
         _address_ptr: *const u8,
@@ -243,17 +236,7 @@ pub unsafe fn allocate_global_address(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize_object(
-    _modules_ptr: *const u8,
-    _modules_len: usize,
-    _template_args_ptr: *const u8,
-    _template_args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize_with_address(
+pub unsafe fn globalize(
     _modules_ptr: *const u8,
     _modules_len: usize,
     _address_ptr: *const u8,

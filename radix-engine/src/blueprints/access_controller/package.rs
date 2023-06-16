@@ -752,7 +752,7 @@ impl AccessControllerNativePackage {
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
-        api.globalize_with_address(
+        api.globalize(
             btreemap!(
                 ObjectModuleId::Main => object_id,
                 ObjectModuleId::AccessRules => access_rules.0,

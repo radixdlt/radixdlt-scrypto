@@ -235,7 +235,7 @@ impl IdentityBlueprint {
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules, btreemap!())?;
+        let address = api.globalize(modules, None)?;
         Ok(address)
     }
 
@@ -247,7 +247,7 @@ impl IdentityBlueprint {
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules, btreemap!())?;
+        let address = api.globalize(modules, None)?;
         Ok((address, bucket))
     }
 

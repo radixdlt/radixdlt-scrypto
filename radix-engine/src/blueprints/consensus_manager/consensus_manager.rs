@@ -282,7 +282,7 @@ impl ConsensusManagerBlueprint {
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-        api.globalize_with_address(
+        api.globalize(
             btreemap!(
                 ObjectModuleId::Main => consensus_manager_id,
                 ObjectModuleId::AccessRules => access_rules.0,

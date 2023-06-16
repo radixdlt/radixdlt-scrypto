@@ -131,6 +131,7 @@ impl TrackedKey {
             | TrackedKey::ReadOnly(ReadOnly::Existent(substate))
             | TrackedKey::ReadExistAndWrite(_, Write::Update(substate))
             | TrackedKey::ReadNonExistAndWrite(substate) => Some(substate),
+
             TrackedKey::WriteOnly(Write::Delete)
             | TrackedKey::ReadExistAndWrite(_, Write::Delete)
             | TrackedKey::ReadOnly(ReadOnly::NonExistent)

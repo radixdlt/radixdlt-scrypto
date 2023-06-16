@@ -124,16 +124,8 @@ pub trait ClientObjectApi<E> {
     ) -> Result<GlobalAddressReservation, E>;
 
     /// Moves an object currently in the heap into the global space making
-    /// it accessible to all. A global address is automatically created and returned.
-    fn globalize(
-        &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
-        template_args: BTreeMap<u8, Vec<u8>>,
-    ) -> Result<GlobalAddress, E>;
-
-    /// Moves an object currently in the heap into the global space making
     /// it accessible to all with the provided global address.
-    fn globalize_with_address(
+    fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,

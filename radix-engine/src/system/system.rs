@@ -1302,26 +1302,8 @@ where
     }
 
     // FIXME: ensure that only the package actor can globalize its own blueprints
-
     #[trace_resources]
     fn globalize(
-        &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
-        template_args: BTreeMap<u8, Vec<u8>>,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
-
-        // TODO: optimize by skipping address allocation
-        let (global_address_reservation, global_address) =
-            self.allocate_global_address(blueprint_id)?;
-
-        self.globalize_with_address_internal(modules, global_address_reservation)?;
-
-        Ok(global_address)
-    }
-
-    #[trace_resources]
-    fn globalize_with_address(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
