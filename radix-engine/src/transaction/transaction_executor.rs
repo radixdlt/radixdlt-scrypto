@@ -205,19 +205,23 @@ where
 
         // Perform runtime validation.
         let current_epoch = Self::read_current_epoch(&mut track);
-        let validation_result = if let Some(range) = executable.epoch_range() {
-            Self::validate_epoch_range(
-                current_epoch,
-                range.start_epoch_inclusive,
-                range.end_epoch_exclusive,
-            )
-            .and_then(|_| {
-                Self::validate_intent_hash(
-                    &mut track,
-                    executable.intent_hash().clone(),
+        let validation_result = if let Some(current_epoch) = current_epoch {
+            if let Some(range) = executable.epoch_range() {
+                Self::validate_epoch_range(
+                    current_epoch,
+                    range.start_epoch_inclusive,
                     range.end_epoch_exclusive,
                 )
-            })
+                .and_then(|_| {
+                    Self::validate_intent_hash(
+                        &mut track,
+                        executable.intent_hash().clone(),
+                        range.end_epoch_exclusive,
+                    )
+                })
+            } else {
+                Ok(())
+            }
         } else {
             Ok(())
         };
@@ -264,13 +268,15 @@ where
                             Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
 
                         // Update intent hash status
-                        Self::update_intent_hash_store(
-                            &mut track,
-                            current_epoch,
-                            executable.intent_hash().clone(),
-                            executable.epoch_range().map(|x| x.end_epoch_exclusive),
-                            is_success,
-                        );
+                        if let Some(current_epoch) = current_epoch {
+                            Self::update_intent_hash_store(
+                                &mut track,
+                                current_epoch,
+                                executable.intent_hash().clone(),
+                                executable.epoch_range().map(|x| x.end_epoch_exclusive),
+                                is_success,
+                            );
+                        }
 
                         // Finalize everything
                         let application_events = events_module.finalize();
@@ -337,22 +343,23 @@ where
         receipt
     }
 
-    fn read_current_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Epoch {
+    fn read_current_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
-        let handle = track
-            .acquire_lock(
-                CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
-                LockFlags::read_only(),
-            )
-            .unwrap()
-            .0;
+        let handle = match track.acquire_lock(
+            CONSENSUS_MANAGER.as_node_id(),
+            MAIN_BASE_PARTITION,
+            &ConsensusManagerField::ConsensusManager.into(),
+            LockFlags::read_only(),
+        ) {
+            Ok(x) => x.0,
+            Err(_) => {
+                return None;
+            }
+        };
         let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
         track.release_lock(handle);
-
-        substate.epoch
+        Some(substate.epoch)
     }
 
     fn validate_epoch_range(
