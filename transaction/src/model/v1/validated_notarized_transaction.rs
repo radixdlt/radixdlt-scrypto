@@ -52,12 +52,13 @@ impl ValidatedNotarizedTransactionV1 {
                     free_credit_in_xrd: 0,
                 },
                 runtime_validations: vec![
-                    RuntimeValidation::CheckIntentHash {
-                        intent_hash: intent_hash.into_hash(),
-                    },
                     RuntimeValidation::CheckEpochRange {
                         start_epoch_inclusive: header.start_epoch_inclusive,
                         end_epoch_exclusive: header.end_epoch_exclusive,
+                    },
+                    RuntimeValidation::CheckIntentHash {
+                        intent_hash: intent_hash.into_hash(),
+                        expiry_epoch: header.end_epoch_exclusive,
                     },
                 ],
                 pre_allocated_addresses: vec![],

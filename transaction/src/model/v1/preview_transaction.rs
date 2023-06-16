@@ -51,14 +51,15 @@ impl ValidatedPreviewIntent {
 
         let mut runtime_validations = vec![];
         if !flags.skip_intent_hash_check {
-            runtime_validations.push(RuntimeValidation::CheckIntentHash {
-                intent_hash: intent_hash.into_hash(),
-            });
-        }
-        if !flags.skip_intent_hash_check {
             runtime_validations.push(RuntimeValidation::CheckEpochRange {
                 start_epoch_inclusive: header.start_epoch_inclusive,
                 end_epoch_exclusive: header.end_epoch_exclusive,
+            });
+        }
+        if !flags.skip_intent_hash_check {
+            runtime_validations.push(RuntimeValidation::CheckIntentHash {
+                intent_hash: intent_hash.into_hash(),
+                expiry_epoch: header.end_epoch_exclusive,
             });
         }
 

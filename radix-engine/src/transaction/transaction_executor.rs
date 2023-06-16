@@ -1,4 +1,5 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::intent_hash_store::IntentHashStoreSubstate;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
@@ -245,11 +246,8 @@ where
                         }
 
                         // Distribute fees
-                        let (fee_summary, fee_payments) = Self::distribute_fees(
-                            &mut track,
-                            costing_module.fee_reserve,
-                            is_success,
-                        );
+                        let (fee_summary, fee_payments) =
+                            Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
 
                         // Finalize everything
                         let application_events = events_module.finalize();
@@ -355,9 +353,22 @@ where
                         });
                     }
                 }
-                RuntimeValidation::CheckIntentHash { .. } => {
-                    // FIXME - Add intent hash replay prevention here
-                    // This will to enable its removal from the node
+                RuntimeValidation::CheckIntentHash {
+                    intent_hash,
+                    expiry_epoch,
+                } => {
+                    let handle = track
+                        .acquire_lock(
+                            INTENT_HASH_STORE.as_node_id(),
+                            MAIN_BASE_PARTITION,
+                            &ConsensusManagerField::ConsensusManager.into(),
+                            LockFlags::read_only(),
+                        )
+                        .unwrap()
+                        .0;
+                    let substate: IntentHashStoreSubstate =
+                        track.read_substate(handle).0.as_typed().unwrap();
+                    track.release_lock(handle);
                 }
             }
         }
@@ -490,7 +501,7 @@ where
         TransactionResultType::Commit(interpretation_result)
     }
 
-    fn distribute_fees(
+    fn finalize_fees(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,

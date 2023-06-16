@@ -37,7 +37,10 @@ impl InstructionOutput {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RuntimeValidation {
     /// To ensure we don't commit a duplicate intent hash
-    CheckIntentHash { intent_hash: Hash },
+    CheckIntentHash {
+        intent_hash: Hash,
+        expiry_epoch: Epoch,
+    },
     /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
     CheckEpochRange {
         start_epoch_inclusive: Epoch,
