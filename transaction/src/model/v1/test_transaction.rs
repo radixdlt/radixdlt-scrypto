@@ -58,6 +58,7 @@ impl PreparedTestTransaction {
             &self.blobs,
             ExecutionContext {
                 intent_hash: self.hash,
+                epoch_range: None,
                 payload_size: self.encoded_instructions.len(),
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
@@ -67,7 +68,6 @@ impl PreparedTestTransaction {
                     tip_percentage: 0,
                     free_credit_in_xrd: 0,
                 },
-                runtime_validations: vec![],
                 pre_allocated_addresses: vec![],
             },
         )

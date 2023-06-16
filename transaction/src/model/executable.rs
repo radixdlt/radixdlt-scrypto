@@ -1,5 +1,4 @@
 use crate::internal_prelude::*;
-use radix_engine_interface::blueprints::transaction_processor::RuntimeValidation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AuthZoneParams {
@@ -8,13 +7,19 @@ pub struct AuthZoneParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct EpochRange {
+    pub start_epoch_inclusive: Epoch,
+    pub end_epoch_exclusive: Epoch,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
     pub intent_hash: Hash,
+    pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
-    pub runtime_validations: Vec<RuntimeValidation>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -86,6 +91,10 @@ impl<'a> Executable<'a> {
         &self.context.intent_hash
     }
 
+    pub fn epoch_range(&self) -> Option<&EpochRange> {
+        self.context.epoch_range.as_ref()
+    }
+
     pub fn overwrite_intent_hash(&mut self, hash: Hash) {
         self.context.intent_hash = hash;
     }
@@ -116,9 +125,5 @@ impl<'a> Executable<'a> {
 
     pub fn payload_size(&self) -> usize {
         self.context.payload_size
-    }
-
-    pub fn runtime_validations(&self) -> &Vec<RuntimeValidation> {
-        &self.context.runtime_validations
     }
 }

@@ -1,13 +1,10 @@
 use crate::internal_prelude::*;
-use radix_engine_interface::{
-    api::node_modules::auth::AuthAddresses, blueprints::transaction_processor::RuntimeValidation,
-};
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Default)]
 pub struct PreviewFlags {
     pub use_free_credit: bool,
     pub assume_all_signature_proofs: bool,
-    pub skip_intent_hash_check: bool,
     pub skip_epoch_check: bool,
 }
 
@@ -49,33 +46,26 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.intent_hash();
 
-        let mut runtime_validations = vec![];
-        if !flags.skip_intent_hash_check {
-            runtime_validations.push(RuntimeValidation::CheckEpochRange {
-                start_epoch_inclusive: header.start_epoch_inclusive,
-                end_epoch_exclusive: header.end_epoch_exclusive,
-            });
-        }
-        if !flags.skip_intent_hash_check {
-            runtime_validations.push(RuntimeValidation::CheckIntentHash {
-                intent_hash: intent_hash.into_hash(),
-                expiry_epoch: header.end_epoch_exclusive,
-            });
-        }
-
         Executable::new(
             &self.encoded_instructions,
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
                 intent_hash: intent_hash.into_hash(),
+                epoch_range: if flags.skip_epoch_check {
+                    None
+                } else {
+                    Some(EpochRange {
+                        start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
+                        end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
+                    })
+                },
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources,
                 },
                 fee_payment,
-                runtime_validations,
                 pre_allocated_addresses: vec![],
             },
         )

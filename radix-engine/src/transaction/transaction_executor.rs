@@ -21,9 +21,7 @@ use crate::vm::{ScryptoVm, Vm};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::blueprints::transaction_processor::{
-    InstructionOutput, RuntimeValidation,
-};
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
@@ -206,8 +204,22 @@ where
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
         // Perform runtime validation.
-        let validation_result =
-            Self::perform_runtime_validation(&mut track, executable.runtime_validations());
+        let validation_result = if let Some(range) = executable.epoch_range() {
+            Self::validate_epoch_range(
+                &mut track,
+                &range.start_epoch_inclusive,
+                &range.end_epoch_exclusive,
+            )
+            .and_then(|_| {
+                Self::validate_intent_hash(
+                    &mut track,
+                    executable.intent_hash(),
+                    &range.end_epoch_exclusive,
+                )
+            })
+        } else {
+            Ok(())
+        };
 
         // Run manifest
         let result = match validation_result {
@@ -249,6 +261,14 @@ where
                         // Distribute fees
                         let (fee_summary, fee_payments) =
                             Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
+
+                        // Update intent hash status
+                        Self::update_intent_hash_store(
+                            &mut track,
+                            executable.intent_hash(),
+                            executable.epoch_range().map(|x| &x.end_epoch_exclusive),
+                            is_success,
+                        );
 
                         // Finalize everything
                         let application_events = events_module.finalize();
@@ -315,100 +335,94 @@ where
         receipt
     }
 
-    fn perform_runtime_validation(
+    fn validate_epoch_range(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
-        validations: &[RuntimeValidation],
+        start_epoch_inclusive: &Epoch,
+        end_epoch_exclusive: &Epoch,
     ) -> Result<(), RejectionError> {
-        for validation in validations {
-            match validation {
-                RuntimeValidation::CheckEpochRange {
-                    start_epoch_inclusive,
-                    end_epoch_exclusive,
-                } => {
-                    // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
-                    //        Which could allow for better caching of transaction validity over epoch boundaries
-                    let handle = track
-                        .acquire_lock(
-                            CONSENSUS_MANAGER.as_node_id(),
-                            MAIN_BASE_PARTITION,
-                            &ConsensusManagerField::ConsensusManager.into(),
-                            LockFlags::read_only(),
-                        )
-                        .unwrap()
-                        .0;
-                    let substate: ConsensusManagerSubstate =
-                        track.read_substate(handle).0.as_typed().unwrap();
-                    track.release_lock(handle);
+        // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
+        //        Which could allow for better caching of transaction validity over epoch boundaries
+        let handle = track
+            .acquire_lock(
+                CONSENSUS_MANAGER.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+                LockFlags::read_only(),
+            )
+            .unwrap()
+            .0;
+        let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
+        track.release_lock(handle);
 
-                    let current_epoch = substate.epoch;
-                    if current_epoch < *start_epoch_inclusive {
-                        return Err(RejectionError::TransactionEpochNotYetValid {
-                            valid_from: *start_epoch_inclusive,
-                            current_epoch,
-                        });
-                    }
-                    if current_epoch >= *end_epoch_exclusive {
-                        return Err(RejectionError::TransactionEpochNoLongerValid {
-                            valid_until: end_epoch_exclusive.previous(),
-                            current_epoch,
-                        });
-                    }
-                }
-                RuntimeValidation::CheckIntentHash {
-                    intent_hash,
-                    expiry_epoch,
-                } => {
-                    let handle = track
-                        .acquire_lock(
-                            INTENT_HASH_STORE.as_node_id(),
-                            MAIN_BASE_PARTITION,
-                            &IntentHashStoreField::IntentHashStore.into(),
-                            LockFlags::read_only(),
-                        )
-                        .unwrap()
-                        .0;
-                    let substate: IntentHashStoreSubstate =
-                        track.read_substate(handle).0.as_typed().unwrap();
-                    track.release_lock(handle);
-
-                    let partition_number = substate
-                        .partition_of(expiry_epoch.number())
-                        .ok_or(RejectionError::IntentHashExpiryEpochOutOfRange)?;
-
-                    let handle = track
-                        .acquire_lock_virtualize(
-                            INTENT_HASH_STORE.as_node_id(),
-                            PartitionNumber(partition_number),
-                            &SubstateKey::Map(intent_hash.to_vec()),
-                            LockFlags::read_only(),
-                            || {
-                                Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                                    value: Option::<IntentHashStatus>::None,
-                                    mutability: SubstateMutability::Mutable,
-                                }))
-                            },
-                        )
-                        .unwrap()
-                        .0;
-                    let substate: KeyValueEntrySubstate<IntentHashStatus> =
-                        track.read_substate(handle).0.as_typed().unwrap();
-                    track.release_lock(handle);
-
-                    match substate.value {
-                        Some(status) => match status {
-                            IntentHashStatus::CommittedSuccess
-                            | IntentHashStatus::CommittedFailure => {
-                                return Err(RejectionError::IntentHashCommitted);
-                            }
-                            IntentHashStatus::Cancelled => {
-                                return Err(RejectionError::IntentHashCancelled);
-                            }
-                        },
-                        None => {}
-                    }
-                }
-            }
+        let current_epoch = substate.epoch;
+        if current_epoch < *start_epoch_inclusive {
+            return Err(RejectionError::TransactionEpochNotYetValid {
+                valid_from: *start_epoch_inclusive,
+                current_epoch,
+            });
         }
+        if current_epoch >= *end_epoch_exclusive {
+            return Err(RejectionError::TransactionEpochNoLongerValid {
+                valid_until: end_epoch_exclusive.previous(),
+                current_epoch,
+            });
+        }
+
+        Ok(())
+    }
+
+    fn validate_intent_hash(
+        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        intent_hash: &Hash,
+        expiry_epoch: &Epoch,
+    ) -> Result<(), RejectionError> {
+        let handle = track
+            .acquire_lock(
+                INTENT_HASH_STORE.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &IntentHashStoreField::IntentHashStore.into(),
+                LockFlags::read_only(),
+            )
+            .unwrap()
+            .0;
+        let substate: IntentHashStoreSubstate = track.read_substate(handle).0.as_typed().unwrap();
+        track.release_lock(handle);
+
+        let partition_number = substate
+            .partition_of(expiry_epoch.number())
+            .ok_or(RejectionError::IntentHashExpiryEpochOutOfRange)?;
+
+        let handle = track
+            .acquire_lock_virtualize(
+                INTENT_HASH_STORE.as_node_id(),
+                PartitionNumber(partition_number),
+                &SubstateKey::Map(intent_hash.to_vec()),
+                LockFlags::read_only(),
+                || {
+                    Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
+                        value: Option::<IntentHashStatus>::None,
+                        mutability: SubstateMutability::Mutable,
+                    }))
+                },
+            )
+            .unwrap()
+            .0;
+        let substate: KeyValueEntrySubstate<IntentHashStatus> =
+            track.read_substate(handle).0.as_typed().unwrap();
+        track.release_lock(handle);
+
+        match substate.value {
+            Some(status) => match status {
+                IntentHashStatus::CommittedSuccess | IntentHashStatus::CommittedFailure => {
+                    return Err(RejectionError::IntentHashCommitted);
+                }
+                IntentHashStatus::Cancelled => {
+                    return Err(RejectionError::IntentHashCancelled);
+                }
+            },
+            None => {}
+        }
+
         Ok(())
     }
 
@@ -678,6 +692,15 @@ where
         }
 
         (fee_summary, fee_payments)
+    }
+
+    fn update_intent_hash_store(
+        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        intent_hash: &Hash,
+        expiry_epoch: Option<&Epoch>,
+        is_success: bool,
+    ) {
+        // FIXME here
     }
 
     #[cfg(not(feature = "alloc"))]

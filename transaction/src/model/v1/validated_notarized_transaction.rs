@@ -1,8 +1,5 @@
-use radix_engine_interface::{
-    api::node_modules::auth::AuthAddresses, blueprints::transaction_processor::RuntimeValidation,
-};
-
 use crate::internal_prelude::*;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedNotarizedTransactionV1 {
@@ -42,6 +39,10 @@ impl ValidatedNotarizedTransactionV1 {
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
                 intent_hash: intent_hash.into_hash(),
+                epoch_range: Some(EpochRange {
+                    start_epoch_inclusive: header.start_epoch_inclusive,
+                    end_epoch_exclusive: header.end_epoch_exclusive,
+                }),
                 payload_size: summary.effective_length,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
@@ -51,16 +52,6 @@ impl ValidatedNotarizedTransactionV1 {
                     tip_percentage: intent.header.inner.tip_percentage,
                     free_credit_in_xrd: 0,
                 },
-                runtime_validations: vec![
-                    RuntimeValidation::CheckEpochRange {
-                        start_epoch_inclusive: header.start_epoch_inclusive,
-                        end_epoch_exclusive: header.end_epoch_exclusive,
-                    },
-                    RuntimeValidation::CheckIntentHash {
-                        intent_hash: intent_hash.into_hash(),
-                        expiry_epoch: header.end_epoch_exclusive,
-                    },
-                ],
                 pre_allocated_addresses: vec![],
             },
         )

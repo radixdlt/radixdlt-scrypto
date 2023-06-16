@@ -1,7 +1,5 @@
 use crate::*;
-use radix_engine_common::crypto::*;
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
-use radix_engine_common::prelude::Epoch;
 use sbor::rust::prelude::*;
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
@@ -32,18 +30,4 @@ impl InstructionOutput {
             }
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RuntimeValidation {
-    /// To ensure we don't commit a duplicate intent hash
-    CheckIntentHash {
-        intent_hash: Hash,
-        expiry_epoch: Epoch,
-    },
-    /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
-    CheckEpochRange {
-        start_epoch_inclusive: Epoch,
-        end_epoch_exclusive: Epoch,
-    },
 }

@@ -106,6 +106,7 @@ impl PreparedSystemTransactionV1 {
             &self.blobs.blobs_by_hash,
             ExecutionContext {
                 intent_hash: self.hash_for_execution.hash,
+                epoch_range: None,
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
@@ -115,7 +116,6 @@ impl PreparedSystemTransactionV1 {
                     tip_percentage: 0,
                     free_credit_in_xrd: DEFAULT_FREE_CREDIT_IN_XRD,
                 },
-                runtime_validations: vec![],
                 pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
             },
         )

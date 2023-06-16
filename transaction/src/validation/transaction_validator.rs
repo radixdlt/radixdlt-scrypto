@@ -422,7 +422,6 @@ mod tests {
                 use_free_credit: true,
                 assume_all_signature_proofs: false,
                 skip_epoch_check: false,
-                skip_intent_hash_check: false,
             },
         };
 
