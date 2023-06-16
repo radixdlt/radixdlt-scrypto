@@ -288,7 +288,6 @@ impl Authorization {
     pub fn verify_auth_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: Option<&NodeId>,
         auth_rule: &AccessRuleNode,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -305,7 +304,6 @@ impl Authorization {
                     let rtn = Self::verify_auth_rule(
                         acting_location,
                         auth_zone_id,
-                        access_rules_of,
                         r,
                         api,
                     )?;
@@ -320,7 +318,6 @@ impl Authorization {
                     let rtn = Self::verify_auth_rule(
                         acting_location,
                         auth_zone_id,
-                        access_rules_of,
                         r,
                         api,
                     )?;
@@ -375,7 +372,6 @@ impl Authorization {
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,
-            Some(access_rules_of),
             &access_rule,
             api,
         )
@@ -386,7 +382,6 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: Option<&NodeId>,
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -395,7 +390,6 @@ impl Authorization {
                 let mut rtn = Self::verify_auth_rule(
                     acting_location,
                     auth_zone_id,
-                    access_rules_of,
                     rule_node,
                     api,
                 )?;
@@ -424,7 +418,6 @@ impl Authorization {
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,
-            None,
             rule,
             api,
         )
