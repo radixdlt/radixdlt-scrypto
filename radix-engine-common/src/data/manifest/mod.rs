@@ -86,3 +86,84 @@ pub fn from_manifest_value<T: ManifestDecode>(
 
     manifest_decode(&encoded).map_err(ValueConversionError::DecodeError)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_manifest_value_conversions() {
+        let invalid_value = ManifestValue::Tuple {
+            fields: vec![ManifestValue::Array {
+                element_value_kind: ValueKind::U8,
+                elements: vec![
+                    ManifestValue::U8 { value: 1 },
+                    ManifestValue::U16 { value: 2 },
+                ],
+            }],
+        };
+        assert!(matches!(
+            to_manifest_value(&invalid_value),
+            Err(ValueConversionError::EncodeError(
+                EncodeError::MismatchingArrayElementValueKind { .. }
+            ))
+        ));
+
+        let invalid_value = ManifestValue::Map {
+            key_value_kind: ValueKind::U8,
+            value_value_kind: ValueKind::I8,
+            entries: vec![(
+                ManifestValue::U16 { value: 1 },
+                ManifestValue::I8 { value: 1 },
+            )],
+        };
+        assert!(matches!(
+            to_manifest_value(&invalid_value),
+            Err(ValueConversionError::EncodeError(
+                EncodeError::MismatchingMapKeyValueKind { .. }
+            ))
+        ));
+
+        let invalid_value = ManifestValue::Map {
+            key_value_kind: ValueKind::U8,
+            value_value_kind: ValueKind::I8,
+            entries: vec![(
+                ManifestValue::U8 { value: 1 },
+                ManifestValue::I16 { value: 1 },
+            )],
+        };
+        assert!(matches!(
+            to_manifest_value(&invalid_value),
+            Err(ValueConversionError::EncodeError(
+                EncodeError::MismatchingMapValueValueKind { .. }
+            ))
+        ));
+
+        let too_deep_tuple = get_tuple_of_depth(MANIFEST_SBOR_V1_MAX_DEPTH + 1).unwrap();
+        assert!(matches!(
+            to_manifest_value(&too_deep_tuple),
+            Err(ValueConversionError::EncodeError(
+                EncodeError::MaxDepthExceeded { .. }
+            ))
+        ));
+
+        let fine_tuple = get_tuple_of_depth(MANIFEST_SBOR_V1_MAX_DEPTH).unwrap();
+        assert!(to_manifest_value(&fine_tuple).is_ok());
+    }
+
+    pub fn get_tuple_of_depth(depth: usize) -> Option<ManifestValue> {
+        // Minimum tuple depth is 2
+        if depth <= 1 {
+            None
+        } else if depth <= 2 {
+            Some(ManifestValue::Tuple {
+                fields: vec![ManifestValue::U8 { value: 1 }],
+            })
+        } else {
+            let value = get_tuple_of_depth(depth - 1).unwrap();
+            Some(ManifestValue::Tuple {
+                fields: vec![value],
+            })
+        }
+    }
+}
