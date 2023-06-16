@@ -5,9 +5,6 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_auth_template, types::*};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{

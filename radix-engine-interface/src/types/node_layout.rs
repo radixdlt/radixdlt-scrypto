@@ -50,7 +50,6 @@ impl TryFrom<u8> for AccessRulesField {
     }
 }
 
-
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ComponentField {

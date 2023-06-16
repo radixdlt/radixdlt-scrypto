@@ -2,7 +2,9 @@ use crate::blueprints::resource::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE};
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
+};
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
 
@@ -26,7 +28,6 @@ pub const UNFREEZE_ROLE: &str = "unfreeze";
 pub const UNFREEZE_UPDATE_ROLE: &str = "unfreeze_update";
 pub const UPDATE_NON_FUNGIBLE_DATA_ROLE: &str = "update_non_fungible_data";
 pub const UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE: &str = "update_non_fungible_data_update";
-
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
@@ -74,7 +75,9 @@ impl ResourceMethodAuthKey {
         match self {
             Self::Mint => (0u8, RoleKey::new(MINT_UPDATE_ROLE)),
             Self::Burn => (0u8, RoleKey::new(BURN_UPDATE_ROLE)),
-            Self::UpdateNonFungibleData => (0u8, RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE)),
+            Self::UpdateNonFungibleData => {
+                (0u8, RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE))
+            }
             Self::Withdraw => (0u8, RoleKey::new(WITHDRAW_UPDATE_ROLE)),
             Self::Deposit => (0u8, RoleKey::new(DEPOSIT_UPDATE_ROLE)),
             Self::Recall => (0u8, RoleKey::new(RECALL_UPDATE_ROLE)),

@@ -1173,7 +1173,7 @@ where
         match data {
             SystemLockData::Field(FieldLockData::Write {
                 blueprint_id,
-                                      type_pointer: schema_pointer,
+                type_pointer: schema_pointer,
             }) => {
                 self.validate_payload_at_type_pointer(
                     &blueprint_id,
@@ -1308,7 +1308,6 @@ where
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, RuntimeError> {
-
         // TODO: optimize by skipping address allocation
         let (global_address_reservation, global_address) =
             if let Some(reservation) = address_reservation {
@@ -1607,7 +1606,7 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id,
                 instance_schema,
-                                              type_pointer: schema_pointer,
+                type_pointer: schema_pointer,
                 can_own,
             }) => {
                 self.validate_payload_at_type_pointer(

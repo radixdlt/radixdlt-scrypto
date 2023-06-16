@@ -1,6 +1,3 @@
-use crate::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;

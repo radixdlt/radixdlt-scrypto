@@ -2,7 +2,9 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataValue, METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -78,7 +80,6 @@ fn build_access_rules(
                 ),
             );
         }
-
 
         // Withdraw
         let (withdraw_access_rule, withdraw_mutability) = access_rules_map

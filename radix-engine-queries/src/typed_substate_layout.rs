@@ -172,11 +172,11 @@ pub fn to_typed_substate_key(
         ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModuleField(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
-        ACCESS_RULES_FIELDS_PARTITION => TypedSubstateKey::AccessRulesModule(
-            TypedAccessRulesSubstateKey::AccessRulesField(
+        ACCESS_RULES_FIELDS_PARTITION => {
+            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
                 AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
-            )
-        ),
+            ))
+        }
         ACCESS_RULES_ROLE_DEF_PARTITION => {
             let key = substate_key
                 .for_map()
@@ -546,11 +546,11 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
-            TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => match access_rules_field_offset {
-                AccessRulesField::OwnerRole => {
-                    TypedSubstateValue::AccessRulesModule(
+            TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => {
+                match access_rules_field_offset {
+                    AccessRulesField::OwnerRole => TypedSubstateValue::AccessRulesModule(
                         TypedAccessRulesModule::OwnerRole(scrypto_decode(data)?),
-                    )
+                    ),
                 }
             }
             TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(

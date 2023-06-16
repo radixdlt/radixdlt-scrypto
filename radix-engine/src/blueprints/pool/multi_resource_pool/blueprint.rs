@@ -1,5 +1,4 @@
 use crate::blueprints::pool::multi_resource_pool::*;
-use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
 use native_sdk::modules::access_rules::*;
@@ -75,8 +74,8 @@ impl MultiResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let roles = btreemap!(0u8 => roles(pool_manager_rule));
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
+        let access_rules =
+            AccessRules::create(OwnerRole::Updateable(pool_manager_rule), btreemap!(), api)?.0;
         // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
@@ -614,10 +613,4 @@ impl MultiResourcePoolBlueprint {
 struct ReserveResourceInformation {
     reserves: Decimal,
     divisibility: u8,
-}
-
-fn roles(pool_manager_rule: AccessRule) -> Roles {
-    roles2! {
-        POOL_MANAGER_ROLE => pool_manager_rule, mut [POOL_MANAGER_ROLE]
-    }
 }

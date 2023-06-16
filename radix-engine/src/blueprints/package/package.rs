@@ -13,9 +13,6 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};

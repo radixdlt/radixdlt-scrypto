@@ -398,14 +398,6 @@ macro_rules! module_permissions {
     ($permissions:expr, methods { $($method:ident => $($permission:ident),+ ;)* }) => ({
         main_permissions!($permissions, Methods, $($method => $($permission),+ ;)*);
     });
-    /*
-    ($permissions:expr, metadata { $($method:ident => $($permission:ident),+ ;)* }) => ({
-        main_permissions!($permissions, MetadataMethods, metadata, $($method => $($permission),+ ;)*);
-    });
-    ($permissions:expr, royalties { $($method:ident => $($permission:ident),+ ;)* }) => ({
-        main_permissions!($permissions, RoyaltyMethods, royalty, $($method => $($permission),+ ;)*);
-    });
-     */
 }
 
 #[macro_export]
@@ -512,31 +504,12 @@ macro_rules! roles_internal {
     });
 }
 
-
 #[macro_export]
 macro_rules! roles {
     ( $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)* ) => ({
         roles_internal!(MethodRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*)
     });
 }
-
-/*
-#[macro_export]
-macro_rules! metadata_roles {
-    ( $($role:ident => $rule:expr $(, mutable_by: $($mutators:ident),+)? ;)* ) => ({
-        let method_roles = MetadataRoles::<RoleEntry> {
-            $($role: role_definition_entry!($rule $(, mutable_by: $($mutators),+)?)),*
-        };
-
-        let mut roles = $crate::blueprints::resource::Roles::new();
-        for (name, entry) in method_roles.list() {
-            roles.define_role(name, entry);
-        }
-
-        roles
-    });
-}
- */
 
 #[macro_export]
 macro_rules! royalty_config {
@@ -618,5 +591,13 @@ macro_rules! royalties {
         let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, mutable_by: $($mutators),+)? ;)*);
         let royalties = royalty_config!($($init)*);
         (royalties, royalty_roles)
+    });
+    {
+        init {
+            $($init:tt)*
+        }
+    } => ({
+        let royalties = royalty_config!($($init)*);
+        (royalties, Roles::new())
     })
 }

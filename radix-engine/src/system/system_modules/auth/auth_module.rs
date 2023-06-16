@@ -128,10 +128,15 @@ impl AuthModule {
                 .package_address
                 .as_node_id(),
             &BlueprintVersionKey::new_default(
-                callee.module_object_info.blueprint_id.blueprint_name.as_str(),
+                callee
+                    .module_object_info
+                    .blueprint_id
+                    .blueprint_name
+                    .as_str(),
             ),
             api.api,
-        )?.method_auth;
+        )?
+        .method_auth;
 
         // TODO: Cleanup logic here
         let method_permissions = match &object_key {

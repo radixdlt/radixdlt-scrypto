@@ -414,7 +414,12 @@ impl MutableAccessRulesTestRunner {
         access_rule: AccessRule,
     ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .update_role(self.component_address.into(), 0u8, authority_key, access_rule)
+            .update_role(
+                self.component_address.into(),
+                0u8,
+                authority_key,
+                access_rule,
+            )
             .build();
         self.execute_manifest(manifest)
     }

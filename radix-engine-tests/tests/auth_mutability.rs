@@ -17,7 +17,6 @@ fn ensure_auth_updater_is_immutable(action: ResourceMethodAuthKey) {
     let mut test_runner = TestRunner::builder().build();
     let resource_address = test_runner.create_everything_allowed_non_fungible_resource();
 
-
     // Act - check that despite everything being allowed, you cannot update the role mutability
     // In other words, both roles are always set to have mutability always be the updater role
     let (module, role_key) = action.action_role_key();
@@ -119,12 +118,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey
             .execute_manifest_ignoring_fee(
                 ManifestBuilder::new()
                     .create_proof_from_account(account, admin_auth)
-                    .update_role(
-                        token_address.into(),
-                        module,
-                        role_key,
-                        AccessRule::DenyAll,
-                    )
+                    .update_role(token_address.into(), module, role_key, AccessRule::DenyAll)
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&public_key)],
             )

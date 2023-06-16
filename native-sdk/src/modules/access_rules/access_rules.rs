@@ -4,7 +4,9 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleEntry, RoleKey, Roles};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, OwnerRole, RoleEntry, RoleKey, Roles,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -15,7 +17,11 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn create<Y, E: Debug + ScryptoDecode>(owner_role: OwnerRole, roles: BTreeMap<u8, Roles>, api: &mut Y) -> Result<Self, E>
+    pub fn create<Y, E: Debug + ScryptoDecode>(
+        owner_role: OwnerRole,
+        roles: BTreeMap<u8, Roles>,
+        api: &mut Y,
+    ) -> Result<Self, E>
     where
         Y: ClientApi<E>,
     {

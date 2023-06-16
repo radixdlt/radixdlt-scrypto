@@ -33,10 +33,6 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge.clone()))))
                 .royalties(royalties! {
-                    // FIXME: Remove and use owner default
-                    roles {
-                        owner => rule!(require(badge));
-                    },
                     init {
                         paid_method => Xrd(1.into()),
                         paid_method_panic => Xrd(1.into()),

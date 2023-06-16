@@ -301,12 +301,7 @@ impl Authorization {
             }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    let rtn = Self::verify_auth_rule(
-                        acting_location,
-                        auth_zone_id,
-                        r,
-                        api,
-                    )?;
+                    let rtn = Self::verify_auth_rule(acting_location, auth_zone_id, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Authorized) {
                         return Ok(rtn);
                     }
@@ -315,12 +310,7 @@ impl Authorization {
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    let rtn = Self::verify_auth_rule(
-                        acting_location,
-                        auth_zone_id,
-                        r,
-                        api,
-                    )?;
+                    let rtn = Self::verify_auth_rule(acting_location, auth_zone_id, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Failed(..)) {
                         return Ok(rtn);
                     }
@@ -348,7 +338,9 @@ impl Authorization {
         } else {
             let handle = api.kernel_lock_substate_with_default(
                 access_rules_of,
-                ACCESS_RULES_BASE_PARTITION.at_offset(ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET).unwrap(),
+                ACCESS_RULES_BASE_PARTITION
+                    .at_offset(ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET)
+                    .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
@@ -366,19 +358,20 @@ impl Authorization {
                 Some(RoleRule::UseOwner) | None => {
                     let handle = api.kernel_lock_substate(
                         access_rules_of,
-                        ACCESS_RULES_BASE_PARTITION.at_offset(ACCESS_RULES_FIELDS_PARTITION_OFFSET).unwrap(),
+                        ACCESS_RULES_BASE_PARTITION
+                            .at_offset(ACCESS_RULES_FIELDS_PARTITION_OFFSET)
+                            .unwrap(),
                         &SubstateKey::Field(0u8),
                         LockFlags::read_only(),
                         SystemLockData::default(),
                     )?;
 
-                    let owner_role: OwnerRole = api.kernel_read_substate(handle)?.as_typed().unwrap();
+                    let owner_role: OwnerRole =
+                        api.kernel_read_substate(handle)?.as_typed().unwrap();
                     api.kernel_drop_lock(handle)?;
                     match owner_role {
                         OwnerRole::None => return Ok(AuthorizationCheckResult::Failed(vec![])),
-                        OwnerRole::Updateable(rule) | OwnerRole::Fixed(rule) => {
-                            rule
-                        }
+                        OwnerRole::Updateable(rule) | OwnerRole::Fixed(rule) => rule,
                     }
                 }
             }
@@ -402,12 +395,8 @@ impl Authorization {
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {
             AccessRule::Protected(rule_node) => {
-                let mut rtn = Self::verify_auth_rule(
-                    acting_location,
-                    auth_zone_id,
-                    rule_node,
-                    api,
-                )?;
+                let mut rtn =
+                    Self::verify_auth_rule(acting_location, auth_zone_id, rule_node, api)?;
                 match &mut rtn {
                     AuthorizationCheckResult::Authorized => {}
                     AuthorizationCheckResult::Failed(stack) => {
@@ -429,7 +418,6 @@ impl Authorization {
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,

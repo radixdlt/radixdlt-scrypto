@@ -1,4 +1,3 @@
-use crate::api::ObjectModuleId;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
@@ -11,7 +10,6 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use utils::btreemap;
-use crate::blueprints::package::MethodAuthTemplate;
 
 use super::AccessRule;
 
@@ -257,7 +255,6 @@ impl Roles {
 pub fn resource_access_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
 ) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
-
     let mut access_rules = BTreeMap::new();
     access_rules.insert(
         ResourceMethodAuthKey::Withdraw,

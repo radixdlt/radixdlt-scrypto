@@ -8,14 +8,12 @@ use crate::method_auth_template;
 use crate::system::system_callback::*;
 use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::pool::*;
-use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission};
+use radix_engine_interface::blueprints::resource::MethodPermission;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::*;
 use radix_engine_interface::types::*;

@@ -2,8 +2,8 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SETTER_ROLE;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
 pub enum SecurifiedRoleEntry {
@@ -45,7 +45,6 @@ pub trait SecurifiedAccessRules {
 
             roles.define_role(RoleKey::new(securify_role), securify_rule);
         }
-
 
         let mut metadata_roles = Roles::new();
         metadata_roles.define_role(METADATA_SETTER_ROLE, owner_rule);
@@ -106,7 +105,12 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<Bucket, RuntimeError> {
         let access_rules = AttachedAccessRules(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            access_rules.update_role(0u8, RoleKey::new(securify_role), RoleEntry::disabled(), api)?;
+            access_rules.update_role(
+                0u8,
+                RoleKey::new(securify_role),
+                RoleEntry::disabled(),
+                api,
+            )?;
         }
 
         let (bucket, owner_entry) = Self::create_securified_badge(api)?;
