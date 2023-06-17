@@ -145,7 +145,7 @@ pub struct BlueprintDefinition {
 pub struct BlueprintInterface {
     pub outer_blueprint: Option<String>,
     pub generics: Vec<Generic>,
-    pub features: BTreeSet<String>,
+    pub feature_set: BTreeSet<String>,
     pub state: IndexedStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
     pub events: BTreeMap<String, TypePointer>,

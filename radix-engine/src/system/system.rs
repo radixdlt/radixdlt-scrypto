@@ -260,7 +260,7 @@ where
         // Validate features
         {
             for feature in features {
-                if !blueprint_interface.features.contains(feature) {
+                if !blueprint_interface.feature_set.contains(feature) {
                     return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
                         feature.to_string(),
                     )));

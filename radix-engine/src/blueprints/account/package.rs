@@ -6,7 +6,7 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
@@ -444,14 +444,13 @@ impl AccountNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                     ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
                     ACCOUNT_OWNER_BADGE.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],

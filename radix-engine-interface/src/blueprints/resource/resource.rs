@@ -24,9 +24,7 @@ pub struct VaultFrozenFlag {
 
 impl Default for VaultFrozenFlag {
     fn default() -> Self {
-        Self {
-            is_frozen: false
-        }
+        Self { is_frozen: false }
     }
 }
 

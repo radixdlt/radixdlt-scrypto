@@ -10,7 +10,7 @@ use crate::{event_schema, method_auth_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -328,9 +328,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::Normal {
+                    feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
@@ -641,9 +642,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::Normal {
+                    feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema: BlueprintSchemaInit {
                     generics: vec![Generic::Any],
                     schema,
@@ -883,9 +885,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1188,9 +1191,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1401,9 +1405,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1615,9 +1620,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1726,9 +1732,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1847,9 +1854,10 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -2015,9 +2023,8 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -2198,9 +2205,8 @@ impl ResourceManagerNativePackage {
             };
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],

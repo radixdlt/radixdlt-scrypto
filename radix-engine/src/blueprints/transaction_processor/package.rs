@@ -6,7 +6,7 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
@@ -44,9 +44,8 @@ impl TransactionProcessorNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,

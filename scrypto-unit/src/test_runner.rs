@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
     PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
@@ -1732,9 +1732,8 @@ pub fn single_function_package_definition(
     blueprints.insert(
         blueprint_name.to_string(),
         BlueprintDefinitionInit {
-            outer_blueprint: None,
+            blueprint_type: BlueprintType::default(),
             dependencies: btreeset!(),
-            feature_set: btreeset!(),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],

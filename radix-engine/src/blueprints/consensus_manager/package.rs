@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
@@ -168,14 +168,13 @@ impl ConsensusManagerNativePackage {
             let consensus_manager_schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(
                     RADIX_TOKEN.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     SYSTEM_TRANSACTION_BADGE.into(),
                     VALIDATOR_OWNER_BADGE.into(),
                 ),
-                feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema: consensus_manager_schema,
@@ -403,9 +402,10 @@ impl ConsensusManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,

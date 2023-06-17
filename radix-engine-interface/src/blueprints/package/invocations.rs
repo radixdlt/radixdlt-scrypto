@@ -87,13 +87,24 @@ pub struct PackageDefinition {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintType {
+    Normal { feature_set: BTreeSet<String> },
+    Inner { outer_blueprint: String },
+}
+
+impl Default for BlueprintType {
+    fn default() -> Self {
+        BlueprintType::Normal {
+            feature_set: BTreeSet::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinitionInit {
-    pub outer_blueprint: Option<String>,
-    pub feature_set: BTreeSet<String>,
+    pub blueprint_type: BlueprintType,
     pub dependencies: BTreeSet<GlobalAddress>,
-
     pub schema: BlueprintSchemaInit,
-
     pub royalty_config: RoyaltyConfig,
     pub auth_config: AuthConfig,
 }
@@ -101,9 +112,8 @@ pub struct BlueprintDefinitionInit {
 impl Default for BlueprintDefinitionInit {
     fn default() -> Self {
         Self {
-            outer_blueprint: None,
+            blueprint_type: BlueprintType::default(),
             dependencies: BTreeSet::default(),
-            feature_set: BTreeSet::default(),
             schema: BlueprintSchemaInit::default(),
             royalty_config: RoyaltyConfig::default(),
             auth_config: AuthConfig::default(),

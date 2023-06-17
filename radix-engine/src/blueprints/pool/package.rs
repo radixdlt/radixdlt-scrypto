@@ -10,7 +10,7 @@ use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::MethodPermission;
@@ -152,9 +152,8 @@ impl PoolNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -318,9 +317,8 @@ impl PoolNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -483,9 +481,8 @@ impl PoolNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],

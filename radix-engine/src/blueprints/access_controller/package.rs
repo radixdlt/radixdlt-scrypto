@@ -17,7 +17,7 @@ use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -470,11 +470,10 @@ impl AccessControllerNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
