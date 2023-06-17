@@ -133,18 +133,21 @@ pub enum MethodAuthTemplate {
         auth: BTreeMap<MethodKey, MethodPermission>,
         outer_auth: BTreeMap<MethodKey, MethodPermission>,
     },
+    StaticUseOuterRoles(BTreeMap<MethodKey, MethodPermission>),
 }
 
 impl MethodAuthTemplate {
     pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
         match self {
             MethodAuthTemplate::Static { auth, .. } => auth,
+            MethodAuthTemplate::StaticUseOuterRoles(auth) => panic!("Unexpected"),
         }
     }
 
     pub fn outer_auth(self) -> BTreeMap<MethodKey, MethodPermission> {
         match self {
             MethodAuthTemplate::Static { outer_auth, .. } => outer_auth,
+            MethodAuthTemplate::StaticUseOuterRoles(auth) => auth,
         }
     }
 }
