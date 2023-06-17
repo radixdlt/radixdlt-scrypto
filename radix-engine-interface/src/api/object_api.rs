@@ -104,13 +104,6 @@ pub trait ClientObjectApi<E> {
 
     fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
-    // FIXME: Combine this with globalization process and/or find the right abstraction
-    fn attach_access_rules(
-        &mut self,
-        node_id: &NodeId,
-        access_rules_node_id: &NodeId,
-    ) -> Result<(), E>;
-
     /// Pre-allocates a global address, for a future globalization.
     fn allocate_global_address(
         &mut self,

@@ -1265,33 +1265,6 @@ where
         )
     }
 
-    fn attach_access_rules(
-        &mut self,
-        node_id: &NodeId,
-        access_rules_node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        // Move and drop
-        let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
-        let interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
-        )?;
-        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
-        for offset in 0u8..interface.state.num_partitions {
-            let src = MAIN_BASE_PARTITION
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-            let dest = module_base_partition
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-
-            self.kernel_move_module(access_rules_node_id, src, node_id, dest)?;
-        }
-        self.kernel_drop_node(access_rules_node_id)?;
-
-        Ok(())
-    }
-
     #[trace_resources]
     fn allocate_global_address(
         &mut self,

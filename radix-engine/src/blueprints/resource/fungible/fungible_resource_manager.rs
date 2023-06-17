@@ -322,18 +322,6 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
-        // These roles define an extra filter on top of the roles defined on the resource manager
-        // The purpose of these roles is to enable freezing of individual vaults
-        // TODO: Figure out how to use SELF_ROLE rather than package
-        let mut roles = Roles::new();
-        roles.define_role(
-            RESOURCE_PACKAGE_ROLE,
-            RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        );
-        let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
-        api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
-
         Runtime::emit_event(api, VaultCreationEvent { vault_id })?;
 
         Ok(Own(vault_id))
