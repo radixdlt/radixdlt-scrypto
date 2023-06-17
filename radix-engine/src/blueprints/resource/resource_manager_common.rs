@@ -112,7 +112,9 @@ fn build_access_rules(
         }
 
         // Freeze
-        if let Some((freeze_access_rule, freeze_mutability)) = access_rules_map.remove(&ResourceMethodAuthKey::Freeze) {
+        if let Some((freeze_access_rule, freeze_mutability)) =
+            access_rules_map.remove(&ResourceMethodAuthKey::Freeze)
+        {
             main_roles.define_role(
                 FREEZE_ROLE,
                 RoleEntry::new(freeze_access_rule, [FREEZE_UPDATE_ROLE], false),

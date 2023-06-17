@@ -30,8 +30,9 @@ pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
     fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> {
+    where
+        Y: ClientApi<RuntimeError>,
+    {
         if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
             return Ok(());
         }
@@ -43,7 +44,9 @@ impl NonFungibleVaultBlueprint {
         )?;
         let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
         if frozen.is_frozen {
-            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::VaultIsFrozen)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::VaultIsFrozen),
+            ));
         }
 
         Ok(())
@@ -142,7 +145,9 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::NotFreezable)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotFreezable),
+            ));
         }
 
         let frozen_flag_handle = api.actor_lock_field(
@@ -163,7 +168,9 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::NotFreezable)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotFreezable),
+            ));
         }
 
         let frozen_flag_handle = api.actor_lock_field(

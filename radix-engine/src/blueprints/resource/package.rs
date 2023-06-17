@@ -930,8 +930,8 @@ impl ResourceManagerNativePackage {
                             VAULT_UNFREEZE_IDENT => MethodPermission::Public;
                             VAULT_PUT_IDENT => MethodPermission::Public;
                             VAULT_BURN_IDENT => MethodPermission::Public;
-                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [VAULT_WITHDRAW_ROLE];
-                            VAULT_TAKE_IDENT => [VAULT_WITHDRAW_ROLE];
+                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => MethodPermission::Public;
+                            VAULT_TAKE_IDENT => MethodPermission::Public;
                         },
 
                         // This is the mapping to ResourceManager roles
@@ -1243,8 +1243,8 @@ impl ResourceManagerNativePackage {
                             VAULT_PUT_IDENT => MethodPermission::Public;
                             VAULT_BURN_IDENT => MethodPermission::Public;
                             NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            VAULT_TAKE_IDENT => [VAULT_WITHDRAW_ROLE];
-                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [VAULT_WITHDRAW_ROLE];
+                            VAULT_TAKE_IDENT => MethodPermission::Public;
+                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => MethodPermission::Public;
                         },
                         // This is the mapping to ResourceManager roles
                         // NOTE: This is an extra filter on top of the Vault filter

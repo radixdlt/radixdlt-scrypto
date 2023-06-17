@@ -246,7 +246,8 @@ where
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
-    ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError> {
+    ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
+    {
         /*
         let blueprint_interface = self.get_blueprint_default_interface(
             blueprint_id.package_address,
@@ -257,7 +258,6 @@ where
          */
 
         // Validate features
-
 
         // Validate instance schema
         {
@@ -414,7 +414,6 @@ where
                 }
             }
         }
-
 
         Ok(partitions)
     }
@@ -637,7 +636,6 @@ where
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, RuntimeError> {
-
         let blueprint_interface = self.get_blueprint_default_interface(
             blueprint_id.package_address,
             blueprint_id.blueprint_name.as_str(),
@@ -648,13 +646,16 @@ where
             match instance_context {
                 Some(context) if context.outer_blueprint.eq(parent) => {
                     if !features.is_empty() {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidChildObjectCreation));
+                        return Err(RuntimeError::SystemError(
+                            SystemError::InvalidChildObjectCreation,
+                        ));
                     }
 
-                    let outer_object_info = self.get_object_info(context.outer_object.as_node_id())?;
+                    let outer_object_info =
+                        self.get_object_info(context.outer_object.as_node_id())?;
 
                     (Some(context.outer_object), outer_object_info.features)
-                },
+                }
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
@@ -681,8 +682,6 @@ where
             fields,
             kv_entries,
         )?;
-
-
 
         let node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
@@ -1155,7 +1154,11 @@ where
         Ok(actor.fn_identifier())
     }
 
-    pub fn is_feature_enabled(&mut self, node_id: &NodeId, feature: &str) -> Result<bool, RuntimeError> {
+    pub fn is_feature_enabled(
+        &mut self,
+        node_id: &NodeId,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
         let object_info = self.get_object_info(node_id)?;
         let features = if let Some(outer_object) = object_info.outer_object {
             self.get_object_info(outer_object.as_node_id())?.features

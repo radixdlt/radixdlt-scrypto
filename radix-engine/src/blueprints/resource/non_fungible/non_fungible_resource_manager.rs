@@ -768,10 +768,6 @@ impl NonFungibleResourceManagerBlueprint {
             RESOURCE_PACKAGE_ROLE,
             RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         );
-        roles.define_role(
-            VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
-        );
         let roles = btreemap!(ObjectModuleId::Main => roles);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
