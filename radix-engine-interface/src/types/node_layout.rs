@@ -117,6 +117,7 @@ pub enum NonFungibleResourceManagerField {
 pub enum FungibleVaultField {
     LiquidFungible,
     LockedFungible,
+    VaultFrozenFlag,
 }
 
 #[repr(u8)]

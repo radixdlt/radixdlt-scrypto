@@ -11,6 +11,8 @@ pub enum VaultError {
     ProofError(ProofError),
     MismatchingResource,
     InvalidAmount,
+    NotFreezable,
+    VaultIsFrozen,
 
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
