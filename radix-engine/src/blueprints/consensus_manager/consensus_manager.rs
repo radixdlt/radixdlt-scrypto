@@ -277,7 +277,7 @@ impl ConsensusManagerBlueprint {
             START_ROLE => rule!(require(AuthAddresses::system_role())), mut [SELF_ROLE];
         };
 
-        let roles = btreemap!(0u8 => role_definitions);
+        let roles = btreemap!(ObjectModuleId::Main => role_definitions);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
@@ -335,7 +335,12 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.update_role(0u8, RoleKey::new(START_ROLE), RoleEntry::disabled(), api)?;
+        access_rules.update_role(
+            ObjectModuleId::Main,
+            RoleKey::new(START_ROLE),
+            RoleEntry::disabled(),
+            api,
+        )?;
 
         Ok(())
     }

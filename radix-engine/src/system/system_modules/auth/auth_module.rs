@@ -159,7 +159,7 @@ impl AuthModule {
             }
             _ => {
                 if let Some(permission) = method_permissions.get(&method_key) {
-                    (permission.clone(), callee.module_id.to_u8())
+                    (permission.clone(), callee.module_id)
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
@@ -201,7 +201,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules_of: &NodeId,
-        module: u8,
+        module: ObjectModuleId,
         role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {

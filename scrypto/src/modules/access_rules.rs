@@ -21,7 +21,7 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(owner_role: OwnerRole, roles: BTreeMap<u8, Roles>) -> Self {
+    pub fn new(owner_role: OwnerRole, roles: BTreeMap<ObjectModuleId, Roles>) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
@@ -38,7 +38,7 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
-                module: 0u8,
+                module: ObjectModuleId::Main,
                 role_key: RoleKey::new(name),
                 rule: Some(entry.into()),
                 mutability: None,
@@ -50,7 +50,7 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
-                module: 0u8,
+                module: ObjectModuleId::Main,
                 role_key: RoleKey::new(name),
                 rule: None,
                 mutability: Some((mutability.into(), true)),
@@ -62,7 +62,7 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
-                module: 1u8,
+                module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new(name),
                 rule: Some(entry.into()),
                 mutability: None,
@@ -74,7 +74,7 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
-                module: 1u8,
+                module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new(name),
                 rule: None,
                 mutability: Some((mutability.into(), true)),

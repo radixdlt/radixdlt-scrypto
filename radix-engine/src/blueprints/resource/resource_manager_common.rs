@@ -13,7 +13,7 @@ use radix_engine_interface::*;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> BTreeMap<u8, Roles> {
+) -> BTreeMap<ObjectModuleId, Roles> {
     let mut main_roles = Roles::new();
 
     // Meta roles
@@ -186,8 +186,8 @@ fn build_access_rules(
     };
 
     btreemap!(
-        0u8 => main_roles,
-        1u8 => metadata_roles,
+        ObjectModuleId::Main => main_roles,
+        ObjectModuleId::Metadata => metadata_roles,
     )
 }
 

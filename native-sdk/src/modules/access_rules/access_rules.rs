@@ -19,7 +19,7 @@ pub struct AccessRules(pub Own);
 impl AccessRules {
     pub fn create<Y, E: Debug + ScryptoDecode>(
         owner_role: OwnerRole,
-        roles: BTreeMap<u8, Roles>,
+        roles: BTreeMap<ObjectModuleId, Roles>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -57,7 +57,7 @@ pub trait AccessRulesObject {
 
     fn update_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
         &self,
-        module: u8,
+        module: ObjectModuleId,
         role_key: R,
         entry: RoleEntry,
         api: &mut Y,
@@ -87,7 +87,7 @@ pub trait AccessRulesObject {
         A: Into<AccessRule>,
     >(
         &self,
-        module: u8,
+        module: ObjectModuleId,
         role_key: R,
         entry: A,
         api: &mut Y,

@@ -3,6 +3,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
@@ -217,7 +218,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         MutableAccessRulesTestRunner::manifest_builder()
             .update_role(
                 test_runner.component_address.into(),
-                0u8,
+                ObjectModuleId::Main,
                 RoleKey::new("borrow_funds_auth"),
                 to_rule,
             )
@@ -416,7 +417,7 @@ impl MutableAccessRulesTestRunner {
         let manifest = Self::manifest_builder()
             .update_role(
                 self.component_address.into(),
-                0u8,
+                ObjectModuleId::Main,
                 authority_key,
                 access_rule,
             )
@@ -428,7 +429,7 @@ impl MutableAccessRulesTestRunner {
         let manifest = Self::manifest_builder()
             .update_role_mutability(
                 self.component_address.into(),
-                0u8,
+                ObjectModuleId::Main,
                 role_key,
                 (RoleList::none(), false),
             )

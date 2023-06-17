@@ -163,7 +163,7 @@ impl FungibleVaultBlueprint {
             ObjectModuleId::AccessRules,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
-                module: 0u8,
+                module: ObjectModuleId::Main,
                 role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
                 rule: Some(rule!(deny_all)),
                 mutability: None,
@@ -183,7 +183,7 @@ impl FungibleVaultBlueprint {
             ObjectModuleId::AccessRules,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
-                module: 0u8,
+                module: ObjectModuleId::Main,
                 role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
                 rule: Some(rule!(allow_all)),
                 mutability: None,

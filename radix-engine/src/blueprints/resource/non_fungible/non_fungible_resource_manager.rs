@@ -7,7 +7,7 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, ObjectModuleId, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
@@ -778,7 +778,7 @@ impl NonFungibleResourceManagerBlueprint {
             VAULT_WITHDRAW_ROLE,
             RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
         );
-        let roles = btreemap!(0u8 => roles);
+        let roles = btreemap!(ObjectModuleId::Main => roles);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
 

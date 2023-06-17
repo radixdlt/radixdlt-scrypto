@@ -166,10 +166,3 @@ impl From<AccessRuleNode> for AccessRule {
         AccessRule::Protected(value)
     }
 }
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum RoleRule {
-    Rule(AccessRule),
-    UseOwner,
-}

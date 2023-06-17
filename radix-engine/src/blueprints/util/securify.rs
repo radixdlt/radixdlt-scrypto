@@ -3,7 +3,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SETTER_ROLE;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 
 pub enum SecurifiedRoleEntry {
@@ -20,7 +20,7 @@ pub trait SecurifiedAccessRules {
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry>;
 
-    fn create_roles(owner_rule: RoleEntry, presecurify: bool) -> BTreeMap<u8, Roles> {
+    fn create_roles(owner_rule: RoleEntry, presecurify: bool) -> BTreeMap<ObjectModuleId, Roles> {
         let role_entries = Self::role_definitions();
 
         let mut roles = Roles::new();
@@ -50,8 +50,8 @@ pub trait SecurifiedAccessRules {
         metadata_roles.define_role(METADATA_SETTER_ROLE, owner_rule);
 
         btreemap!(
-            0u8 => roles,
-            1u8 => metadata_roles,
+            ObjectModuleId::Main => roles,
+            ObjectModuleId::Metadata => metadata_roles,
         )
     }
 
@@ -106,7 +106,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let access_rules = AttachedAccessRules(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             access_rules.update_role(
-                0u8,
+                ObjectModuleId::Main,
                 RoleKey::new(securify_role),
                 RoleEntry::disabled(),
                 api,
@@ -115,7 +115,12 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         let (bucket, owner_entry) = Self::create_securified_badge(api)?;
 
-        access_rules.update_role(0u8, RoleKey::new(OWNER_ROLE), owner_entry, api)?;
+        access_rules.update_role(
+            ObjectModuleId::Main,
+            RoleKey::new(OWNER_ROLE),
+            owner_entry,
+            api,
+        )?;
 
         Ok(bucket)
     }

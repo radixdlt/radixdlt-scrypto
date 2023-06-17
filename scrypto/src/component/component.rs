@@ -316,9 +316,9 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         let access_rules = AccessRules::new(
             self.owner_role,
             btreemap!(
-                0u8 => self.roles,
-                1u8 => metadata_roles,
-                2u8 => royalty_roles,
+                ObjectModuleId::Main => self.roles,
+                ObjectModuleId::Metadata => metadata_roles,
+                ObjectModuleId::Royalty => royalty_roles,
             ),
         );
 

@@ -8,7 +8,7 @@ use crate::system::system_modules::auth::{
 };
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
-use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
@@ -349,13 +349,13 @@ impl Authorization {
                 }),
                 SystemLockData::default(),
             )?;
-            let substate: KeyValueEntrySubstate<RoleRule> =
+            let substate: KeyValueEntrySubstate<AccessRule> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_drop_lock(handle)?;
 
             match substate.value {
-                Some(RoleRule::Rule(access_rule)) => access_rule,
-                Some(RoleRule::UseOwner) | None => {
+                Some(access_rule) => access_rule,
+                None => {
                     let handle = api.kernel_lock_substate(
                         access_rules_of,
                         ACCESS_RULES_BASE_PARTITION
@@ -432,7 +432,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: &NodeId,
-        module: u8,
+        module: ObjectModuleId,
         role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {

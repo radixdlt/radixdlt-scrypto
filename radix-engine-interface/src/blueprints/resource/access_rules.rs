@@ -3,6 +3,7 @@ use crate::rule;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_engine_interface::api::ObjectModuleId;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
@@ -99,12 +100,12 @@ pub enum AttachedModule {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct ModuleRoleKey {
-    pub module: u8,
+    pub module: ObjectModuleId,
     pub key: RoleKey,
 }
 
 impl ModuleRoleKey {
-    pub fn new<K: Into<RoleKey>>(module: u8, key: K) -> Self {
+    pub fn new<K: Into<RoleKey>>(module: ObjectModuleId, key: K) -> Self {
         Self {
             module,
             key: key.into(),

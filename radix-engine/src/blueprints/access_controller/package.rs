@@ -743,7 +743,7 @@ impl AccessControllerNativePackage {
         )?;
 
         let roles = init_roles_from_rule_set(input.rule_set);
-        let roles = btreemap!(0u8 => roles);
+        let roles = btreemap!(ObjectModuleId::Main => roles);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
         let metadata = Metadata::create(api)?;
@@ -1416,19 +1416,19 @@ where
 {
     let attached = AttachedAccessRules(receiver.clone());
     attached.update_role_rules(
-        0u8,
+        ObjectModuleId::Main,
         RoleKey::new("primary"),
         rule_set.primary_role.clone(),
         api,
     )?;
     attached.update_role_rules(
-        0u8,
+        ObjectModuleId::Main,
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
     attached.update_role_rules(
-        0u8,
+        ObjectModuleId::Main,
         RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,

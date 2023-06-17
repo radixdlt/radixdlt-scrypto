@@ -5,6 +5,7 @@ use arbitrary::Arbitrary;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
 };
+use radix_engine_interface::api::ObjectModuleId;
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
 
@@ -56,35 +57,42 @@ pub const ALL_RESOURCE_AUTH_KEYS: [ResourceMethodAuthKey; 9] = [
 ];
 
 impl ResourceMethodAuthKey {
-    pub fn action_role_key(&self) -> (u8, RoleKey) {
+    pub fn action_role_key(&self) -> (ObjectModuleId, RoleKey) {
         match self {
-            Self::Mint => (0u8, RoleKey::new(MINT_ROLE)),
-            Self::Burn => (0u8, RoleKey::new(BURN_ROLE)),
-            Self::UpdateNonFungibleData => (0u8, RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_ROLE)),
-            Self::Withdraw => (0u8, RoleKey::new(WITHDRAW_ROLE)),
-            Self::Deposit => (0u8, RoleKey::new(DEPOSIT_ROLE)),
-            Self::Recall => (0u8, RoleKey::new(RECALL_ROLE)),
-            Self::Freeze => (0u8, RoleKey::new(FREEZE_ROLE)),
-            Self::Unfreeze => (0u8, RoleKey::new(UNFREEZE_ROLE)),
+            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINT_ROLE)),
+            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURN_ROLE)),
+            Self::UpdateNonFungibleData => (
+                ObjectModuleId::Main,
+                RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_ROLE),
+            ),
+            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_ROLE)),
+            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_ROLE)),
+            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
+            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
+            Self::Unfreeze => (ObjectModuleId::Main, RoleKey::new(UNFREEZE_ROLE)),
 
-            Self::UpdateMetadata => (1u8, RoleKey::new(METADATA_SETTER_ROLE)),
+            Self::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE)),
         }
     }
 
-    pub fn updater_role_key(&self) -> (u8, RoleKey) {
+    pub fn updater_role_key(&self) -> (ObjectModuleId, RoleKey) {
         match self {
-            Self::Mint => (0u8, RoleKey::new(MINT_UPDATE_ROLE)),
-            Self::Burn => (0u8, RoleKey::new(BURN_UPDATE_ROLE)),
-            Self::UpdateNonFungibleData => {
-                (0u8, RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE))
-            }
-            Self::Withdraw => (0u8, RoleKey::new(WITHDRAW_UPDATE_ROLE)),
-            Self::Deposit => (0u8, RoleKey::new(DEPOSIT_UPDATE_ROLE)),
-            Self::Recall => (0u8, RoleKey::new(RECALL_UPDATE_ROLE)),
-            Self::Freeze => (0u8, RoleKey::new(FREEZE_UPDATE_ROLE)),
-            Self::Unfreeze => (0u8, RoleKey::new(UNFREEZE_UPDATE_ROLE)),
+            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINT_UPDATE_ROLE)),
+            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURN_UPDATE_ROLE)),
+            Self::UpdateNonFungibleData => (
+                ObjectModuleId::Main,
+                RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE),
+            ),
+            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_UPDATE_ROLE)),
+            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_UPDATE_ROLE)),
+            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_UPDATE_ROLE)),
+            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_UPDATE_ROLE)),
+            Self::Unfreeze => (ObjectModuleId::Main, RoleKey::new(UNFREEZE_UPDATE_ROLE)),
 
-            Self::UpdateMetadata => (1u8, RoleKey::new(METADATA_SETTER_UPDATER_ROLE)),
+            Self::UpdateMetadata => (
+                ObjectModuleId::Metadata,
+                RoleKey::new(METADATA_SETTER_UPDATER_ROLE),
+            ),
         }
     }
 }
