@@ -519,7 +519,29 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                     }
                 }
             }
-            Entry::Occupied(..) => (),
+            Entry::Occupied(mut entry) => {
+                let read_only_non_existent = matches!(
+                    entry.get().tracked,
+                    TrackedKey::ReadOnly(ReadOnly::NonExistent)
+                );
+                if read_only_non_existent {
+                    let value = virtualize();
+                    if let Some(value) = value {
+                        store_access.push(StoreAccess::WriteToTrack(value.len()));
+                        let tracked = TrackedSubstateKey {
+                            substate_key,
+                            tracked: TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value)),
+                        };
+                        entry.insert(tracked);
+                    } else {
+                        let tracked = TrackedSubstateKey {
+                            substate_key,
+                            tracked: TrackedKey::ReadOnly(ReadOnly::NonExistent),
+                        };
+                        entry.insert(tracked);
+                    }
+                }
+            }
         }
 
         (
