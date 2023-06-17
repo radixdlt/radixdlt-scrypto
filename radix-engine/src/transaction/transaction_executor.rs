@@ -199,6 +199,8 @@ where
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
         // Perform runtime validation.
+        // TODO: the following assumptions can be removed with better interface.
+        // We are assuming that intent hash store is ready when epoch manager is ready.
         let current_epoch = Self::read_epoch(&mut track);
         let validation_result = if let Some(current_epoch) = current_epoch {
             if let Some(range) = executable.epoch_range() {

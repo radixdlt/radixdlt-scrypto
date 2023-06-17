@@ -16,7 +16,7 @@ use transaction::validation::{
 };
 
 #[test]
-fn test_transaction_replay() {
+fn test_transaction_replay_protection() {
     let mut test_runner = TestRunner::builder().build();
 
     let current_epoch = Epoch::of(1);

@@ -4,6 +4,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
@@ -204,10 +205,11 @@ impl IntentHashStoreBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let current_epoch = Runtime::current_epoch(api)?;
         let intent_store = api.new_simple_object(
             INTENT_HASH_STORE_BLUEPRINT,
             vec![scrypto_encode(&IntentHashStoreSubstate {
-                start_epoch: 0,
+                start_epoch: current_epoch.number(),
                 start_partition: PARTITION_RANGE_START,
                 partition_range_start: PARTITION_RANGE_START,
                 partition_range_end: PARTITION_RANGE_END,
