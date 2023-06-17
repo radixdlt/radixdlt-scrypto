@@ -469,6 +469,7 @@ pub enum TypedFungibleVaultFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleVaultFieldValue {
     Balance(NonFungibleVaultBalanceSubstate),
+    VaultFrozenFlag(VaultFrozenFlag),
 }
 
 #[derive(Debug, Clone)]
@@ -651,6 +652,9 @@ fn to_typed_object_substate_value(
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
                 NonFungibleVaultField::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
+                NonFungibleVaultField::VaultFrozenFlag => {
+                    TypedNonFungibleVaultFieldValue::VaultFrozenFlag(scrypto_decode(data)?)
+                }
             })
         }
         TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_) => {

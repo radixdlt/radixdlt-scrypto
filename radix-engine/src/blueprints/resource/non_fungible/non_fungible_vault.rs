@@ -29,10 +29,32 @@ pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
+    fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError> {
+        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
+            return Ok(());
+        }
+
+        let frozen_flag_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        if frozen.is_frozen {
+            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::VaultIsFrozen)));
+        }
+
+        Ok(())
+    }
+
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(api)?;
+
         // Check amount
         if !check_non_fungible_amount(amount) {
             return Err(RuntimeError::ApplicationError(
@@ -54,6 +76,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(api)?;
+
         // Take
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
@@ -117,18 +141,19 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        api.actor_call_module_method(
+        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::NotFreezable)));
+        }
+
+        let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            scrypto_encode(&AccessRulesUpdateRoleInput {
-                module: ObjectModuleId::Main,
-                role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
-                rule: Some(rule!(deny_all)),
-                mutability: None,
-            })
-            .unwrap(),
+            FungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
         )?;
+
+        let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        frozen.is_frozen = true;
+        api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }
@@ -137,18 +162,18 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        api.actor_call_module_method(
+        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::NotFreezable)));
+        }
+
+        let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            scrypto_encode(&AccessRulesUpdateRoleInput {
-                module: ObjectModuleId::Main,
-                role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
-                rule: Some(rule!(allow_all)),
-                mutability: None,
-            })
-            .unwrap(),
+            FungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
         )?;
+        let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        frozen.is_frozen = false;
+        api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }

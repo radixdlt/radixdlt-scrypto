@@ -145,6 +145,9 @@ impl NonFungibleResourceManagerBlueprint {
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
+        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+            features.push(FREEZE_VAULT_FEATURE);
+        }
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -229,6 +232,9 @@ impl NonFungibleResourceManagerBlueprint {
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
+        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+            features.push(FREEZE_VAULT_FEATURE);
+        }
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -295,6 +301,9 @@ impl NonFungibleResourceManagerBlueprint {
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
+        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+            features.push(FREEZE_VAULT_FEATURE);
+        }
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -348,11 +357,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -411,11 +416,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update Total Supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -476,11 +477,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -698,11 +695,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -763,6 +756,7 @@ impl NonFungibleResourceManagerBlueprint {
             vec![
                 scrypto_encode(&vault).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
             ],
         )?;
 
@@ -807,11 +801,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),

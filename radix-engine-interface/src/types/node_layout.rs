@@ -140,6 +140,7 @@ impl TryFrom<u8> for NonFungibleVaultPartitionOffset {
 pub enum NonFungibleVaultField {
     LiquidNonFungible,
     LockedNonFungible,
+    VaultFrozenFlag,
 }
 
 #[repr(u8)]
