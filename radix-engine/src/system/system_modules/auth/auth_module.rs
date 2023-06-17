@@ -92,7 +92,7 @@ impl AuthModule {
             )?;
         }
 
-        if info.global || VaultUtil::is_vault_blueprint(&info.blueprint_id) {
+        if info.global {
             Self::check_authorization_against_access_rules(
                 callee,
                 auth_zone_id,

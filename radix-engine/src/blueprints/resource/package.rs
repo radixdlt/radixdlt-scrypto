@@ -919,20 +919,7 @@ impl ResourceManagerNativePackage {
                         // NOTE: This is an extra filter on top of the ResourceManager filter
                         // This is for use with the freezing feature
                         // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                        auth: method_auth_template! {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_RECALL_IDENT => MethodPermission::Public;
-                            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => MethodPermission::Public;
-                            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_FREEZE_IDENT => MethodPermission::Public;
-                            VAULT_UNFREEZE_IDENT => MethodPermission::Public;
-                            VAULT_PUT_IDENT => MethodPermission::Public;
-                            VAULT_BURN_IDENT => MethodPermission::Public;
-                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => MethodPermission::Public;
-                            VAULT_TAKE_IDENT => MethodPermission::Public;
-                        },
+                        auth: btreemap!(),
 
                         // This is the mapping to ResourceManager roles
                         // NOTE: This is an extra filter on top of the Vault filter
@@ -1228,24 +1215,7 @@ impl ResourceManagerNativePackage {
                         // NOTE: This is an extra filter on top of the ResourceManager filter
                         // This is for use with the freezing feature
                         // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                        auth: method_auth_template! {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            VAULT_RECALL_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            VAULT_FREEZE_IDENT => MethodPermission::Public;
-                            VAULT_UNFREEZE_IDENT => MethodPermission::Public;
-                            VAULT_PUT_IDENT => MethodPermission::Public;
-                            VAULT_BURN_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            VAULT_TAKE_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                        },
+                        auth: btreemap!(),
                         // This is the mapping to ResourceManager roles
                         // NOTE: This is an extra filter on top of the Vault filter
                         outer_auth: method_auth_template! {
