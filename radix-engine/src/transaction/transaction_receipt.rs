@@ -80,8 +80,8 @@ impl TransactionResult {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
     pub state_updates: StateUpdates,
-    /// Unstable, for intent hash intent only;
-    /// Must be applied after committing the state updates above.
+    /// Unstable, for intent hash intent only; Must be applied after committing the state updates above.
+    /// TODO: if time allows, consider merging into tracked nodes.
     pub partition_deletions: IndexSet<DbPartitionKey>,
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,

@@ -366,6 +366,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     substate_db: &'s S,
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
+    // TODO: if time allows, consider merging into tracked nodes.
     deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
