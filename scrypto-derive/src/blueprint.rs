@@ -1526,9 +1526,8 @@ mod tests {
                         let royalty_config = package_royalty_config();
 
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-                            outer_blueprint: None,
+                            blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
                             dependencies,
-                            feature_set: BTreeSet::new(),
                             schema,
                             auth_config,
                             royalty_config,

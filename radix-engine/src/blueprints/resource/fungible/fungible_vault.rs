@@ -37,11 +37,7 @@ impl FungibleVaultBlueprint {
     pub fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
         where
             Y: ClientApi<RuntimeError> {
-        if !api
-            .actor_get_info()?
-            .features
-            .contains(FREEZE_VAULT_FEATURE)
-        {
+        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
             return Ok(());
         }
 
@@ -51,7 +47,7 @@ impl FungibleVaultBlueprint {
             LockFlags::MUTABLE,
         )?;
         let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        if !frozen.is_frozen {
+        if frozen.is_frozen {
             return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::VaultIsFrozen)));
         }
 
@@ -187,11 +183,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !api
-            .actor_get_info()?
-            .features
-            .contains(FREEZE_VAULT_FEATURE)
-        {
+        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
             return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::NotFreezable)));
         }
 
@@ -212,11 +204,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !api
-            .actor_get_info()?
-            .features
-            .contains(FREEZE_VAULT_FEATURE)
-        {
+        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
             return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::NotFreezable)));
         }
 

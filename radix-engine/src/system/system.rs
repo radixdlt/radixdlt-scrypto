@@ -241,32 +241,23 @@ where
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
+        blueprint_interface: &BlueprintInterface,
         features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
-    ) -> Result<
-        (
-            Option<String>,
-            BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError> {
+        /*
         let blueprint_interface = self.get_blueprint_default_interface(
             blueprint_id.package_address,
             blueprint_id.blueprint_name.as_str(),
         )?;
 
+        let parent_blueprint = blueprint_interface.outer_blueprint.clone();
+         */
+
         // Validate features
-        {
-            for feature in features {
-                if !blueprint_interface.feature_set.contains(feature) {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
-                        feature.to_string(),
-                    )));
-                }
-            }
-        }
+
 
         // Validate instance schema
         {
@@ -424,9 +415,8 @@ where
             }
         }
 
-        let parent_blueprint = blueprint_interface.outer_blueprint.clone();
 
-        Ok((parent_blueprint, partitions))
+        Ok(partitions)
     }
 
     pub fn get_schema(
@@ -640,26 +630,31 @@ where
 
     fn new_object_internal(
         &mut self,
-        blueprint: &BlueprintId,
+        blueprint_id: &BlueprintId,
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, RuntimeError> {
-        let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
 
-        let (expected_blueprint_parent, user_substates) = self.validate_instance_schema_and_state(
-            blueprint,
-            &features,
-            &instance_schema,
-            fields,
-            kv_entries,
+        let blueprint_interface = self.get_blueprint_default_interface(
+            blueprint_id.package_address,
+            blueprint_id.blueprint_name.as_str(),
         )?;
+        let expected_blueprint_parent = blueprint_interface.outer_blueprint.clone();
 
-        let outer_object = if let Some(parent) = &expected_blueprint_parent {
+        let (outer_object, features) = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
-                Some(context) if context.outer_blueprint.eq(parent) => Some(context.outer_object),
+                Some(context) if context.outer_blueprint.eq(parent) => {
+                    if !features.is_empty() {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidChildObjectCreation));
+                    }
+
+                    let outer_object_info = self.get_object_info(context.outer_object.as_node_id())?;
+
+                    (Some(context.outer_object), outer_object_info.features)
+                },
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
@@ -667,12 +662,31 @@ where
                 }
             }
         } else {
-            None
+            let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+            for feature in &features {
+                if !blueprint_interface.feature_set.contains(feature) {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                        feature.to_string(),
+                    )));
+                }
+            }
+            (None, features)
         };
+
+        let user_substates = self.validate_instance_schema_and_state(
+            blueprint_id,
+            &blueprint_interface,
+            &features,
+            &instance_schema,
+            fields,
+            kv_entries,
+        )?;
+
+
 
         let node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
-                blueprint_id: blueprint.clone(),
+                blueprint_id: blueprint_id.clone(),
                 global: false,
             }
             .entity_type(),
@@ -683,7 +697,7 @@ where
                 TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
 
-                    blueprint_id: blueprint.clone(),
+                    blueprint_id: blueprint_id.clone(),
                     version: BlueprintVersion::default(),
 
                     outer_object,
@@ -787,7 +801,7 @@ where
             })?;
 
         if let Condition::IfFeature(feature) = field_schema.condition {
-            if !info.features.contains(&feature) {
+            if !self.is_feature_enabled(&node_id, feature.as_str())? {
                 return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                     info.blueprint_id.clone(),
                     field_index,
@@ -1139,6 +1153,17 @@ where
     pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.fn_identifier())
+    }
+
+    pub fn is_feature_enabled(&mut self, node_id: &NodeId, feature: &str) -> Result<bool, RuntimeError> {
+        let object_info = self.get_object_info(node_id)?;
+        let features = if let Some(outer_object) = object_info.outer_object {
+            self.get_object_info(outer_object.as_node_id())?.features
+        } else {
+            object_info.features
+        };
+
+        Ok(features.contains(feature))
     }
 }
 
@@ -2191,6 +2216,12 @@ where
         };
 
         self.call_method_advanced(&node_id, false, module_id, method_name, args)
+    }
+
+    #[trace_resources]
+    fn actor_is_feature_enabled(&mut self, feature: &str) -> Result<bool, RuntimeError> {
+        let node_id = self.actor_get_node_id()?;
+        self.is_feature_enabled(&node_id, feature)
     }
 }
 

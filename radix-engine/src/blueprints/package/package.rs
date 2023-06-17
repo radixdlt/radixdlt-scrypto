@@ -760,18 +760,6 @@ impl PackageNativePackage {
 
         let code_hash = hash(scrypto_encode(&code).unwrap());
 
-        let feature_sets: BTreeMap<String, BTreeSet<String>> = setup
-            .blueprints
-            .iter()
-            .filter_map(|(name, def)| {
-                if let BlueprintType::Normal { feature_set } = &def.blueprint_type {
-                    Some((name.clone(), feature_set.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
         {
             for (blueprint, definition_init) in setup.blueprints {
                 blueprint_auth_templates.insert(blueprint.clone(), definition_init.auth_config);
@@ -829,15 +817,7 @@ impl PackageNativePackage {
 
                 let (feature_set, outer_blueprint) = match definition_init.blueprint_type {
                     BlueprintType::Normal { feature_set } => (feature_set, None),
-                    BlueprintType::Inner { outer_blueprint } => {
-                        if let Some(feature_set) = feature_sets.get(&outer_blueprint) {
-                            (feature_set.clone(), Some(outer_blueprint))
-                        } else {
-                            return Err(RuntimeError::ApplicationError(
-                                ApplicationError::PackageError(PackageError::MissingOuterBlueprint),
-                            ));
-                        }
-                    }
+                    BlueprintType::Inner { outer_blueprint } => (BTreeSet::new(), Some(outer_blueprint)),
                 };
 
                 let definition = BlueprintDefinition {

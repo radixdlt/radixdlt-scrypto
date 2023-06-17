@@ -366,6 +366,10 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
+    fn actor_is_feature_enabled(&mut self, _feature: &str) -> Result<bool, ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }

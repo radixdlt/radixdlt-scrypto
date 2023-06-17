@@ -86,6 +86,9 @@ impl FungibleResourceManagerBlueprint {
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
+        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+            features.push(FREEZE_VAULT_FEATURE);
+        }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -149,14 +152,17 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let mut features = Vec::new();
+        let mut feature_set = Vec::new();
         if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+            feature_set.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
+        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+            feature_set.push(FREEZE_VAULT_FEATURE);
         }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features,
+            feature_set,
             None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -202,11 +208,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -253,11 +255,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),

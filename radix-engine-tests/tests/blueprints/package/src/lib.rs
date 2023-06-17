@@ -61,9 +61,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-        outer_blueprint: None,
+        blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
-        feature_set: btreeset!(),
         schema,
         royalty_config: RoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
@@ -119,9 +118,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-        outer_blueprint: None,
+        blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
-        feature_set: btreeset!(),
         schema,
         royalty_config: RoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
@@ -177,9 +175,8 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-        outer_blueprint: None,
+        blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
-        feature_set: btreeset!(),
         schema,
         royalty_config: RoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
@@ -222,9 +219,8 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-        outer_blueprint: None,
+        blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
-        feature_set: btreeset!(),
         schema: BlueprintSchemaInit {
             generics: vec![],
             schema: empty_schema,
