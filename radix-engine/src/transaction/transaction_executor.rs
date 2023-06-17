@@ -242,6 +242,16 @@ where
                     fee_reserve,
                     fee_table,
                 );
+
+                #[cfg(not(feature = "alloc"))]
+                if execution_config
+                    .enabled_modules
+                    .contains(EnabledModules::KERNEL_TRACE)
+                {
+                    println!("{:-^80}", "Interpretation Results");
+                    println!("{:?}", interpretation_result);
+                }
+
                 let result_type = Self::determine_result_type(
                     interpretation_result,
                     &mut costing_module.fee_reserve,
