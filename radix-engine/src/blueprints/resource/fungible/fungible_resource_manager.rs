@@ -320,6 +320,7 @@ impl FungibleResourceManagerBlueprint {
             vec![
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
             ],
         )?;
 

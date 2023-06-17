@@ -699,6 +699,10 @@ impl ResourceManagerNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
+            fields.push(FieldSchema::if_feature(
+                aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
+                FREEZE_VAULT_FEATURE,
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
