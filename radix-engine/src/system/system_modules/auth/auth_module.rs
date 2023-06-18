@@ -15,7 +15,9 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate};
+use radix_engine_interface::blueprints::package::{
+    BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
@@ -87,99 +89,49 @@ impl AuthModule {
 
         let method_key = MethodKey::new(ident);
 
-        Self::check_authorization_against_access_rules(
-            callee,
-            auth_zone_id,
-            acting_location,
-            method_key,
-            args,
-            api,
-        )?;
+        // Step 1: Resolve method to permission
+        let resolved_method_permission =
+            Self::resolve_method_permission(callee, &method_key, args, api)?;
 
-        Ok(())
-    }
-
-
-    fn check_authorization_against_access_rules<
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
-    >(
-        callee: &MethodActor,
-        auth_zone_id: &NodeId,
-        acting_location: ActingLocation,
-        method_key: MethodKey,
-        args: &IndexedScryptoValue,
-        api: &mut SystemService<Y, V>,
-    ) -> Result<(), RuntimeError> {
-        let resolved_method_permission = Self::resolve_method_permission(
-            callee,
-            &method_key,
-            args,
-            api,
-        )?;
-
-        match resolved_method_permission {
+        // Step 2: Early exit if possible
+        let (access_rules_of, role_list, module_id) = match resolved_method_permission {
             ResolvedMethodPermission::AllowAll => return Ok(()),
             ResolvedMethodPermission::Auth {
-                access_rules_of, role_list, module_id
-            } => {
-                Self::check_authorization_against_role_list(
-                    callee.fn_identifier(),
-                    auth_zone_id,
-                    acting_location,
-                    &access_rules_of,
-                    module_id,
-                    &role_list,
-                    api,
-                )?;
-            }
-        }
+                access_rules_of,
+                role_list,
+                module_id,
+            } => (access_rules_of, role_list, module_id),
+        };
 
-        Ok(())
-    }
-
-    pub fn check_authorization_against_role_list<
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
-    >(
-        fn_identifier: FnIdentifier, // TODO: Cleanup
-        auth_zone_id: &NodeId,
-        acting_location: ActingLocation,
-        access_rules_of: &NodeId,
-        module: ObjectModuleId,
-        role_list: &RoleList,
-        api: &mut SystemService<Y, V>,
-    ) -> Result<(), RuntimeError> {
+        // Step 3: Check role rules
         let result = Authorization::check_authorization_against_role_list(
             acting_location,
             *auth_zone_id,
-            access_rules_of,
-            module,
-            role_list,
+            &access_rules_of,
+            module_id,
+            &role_list,
             api,
         )?;
+
         match result {
             AuthorityListAuthorizationResult::Authorized => Ok(()),
             AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
                 Err(RuntimeError::SystemModuleError(
                     SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
                         failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
-                        fn_identifier,
+                        fn_identifier: callee.fn_identifier(),
                     }))),
                 ))
             }
         }
     }
 
-    fn resolve_method_permission<
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
-    >(
+    fn resolve_method_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         callee: &MethodActor,
         method_key: &MethodKey,
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
-    ) -> Result<ResolvedMethodPermission, RuntimeError>{
+    ) -> Result<ResolvedMethodPermission, RuntimeError> {
         if let ObjectModuleId::AccessRules = callee.module_id {
             return AccessRulesNativePackage::authorization(
                 &callee.node_id,
@@ -203,7 +155,8 @@ impl AuthModule {
                     .as_str(),
             ),
             api.api,
-        )?.method_auth;
+        )?
+        .method_auth;
 
         let (access_rules_of, method_permissions) = match auth_template {
             MethodAuthTemplate::Static(method_roles) => {
@@ -224,23 +177,15 @@ impl AuthModule {
         };
 
         match method_permissions.get(method_key) {
-            Some(MethodPermission::Public) => {
-                Ok(ResolvedMethodPermission::AllowAll)
-            }
-            Some(MethodPermission::Protected(role_list)) => {
-                Ok(ResolvedMethodPermission::Auth {
-                    access_rules_of,
-                    role_list: role_list.clone(),
-                    module_id: callee.module_id,
-                })
-            }
-            None => {
-                Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::AuthError(AuthError::NoMethodMapping(
-                        callee.fn_identifier(),
-                    )),
-                ))
-            }
+            Some(MethodPermission::Public) => Ok(ResolvedMethodPermission::AllowAll),
+            Some(MethodPermission::Protected(role_list)) => Ok(ResolvedMethodPermission::Auth {
+                access_rules_of,
+                role_list: role_list.clone(),
+                module_id: callee.module_id,
+            }),
+            None => Err(RuntimeError::SystemModuleError(
+                SystemModuleError::AuthError(AuthError::NoMethodMapping(callee.fn_identifier())),
+            )),
         }
     }
 

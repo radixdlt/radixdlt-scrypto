@@ -194,17 +194,15 @@ impl ConsensusManagerNativePackage {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: MethodAuthTemplate::Static(
-                        method_auth_template!(
-                            CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
-                            CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
+                    method_auth: MethodAuthTemplate::Static(method_auth_template!(
+                        CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
+                        CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
-                            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodPermission::Public;
-                            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodPermission::Public;
-                            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodPermission::Public;
-                            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodPermission::Public;
-                        ),
-                    ),
+                        CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodPermission::Public;
+                        CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodPermission::Public;
+                        CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodPermission::Public;
+                        CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodPermission::Public;
+                    )),
                 },
             }
         };
@@ -421,23 +419,21 @@ impl ConsensusManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static(
-                        method_auth_template! {
-                            VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
-                            VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;
-                            VALIDATOR_STAKE_IDENT => [STAKE_ROLE];
-                            VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
-                            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
-                            VALIDATOR_APPLY_EMISSION_IDENT => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
-                            VALIDATOR_APPLY_REWARD_IDENT => [VALIDATOR_APPLY_REWARD_AUTHORITY];
-                        },
-                    ),
+                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                        VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
+                        VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;
+                        VALIDATOR_STAKE_IDENT => [STAKE_ROLE];
+                        VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_APPLY_EMISSION_IDENT => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+                        VALIDATOR_APPLY_REWARD_IDENT => [VALIDATOR_APPLY_REWARD_AUTHORITY];
+                    }),
                 },
             }
         };
