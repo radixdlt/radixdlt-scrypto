@@ -184,6 +184,8 @@ impl TransactionTrackerSubstate {
         Some(partition_number as u8)
     }
 
+    /// This method will shift the start partition by 1, considering the partition range as a buffer.
+    /// Protocol-specific implementation is within transaction executor.
     pub fn advance(&mut self) -> u8 {
         let old_start_partition = self.start_partition;
         self.start_epoch += self.epochs_per_partition;
