@@ -331,7 +331,8 @@ impl ResourceManagerNativePackage {
                 blueprint_type: BlueprintType::Outer {
                     feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        FREEZE_VAULT_FEATURE.to_string(),
+                        VAULT_FREEZE_FEATURE.to_string(),
+                        VAULT_RECALL_FEATURE.to_string(),
                         MINT_FEATURE.to_string(),
                     ),
                 },
@@ -646,7 +647,8 @@ impl ResourceManagerNativePackage {
                 blueprint_type: BlueprintType::Outer {
                     feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        FREEZE_VAULT_FEATURE.to_string(),
+                        VAULT_FREEZE_FEATURE.to_string(),
+                        VAULT_RECALL_FEATURE.to_string(),
                         MINT_FEATURE.to_string(),
                     ),
                 },
@@ -705,7 +707,7 @@ impl ResourceManagerNativePackage {
             ));
             fields.push(FieldSchema::if_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
-                FREEZE_VAULT_FEATURE,
+                VAULT_FREEZE_FEATURE,
             ));
 
             let mut functions = BTreeMap::new();
@@ -941,7 +943,7 @@ impl ResourceManagerNativePackage {
             ));
             fields.push(FieldSchema::if_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
-                FREEZE_VAULT_FEATURE,
+                VAULT_FREEZE_FEATURE,
             ));
 
             let mut collections = Vec::new();

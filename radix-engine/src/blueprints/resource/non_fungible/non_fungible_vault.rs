@@ -24,28 +24,6 @@ pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
-    fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Ok(());
-        }
-
-        let frozen_flag_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::VaultFrozenFlag.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        if frozen.is_frozen {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::VaultIsFrozen),
-            ));
-        }
-
-        Ok(())
-    }
 
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
@@ -120,6 +98,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_recallable(api)?;
+
         if !check_non_fungible_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
@@ -139,11 +119,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NotFreezable),
-            ));
-        }
+        Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -162,11 +138,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NotFreezable),
-            ));
-        }
+        Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -187,6 +159,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_recallable(api)?;
+
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
@@ -293,6 +267,56 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         NonFungibleVault::unlock_non_fungibles(local_ids, api)?;
+
+        Ok(())
+    }
+
+
+    fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+            return Ok(());
+        }
+
+        let frozen_flag_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        if frozen.is_frozen {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::VaultIsFrozen),
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotFreezable),
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(VAULT_RECALL_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotRecallable),
+            ));
+        }
 
         Ok(())
     }
@@ -623,4 +647,5 @@ impl NonFungibleVault {
 
         NonFungibleVault::put(LiquidNonFungibleResource::new(liquid_non_fungibles), api)
     }
+
 }

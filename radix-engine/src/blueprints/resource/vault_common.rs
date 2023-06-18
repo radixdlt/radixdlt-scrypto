@@ -10,6 +10,7 @@ pub enum VaultError {
     MismatchingResource,
     InvalidAmount,
     NotFreezable,
+    NotRecallable,
     VaultIsFrozen,
 
     LockFeeNotRadixToken,

@@ -8,7 +8,8 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::ObjectModuleId;
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
-pub const FREEZE_VAULT_FEATURE: &str = "freeze_vault";
+pub const VAULT_FREEZE_FEATURE: &str = "vault_freeze";
+pub const VAULT_RECALL_FEATURE: &str = "vault_recall";
 pub const MINT_FEATURE: &str = "mint";
 
 // Meta-roles

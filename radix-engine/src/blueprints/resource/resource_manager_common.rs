@@ -200,7 +200,10 @@ pub fn features(
         features.push(TRACK_TOTAL_SUPPLY_FEATURE);
     }
     if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-        features.push(FREEZE_VAULT_FEATURE);
+        features.push(VAULT_FREEZE_FEATURE);
+    }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Recall) {
+        features.push(VAULT_RECALL_FEATURE);
     }
     if access_rules.contains_key(&ResourceMethodAuthKey::Mint) {
         features.push(MINT_FEATURE);

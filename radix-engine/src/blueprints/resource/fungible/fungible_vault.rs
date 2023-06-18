@@ -29,28 +29,6 @@ impl FungibleVaultBlueprint {
         Ok(divisibility)
     }
 
-    pub fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Ok(());
-        }
-
-        let frozen_flag_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            FungibleVaultField::VaultFrozenFlag.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        if frozen.is_frozen {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::VaultIsFrozen),
-            ));
-        }
-
-        Ok(())
-    }
 
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
@@ -160,6 +138,8 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_recallable(api)?;
+
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
@@ -180,11 +160,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NotFreezable),
-            ));
-        }
+        Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -203,11 +179,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(FREEZE_VAULT_FEATURE)? {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NotFreezable),
-            ));
-        }
+        Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -285,6 +257,55 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         FungibleVault::unlock_amount(amount, api)?;
+
+        Ok(())
+    }
+
+    pub fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+            return Ok(());
+        }
+
+        let frozen_flag_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        if frozen.is_frozen {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::VaultIsFrozen),
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotFreezable),
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(VAULT_RECALL_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotRecallable),
+            ));
+        }
 
         Ok(())
     }

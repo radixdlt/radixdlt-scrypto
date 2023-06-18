@@ -290,7 +290,7 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
         if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-            features.push(FREEZE_VAULT_FEATURE);
+            features.push(VAULT_FREEZE_FEATURE);
         }
 
         let object_id = api.new_object(
