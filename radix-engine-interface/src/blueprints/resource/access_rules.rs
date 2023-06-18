@@ -56,6 +56,7 @@ impl MethodEntry {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum MethodPermission {
     Public,
+    OuterObjectOnly,
     Protected(RoleList),
 }
 

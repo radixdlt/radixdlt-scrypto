@@ -1216,6 +1216,7 @@ impl ResourceManagerNativePackage {
                         VAULT_PUT_IDENT => [DEPOSIT_ROLE];
                         VAULT_BURN_IDENT => [BURN_ROLE];
                         NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURN_ROLE];
+
                         NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                         NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                     }),
