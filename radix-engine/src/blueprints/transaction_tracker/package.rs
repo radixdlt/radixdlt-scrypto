@@ -44,7 +44,7 @@ impl TransactionTrackerNativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<Hash>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<IntentHashStatus>();
+        let value_type_index = aggregator.add_child_type_and_descendents::<TransactionStatus>();
 
         let mut collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeIndex>>> = vec![];
         for _ in PARTITION_RANGE_START..=PARTITION_RANGE_END {
@@ -143,7 +143,7 @@ impl TransactionTrackerNativePackage {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub enum IntentHashStatus {
+pub enum TransactionStatus {
     CommittedSuccess,
     CommittedFailure,
     Cancelled,

@@ -1,6 +1,6 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::blueprints::transaction_tracker::{IntentHashStatus, TransactionTrackerSubstate};
+use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
@@ -427,23 +427,23 @@ where
                 LockFlags::read_only(),
                 || {
                     Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                        value: Option::<IntentHashStatus>::None,
+                        value: Option::<TransactionStatus>::None,
                         mutability: SubstateMutability::Mutable,
                     }))
                 },
             )
             .unwrap()
             .0;
-        let substate: KeyValueEntrySubstate<IntentHashStatus> =
+        let substate: KeyValueEntrySubstate<TransactionStatus> =
             track.read_substate(handle).0.as_typed().unwrap();
         track.release_lock(handle);
 
         match substate.value {
             Some(status) => match status {
-                IntentHashStatus::CommittedSuccess | IntentHashStatus::CommittedFailure => {
+                TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
                     return Err(RejectionError::IntentHashCommitted);
                 }
-                IntentHashStatus::Cancelled => {
+                TransactionStatus::Cancelled => {
                     return Err(RejectionError::IntentHashCancelled);
                 }
             },
@@ -758,7 +758,7 @@ where
                         LockFlags::MUTABLE,
                         || {
                             Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                                value: Option::<IntentHashStatus>::None,
+                                value: Option::<TransactionStatus>::None,
                                 mutability: SubstateMutability::Mutable,
                             }))
                         },
@@ -769,9 +769,9 @@ where
                     handle,
                     IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                         value: Some(if is_success {
-                            IntentHashStatus::CommittedSuccess
+                            TransactionStatus::CommittedSuccess
                         } else {
-                            IntentHashStatus::CommittedFailure
+                            TransactionStatus::CommittedFailure
                         }),
                         // TODO: maybe make it immutable, but how does this affect partition deletion?
                         mutability: SubstateMutability::Mutable,
