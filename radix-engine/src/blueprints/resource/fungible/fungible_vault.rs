@@ -233,6 +233,8 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take(&amount, api)?.package_burn(api)?;
         Ok(())
     }

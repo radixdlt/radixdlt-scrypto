@@ -229,6 +229,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take(&amount, api)?.package_burn(api)?;
         Ok(())
     }
@@ -240,6 +242,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take_non_fungibles(non_fungible_local_ids, api)?.package_burn(api)?;
         Ok(())
     }

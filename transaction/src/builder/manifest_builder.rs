@@ -1039,6 +1039,28 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn freeze_burn(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: to_manifest_value(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::BURN
+            }),
+        });
+        self
+    }
+
+    pub fn unfreeze_burn(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: to_manifest_value(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::BURN
+            }),
+        });
+        self
+    }
+
     pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
         ids.insert(non_fungible_global_id.local_id().clone());
@@ -1167,6 +1189,26 @@ impl ManifestBuilder {
             args,
         })
         .0
+    }
+
+    /// Withdraws resource from an account.
+    pub fn burn_in_account(
+        &mut self,
+        account: ComponentAddress,
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        let args = to_manifest_value(&AccountBurnInput {
+            resource_address,
+            amount,
+        });
+
+        self.add_instruction(InstructionV1::CallMethod {
+            address: account.into(),
+            method_name: ACCOUNT_BURN_IDENT.to_string(),
+            args,
+        })
+            .0
     }
 
     /// Creates resource proof from an account.

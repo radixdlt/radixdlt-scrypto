@@ -1152,6 +1152,7 @@ impl TestRunner {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         access_rules.insert(Recall, (rule!(allow_all), LOCKED));
         access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
 
