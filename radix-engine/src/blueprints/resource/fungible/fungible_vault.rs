@@ -55,6 +55,8 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
+
         // Drop other bucket
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 

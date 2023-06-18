@@ -1017,6 +1017,28 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn freeze_deposit(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: to_manifest_value(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::DEPOSIT
+            }),
+        });
+        self
+    }
+
+    pub fn unfreeze_deposit(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: to_manifest_value(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::DEPOSIT
+            }),
+        });
+        self
+    }
+
     pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
         ids.insert(non_fungible_global_id.local_id().clone());
