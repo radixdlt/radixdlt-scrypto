@@ -416,7 +416,7 @@ where
         track.release_lock(handle);
 
         let partition_number = substate
-            .partition_for_expiry_epoch(expiry_epoch.number())
+            .partition_for_expiry_epoch(expiry_epoch)
             .ok_or(RejectionError::IntentHashExpiryEpochOutOfRange)?;
 
         let handle = track
@@ -750,7 +750,7 @@ where
         // Update the status of the intent hash
         if let Some(expiry_epoch) = expiry_epoch {
             if let Some(partition_number) =
-                transaction_tracker.partition_for_expiry_epoch(expiry_epoch.number())
+                transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
             {
                 let handle = track
                     .acquire_lock_virtualize(
