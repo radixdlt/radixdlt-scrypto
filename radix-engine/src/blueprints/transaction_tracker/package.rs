@@ -161,7 +161,7 @@ pub struct TransactionTrackerSubstate {
 }
 
 impl TransactionTrackerSubstate {
-    pub fn partition_of(&self, epoch: u64) -> Option<u8> {
+    pub fn partition_for_expiry_epoch(&self, epoch: u64) -> Option<u8> {
         // Check if epoch is within range
         let num_partitions = self.partition_range_end - self.partition_range_start + 1;
         let max_epoch_exclusive =
@@ -260,16 +260,16 @@ mod tests {
         };
         let num_partitions = (PARTITION_RANGE_END - PARTITION_RANGE_START + 1) as u64;
 
-        assert_eq!(store.partition_of(0), None);
-        assert_eq!(store.partition_of(256), Some(70));
-        assert_eq!(store.partition_of(256 + EPOCHS_PER_PARTITION - 1), Some(70));
-        assert_eq!(store.partition_of(256 + EPOCHS_PER_PARTITION), Some(71));
+        assert_eq!(store.partition_for_expiry_epoch(0), None);
+        assert_eq!(store.partition_for_expiry_epoch(256), Some(70));
+        assert_eq!(store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION - 1), Some(70));
+        assert_eq!(store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION), Some(71));
         assert_eq!(
-            store.partition_of(256 + EPOCHS_PER_PARTITION * num_partitions - 1),
+            store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION * num_partitions - 1),
             Some(69)
         );
         assert_eq!(
-            store.partition_of(256 + EPOCHS_PER_PARTITION * num_partitions),
+            store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION * num_partitions),
             None,
         );
 

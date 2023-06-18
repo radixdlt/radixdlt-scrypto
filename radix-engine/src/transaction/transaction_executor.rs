@@ -416,7 +416,7 @@ where
         track.release_lock(handle);
 
         let partition_number = substate
-            .partition_of(expiry_epoch.number())
+            .partition_for_expiry_epoch(expiry_epoch.number())
             .ok_or(RejectionError::IntentHashExpiryEpochOutOfRange)?;
 
         let handle = track
@@ -749,7 +749,9 @@ where
 
         // Update the status of the intent hash
         if let Some(expiry_epoch) = expiry_epoch {
-            if let Some(partition_number) = substate.partition_of(expiry_epoch.number()) {
+            if let Some(partition_number) =
+                substate.partition_for_expiry_epoch(expiry_epoch.number())
+            {
                 let handle = track
                     .acquire_lock_virtualize(
                         TRANSACTION_TRACKER.as_node_id(),
@@ -781,20 +783,16 @@ where
             }
         }
 
-        loop {
-            // TODO: how do we align this with TransactionValidator?
-            if substate
-                .partition_of(next_epoch.after(DEFAULT_MAX_EPOCH_RANGE).number())
-                .is_none()
-            {
-                let discarded_partition = substate.advance();
-                track.delete_partition(
-                    TRANSACTION_TRACKER.as_node_id(),
-                    PartitionNumber(discarded_partition),
-                );
-            } else {
-                break;
-            }
+        // TODO: how do we align this with TransactionValidator?
+        if substate
+            .partition_for_expiry_epoch(next_epoch.after(DEFAULT_MAX_EPOCH_RANGE).number())
+            .is_none()
+        {
+            let discarded_partition = substate.advance();
+            track.delete_partition(
+                TRANSACTION_TRACKER.as_node_id(),
+                PartitionNumber(discarded_partition),
+            );
         }
         track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);
