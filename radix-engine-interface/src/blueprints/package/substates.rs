@@ -19,7 +19,7 @@ pub const METADATA_CODE_ID: u8 = 10u8;
 pub const ROYALTY_CODE_ID: u8 = 11u8;
 pub const ACCESS_RULES_CODE_ID: u8 = 12u8;
 pub const POOL_CODE_ID: u8 = 13u8;
-pub const INTENT_HASH_STORE_CODE_ID: u8 = 14u8;
+pub const TRANSACTION_TRACKER_CODE_ID: u8 = 14u8;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);

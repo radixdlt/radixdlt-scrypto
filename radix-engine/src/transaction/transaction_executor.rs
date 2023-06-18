@@ -1,6 +1,6 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::intent_hash_store::{IntentHashStatus, IntentHashStoreSubstate};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::blueprints::transaction_tracker::{IntentHashStatus, TransactionTrackerSubstate};
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
@@ -276,7 +276,7 @@ where
 
                         // Update intent hash status
                         if let Some(next_epoch) = Self::read_epoch(&mut track) {
-                            Self::update_intent_hash_store(
+                            Self::update_transaction_tracker(
                                 &mut track,
                                 next_epoch,
                                 executable.intent_hash().clone(),
@@ -404,14 +404,15 @@ where
     ) -> Result<(), RejectionError> {
         let handle = track
             .acquire_lock(
-                INTENT_HASH_STORE.as_node_id(),
+                TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::read_only(),
             )
             .unwrap()
             .0;
-        let substate: IntentHashStoreSubstate = track.read_substate(handle).0.as_typed().unwrap();
+        let substate: TransactionTrackerSubstate =
+            track.read_substate(handle).0.as_typed().unwrap();
         track.release_lock(handle);
 
         let partition_number = substate
@@ -420,7 +421,7 @@ where
 
         let handle = track
             .acquire_lock_virtualize(
-                INTENT_HASH_STORE.as_node_id(),
+                TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(partition_number),
                 &SubstateKey::Map(intent_hash.to_vec()),
                 LockFlags::read_only(),
@@ -726,7 +727,7 @@ where
         (fee_summary, fee_payments)
     }
 
-    fn update_intent_hash_store(
+    fn update_transaction_tracker(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         next_epoch: Epoch,
         intent_hash: Hash,
@@ -736,14 +737,14 @@ where
         // Read the intent hash store
         let handle = track
             .acquire_lock(
-                INTENT_HASH_STORE.as_node_id(),
+                TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::MUTABLE,
             )
             .unwrap()
             .0;
-        let mut substate: IntentHashStoreSubstate =
+        let mut substate: TransactionTrackerSubstate =
             track.read_substate(handle).0.as_typed().unwrap();
 
         // Update the status of the intent hash
@@ -751,7 +752,7 @@ where
             if let Some(partition_number) = substate.partition_of(expiry_epoch.number()) {
                 let handle = track
                     .acquire_lock_virtualize(
-                        INTENT_HASH_STORE.as_node_id(),
+                        TRANSACTION_TRACKER.as_node_id(),
                         PartitionNumber(partition_number),
                         &SubstateKey::Map(intent_hash.to_vec()),
                         LockFlags::MUTABLE,
@@ -788,7 +789,7 @@ where
             {
                 let discarded_partition = substate.advance();
                 track.delete_partition(
-                    INTENT_HASH_STORE.as_node_id(),
+                    TRANSACTION_TRACKER.as_node_id(),
                     PartitionNumber(discarded_partition),
                 );
             } else {

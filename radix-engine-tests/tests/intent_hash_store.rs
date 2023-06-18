@@ -1,4 +1,4 @@
-use radix_engine::blueprints::intent_hash_store::EPOCHS_PER_PARTITION;
+use radix_engine::blueprints::transaction_tracker::EPOCHS_PER_PARTITION;
 use radix_engine::errors::RejectionError;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;

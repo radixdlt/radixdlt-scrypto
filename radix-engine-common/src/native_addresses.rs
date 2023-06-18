@@ -190,7 +190,7 @@ pub const TRANSACTION_TRACKER_PACKAGE: PackageAddress = PackageAddress::new_or_p
     13, 144, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 190, 133,
     161, 125, 72, 188, 166, 49, 140, 99, 24, 198,
 ]);
-pub const INTENT_HASH_STORE_BLUEPRINT: &str = "IntentHashStore";
+pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
 
 //=========================================================================
 // SYSTEM SINGLETON COMPONENTS - NATIVE
@@ -221,7 +221,7 @@ pub const FAUCET: ComponentAddress = ComponentAddress::new_or_panic([
 pub use FAUCET as FAUCET_COMPONENT;
 
 /// The intent hash store component
-pub const INTENT_HASH_STORE: ComponentAddress = ComponentAddress::new_or_panic([
+pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic([
     130, 204, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 232, 245,
     174, 143, 74, 150, 166, 49, 140, 99, 24, 198,
 ]);
@@ -380,7 +380,7 @@ mod tests {
             "component_rdx1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxgenssx",
         );
         check_address(
-            INTENT_HASH_STORE.as_ref(),
+            TRANSACTION_TRACKER.as_ref(),
             EntityType::GlobalTransactionTracker,
             "transactiontracker_rdx1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxxtxtrak",
         );

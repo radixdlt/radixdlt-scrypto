@@ -1,4 +1,4 @@
-use radix_engine::blueprints::intent_hash_store::IntentHashStoreSubstate;
+use radix_engine::blueprints::transaction_tracker::TransactionTrackerSubstate;
 use radix_engine::types::*;
 use sbor::rust::prelude::*;
 
@@ -519,7 +519,7 @@ pub enum TypedMultiResourcePoolFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedTransactionTrackerFieldValue {
-    TransactionTracker(IntentHashStoreSubstate),
+    TransactionTracker(TransactionTrackerSubstate),
 }
 
 #[derive(Debug, Clone)]

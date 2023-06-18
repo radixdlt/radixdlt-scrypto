@@ -16,31 +16,31 @@ use radix_engine_interface::schema::{
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use resources_tracker_macro::trace_resources;
 
-pub const INTENT_HASH_STORE_BLUEPRINT: &str = "IntentHashStore";
+pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
 
-pub const INTENT_HASH_STORE_CREATE_IDENT: &str = "create";
+pub const TRANSACTION_TRACKER_CREATE_IDENT: &str = "create";
 
-pub const INTENT_HASH_STORE_CREATE_EXPORT_NAME: &str = "create";
+pub const TRANSACTION_TRACKER_CREATE_EXPORT_NAME: &str = "create";
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct IntentHashStoreCreateInput {
+pub struct TransactionTrackerCreateInput {
     pub address_reservation: GlobalAddressReservation,
 }
 
 #[derive(Debug, Clone, ManifestSbor)]
-pub struct IntentHashStoreCreateManifestInput {
+pub struct TransactionTrackerCreateManifestInput {
     pub address_reservation: ManifestAddressReservation,
 }
 
-pub type IntentHashStoreCreateOutput = ComponentAddress;
+pub type TransactionTrackerCreateOutput = ComponentAddress;
 
-pub struct IntentHashStoreNativePackage;
+pub struct TransactionTrackerNativePackage;
 
 pub const PARTITION_RANGE_START: u8 = MAIN_BASE_PARTITION.0 + 1;
 pub const PARTITION_RANGE_END: u8 = u8::MAX;
 pub const EPOCHS_PER_PARTITION: u64 = 100;
 
-impl IntentHashStoreNativePackage {
+impl TransactionTrackerNativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<Hash>();
@@ -59,27 +59,27 @@ impl IntentHashStoreNativePackage {
 
         let mut fields = Vec::new();
         fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<IntentHashStoreSubstate>(),
+            aggregator.add_child_type_and_descendents::<TransactionTrackerSubstate>(),
         ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            INTENT_HASH_STORE_CREATE_IDENT.to_string(),
+            TRANSACTION_TRACKER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
                 input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<IntentHashStoreCreateInput>(),
+                    aggregator.add_child_type_and_descendents::<TransactionTrackerCreateInput>(),
                 ),
                 output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<IntentHashStoreCreateOutput>(),
+                    aggregator.add_child_type_and_descendents::<TransactionTrackerCreateOutput>(),
                 ),
-                export: INTENT_HASH_STORE_CREATE_EXPORT_NAME.to_string(),
+                export: TRANSACTION_TRACKER_CREATE_EXPORT_NAME.to_string(),
             },
         );
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
-            INTENT_HASH_STORE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
+            TRANSACTION_TRACKER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 outer_blueprint: None,
                 dependencies: btreeset!(
                 ),
@@ -123,14 +123,14 @@ impl IntentHashStoreNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         match export_name {
-            INTENT_HASH_STORE_CREATE_EXPORT_NAME => {
+            TRANSACTION_TRACKER_CREATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: IntentHashStoreCreateInput = input.as_typed().map_err(|e| {
+                let input: TransactionTrackerCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IntentHashStoreBlueprint::create(input.address_reservation, api)?;
+                let rtn = TransactionTrackerBlueprint::create(input.address_reservation, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -150,7 +150,7 @@ pub enum IntentHashStatus {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct IntentHashStoreSubstate {
+pub struct TransactionTrackerSubstate {
     pub start_epoch: u64,
     pub start_partition: u8,
 
@@ -160,7 +160,7 @@ pub struct IntentHashStoreSubstate {
     pub epochs_per_partition: u64,
 }
 
-impl IntentHashStoreSubstate {
+impl TransactionTrackerSubstate {
     pub fn partition_of(&self, epoch: u64) -> Option<u8> {
         // Check if epoch is within range
         let num_partitions = self.partition_range_end - self.partition_range_start + 1;
@@ -195,9 +195,9 @@ impl IntentHashStoreSubstate {
     }
 }
 
-pub struct IntentHashStoreBlueprint;
+pub struct TransactionTrackerBlueprint;
 
-impl IntentHashStoreBlueprint {
+impl TransactionTrackerBlueprint {
     pub fn create<Y>(
         address_reservation: GlobalAddressReservation,
         api: &mut Y,
@@ -207,8 +207,8 @@ impl IntentHashStoreBlueprint {
     {
         let current_epoch = Runtime::current_epoch(api)?;
         let intent_store = api.new_simple_object(
-            INTENT_HASH_STORE_BLUEPRINT,
-            vec![scrypto_encode(&IntentHashStoreSubstate {
+            TRANSACTION_TRACKER_BLUEPRINT,
+            vec![scrypto_encode(&TransactionTrackerSubstate {
                 start_epoch: current_epoch.number(),
                 start_partition: PARTITION_RANGE_START,
                 partition_range_start: PARTITION_RANGE_START,
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_partition_calculation() {
-        let mut store = IntentHashStoreSubstate {
+        let mut store = TransactionTrackerSubstate {
             start_epoch: 256,
             start_partition: 70,
             partition_range_start: PARTITION_RANGE_START,
