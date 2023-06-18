@@ -744,13 +744,13 @@ where
             )
             .unwrap()
             .0;
-        let mut substate: TransactionTrackerSubstate =
+        let mut transaction_tracker: TransactionTrackerSubstate =
             track.read_substate(handle).0.as_typed().unwrap();
 
         // Update the status of the intent hash
         if let Some(expiry_epoch) = expiry_epoch {
             if let Some(partition_number) =
-                substate.partition_for_expiry_epoch(expiry_epoch.number())
+                transaction_tracker.partition_for_expiry_epoch(expiry_epoch.number())
             {
                 let handle = track
                     .acquire_lock_virtualize(
@@ -783,18 +783,24 @@ where
             }
         }
 
-        // TODO: how do we align this with TransactionValidator?
-        if substate
-            .partition_for_expiry_epoch(next_epoch.after(DEFAULT_MAX_EPOCH_RANGE).number())
-            .is_none()
+        // Check if all intent hashes in the first epoch have expired, based on the `next_epoch`.
+        // In this particular implementation, because the transaction tracker coverage is greater than
+        // the max epoch range in transaction header, we must check epoch range first to
+        // ensure we don't store intent hash too far into the future.
+
+        if next_epoch.number()
+            >= transaction_tracker.start_epoch + transaction_tracker.epochs_per_partition
         {
-            let discarded_partition = substate.advance();
+            let discarded_partition = transaction_tracker.advance();
             track.delete_partition(
                 TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(discarded_partition),
             );
         }
-        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.update_substate(
+            handle,
+            IndexedScryptoValue::from_typed(&transaction_tracker),
+        );
         track.release_lock(handle);
     }
 

@@ -132,7 +132,7 @@ pub trait SubstateStore {
         substate_value: IndexedScryptoValue,
     ) -> StoreAccessInfo;
 
-    /// Note: unstable interface, for intent hash intent store only
+    /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
 }
 
