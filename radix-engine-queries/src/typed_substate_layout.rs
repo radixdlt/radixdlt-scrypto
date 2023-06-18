@@ -697,7 +697,7 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::Validator(match offset {
                 ValidatorField::Validator => {
                     TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
-                },
+                }
                 ValidatorField::AcceptsDelegatedStakeFlag => {
                     TypedValidatorFieldValue::AcceptsDelegatedStakeFlag(scrypto_decode(data)?)
                 }

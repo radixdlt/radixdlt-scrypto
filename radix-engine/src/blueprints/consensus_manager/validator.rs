@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::*;
-use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
+use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
@@ -165,8 +165,8 @@ impl ValidatorBlueprint {
     }
 
     pub fn stake_as_owner<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         Self::stake_internal(xrd_bucket, api)
     }
@@ -184,15 +184,19 @@ impl ValidatorBlueprint {
         api.field_lock_release(handle)?;
         if !substate.accepts_delegated_stake {
             // TODO: Should this be an Option returned instead similar to Account?
-            return Err(RuntimeError::ApplicationError(ApplicationError::ValidatorError(ValidatorError::ValidatorIsNotAcceptingDelegatedStake)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(
+                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
+                ),
+            ));
         }
 
         Self::stake_internal(xrd_bucket, api)
     }
 
     fn stake_internal<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let xrd_bucket_amount = xrd_bucket.amount(api)?;
 
@@ -1005,10 +1009,6 @@ struct SecurifiedValidator;
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = None;
-
-    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
-        btreemap!()
-    }
 }
 
 pub(crate) struct ValidatorCreator;

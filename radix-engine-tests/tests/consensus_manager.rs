@@ -476,7 +476,9 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::ApplicationError(ApplicationError::ValidatorError(ValidatorError::ValidatorIsNotAcceptingDelegatedStake))
+                RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake
+                ))
             )
         });
     }
