@@ -959,7 +959,7 @@ impl TestRunner {
                     blobs: BlobsV1 {
                         blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
                     },
-                    attachments: AttachmentsV1 {},
+                    attachments: AttachmentsV1::default(),
                 },
                 signer_public_keys,
                 flags,
