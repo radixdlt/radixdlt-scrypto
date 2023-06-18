@@ -53,10 +53,25 @@ impl Royalty {
         Self(ModuleHandle::Own(royalty))
     }
 
-    pub fn set_royalty(&self, method: String, amount: RoyaltyAmount) {
+    pub fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-            &ComponentSetRoyaltyInput { method, amount },
+            &ComponentSetRoyaltyInput {
+                method: method.to_string(),
+                amount: Some(amount),
+                freeze: false,
+            },
+        );
+    }
+
+    pub fn freeze_royalty_amount<M: ToString>(&self, method: M) {
+        self.call_ignore_rtn(
+            COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+            &ComponentSetRoyaltyInput {
+                method: method.to_string(),
+                amount: None,
+                freeze: true,
+            },
         );
     }
 

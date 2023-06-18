@@ -675,7 +675,8 @@ impl ManifestBuilder {
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&ComponentSetRoyaltyInput {
                 method: method.to_string(),
-                amount,
+                amount: Some(amount),
+                freeze: false,
             }),
         })
         .0
