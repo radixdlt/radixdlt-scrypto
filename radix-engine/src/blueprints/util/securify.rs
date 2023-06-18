@@ -8,7 +8,7 @@ use radix_engine_interface::blueprints::resource::*;
 
 pub enum SecurifiedRoleEntry {
     Owner { updaters: RoleList },
-    Normal(RoleEntry),
+    Normal(AccessRule),
 }
 
 pub trait SecurifiedAccessRules {
@@ -17,33 +17,46 @@ pub trait SecurifiedAccessRules {
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry>;
 
-    fn create_roles(owner_rule: RoleEntry, presecurify: bool) -> BTreeMap<ObjectModuleId, Roles> {
+    fn create_roles(owner_rule: AccessRule, presecurify: bool) -> BTreeMap<ObjectModuleId, Roles> {
         let role_entries = Self::role_definitions();
 
         let mut roles = Roles::new();
         for (role, entry) in role_entries {
-            let role_entry = match entry {
+            match entry {
                 SecurifiedRoleEntry::Owner { updaters } => {
-                    RoleEntry::new(owner_rule.rule.clone(), updaters)
+                    if !updaters.list.is_empty() {
+                        let role_entry = RoleEntry::new(owner_rule.clone(), updaters);
+                        roles.define_mutable_role(role, role_entry);
+                    } else {
+                        roles.define_immutable_role(role, owner_rule.clone())
+                    }
                 }
-                SecurifiedRoleEntry::Normal(entry) => entry,
+                SecurifiedRoleEntry::Normal(rule) => {
+                    roles.define_immutable_role(role, rule.clone())
+                }
             };
-            roles.define_mutable_role(role, role_entry);
         }
 
-        roles.define_mutable_role(RoleKey::new(OWNER_ROLE), owner_rule.clone());
-        if let Some(securify_role) = Self::SECURIFY_ROLE {
-            let securify_rule = if presecurify {
-                owner_rule.clone()
-            } else {
-                RoleEntry::disabled()
-            };
+        if presecurify {
+            let entry = RoleEntry::new(owner_rule.clone(), [SELF_ROLE]);
+            roles.define_mutable_role(RoleKey::new(OWNER_ROLE), entry);
+        } else {
+            roles.define_immutable_role(RoleKey::new(OWNER_ROLE), owner_rule.clone());
+        }
 
-            roles.define_mutable_role(RoleKey::new(securify_role), securify_rule);
+        if let Some(securify_role) = Self::SECURIFY_ROLE {
+            if presecurify {
+                roles.define_mutable_role(
+                    RoleKey::new(securify_role),
+                    RoleEntry::new(owner_rule.clone(), [SELF_ROLE]),
+                );
+            } else {
+                roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
+            };
         }
 
         let mut metadata_roles = Roles::new();
-        metadata_roles.define_mutable_role(METADATA_SETTER_ROLE, owner_rule);
+        metadata_roles.define_immutable_role(METADATA_SETTER_ROLE, owner_rule);
 
         btreemap!(
             ObjectModuleId::Main => roles,
@@ -55,8 +68,9 @@ pub trait SecurifiedAccessRules {
         owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let owner_role_entry = owner_rule.to_role_entry(OWNER_ROLE);
-        let roles = Self::create_roles(owner_role_entry, false);
+        // FIXME: Remove to_role_entry mapping
+        let owner_rule = owner_rule.to_role_entry(OWNER_ROLE).rule;
+        let roles = Self::create_roles(owner_rule, false);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         Ok(access_rules)
     }
@@ -74,8 +88,7 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let (bucket, owner_rule) = Self::create_securified_badge(api)?;
-        let owner_entry = RoleEntry::immutable(owner_rule);
-        let roles = Self::create_roles(owner_entry, false);
+        let roles = Self::create_roles(owner_rule, false);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         Ok((access_rules, bucket))
     }
@@ -86,7 +99,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let roles = Self::create_roles(RoleEntry::new(rule!(require(owner_id)), [SELF_ROLE]), true);
+        let roles = Self::create_roles(rule!(require(owner_id)), true);
 
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         Ok(access_rules)

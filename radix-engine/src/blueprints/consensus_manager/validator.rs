@@ -1001,8 +1001,8 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
         btreemap!(
-            RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
-            RoleKey::new(VALIDATOR_APPLY_REWARD_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
+            RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(rule!(require(global_caller(CONSENSUS_MANAGER)))),
+            RoleKey::new(VALIDATOR_APPLY_REWARD_AUTHORITY) => SecurifiedRoleEntry::Normal(rule!(require(global_caller(CONSENSUS_MANAGER)))),
             RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { updaters: [SELF_ROLE].into() },
         )
     }
