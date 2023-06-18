@@ -1007,10 +1007,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const SECURIFY_ROLE: Option<&'static str> = None;
 
     fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
-        btreemap!(
-            RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
-            RoleKey::new(VALIDATOR_APPLY_REWARD_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
-        )
+        btreemap!()
     }
 }
 

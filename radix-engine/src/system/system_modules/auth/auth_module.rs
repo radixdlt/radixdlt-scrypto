@@ -29,6 +29,7 @@ pub enum AuthError {
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
+    InvalidOuterObjectMapping,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -64,11 +65,12 @@ pub enum AuthorityListAuthorizationResult {
 }
 
 pub enum ResolvedMethodPermission {
-    Auth {
+    RoleList {
         access_rules_of: NodeId,
         module_id: ObjectModuleId,
         role_list: RoleList,
     },
+    AccessRule(AccessRule),
     AllowAll,
 }
 
@@ -92,35 +94,58 @@ impl AuthModule {
         let resolved_method_permission =
             Self::resolve_method_permission(callee, &method_key, args, api)?;
 
-        // Step 2: Early exit if possible
-        let (access_rules_of, role_list, module_id) = match resolved_method_permission {
+        // Step 2: Check permission
+        match resolved_method_permission {
             ResolvedMethodPermission::AllowAll => return Ok(()),
-            ResolvedMethodPermission::Auth {
+            ResolvedMethodPermission::AccessRule(rule) => {
+                let result = Authorization::check_authorization_against_access_rule(
+                    acting_location,
+                    auth_zone_id.clone(),
+                    &rule,
+                    api
+                )?;
+
+                match result {
+                    AuthorizationCheckResult::Authorized => Ok(()),
+                    AuthorizationCheckResult::Failed(access_rule_stack) => {
+                        Err(RuntimeError::SystemModuleError(
+                            SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(
+                                Unauthorized {
+                                    failed_access_rules: FailedAccessRules::AccessRule(
+                                        access_rule_stack,
+                                    ),
+                                    fn_identifier: callee.fn_identifier(),
+                                },
+                            ))),
+                        ))
+                    }
+                }
+            }
+            ResolvedMethodPermission::RoleList {
                 access_rules_of,
                 role_list,
                 module_id,
-            } => (access_rules_of, role_list, module_id),
-        };
+            } => {
+                let result = Authorization::check_authorization_against_role_list(
+                    acting_location,
+                    *auth_zone_id,
+                    &access_rules_of,
+                    module_id,
+                    &role_list,
+                    api,
+                )?;
 
-        // Step 3: Check role rules
-        let result = Authorization::check_authorization_against_role_list(
-            acting_location,
-            *auth_zone_id,
-            &access_rules_of,
-            module_id,
-            &role_list,
-            api,
-        )?;
-
-        match result {
-            AuthorityListAuthorizationResult::Authorized => Ok(()),
-            AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
-                Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
-                        failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
-                        fn_identifier: callee.fn_identifier(),
-                    }))),
-                ))
+                match result {
+                    AuthorityListAuthorizationResult::Authorized => Ok(()),
+                    AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
+                        Err(RuntimeError::SystemModuleError(
+                            SystemModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
+                                failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
+                                fn_identifier: callee.fn_identifier(),
+                            }))),
+                        ))
+                    }
+                }
             }
         }
     }
@@ -179,7 +204,19 @@ impl AuthModule {
 
         match method_permissions.get(method_key) {
             Some(MethodPermission::Public) => Ok(ResolvedMethodPermission::AllowAll),
-            Some(MethodPermission::Protected(role_list)) => Ok(ResolvedMethodPermission::Auth {
+            Some(MethodPermission::OuterObjectOnly) => {
+                match callee.module_object_info.blueprint_info {
+                    ObjectBlueprintInfo::Inner { outer_object } => {
+                        Ok(ResolvedMethodPermission::AccessRule(rule!(require(global_caller(outer_object)))))
+                    }
+                    ObjectBlueprintInfo::Outer { .. } => {
+                        Err(RuntimeError::SystemModuleError(
+                            SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                        ))
+                    }
+                }
+            }
+            Some(MethodPermission::Protected(role_list)) => Ok(ResolvedMethodPermission::RoleList {
                 access_rules_of,
                 role_list: role_list.clone(),
                 module_id: callee.module_id,

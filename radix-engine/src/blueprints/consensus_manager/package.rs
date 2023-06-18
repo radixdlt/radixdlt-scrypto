@@ -23,9 +23,6 @@ use super::*;
 pub const VALIDATOR_ROLE: &str = "validator";
 pub const START_ROLE: &str = "start";
 
-pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
-pub const VALIDATOR_APPLY_REWARD_AUTHORITY: &str = "apply_reward";
-
 pub struct ConsensusManagerNativePackage;
 
 impl ConsensusManagerNativePackage {
@@ -448,8 +445,8 @@ impl ConsensusManagerNativePackage {
                         VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
                         VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
                         VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
-                        VALIDATOR_APPLY_EMISSION_IDENT => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
-                        VALIDATOR_APPLY_REWARD_IDENT => [VALIDATOR_APPLY_REWARD_AUTHORITY];
+                        VALIDATOR_APPLY_EMISSION_IDENT => MethodPermission::OuterObjectOnly;
+                        VALIDATOR_APPLY_REWARD_IDENT => MethodPermission::OuterObjectOnly;
                     }),
                 },
             }
