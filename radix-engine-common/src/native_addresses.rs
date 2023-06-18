@@ -186,7 +186,7 @@ pub const FAUCET_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
 /// The name of the faucet blueprint under the `FAUCET_PACKAGE`.
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
-pub const INTENT_HASH_STORE_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+pub const TRANSACTION_TRACKER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     13, 81, 121, 169, 121, 103, 120, 45, 28, 92, 121, 183, 135, 244, 44, 167, 250, 113, 3, 44, 88,
     150, 33, 255, 49, 25, 98, 231, 11, 110,
 ]);
@@ -356,7 +356,7 @@ mod tests {
             "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
         );
         check_address(
-            INTENT_HASH_STORE_PACKAGE.as_ref(),
+            TRANSACTION_TRACKER_PACKAGE.as_ref(),
             EntityType::GlobalPackage,
             "package_rdx1p4ghn2tevauz68zu0xmc0apv5la8zqevtztzrle3r93wwzmwak7rzg",
         );

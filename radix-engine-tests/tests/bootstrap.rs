@@ -69,7 +69,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     assert!(system_bootstrap_receipt
         .expect_commit_success()
         .new_package_addresses()
-        .contains(&INTENT_HASH_STORE_PACKAGE));
+        .contains(&TRANSACTION_TRACKER_PACKAGE));
 
     assert!(system_bootstrap_receipt
         .expect_commit_success()

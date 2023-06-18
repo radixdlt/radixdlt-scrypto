@@ -914,7 +914,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(INTENT_HASH_STORE_PACKAGE),
+            GlobalAddress::from(TRANSACTION_TRACKER_PACKAGE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE.into(),
@@ -932,11 +932,11 @@ pub fn create_system_bootstrap_transaction(
     // Intent Hash Store component
     {
         pre_allocated_addresses.push((
-            BlueprintId::new(&INTENT_HASH_STORE_PACKAGE, INTENT_HASH_STORE_BLUEPRINT),
+            BlueprintId::new(&TRANSACTION_TRACKER_PACKAGE, INTENT_HASH_STORE_BLUEPRINT),
             GlobalAddress::from(INTENT_HASH_STORE),
         ));
         instructions.push(InstructionV1::CallFunction {
-            package_address: INTENT_HASH_STORE_PACKAGE.into(),
+            package_address: TRANSACTION_TRACKER_PACKAGE.into(),
             blueprint_name: INTENT_HASH_STORE_BLUEPRINT.to_string(),
             function_name: INTENT_HASH_STORE_CREATE_IDENT.to_string(),
             args: manifest_args!(id_allocator.new_address_reservation_id()),
