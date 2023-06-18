@@ -61,6 +61,15 @@ pub enum AuthorityListAuthorizationResult {
     Failed(Vec<(RoleKey, Vec<AccessRule>)>),
 }
 
+pub enum ResolvedMethodPermission {
+    Auth {
+        access_rules_of: NodeId,
+        module_id: ObjectModuleId,
+        role_list: RoleList,
+    },
+    AllowAll,
+}
+
 impl AuthModule {
     fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_zone_id: &NodeId,
@@ -90,88 +99,41 @@ impl AuthModule {
         Ok(())
     }
 
+
     fn check_authorization_against_access_rules<
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        callee: &MethodActor, // TODO: Cleanup
+        callee: &MethodActor,
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         method_key: MethodKey,
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let (access_rules_of, permission, module) = match callee.module_id {
-            ObjectModuleId::AccessRules => {
-                let (permission, module) = AccessRulesNativePackage::authorization(
-                    &callee.node_id,
-                    method_key.ident.as_str(),
-                    args,
-                    api,
-                )?;
-                (callee.node_id, permission, module)
-            }
-            _ => {
-                let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
-                    callee
-                        .module_object_info
-                        .blueprint_id
-                        .package_address
-                        .as_node_id(),
-                    &BlueprintVersionKey::new_default(
-                        callee
-                            .module_object_info
-                            .blueprint_id
-                            .blueprint_name
-                            .as_str(),
-                    ),
-                    api.api,
-                )?.method_auth;
-
-                let (access_rules_of, method_permissions) = match auth_template {
-                    MethodAuthTemplate::Static(method_roles) => {
-                        // Non-globalized objects do not have access rules objet yet
-                        if !callee.node_object_info.global {
-                            return Ok(());
-                        }
-
-                        (callee.node_id, method_roles)
-                    }
-                    MethodAuthTemplate::StaticUseOuterAuth(method_roles) => {
-                        let node_id = callee.node_id;
-                        let info = api.get_object_info(&node_id)?;
-                        let access_rules_of = info.outer_object.unwrap();
-                        (access_rules_of.into_node_id(), method_roles)
-                    }
-                    MethodAuthTemplate::NoAuth => return Ok(()),
-                };
-
-                if let Some(permission) = method_permissions.get(&method_key) {
-                    (access_rules_of, permission.clone(), callee.module_id)
-                } else {
-                    return Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::AuthError(AuthError::NoMethodMapping(
-                            callee.fn_identifier(),
-                        )),
-                    ));
-                }
-            }
-        };
-
-        let role_list = match permission {
-            MethodPermission::Public => return Ok(()),
-            MethodPermission::Protected(list) => list,
-        };
-
-        Self::check_authorization_against_role_list(
-            callee.fn_identifier(),
-            auth_zone_id,
-            acting_location,
-            &access_rules_of,
-            module,
-            &role_list,
+        let resolved_method_permission = Self::resolve_method_permission(
+            callee,
+            &method_key,
+            args,
             api,
         )?;
+
+        match resolved_method_permission {
+            ResolvedMethodPermission::AllowAll => return Ok(()),
+            ResolvedMethodPermission::Auth {
+                access_rules_of, role_list, module_id
+            } => {
+                Self::check_authorization_against_role_list(
+                    callee.fn_identifier(),
+                    auth_zone_id,
+                    acting_location,
+                    &access_rules_of,
+                    module_id,
+                    &role_list,
+                    api,
+                )?;
+            }
+        }
 
         Ok(())
     }
@@ -204,6 +166,79 @@ impl AuthModule {
                         failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
                         fn_identifier,
                     }))),
+                ))
+            }
+        }
+    }
+
+    fn resolve_method_permission<
+        Y: KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
+    >(
+        callee: &MethodActor,
+        method_key: &MethodKey,
+        args: &IndexedScryptoValue,
+        api: &mut SystemService<Y, V>,
+    ) -> Result<ResolvedMethodPermission, RuntimeError>{
+        if let ObjectModuleId::AccessRules = callee.module_id {
+            return AccessRulesNativePackage::authorization(
+                &callee.node_id,
+                method_key.ident.as_str(),
+                args,
+                api,
+            );
+        }
+
+        let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
+            callee
+                .module_object_info
+                .blueprint_id
+                .package_address
+                .as_node_id(),
+            &BlueprintVersionKey::new_default(
+                callee
+                    .module_object_info
+                    .blueprint_id
+                    .blueprint_name
+                    .as_str(),
+            ),
+            api.api,
+        )?.method_auth;
+
+        let (access_rules_of, method_permissions) = match auth_template {
+            MethodAuthTemplate::Static(method_roles) => {
+                // Non-globalized objects do not have access rules objet yet
+                if !callee.node_object_info.global {
+                    return Ok(ResolvedMethodPermission::AllowAll);
+                }
+
+                (callee.node_id, method_roles)
+            }
+            MethodAuthTemplate::StaticUseOuterAuth(method_roles) => {
+                let node_id = callee.node_id;
+                let info = api.get_object_info(&node_id)?;
+                let access_rules_of = info.outer_object.unwrap();
+                (access_rules_of.into_node_id(), method_roles)
+            }
+            MethodAuthTemplate::NoAuth => return Ok(ResolvedMethodPermission::AllowAll),
+        };
+
+        match method_permissions.get(method_key) {
+            Some(MethodPermission::Public) => {
+                Ok(ResolvedMethodPermission::AllowAll)
+            }
+            Some(MethodPermission::Protected(role_list)) => {
+                Ok(ResolvedMethodPermission::Auth {
+                    access_rules_of,
+                    role_list: role_list.clone(),
+                    module_id: callee.module_id,
+                })
+            }
+            None => {
+                Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::NoMethodMapping(
+                        callee.fn_identifier(),
+                    )),
                 ))
             }
         }
