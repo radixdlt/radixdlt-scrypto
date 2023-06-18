@@ -88,13 +88,13 @@ pub struct PackageDefinition {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintType {
-    Normal { feature_set: BTreeSet<String> },
+    Outer { feature_set: BTreeSet<String> },
     Inner { outer_blueprint: String },
 }
 
 impl Default for BlueprintType {
     fn default() -> Self {
-        BlueprintType::Normal {
+        BlueprintType::Outer {
             feature_set: BTreeSet::default(),
         }
     }

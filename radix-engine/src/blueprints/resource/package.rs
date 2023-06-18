@@ -328,7 +328,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::Normal {
+                blueprint_type: BlueprintType::Outer {
                     feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                         FREEZE_VAULT_FEATURE.to_string(),
@@ -642,7 +642,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::Normal {
+                blueprint_type: BlueprintType::Outer {
                     feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                         FREEZE_VAULT_FEATURE.to_string(),

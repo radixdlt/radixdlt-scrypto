@@ -158,7 +158,7 @@ impl Publish {
                     .collect();
 
                 let (feature_set, outer_blueprint) = match s.blueprint_type {
-                    BlueprintType::Normal { feature_set } => (feature_set, None),
+                    BlueprintType::Outer { feature_set } => (feature_set, None),
                     BlueprintType::Inner { outer_blueprint } => {
                         (BTreeSet::new(), Some(outer_blueprint))
                     }

@@ -248,17 +248,6 @@ where
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
     {
-        /*
-        let blueprint_interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
-        )?;
-
-        let parent_blueprint = blueprint_interface.outer_blueprint.clone();
-         */
-
-        // Validate features
-
         // Validate instance schema
         {
             if let Some(instance_schema) = instance_schema {
@@ -659,8 +648,6 @@ where
                         },
                         outer_object_info.get_features(),
                     )
-
-                    //(Some(context.outer_object), outer_object_info.features)
                 }
                 _ => {
                     return Err(RuntimeError::SystemError(
@@ -670,6 +657,8 @@ where
             }
         } else {
             let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+
+            // Validate features
             for feature in &features {
                 if !blueprint_interface.feature_set.contains(feature) {
                     return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
@@ -677,7 +666,7 @@ where
                     )));
                 }
             }
-            //(None, features)
+
             (
                 ObjectBlueprintInfo::Outer {
                     features: features.clone(),

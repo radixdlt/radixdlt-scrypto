@@ -57,6 +57,8 @@ pub enum PackageError {
     WasmUnsupported(String),
     InvalidGenericId(u8),
 
+    InvalidAuthSetup,
+
     InvalidMetadataKey(String),
 }
 
@@ -745,7 +747,7 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let mut blueprint_auth_templates = BTreeMap::new();
+        let mut auth_configs = BTreeMap::new();
         let mut schemas = BTreeMap::new();
         let mut blueprints = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
@@ -759,7 +761,21 @@ impl PackageNativePackage {
 
         {
             for (blueprint, definition_init) in setup.blueprints {
-                blueprint_auth_templates.insert(blueprint.clone(), definition_init.auth_config);
+                match (
+                    &definition_init.blueprint_type,
+                    &definition_init.auth_config.method_auth,
+                ) {
+                    (_, MethodAuthTemplate::Static(..)) => {}
+                    (_, MethodAuthTemplate::NoAuth) => {}
+                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterAuth(..)) => {}
+                    _ => {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::InvalidAuthSetup),
+                        ));
+                    }
+                }
+
+                auth_configs.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
                 let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
@@ -813,7 +829,7 @@ impl PackageNativePackage {
                 }
 
                 let (feature_set, outer_blueprint) = match definition_init.blueprint_type {
-                    BlueprintType::Normal { feature_set } => (feature_set, None),
+                    BlueprintType::Outer { feature_set } => (feature_set, None),
                     BlueprintType::Inner { outer_blueprint } => {
                         (BTreeSet::new(), Some(outer_blueprint))
                     }
@@ -865,7 +881,7 @@ impl PackageNativePackage {
             code,
             code_hash,
             btreemap!(),
-            blueprint_auth_templates,
+            auth_configs,
             metadata,
             None,
             api,
@@ -942,7 +958,7 @@ impl PackageNativePackage {
         } in setup.blueprints.values()
         {
             match blueprint_type {
-                BlueprintType::Normal { feature_set } => {
+                BlueprintType::Outer { feature_set } => {
                     if !feature_set.is_empty() {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::WasmUnsupported(
@@ -1023,6 +1039,19 @@ impl PackageNativePackage {
         // Build node init
         {
             for (blueprint, definition_init) in setup.blueprints {
+                match (
+                    &definition_init.blueprint_type,
+                    &definition_init.auth_config.method_auth,
+                ) {
+                    (_, MethodAuthTemplate::Static(..)) => {}
+                    (_, MethodAuthTemplate::NoAuth) => {}
+                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterAuth(..)) => {}
+                    _ => {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::InvalidAuthSetup),
+                        ));
+                    }
+                }
                 auth_templates.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
@@ -1078,7 +1107,7 @@ impl PackageNativePackage {
                 }
 
                 let (feature_set, outer_blueprint) = match definition_init.blueprint_type {
-                    BlueprintType::Normal { feature_set } => (feature_set, None),
+                    BlueprintType::Outer { feature_set } => (feature_set, None),
                     BlueprintType::Inner { outer_blueprint } => {
                         (BTreeSet::new(), Some(outer_blueprint))
                     }
