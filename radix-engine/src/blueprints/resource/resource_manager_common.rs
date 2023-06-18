@@ -208,6 +208,9 @@ pub fn features(
     if access_rules.contains_key(&ResourceMethodAuthKey::Mint) {
         features.push(MINT_FEATURE);
     }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Burn) {
+        features.push(BURN_FEATURE);
+    }
 
     features
 }

@@ -11,6 +11,7 @@ pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
 pub const VAULT_FREEZE_FEATURE: &str = "vault_freeze";
 pub const VAULT_RECALL_FEATURE: &str = "vault_recall";
 pub const MINT_FEATURE: &str = "mint";
+pub const BURN_FEATURE: &str = "burn";
 
 // Meta-roles
 pub const RESOURCE_PACKAGE_ROLE: &str = "resource_package";

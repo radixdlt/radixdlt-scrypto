@@ -13,7 +13,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
 use radix_engine_interface::*;
-use sbor::rust::vec::Vec;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
@@ -29,6 +28,7 @@ pub enum FungibleResourceManagerError {
     InvalidDivisibility(u8),
     DropNonEmptyBucket,
     NotMintable,
+    NotBurnable,
 }
 
 pub type FungibleResourceManagerDivisibilitySubstate = u8;
@@ -232,6 +232,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_burnable(api)?;
+
         // Drop other bucket
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -357,6 +359,19 @@ impl FungibleResourceManagerBlueprint {
         if !api.actor_is_feature_enabled(MINT_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::NotMintable),
+            ));
+        }
+
+        return Ok(());
+    }
+
+    fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(BURN_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::NotBurnable),
             ));
         }
 

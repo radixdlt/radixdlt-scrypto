@@ -24,6 +24,7 @@ pub enum NonFungibleResourceManagerError {
     NonFungibleLocalIdProvidedForUUIDType,
     DropNonEmptyBucket,
     NotMintable,
+    NotBurnable,
 }
 
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
@@ -285,13 +286,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
-        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-            features.push(VAULT_FREEZE_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -676,6 +671,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_burnable(api)?;
+
         // Drop the bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -799,6 +796,19 @@ impl NonFungibleResourceManagerBlueprint {
         if !api.actor_is_feature_enabled(MINT_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NotMintable),
+            ));
+        }
+
+        return Ok(());
+    }
+
+    fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(BURN_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NotBurnable),
             ));
         }
 
