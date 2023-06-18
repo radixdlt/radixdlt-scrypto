@@ -1,6 +1,6 @@
 use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
-use crate::blueprints::resource::{AuthZone, VaultUtil};
+use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
@@ -79,7 +79,6 @@ impl AuthModule {
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let node_id = callee.node_id;
         let ident = callee.ident.as_str();
         let acting_location = if callee.module_object_info.global {
             ActingLocation::AtBarrier
@@ -170,7 +169,9 @@ impl AuthModule {
             MethodAuthTemplate::StaticUseOuterAuth(method_roles) => {
                 let node_id = callee.node_id;
                 let info = api.get_object_info(&node_id)?;
-                let access_rules_of = info.outer_object.unwrap();
+
+                // FIXME: Add verification that StaticUseOuterAuth should only be used with inner blueprints
+                let access_rules_of = info.get_outer_object();
                 (access_rules_of.into_node_id(), method_roles)
             }
             MethodAuthTemplate::NoAuth => return Ok(ResolvedMethodPermission::AllowAll),
@@ -322,9 +323,8 @@ impl AuthModule {
                     blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     version: BlueprintVersion::default(),
 
-                    outer_object: None,
+                    blueprint_info: ObjectBlueprintInfo::default(),
                     instance_schema: None,
-                    features: btreeset!(),
                 }))
             ),
         )?;

@@ -103,9 +103,10 @@ impl AuthZoneBlueprint {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                             version: BlueprintVersion::default(),
 
-                            outer_object: Some(resource_address.into()),
+                            blueprint_info: ObjectBlueprintInfo::Inner {
+                                outer_object: resource_address.into(),
+                            },
                             instance_schema: None,
-                            features: btreeset!(),
                         })),
                     ),
                 )?;
@@ -121,9 +122,10 @@ impl AuthZoneBlueprint {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                         version: BlueprintVersion::default(),
 
-                        outer_object: Some(resource_address.into()),
+                        blueprint_info: ObjectBlueprintInfo::Inner {
+                            outer_object: resource_address.into(),
+                        },
                         instance_schema: None,
-                        features: btreeset!(),
                     }))),
                 )?;
             }
@@ -163,9 +165,10 @@ impl AuthZoneBlueprint {
                     blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     version: BlueprintVersion::default(),
 
-                    outer_object: Some(resource_address.into()),
+                    blueprint_info: ObjectBlueprintInfo::Inner {
+                        outer_object: resource_address.into(),
+                    },
                     instance_schema: None,
-                    features: btreeset!(),
                 }))
             ),
         )?;
@@ -207,9 +210,10 @@ impl AuthZoneBlueprint {
                     blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
                     version: BlueprintVersion::default(),
 
-                    outer_object: Some(resource_address.into()),
+                    blueprint_info: ObjectBlueprintInfo::Inner {
+                        outer_object: resource_address.into(),
+                    },
                     instance_schema: None,
-                    features: btreeset!(),
                 }))
             ),
         )?;

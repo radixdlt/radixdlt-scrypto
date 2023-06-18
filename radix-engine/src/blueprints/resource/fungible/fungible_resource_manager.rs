@@ -4,12 +4,11 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use lazy_static::lazy_static;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
@@ -347,11 +346,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),

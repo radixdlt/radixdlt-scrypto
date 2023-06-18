@@ -242,7 +242,7 @@ where
         &mut self,
         blueprint_id: &BlueprintId,
         blueprint_interface: &BlueprintInterface,
-        features: &BTreeSet<String>,
+        features: BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
@@ -577,9 +577,8 @@ where
                 },
                 version: BlueprintVersion::default(),
 
-                outer_object: None,
+                blueprint_info: ObjectBlueprintInfo::default(),
                 instance_schema: None,
-                features: btreeset!(),
             }));
         } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
@@ -600,9 +599,8 @@ where
                 },
                 version: BlueprintVersion::default(),
 
-                outer_object: None,
+                blueprint_info: ObjectBlueprintInfo::default(),
                 instance_schema: None,
-                features: btreeset!(),
             }));
         }
 
@@ -642,7 +640,8 @@ where
         )?;
         let expected_blueprint_parent = blueprint_interface.outer_blueprint.clone();
 
-        let (outer_object, features) = if let Some(parent) = &expected_blueprint_parent {
+        let (blueprint_info, associated_features) = if let Some(parent) = &expected_blueprint_parent
+        {
             match instance_context {
                 Some(context) if context.outer_blueprint.eq(parent) => {
                     if !features.is_empty() {
@@ -654,7 +653,14 @@ where
                     let outer_object_info =
                         self.get_object_info(context.outer_object.as_node_id())?;
 
-                    (Some(context.outer_object), outer_object_info.features)
+                    (
+                        ObjectBlueprintInfo::Inner {
+                            outer_object: context.outer_object,
+                        },
+                        outer_object_info.get_features(),
+                    )
+
+                    //(Some(context.outer_object), outer_object_info.features)
                 }
                 _ => {
                     return Err(RuntimeError::SystemError(
@@ -671,13 +677,19 @@ where
                     )));
                 }
             }
-            (None, features)
+            //(None, features)
+            (
+                ObjectBlueprintInfo::Outer {
+                    features: features.clone(),
+                },
+                features,
+            )
         };
 
         let user_substates = self.validate_instance_schema_and_state(
             blueprint_id,
             &blueprint_interface,
-            &features,
+            associated_features,
             &instance_schema,
             fields,
             kv_entries,
@@ -699,9 +711,8 @@ where
                     blueprint_id: blueprint_id.clone(),
                     version: BlueprintVersion::default(),
 
-                    outer_object,
+                    blueprint_info,
                     instance_schema,
-                    features,
                 })
             ),
         );
@@ -750,7 +761,7 @@ where
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
         match actor_object_type {
             ActorObjectType::OuterObject => {
-                let address = method.module_object_info.outer_object.unwrap();
+                let address = method.module_object_info.get_outer_object();
                 let info = self.get_object_info(address.as_node_id())?;
 
                 let blueprint_interface = self.get_blueprint_default_interface(
@@ -1160,10 +1171,19 @@ where
         feature: &str,
     ) -> Result<bool, RuntimeError> {
         let object_info = self.get_object_info(node_id)?;
-        let features = if let Some(outer_object) = object_info.outer_object {
-            self.get_object_info(outer_object.as_node_id())?.features
-        } else {
-            object_info.features
+        let features = match object_info.blueprint_info {
+            ObjectBlueprintInfo::Inner { outer_object } => {
+                match self
+                    .get_object_info(outer_object.as_node_id())?
+                    .blueprint_info
+                {
+                    ObjectBlueprintInfo::Outer { features } => features,
+                    ObjectBlueprintInfo::Inner { .. } => {
+                        panic!("Fully recursive inner blueprints is not supported so this should never occur.");
+                    }
+                }
+            }
+            ObjectBlueprintInfo::Outer { features } => features,
         };
 
         Ok(features.contains(feature))
@@ -1402,9 +1422,8 @@ where
                     blueprint_id: object_module_id.static_blueprint().unwrap(),
                     version: BlueprintVersion::default(),
 
-                    outer_object: None,
+                    blueprint_info: ObjectBlueprintInfo::default(),
                     instance_schema: None,
-                    features: btreeset!(),
                 },
                 None,
             ),
@@ -1423,17 +1442,17 @@ where
                 }),
             }
         } else {
-            match &module_object_info.outer_object {
-                None => None,
-                Some(blueprint_parent) => {
+            match &module_object_info.blueprint_info {
+                ObjectBlueprintInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
                     // FIXME: is unwrap safe?
-                    let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
+                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
                     Some(InstanceContext {
-                        outer_object: blueprint_parent.clone(),
-                        outer_blueprint: parent_info.blueprint_id.blueprint_name.clone(),
+                        outer_object: outer_object.clone(),
+                        outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),
                     })
                 }
+                ObjectBlueprintInfo::Outer { .. } => None,
             }
         };
 
@@ -1490,13 +1509,17 @@ where
         // FIXME: what's the right model, trading off between flexibility and security?
 
         // If the actor is the object's outer object
-        if let Some(outer_object) = info.outer_object {
-            if let Some(instance_context) = actor.instance_context() {
-                if instance_context.outer_object.eq(&outer_object) {
-                    is_drop_allowed = true;
+        match info.blueprint_info {
+            ObjectBlueprintInfo::Inner { outer_object } => {
+                if let Some(instance_context) = actor.instance_context() {
+                    if instance_context.outer_object.eq(&outer_object) {
+                        is_drop_allowed = true;
+                    }
                 }
             }
+            ObjectBlueprintInfo::Outer { .. } => {}
         }
+
         // If the actor is a function within the same blueprint
         if let Actor::Function {
             blueprint_id: blueprint,
@@ -2163,7 +2186,7 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
-        Ok(actor.blueprint().clone())
+        Ok(actor.blueprint_id().clone())
     }
 
     #[trace_resources]
@@ -2181,13 +2204,14 @@ where
                     .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
                     .0
             }
-            ActorObjectType::OuterObject => self
-                .actor_get_info()?
-                .outer_object
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::OuterObjectDoesNotExist,
-                ))?
-                .into_node_id(),
+            ActorObjectType::OuterObject => match self.actor_get_info()?.blueprint_info {
+                ObjectBlueprintInfo::Inner { outer_object } => outer_object.into_node_id(),
+                ObjectBlueprintInfo::Outer { .. } => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::OuterObjectDoesNotExist,
+                    ));
+                }
+            },
         };
 
         self.call_method_advanced(&node_id, false, module_id, method_name, args)

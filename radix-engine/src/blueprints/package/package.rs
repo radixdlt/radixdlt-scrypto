@@ -389,9 +389,8 @@ where
             blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             version: BlueprintVersion::default(),
 
-            outer_object: None,
+            blueprint_info: ObjectBlueprintInfo::default(),
             instance_schema: None,
-            features: btreeset!(),
         })),
     );
     let metadata_partition = {

@@ -1,6 +1,5 @@
 use radix_engine::blueprints::resource::VaultError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;

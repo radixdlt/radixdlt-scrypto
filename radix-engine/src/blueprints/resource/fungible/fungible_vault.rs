@@ -6,12 +6,7 @@ use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesUpdateRoleInput, ACCESS_RULES_UPDATE_ROLE_IDENT,
-};
-use radix_engine_interface::api::{
-    ClientApi, ObjectModuleId, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -114,7 +109,7 @@ impl FungibleVaultBlueprint {
 
         // Check resource address and amount
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
         if resource_address != RADIX_TOKEN {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),

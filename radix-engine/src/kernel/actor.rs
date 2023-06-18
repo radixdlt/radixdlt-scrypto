@@ -173,7 +173,7 @@ impl Actor {
         }
     }
 
-    pub fn blueprint(&self) -> &BlueprintId {
+    pub fn blueprint_id(&self) -> &BlueprintId {
         match self {
             Actor::Method(MethodActor {
                 module_object_info:

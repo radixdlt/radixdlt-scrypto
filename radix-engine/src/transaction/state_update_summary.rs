@@ -262,10 +262,9 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .expect("Missing vault info");
 
         let resource_address = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                outer_object: Some(x),
-                ..
-            }) => ResourceAddress::new_or_panic(x.into()),
+            TypeInfoSubstate::Object(info) => {
+                ResourceAddress::new_or_panic(info.get_outer_object().into())
+            }
             _ => panic!("Unexpected"),
         };
 

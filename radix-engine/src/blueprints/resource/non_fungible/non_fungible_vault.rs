@@ -5,12 +5,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesUpdateRoleInput, ACCESS_RULES_UPDATE_ROLE_IDENT,
-};
-use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
