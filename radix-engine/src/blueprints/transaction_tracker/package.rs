@@ -155,15 +155,16 @@ pub struct TransactionTrackerSubstate {
     pub start_partition: u8,
 
     // parameters
-    pub partition_range_start: u8,
-    pub partition_range_end: u8,
+    pub partition_range_start_inclusive: u8,
+    pub partition_range_end_inclusive: u8,
     pub epochs_per_partition: u64,
 }
 
 impl TransactionTrackerSubstate {
     pub fn partition_for_expiry_epoch(&self, epoch: u64) -> Option<u8> {
         // Check if epoch is within range
-        let num_partitions = self.partition_range_end - self.partition_range_start + 1;
+        let num_partitions =
+            self.partition_range_end_inclusive - self.partition_range_start_inclusive + 1;
         let max_epoch_exclusive =
             self.start_epoch + num_partitions as u64 * self.epochs_per_partition;
         if epoch < self.start_epoch || epoch >= max_epoch_exclusive {
@@ -173,12 +174,12 @@ impl TransactionTrackerSubstate {
         // Calculate the destination partition number
         let mut partition_number =
             self.start_partition as u64 + (epoch - self.start_epoch) / self.epochs_per_partition;
-        if partition_number > self.partition_range_end as u64 {
+        if partition_number > self.partition_range_end_inclusive as u64 {
             partition_number -= num_partitions as u64;
         }
 
-        assert!(partition_number >= self.partition_range_start as u64);
-        assert!(partition_number <= self.partition_range_end as u64);
+        assert!(partition_number >= self.partition_range_start_inclusive as u64);
+        assert!(partition_number <= self.partition_range_end_inclusive as u64);
 
         Some(partition_number as u8)
     }
@@ -186,8 +187,8 @@ impl TransactionTrackerSubstate {
     pub fn advance(&mut self) -> u8 {
         let old_start_partition = self.start_partition;
         self.start_epoch += self.epochs_per_partition;
-        self.start_partition = if self.start_partition == self.partition_range_end {
-            self.partition_range_start
+        self.start_partition = if self.start_partition == self.partition_range_end_inclusive {
+            self.partition_range_start_inclusive
         } else {
             self.start_partition + 1
         };
@@ -211,8 +212,8 @@ impl TransactionTrackerBlueprint {
             vec![scrypto_encode(&TransactionTrackerSubstate {
                 start_epoch: current_epoch.number(),
                 start_partition: PARTITION_RANGE_START,
-                partition_range_start: PARTITION_RANGE_START,
-                partition_range_end: PARTITION_RANGE_END,
+                partition_range_start_inclusive: PARTITION_RANGE_START,
+                partition_range_end_inclusive: PARTITION_RANGE_END,
                 epochs_per_partition: EPOCHS_PER_PARTITION,
             })
             .unwrap()],
@@ -256,8 +257,8 @@ mod tests {
         let mut store = TransactionTrackerSubstate {
             start_epoch: 256,
             start_partition: 70,
-            partition_range_start: PARTITION_RANGE_START,
-            partition_range_end: PARTITION_RANGE_END,
+            partition_range_start_inclusive: PARTITION_RANGE_START,
+            partition_range_end_inclusive: PARTITION_RANGE_END,
             epochs_per_partition: EPOCHS_PER_PARTITION,
         };
         let num_partitions = (PARTITION_RANGE_END - PARTITION_RANGE_START + 1) as u64;
