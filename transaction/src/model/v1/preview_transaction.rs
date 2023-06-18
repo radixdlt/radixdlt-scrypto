@@ -52,11 +52,11 @@ impl ValidatedPreviewIntent {
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
                 intent_hash: if flags.skip_epoch_check {
-                    TransactionIntentHash::System {
+                    TransactionIntentHash::NotToCheck {
                         intent_hash: intent_hash.into_hash(),
                     }
                 } else {
-                    TransactionIntentHash::User {
+                    TransactionIntentHash::ToCheck {
                         intent_hash: intent_hash.into_hash(),
                         expiry_epoch: intent.header.inner.end_epoch_exclusive,
                     }

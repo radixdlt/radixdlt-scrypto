@@ -38,7 +38,7 @@ impl ValidatedNotarizedTransactionV1 {
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
-                intent_hash: TransactionIntentHash::User {
+                intent_hash: TransactionIntentHash::ToCheck {
                     intent_hash: intent_hash.into_hash(),
                     expiry_epoch: header.end_epoch_exclusive,
                 },

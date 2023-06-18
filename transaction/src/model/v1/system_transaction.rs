@@ -105,7 +105,7 @@ impl PreparedSystemTransactionV1 {
             &self.references,
             &self.blobs.blobs_by_hash,
             ExecutionContext {
-                intent_hash: TransactionIntentHash::System {
+                intent_hash: TransactionIntentHash::NotToCheck {
                     intent_hash: self.hash_for_execution.hash,
                 },
                 epoch_range: None,

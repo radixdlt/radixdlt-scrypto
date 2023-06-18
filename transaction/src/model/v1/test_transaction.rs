@@ -57,7 +57,7 @@ impl PreparedTestTransaction {
             &self.references,
             &self.blobs,
             ExecutionContext {
-                intent_hash: TransactionIntentHash::System {
+                intent_hash: TransactionIntentHash::NotToCheck {
                     intent_hash: self.hash,
                 },
                 epoch_range: None,

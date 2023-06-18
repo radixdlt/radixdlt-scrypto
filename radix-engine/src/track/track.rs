@@ -19,8 +19,8 @@ use sbor::rust::mem;
 pub struct StateUpdates {
     pub database_updates: DatabaseUpdates,
     pub system_updates: SystemUpdates,
-    /// Unstable, for intent hash intent only; Must be applied after committing the state updates above.
-    /// TODO: if time allows, consider merging into tracked nodes.
+    /// Unstable, for transaction tracker only; Must be applied after committing the updates above.
+    /// TODO: if time allows, consider merging it into database/system updates.
     pub partition_deletions: IndexSet<DbPartitionKey>,
 }
 pub type SystemUpdates = IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>;
@@ -377,7 +377,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     substate_db: &'s S,
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
-    // TODO: if time allows, consider merging into tracked nodes.
+    /// TODO: if time allows, consider merging into tracked nodes.
     deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,

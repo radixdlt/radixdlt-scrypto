@@ -740,7 +740,7 @@ where
             track.read_substate(handle).0.as_typed().unwrap();
 
         // Update the status of the intent hash
-        if let TransactionIntentHash::User {
+        if let TransactionIntentHash::ToCheck {
             expiry_epoch,
             intent_hash,
         } = intent_hash

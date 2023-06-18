@@ -24,20 +24,20 @@ pub struct ExecutionContext {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionIntentHash {
-    User {
+    /// Should be checked with transaction tracker.
+    ToCheck {
         intent_hash: Hash,
         expiry_epoch: Epoch,
     },
-    System {
-        intent_hash: Hash,
-    },
+    /// Should not be checked by transaction tracker.
+    NotToCheck { intent_hash: Hash },
 }
 
 impl TransactionIntentHash {
     pub fn as_hash(&self) -> &Hash {
         match self {
-            TransactionIntentHash::User { intent_hash, .. }
-            | TransactionIntentHash::System { intent_hash } => intent_hash,
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => intent_hash,
         }
     }
     pub fn to_hash(&self) -> Hash {
@@ -120,8 +120,8 @@ impl<'a> Executable<'a> {
 
     pub fn overwrite_intent_hash(&mut self, hash: Hash) {
         match &mut self.context.intent_hash {
-            TransactionIntentHash::User { intent_hash, .. }
-            | TransactionIntentHash::System { intent_hash } => {
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => {
                 *intent_hash = hash;
             }
         }
