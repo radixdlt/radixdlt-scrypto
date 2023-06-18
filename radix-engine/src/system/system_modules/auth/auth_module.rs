@@ -161,7 +161,7 @@ impl AuthModule {
         let (access_rules_of, method_permissions) = match auth_template {
             MethodAuthTemplate::Static(method_roles) => {
                 // Non-globalized objects do not have access rules objet yet
-                if !callee.node_object_info.global {
+                if !callee.module_object_info.global {
                     return Ok(ResolvedMethodPermission::AllowAll);
                 }
 

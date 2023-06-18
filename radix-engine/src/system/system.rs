@@ -1441,7 +1441,6 @@ where
             actor: Actor::method(
                 global_address,
                 identifier,
-                node_object_info,
                 module_object_info,
                 instance_context,
                 direct_access,
