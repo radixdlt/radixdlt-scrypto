@@ -57,7 +57,9 @@ impl PreparedTestTransaction {
             &self.references,
             &self.blobs,
             ExecutionContext {
-                intent_hash: self.hash,
+                intent_hash: TransactionIntentHash::NotToCheck {
+                    intent_hash: self.hash,
+                },
                 epoch_range: None,
                 payload_size: self.encoded_instructions.len(),
                 auth_zone_params: AuthZoneParams {

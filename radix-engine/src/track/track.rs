@@ -6,6 +6,7 @@ use crate::track::utils::OverlayingIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::*;
+use radix_engine_store_interface::interface::DbPartitionKey;
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase},
@@ -18,6 +19,9 @@ use sbor::rust::mem;
 pub struct StateUpdates {
     pub database_updates: DatabaseUpdates,
     pub system_updates: SystemUpdates,
+    /// Unstable, for transaction tracker only; Must be applied after committing the updates above.
+    /// TODO: if time allows, consider merging it into database/system updates.
+    pub partition_deletions: IndexSet<DbPartitionKey>,
 }
 pub type SystemUpdates = IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>;
 
@@ -298,6 +302,7 @@ impl TrackedNode {
 
 pub fn to_state_updates<M: DatabaseKeyMapper>(
     index: IndexMap<NodeId, TrackedNode>,
+    deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 ) -> StateUpdates {
     let mut database_updates: DatabaseUpdates = index_map_new();
     let mut system_updates: SystemUpdates = index_map_new();
@@ -333,9 +338,15 @@ pub fn to_state_updates<M: DatabaseKeyMapper>(
         }
     }
 
+    let partition_deletions = deleted_partitions
+        .into_iter()
+        .map(|(node_id, partition_num)| M::to_db_partition_key(&node_id, partition_num))
+        .collect();
+
     StateUpdates {
         database_updates,
         system_updates,
+        partition_deletions,
     }
 }
 
@@ -366,7 +377,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     substate_db: &'s S,
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
-    // TODO: if time allows, consider merging into tracked nodes.
+    /// TODO: if time allows, consider merging into tracked nodes.
     deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,

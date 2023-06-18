@@ -1,4 +1,4 @@
-use radix_engine::blueprints::intent_hash_store::EPOCHS_PER_PARTITION;
+use radix_engine::blueprints::transaction_tracker::EPOCHS_PER_PARTITION;
 use radix_engine::errors::RejectionError;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
@@ -41,7 +41,7 @@ fn test_transaction_replay_protection() {
         ExecutionConfig::for_notarized_transaction(),
     );
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::IntentHashCommitted => true,
+        RejectionError::IntentHashPreviouslyCommitted => true,
         _ => false,
     });
 
@@ -60,7 +60,7 @@ fn test_transaction_replay_protection() {
         ExecutionConfig::for_notarized_transaction(),
     );
     let result = receipt.expect_commit_success();
-    assert_eq!(result.partition_deletions.len(), 1);
+    assert_eq!(result.state_updates.partition_deletions.len(), 1);
 }
 
 fn get_validated(

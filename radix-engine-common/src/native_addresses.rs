@@ -186,11 +186,11 @@ pub const FAUCET_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
 /// The name of the faucet blueprint under the `FAUCET_PACKAGE`.
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
-pub const INTENT_HASH_STORE_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
-    13, 81, 121, 169, 121, 103, 120, 45, 28, 92, 121, 183, 135, 244, 44, 167, 250, 113, 3, 44, 88,
-    150, 33, 255, 49, 25, 98, 231, 11, 110,
+pub const TRANSACTION_TRACKER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+    13, 144, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 190, 133,
+    161, 125, 72, 188, 166, 49, 140, 99, 24, 198,
 ]);
-pub const INTENT_HASH_STORE_BLUEPRINT: &str = "IntentHashStore";
+pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
 
 //=========================================================================
 // SYSTEM SINGLETON COMPONENTS - NATIVE
@@ -221,9 +221,9 @@ pub const FAUCET: ComponentAddress = ComponentAddress::new_or_panic([
 pub use FAUCET as FAUCET_COMPONENT;
 
 /// The intent hash store component
-pub const INTENT_HASH_STORE: ComponentAddress = ComponentAddress::new_or_panic([
-    192, 255, 44, 88, 165, 149, 21, 42, 183, 10, 139, 243, 134, 75, 218, 84, 14, 87, 36, 9, 34, 31,
-    221, 247, 41, 156, 23, 169, 61, 30,
+pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic([
+    130, 204, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 232, 245,
+    174, 143, 74, 150, 166, 49, 140, 99, 24, 198,
 ]);
 
 //=========================================================================
@@ -356,9 +356,9 @@ mod tests {
             "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
         );
         check_address(
-            INTENT_HASH_STORE_PACKAGE.as_ref(),
+            TRANSACTION_TRACKER_PACKAGE.as_ref(),
             EntityType::GlobalPackage,
-            "package_rdx1p4ghn2tevauz68zu0xmc0apv5la8zqevtztzrle3r93wwzmwak7rzg",
+            "package_rdx1pkgxxxxxxxxxtxtrakxxxxxxxxx000595975309xxxxxxxxxtxtrak",
         );
 
         // System singleton components - native
@@ -380,9 +380,9 @@ mod tests {
             "component_rdx1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxgenssx",
         );
         check_address(
-            INTENT_HASH_STORE.as_ref(),
-            EntityType::GlobalGenericComponent,
-            "component_rdx1crljck99j52j4dc230ecvj762s89wfqfyg0amaefnst6j0g7tgfnm6",
+            TRANSACTION_TRACKER.as_ref(),
+            EntityType::GlobalTransactionTracker,
+            "transactiontracker_rdx1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxxtxtrak",
         );
     }
 

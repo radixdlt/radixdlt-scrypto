@@ -51,7 +51,16 @@ impl ValidatedPreviewIntent {
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
-                intent_hash: intent_hash.into_hash(),
+                intent_hash: if flags.skip_epoch_check {
+                    TransactionIntentHash::NotToCheck {
+                        intent_hash: intent_hash.into_hash(),
+                    }
+                } else {
+                    TransactionIntentHash::ToCheck {
+                        intent_hash: intent_hash.into_hash(),
+                        expiry_epoch: intent.header.inner.end_epoch_exclusive,
+                    }
+                },
                 epoch_range: if flags.skip_epoch_check {
                     None
                 } else {

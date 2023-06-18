@@ -1,6 +1,6 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::intent_hash_store::{IntentHashStatus, IntentHashStoreSubstate};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
@@ -22,7 +22,6 @@ use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
@@ -212,7 +211,7 @@ where
                 .and_then(|_| {
                     Self::validate_intent_hash(
                         &mut track,
-                        executable.intent_hash().clone(),
+                        executable.intent_hash().to_hash(),
                         range.end_epoch_exclusive,
                     )
                 })
@@ -276,11 +275,10 @@ where
 
                         // Update intent hash status
                         if let Some(next_epoch) = Self::read_epoch(&mut track) {
-                            Self::update_intent_hash_store(
+                            Self::update_transaction_tracker(
                                 &mut track,
                                 next_epoch,
-                                executable.intent_hash().clone(),
-                                executable.epoch_range().map(|x| x.end_epoch_exclusive),
+                                executable.intent_hash(),
                                 is_success,
                             );
                         }
@@ -292,21 +290,16 @@ where
                             limits_module.finalize(fee_summary.execution_cost_sum);
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
-                        let (tracked_nodes, partition_deletions) = track.finalize();
+                        let (tracked_nodes, deleted_partitions) = track.finalize();
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
-                        let state_updates =
-                            to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes);
-                        let partition_deletions = partition_deletions
-                            .into_iter()
-                            .map(|(node_id, partition_num)| {
-                                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num)
-                            })
-                            .collect();
+                        let state_updates = to_state_updates::<SpreadPrefixKeyMapper>(
+                            tracked_nodes,
+                            deleted_partitions,
+                        );
 
                         TransactionResult::Commit(CommitResult {
                             state_updates,
-                            partition_deletions,
                             state_update_summary,
                             outcome: match outcome {
                                 Ok(o) => TransactionOutcome::Success(o),
@@ -404,46 +397,47 @@ where
     ) -> Result<(), RejectionError> {
         let handle = track
             .acquire_lock(
-                INTENT_HASH_STORE.as_node_id(),
+                TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &IntentHashStoreField::IntentHashStore.into(),
+                &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::read_only(),
             )
             .unwrap()
             .0;
-        let substate: IntentHashStoreSubstate = track.read_substate(handle).0.as_typed().unwrap();
+        let substate: TransactionTrackerSubstate =
+            track.read_substate(handle).0.as_typed().unwrap();
         track.release_lock(handle);
 
         let partition_number = substate
-            .partition_of(expiry_epoch.number())
-            .ok_or(RejectionError::IntentHashExpiryEpochOutOfRange)?;
+            .partition_for_expiry_epoch(expiry_epoch)
+            .expect("Transaction tracker should cover all valid epoch ranges");
 
         let handle = track
             .acquire_lock_virtualize(
-                INTENT_HASH_STORE.as_node_id(),
+                TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(partition_number),
                 &SubstateKey::Map(intent_hash.to_vec()),
                 LockFlags::read_only(),
                 || {
                     Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                        value: Option::<IntentHashStatus>::None,
+                        value: Option::<TransactionStatus>::None,
                         mutability: SubstateMutability::Mutable,
                     }))
                 },
             )
             .unwrap()
             .0;
-        let substate: KeyValueEntrySubstate<IntentHashStatus> =
+        let substate: KeyValueEntrySubstate<TransactionStatus> =
             track.read_substate(handle).0.as_typed().unwrap();
         track.release_lock(handle);
 
         match substate.value {
             Some(status) => match status {
-                IntentHashStatus::CommittedSuccess | IntentHashStatus::CommittedFailure => {
-                    return Err(RejectionError::IntentHashCommitted);
+                TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
+                    return Err(RejectionError::IntentHashPreviouslyCommitted);
                 }
-                IntentHashStatus::Cancelled => {
-                    return Err(RejectionError::IntentHashCancelled);
+                TransactionStatus::Cancelled => {
+                    return Err(RejectionError::IntentHashPreviouslyCancelled);
                 }
             },
             None => {}
@@ -469,7 +463,7 @@ where
             ExecutionTraceModule,
         ),
     ) {
-        let mut id_allocator = IdAllocator::new(executable.intent_hash().clone());
+        let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
         let mut system = SystemConfig {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
@@ -479,7 +473,7 @@ where
             },
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,
-                executable.intent_hash().clone(),
+                executable.intent_hash().to_hash(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
@@ -497,7 +491,7 @@ where
 
         let interpretation_result = kernel_boot
             .call_transaction_processor(
-                executable.intent_hash(),
+                executable.intent_hash().as_hash(),
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),
@@ -726,38 +720,43 @@ where
         (fee_summary, fee_payments)
     }
 
-    fn update_intent_hash_store(
+    fn update_transaction_tracker(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         next_epoch: Epoch,
-        intent_hash: Hash,
-        expiry_epoch: Option<Epoch>,
+        intent_hash: &TransactionIntentHash,
         is_success: bool,
     ) {
         // Read the intent hash store
         let handle = track
             .acquire_lock(
-                INTENT_HASH_STORE.as_node_id(),
+                TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &IntentHashStoreField::IntentHashStore.into(),
+                &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::MUTABLE,
             )
             .unwrap()
             .0;
-        let mut substate: IntentHashStoreSubstate =
+        let mut transaction_tracker: TransactionTrackerSubstate =
             track.read_substate(handle).0.as_typed().unwrap();
 
         // Update the status of the intent hash
-        if let Some(expiry_epoch) = expiry_epoch {
-            if let Some(partition_number) = substate.partition_of(expiry_epoch.number()) {
+        if let TransactionIntentHash::ToCheck {
+            expiry_epoch,
+            intent_hash,
+        } = intent_hash
+        {
+            if let Some(partition_number) =
+                transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
+            {
                 let handle = track
                     .acquire_lock_virtualize(
-                        INTENT_HASH_STORE.as_node_id(),
+                        TRANSACTION_TRACKER.as_node_id(),
                         PartitionNumber(partition_number),
                         &SubstateKey::Map(intent_hash.to_vec()),
                         LockFlags::MUTABLE,
                         || {
                             Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                                value: Option::<IntentHashStatus>::None,
+                                value: Option::<TransactionStatus>::None,
                                 mutability: SubstateMutability::Mutable,
                             }))
                         },
@@ -768,9 +767,9 @@ where
                     handle,
                     IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                         value: Some(if is_success {
-                            IntentHashStatus::CommittedSuccess
+                            TransactionStatus::CommittedSuccess
                         } else {
-                            IntentHashStatus::CommittedFailure
+                            TransactionStatus::CommittedFailure
                         }),
                         // TODO: maybe make it immutable, but how does this affect partition deletion?
                         mutability: SubstateMutability::Mutable,
@@ -780,29 +779,33 @@ where
             }
         }
 
-        loop {
-            // TODO: how do we align this with TransactionValidator?
-            if substate
-                .partition_of(next_epoch.after(DEFAULT_MAX_EPOCH_RANGE).number())
-                .is_none()
-            {
-                let discarded_partition = substate.advance();
-                track.delete_partition(
-                    INTENT_HASH_STORE.as_node_id(),
-                    PartitionNumber(discarded_partition),
-                );
-            } else {
-                break;
-            }
+        // Check if all intent hashes in the first epoch have expired, based on the `next_epoch`.
+        //
+        // In this particular implementation, because the transaction tracker coverage is greater than
+        // the max epoch range in transaction header, we must check epoch range first to
+        // ensure we don't store intent hash too far into the future.
+        //
+        // Also, we need to make sure epoch doesn't jump by a large distance.
+        if next_epoch.number()
+            >= transaction_tracker.start_epoch + transaction_tracker.epochs_per_partition
+        {
+            let discarded_partition = transaction_tracker.advance();
+            track.delete_partition(
+                TRANSACTION_TRACKER.as_node_id(),
+                PartitionNumber(discarded_partition),
+            );
         }
-        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.update_substate(
+            handle,
+            IndexedScryptoValue::from_typed(&transaction_tracker),
+        );
         track.release_lock(handle);
     }
 
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
         println!("{:-^80}", "Executable");
-        println!("Transaction hash: {}", executable.intent_hash());
+        println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
         println!("Fee payment: {:?}", executable.fee_payment());
         println!(

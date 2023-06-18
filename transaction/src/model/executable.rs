@@ -14,12 +14,35 @@ pub struct EpochRange {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
-    pub intent_hash: Hash,
+    pub intent_hash: TransactionIntentHash,
     pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum TransactionIntentHash {
+    /// Should be checked with transaction tracker.
+    ToCheck {
+        intent_hash: Hash,
+        expiry_epoch: Epoch,
+    },
+    /// Should not be checked by transaction tracker.
+    NotToCheck { intent_hash: Hash },
+}
+
+impl TransactionIntentHash {
+    pub fn as_hash(&self) -> &Hash {
+        match self {
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => intent_hash,
+        }
+    }
+    pub fn to_hash(&self) -> Hash {
+        self.as_hash().clone()
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -87,7 +110,7 @@ impl<'a> Executable<'a> {
         }
     }
 
-    pub fn intent_hash(&self) -> &Hash {
+    pub fn intent_hash(&self) -> &TransactionIntentHash {
         &self.context.intent_hash
     }
 
@@ -96,7 +119,12 @@ impl<'a> Executable<'a> {
     }
 
     pub fn overwrite_intent_hash(&mut self, hash: Hash) {
-        self.context.intent_hash = hash;
+        match &mut self.context.intent_hash {
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => {
+                *intent_hash = hash;
+            }
+        }
     }
 
     pub fn fee_payment(&self) -> &FeePayment {

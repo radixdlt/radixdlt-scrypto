@@ -2,11 +2,11 @@ use crate::blueprints::access_controller::AccessControllerNativePackage;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::intent_hash_store::IntentHashStoreNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
+use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
@@ -75,8 +75,8 @@ impl VmInvoke for NativeVmInstance {
                 AccessRulesNativePackage::invoke_export(export_name, input, api)
             }
             POOL_CODE_ID => PoolNativePackage::invoke_export(export_name, input, api),
-            INTENT_HASH_STORE_CODE_ID => {
-                IntentHashStoreNativePackage::invoke_export(export_name, input, api)
+            TRANSACTION_TRACKER_CODE_ID => {
+                TransactionTrackerNativePackage::invoke_export(export_name, input, api)
             }
             _ => {
                 return Err(RuntimeError::VmError(VmError::Native(
