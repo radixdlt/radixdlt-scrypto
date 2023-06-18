@@ -1000,7 +1000,7 @@ impl ManifestBuilder {
             address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultFreezeInput {
-                to_freeze: VaultFreezeFlags::WITHDRAW
+                to_freeze: VaultFreezeFlags::WITHDRAW,
             }),
         });
         self
@@ -1011,7 +1011,7 @@ impl ManifestBuilder {
             address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultUnfreezeInput {
-                to_unfreeze: VaultFreezeFlags::WITHDRAW
+                to_unfreeze: VaultFreezeFlags::WITHDRAW,
             }),
         });
         self
@@ -1022,7 +1022,7 @@ impl ManifestBuilder {
             address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultFreezeInput {
-                to_freeze: VaultFreezeFlags::DEPOSIT
+                to_freeze: VaultFreezeFlags::DEPOSIT,
             }),
         });
         self
@@ -1033,7 +1033,7 @@ impl ManifestBuilder {
             address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultUnfreezeInput {
-                to_unfreeze: VaultFreezeFlags::DEPOSIT
+                to_unfreeze: VaultFreezeFlags::DEPOSIT,
             }),
         });
         self
@@ -1044,7 +1044,7 @@ impl ManifestBuilder {
             address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultFreezeInput {
-                to_freeze: VaultFreezeFlags::BURN
+                to_freeze: VaultFreezeFlags::BURN,
             }),
         });
         self
@@ -1055,7 +1055,7 @@ impl ManifestBuilder {
             address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
             args: to_manifest_value(&VaultUnfreezeInput {
-                to_unfreeze: VaultFreezeFlags::BURN
+                to_unfreeze: VaultFreezeFlags::BURN,
             }),
         });
         self
@@ -1208,7 +1208,7 @@ impl ManifestBuilder {
             method_name: ACCOUNT_BURN_IDENT.to_string(),
             args,
         })
-            .0
+        .0
     }
 
     /// Creates resource proof from an account.

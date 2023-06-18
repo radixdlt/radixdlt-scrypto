@@ -85,7 +85,10 @@ impl ResourceMethodAuthKey {
             Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_UPDATE_ROLE)),
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_UPDATE_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_UPDATE_ROLE)),
-            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(REMOTE_FREEZE_UPDATER_ROLE)),
+            Self::Freeze => (
+                ObjectModuleId::Main,
+                RoleKey::new(REMOTE_FREEZE_UPDATER_ROLE),
+            ),
 
             Self::UpdateMetadata => (
                 ObjectModuleId::Metadata,

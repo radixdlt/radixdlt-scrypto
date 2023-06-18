@@ -1,7 +1,7 @@
-use radix_engine_interface::blueprints::resource::VaultFreezeFlags;
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
+use radix_engine_interface::blueprints::resource::VaultFreezeFlags;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -25,7 +25,9 @@ pub struct VaultFrozenFlag {
 
 impl Default for VaultFrozenFlag {
     fn default() -> Self {
-        Self { frozen: VaultFreezeFlags::empty() }
+        Self {
+            frozen: VaultFreezeFlags::empty(),
+        }
     }
 }
 

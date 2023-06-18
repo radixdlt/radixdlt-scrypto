@@ -117,8 +117,8 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -136,8 +136,8 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -277,8 +277,8 @@ impl NonFungibleVaultBlueprint {
     }
 
     fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
             return Ok(());
