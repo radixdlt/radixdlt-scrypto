@@ -417,7 +417,7 @@ where
 
         let partition_number = substate
             .partition_for_expiry_epoch(expiry_epoch)
-            .ok_or(RejectionError::IntentHashExpiryEpochOutOfRange)?;
+            .expect("Transaction tracker should cover all valid epoch ranges");
 
         let handle = track
             .acquire_lock_virtualize(

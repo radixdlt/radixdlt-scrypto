@@ -52,7 +52,6 @@ pub enum RejectionError {
         valid_until: Epoch,
         current_epoch: Epoch,
     },
-    IntentHashExpiryEpochOutOfRange,
     IntentHashPreviouslyCommitted,
     IntentHashPreviouslyCancelled,
 }
