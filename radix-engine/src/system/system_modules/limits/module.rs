@@ -62,7 +62,7 @@ pub struct TransactionLimitsConfig {
 /// if exceeded breaks execution with appropriate error.
 /// Default limits values are defined in radix-engine-constants lib.
 /// Stores boundary values of the limits and returns them in transaction receipt.
-pub struct TransactionLimitsModule {
+pub struct LimitsModule {
     /// Definitions of the limits levels.
     limits_config: TransactionLimitsConfig,
     /// Internal stack of data for each call frame.
@@ -81,9 +81,9 @@ pub struct TransactionLimitsModule {
     invoke_payload_max_size: usize,
 }
 
-impl TransactionLimitsModule {
+impl LimitsModule {
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
-        TransactionLimitsModule {
+        LimitsModule {
             limits_config,
             call_frames_stack: Vec::with_capacity(8),
             substate_db_read_count: 0,
@@ -217,16 +217,12 @@ impl TransactionLimitsModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimitsModule {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api
-            .kernel_get_system()
-            .modules
-            .transaction_limits_module()
-            .unwrap();
+        let tlimit = &mut api.kernel_get_system().modules.limits_module().unwrap();
         let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
             tlimit.invoke_payload_max_size = input_size;
@@ -252,7 +248,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         // push new empty wasm memory value refencing current call frame to internal stack
         api.kernel_get_system()
             .modules
-            .transaction_limits_module()
+            .limits_module()
             .unwrap()
             .call_frames_stack
             .push(CallFrameLimitInfo::default());
@@ -266,7 +262,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         // pop from internal stack
         api.kernel_get_system()
             .modules
-            .transaction_limits_module()
+            .limits_module()
             .unwrap()
             .call_frames_stack
             .pop();
@@ -279,11 +275,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api
-            .kernel_get_system()
-            .modules
-            .transaction_limits_module()
-            .unwrap();
+        let tlimit = &mut api.kernel_get_system().modules.limits_module().unwrap();
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
@@ -301,11 +293,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api
-            .kernel_get_system()
-            .modules
-            .transaction_limits_module()
-            .unwrap();
+        let tlimit = &mut api.kernel_get_system().modules.limits_module().unwrap();
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;

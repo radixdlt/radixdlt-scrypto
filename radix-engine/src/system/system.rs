@@ -20,8 +20,8 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
 
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::system::system_modules::transaction_events::EventError;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
@@ -991,7 +991,7 @@ where
             .kernel_get_system_state()
             .system
             .modules
-            .events_module()
+            .transaction_events_module()
         {
             module.add_replacement(
                 (node_id, ObjectModuleId::Main),
@@ -1094,7 +1094,7 @@ where
                         .kernel_get_system_state()
                         .system
                         .modules
-                        .events_module()
+                        .transaction_events_module()
                     {
                         module.add_replacement(
                             (node_id, ObjectModuleId::Main),
@@ -2321,12 +2321,7 @@ where
         // No costing applied
 
         let current_depth = self.api.kernel_get_current_depth();
-        if let Some(module) = self
-            .api
-            .kernel_get_system()
-            .modules
-            .transaction_limits_module()
-        {
+        if let Some(module) = self.api.kernel_get_system().modules.limits_module() {
             module.update_wasm_memory_usage(current_depth, consumed_memory)?;
             Ok(())
         } else {
@@ -2438,7 +2433,12 @@ where
         }?;
 
         // Adding the event to the event store
-        if let Some(module) = self.api.kernel_get_system().modules.events_module() {
+        if let Some(module) = self
+            .api
+            .kernel_get_system()
+            .modules
+            .transaction_events_module()
+        {
             module.add_event(event_type_identifier, event_data);
         }
 
@@ -2454,8 +2454,13 @@ where
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self.api.kernel_get_system().modules.logger_module() {
-            module.add(level, message);
+        if let Some(module) = self
+            .api
+            .kernel_get_system()
+            .modules
+            .transaction_runtime_module()
+        {
+            module.add_log(level, message);
             Ok(())
         } else {
             Ok(())

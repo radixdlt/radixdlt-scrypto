@@ -8,10 +8,10 @@ use crate::system::module_mixer::{EnabledModules, SystemModuleMixer};
 use crate::system::system::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::system::system_modules::events::EventsModule;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
-use crate::system::system_modules::logger::LoggerModule;
-use crate::system::system_modules::transaction_limits::TransactionLimitsModule;
+use crate::system::system_modules::limits::LimitsModule;
+use crate::system::system_modules::transaction_events::TransactionEventsModule;
+use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
@@ -229,11 +229,11 @@ where
                 let (
                     interpretation_result,
                     (
+                        limits_module,
                         mut costing_module,
+                        runtime_module,
                         mut events_module,
-                        logger_module,
                         execution_trace_module,
-                        transaction_limits_module,
                     ),
                 ) = self.interpret_manifest(
                     &mut track,
@@ -287,9 +287,9 @@ where
 
                         // Finalize everything
                         let application_events = events_module.finalize();
-                        let application_logs = logger_module.finalize();
+                        let application_logs = runtime_module.finalize();
                         let execution_metrics =
-                            transaction_limits_module.finalize(fee_summary.execution_cost_sum);
+                            limits_module.finalize(fee_summary.execution_cost_sum);
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
                         let (tracked_nodes, partition_deletions) = track.finalize();
@@ -462,11 +462,11 @@ where
     ) -> (
         Result<Vec<InstructionOutput>, RuntimeError>,
         (
+            LimitsModule,
             CostingModule,
-            EventsModule,
-            LoggerModule,
+            TransactionRuntimeModule,
+            TransactionEventsModule,
             ExecutionTraceModule,
-            TransactionLimitsModule,
         ),
     ) {
         let mut id_allocator = IdAllocator::new(executable.intent_hash().clone());

@@ -5,12 +5,12 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::types::*;
 
 #[derive(Debug, Default, Clone)]
-pub struct EventsModule {
+pub struct TransactionEventsModule {
     events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     replacements: IndexMap<(NodeId, ObjectModuleId), (NodeId, ObjectModuleId)>,
 }
 
-impl EventsModule {
+impl TransactionEventsModule {
     pub fn add_event(&mut self, identifier: EventTypeIdentifier, data: Vec<u8>) {
         self.events.push((identifier, data))
     }
@@ -51,4 +51,4 @@ impl EventsModule {
     }
 }
 
-impl<K: KernelCallbackObject> SystemModule<K> for EventsModule {}
+impl<K: KernelCallbackObject> SystemModule<K> for TransactionEventsModule {}

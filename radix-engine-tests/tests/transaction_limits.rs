@@ -1,6 +1,6 @@
 use radix_engine::{
     errors::{RejectionError, RuntimeError, SystemModuleError},
-    system::system_modules::transaction_limits::TransactionLimitsError,
+    system::system_modules::limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
     vm::wasm::WASM_MEMORY_PAGE_SIZE,

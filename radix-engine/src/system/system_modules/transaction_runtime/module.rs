@@ -7,6 +7,7 @@ use radix_engine_interface::crypto::Hash;
 pub struct TransactionRuntimeModule {
     pub tx_hash: Hash,
     pub next_id: u32,
+    pub logs: Vec<(Level, String)>,
 }
 
 impl TransactionRuntimeModule {
@@ -29,6 +30,14 @@ impl TransactionRuntimeModule {
 
         uuid
     }
+
+    pub fn add_log(&mut self, level: Level, message: String) {
+        self.logs.push((level, message))
+    }
+
+    pub fn finalize(self) -> Vec<(Level, String)> {
+        self.logs
+    }
 }
 
 impl<K: KernelCallbackObject> SystemModule<K> for TransactionRuntimeModule {}
@@ -45,6 +54,7 @@ mod tests {
             )
             .unwrap(),
             next_id: 5,
+            logs: Vec::new(),
         };
         assert_eq!(
             NonFungibleLocalId::uuid(id.generate_uuid())
@@ -56,6 +66,7 @@ mod tests {
         let mut id = TransactionRuntimeModule {
             tx_hash: Hash([0u8; 32]),
             next_id: 5,
+            logs: Vec::new(),
         };
         assert_eq!(
             NonFungibleLocalId::uuid(id.generate_uuid())
@@ -67,6 +78,7 @@ mod tests {
         let mut id = TransactionRuntimeModule {
             tx_hash: Hash([255u8; 32]),
             next_id: 5,
+            logs: Vec::new(),
         };
         assert_eq!(
             NonFungibleLocalId::uuid(id.generate_uuid())
