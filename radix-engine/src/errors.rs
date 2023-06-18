@@ -422,7 +422,7 @@ pub enum ApplicationError {
 
     ValidatorError(ValidatorError),
 
-    ResourceManagerError(FungibleResourceManagerError),
+    FungibleResourceManagerError(FungibleResourceManagerError),
 
     NonFungibleResourceManagerError(NonFungibleResourceManagerError),
 
@@ -469,7 +469,7 @@ impl From<ConsensusManagerError> for ApplicationError {
 
 impl From<FungibleResourceManagerError> for ApplicationError {
     fn from(value: FungibleResourceManagerError) -> Self {
-        Self::ResourceManagerError(value)
+        Self::FungibleResourceManagerError(value)
     }
 }
 

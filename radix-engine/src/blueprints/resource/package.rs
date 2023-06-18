@@ -332,6 +332,7 @@ impl ResourceManagerNativePackage {
                     feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                         FREEZE_VAULT_FEATURE.to_string(),
+                        MINT_FEATURE.to_string(),
                     ),
                 },
                 dependencies: btreeset!(),
@@ -646,6 +647,7 @@ impl ResourceManagerNativePackage {
                     feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                         FREEZE_VAULT_FEATURE.to_string(),
+                        MINT_FEATURE.to_string(),
                     ),
                 },
                 dependencies: btreeset!(),

@@ -9,6 +9,7 @@ use radix_engine_interface::api::ObjectModuleId;
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
 pub const FREEZE_VAULT_FEATURE: &str = "freeze_vault";
+pub const MINT_FEATURE: &str = "mint";
 
 // Meta-roles
 pub const RESOURCE_PACKAGE_ROLE: &str = "resource_package";

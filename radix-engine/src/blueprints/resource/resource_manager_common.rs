@@ -190,6 +190,25 @@ fn build_access_rules(
     )
 }
 
+pub fn features(
+    track_total_supply: bool,
+    access_rules: &BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+) -> Vec<&str> {
+    let mut features = Vec::new();
+
+    if track_total_supply {
+        features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+    }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+        features.push(FREEZE_VAULT_FEATURE);
+    }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Mint) {
+        features.push(MINT_FEATURE);
+    }
+
+    features
+}
+
 pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,

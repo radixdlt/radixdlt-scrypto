@@ -28,6 +28,7 @@ pub enum FungibleResourceManagerError {
     MaxMintAmountExceeded,
     InvalidDivisibility(u8),
     DropNonEmptyBucket,
+    NotMintable,
 }
 
 pub type FungibleResourceManagerDivisibilitySubstate = u8;
@@ -36,7 +37,7 @@ pub type FungibleResourceManagerTotalSupplySubstate = Decimal;
 pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
     if divisibility > DIVISIBILITY_MAXIMUM {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::ResourceManagerError(
+            ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidDivisibility(divisibility),
             ),
         ));
@@ -48,7 +49,7 @@ pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
 fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
     if !check_fungible_amount(&amount, divisibility) {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
+            ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidAmount(
                 amount,
                 divisibility,
             )),
@@ -57,7 +58,7 @@ fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeErr
 
     if amount > *MAX_MINT_AMOUNT {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::ResourceManagerError(
+            ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::MaxMintAmountExceeded,
             ),
         ));
@@ -81,13 +82,7 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
-        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-            features.push(FREEZE_VAULT_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -151,17 +146,11 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let mut feature_set = Vec::new();
-        if track_total_supply {
-            feature_set.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
-        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-            feature_set.push(FREEZE_VAULT_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            feature_set,
+            features,
             None,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -188,6 +177,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let divisibility = {
             let divisibility_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -279,7 +270,7 @@ impl FungibleResourceManagerBlueprint {
             Ok(())
         } else {
             Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(
+                ApplicationError::FungibleResourceManagerError(
                     FungibleResourceManagerError::DropNonEmptyBucket,
                 ),
             ))
@@ -357,5 +348,18 @@ impl FungibleResourceManagerBlueprint {
         } else {
             Ok(None)
         }
+    }
+
+    fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(MINT_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::NotMintable),
+            ));
+        }
+
+        return Ok(());
     }
 }

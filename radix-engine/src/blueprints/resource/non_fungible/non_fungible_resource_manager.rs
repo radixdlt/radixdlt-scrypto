@@ -23,6 +23,7 @@ pub enum NonFungibleResourceManagerError {
     InvalidNonFungibleIdType,
     NonFungibleLocalIdProvidedForUUIDType,
     DropNonEmptyBucket,
+    NotMintable,
 }
 
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
@@ -140,13 +141,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
-        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-            features.push(FREEZE_VAULT_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -227,13 +222,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
-        if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-            features.push(FREEZE_VAULT_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -334,6 +323,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let id_type = {
@@ -389,6 +380,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
@@ -451,6 +444,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
@@ -795,5 +790,18 @@ impl NonFungibleResourceManagerBlueprint {
         } else {
             Ok(None)
         }
+    }
+
+    fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(MINT_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NotMintable),
+            ));
+        }
+
+        return Ok(());
     }
 }

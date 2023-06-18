@@ -26,7 +26,7 @@ fn test_worktop_resource_leak() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::DropNonEmptyBucket
             ))
         )
