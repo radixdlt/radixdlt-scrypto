@@ -222,7 +222,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.limits_module().unwrap();
+        let tlimit = &mut api.kernel_get_system().modules.limits;
         let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
             tlimit.invoke_payload_max_size = input_size;
@@ -248,8 +248,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         // push new empty wasm memory value refencing current call frame to internal stack
         api.kernel_get_system()
             .modules
-            .limits_module()
-            .unwrap()
+            .limits
             .call_frames_stack
             .push(CallFrameLimitInfo::default());
         Ok(())
@@ -262,8 +261,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         // pop from internal stack
         api.kernel_get_system()
             .modules
-            .limits_module()
-            .unwrap()
+            .limits
             .call_frames_stack
             .pop();
         Ok(())
@@ -275,7 +273,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.limits_module().unwrap();
+        let tlimit = &mut api.kernel_get_system().modules.limits;
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
@@ -293,7 +291,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.limits_module().unwrap();
+        let tlimit = &mut api.kernel_get_system().modules.limits;
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;

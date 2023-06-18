@@ -88,14 +88,14 @@ pub struct SystemModuleMixer {
     enabled_modules: EnabledModules,
 
     /* states */
-    kernel_trace: KernelTraceModule,
-    limits: LimitsModule,
-    costing: CostingModule,
-    auth: AuthModule,
-    node_move: NodeMoveModule,
-    transaction_runtime: TransactionRuntimeModule,
-    transaction_events: TransactionEventsModule,
-    execution_trace: ExecutionTraceModule,
+    pub(super) kernel_trace: KernelTraceModule,
+    pub(super) limits: LimitsModule,
+    pub(super) costing: CostingModule,
+    pub(super) auth: AuthModule,
+    pub(super) node_move: NodeMoveModule,
+    pub(super) transaction_runtime: TransactionRuntimeModule,
+    pub(super) transaction_events: TransactionEventsModule,
+    pub(super) execution_trace: ExecutionTraceModule,
 }
 
 // Macro generates default modules dispatches call based on passed function name and arguments.
@@ -174,62 +174,6 @@ impl SystemModuleMixer {
                 logs: Vec::new(),
             },
             transaction_events: TransactionEventsModule::default(),
-        }
-    }
-
-    pub fn limits_module(&mut self) -> Option<&mut LimitsModule> {
-        if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            Some(&mut self.limits)
-        } else {
-            None
-        }
-    }
-
-    pub fn costing_module(&mut self) -> Option<&mut CostingModule> {
-        if self.enabled_modules.contains(EnabledModules::COSTING) {
-            Some(&mut self.costing)
-        } else {
-            None
-        }
-    }
-
-    pub fn auth_module(&mut self) -> Option<&mut AuthModule> {
-        if self.enabled_modules.contains(EnabledModules::AUTH) {
-            Some(&mut self.auth)
-        } else {
-            None
-        }
-    }
-
-    pub fn execution_trace_module(&mut self) -> Option<&mut ExecutionTraceModule> {
-        if self
-            .enabled_modules
-            .contains(EnabledModules::EXECUTION_TRACE)
-        {
-            Some(&mut self.execution_trace)
-        } else {
-            None
-        }
-    }
-
-    pub fn transaction_runtime_module(&mut self) -> Option<&mut TransactionRuntimeModule> {
-        if self
-            .enabled_modules
-            .contains(EnabledModules::TRANSACTION_RUNTIME)
-        {
-            Some(&mut self.transaction_runtime)
-        } else {
-            None
-        }
-    }
-    pub fn transaction_events_module(&mut self) -> Option<&mut TransactionEventsModule> {
-        if self
-            .enabled_modules
-            .contains(EnabledModules::TRANSACTION_EVENTS)
-        {
-            Some(&mut self.transaction_events)
-        } else {
-            None
         }
     }
 
