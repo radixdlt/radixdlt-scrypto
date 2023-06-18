@@ -24,7 +24,7 @@ pub enum EntityType {
     GlobalConsensusManager = 0b10000110, //-------------- 10000 => s, 110xx => ce6m [se vanity prefix]
 
     /// A global validator entity (130 in decimal). Gives Bech32 prefix: `s` followed by one of `v`, `d`, `w` or `0`.
-    GlobalValidator = 0b10000010, //----------------- 10000 => s, 110xx => vdw0
+    GlobalValidator = 0b10000011, //--------------------- 10000 => s, 110xx => vdw0
 
     //=========================================================================
     // Standard Global Components (start with char c for component)
@@ -42,13 +42,16 @@ pub enum EntityType {
     GlobalAccessController = 0b11000011, //---------- 11000 => c, 011xx => vdw0 (011 = access controller)
 
     /// A global native pool entity (196 in decimal). Gives Bech32 prefix: `c` followed by one of `s`, `3`, `j` or `n`.
-    GlobalOneResourcePool = 0b11000100, //---------- 11000 => c, 100xx => s3jn (100 = pool)
+    GlobalOneResourcePool = 0b11000100, //----------- 11000 => c, 100xx => s3jn (100 = pool)
 
     /// A global native pool entity (197 in decimal). Gives Bech32 prefix: `c` followed by one of `5`, `4`, `k` or `h`.
-    GlobalTwoResourcePool = 0b11000101, //---------- 11000 => c, 101xx => 54kh (101 = pool)
+    GlobalTwoResourcePool = 0b11000101, //----------- 11000 => c, 101xx => 54kh (101 = pool)
 
     /// A global native pool entity (197 in decimal). Gives Bech32 prefix: `c` followed by one of `c`, `e`, `6` or `m`.
-    GlobalMultiResourcePool = 0b11000110, //---------- 11000 => c, 110xx => ce6m (101 = pool)
+    GlobalMultiResourcePool = 0b11000110, //--------- 11000 => c, 110xx => ce6m (101 = pool)
+
+    /// A global transaction tracker (130 in decimal). Gives Bech32 prefix: `s` followed by one of `g`, `f`, `2` or `t`.
+    GlobalTransactionTracker = 0b10000010, //-------- 10000 => s, 010xx => gf2t [st vanity prefix]
 
     //=========================================================================
     // Secp256k1 Virtual Global Components (start with char 6 for Secp256k1)
@@ -122,7 +125,8 @@ impl EntityType {
             | EntityType::GlobalVirtualEd25519Identity
             | EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
-            | EntityType::GlobalMultiResourcePool => true,
+            | EntityType::GlobalMultiResourcePool
+            | EntityType::GlobalTransactionTracker => true,
             EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalAccount
@@ -149,7 +153,8 @@ impl EntityType {
             | EntityType::GlobalVirtualEd25519Identity
             | EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
-            | EntityType::GlobalMultiResourcePool => true,
+            | EntityType::GlobalMultiResourcePool
+            | EntityType::GlobalTransactionTracker => true,
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResourceManager
             | EntityType::GlobalNonFungibleResourceManager

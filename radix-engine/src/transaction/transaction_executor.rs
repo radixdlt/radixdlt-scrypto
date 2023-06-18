@@ -406,7 +406,7 @@ where
             .acquire_lock(
                 INTENT_HASH_STORE.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &IntentHashStoreField::IntentHashStore.into(),
+                &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::read_only(),
             )
             .unwrap()
@@ -738,7 +738,7 @@ where
             .acquire_lock(
                 INTENT_HASH_STORE.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &IntentHashStoreField::IntentHashStore.into(),
+                &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::MUTABLE,
             )
             .unwrap()

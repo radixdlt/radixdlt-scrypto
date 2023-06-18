@@ -5,6 +5,7 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
 use crate::blueprints::identity::*;
+use crate::blueprints::intent_hash_store::IntentHashStoreNativePackage;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::*;
 use crate::blueprints::resource::*;
@@ -23,6 +24,8 @@ lazy_static! {
     pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION: PackageDefinition =
         AccessControllerNativePackage::definition();
     pub static ref POOL_PACKAGE_DEFINITION: PackageDefinition = PoolNativePackage::definition();
+    pub static ref TRANSACTION_TRACKER_PACKAGE_DEFINITION: PackageDefinition =
+        IntentHashStoreNativePackage::definition();
     pub static ref RESOURCE_PACKAGE_DEFINITION: PackageDefinition =
         ResourceManagerNativePackage::definition();
     pub static ref PACKAGE_PACKAGE_DEFINITION: PackageDefinition =
