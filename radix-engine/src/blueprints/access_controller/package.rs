@@ -494,10 +494,9 @@ impl AccessControllerNativePackage {
                     function_auth: btreemap!(
                         ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth,
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth,
+                    ),
                 },
             }
         );

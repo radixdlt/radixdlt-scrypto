@@ -64,10 +64,7 @@ impl TransactionProcessorNativePackage {
                     function_auth: btreemap!(
                         TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // FIXME: Change to only allow root to call? and add auditors' tests
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::NoAuth,
                 },
             }
         );

@@ -1767,10 +1767,7 @@ pub fn single_function_package_definition(
                 function_auth: btreemap!(
                     function_name.to_string() => rule!(allow_all),
                 ),
-                method_auth: MethodAuthTemplate::Static {
-                    auth: btreemap!(),
-                    outer_auth: btreemap!(),
-                },
+                method_auth: MethodAuthTemplate::NoAuth,
             },
         },
     );

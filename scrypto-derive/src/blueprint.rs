@@ -611,10 +611,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let auth_config = {
                     let auth = method_auth_template();
-                    let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
-                        auth,
-                        outer_auth: BTreeMap::new(),
-                    };
+                    let method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static(auth);
 
                     scrypto::blueprints::package::AuthConfig {
                         method_auth,
@@ -1512,10 +1509,7 @@ mod tests {
 
                         let auth_config = {
                             let auth = method_auth_template();
-                            let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
-                                auth,
-                                outer_auth: BTreeMap::new(),
-                            };
+                            let method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static(auth);
 
                             scrypto::blueprints::package::AuthConfig {
                                 method_auth,

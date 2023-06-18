@@ -118,10 +118,9 @@ impl IdentityNativePackage {
                         IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                         IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth,
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth,
+                    ),
                 },
             }
         );

@@ -473,10 +473,9 @@ impl AccountNativePackage {
                         ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
                         ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth,
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth,
+                    ),
                 },
             }
         );

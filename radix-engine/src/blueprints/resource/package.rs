@@ -355,8 +355,8 @@ impl ResourceManagerNativePackage {
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth_template! {
                             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
                             RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
                             RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
@@ -366,8 +366,7 @@ impl ResourceManagerNativePackage {
                             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodPermission::Public;
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodPermission::Public;
                         },
-                        outer_auth: btreemap!(),
-                    },
+                    ),
                 },
             }
         };
@@ -674,8 +673,8 @@ impl ResourceManagerNativePackage {
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth_template! {
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT => [MINT_ROLE];
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT => [MINT_ROLE];
@@ -689,9 +688,8 @@ impl ResourceManagerNativePackage {
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodPermission::Public;
                             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodPermission::Public;
                             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => MethodPermission::Public;
-                        },
-                        outer_auth: btreemap!(),
-                    },
+                        }
+                    ),
                 },
             }
         };
@@ -914,16 +912,8 @@ impl ResourceManagerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
 
-                    method_auth: MethodAuthTemplate::Static {
-                        // This is the mapping from Vault methods to Vault roles
-                        // NOTE: This is an extra filter on top of the ResourceManager filter
-                        // This is for use with the freezing feature
-                        // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                        auth: btreemap!(),
-
-                        // This is the mapping to ResourceManager roles
-                        // NOTE: This is an extra filter on top of the Vault filter
-                        outer_auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(
+                        method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
                             VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
                             VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
@@ -937,7 +927,7 @@ impl ResourceManagerNativePackage {
                             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                    ),
                 },
             }
         };
@@ -1210,15 +1200,8 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        // This is the mapping from Vault methods to Vault roles
-                        // NOTE: This is an extra filter on top of the ResourceManager filter
-                        // This is for use with the freezing feature
-                        // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                        auth: btreemap!(),
-                        // This is the mapping to ResourceManager roles
-                        // NOTE: This is an extra filter on top of the Vault filter
-                        outer_auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(
+                        method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
                             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
                             VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
@@ -1237,7 +1220,7 @@ impl ResourceManagerNativePackage {
                             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                    ),
                 },
             }
         };
@@ -1407,9 +1390,8 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(
+                        method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
                             BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
@@ -1421,7 +1403,7 @@ impl ResourceManagerNativePackage {
                             FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                             FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                    ),
                 },
             }
         };
@@ -1622,9 +1604,8 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(
+                        method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
                             BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
@@ -1632,13 +1613,14 @@ impl ResourceManagerNativePackage {
                             BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
                             BUCKET_PUT_IDENT => MethodPermission::Public;
                             BUCKET_TAKE_IDENT => MethodPermission::Public;
+                            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodPermission::Public;
                             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
                             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
 
                             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                    ),
                 },
             }
         };
@@ -1736,15 +1718,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template!(
-                            PROOF_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            PROOF_CLONE_IDENT => MethodPermission::Public;
-                            PROOF_DROP_IDENT => MethodPermission::Public;
-                            PROOF_GET_AMOUNT_IDENT => MethodPermission::Public;
-                        ),
-                    },
+                    method_auth: MethodAuthTemplate::NoAuth,
                 },
             }
         };
@@ -1858,16 +1832,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template!(
-                            PROOF_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            PROOF_CLONE_IDENT => MethodPermission::Public;
-                            PROOF_DROP_IDENT => MethodPermission::Public;
-                            PROOF_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT => MethodPermission::Public;
-                        ),
-                    },
+                    method_auth: MethodAuthTemplate::NoAuth,
                 },
             }
         };
@@ -2025,10 +1990,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::NoAuth,
                 },
             }
         };
@@ -2202,10 +2164,7 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::NoAuth,
                 },
             }
         };

@@ -129,34 +129,13 @@ pub struct AuthConfig {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum MethodAuthTemplate {
-    Static {
-        auth: BTreeMap<MethodKey, MethodPermission>,
-        outer_auth: BTreeMap<MethodKey, MethodPermission>,
-    },
-    StaticUseOuterRoles(BTreeMap<MethodKey, MethodPermission>),
-}
-
-impl MethodAuthTemplate {
-    pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
-        match self {
-            MethodAuthTemplate::Static { auth, .. } => auth,
-            MethodAuthTemplate::StaticUseOuterRoles(auth) => panic!("Unexpected"),
-        }
-    }
-
-    pub fn outer_auth(self) -> BTreeMap<MethodKey, MethodPermission> {
-        match self {
-            MethodAuthTemplate::Static { outer_auth, .. } => outer_auth,
-            MethodAuthTemplate::StaticUseOuterRoles(auth) => auth,
-        }
-    }
+    Static(BTreeMap<MethodKey, MethodPermission>),
+    StaticUseOuterAuth(BTreeMap<MethodKey, MethodPermission>),
+    NoAuth,
 }
 
 impl Default for MethodAuthTemplate {
     fn default() -> Self {
-        MethodAuthTemplate::Static {
-            auth: BTreeMap::default(),
-            outer_auth: BTreeMap::default(),
-        }
+        MethodAuthTemplate::Static(BTreeMap::default())
     }
 }

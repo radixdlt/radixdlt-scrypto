@@ -15,7 +15,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
+use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
@@ -76,8 +76,9 @@ impl AuthModule {
             ActingLocation::AtLocalBarrier
         };
 
-        let info = api.get_object_info(&node_id)?;
         let method_key = MethodKey::new(ident);
+        /*
+        let info = api.get_object_info(&node_id)?;
 
         if let Some(parent) = info.outer_object {
             Self::check_authorization_against_access_rules(
@@ -93,17 +94,18 @@ impl AuthModule {
         }
 
         if info.global {
+         */
             Self::check_authorization_against_access_rules(
                 callee,
                 auth_zone_id,
                 acting_location,
-                &node_id,
-                ObjectKey::SELF,
+                //&node_id,
+                //ObjectKey::SELF,
                 method_key,
                 args,
                 api,
             )?;
-        }
+        //}
 
         Ok(())
     }
@@ -115,8 +117,8 @@ impl AuthModule {
         callee: &MethodActor, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        access_rules_of: &NodeId,
-        object_key: ObjectKey,
+        //access_rules_of: &NodeId,
+        //object_key: ObjectKey,
         method_key: MethodKey,
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
@@ -138,20 +140,36 @@ impl AuthModule {
         )?
         .method_auth;
 
-        // TODO: Cleanup logic here
-        let method_permissions = match &object_key {
-            ObjectKey::SELF => auth_template.auth(),
-            ObjectKey::InnerBlueprint(_blueprint_name) => auth_template.outer_auth(),
+        let (access_rules_of, method_permissions) = match auth_template {
+            MethodAuthTemplate::Static(method_roles) => {
+
+                let info = api.get_object_info(&callee.node_id)?;
+                // Non-globalized objects do not have access rules objet yet
+                if !info.global {
+                    return Ok(());
+                }
+
+                (callee.node_id, method_roles)
+            }
+            MethodAuthTemplate::StaticUseOuterAuth(method_roles) => {
+                let node_id = callee.node_id;
+                let info = api.get_object_info(&node_id)?;
+                let access_rules_of = info.outer_object.unwrap();
+                (access_rules_of.into_node_id(), method_roles)
+            }
+            MethodAuthTemplate::NoAuth => return Ok(()),
         };
 
         let (permission, module) = match callee.module_id {
             ObjectModuleId::AccessRules => {
+                /*
                 match &object_key {
                     ObjectKey::SELF => {}
                     ObjectKey::InnerBlueprint(..) => return Ok(()),
                 }
+                 */
                 AccessRulesNativePackage::authorization(
-                    access_rules_of,
+                    &callee.node_id,
                     method_key.ident.as_str(),
                     args,
                     api,
@@ -161,16 +179,21 @@ impl AuthModule {
                 if let Some(permission) = method_permissions.get(&method_key) {
                     (permission.clone(), callee.module_id)
                 } else {
+                    /*
                     match &object_key {
                         ObjectKey::SELF => {
+
+                     */
                             return Err(RuntimeError::SystemModuleError(
                                 SystemModuleError::AuthError(AuthError::NoMethodMapping(
                                     callee.fn_identifier(),
                                 )),
                             ));
+                    /*
                         }
                         _ => return Ok(()),
                     }
+                     */
                 }
             }
         };
@@ -184,7 +207,7 @@ impl AuthModule {
             callee.fn_identifier(),
             auth_zone_id,
             acting_location,
-            access_rules_of,
+            &access_rules_of,
             module,
             &role_list,
             api,

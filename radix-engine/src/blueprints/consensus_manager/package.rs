@@ -194,8 +194,8 @@ impl ConsensusManagerNativePackage {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template!(
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth_template!(
                             CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
                             CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
@@ -204,8 +204,7 @@ impl ConsensusManagerNativePackage {
                             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodPermission::Public;
                             CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodPermission::Public;
                         ),
-                        outer_auth: method_auth_template!(),
-                    },
+                    ),
                 },
             }
         };
@@ -422,8 +421,8 @@ impl ConsensusManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth_template! {
                             VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
                             VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;
                             VALIDATOR_STAKE_IDENT => [STAKE_ROLE];
@@ -438,8 +437,7 @@ impl ConsensusManagerNativePackage {
                             VALIDATOR_APPLY_EMISSION_IDENT => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
                             VALIDATOR_APPLY_REWARD_IDENT => [VALIDATOR_APPLY_REWARD_AUTHORITY];
                         },
-                        outer_auth: btreemap!(),
-                    },
+                    ),
                 },
             }
         };

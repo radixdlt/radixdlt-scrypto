@@ -647,13 +647,11 @@ impl PackageNativePackage {
                         PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
                         PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth_template! {
                             PACKAGE_CLAIM_ROYALTIES_IDENT => [OWNER_ROLE];
                         },
-                        outer_auth: method_auth_template!(),
-                    }
-
+                    ),
                 },
             }
         );

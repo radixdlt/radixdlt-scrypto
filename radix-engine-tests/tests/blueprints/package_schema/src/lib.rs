@@ -219,10 +219,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         royalty_config: RoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
             function_auth,
-            method_auth: scrypto::blueprints::package::MethodAuthTemplate::Static {
-                auth: btreemap!(),
-                outer_auth: btreemap!(),
-            },
+            method_auth: scrypto::blueprints::package::MethodAuthTemplate::NoAuth,
         },
     };
 
