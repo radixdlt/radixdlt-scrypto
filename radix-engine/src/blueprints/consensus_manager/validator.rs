@@ -552,7 +552,7 @@ impl ValidatorBlueprint {
                 module: ObjectModuleId::Main,
                 role_key: RoleKey::new(STAKE_ROLE),
                 rule: Some(rule),
-                mutability: None,
+                freeze: false,
             })
             .unwrap(),
         )?;
@@ -1003,7 +1003,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         btreemap!(
             RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
             RoleKey::new(VALIDATOR_APPLY_REWARD_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
-            RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { mutable: [SELF_ROLE].into(), mutable_mutable: false },
+            RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { updaters: [SELF_ROLE].into() },
         )
     }
 }
