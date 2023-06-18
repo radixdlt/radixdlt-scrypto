@@ -437,7 +437,8 @@ CALL_METHOD
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
     "my_method"
-    Enum<0u8>()
+    Enum<0u8>(Enum<0u8>())
+    true
 ;
 CLAIM_PACKAGE_ROYALTY
     Address("${package_address}")

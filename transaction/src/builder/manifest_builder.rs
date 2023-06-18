@@ -664,6 +664,23 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn freeze_component_royalty<S: ToString>(
+        &mut self,
+        component_address: ComponentAddress,
+        method: S,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallRoyaltyMethod {
+            address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&ComponentSetRoyaltyInput {
+                method: method.to_string(),
+                amount: None,
+                freeze: true,
+            }),
+        })
+        .0
+    }
+
     pub fn set_component_royalty<S: ToString>(
         &mut self,
         component_address: ComponentAddress,
