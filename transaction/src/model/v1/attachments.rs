@@ -33,7 +33,7 @@ pub struct PlaintextMessageV1 {
 
 /// We explicitly mark content as either String or Bytes - this distinguishes (along with the mime type)
 /// whether the message is intended to be displayable as text, or not.
-/// 
+///
 /// This data model ensures that messages intended to be displayable as text are valid unicode strings.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum MessageContentsV1 {
@@ -61,14 +61,19 @@ impl MessageContentsV1 {
 ///
 /// The plaintext message payload bytes are encrypted via (128-bit) AES-GCM with an ephemeral symmetric key.
 ///
-/// The AES-GCM symmetric key is encrypted separately for each decryptor public key via (128-bit) AES-KeyWrap.
+/// The (128-bit) AES-GCM symmetric key is encrypted separately for each decryptor public key via (256-bit) AES-KeyWrap.
 /// AES-KeyWrap uses a key derived via a KDF (Key Derivation Function) using a shared secret.
-/// For each decryptor public key, we create a shared secret via static Diffie-Helman between the
+/// For each decryptor public key, we create a shared curve point `G` via static Diffie-Helman between the
 /// decryptor public key, and a per-transaction ephemeral public key for that curve type.
+/// We then use that shared secret with a key derivation function to create the (256-bit) KEK (Key Encrypting Key):
+/// `KEK = HKDF(hash: Blake2b, secret: x co-ord of G, salt: [], length: 256 bits)`.
 ///
-/// Note - for V1 we use 128-bit symmetric keys because we wish to save on payload size, and:
-/// * 128-bit AES is considered secure enough for most use cases (EG bitcoin hash rate is only 2^93 / year)
-/// * It's being used with a transient key - so a hypothetical successful attack would only decrypt one message
+/// Note:
+/// - For ECDH, the secret we use is the `x` coordinate of the shared public point, unhashed. This ECDH output is
+///   known as ASN1 X9.63 variant of ECDH. Be careful - libsecp256k1 uses another non-standard variant.
+/// - We persist 128-bit symmetric keys because we wish to save on payload size, and:
+///   * 128-bit AES is considered secure enough for most use cases (EG bitcoin hash rate is only 2^93 / year)
+///   * It's being used with a transient key - so a hypothetical successful attack would only decrypt one message
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub struct EncryptedMessageV1 {
     pub encrypted: AesGcmPayload,
@@ -145,7 +150,7 @@ impl From<PublicKeyHash> for PublicKeyFingerprint {
 #[sbor(transparent)]
 pub struct AesGcmPayload(pub Vec<u8>);
 
-/// The wrapped key bytes from applying AES-KeyWrap according to RFC-3394
+/// The wrapped key bytes from applying 256-bit AES-KeyWrap from RFC-3394
 /// to the 128-bit message ephemeral public key, with the secret KEK provided by
 /// static Diffie-Helman between the decryptor public key, and the `dh_ephemeral_public_key`
 /// for that curve type.
