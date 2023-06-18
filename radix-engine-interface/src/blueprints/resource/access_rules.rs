@@ -19,19 +19,6 @@ pub const OWNER_ROLE: &'static str = "_owner_";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum ObjectKey {
-    SELF,
-    InnerBlueprint(String),
-}
-
-impl ObjectKey {
-    pub fn inner_blueprint(name: &str) -> Self {
-        ObjectKey::InnerBlueprint(name.to_string())
-    }
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct MethodKey {
     pub ident: String,

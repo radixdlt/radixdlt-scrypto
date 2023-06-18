@@ -77,35 +77,15 @@ impl AuthModule {
         };
 
         let method_key = MethodKey::new(ident);
-        /*
-        let info = api.get_object_info(&node_id)?;
 
-        if let Some(parent) = info.outer_object {
-            Self::check_authorization_against_access_rules(
-                callee,
-                auth_zone_id,
-                acting_location,
-                parent.as_node_id(),
-                ObjectKey::InnerBlueprint(info.blueprint_id.blueprint_name.clone()),
-                method_key.clone(),
-                args,
-                api,
-            )?;
-        }
-
-        if info.global {
-         */
-            Self::check_authorization_against_access_rules(
-                callee,
-                auth_zone_id,
-                acting_location,
-                //&node_id,
-                //ObjectKey::SELF,
-                method_key,
-                args,
-                api,
-            )?;
-        //}
+        Self::check_authorization_against_access_rules(
+            callee,
+            auth_zone_id,
+            acting_location,
+            method_key,
+            args,
+            api,
+        )?;
 
         Ok(())
     }
@@ -117,83 +97,63 @@ impl AuthModule {
         callee: &MethodActor, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        //access_rules_of: &NodeId,
-        //object_key: ObjectKey,
         method_key: MethodKey,
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
-            callee
-                .module_object_info
-                .blueprint_id
-                .package_address
-                .as_node_id(),
-            &BlueprintVersionKey::new_default(
-                callee
-                    .module_object_info
-                    .blueprint_id
-                    .blueprint_name
-                    .as_str(),
-            ),
-            api.api,
-        )?
-        .method_auth;
-
-        let (access_rules_of, method_permissions) = match auth_template {
-            MethodAuthTemplate::Static(method_roles) => {
-
-                let info = api.get_object_info(&callee.node_id)?;
-                // Non-globalized objects do not have access rules objet yet
-                if !info.global {
-                    return Ok(());
-                }
-
-                (callee.node_id, method_roles)
-            }
-            MethodAuthTemplate::StaticUseOuterAuth(method_roles) => {
-                let node_id = callee.node_id;
-                let info = api.get_object_info(&node_id)?;
-                let access_rules_of = info.outer_object.unwrap();
-                (access_rules_of.into_node_id(), method_roles)
-            }
-            MethodAuthTemplate::NoAuth => return Ok(()),
-        };
-
-        let (permission, module) = match callee.module_id {
+        let (access_rules_of, permission, module) = match callee.module_id {
             ObjectModuleId::AccessRules => {
-                /*
-                match &object_key {
-                    ObjectKey::SELF => {}
-                    ObjectKey::InnerBlueprint(..) => return Ok(()),
-                }
-                 */
-                AccessRulesNativePackage::authorization(
+                let (permission, module) = AccessRulesNativePackage::authorization(
                     &callee.node_id,
                     method_key.ident.as_str(),
                     args,
                     api,
-                )?
+                )?;
+                (callee.node_id, permission, module)
             }
             _ => {
-                if let Some(permission) = method_permissions.get(&method_key) {
-                    (permission.clone(), callee.module_id)
-                } else {
-                    /*
-                    match &object_key {
-                        ObjectKey::SELF => {
+                let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
+                    callee
+                        .module_object_info
+                        .blueprint_id
+                        .package_address
+                        .as_node_id(),
+                    &BlueprintVersionKey::new_default(
+                        callee
+                            .module_object_info
+                            .blueprint_id
+                            .blueprint_name
+                            .as_str(),
+                    ),
+                    api.api,
+                )?.method_auth;
 
-                     */
-                            return Err(RuntimeError::SystemModuleError(
-                                SystemModuleError::AuthError(AuthError::NoMethodMapping(
-                                    callee.fn_identifier(),
-                                )),
-                            ));
-                    /*
+                let (access_rules_of, method_permissions) = match auth_template {
+                    MethodAuthTemplate::Static(method_roles) => {
+                        // Non-globalized objects do not have access rules objet yet
+                        if !callee.node_object_info.global {
+                            return Ok(());
                         }
-                        _ => return Ok(()),
+
+                        (callee.node_id, method_roles)
                     }
-                     */
+                    MethodAuthTemplate::StaticUseOuterAuth(method_roles) => {
+                        let node_id = callee.node_id;
+                        let info = api.get_object_info(&node_id)?;
+                        let access_rules_of = info.outer_object.unwrap();
+                        (access_rules_of.into_node_id(), method_roles)
+                    }
+                    MethodAuthTemplate::NoAuth => return Ok(()),
+                };
+
+                if let Some(permission) = method_permissions.get(&method_key) {
+                    (access_rules_of, permission.clone(), callee.module_id)
+                } else {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::AuthError(AuthError::NoMethodMapping(
+                            callee.fn_identifier(),
+                        )),
+                    ));
                 }
             }
         };
