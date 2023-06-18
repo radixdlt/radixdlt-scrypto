@@ -111,7 +111,7 @@ fn build_access_rules(
             );
         }
 
-        // Freeze
+        // Freeze/Unfreeze Role
         if let Some((freeze_access_rule, freeze_mutability)) =
             access_rules_map.remove(&ResourceMethodAuthKey::Freeze)
         {
@@ -122,21 +122,6 @@ fn build_access_rules(
             main_roles.define_role(
                 FREEZE_UPDATE_ROLE,
                 RoleEntry::new(freeze_mutability, [FREEZE_UPDATE_ROLE], false),
-            );
-        }
-
-        // Unfreeze
-        let (unfreeze_access_rule, unfreeze_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Unfreeze)
-            .unwrap_or((DenyAll, DenyAll));
-        {
-            main_roles.define_role(
-                UNFREEZE_ROLE,
-                RoleEntry::new(unfreeze_access_rule, [UNFREEZE_UPDATE_ROLE], false),
-            );
-            main_roles.define_role(
-                UNFREEZE_UPDATE_ROLE,
-                RoleEntry::new(unfreeze_mutability, [UNFREEZE_UPDATE_ROLE], false),
             );
         }
 

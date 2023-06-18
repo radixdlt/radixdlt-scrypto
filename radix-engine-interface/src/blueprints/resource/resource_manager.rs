@@ -29,8 +29,6 @@ pub const RECALL_ROLE: &str = "recall";
 pub const RECALL_UPDATE_ROLE: &str = "recall_update";
 pub const FREEZE_ROLE: &str = "freeze";
 pub const FREEZE_UPDATE_ROLE: &str = "freeze_update";
-pub const UNFREEZE_ROLE: &str = "unfreeze";
-pub const UNFREEZE_UPDATE_ROLE: &str = "unfreeze_update";
 pub const UPDATE_NON_FUNGIBLE_DATA_ROLE: &str = "update_non_fungible_data";
 pub const UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE: &str = "update_non_fungible_data_update";
 
@@ -45,10 +43,9 @@ pub enum ResourceMethodAuthKey {
     Deposit,
     Recall,
     Freeze,
-    Unfreeze,
 }
 
-pub const ALL_RESOURCE_AUTH_KEYS: [ResourceMethodAuthKey; 9] = [
+pub const ALL_RESOURCE_AUTH_KEYS: [ResourceMethodAuthKey; 8] = [
     ResourceMethodAuthKey::Mint,
     ResourceMethodAuthKey::Burn,
     ResourceMethodAuthKey::UpdateNonFungibleData,
@@ -57,7 +54,6 @@ pub const ALL_RESOURCE_AUTH_KEYS: [ResourceMethodAuthKey; 9] = [
     ResourceMethodAuthKey::Deposit,
     ResourceMethodAuthKey::Recall,
     ResourceMethodAuthKey::Freeze,
-    ResourceMethodAuthKey::Unfreeze,
 ];
 
 impl ResourceMethodAuthKey {
@@ -73,7 +69,6 @@ impl ResourceMethodAuthKey {
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
-            Self::Unfreeze => (ObjectModuleId::Main, RoleKey::new(UNFREEZE_ROLE)),
 
             Self::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE)),
         }
@@ -91,7 +86,6 @@ impl ResourceMethodAuthKey {
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_UPDATE_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_UPDATE_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_UPDATE_ROLE)),
-            Self::Unfreeze => (ObjectModuleId::Main, RoleKey::new(UNFREEZE_UPDATE_ROLE)),
 
             Self::UpdateMetadata => (
                 ObjectModuleId::Metadata,

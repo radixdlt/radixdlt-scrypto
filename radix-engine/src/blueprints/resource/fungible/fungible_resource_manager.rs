@@ -49,10 +49,9 @@ pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
 fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
     if !check_fungible_amount(&amount, divisibility) {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidAmount(
-                amount,
-                divisibility,
-            )),
+            ApplicationError::FungibleResourceManagerError(
+                FungibleResourceManagerError::InvalidAmount(amount, divisibility),
+            ),
         ));
     }
 
@@ -353,12 +352,14 @@ impl FungibleResourceManagerBlueprint {
     }
 
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(MINT_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::NotMintable),
+                ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::NotMintable,
+                ),
             ));
         }
 
@@ -366,12 +367,14 @@ impl FungibleResourceManagerBlueprint {
     }
 
     fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(BURN_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::NotBurnable),
+                ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::NotBurnable,
+                ),
             ));
         }
 

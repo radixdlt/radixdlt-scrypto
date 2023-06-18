@@ -919,7 +919,7 @@ impl ResourceManagerNativePackage {
                         VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
                         VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
                         VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                        VAULT_UNFREEZE_IDENT => [UNFREEZE_ROLE];
+                        VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
                         VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
                         FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAW_ROLE];
                         VAULT_RECALL_IDENT => [RECALL_ROLE];
@@ -1211,7 +1211,7 @@ impl ResourceManagerNativePackage {
                         NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAW_ROLE];
                         VAULT_RECALL_IDENT => [RECALL_ROLE];
                         VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                        VAULT_UNFREEZE_IDENT => [UNFREEZE_ROLE];
+                        VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
                         NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALL_ROLE];
                         VAULT_PUT_IDENT => [DEPOSIT_ROLE];
                         VAULT_BURN_IDENT => [BURN_ROLE];

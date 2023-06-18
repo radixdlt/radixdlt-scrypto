@@ -790,12 +790,14 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(MINT_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NotMintable),
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::NotMintable,
+                ),
             ));
         }
 
@@ -803,12 +805,14 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(BURN_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NotBurnable),
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::NotBurnable,
+                ),
             ));
         }
 

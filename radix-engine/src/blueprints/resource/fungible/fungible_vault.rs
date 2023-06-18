@@ -29,7 +29,6 @@ impl FungibleVaultBlueprint {
         Ok(divisibility)
     }
 
-
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
@@ -262,8 +261,8 @@ impl FungibleVaultBlueprint {
     }
 
     pub fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
             return Ok(());
@@ -285,8 +284,8 @@ impl FungibleVaultBlueprint {
     }
 
     fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
@@ -298,8 +297,8 @@ impl FungibleVaultBlueprint {
     }
 
     fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(VAULT_RECALL_FEATURE)? {
             return Err(RuntimeError::ApplicationError(

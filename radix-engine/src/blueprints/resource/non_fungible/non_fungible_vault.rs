@@ -24,7 +24,6 @@ pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
-
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
@@ -271,10 +270,9 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-
     fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
             return Ok(());
@@ -296,8 +294,8 @@ impl NonFungibleVaultBlueprint {
     }
 
     fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
@@ -309,8 +307,8 @@ impl NonFungibleVaultBlueprint {
     }
 
     fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(VAULT_RECALL_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
@@ -647,5 +645,4 @@ impl NonFungibleVault {
 
         NonFungibleVault::put(LiquidNonFungibleResource::new(liquid_non_fungibles), api)
     }
-
 }
