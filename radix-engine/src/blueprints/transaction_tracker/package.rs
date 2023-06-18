@@ -240,13 +240,15 @@ mod tests {
 
     #[test]
     fn calculate_coverage() {
-        let covered_days = EPOCHS_PER_PARTITION as f64
-            * (PARTITION_RANGE_END as f64 - (PARTITION_RANGE_START as f64 - 1.0) - 1.0)
-            * 5.0
-            / 60.0
-            / 24.0;
-
-        assert_eq!(covered_days.floor() as usize, 65);
+        let covered_epochs = (EPOCHS_PER_PARTITION as f64
+            * (PARTITION_RANGE_END as f64 - (PARTITION_RANGE_START as f64 - 1.0) - 1.0))
+            .floor() as u64;
+        let covered_days = covered_epochs
+            * 5 // Targeted epoch duration: 5 mins
+            / 60
+            / 24;
+        assert!(covered_epochs >= DEFAULT_MAX_EPOCH_RANGE);
+        assert_eq!(covered_days, 65);
     }
 
     #[test]
@@ -262,8 +264,14 @@ mod tests {
 
         assert_eq!(store.partition_for_expiry_epoch(0), None);
         assert_eq!(store.partition_for_expiry_epoch(256), Some(70));
-        assert_eq!(store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION - 1), Some(70));
-        assert_eq!(store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION), Some(71));
+        assert_eq!(
+            store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION - 1),
+            Some(70)
+        );
+        assert_eq!(
+            store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION),
+            Some(71)
+        );
         assert_eq!(
             store.partition_for_expiry_epoch(256 + EPOCHS_PER_PARTITION * num_partitions - 1),
             Some(69)

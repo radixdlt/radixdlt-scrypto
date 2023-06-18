@@ -784,10 +784,12 @@ where
         }
 
         // Check if all intent hashes in the first epoch have expired, based on the `next_epoch`.
+        //
         // In this particular implementation, because the transaction tracker coverage is greater than
         // the max epoch range in transaction header, we must check epoch range first to
         // ensure we don't store intent hash too far into the future.
-
+        //
+        // Also, we need to make sure epoch doesn't jump by a large distance.
         if next_epoch.number()
             >= transaction_tracker.start_epoch + transaction_tracker.epochs_per_partition
         {
