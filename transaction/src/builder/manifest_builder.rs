@@ -995,20 +995,24 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn freeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+    pub fn freeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
-            args: to_manifest_value(&VaultFreezeInput {}),
+            args: to_manifest_value(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::WITHDRAW
+            }),
         });
         self
     }
 
-    pub fn unfreeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+    pub fn unfreeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
-            args: to_manifest_value(&VaultUnfreezeInput {}),
+            args: to_manifest_value(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::WITHDRAW
+            }),
         });
         self
     }

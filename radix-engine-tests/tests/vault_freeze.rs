@@ -15,7 +15,7 @@ fn cannot_withdraw_from_frozen_vault() {
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .freeze(InternalAddress::new_or_panic(vault_id.into()))
+        .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -49,7 +49,7 @@ fn cannot_recall_from_frozen_vault() {
     let vault_address = InternalAddress::new_or_panic(vault_id.into());
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .freeze(vault_address)
+        .freeze_withdraw(vault_address)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -77,13 +77,13 @@ fn can_withdraw_from_unfrozen_vault() {
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .freeze(InternalAddress::new_or_panic(vault_id.into()))
+        .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .unfreeze(InternalAddress::new_or_panic(vault_id.into()))
+        .unfreeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);

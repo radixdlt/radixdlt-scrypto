@@ -27,8 +27,8 @@ pub const DEPOSIT_ROLE: &str = "deposit";
 pub const DEPOSIT_UPDATE_ROLE: &str = "deposit_update";
 pub const RECALL_ROLE: &str = "recall";
 pub const RECALL_UPDATE_ROLE: &str = "recall_update";
-pub const FREEZE_ROLE: &str = "freeze";
-pub const FREEZE_UPDATE_ROLE: &str = "freeze_update";
+pub const REMOTE_FREEZE_ROLE: &str = "freeze";
+pub const REMOTE_FREEZE_UPDATER_ROLE: &str = "freeze_update";
 pub const UPDATE_NON_FUNGIBLE_DATA_ROLE: &str = "update_non_fungible_data";
 pub const UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE: &str = "update_non_fungible_data_update";
 
@@ -68,7 +68,7 @@ impl ResourceMethodAuthKey {
             Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_ROLE)),
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
-            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
+            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(REMOTE_FREEZE_ROLE)),
 
             Self::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE)),
         }
@@ -85,7 +85,7 @@ impl ResourceMethodAuthKey {
             Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_UPDATE_ROLE)),
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_UPDATE_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_UPDATE_ROLE)),
-            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_UPDATE_ROLE)),
+            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(REMOTE_FREEZE_UPDATER_ROLE)),
 
             Self::UpdateMetadata => (
                 ObjectModuleId::Metadata,

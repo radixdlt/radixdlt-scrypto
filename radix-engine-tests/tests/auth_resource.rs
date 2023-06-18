@@ -25,7 +25,7 @@ impl Action {
             Action::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_ROLE)),
             Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_ROLE)),
             Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
-            Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
+            Action::Freeze => (ObjectModuleId::Main, RoleKey::new(REMOTE_FREEZE_ROLE)),
 
             Action::UpdateMetadata => {
                 (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE))
@@ -144,7 +144,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         Action::Freeze => {
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
-            builder.freeze(InternalAddress::new_or_panic(vault_id.into()))
+            builder.freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         }
     };
 
