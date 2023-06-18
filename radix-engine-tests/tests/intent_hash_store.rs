@@ -60,7 +60,7 @@ fn test_transaction_replay_protection() {
         ExecutionConfig::for_notarized_transaction(),
     );
     let result = receipt.expect_commit_success();
-    assert_eq!(result.partition_deletions.len(), 1);
+    assert_eq!(result.state_updates.partition_deletions.len(), 1);
 }
 
 fn get_validated(
