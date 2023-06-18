@@ -41,7 +41,7 @@ fn test_transaction_replay_protection() {
         ExecutionConfig::for_notarized_transaction(),
     );
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::IntentHashCommitted => true,
+        RejectionError::IntentHashPreviouslyCommitted => true,
         _ => false,
     });
 

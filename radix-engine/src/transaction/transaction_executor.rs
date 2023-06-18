@@ -441,10 +441,10 @@ where
         match substate.value {
             Some(status) => match status {
                 TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
-                    return Err(RejectionError::IntentHashCommitted);
+                    return Err(RejectionError::IntentHashPreviouslyCommitted);
                 }
                 TransactionStatus::Cancelled => {
-                    return Err(RejectionError::IntentHashCancelled);
+                    return Err(RejectionError::IntentHashPreviouslyCancelled);
                 }
             },
             None => {}
