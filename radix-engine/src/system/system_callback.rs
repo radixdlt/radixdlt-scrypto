@@ -504,12 +504,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         // to make sure the auth zone stack is in good state for the proof dropping above.
 
         // Detach proofs from the auth zone
-        if let Some(auth_zone_id) = api
-            .kernel_get_system()
-            .modules
-            .auth_module()
-            .and_then(|auth| auth.auth_zone_stack.last().cloned())
-        {
+        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
             let handle = api.kernel_lock_substate(
                 &auth_zone_id,
                 MAIN_BASE_PARTITION,

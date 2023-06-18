@@ -22,9 +22,12 @@ use crate::types::*;
 use bitflags::bitflags;
 use paste::paste;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
+
+use super::costing::CostingReason;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -421,5 +424,132 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_take_substates(api, store_access))
+    }
+}
+
+impl SystemModuleMixer {
+    // Note that module mixer is called by both kernel and system.
+    // - Kernel uses the `SystemModule<SystemConfig<V>>` trait above;
+    // - System uses methods defined below (TODO: add a trait?)
+
+    pub fn add_log(&mut self, level: Level, message: String) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            self.transaction_runtime.add_log(level, message)
+        }
+    }
+
+    pub fn add_event(&mut self, identifier: EventTypeIdentifier, data: Vec<u8>) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_EVENTS)
+        {
+            self.transaction_events.add_event(identifier, data)
+        }
+    }
+
+    pub fn add_replacement(
+        &mut self,
+        old: (NodeId, ObjectModuleId),
+        new: (NodeId, ObjectModuleId),
+    ) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_EVENTS)
+        {
+            self.transaction_events.add_replacement(old, new)
+        }
+    }
+
+    pub fn auth_zone_id(&mut self) -> Option<NodeId> {
+        if self.enabled_modules.contains(EnabledModules::AUTH) {
+            self.auth.last_auth_zone()
+        } else {
+            None
+        }
+    }
+
+    pub fn fee_reserve(&mut self) -> Option<&SystemLoanFeeReserve> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            Some(&self.costing.fee_reserve)
+        } else {
+            None
+        }
+    }
+
+    pub fn transaction_hash(&self) -> Option<Hash> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            Some(self.transaction_runtime.tx_hash)
+        } else {
+            None
+        }
+    }
+
+    pub fn generate_uuid(&mut self) -> Option<u128> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            Some(self.transaction_runtime.generate_uuid())
+        } else {
+            None
+        }
+    }
+
+    pub fn update_instruction_index(&mut self, new_index: usize) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::EXECUTION_TRACE)
+        {
+            self.execution_trace.update_instruction_index(new_index)
+        }
+    }
+
+    pub fn update_wasm_memory_usage(
+        &mut self,
+        depth: usize,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
+            self.limits.update_wasm_memory_usage(depth, consumed_memory)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn apply_execution_cost<F>(
+        &mut self,
+        reason: CostingReason,
+        base_price: F,
+        multiplier: usize,
+    ) -> Result<(), RuntimeError>
+    where
+        F: Fn(&FeeTable) -> u32,
+    {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing
+                .apply_execution_cost(reason, base_price, multiplier)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn credit_cost_units(
+        &mut self,
+        vault_id: NodeId,
+        locked_fee: LiquidFungibleResource,
+        contingent: bool,
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing
+                .credit_cost_units(vault_id, locked_fee, contingent)
+        } else {
+            Ok(locked_fee)
+        }
     }
 }
