@@ -212,7 +212,7 @@ where
                 .and_then(|_| {
                     Self::validate_intent_hash(
                         &mut track,
-                        executable.intent_hash().clone(),
+                        executable.intent_hash().to_hash(),
                         range.end_epoch_exclusive,
                     )
                 })
@@ -279,8 +279,7 @@ where
                             Self::update_transaction_tracker(
                                 &mut track,
                                 next_epoch,
-                                executable.intent_hash().clone(),
-                                executable.epoch_range().map(|x| x.end_epoch_exclusive),
+                                executable.intent_hash(),
                                 is_success,
                             );
                         }
@@ -470,7 +469,7 @@ where
             TransactionLimitsModule,
         ),
     ) {
-        let mut id_allocator = IdAllocator::new(executable.intent_hash().clone());
+        let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
         let mut system = SystemConfig {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
@@ -480,7 +479,7 @@ where
             },
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,
-                executable.intent_hash().clone(),
+                executable.intent_hash().to_hash(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
@@ -498,7 +497,7 @@ where
 
         let interpretation_result = kernel_boot
             .call_transaction_processor(
-                executable.intent_hash(),
+                executable.intent_hash().as_hash(),
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),
@@ -730,8 +729,7 @@ where
     fn update_transaction_tracker(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         next_epoch: Epoch,
-        intent_hash: Hash,
-        expiry_epoch: Option<Epoch>,
+        intent_hash: &TransactionIntentHash,
         is_success: bool,
     ) {
         // Read the intent hash store
@@ -748,9 +746,13 @@ where
             track.read_substate(handle).0.as_typed().unwrap();
 
         // Update the status of the intent hash
-        if let Some(expiry_epoch) = expiry_epoch {
+        if let TransactionIntentHash::User {
+            expiry_epoch,
+            intent_hash,
+        } = intent_hash
+        {
             if let Some(partition_number) =
-                transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
+                transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
             {
                 let handle = track
                     .acquire_lock_virtualize(
@@ -809,7 +811,7 @@ where
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
         println!("{:-^80}", "Executable");
-        println!("Transaction hash: {}", executable.intent_hash());
+        println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
         println!("Fee payment: {:?}", executable.fee_payment());
         println!(

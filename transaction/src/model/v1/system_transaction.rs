@@ -105,7 +105,9 @@ impl PreparedSystemTransactionV1 {
             &self.references,
             &self.blobs.blobs_by_hash,
             ExecutionContext {
-                intent_hash: self.hash_for_execution.hash,
+                intent_hash: TransactionIntentHash::System {
+                    intent_hash: self.hash_for_execution.hash,
+                },
                 epoch_range: None,
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
