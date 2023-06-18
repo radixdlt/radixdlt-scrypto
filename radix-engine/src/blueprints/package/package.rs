@@ -29,7 +29,7 @@ use crate::method_auth_template;
 use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::AuthError;
+use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
@@ -1262,12 +1262,12 @@ impl PackageRoyaltyNativeBlueprint {
 pub struct PackageAuthNativeBlueprint;
 
 impl PackageAuthNativeBlueprint {
-    pub fn get_bp_function_access_rule<Y, V>(
+    pub fn resolve_function_permission<Y, V>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         ident: &str,
         api: &mut Y,
-    ) -> Result<AccessRule, RuntimeError>
+    ) -> Result<ResolvedPermission, RuntimeError>
     where
         Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
@@ -1275,7 +1275,7 @@ impl PackageAuthNativeBlueprint {
         let auth_template = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
         let access_rule = auth_template.function_auth.get(ident);
         if let Some(access_rule) = access_rule {
-            Ok(access_rule.clone())
+            Ok(ResolvedPermission::AccessRule(access_rule.clone()))
         } else {
             let package_address = PackageAddress::new_or_panic(receiver.0.clone());
             let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
