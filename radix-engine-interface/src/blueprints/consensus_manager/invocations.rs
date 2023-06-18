@@ -276,6 +276,15 @@ pub struct ValidatorUnregisterInput {}
 
 pub type ValidatorUnregisterOutput = ();
 
+pub const VALIDATOR_STAKE_AS_OWNER_IDENT: &str = "stake_as_owner";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorStakeAsOwnerInput {
+    pub stake: Bucket,
+}
+
+pub type ValidatorStakeAsOwnerOutput = Bucket;
+
 pub const VALIDATOR_STAKE_IDENT: &str = "stake";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]

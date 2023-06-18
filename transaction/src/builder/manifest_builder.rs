@@ -12,11 +12,7 @@ use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerCreateValidatorInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
-    VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
-    VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
-};
+use radix_engine_interface::blueprints::consensus_manager::{ConsensusManagerCreateValidatorInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT, VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_STAKE_AS_OWNER_IDENT};
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
@@ -580,6 +576,19 @@ impl ManifestBuilder {
             address: validator_address.into(),
             method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: manifest_args!(),
+        });
+        self
+    }
+
+    pub fn stake_validator_as_owner(
+        &mut self,
+        validator_address: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallMethod {
+            address: validator_address.into(),
+            method_name: VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+            args: manifest_args!(bucket),
         });
         self
     }

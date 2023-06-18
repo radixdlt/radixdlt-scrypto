@@ -246,6 +246,19 @@ impl ConsensusManagerNativePackage {
                 },
             );
             functions.insert(
+                VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerOutput>(),
+                    ),
+                    export: VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+                },
+            );
+            functions.insert(
                 VALIDATOR_STAKE_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -425,7 +438,8 @@ impl ConsensusManagerNativePackage {
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
                         VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
                         VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;
-                        VALIDATOR_STAKE_IDENT => [STAKE_ROLE];
+                        VALIDATOR_STAKE_IDENT => MethodPermission::Public;
+                        VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
                         VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
                         VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
                         VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
@@ -567,6 +581,15 @@ impl ConsensusManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unregister(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_STAKE_AS_OWNER_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorStakeAsOwnerInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::stake_as_owner(input.stake, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_STAKE_IDENT => {
