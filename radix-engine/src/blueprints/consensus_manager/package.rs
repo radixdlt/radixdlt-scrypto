@@ -214,6 +214,9 @@ impl ConsensusManagerNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ValidatorSubstate>(),
             ));
+            fields.push(FieldSchema::static_field(
+                aggregator.add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeFlag>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(

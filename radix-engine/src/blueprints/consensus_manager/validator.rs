@@ -108,6 +108,12 @@ pub struct ValidatorSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ValidatorAcceptsDelegatedStakeFlag {
+    pub accepts_delegated_stake: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct UnstakeData {
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
     /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
@@ -1113,9 +1119,16 @@ impl ValidatorCreator {
             already_unlocked_owner_stake_unit_amount: Decimal::zero(),
         };
 
+        let accepts_delegated_stake = ValidatorAcceptsDelegatedStakeFlag {
+            accepts_delegated_stake: false,
+        };
+
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
-            vec![scrypto_encode(&substate).unwrap()],
+            vec![
+                scrypto_encode(&substate).unwrap(),
+                scrypto_encode(&accepts_delegated_stake).unwrap(),
+            ],
         )?;
 
         let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
