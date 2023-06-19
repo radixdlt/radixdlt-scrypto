@@ -1,7 +1,7 @@
-use radix_engine::blueprints::transaction_tracker::EPOCHS_PER_PARTITION;
 use radix_engine::errors::RejectionError;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -17,26 +17,40 @@ use transaction::validation::{
 
 #[test]
 fn test_transaction_replay_protection() {
-    let mut test_runner = TestRunner::builder().build();
-
-    let current_epoch = Epoch::of(1);
-    test_runner.set_current_epoch(current_epoch);
-    let transaction = create_notarized_transaction(TransactionParams {
-        start_epoch_inclusive: current_epoch,
-        end_epoch_exclusive: current_epoch.after(DEFAULT_MAX_EPOCH_RANGE),
-    });
+    let init_epoch = Epoch::of(1);
+    let rounds_per_epoch = 5;
+    let genesis = CustomGenesis::default(
+        init_epoch,
+        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // 1. Run a notarized transaction
+    let transaction = create_notarized_transaction(TransactionParams {
+        start_epoch_inclusive: init_epoch,
+        end_epoch_exclusive: init_epoch.after(DEFAULT_MAX_EPOCH_RANGE),
+    });
+    let validated = get_validated(&transaction).unwrap();
     let receipt = test_runner.execute_transaction(
-        get_validated(&transaction).unwrap().get_executable(),
+        validated.get_executable(),
         FeeReserveConfig::default(),
         ExecutionConfig::for_notarized_transaction(),
     );
     receipt.expect_commit_success();
 
-    // 2. Run the transaction again
+    // 2. Force update the epoch (through database layer)
+    let new_epoch = init_epoch.after(DEFAULT_MAX_EPOCH_RANGE).previous();
+    test_runner.set_current_epoch(new_epoch);
+
+    // 3. Run the transaction again
     let receipt = test_runner.execute_transaction(
-        get_validated(&transaction).unwrap().get_executable(),
+        validated.get_executable(),
         FeeReserveConfig::default(),
         ExecutionConfig::for_notarized_transaction(),
     );
@@ -45,22 +59,27 @@ fn test_transaction_replay_protection() {
         _ => false,
     });
 
-    // 3. Update the epoch
-    let new_epoch = current_epoch.after(EPOCHS_PER_PARTITION * 190);
-    test_runner.set_current_epoch(new_epoch);
+    // 4. Advance to the max epoch (which triggers epoch update)
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    assert_eq!(
+        receipt
+            .expect_commit_success()
+            .state_updates
+            .partition_deletions
+            .len(),
+        1
+    );
 
-    // 4. Run another transaction
-    let transaction = create_notarized_transaction(TransactionParams {
-        start_epoch_inclusive: new_epoch,
-        end_epoch_exclusive: new_epoch.after(1),
-    });
+    // 5. Run the transaction the 3rd time (with epoch range check disabled)
+    // Note that in production, this won't be possible.
+    let mut executable = validated.get_executable();
+    executable.skip_epoch_range_check();
     let receipt = test_runner.execute_transaction(
-        get_validated(&transaction).unwrap().get_executable(),
+        executable,
         FeeReserveConfig::default(),
         ExecutionConfig::for_notarized_transaction(),
     );
-    let result = receipt.expect_commit_success();
-    assert_eq!(result.state_updates.partition_deletions.len(), 1);
+    receipt.expect_commit_success();
 }
 
 fn get_validated(

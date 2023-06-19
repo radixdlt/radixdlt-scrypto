@@ -57,6 +57,8 @@ pub struct ExecutionConfig {
 }
 
 impl ExecutionConfig {
+    /// Creates an `ExecutionConfig` using default configurations.
+    /// This is internal. Clients should use `for_xxx` constructors instead.
     fn default() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
@@ -766,6 +768,8 @@ where
                     }),
                 );
                 track.release_lock(handle);
+            } else {
+                panic!("No partition for an expiry epoch")
             }
         }
 
