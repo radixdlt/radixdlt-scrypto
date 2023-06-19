@@ -717,18 +717,17 @@ impl ManifestBuilder {
                 module,
                 role_key,
                 rule: Some(rule),
-                mutability: None,
+                freeze: false,
             }),
         })
         .0
     }
 
-    pub fn update_role_mutability(
+    pub fn freeze_role(
         &mut self,
         address: GlobalAddress,
         module: ObjectModuleId,
         role_key: RoleKey,
-        mutability: (RoleList, bool),
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
@@ -737,7 +736,7 @@ impl ManifestBuilder {
                 module,
                 role_key,
                 rule: None,
-                mutability: Some(mutability),
+                freeze: true,
             }),
         })
         .0

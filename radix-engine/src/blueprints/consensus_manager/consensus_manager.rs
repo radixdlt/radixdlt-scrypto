@@ -338,7 +338,8 @@ impl ConsensusManagerBlueprint {
         access_rules.update_role(
             ObjectModuleId::Main,
             RoleKey::new(START_ROLE),
-            RoleEntry::disabled(),
+            Some(AccessRule::DenyAll),
+            true,
             api,
         )?;
 

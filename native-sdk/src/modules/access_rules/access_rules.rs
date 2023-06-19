@@ -4,9 +4,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, OwnerRole, RoleEntry, RoleKey, Roles,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleKey, Roles};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -55,11 +53,17 @@ impl AccessRulesObject for AttachedAccessRules {
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn update_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
+    fn update_role<
+        Y: ClientApi<E>,
+        E: Debug + ScryptoDecode,
+        R: Into<RoleKey>,
+        A: Into<AccessRule>,
+    >(
         &self,
         module: ObjectModuleId,
         role_key: R,
-        entry: RoleEntry,
+        rule: Option<A>,
+        freeze: bool,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
@@ -71,8 +75,9 @@ pub trait AccessRulesObject {
             scrypto_encode(&AccessRulesUpdateRoleInput {
                 module,
                 role_key: role_key.into(),
-                rule: Some(entry.rule),
-                mutability: Some((entry.mutable, entry.mutable_mutable)),
+                rule: rule.map(|a| a.into()),
+                freeze,
+                //mutability: Some((entry.mutable, entry.mutable_mutable)),
             })
             .unwrap(),
         )?;
@@ -89,7 +94,7 @@ pub trait AccessRulesObject {
         &self,
         module: ObjectModuleId,
         role_key: R,
-        entry: A,
+        rule: A,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
@@ -101,8 +106,8 @@ pub trait AccessRulesObject {
             scrypto_encode(&AccessRulesUpdateRoleInput {
                 module,
                 role_key: role_key.into(),
-                rule: Some(entry.into()),
-                mutability: None,
+                rule: Some(rule.into()),
+                freeze: false,
             })
             .unwrap(),
         )?;

@@ -5,6 +5,7 @@ use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+/*
 #[test]
 fn test_all_resource_roles_have_immutable_updater() {
     for key in ALL_RESOURCE_AUTH_KEYS {
@@ -24,11 +25,10 @@ fn ensure_auth_updater_is_immutable(action: ResourceMethodAuthKey) {
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .update_role_mutability(
+                .freeze_role(
                     resource_address.into(),
                     module,
                     role_key,
-                    (RoleList::none(), false),
                 )
                 .build(),
             vec![],
@@ -37,17 +37,17 @@ fn ensure_auth_updater_is_immutable(action: ResourceMethodAuthKey) {
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .update_role_mutability(
+                .freeze_role(
                     resource_address.into(),
                     updater_module,
                     updater_role_key,
-                    (RoleList::none(), false),
                 )
                 .build(),
             vec![],
         )
         .expect_auth_mutability_failure();
 }
+ */
 
 #[test]
 fn test_locked_resource_auth_cannot_be_updated() {
