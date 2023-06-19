@@ -758,6 +758,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_system_transaction(),
         );
 
         receipt.expect_commit_success();
@@ -863,6 +865,8 @@ impl TestRunner {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_test_transaction(),
         )
     }
 
@@ -876,39 +880,33 @@ impl TestRunner {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        self.execute_transaction_with_config(
+        self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::default()
-                .with_kernel_trace(self.trace)
-                .with_cost_unit_limit(cost_unit_limit),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_test_transaction().with_cost_unit_limit(cost_unit_limit),
         )
     }
 
-    pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
-        let fee_config = FeeReserveConfig::default();
-        let execution_config = ExecutionConfig::default().with_kernel_trace(self.trace);
-
-        self.execute_transaction_with_config(executable, &fee_config, &execution_config)
-    }
-
-    pub fn execute_transaction_with_config(
+    pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
+        fee_reserve_config: FeeReserveConfig,
+        mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
+        // Override the kernel trace config
+        execution_config = execution_config.with_kernel_trace(self.trace);
+
         let transaction_receipt = execute_transaction(
             &mut self.substate_db,
             &self.scrypto_interpreter,
-            fee_reserve_config,
-            execution_config,
+            &fee_reserve_config,
+            &execution_config,
             &executable,
         );
-        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+        if let TransactionResult::Commit(commit) = &transaction_receipt.transaction_result {
             self.substate_db
                 .commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
@@ -1406,6 +1404,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_system_transaction(),
         )
     }
 
@@ -1434,6 +1434,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_system_transaction(),
         )
     }
 
@@ -1454,6 +1456,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_system_transaction(),
         )
     }
 

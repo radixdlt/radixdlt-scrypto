@@ -122,7 +122,7 @@ impl FungibleVaultBlueprint {
 
         // Keep changes
         if !changes.is_empty() {
-            vault.put(changes).expect("Failed to put fee changes");
+            vault.put(changes);
         }
 
         // Flush updates
@@ -387,11 +387,7 @@ impl FungibleVault {
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
-        substate_ref.put(resource).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
-                e,
-            )))
-        })?;
+        substate_ref.put(resource);
         api.field_lock_write_typed(handle, &substate_ref)?;
         api.field_lock_release(handle)?;
 

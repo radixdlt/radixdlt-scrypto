@@ -9,10 +9,9 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
-use native_sdk::runtime::{LocalAuthZone, Runtime};
+use native_sdk::runtime::LocalAuthZone;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -25,7 +24,6 @@ use transaction::validation::*;
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {
     pub transaction_hash: Hash,
-    pub runtime_validations: Vec<RuntimeValidationRequest>,
     pub manifest_encoded_instructions: Vec<u8>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
@@ -36,7 +34,6 @@ pub struct TransactionProcessorRunInput {
 #[derive(Debug, Eq, PartialEq, ScryptoEncode)]
 pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
     pub transaction_hash: &'a Hash,
-    pub runtime_validations: &'a [RuntimeValidationRequest],
     pub manifest_encoded_instructions: &'a [u8],
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: &'a IndexSet<Reference>,
@@ -100,11 +97,6 @@ impl TransactionProcessorBlueprint {
         let input: TransactionProcessorRunInput = input
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
-        // Runtime transaction validation
-        for request in &input.runtime_validations {
-            TransactionProcessor::perform_validation(request, api)?;
-        }
 
         // Create a worktop
         let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
@@ -645,54 +637,6 @@ impl TransactionProcessor {
         }
 
         Ok(())
-    }
-
-    fn perform_validation<'a, Y>(
-        request: &RuntimeValidationRequest,
-        env: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientObjectApi<RuntimeError>,
-    {
-        let should_skip_assertion = request.skip_assertion;
-        match &request.validation {
-            RuntimeValidation::WithinEpochRange {
-                start_epoch_inclusive,
-                end_epoch_exclusive,
-            } => {
-                // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
-                //        Which could allow for better caching of transaction validity over epoch boundaries
-                let current_epoch = Runtime::current_epoch(env)?;
-
-                if !should_skip_assertion && current_epoch < *start_epoch_inclusive {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::TransactionEpochNotYetValid {
-                                valid_from: *start_epoch_inclusive,
-                                current_epoch,
-                            },
-                        ),
-                    ));
-                }
-                if !should_skip_assertion && current_epoch >= *end_epoch_exclusive {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::TransactionEpochNoLongerValid {
-                                valid_until: end_epoch_exclusive.previous(),
-                                current_epoch,
-                            },
-                        ),
-                    ));
-                }
-
-                Ok(())
-            }
-            RuntimeValidation::IntentHashUniqueness { .. } => {
-                // FIXME - Add intent hash replay prevention here
-                // This will to enable its removal from the node
-                Ok(())
-            }
-        }
     }
 }
 
