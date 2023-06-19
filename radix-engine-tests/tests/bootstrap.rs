@@ -66,6 +66,16 @@ fn test_bootstrap_receipt_should_match_constants() {
         .new_component_addresses()
         .contains(&GENESIS_HELPER));
 
+    assert!(system_bootstrap_receipt
+        .expect_commit_success()
+        .new_package_addresses()
+        .contains(&TRANSACTION_TRACKER_PACKAGE));
+
+    assert!(system_bootstrap_receipt
+        .expect_commit_success()
+        .new_component_addresses()
+        .contains(&TRANSACTION_TRACKER));
+
     assert!(wrap_up_receipt
         .expect_commit_success()
         .new_component_addresses()

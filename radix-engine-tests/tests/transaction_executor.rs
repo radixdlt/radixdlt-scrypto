@@ -37,8 +37,11 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     });
 
     // Act
-    let receipt =
-        test_runner.execute_transaction(get_validated(&transaction).unwrap().get_executable());
+    let receipt = test_runner.execute_transaction(
+        get_validated(&transaction).unwrap().get_executable(),
+        FeeReserveConfig::default(),
+        ExecutionConfig::for_test_transaction(),
+    );
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -68,8 +71,11 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     });
 
     // Act
-    let receipt =
-        test_runner.execute_transaction(get_validated(&transaction).unwrap().get_executable());
+    let receipt = test_runner.execute_transaction(
+        get_validated(&transaction).unwrap().get_executable(),
+        FeeReserveConfig::default(),
+        ExecutionConfig::for_test_transaction(),
+    );
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -96,7 +102,7 @@ fn test_normal_transaction_flow() {
         .unwrap();
 
     let fee_reserve_config = FeeReserveConfig::default();
-    let execution_config = ExecutionConfig::default().with_kernel_trace(true);
+    let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(TransactionParams {
         start_epoch_inclusive: Epoch::zero(),
         end_epoch_exclusive: Epoch::of(100),
