@@ -2,17 +2,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata {
-    enable_method_auth! {
-        methods {
-            set_string => PUBLIC;
-            set_address => PUBLIC;
-            set_array => PUBLIC;
-            get_string => PUBLIC;
-            get_address => PUBLIC;
-            get_array => PUBLIC;
-        }
-    }
-
     struct MetadataTest {}
 
     impl MetadataTest {
@@ -22,7 +11,7 @@ mod metadata {
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     roles {
-                        setter => rule!(allow_all);
+                        metadata_admin => rule!(allow_all);
                     },
                     init {
                     }
