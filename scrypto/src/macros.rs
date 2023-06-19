@@ -447,7 +447,7 @@ macro_rules! enable_method_auth {
 
             let mut roles: BTreeMap<RoleKey, RoleList> = BTreeMap::new();
             $(
-                internal_add_role!(roles, role $( => updaters: $($updaters),+)?);
+                internal_add_role!(roles, $role $( => updaters: $($updaters),+)?);
             )*
 
             let static_roles = scrypto::blueprints::package::StaticRoles {

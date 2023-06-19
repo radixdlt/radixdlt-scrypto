@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 mod mutable_access_rules_component {
     enable_method_auth! {
         roles {
-            borrow_funds_auth;
+            borrow_funds_auth => updaters: deposit_funds_auth;
             deposit_funds_auth;
         },
         methods {
@@ -33,7 +33,7 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    borrow_funds_auth => rule!(require(RADIX_TOKEN)), updaters: deposit_funds_auth;
+                    borrow_funds_auth => rule!(require(RADIX_TOKEN));
                     deposit_funds_auth => owner_update_access_rule;
                 })
                 .globalize()
