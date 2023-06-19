@@ -19,7 +19,7 @@ impl TransactionRuntimeModule {
     }
 
     pub fn generate_ruid(&mut self) -> [u8; 32] {
-        let mut bytes = [0u8; 64];
+        let mut bytes = [0u8; 36];
         (&mut bytes[..32]).copy_from_slice(self.tx_hash.as_slice());
         bytes[32..].copy_from_slice(&self.next_id.to_le_bytes());
 
