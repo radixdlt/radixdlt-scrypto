@@ -127,7 +127,7 @@ impl<'a> Executable<'a> {
         }
     }
 
-    pub fn skip_epoch_range_epoch(&mut self) {
+    pub fn skip_epoch_range_check(&mut self) {
         self.context.epoch_range = None;
     }
 

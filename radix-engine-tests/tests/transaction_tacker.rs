@@ -73,7 +73,7 @@ fn test_transaction_replay_protection() {
     // 5. Run the transaction the 3rd time (with epoch range check disabled)
     // Note that in production, this won't be possible.
     let mut executable = validated.get_executable();
-    executable.skip_epoch_range_epoch();
+    executable.skip_epoch_range_check();
     let receipt = test_runner.execute_transaction(
         executable,
         FeeReserveConfig::default(),
