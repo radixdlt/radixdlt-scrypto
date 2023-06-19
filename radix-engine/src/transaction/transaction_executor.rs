@@ -226,12 +226,7 @@ where
             Ok(()) => {
                 let (
                     interpretation_result,
-                    (
-                        limits_module,
-                        mut costing_module,
-                        runtime_module,
-                        execution_trace_module,
-                    ),
+                    (limits_module, mut costing_module, runtime_module, execution_trace_module),
                 ) = self.interpret_manifest(
                     &mut track,
                     executable,
