@@ -11,7 +11,7 @@ mod metadata_component {
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     roles {
-                        setter => rule!(allow_all);
+                        metadata_admin => rule!(allow_all);
                     },
                     init {
                         key.clone() => value.clone()
