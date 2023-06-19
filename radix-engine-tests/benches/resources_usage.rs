@@ -154,7 +154,7 @@ fn transfer_test(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::default(),
+                &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -176,7 +176,7 @@ fn transfer_test(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::default(),
+                &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -207,7 +207,7 @@ fn transfer_test(c: &mut Criterion) {
             &mut substate_db,
             &mut scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::for_notarized_transaction(),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
                 .unwrap()
@@ -235,14 +235,19 @@ fn transfer_test(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::default(),
+                &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
 
-            fwk.add_measurement(&receipt.execution_trace.resources_usage);
+            fwk.add_measurement(
+                &receipt
+                    .expect_commit_success()
+                    .execution_trace
+                    .resources_usage,
+            );
 
             receipt.expect_commit_success();
             nonce += 1;

@@ -6,6 +6,9 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
+use crate::blueprints::transaction_tracker::{
+    TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
+};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -728,7 +731,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: PoolNativePackage::definition(),
                 metadata: BTreeMap::new(),
-                native_package_code_id: POOL_ID,
+                native_package_code_id: POOL_CODE_ID,
             }),
         });
     }
@@ -920,6 +923,39 @@ pub fn create_system_bootstrap_transaction(
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
             ),
+        });
+    }
+
+    // Intent Hash Store package
+    {
+        pre_allocated_addresses.push((
+            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            GlobalAddress::from(TRANSACTION_TRACKER_PACKAGE),
+        ));
+        instructions.push(InstructionV1::CallFunction {
+            package_address: PACKAGE_PACKAGE.into(),
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeManifestInput {
+                package_address: Some(id_allocator.new_address_reservation_id()),
+                native_package_code_id: TRANSACTION_TRACKER_CODE_ID,
+                setup: TransactionTrackerNativePackage::definition(),
+                metadata: BTreeMap::new(),
+            }),
+        });
+    }
+
+    // Intent Hash Store component
+    {
+        pre_allocated_addresses.push((
+            BlueprintId::new(&TRANSACTION_TRACKER_PACKAGE, TRANSACTION_TRACKER_BLUEPRINT),
+            GlobalAddress::from(TRANSACTION_TRACKER),
+        ));
+        instructions.push(InstructionV1::CallFunction {
+            package_address: TRANSACTION_TRACKER_PACKAGE.into(),
+            blueprint_name: TRANSACTION_TRACKER_BLUEPRINT.to_string(),
+            function_name: TRANSACTION_TRACKER_CREATE_IDENT.to_string(),
+            args: manifest_args!(id_allocator.new_address_reservation_id()),
         });
     }
 

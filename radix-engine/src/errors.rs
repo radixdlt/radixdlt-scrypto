@@ -52,6 +52,8 @@ pub enum RejectionError {
         valid_until: Epoch,
         current_epoch: Epoch,
     },
+    IntentHashPreviouslyCommitted,
+    IntentHashPreviouslyCancelled,
 }
 
 impl fmt::Display for RejectionError {

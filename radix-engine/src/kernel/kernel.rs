@@ -23,7 +23,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::{
-    RuntimeValidationRequest, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
@@ -41,7 +41,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     pub fn call_transaction_processor<'a>(
         self,
         transaction_hash: &'a Hash,
-        runtime_validations: &'a [RuntimeValidationRequest],
         manifest_encoded_instructions: &'a [u8],
         pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
         references: &'a IndexSet<Reference>,
@@ -147,7 +146,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
                 transaction_hash,
-                runtime_validations,
                 manifest_encoded_instructions,
                 global_address_reservations,
                 references,
