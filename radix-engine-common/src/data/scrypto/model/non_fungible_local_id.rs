@@ -526,10 +526,20 @@ impl FromStr for NonFungibleLocalId {
             )
             .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
         } else if s.starts_with("{") && s.ends_with("}") {
-            let bytes = hex::decode(&s[1..s.len() - 1])
-                .map_err(|_| ParseNonFungibleLocalIdError::InvalidRUID)?;
-            if bytes.len() == 32 {
-                NonFungibleLocalId::ruid(bytes.try_into().unwrap())
+            let chars: Vec<char> = s[1..s.len() - 1].chars().collect();
+            if chars.len() == 32 * 2 + 3 && chars[16] == '-' && chars[33] == '-' && chars[50] == '-'
+            {
+                let hyphen_stripped: String = chars.into_iter().filter(|c| *c != '-').collect();
+                if hyphen_stripped.len() == 64 {
+                    NonFungibleLocalId::RUID(RUIDNonFungibleLocalId(
+                        hex::decode(&hyphen_stripped)
+                            .map_err(|_| ParseNonFungibleLocalIdError::InvalidRUID)?
+                            .try_into()
+                            .unwrap(),
+                    ))
+                } else {
+                    return Err(ParseNonFungibleLocalIdError::InvalidRUID);
+                }
             } else {
                 return Err(ParseNonFungibleLocalIdError::InvalidRUID);
             }
@@ -683,8 +693,11 @@ mod tests {
             Err(ParseNonFungibleLocalIdError::InvalidInteger)
         );
         assert_eq!(
-            NonFungibleLocalId::from_str("{b36f5b3f-835b-406c-980f-7788d8f13c1b}").unwrap(),
-            NonFungibleLocalId::ruid([0u8; 32])
+            NonFungibleLocalId::from_str(
+                "{1111111111111111-1111111111111111-1111111111111111-1111111111111111}"
+            )
+            .unwrap(),
+            NonFungibleLocalId::ruid([0x11; 32])
         );
         assert_eq!(
             NonFungibleLocalId::from_str("<test>").unwrap(),
@@ -708,7 +721,7 @@ mod tests {
                 0x44, 0x44, 0x44, 0x44,
             ])
             .to_string(),
-            "{0236805c-56e9-4431-a2a3-7d339db305c4}",
+            "{1111111111111111-2222222222222222-3333333333333333-4444444444444444}",
         );
         assert_eq!(
             NonFungibleLocalId::string("test").unwrap().to_string(),

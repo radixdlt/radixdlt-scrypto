@@ -111,13 +111,13 @@ mod tests {
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::ruid(
-                        [0x11u8; 32],
+                        [0x11; 32],
                     )),
                 },
             ],
         };
 
-        let expected = format!("Tuple(Reference(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Own(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Decimal(\"1\"), Decimal(\"0.01\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}}\"))");
+        let expected = format!("Tuple(Reference(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Own(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Decimal(\"1\"), Decimal(\"0.01\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{{1111111111111111-1111111111111111-1111111111111111-1111111111111111}}\"))");
 
         let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
 

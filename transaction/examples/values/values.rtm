@@ -69,5 +69,5 @@ CALL_METHOD
     NonFungibleLocalId("<SomeId>")
     NonFungibleLocalId("#12#")
     NonFungibleLocalId("[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
-    NonFungibleLocalId("{43968a72-5954-45da-9678-8659dd399faa}")
+    NonFungibleLocalId("{1111111111111111-1111111111111111-1111111111111111-1111111111111111}")
 ;
