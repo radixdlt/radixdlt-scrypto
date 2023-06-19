@@ -60,7 +60,7 @@ use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::model::{
-    AttachmentsV1, BlobV1, Executable, InstructionV1, IntentV1, PreviewFlags, PreviewIntentV1,
+    BlobV1, Executable, InstructionV1, IntentV1, MessageV1, PreviewFlags, PreviewIntentV1,
     SystemTransactionV1, TestTransaction, TransactionHeaderV1, TransactionPayload,
 };
 use transaction::prelude::*;
@@ -957,7 +957,7 @@ impl TestRunner {
                     blobs: BlobsV1 {
                         blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
                     },
-                    attachments: AttachmentsV1 {},
+                    message: MessageV1::default(),
                 },
                 signer_public_keys,
                 flags,
