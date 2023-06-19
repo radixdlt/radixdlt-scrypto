@@ -401,6 +401,21 @@ macro_rules! module_permissions {
 }
 
 #[macro_export]
+macro_rules! internal_add_role {
+    ($roles:ident, $role:ident) => {{
+        $roles.insert(stringify!($role).into(), RoleList::none());
+    }};
+    ($roles:ident, $role:ident => updaters: $($updaters:ident),+) => {{
+        let role_list = [
+            $(
+                ROLE_STRINGS.$updaters
+            ),+
+        ];
+        $roles.insert(stringify!($role).into(), role_list.into());
+    }};
+}
+
+#[macro_export]
 macro_rules! enable_method_auth {
     (
         roles {
@@ -430,12 +445,17 @@ macro_rules! enable_method_auth {
                 module_permissions!(methods, $module { $($method => $($permission),+ ;)* });
             )*
 
-            let roles = scrypto::blueprints::package::StaticRoles {
+            let mut roles: BTreeMap<RoleKey, RoleList> = BTreeMap::new();
+            $(
+                internal_add_role!(roles, role $( => updaters: $($updaters),+)?);
+            )*
+
+            let static_roles = scrypto::blueprints::package::StaticRoles {
                 methods,
-                roles: BTreeMap::new(),
+                roles,
             };
 
-            scrypto::blueprints::package::MethodAuthTemplate::Static(roles)
+            scrypto::blueprints::package::MethodAuthTemplate::Static(static_roles)
         }
     );
 
