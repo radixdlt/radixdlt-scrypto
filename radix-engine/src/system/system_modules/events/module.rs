@@ -23,7 +23,12 @@ impl EventsModule {
         self.replacements.insert(old, new);
     }
 
-    pub fn events(self) -> Vec<(EventTypeIdentifier, Vec<u8>)> {
+    pub fn clear(&mut self) {
+        self.events.clear();
+        self.replacements.clear();
+    }
+
+    pub fn finalize(self) -> Vec<(EventTypeIdentifier, Vec<u8>)> {
         let mut events = self.events;
 
         for (event_identifier, _) in events.iter_mut() {

@@ -6,6 +6,7 @@ use crate::track::utils::OverlayingIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::*;
+use radix_engine_store_interface::interface::DbPartitionKey;
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase},
@@ -18,6 +19,9 @@ use sbor::rust::mem;
 pub struct StateUpdates {
     pub database_updates: DatabaseUpdates,
     pub system_updates: SystemUpdates,
+    /// Unstable, for transaction tracker only; Must be applied after committing the updates above.
+    /// TODO: if time allows, consider merging it into database/system updates.
+    pub partition_deletions: IndexSet<DbPartitionKey>,
 }
 pub type SystemUpdates = IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>;
 
@@ -299,6 +303,7 @@ impl TrackedNode {
 
 pub fn to_state_updates<M: DatabaseKeyMapper>(
     index: IndexMap<NodeId, TrackedNode>,
+    deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 ) -> StateUpdates {
     let mut database_updates: DatabaseUpdates = index_map_new();
     let mut system_updates: SystemUpdates = index_map_new();
@@ -334,9 +339,15 @@ pub fn to_state_updates<M: DatabaseKeyMapper>(
         }
     }
 
+    let partition_deletions = deleted_partitions
+        .into_iter()
+        .map(|(node_id, partition_num)| M::to_db_partition_key(&node_id, partition_num))
+        .collect();
+
     StateUpdates {
         database_updates,
         system_updates,
+        partition_deletions,
     }
 }
 
@@ -367,6 +378,8 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     substate_db: &'s S,
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
+    /// TODO: if time allows, consider merging into tracked nodes.
+    deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
     next_lock_id: u32,
@@ -379,6 +392,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             substate_db,
             force_write_tracked_nodes: index_map_new(),
             tracked_nodes: index_map_new(),
+            deleted_partitions: index_set_new(),
             locks: index_map_new(),
             next_lock_id: 0,
             phantom_data: PhantomData::default(),
@@ -435,8 +449,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    pub fn finalize(self) -> IndexMap<NodeId, TrackedNode> {
-        self.tracked_nodes
+    pub fn finalize(
+        self,
+    ) -> (
+        IndexMap<NodeId, TrackedNode>,
+        IndexSet<(NodeId, PartitionNumber)>,
+    ) {
+        (self.tracked_nodes, self.deleted_partitions)
     }
 
     fn get_tracked_partition(
@@ -513,7 +532,29 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                     }
                 }
             }
-            Entry::Occupied(..) => (),
+            Entry::Occupied(mut entry) => {
+                let read_only_non_existent = matches!(
+                    entry.get().tracked,
+                    TrackedKey::ReadOnly(ReadOnly::NonExistent)
+                );
+                if read_only_non_existent {
+                    let value = virtualize();
+                    if let Some(value) = value {
+                        store_access.push(StoreAccess::WriteToTrack(value.len()));
+                        let tracked = TrackedSubstateKey {
+                            substate_key,
+                            tracked: TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value)),
+                        };
+                        entry.insert(tracked);
+                    } else {
+                        let tracked = TrackedSubstateKey {
+                            substate_key,
+                            tracked: TrackedKey::ReadOnly(ReadOnly::NonExistent),
+                        };
+                        entry.insert(tracked);
+                    }
+                }
+            }
         }
 
         (
@@ -952,13 +993,16 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        let substate = tracked
-            .get_runtime_substate_mut()
-            .ok_or(AcquireLockError::NotFound(
-                *node_id,
-                partition_num,
-                substate_key.clone(),
-            ))?;
+        let substate = match tracked.get_runtime_substate_mut() {
+            Some(x) => x,
+            None => {
+                return Err(AcquireLockError::NotFound(
+                    *node_id,
+                    partition_num,
+                    substate_key.clone(),
+                ));
+            }
+        };
 
         // Check read/write permission
         substate.lock_state.try_lock(flags).map_err(|_| {
@@ -1087,5 +1131,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         };
 
         store_access
+    }
+
+    fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber) {
+        self.deleted_partitions.insert((*node_id, partition_num));
     }
 }

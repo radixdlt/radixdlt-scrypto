@@ -8,7 +8,7 @@ use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
-use crate::transaction::{TransactionExecutionTrace, TransactionResult};
+use crate::transaction::TransactionExecutionTrace;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -600,28 +600,21 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn finalize(mut self, transaction_result: &TransactionResult) -> TransactionExecutionTrace {
-        match transaction_result {
-            TransactionResult::Commit(c) => {
-                let mut execution_traces = Vec::new();
-                for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
-                    execution_traces.extend(traces);
-                }
+    pub fn finalize(
+        mut self,
+        fee_payments: &IndexMap<NodeId, Decimal>,
+        is_success: bool,
+    ) -> TransactionExecutionTrace {
+        let mut execution_traces = Vec::new();
+        for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
+            execution_traces.extend(traces);
+        }
 
-                let resource_changes = calculate_resource_changes(
-                    self.vault_ops,
-                    &c.fee_payments,
-                    c.outcome.is_success(),
-                );
+        let resource_changes = calculate_resource_changes(self.vault_ops, fee_payments, is_success);
 
-                TransactionExecutionTrace {
-                    execution_traces,
-                    resource_changes,
-                }
-            }
-            TransactionResult::Reject(_) | TransactionResult::Abort(_) => {
-                TransactionExecutionTrace::default()
-            }
+        TransactionExecutionTrace {
+            execution_traces,
+            resource_changes,
         }
     }
 

@@ -179,7 +179,7 @@ impl ScenarioCore {
         previous: &'a Option<&TransactionReceipt>,
     ) -> Result<&'a CommitResult, ScenarioError> {
         match previous {
-            Some(receipt) => match &receipt.result {
+            Some(receipt) => match &receipt.transaction_result {
                 TransactionResult::Commit(c) => match &c.outcome {
                     TransactionOutcome::Success(_) => Ok(c),
                     TransactionOutcome::Failure(err) => Err(ScenarioError::TransactionFailed(

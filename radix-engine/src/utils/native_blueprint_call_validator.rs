@@ -231,6 +231,10 @@ fn get_arguments_schema<'s>(
                     .blueprints
                     .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT),
 
+                EntityType::GlobalTransactionTracker => TRANSACTION_TRACKER_PACKAGE_DEFINITION
+                    .blueprints
+                    .get(TRANSACTION_TRACKER_BLUEPRINT),
+
                 EntityType::GlobalFungibleResourceManager => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
                     .get(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),

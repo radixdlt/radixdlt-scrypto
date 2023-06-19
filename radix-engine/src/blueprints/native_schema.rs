@@ -9,6 +9,7 @@ use crate::blueprints::package::*;
 use crate::blueprints::pool::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::*;
+use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::*;
 use crate::system::node_modules::royalty::*;
@@ -23,6 +24,8 @@ lazy_static! {
     pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION: PackageDefinition =
         AccessControllerNativePackage::definition();
     pub static ref POOL_PACKAGE_DEFINITION: PackageDefinition = PoolNativePackage::definition();
+    pub static ref TRANSACTION_TRACKER_PACKAGE_DEFINITION: PackageDefinition =
+        TransactionTrackerNativePackage::definition();
     pub static ref RESOURCE_PACKAGE_DEFINITION: PackageDefinition =
         ResourceManagerNativePackage::definition();
     pub static ref PACKAGE_PACKAGE_DEFINITION: PackageDefinition =
