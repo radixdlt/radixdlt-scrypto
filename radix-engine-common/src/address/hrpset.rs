@@ -14,6 +14,7 @@ pub struct HrpSet {
     validator: String,
     access_controller: String,
     pool: String,
+    transaction_tracker: String,
     internal_vault: String,
     internal_account: String,
     internal_component: String,
@@ -44,6 +45,7 @@ impl HrpSet {
             EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool => &self.pool,
+            EntityType::GlobalTransactionTracker => &self.transaction_tracker,
         }
     }
 }
@@ -61,6 +63,7 @@ impl From<&NetworkDefinition> for HrpSet {
             validator: format!("validator_{}", suffix),
             access_controller: format!("accesscontroller_{}", suffix),
             pool: format!("pool_{}", suffix),
+            transaction_tracker: format!("transactiontracker_{}", suffix),
             internal_vault: format!("internal_vault_{}", suffix),
             internal_account: format!("internal_account_{}", suffix),
             internal_component: format!("internal_component_{}", suffix),

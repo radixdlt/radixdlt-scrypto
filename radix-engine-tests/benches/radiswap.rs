@@ -1,6 +1,9 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::{transaction::TransactionReceipt, types::*};
+use radix_engine::{
+    transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
+    types::*,
+};
 use scrypto_unit::TestRunner;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
@@ -155,8 +158,12 @@ fn do_swap(
     let mut executable = validated.get_executable();
 
     // Execute & commit
-    executable.overwrite_transaction_hash(hash(nonce.to_le_bytes()));
-    let receipt = test_runner.execute_transaction(executable);
+    executable.overwrite_intent_hash(hash(nonce.to_le_bytes()));
+    let receipt = test_runner.execute_transaction(
+        executable,
+        FeeReserveConfig::default(),
+        ExecutionConfig::for_notarized_transaction(),
+    );
     receipt.expect_commit_success();
 
     receipt

@@ -43,7 +43,7 @@ impl TransactionExecutionTrace {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct ExecutionMetrics {
     /// Consumed cost units (excluding royalties)
-    pub execution_cost_units_consumed: usize,
+    pub execution_cost_units_consumed: u32,
     /// Total substate read size in bytes.
     pub substate_read_size: usize,
     /// Substate read count.
@@ -85,6 +85,11 @@ pub struct CommitResult {
     pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
+    /// Metrics gathered during transaction execution.
+    pub execution_metrics: ExecutionMetrics,
+    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
+    /// Mainly for transaction preview.
+    pub execution_trace: TransactionExecutionTrace,
 }
 
 impl CommitResult {
@@ -202,12 +207,7 @@ pub enum AbortReason {
 /// Represents a transaction receipt.
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
-    pub result: TransactionResult,
-    /// Metrics gathered during transaction execution.
-    pub execution_metrics: ExecutionMetrics,
-    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
-    /// Mainly for transaction preview.
-    pub execution_trace: TransactionExecutionTrace,
+    pub transaction_result: TransactionResult,
     /// Optional, only when compile-time feature flag `resources_usage` is ON.
     pub resources_usage: ResourcesUsage,
 }
@@ -215,7 +215,7 @@ pub struct TransactionReceipt {
 impl TransactionReceipt {
     pub fn is_commit_success(&self) -> bool {
         matches!(
-            self.result,
+            self.transaction_result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Success(_),
                 ..
@@ -225,7 +225,7 @@ impl TransactionReceipt {
 
     pub fn is_commit_failure(&self) -> bool {
         matches!(
-            self.result,
+            self.transaction_result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Failure(_),
                 ..
@@ -234,11 +234,11 @@ impl TransactionReceipt {
     }
 
     pub fn is_rejection(&self) -> bool {
-        matches!(self.result, TransactionResult::Reject(_))
+        matches!(self.transaction_result, TransactionResult::Reject(_))
     }
 
     pub fn expect_commit(&self, success: bool) -> &CommitResult {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() != success {
                     panic!(
@@ -268,7 +268,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_rejection(&self) -> &RejectionError {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
             TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
@@ -276,7 +276,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_abortion(&self) -> &AbortReason {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
             TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
             TransactionResult::Abort(ref r) => &r.reason,
@@ -284,7 +284,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_not_success(&self) {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() {
                     panic!("Transaction succeeded unexpectedly")
@@ -299,7 +299,7 @@ impl TransactionReceipt {
     where
         F: Fn(&RejectionError) -> bool,
     {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
             TransactionResult::Reject(result) => {
                 if !f(&result.error) {
@@ -314,7 +314,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_failure(&self) -> &RuntimeError {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
                 TransactionOutcome::Failure(error) => error,
@@ -461,7 +461,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         f: &mut F,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let result = &self.result;
+        let result = &self.transaction_result;
         let scrypto_value_display_context = context.display_context();
         let address_display_context = context.address_display_context();
 

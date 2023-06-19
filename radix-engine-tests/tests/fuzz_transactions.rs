@@ -52,7 +52,7 @@ impl TransactionFuzzer {
             .validate(transaction.prepare().expect("transaction to be preparable"))
             .expect("transaction to be validatable");
 
-        let execution_config = ExecutionConfig::default();
+        let execution_config = ExecutionConfig::for_test_transaction();
         let fee_reserve_config = FeeReserveConfig::default();
 
         execute_and_commit_transaction(
