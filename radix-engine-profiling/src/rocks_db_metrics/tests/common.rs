@@ -146,7 +146,7 @@ pub fn export_one_graph(
     scatter_ctx
         .configure_mesh()
         .x_desc("Size [bytes]")
-        .y_desc("Duration [microseconds]")
+        .y_desc("Duration [µs]")
         .axis_desc_style(("sans-serif", 16))
         .draw()?;
     // Draw all points
@@ -293,7 +293,7 @@ pub fn export_graph_and_print_summary(
     let mut y_min = axis_ranges.2;
     let mut y_max = axis_ranges.3;
 
-    // 4. calculate linear approximation
+    // calculate linear approximation
     let (lin_slope, lin_intercept): (f32, f32) =
         linear_regression_of(&output_data).unwrap_or_default();
     let lin_x_axis = (x_min as f32..(x_max + 1f32) as f32).step(1f32);
@@ -316,7 +316,7 @@ pub fn export_graph_and_print_summary(
     scatter_ctx
         .configure_mesh()
         .x_desc(x_axis_description.unwrap_or_else(|| "Size [bytes]"))
-        .y_desc("Duration [microseconds]")
+        .y_desc("Duration [µs]")
         .axis_desc_style(("sans-serif", 16))
         .draw()?;
     // 1. draw all read points
@@ -490,7 +490,7 @@ pub fn export_graph_and_print_summary_for_two_series(
     scatter_ctx
         .configure_mesh()
         .x_desc("Size [bytes]")
-        .y_desc("DB read duration [microseconds]")
+        .y_desc("DB read duration [µs]")
         .axis_desc_style(("sans-serif", 16))
         .draw()?;
     // 1. draw read series1 points
@@ -673,15 +673,91 @@ pub fn export_graph_two_series(
     Ok(())
 }
 
-pub fn print_read_not_found_results<S: SubstateDatabase + CommittableSubstateDatabase>(
+pub fn export_graph_and_print_summary_read_not_found_results<
+    S: SubstateDatabase + CommittableSubstateDatabase,
+>(
     substate_store: &SubstateStoreWithMetrics<S>,
-) {
-    let v = &substate_store.read_not_found_metrics.borrow();
-    let min = v.iter().min().unwrap().as_nanos();
-    let max = v.iter().max().unwrap().as_nanos();
-    let avg = v.iter().sum::<Duration>().as_nanos() as usize / v.len();
+    output_png_file: &str,
+    caption: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let data = &substate_store.read_not_found_metrics.borrow();
+
+    let mut use_micro = true;
+    let mut y_desc = "Duration [µs]";
+
+    // calculate axis max/min values
+    let x_min = 0;
+    let x_max = data.len();
+    let y_min = 0;
+    let mut y_max = data
+        .iter()
+        .max()
+        .unwrap_or(&Duration::default())
+        .as_micros();
+    if y_max == 0 {
+        y_max = data.iter().max().unwrap_or(&Duration::default()).as_nanos();
+        use_micro = false;
+        y_desc = "Duration [ns]"
+    }
+    y_max += 10;
+
+    // draw scatter plot
+    let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
+    root.fill(&WHITE)?;
+    root.margin(20, 20, 20, 20);
+
+    let mut scatter_ctx = ChartBuilder::on(&root)
+        .caption(caption, ("sans-serif", 20).into_font())
+        .x_label_area_size(40)
+        .y_label_area_size(80)
+        .margin(20)
+        .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+    scatter_ctx
+        .configure_mesh()
+        .x_desc("Count")
+        .y_desc(y_desc)
+        .axis_desc_style(("sans-serif", 16))
+        .draw()?;
+    // 1. draw all read points
+    scatter_ctx
+        .draw_series(data.iter().enumerate().map(|(idx, y)| {
+            let value = if use_micro {
+                y.as_micros()
+            } else {
+                y.as_nanos()
+            };
+            Circle::new((idx, value), 2, GREEN.filled())
+        }))?
+        .label(format!("Points (count: {})", data.len()))
+        .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+    scatter_ctx
+        .configure_series_labels()
+        .background_style(&WHITE)
+        .border_style(&BLACK)
+        .label_font(("sans-serif", 16))
+        .position(SeriesLabelPosition::UpperMiddle)
+        .draw()?;
+
+    root.present().expect("Unable to write result to file");
+
+    // print some informations
+    let (avg, unit) = if use_micro {
+        (
+            data.iter().sum::<Duration>().as_micros() as usize / data.len(),
+            'µ',
+        )
+    } else {
+        (
+            data.iter().sum::<Duration>().as_nanos() as usize / data.len(),
+            'n',
+        )
+    };
     println!(
-        "Read not found times [ns]: min={} max={} avg={}\n",
-        min, max, avg
+        "Read not found times [{}s]: min={} max={} avg={}",
+        unit, y_min, y_max, avg
     );
+    println!("Points count: {}", data.len());
+    println!("Output graph file: {}\n", output_png_file);
+
+    Ok(())
 }

@@ -125,7 +125,12 @@ fn test_read() {
     )
     .unwrap();
 
-    print_read_not_found_results(&substate_db);
+    export_graph_and_print_summary_read_not_found_results(
+        &substate_db,
+        "/tmp/scrypto_not_found_read_rocksdb.png",
+        "RocksDB read not existing substates",
+    )
+    .unwrap();
 
     // InMemory DB part
     let mut substate_db = SubstateStoreWithMetrics::new_inmem();
@@ -182,7 +187,12 @@ fn test_read() {
     )
     .unwrap();
 
-    print_read_not_found_results(&substate_db);
+    export_graph_and_print_summary_read_not_found_results(
+        &substate_db,
+        "/tmp/scrypto_not_found_read_inmem.png",
+        "InMemoryDB read not existing substates",
+    )
+    .unwrap();
 }
 
 fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
