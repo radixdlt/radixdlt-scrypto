@@ -89,10 +89,7 @@ impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
                 Self::Bytes(bytes)
             }
             3 => {
-                let mut ruid = u128::arbitrary(u).unwrap();
-                // make sure this is v4 and variant 1
-                ruid &= !0x00000000_0000_f000_c000_000000000000u128;
-                ruid |= 0x00000000_0000_4000_8000_000000000000u128;
+                let mut ruid = <[u8; 32]>::arbitrary(u).unwrap();
                 Self::RUID(ruid)
             }
             _ => unreachable!(),
