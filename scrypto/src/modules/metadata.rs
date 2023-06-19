@@ -126,11 +126,11 @@ impl Metadata {
 }
 
 pub struct MetadataRoles<T> {
-    pub setter: T,
+    pub metadata_admin: T,
 }
 
 impl<T> MetadataRoles<T> {
     pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![("setter", self.setter)]
+        vec![(METADATA_ADMIN_ROLE, self.metadata_admin)]
     }
 }
