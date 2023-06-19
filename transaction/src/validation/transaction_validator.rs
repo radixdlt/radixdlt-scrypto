@@ -158,7 +158,7 @@ impl NotarizedTransactionValidator {
         self.validate_header_v1(&intent.header.inner)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
-        self.validate_attachments_v1(&intent.attachments.inner)?;
+        self.validate_message_v1(&intent.message.inner)?;
 
         Self::validate_instructions_v1(&intent.instructions.inner.0)?;
 
@@ -371,15 +371,6 @@ impl NotarizedTransactionValidator {
         Ok(())
     }
 
-    pub fn validate_attachments_v1(
-        &self,
-        attachments: &AttachmentsV1,
-    ) -> Result<(), TransactionValidationError> {
-        let AttachmentsV1 { message } = attachments;
-        self.validate_message_v1(message)?;
-        Ok(())
-    }
-
     pub fn validate_message_v1(&self, message: &MessageV1) -> Result<(), InvalidMessageError> {
         let validation = &self.config.message_validation;
         match message {
@@ -527,48 +518,42 @@ mod tests {
     fn test_valid_messages() {
         // None
         {
-            let attachments = AttachmentsV1 {
-                message: MessageV1::None,
-            };
-            let result = validate_default(&create_transaction_with_attachments(attachments));
+            let message = MessageV1::None;
+            let result = validate_default(&create_transaction_with_message(message));
             assert!(result.is_ok());
         }
         // Plaintext
         {
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Plaintext(PlaintextMessageV1 {
-                    mime_type: "text/plain".to_owned(),
-                    message: MessageContentsV1::String("Hello world!".to_string()),
-                }),
-            };
-            let result = validate_default(&create_transaction_with_attachments(attachments));
+            let message = MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type: "text/plain".to_owned(),
+                message: MessageContentsV1::String("Hello world!".to_string()),
+            });
+            let result = validate_default(&create_transaction_with_message(message));
             assert!(result.is_ok());
         }
         // Encrypted
         {
             // Note - this isn't actually a validly encrypted message,
             // this just shows that a sufficiently valid encrypted message can pass validation
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Encrypted(EncryptedMessageV1 {
-                    encrypted: AesGcmPayload(vec![]),
-                    decryptors_by_curve: btreemap!(
-                        CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
-                            dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
-                            decryptors: btreemap!(
-                                PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
-                            ),
-                        },
-                        CurveType::Secp256k1 => DecryptorsByCurve::Secp256k1 {
-                            dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
-                            decryptors: btreemap!(
-                                PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
-                                PublicKeyFingerprint([1; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
-                            ),
-                        },
-                    ),
-                }),
-            };
-            let result = validate_default(&create_transaction_with_attachments(attachments));
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    },
+                    CurveType::Secp256k1 => DecryptorsByCurve::Secp256k1 {
+                        dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                            PublicKeyFingerprint([1; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    },
+                ),
+            });
+            let result = validate_default(&create_transaction_with_message(message));
             assert!(result.is_ok());
         }
     }
@@ -577,15 +562,12 @@ mod tests {
     fn test_invalid_message_errors() {
         // MimeTypeTooLong
         {
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Plaintext(PlaintextMessageV1 {
-                    mime_type: "very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, ".to_owned(),
-                    message: MessageContentsV1::String("Hello".to_string()),
-                }),
-            };
-            let error = validate_default_expecting_message_error(
-                &create_transaction_with_attachments(attachments),
-            );
+            let message = MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type: "very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, ".to_owned(),
+                message: MessageContentsV1::String("Hello".to_string()),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
             assert!(matches!(error, InvalidMessageError::MimeTypeTooLong { .. }))
         }
 
@@ -595,15 +577,12 @@ mod tests {
             while long_message.len() <= 2048 {
                 long_message.push_str("more text please!");
             }
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Plaintext(PlaintextMessageV1 {
-                    mime_type: "text/plain".to_owned(),
-                    message: MessageContentsV1::String(long_message),
-                }),
-            };
-            let error = validate_default_expecting_message_error(
-                &create_transaction_with_attachments(attachments),
-            );
+            let message = MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type: "text/plain".to_owned(),
+                message: MessageContentsV1::String(long_message),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
             assert!(matches!(
                 error,
                 InvalidMessageError::PlaintextMessageTooLong { .. }
@@ -617,22 +596,19 @@ mod tests {
                 // Some more bytes for the AES padding
                 message_which_is_too_long.push_str("more text please!");
             }
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Encrypted(EncryptedMessageV1 {
-                    encrypted: AesGcmPayload(message_which_is_too_long.as_bytes().to_vec()),
-                    decryptors_by_curve: btreemap!(
-                        CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
-                            dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
-                            decryptors: btreemap!(
-                                PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
-                            ),
-                        }
-                    ),
-                }),
-            };
-            let error = validate_default_expecting_message_error(
-                &create_transaction_with_attachments(attachments),
-            );
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(message_which_is_too_long.as_bytes().to_vec()),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
             assert!(matches!(
                 error,
                 InvalidMessageError::EncryptedMessageTooLong { .. }
@@ -641,34 +617,28 @@ mod tests {
 
         // NoDecryptors
         {
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Encrypted(EncryptedMessageV1 {
-                    encrypted: AesGcmPayload(vec![]),
-                    decryptors_by_curve: btreemap!(),
-                }),
-            };
-            let error = validate_default_expecting_message_error(
-                &create_transaction_with_attachments(attachments),
-            );
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
             assert!(matches!(error, InvalidMessageError::NoDecryptors))
         }
 
         // NoDecryptorsForCurveType
         {
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Encrypted(EncryptedMessageV1 {
-                    encrypted: AesGcmPayload(vec![]),
-                    decryptors_by_curve: btreemap!(
-                        CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
-                            dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
-                            decryptors: btreemap!(),
-                        }
-                    ),
-                }),
-            };
-            let error = validate_default_expecting_message_error(
-                &create_transaction_with_attachments(attachments),
-            );
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(),
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
             assert!(matches!(
                 error,
                 InvalidMessageError::NoDecryptorsForCurveType {
@@ -679,22 +649,19 @@ mod tests {
 
         // MismatchingDecryptorCurves
         {
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Encrypted(EncryptedMessageV1 {
-                    encrypted: AesGcmPayload(vec![]),
-                    decryptors_by_curve: btreemap!(
-                        CurveType::Ed25519 => DecryptorsByCurve::Secp256k1 {
-                            dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
-                            decryptors: btreemap!(
-                                PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
-                            ),
-                        }
-                    ),
-                }),
-            };
-            let error = validate_default_expecting_message_error(
-                &create_transaction_with_attachments(attachments),
-            );
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Secp256k1 {
+                        dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
             assert!(matches!(
                 error,
                 InvalidMessageError::MismatchingDecryptorCurves {
@@ -706,27 +673,24 @@ mod tests {
 
         // TooManyDecryptors
         {
-            let mut decryptors = BTreeMap::<PublicKeyFingerprint, AesWrapped128BitKey>::new();
+            let mut decryptors = IndexMap::<PublicKeyFingerprint, AesWrapped128BitKey>::default();
             for i in 0..30 {
                 decryptors.insert(
                     PublicKeyFingerprint([0, 0, 0, 0, 0, 0, 0, i as u8]),
                     AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
                 );
             }
-            let attachments = AttachmentsV1 {
-                message: MessageV1::Encrypted(EncryptedMessageV1 {
-                    encrypted: AesGcmPayload(vec![]),
-                    decryptors_by_curve: btreemap!(
-                        CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
-                            dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
-                            decryptors,
-                        }
-                    ),
-                }),
-            };
-            let error = validate_default_expecting_message_error(
-                &create_transaction_with_attachments(attachments),
-            );
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors,
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
             assert!(matches!(
                 error,
                 InvalidMessageError::TooManyDecryptors {
@@ -757,7 +721,7 @@ mod tests {
             .map(|_| ())
     }
 
-    fn create_transaction_with_attachments(attachments: AttachmentsV1) -> NotarizedTransactionV1 {
+    fn create_transaction_with_message(message: MessageV1) -> NotarizedTransactionV1 {
         let sk_notary = Secp256k1PrivateKey::from_u64(1).unwrap();
 
         let mut builder = TransactionBuilder::new()
@@ -771,7 +735,7 @@ mod tests {
                 tip_percentage: 5,
             })
             .manifest(ManifestBuilder::new().clear_auth_zone().build())
-            .attachments(attachments);
+            .message(message);
 
         builder = builder.notarize(&sk_notary);
 

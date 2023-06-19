@@ -1,12 +1,6 @@
 use super::*;
 use crate::prelude::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, Default)]
-#[sbor(transparent)]
-pub struct AttachmentsV1 {
-    pub message: MessageV1,
-}
-
 /// Transaction messages as per REP-70
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub enum MessageV1 {
@@ -79,10 +73,10 @@ pub struct EncryptedMessageV1 {
     pub encrypted: AesGcmPayload,
     // Note we use a collection here rather than a struct to be forward-compatible to adding more curve types.
     // The engine should validate each DecryptorsByCurve matches the CurveType.
-    pub decryptors_by_curve: BTreeMap<CurveType, DecryptorsByCurve>,
+    pub decryptors_by_curve: IndexMap<CurveType, DecryptorsByCurve>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor)]
 pub enum CurveType {
     Ed25519,
     Secp256k1,
@@ -92,11 +86,11 @@ pub enum CurveType {
 pub enum DecryptorsByCurve {
     Ed25519 {
         dh_ephemeral_public_key: Ed25519PublicKey,
-        decryptors: BTreeMap<PublicKeyFingerprint, AesWrapped128BitKey>,
+        decryptors: IndexMap<PublicKeyFingerprint, AesWrapped128BitKey>,
     },
     Secp256k1 {
         dh_ephemeral_public_key: Secp256k1PublicKey,
-        decryptors: BTreeMap<PublicKeyFingerprint, AesWrapped128BitKey>,
+        decryptors: IndexMap<PublicKeyFingerprint, AesWrapped128BitKey>,
     },
 }
 
@@ -118,7 +112,7 @@ impl DecryptorsByCurve {
 
 /// The last 8 bytes of the Blake2b-256 hash of the public key bytes,
 /// in their standard Radix byte-serialization.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor)]
 #[sbor(transparent)]
 pub struct PublicKeyFingerprint(pub [u8; Self::LENGTH]);
 
@@ -171,7 +165,7 @@ impl AesWrapped128BitKey {
 // PREPARATION
 //============================================================================
 
-pub type PreparedAttachmentsV1 = SummarizedRawFullBody<AttachmentsV1>;
+pub type PreparedMessageV1 = SummarizedRawFullBody<MessageV1>;
 
 // TODO: Add tests with a canonical implementation of message encryption/decryption,
 // and corresponding test vectors for other implementers.

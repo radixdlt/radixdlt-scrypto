@@ -6,7 +6,7 @@ use super::manifest_builder::TransactionManifestV1;
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifestV1>,
     header: Option<TransactionHeaderV1>,
-    attachments: Option<AttachmentsV1>,
+    message: Option<MessageV1>,
     intent_signatures: Vec<SignatureWithPublicKeyV1>,
     notary_signature: Option<SignatureV1>,
 }
@@ -16,7 +16,7 @@ impl TransactionBuilder {
         Self {
             manifest: None,
             header: None,
-            attachments: None,
+            message: None,
             intent_signatures: vec![],
             notary_signature: None,
         }
@@ -32,8 +32,8 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn attachments(mut self, attachments: AttachmentsV1) -> Self {
-        self.attachments = Some(attachments);
+    pub fn message(mut self, message: MessageV1) -> Self {
+        self.message = Some(message);
         self
     }
 
@@ -87,7 +87,7 @@ impl TransactionBuilder {
             header: self.header.clone().expect("Header not specified"),
             instructions,
             blobs,
-            attachments: self.attachments.clone().unwrap_or_default(),
+            message: self.message.clone().unwrap_or_default(),
         }
     }
 

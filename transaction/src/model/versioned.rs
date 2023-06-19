@@ -39,7 +39,7 @@ pub enum VersionedTransactionPayload {
         header: TransactionHeaderV1,
         instructions: InstructionsV1,
         blobs: BlobsV1,
-        attachments: AttachmentsV1,
+        message: MessageV1,
     },
     #[sbor(discriminator(V1_SIGNED_INTENT))]
     SignedIntentV1 {
@@ -116,14 +116,14 @@ mod tests {
         .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
-        let attachments_v1 = AttachmentsV1::default();
-        let expected_attachments_hash = hash_manifest_encoded_without_prefix_byte(&attachments_v1);
+        let message_v1 = MessageV1::default();
+        let expected_attachments_hash = hash_manifest_encoded_without_prefix_byte(&message_v1);
 
         let intent_v1 = IntentV1 {
             header: header_v1.clone(),
             instructions: instructions_v1.clone(),
             blobs: blobs_v1.clone(),
-            attachments: attachments_v1.clone(),
+            message: message_v1.clone(),
         };
         let expected_intent_hash = IntentHash::from_hash(hash(
             [
@@ -150,7 +150,7 @@ mod tests {
                 header: header_v1.clone(),
                 instructions: instructions_v1.clone(),
                 blobs: blobs_v1.clone(),
-                attachments: attachments_v1.clone(),
+                message: message_v1.clone(),
             }
         );
 

@@ -1283,7 +1283,7 @@ CALL_METHOD
             },
             instructions,
             blobs,
-            attachments: AttachmentsV1::default(),
+            message: MessageV1::default(),
         })
     }
 
