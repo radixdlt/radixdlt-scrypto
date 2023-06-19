@@ -1440,7 +1440,7 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
         ),
         (
             "${validator_address}",
-            "validator_sim1sgvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvedzgr3l",
+            "validator_sim1svzs2pg9q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9wr6hj0",
         ),
         (
             "${accesscontroller_address}",

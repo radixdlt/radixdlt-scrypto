@@ -14,6 +14,9 @@ use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::RoyaltyConfig;
+use sbor::rust::string::String;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use scrypto::modules::Attachable;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
