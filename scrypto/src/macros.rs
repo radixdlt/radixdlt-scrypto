@@ -416,16 +416,6 @@ macro_rules! internal_add_role {
 }
 
 #[macro_export]
-macro_rules! internal_role_mutability {
-    () => {{
-        false
-    }};
-    (=> updaters: $($updaters:ident),+) => {{
-        true
-    }};
-}
-
-#[macro_export]
 macro_rules! enable_method_auth {
     (
         roles {
@@ -447,12 +437,6 @@ macro_rules! enable_method_auth {
 
         const ROLE_STRINGS: MethodRoles<&str> = MethodRoles {
             $($role: stringify!($role)),*
-        };
-
-        const ROLE_MUTABLE: MethodRoles<bool> = MethodRoles {
-            $(
-                $role: internal_role_mutability!($( => updaters: $($updaters),+)?)
-            ),*
         };
 
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
@@ -526,23 +510,21 @@ macro_rules! enable_package_royalties {
 
 #[macro_export]
 macro_rules! role_definition_entry {
-    ($rule:expr, updaters: $($mutators:ident),+) => {{
-        let mut list = RoleList::none();
-        permission_role_list!(list, $($mutators),+);
-        RoleEntry::new($rule, list)
-    }};
     ($rule:expr) => {{
-        RoleEntry::immutable($rule)
+        ($rule, false)
+    }};
+    ($rule:expr, updatable) => {{
+        ($rule, true)
     }};
 }
 
 #[macro_export]
 macro_rules! roles_internal {
-    ($module_roles:ident, $mutability:ident, $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)* ) => ({
+    ($module_roles:ident, $($role:ident => $rule:expr $(, $updatable:ident)? ;)* ) => ({
         let method_roles = $module_roles::<(AccessRule, bool)> {
             $(
                 $role: {
-                    ($rule, $mutability.$role)
+                    role_definition_entry!($rule $(, $updatable)?)
                 }
             ),*
         };
@@ -562,8 +544,8 @@ macro_rules! roles_internal {
 
 #[macro_export]
 macro_rules! roles {
-    ( $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)* ) => ({
-        roles_internal!(MethodRoles, ROLE_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*)
+    ( $($role:ident => $rule:expr $(, $updatable:ident)? ;)* ) => ({
+        roles_internal!(MethodRoles, $($role => $rule $(, $updatable)? ;)*)
     });
 }
 
@@ -602,13 +584,13 @@ macro_rules! metadata_config {
 macro_rules! metadata {
     {
         roles {
-            $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)*
+            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
         },
         init {
             $($key:expr => $value:expr),*
         }
     } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, METADATA_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
+        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable)? ;)*);
         let metadata = metadata_config!($($key => $value),*);
         (metadata, metadata_roles)
     });
@@ -624,10 +606,10 @@ macro_rules! metadata {
 
     {
         roles {
-            $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)*
+            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
         }
     } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, METADATA_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
+        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable:ident)? ;)*);
         let metadata = metadata_config!();
         (metadata, metadata_roles)
     });
@@ -638,13 +620,13 @@ macro_rules! metadata {
 macro_rules! royalties {
     {
         roles {
-            $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)*
+            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
         },
         init {
             $($init:tt)*
         }
     } => ({
-        let royalty_roles = roles_internal!(RoyaltyRoles, ROYALTY_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
+        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, $updatable)? ;)*);
         let royalties = royalty_config!($($init)*);
         (royalties, royalty_roles)
     });

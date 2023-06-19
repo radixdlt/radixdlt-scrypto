@@ -33,7 +33,7 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    borrow_funds_auth => rule!(require(RADIX_TOKEN));
+                    borrow_funds_auth => rule!(require(RADIX_TOKEN)), updatable;
                     deposit_funds_auth => owner_update_access_rule;
                 })
                 .globalize()

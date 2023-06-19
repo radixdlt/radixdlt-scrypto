@@ -138,8 +138,3 @@ impl<T> MetadataRoles<T> {
         ]
     }
 }
-
-pub const METADATA_MUTABLE: MetadataRoles<bool> = MetadataRoles {
-    setter: true,
-    setter_updater: true,
-};
