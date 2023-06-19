@@ -85,7 +85,7 @@ fn access_rules_method_auth_cannot_be_mutated_when_locked() {
     roles.define_immutable_role("deposit_funds_auth_update", rule!(allow_all));
     roles.define_mutable_role(
         "borrow_funds_auth",
-        RoleEntry::new(rule!(allow_all), ["deposit_funds_auth_update"]),
+        rule!(allow_all),
     );
     roles.define_immutable_role("deposit_funds_auth", rule!(require(RADIX_TOKEN)));
     let mut test_runner = MutableAccessRulesTestRunner::new(roles);

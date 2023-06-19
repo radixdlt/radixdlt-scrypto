@@ -14,8 +14,7 @@ pub trait SecurifiedAccessRules {
         let mut roles = Roles::new();
 
         if presecurify {
-            let entry = RoleEntry::new(owner_rule.clone(), [SELF_ROLE]);
-            roles.define_mutable_role(RoleKey::new(OWNER_ROLE), entry);
+            roles.define_mutable_role(RoleKey::new(OWNER_ROLE), owner_rule.clone());
         } else {
             roles.define_immutable_role(RoleKey::new(OWNER_ROLE), owner_rule.clone());
         }
@@ -24,7 +23,7 @@ pub trait SecurifiedAccessRules {
             if presecurify {
                 roles.define_mutable_role(
                     RoleKey::new(securify_role),
-                    RoleEntry::new(owner_rule.clone(), [SELF_ROLE]),
+                    owner_rule.clone(),
                 );
             } else {
                 roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);

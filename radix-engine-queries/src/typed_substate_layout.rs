@@ -94,7 +94,6 @@ impl TypedSubstateKey {
 pub enum TypedAccessRulesSubstateKey {
     AccessRulesField(AccessRulesField),
     Rule(ModuleRoleKey),
-    Mutability(ModuleRoleKey),
 }
 
 /// Doesn't include non-object modules, nor transient nodes.
@@ -183,14 +182,6 @@ pub fn to_typed_substate_key(
                 .ok_or_else(|| error("Access Rules key"))?;
             TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
                 scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
-            ))
-        }
-        ACCESS_RULES_MUTABILITY_PARTITION => {
-            let key = substate_key
-                .for_map()
-                .ok_or_else(|| error("Access Rules Mutability key"))?;
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(
-                scrypto_decode(&key).map_err(|_| error("Access Rules Mutability key"))?,
             ))
         }
         partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
@@ -401,7 +392,6 @@ pub enum TypedTypeInfoModuleFieldValue {
 pub enum TypedAccessRulesModule {
     OwnerRole(OwnerRole),
     Rule(KeyValueEntrySubstate<AccessRule>),
-    Mutability(KeyValueEntrySubstate<RoleList>),
 }
 
 #[derive(Debug, Clone)]
@@ -558,9 +548,6 @@ fn to_typed_substate_value_internal(
             }
             TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
                 TypedAccessRulesModule::Rule(scrypto_decode(data)?),
-            ),
-            TypedAccessRulesSubstateKey::Mutability(_) => TypedSubstateValue::AccessRulesModule(
-                TypedAccessRulesModule::Mutability(scrypto_decode(data)?),
             ),
         },
         TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {

@@ -532,7 +532,7 @@ macro_rules! roles_internal {
         let mut roles = $crate::blueprints::resource::Roles::new();
         for (name, (rule, mutable)) in method_roles.list() {
             if mutable {
-                roles.define_mutable_role(name, RoleEntry::new(rule, RoleList::none()));
+                roles.define_mutable_role(name, rule);
             } else {
                 roles.define_immutable_role(name, rule);
             }

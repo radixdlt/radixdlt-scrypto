@@ -222,7 +222,7 @@ impl OwnerRole {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
-    pub roles: BTreeMap<RoleKey, (RoleEntry, bool)>,
+    pub roles: BTreeMap<RoleKey, (AccessRule, bool)>,
 }
 
 impl Roles {
@@ -232,11 +232,11 @@ impl Roles {
 
     pub fn define_immutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
         self.roles
-            .insert(role.into(), (RoleEntry::immutable(access_rule), true));
+            .insert(role.into(), (access_rule, true));
     }
 
-    pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, entry: RoleEntry) {
-        self.roles.insert(role.into(), (entry, false));
+    pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
+        self.roles.insert(role.into(), (access_rule, false));
     }
 }
 

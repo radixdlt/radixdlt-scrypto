@@ -274,7 +274,7 @@ impl ConsensusManagerBlueprint {
 
         let role_definitions = roles2! {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
-            START_ROLE => rule!(require(AuthAddresses::system_role())), mut [SELF_ROLE];
+            START_ROLE => rule!(require(AuthAddresses::system_role())), updatable;
         };
 
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
