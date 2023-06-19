@@ -21,7 +21,27 @@ macro_rules! method_auth_template {
     () => ({
         radix_engine_interface::blueprints::package::StaticRoles {
             methods: BTreeMap::new(),
-            updatable_roles: BTreeMap::new(),
+            roles: BTreeMap::new(),
+        }
+    });
+    (
+        roles { $($role:ident );* },
+        methods { $($method:expr => $entry:expr );* }
+    ) => ({
+        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+            = BTreeMap::new();
+        $(
+            methods.insert($method.into(), $entry.into());
+        )*
+
+        let mut roles: BTreeMap<radix_engine_interface::blueprints::resource::RoleKey, RoleList> = BTreeMap::new();
+        $(
+            roles.insert(stringify!($role).into(), RoleList::none());
+        )*
+
+        radix_engine_interface::blueprints::package::StaticRoles {
+            methods,
+            roles,
         }
     });
     (methods { $($method:expr => $entry:expr );* }) => ({
@@ -33,7 +53,7 @@ macro_rules! method_auth_template {
 
         radix_engine_interface::blueprints::package::StaticRoles {
             methods,
-            updatable_roles: BTreeMap::new(),
+            roles: BTreeMap::new(),
         }
     });
     ( methods { $($key:expr => $entry:expr;)* }) => (
