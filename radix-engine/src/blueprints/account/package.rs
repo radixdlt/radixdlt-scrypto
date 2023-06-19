@@ -15,7 +15,7 @@ use radix_engine_interface::schema::{
 };
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
-use crate::method_auth_template;
+use crate::roles_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
@@ -417,32 +417,6 @@ impl AccountNativePackage {
             ]
         */
 
-        let method_auth = method_auth_template!(
-            methods {
-                ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
-                ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
-                ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
-                ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
-                ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
-                ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [OWNER_ROLE];
-                ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [OWNER_ROLE];
-                ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
-                ACCOUNT_CREATE_PROOF_IDENT => [OWNER_ROLE];
-                ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
-                ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
-                ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
-                ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
-                ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
-                ACCOUNT_BURN_IDENT => [OWNER_ROLE];
-                ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
-
-                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodPermission::Public;
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodPermission::Public;
-                ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodPermission::Public;
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodPermission::Public;
-            }
-        );
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -475,9 +449,34 @@ impl AccountNativePackage {
                         ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
                         ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(
-                        method_auth,
-                    ),
+                    method_auth: MethodAuthTemplate::Static(roles_template!(
+                        roles {
+                            OWNER_ROLE;
+                        },
+                        methods {
+                            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
+                            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CREATE_PROOF_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
+                            ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
+                            ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
+                            ACCOUNT_BURN_IDENT => [OWNER_ROLE];
+                            ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+
+                            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodPermission::Public;
+                            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodPermission::Public;
+                            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodPermission::Public;
+                            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodPermission::Public;
+                        }
+                    )),
                 },
             }
         );

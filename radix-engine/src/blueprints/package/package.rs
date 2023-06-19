@@ -25,7 +25,7 @@ use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
-use crate::method_auth_template;
+use crate::roles_template;
 use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -645,7 +645,10 @@ impl PackageNativePackage {
                         PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                     ),
                     method_auth: MethodAuthTemplate::Static(
-                        method_auth_template! {
+                        roles_template! {
+                            roles {
+                                OWNER_ROLE;
+                            },
                             methods {
                                 PACKAGE_CLAIM_ROYALTIES_IDENT => [OWNER_ROLE];
                             }
@@ -765,7 +768,7 @@ impl PackageNativePackage {
                 ) {
                     (_, MethodAuthTemplate::Static(..)) => {}
                     (_, MethodAuthTemplate::NoAuth) => {}
-                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterAuth(..)) => {}
+                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterRoles(..)) => {}
                     _ => {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::InvalidAuthSetup),
@@ -1043,7 +1046,7 @@ impl PackageNativePackage {
                 ) {
                     (_, MethodAuthTemplate::Static(..)) => {}
                     (_, MethodAuthTemplate::NoAuth) => {}
-                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterAuth(..)) => {}
+                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterRoles(..)) => {}
                     _ => {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::InvalidAuthSetup),

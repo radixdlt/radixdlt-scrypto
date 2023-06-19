@@ -2,7 +2,7 @@ use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorB
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use crate::{event_schema, method_auth_template, types::*};
+use crate::{event_schema, roles_template, types::*};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
@@ -191,7 +191,11 @@ impl ConsensusManagerNativePackage {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template!(
+                    method_auth: MethodAuthTemplate::Static(roles_template!(
+                        roles {
+                            START_ROLE => updaters: [SELF_ROLE];
+                            VALIDATOR_ROLE;
+                        },
                         methods {
                             CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
                             CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
@@ -434,7 +438,10 @@ impl ConsensusManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                        roles {
+                            OWNER_ROLE;
+                        },
                         methods {
                             VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
                             VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;

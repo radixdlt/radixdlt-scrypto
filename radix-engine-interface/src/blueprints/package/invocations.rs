@@ -145,7 +145,7 @@ impl Default for StaticRoles {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum MethodAuthTemplate {
     Static(StaticRoles),
-    StaticUseOuterAuth(StaticRoles),
+    StaticUseOuterRoles(BTreeMap<MethodKey, MethodPermission>),
     NoAuth,
 }
 

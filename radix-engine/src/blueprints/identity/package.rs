@@ -1,6 +1,6 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::{ApplicationError, RuntimeError};
-use crate::method_auth_template;
+use crate::roles_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -82,12 +82,6 @@ impl IdentityNativePackage {
             IDENTITY_CREATE_VIRTUAL_ED25519_ID => IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
         );
 
-        let method_auth = method_auth_template! {
-            methods {
-                IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
-            }
-        };
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -118,9 +112,14 @@ impl IdentityNativePackage {
                         IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                         IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(
-                        method_auth,
-                    ),
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                        roles {
+                            SECURIFY_ROLE => updaters: [SELF_ROLE];
+                        },
+                        methods {
+                            IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
+                        }
+                    }),
                 },
             }
         );

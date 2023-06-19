@@ -4,7 +4,7 @@ use super::two_resource_pool::*;
 use crate::errors::*;
 use crate::event_schema;
 use crate::kernel::kernel_api::*;
-use crate::method_auth_template;
+use crate::roles_template;
 use crate::system::system_callback::*;
 use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
@@ -174,7 +174,7 @@ impl PoolNativePackage {
                     function_auth: btreemap!(
                         ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             POOL_MANAGER_ROLE;
                         },
@@ -341,7 +341,7 @@ impl PoolNativePackage {
                     function_auth: btreemap!(
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             POOL_MANAGER_ROLE;
                         },
@@ -506,7 +506,7 @@ impl PoolNativePackage {
                     function_auth: btreemap!(
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             POOL_MANAGER_ROLE;
                         },

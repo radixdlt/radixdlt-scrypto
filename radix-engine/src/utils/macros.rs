@@ -29,6 +29,24 @@ macro_rules! add_role {
 #[macro_export]
 macro_rules! method_auth_template {
     () => ({
+        let methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+            = BTreeMap::new();
+        methods
+    });
+    ($($method:expr => $entry:expr;)*) => ({
+        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+            = BTreeMap::new();
+        $(
+            methods.insert($method.into(), $entry.into());
+        )*
+        methods
+    });
+}
+
+
+#[macro_export]
+macro_rules! roles_template {
+    () => ({
         radix_engine_interface::blueprints::package::StaticRoles {
             methods: BTreeMap::new(),
             roles: BTreeMap::new(),
@@ -54,7 +72,7 @@ macro_rules! method_auth_template {
             methods,
         }
     });
-    (methods { $($method:expr => $entry:expr );* }) => ({
+    ( methods { $($key:expr => $entry:expr;)* }) => (
         let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
             = BTreeMap::new();
         $(
@@ -65,8 +83,6 @@ macro_rules! method_auth_template {
             methods,
             roles: BTreeMap::new(),
         }
-    });
-    ( methods { $($key:expr => $entry:expr;)* }) => (
-        method_auth_template!(methods { $($key => $entry);* })
     );
 }
+

@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
-use crate::{event_schema, method_auth_template};
+use crate::{event_schema, method_auth_template, roles_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
@@ -358,10 +358,14 @@ impl ResourceManagerNativePackage {
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
-                            MINT_ROLE;
-                            BURN_ROLE;
+                            MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
+                            BURN_ROLE => updaters: [BURN_UPDATE_ROLE];
+                            WITHDRAW_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
+                            DEPOSIT_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
+                            RECALL_ROLE => updaters: [RECALL_UPDATE_ROLE];
+                            FREEZE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
                             RESOURCE_PACKAGE_ROLE;
                         },
                         methods {
@@ -684,7 +688,17 @@ impl ResourceManagerNativePackage {
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                        roles {
+                            MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
+                            BURN_ROLE => updaters: [BURN_UPDATE_ROLE];
+                            WITHDRAW_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
+                            DEPOSIT_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
+                            RECALL_ROLE => updaters: [RECALL_UPDATE_ROLE];
+                            FREEZE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
+                            UPDATE_NON_FUNGIBLE_DATA_ROLE => updaters: [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE];
+                            RESOURCE_PACKAGE_ROLE;
+                        },
                         methods {
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT => [MINT_ROLE];
@@ -923,21 +937,19 @@ impl ResourceManagerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
 
-                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        methods {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAW_ROLE];
-                            VAULT_RECALL_IDENT => [RECALL_ROLE];
-                            VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                            VAULT_BURN_IDENT => [BURN_ROLE];
-                            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        }
+                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
+                        VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
+                        VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
+                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
+                        VAULT_FREEZE_IDENT => [FREEZE_ROLE];
+                        VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
+                        VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
+                        FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAW_ROLE];
+                        VAULT_RECALL_IDENT => [RECALL_ROLE];
+                        VAULT_PUT_IDENT => [DEPOSIT_ROLE];
+                        VAULT_BURN_IDENT => [BURN_ROLE];
+                        FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                     }),
                 },
             }
@@ -1211,27 +1223,25 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        methods {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
+                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
+                        VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
+                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
+                        VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
+                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
+                        NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
 
-                            VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAW_ROLE];
-                            VAULT_RECALL_IDENT => [RECALL_ROLE];
-                            VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
-                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALL_ROLE];
-                            VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                            VAULT_BURN_IDENT => [BURN_ROLE];
-                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURN_ROLE];
+                        VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
+                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAW_ROLE];
+                        VAULT_RECALL_IDENT => [RECALL_ROLE];
+                        VAULT_FREEZE_IDENT => [FREEZE_ROLE];
+                        VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
+                        NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALL_ROLE];
+                        VAULT_PUT_IDENT => [DEPOSIT_ROLE];
+                        VAULT_BURN_IDENT => [BURN_ROLE];
+                        NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURN_ROLE];
 
-                            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        }
+                        NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                     }),
                 },
             }
@@ -1402,19 +1412,17 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        methods {
-                            BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_PUT_IDENT => MethodPermission::Public;
-                            BUCKET_TAKE_IDENT => MethodPermission::Public;
+                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
+                        BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
+                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
+                        BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
+                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
+                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
+                        BUCKET_PUT_IDENT => MethodPermission::Public;
+                        BUCKET_TAKE_IDENT => MethodPermission::Public;
 
-                            FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        }
+                        FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                     }),
                 },
             }
@@ -1616,22 +1624,20 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        methods {
-                            BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_PUT_IDENT => MethodPermission::Public;
-                            BUCKET_TAKE_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
+                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
+                        BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
+                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
+                        BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
+                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
+                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
+                        BUCKET_PUT_IDENT => MethodPermission::Public;
+                        BUCKET_TAKE_IDENT => MethodPermission::Public;
+                        NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodPermission::Public;
+                        NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
+                        NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
 
-                            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        }
+                        NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                     }),
                 },
             }
