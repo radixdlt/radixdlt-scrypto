@@ -16,7 +16,7 @@ const READ_NODES_REPEAT_COUNT: usize = 50;
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
-const MAX_SIZE: usize = 4 * 1024 * 1024;
+const MAX_SIZE: usize = 1024 * 1024;
 /// Range step
 const SIZE_STEP: usize = 100 * 1024;
 /// Number of nodes written to the database in preparation step. 
@@ -24,6 +24,7 @@ const SIZE_STEP: usize = 100 * 1024;
 const WRITE_NODES_COUNT: usize = 10;
 
 #[test]
+/// Measuring the writing nodes with substates from range [MIN_SIZE-MAX_SIZE] each.
 /// Database is created in /tmp/radix-scrypto-db folder.
 /// Outputs are genered in png files: /tmp/scrypto_commit_per_size_rocksdb.png, /tmp/scrypto_commit_per_size_rocksdb_JMT.png, /tmp/scrypto_commit_per_size_rocksdb_diff.png
 /// point list is printed to stdout.
@@ -32,7 +33,7 @@ const WRITE_NODES_COUNT: usize = 10;
 /// or
 ///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_commit_per_size
 /// from main radixdlt-scrypto folder.
-/// Test can be parametrized using environment variables: ROUNDS_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP
+/// Test can be parametrized using environment variables: READ_NODES_REPEAT_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP, WRITE_NODES_COUNT
 fn test_commit_per_size() {
     let read_nodes_repeat_count = match std::env::var("READ_NODES_REPEAT_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -132,6 +133,7 @@ fn test_commit_per_size() {
 }
 
 #[test]
+/// Measuring the writing partition of variable sizes [0-100].
 /// Database is created in /tmp/radix-scrypto-db folder.
 /// Outputs are genered in png files: /tmp/scrypto_commit_per_partition_rocksdb.png, /tmp/scrypto_commit_per_partition_rocksdb_JMT.png, /tmp/scrypto_commit_per_partition_rocksdb_diff.png
 /// point list is printed to stdout.

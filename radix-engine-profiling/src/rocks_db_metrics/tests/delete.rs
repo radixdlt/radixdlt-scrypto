@@ -14,7 +14,7 @@ use std::{io::Write, path::PathBuf};
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
-const MAX_SIZE: usize = 4 * 1024 * 1024;
+const MAX_SIZE: usize = 1024 * 1024;
 /// Range step
 const SIZE_STEP: usize = 100 * 1024;
 /// Number of nodes written to the database in preparation step. 
@@ -22,6 +22,7 @@ const SIZE_STEP: usize = 100 * 1024;
 const WRITE_NODES_COUNT: usize = 4000;
 
 #[test]
+/// Measuring deletion of substates of size from range [MIN_SIZE-MAX_SIZE].
 /// Database is created in /tmp/radix-scrypto-db folder.
 /// Outputs are genered in png files: /tmp/scrypto_delete_per_size_rocksdb.png, /tmp/scrypto_delete_per_size_rocksdb_JMT.png, /tmp/scrypto_delete_per_size_rocksdb_diff.png
 /// point list is printed to stdout.
@@ -30,7 +31,7 @@ const WRITE_NODES_COUNT: usize = 4000;
 /// or
 ///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_delete_per_size
 /// from main radixdlt-scrypto folder.
-/// Test can be parametrized using environment variables: ROUNDS_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP
+/// Test can be parametrized using environment variables: WRITE_NODES_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP
 fn test_delete_per_size() {
     let min_size = match std::env::var("MIN_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -112,6 +113,7 @@ fn test_delete_per_size() {
 }
 
 #[test]
+/// Measuring partition removal of variable sizes [0-100].
 /// Database is created in /tmp/radix-scrypto-db folder.
 /// Outputs are genered in png files: /tmp/scrypto_delete_per_partition_rocksdb.png, /tmp/scrypto_delete_per_partition_rocksdb_JMT.png, /tmp/scrypto_delete_per_partition_rocksdb_diff.png
 /// point list is printed to stdout.

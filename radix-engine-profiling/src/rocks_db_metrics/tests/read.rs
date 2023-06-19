@@ -26,6 +26,7 @@ const FILTER_READ_MAX_SIZE: usize = MAX_SIZE;
 const FILTER_SPIKES: f32 = 500f32;
 
 #[test]
+/// Measuring read of node substates of size in range [MIN_SIZE-MAX_SIZE] and measuring substates not found in database.
 /// Database is created in /tmp/radix-scrypto-db folder.
 /// Outputs are genered in png files: /tmp/scrypto_read_rocksdb.png, /tmp/scrypto_read_inmem.png, /tmp/scrypto_read_diff.png
 /// point list is printed to stdout.
@@ -34,8 +35,8 @@ const FILTER_SPIKES: f32 = 500f32;
 /// or
 ///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_read
 /// from main radixdlt-scrypto folder.
-/// Test can be parametrized using environment variables: READ_ROUNDS, MIN_SIZE, MAX_SIZE, SIZE_STEP,
-///  PREPARE_NUM_OF_SUBSTATES_PER_SIZE, READ_MAX_SIZE, FILTER, PREPARE_NUM_OF_SUBSTATES_NOT_FUND
+/// Test can be parametrized using environment variables: READ_NODES_REPEAT_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP,
+///  WRITE_NODES_COUNT, FILTER_READ_MAX_SIZE, FILTER_SPIKES, READ_NOT_FOUND_SUBSTATES_COUNT
 fn test_read() {
     let read_repeats = match std::env::var("READ_NODES_REPEAT_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
