@@ -776,6 +776,8 @@ where
                     }),
                 );
                 track.release_lock(handle);
+            } else {
+                panic!("No partition for an expiry epoch")
             }
         }
 
