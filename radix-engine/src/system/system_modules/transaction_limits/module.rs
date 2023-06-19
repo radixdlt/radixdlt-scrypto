@@ -4,7 +4,7 @@ use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::StoreAccessInfo;
-use crate::transaction::{ExecutionMetrics, TransactionResult};
+use crate::transaction::ExecutionMetrics;
 use crate::types::*;
 use crate::{
     errors::RuntimeError,
@@ -96,18 +96,15 @@ impl TransactionLimitsModule {
     }
 
     /// Exports metrics to transaction receipt.
-    pub fn finalize(&self, transaction_result: &TransactionResult) -> ExecutionMetrics {
-        match transaction_result {
-            TransactionResult::Commit(c) => ExecutionMetrics {
-                substate_read_count: self.substate_db_read_count,
-                substate_write_count: self.substate_db_write_count,
-                substate_read_size: self.substate_db_read_size_total,
-                substate_write_size: self.substate_db_write_size_total,
-                max_wasm_memory_used: self.wasm_max_memory,
-                max_invoke_payload_size: self.invoke_payload_max_size,
-                execution_cost_units_consumed: c.fee_summary.execution_cost_sum as usize,
-            },
-            _ => ExecutionMetrics::default(),
+    pub fn finalize(self, execution_cost_units_consumed: u32) -> ExecutionMetrics {
+        ExecutionMetrics {
+            substate_read_count: self.substate_db_read_count,
+            substate_write_count: self.substate_db_write_count,
+            substate_read_size: self.substate_db_read_size_total,
+            substate_write_size: self.substate_db_write_size_total,
+            max_wasm_memory_used: self.wasm_max_memory,
+            max_invoke_payload_size: self.invoke_payload_max_size,
+            execution_cost_units_consumed,
         }
     }
 

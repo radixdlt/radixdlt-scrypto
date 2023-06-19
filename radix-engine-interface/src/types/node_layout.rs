@@ -268,6 +268,12 @@ pub enum MultiResourcePoolField {
     MultiResourcePool,
 }
 
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum TransactionTrackerField {
+    TransactionTracker,
+}
+
 macro_rules! substate_key {
     ($t:ty) => {
         impl From<$t> for SubstateKey {
@@ -315,6 +321,7 @@ substate_key!(AccountField);
 substate_key!(OneResourcePoolField);
 substate_key!(TwoResourcePoolField);
 substate_key!(MultiResourcePoolField);
+substate_key!(TransactionTrackerField);
 
 // Transient
 substate_key!(WorktopField);

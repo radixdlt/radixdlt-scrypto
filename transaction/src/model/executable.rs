@@ -1,5 +1,4 @@
 use crate::internal_prelude::*;
-use radix_engine_interface::blueprints::transaction_processor::RuntimeValidationRequest;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AuthZoneParams {
@@ -8,13 +7,42 @@ pub struct AuthZoneParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct EpochRange {
+    pub start_epoch_inclusive: Epoch,
+    pub end_epoch_exclusive: Epoch,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
-    pub transaction_hash: Hash,
+    pub intent_hash: TransactionIntentHash,
+    pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
-    pub runtime_validations: Vec<RuntimeValidationRequest>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum TransactionIntentHash {
+    /// Should be checked with transaction tracker.
+    ToCheck {
+        intent_hash: Hash,
+        expiry_epoch: Epoch,
+    },
+    /// Should not be checked by transaction tracker.
+    NotToCheck { intent_hash: Hash },
+}
+
+impl TransactionIntentHash {
+    pub fn as_hash(&self) -> &Hash {
+        match self {
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => intent_hash,
+        }
+    }
+    pub fn to_hash(&self) -> Hash {
+        self.as_hash().clone()
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -82,12 +110,25 @@ impl<'a> Executable<'a> {
         }
     }
 
-    pub fn transaction_hash(&self) -> &Hash {
-        &self.context.transaction_hash
+    pub fn intent_hash(&self) -> &TransactionIntentHash {
+        &self.context.intent_hash
     }
 
-    pub fn overwrite_transaction_hash(&mut self, hash: Hash) {
-        self.context.transaction_hash = hash;
+    pub fn epoch_range(&self) -> Option<&EpochRange> {
+        self.context.epoch_range.as_ref()
+    }
+
+    pub fn overwrite_intent_hash(&mut self, hash: Hash) {
+        match &mut self.context.intent_hash {
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => {
+                *intent_hash = hash;
+            }
+        }
+    }
+
+    pub fn skip_epoch_range_check(&mut self) {
+        self.context.epoch_range = None;
     }
 
     pub fn fee_payment(&self) -> &FeePayment {
@@ -116,9 +157,5 @@ impl<'a> Executable<'a> {
 
     pub fn payload_size(&self) -> usize {
         self.context.payload_size
-    }
-
-    pub fn runtime_validations(&self) -> &Vec<RuntimeValidationRequest> {
-        &self.context.runtime_validations
     }
 }

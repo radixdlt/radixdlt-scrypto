@@ -45,11 +45,9 @@ impl LiquidFungibleResource {
         self.amount.is_zero()
     }
 
-    pub fn put(&mut self, other: LiquidFungibleResource) -> Result<(), ResourceError> {
+    pub fn put(&mut self, other: LiquidFungibleResource) {
         // update liquidity
         self.amount += other.amount();
-
-        Ok(())
     }
 
     pub fn take_by_amount(

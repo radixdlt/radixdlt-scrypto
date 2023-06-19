@@ -49,7 +49,7 @@ mod multi_threaded_test {
                     &mut substate_db,
                     &mut scrypto_interpreter,
                     &FeeReserveConfig::default(),
-                    &ExecutionConfig::default(),
+                    &ExecutionConfig::for_test_transaction(),
                     &TestTransaction::new(manifest.clone(), hash(format!("Account creation: {i}")))
                         .prepare()
                         .unwrap()
@@ -81,7 +81,7 @@ mod multi_threaded_test {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::default(),
+                &ExecutionConfig::for_test_transaction(),
                 &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
                     .expect("Expected transaction to be preparable")
@@ -111,7 +111,7 @@ mod multi_threaded_test {
                         &substate_db,
                         &scrypto_interpreter,
                         &FeeReserveConfig::default(),
-                        &ExecutionConfig::default(),
+                        &ExecutionConfig::for_test_transaction(),
                         &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()
                             .expect("Expected transaction to be preparable")
