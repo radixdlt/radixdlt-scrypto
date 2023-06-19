@@ -159,8 +159,6 @@ pub fn to_typed_substate_key(
     partition_num: PartitionNumber,
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
-    println!("{:?}, {:?}", partition_num, substate_key);
-
     let substate_type = match partition_num {
         TYPE_INFO_FIELD_PARTITION => TypedSubstateKey::TypeInfoModuleField(
             TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
