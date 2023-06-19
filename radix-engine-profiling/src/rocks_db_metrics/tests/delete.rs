@@ -11,7 +11,7 @@ use radix_engine_store_interface::{
 use rand::Rng;
 use std::{io::Write, path::PathBuf};
 
-/// One test delete rounds count
+/// Delete rounds count
 const ROUNDS_COUNT: usize = 50;
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
@@ -19,8 +19,9 @@ const MIN_SIZE: usize = 1;
 const MAX_SIZE: usize = 4 * 1024 * 1024;
 /// Range step
 const SIZE_STEP: usize = 100 * 1024;
-/// Count of repeated writes for database preparation
-const PREPARE_DB_WRITE_REPEATS: usize = ROUNDS_COUNT * 2;
+/// Number of nodes written to the database in preparation step. 
+/// Each node has N=(MAX_SIZE-MIN_SIZE)/SIZE_STEP substates of size between MIN_SIZE and MAX_SIZE in one partition.
+const WRITE_NODES_COUNT: usize = ROUNDS_COUNT * 2;
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
@@ -56,7 +57,7 @@ fn test_delete_per_size() {
         min_size,
         max_size,
         size_step,
-        PREPARE_DB_WRITE_REPEATS,
+        WRITE_NODES_COUNT,
         |path| SubstateStoreWithMetrics::new_rocksdb(path),
     );
 
@@ -83,7 +84,7 @@ fn test_delete_per_size() {
             min_size,
             max_size,
             size_step,
-            PREPARE_DB_WRITE_REPEATS,
+            WRITE_NODES_COUNT,
             |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path),
         );
 
@@ -270,7 +271,7 @@ where
         let mut size_vector: Vec<usize> = Vec::new();
         for j in (i..data.len()).step_by(prepare_db_write_repeats) {
             size_vector.push(j);
-        }
+        } // todo optimize
 
         let mut idx_vector = size_vector.clone();
 
@@ -360,7 +361,7 @@ where
                     rng.fill(value_data.as_mut_slice());
                     let value = DatabaseUpdate::Set(value_data);
 
-                    let mut substate_key_value = [0u8; NodeId::LENGTH];
+                    let mut substate_key_value = [0u8; SUBSTATE_KEY_LENGTH];
                     rng.fill(&mut substate_key_value);
                     let sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
                         substate_key_value.into(),

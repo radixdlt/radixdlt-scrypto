@@ -12,6 +12,9 @@ use rand::{rngs::ThreadRng, Rng};
 #[allow(unused_imports)]
 use std::{io::Write, path::PathBuf};
 
+
+pub const SUBSTATE_KEY_LENGTH: usize = 30;
+
 macro_rules! number_to_str {
     ( $x:expr, $precission:expr ) => {{
         if $x < 0f32 {
@@ -62,7 +65,7 @@ pub fn generate_commit_data(
     rng.fill(value_data.as_mut_slice());
     let value = DatabaseUpdate::Set(value_data);
 
-    let mut substate_key_value = [0u8; NodeId::LENGTH];
+    let mut substate_key_value = [0u8; SUBSTATE_KEY_LENGTH];
     rng.fill(&mut substate_key_value);
     let sort_key =
         SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(substate_key_value.into()));

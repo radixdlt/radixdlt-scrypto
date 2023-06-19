@@ -13,16 +13,17 @@ const MIN_SIZE: usize = 1;
 const MAX_SIZE: usize = 1024 * 1024;
 /// Range step
 const SIZE_STEP: usize = 16 * 1024;
-/// Number of substates generated for each step size
-const PREPARE_NUM_OF_SUBSTATES_PER_SIZE: usize = 40;
-/// Multiplication of each step read (COUNT * READ_REPEATS)
-const READ_ROUNDS: usize = 100;
-/// Number of substates to read in read not found test
-const PREPARE_NUM_OF_SUBSTATES_NOT_FUND: usize = 100;
+/// Number of nodes written to the database in preparation step. 
+/// Each node has N=(MAX_SIZE-MIN_SIZE)/SIZE_STEP substates of size between MIN_SIZE and MAX_SIZE in one partition.
+const WRITE_NODES_COUNT: usize = 4000;
+/// Number of repated reads of each node previously written to the database.
+const READ_NODES_REPEAT_COUNT: usize = 100;
+/// Number of substates to read in 'read not found' test
+const READ_NOT_FOUND_SUBSTATES_COUNT: usize = 100;
 /// Max size of read substates to use
-const READ_MAX_SIZE: usize = MAX_SIZE;
+const FILTER_READ_MAX_SIZE: usize = MAX_SIZE;
 /// Filter to use to discard spikes (only value in range median +/- filter is used)
-const FILTER: f32 = 500f32;
+const FILTER_SPIKES: f32 = 500f32;
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
@@ -36,9 +37,9 @@ const FILTER: f32 = 500f32;
 /// Test can be parametrized using environment variables: READ_ROUNDS, MIN_SIZE, MAX_SIZE, SIZE_STEP,
 ///  PREPARE_NUM_OF_SUBSTATES_PER_SIZE, READ_MAX_SIZE, FILTER, PREPARE_NUM_OF_SUBSTATES_NOT_FUND
 fn test_read() {
-    let read_repeats = match std::env::var("READ_ROUNDS") {
+    let read_repeats = match std::env::var("READ_NODES_REPEAT_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => READ_ROUNDS,
+        _ => READ_NODES_REPEAT_COUNT,
     };
     let min_size = match std::env::var("MIN_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -52,21 +53,21 @@ fn test_read() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => SIZE_STEP,
     };
-    let prepare_db_write_count = match std::env::var("PREPARE_NUM_OF_SUBSTATES_PER_SIZE") {
+    let write_nodes_count = match std::env::var("WRITE_NODES_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => PREPARE_NUM_OF_SUBSTATES_PER_SIZE,
+        _ => WRITE_NODES_COUNT,
     };
-    let read_max_size = match std::env::var("READ_MAX_SIZE") {
+    let read_max_size = match std::env::var("FILTER_READ_MAX_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => READ_MAX_SIZE,
+        _ => FILTER_READ_MAX_SIZE,
     };
-    let filter = match std::env::var("FILTER") {
+    let filter = match std::env::var("FILTER_SPIKES") {
         Ok(v) => f32::from_str(&v).unwrap(),
-        _ => FILTER,
+        _ => FILTER_SPIKES,
     };
-    let read_not_fund_count = match std::env::var("PREPARE_NUM_OF_SUBSTATES_NOT_FUND") {
+    let read_not_fund_count = match std::env::var("READ_NOT_FOUND_SUBSTATES_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => PREPARE_NUM_OF_SUBSTATES_NOT_FUND,
+        _ => READ_NOT_FOUND_SUBSTATES_COUNT,
     };
 
     // RocksDB part
@@ -82,7 +83,7 @@ fn test_read() {
             min_size,
             max_size,
             size_step,
-            prepare_db_write_count,
+            write_nodes_count,
         )
     };
 
@@ -139,7 +140,7 @@ fn test_read() {
         min_size,
         max_size,
         size_step,
-        prepare_db_write_count,
+        write_nodes_count,
     );
 
     let data_index_vector = data_index_vector
@@ -264,7 +265,7 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
         let partition_key =
             SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
-        let mut substate_key_value = [0u8; NodeId::LENGTH];
+        let mut substate_key_value = [0u8; SUBSTATE_KEY_LENGTH];
         rng.fill(&mut substate_key_value);
         let sort_key =
             SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(substate_key_value.into()));

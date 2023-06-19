@@ -11,16 +11,17 @@ use radix_engine_store_interface::{
 use rand::Rng;
 use std::{io::Write, path::PathBuf};
 
-/// One test write rounds count
-const ROUNDS_COUNT: usize = 50;
+/// Number of repated reads of each node previously written to the database.
+const READ_NODES_REPEAT_COUNT: usize = 50;
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
 const MAX_SIZE: usize = 4 * 1024 * 1024;
 /// Range step
 const SIZE_STEP: usize = 100 * 1024;
-/// Count of repeated writes for database preparation
-const PREPARE_DB_WRITE_REPEATS: usize = 10;
+/// Number of nodes written to the database in preparation step. 
+/// Each node has N=(MAX_SIZE-MIN_SIZE)/SIZE_STEP substates of size between MIN_SIZE and MAX_SIZE in one partition.
+const WRITE_NODES_COUNT: usize = 10;
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
@@ -33,9 +34,9 @@ const PREPARE_DB_WRITE_REPEATS: usize = 10;
 /// from main radixdlt-scrypto folder.
 /// Test can be parametrized using environment variables: ROUNDS_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP
 fn test_commit_per_size() {
-    let rounds_count = match std::env::var("ROUNDS_COUNT") {
+    let read_nodes_repeat_count = match std::env::var("READ_NODES_REPEAT_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => ROUNDS_COUNT,
+        _ => READ_NODES_REPEAT_COUNT,
     };
     let min_size = match std::env::var("MIN_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -49,14 +50,18 @@ fn test_commit_per_size() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => SIZE_STEP,
     };
+    let write_nodes_count = match std::env::var("WRITE_NODES_COUNT") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => WRITE_NODES_COUNT,
+    };
 
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_commit_per_size_internal(
-        rounds_count,
+        read_nodes_repeat_count,
         min_size,
         max_size,
         size_step,
-        PREPARE_DB_WRITE_REPEATS,
+        write_nodes_count,
         |path| SubstateStoreWithMetrics::new_rocksdb(path),
     );
 
@@ -66,7 +71,7 @@ fn test_commit_per_size() {
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     axis_ranges.3 = (lin_slope * max_size as f32 + lin_intercept) * 1.2f32;
     export_graph_and_print_summary(
-        &format!("RocksDB per size commits, rounds: {}", rounds_count),
+        &format!("RocksDB per size commits, rounds: {}", read_nodes_repeat_count),
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_commit_per_size_rocksdb.png",
@@ -80,11 +85,11 @@ fn test_commit_per_size() {
     println!("JMT part");
     let (jmt_rocksdb_data, jmt_rocksdb_data_output, jmt_rocksdb_data_original) =
         test_commit_per_size_internal(
-            rounds_count,
+            read_nodes_repeat_count,
             min_size,
             max_size,
             size_step,
-            PREPARE_DB_WRITE_REPEATS,
+            write_nodes_count,
             |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path),
         );
 
@@ -96,7 +101,7 @@ fn test_commit_per_size() {
     export_graph_and_print_summary(
         &format!(
             "RocksDB with Merkle tree per size commits, rounds: {}",
-            rounds_count
+            read_nodes_repeat_count
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
@@ -111,7 +116,7 @@ fn test_commit_per_size() {
     export_graph_two_series(
         &format!(
             "95th percentile of commits per size, rounds: {}",
-            rounds_count
+            read_nodes_repeat_count
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
