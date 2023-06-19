@@ -19,16 +19,20 @@ macro_rules! event_schema {
 #[macro_export]
 macro_rules! method_auth_template {
     () => ({
-        let auth: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission> = BTreeMap::new();
-        auth
+        radix_engine_interface::blueprints::package::StaticRoles {
+            methods: BTreeMap::new(),
+        }
     });
     ( $($method:expr => $entry:expr );* ) => ({
-        let mut auth: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
             = BTreeMap::new();
         $(
-            auth.insert($method.into(), $entry.into());
+            methods.insert($method.into(), $entry.into());
         )*
-        auth
+
+        radix_engine_interface::blueprints::package::StaticRoles {
+            methods
+        }
     });
     ( $($key:expr => $entry:expr;)* ) => (
         method_auth_template!{$($key => $entry);*}

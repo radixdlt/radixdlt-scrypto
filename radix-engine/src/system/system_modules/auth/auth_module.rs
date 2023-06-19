@@ -237,21 +237,21 @@ impl AuthModule {
         .method_auth;
 
         let (access_rules_of, method_permissions) = match auth_template {
-            MethodAuthTemplate::Static(method_roles) => {
+            MethodAuthTemplate::Static(static_roles) => {
                 // Non-globalized objects do not have access rules objet yet
                 if !callee.module_object_info.global {
                     return Ok(ResolvedPermission::AllowAll);
                 }
 
-                (callee.node_id, method_roles)
+                (callee.node_id, static_roles.methods)
             }
-            MethodAuthTemplate::StaticUseOuterAuth(method_roles) => {
+            MethodAuthTemplate::StaticUseOuterAuth(static_roles) => {
                 let node_id = callee.node_id;
                 let info = api.get_object_info(&node_id)?;
 
                 // FIXME: Add verification that StaticUseOuterAuth should only be used with inner blueprints
                 let access_rules_of = info.get_outer_object();
-                (access_rules_of.into_node_id(), method_roles)
+                (access_rules_of.into_node_id(), static_roles.methods)
             }
             MethodAuthTemplate::NoAuth => return Ok(ResolvedPermission::AllowAll),
         };

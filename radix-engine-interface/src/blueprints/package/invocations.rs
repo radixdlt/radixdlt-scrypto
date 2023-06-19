@@ -128,14 +128,28 @@ pub struct AuthConfig {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct StaticRoles {
+    pub methods: BTreeMap<MethodKey, MethodPermission>,
+    //pub updatable_roles: BTreeMap<RoleKey, RoleList>,
+}
+
+impl Default for StaticRoles {
+    fn default() -> Self {
+        Self {
+            methods: BTreeMap::new()
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum MethodAuthTemplate {
-    Static(BTreeMap<MethodKey, MethodPermission>),
-    StaticUseOuterAuth(BTreeMap<MethodKey, MethodPermission>),
+    Static(StaticRoles),
+    StaticUseOuterAuth(StaticRoles),
     NoAuth,
 }
 
 impl Default for MethodAuthTemplate {
     fn default() -> Self {
-        MethodAuthTemplate::Static(BTreeMap::default())
+        MethodAuthTemplate::Static(StaticRoles::default())
     }
 }

@@ -332,7 +332,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let generated_schema_info = generate_schema(bp_ident, bp_items, &mut dependency_exprs)?;
     let fn_idents = generated_schema_info.fn_idents;
     let method_idents = generated_schema_info.method_idents;
-    let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
     let function_idents = generated_schema_info.function_idents;
 
     let blueprint_name = bp_ident.to_string();
@@ -355,14 +354,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #auth_macro
             }
         } else {
-            // FIXME: Use AllPublicMethod Template instead
             quote! {
-                fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
-                    btreemap!(
-                        #(
-                            MethodKey::new(#method_names) => MethodPermission::Public,
-                        )*
-                    )
+                fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
+                    scrypto::blueprints::package::MethodAuthTemplate::NoAuth
                 }
             }
         }
@@ -610,8 +604,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 })*
 
                 let auth_config = {
-                    let auth = method_auth_template();
-                    let method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static(auth);
+                    let method_auth = method_auth_template();
 
                     scrypto::blueprints::package::AuthConfig {
                         method_auth,
@@ -1307,10 +1300,8 @@ mod tests {
                     use scrypto::prelude::MethodPermission::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
-                    fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
-                        btreemap!(
-                            MethodKey::new("x") => MethodPermission::Public,
-                        )
+                    fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
+                        scrypto::blueprints::package::MethodAuthTemplate::NoAuth
                     }
 
                     #[derive(::scrypto::prelude::ScryptoSbor)]
@@ -1508,8 +1499,7 @@ mod tests {
                         let mut dependencies = BTreeSet::new();
 
                         let auth_config = {
-                            let auth = method_auth_template();
-                            let method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static(auth);
+                            let method_auth = method_auth_template();
 
                             scrypto::blueprints::package::AuthConfig {
                                 method_auth,

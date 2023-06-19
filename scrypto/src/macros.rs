@@ -424,24 +424,34 @@ macro_rules! enable_method_auth {
             $($role: stringify!($role)),*
         };
 
-        fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
-            let mut permissions: BTreeMap<MethodKey, MethodPermission> = BTreeMap::new();
+        fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
+            let mut methods: BTreeMap<MethodKey, MethodPermission> = BTreeMap::new();
             $(
-                module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
+                module_permissions!(methods, $module { $($method => $($permission),+ ;)* });
             )*
-            permissions
+
+            let roles = scrypto::blueprints::package::StaticRoles {
+                methods
+            };
+
+            scrypto::blueprints::package::MethodAuthTemplate::Static(roles)
         }
     );
 
     (
         $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
     ) => (
-        fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
-            let mut permissions: BTreeMap<MethodKey, MethodPermission> = BTreeMap::new();
+        fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
+            let mut methods: BTreeMap<MethodKey, MethodPermission> = BTreeMap::new();
             $(
-                module_permissions!(permissions, $module { $($method => $($permission),+ ;)* });
+                module_permissions!(methods, $module { $($method => $($permission),+ ;)* });
             )*
-            permissions
+
+            let roles = scrypto::blueprints::package::StaticRoles {
+                methods
+            };
+
+            scrypto::blueprints::package::MethodAuthTemplate::Static(roles)
         }
     );
 }
