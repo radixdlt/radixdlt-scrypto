@@ -9,7 +9,6 @@ use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::limits::LimitsModule;
-use crate::system::system_modules::transaction_events::TransactionEventsModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::track::interface::SubstateStore;
@@ -231,7 +230,6 @@ where
                         limits_module,
                         mut costing_module,
                         runtime_module,
-                        mut events_module,
                         execution_trace_module,
                     ),
                 ) = self.interpret_manifest(
@@ -262,8 +260,6 @@ where
                         // Commit/revert
                         if !is_success {
                             costing_module.fee_reserve.revert_royalty();
-                            events_module.clear();
-                            // application logs retain
                             track.revert_non_force_write_changes();
 
                             // FIXME: clean up locks
@@ -284,8 +280,8 @@ where
                         }
 
                         // Finalize everything
-                        let application_events = events_module.finalize();
-                        let application_logs = runtime_module.finalize();
+                        let (application_events, application_logs) =
+                            runtime_module.finalize(is_success);
                         let execution_metrics =
                             limits_module.finalize(fee_summary.execution_cost_sum);
                         let execution_trace =
@@ -459,7 +455,6 @@ where
             LimitsModule,
             CostingModule,
             TransactionRuntimeModule,
-            TransactionEventsModule,
             ExecutionTraceModule,
         ),
     ) {

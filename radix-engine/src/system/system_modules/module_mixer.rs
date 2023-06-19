@@ -14,7 +14,6 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::node_move::NodeMoveModule;
-use crate::system::system_modules::transaction_events::TransactionEventsModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::ExecutionConfig;
@@ -42,10 +41,9 @@ bitflags! {
 
         // Transaction runtime data
         const TRANSACTION_RUNTIME = 0x01 << 5;
-        const TRANSACTION_EVENTS = 0x01 << 6;
 
         // Execution trace, for preview only
-        const EXECUTION_TRACE = 0x01 << 7;
+        const EXECUTION_TRACE = 0x01 << 6;
     }
 }
 
@@ -53,24 +51,15 @@ impl EnabledModules {
     /// The difference between genesis transaction and system transaction is "no auth".
     /// TODO: double check if this is the right assumption.
     pub fn for_genesis_transaction() -> Self {
-        Self::LIMITS | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME | Self::TRANSACTION_EVENTS
+        Self::LIMITS | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_system_transaction() -> Self {
-        Self::LIMITS
-            | Self::AUTH
-            | Self::NODE_MOVE
-            | Self::TRANSACTION_RUNTIME
-            | Self::TRANSACTION_EVENTS
+        Self::LIMITS | Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_notarized_transaction() -> Self {
-        Self::LIMITS
-            | Self::COSTING
-            | Self::AUTH
-            | Self::NODE_MOVE
-            | Self::TRANSACTION_RUNTIME
-            | Self::TRANSACTION_EVENTS
+        Self::LIMITS | Self::COSTING | Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_test_transaction() -> Self {
@@ -97,7 +86,6 @@ pub struct SystemModuleMixer {
     pub(super) auth: AuthModule,
     pub(super) node_move: NodeMoveModule,
     pub(super) transaction_runtime: TransactionRuntimeModule,
-    pub(super) transaction_events: TransactionEventsModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }
 
@@ -124,9 +112,6 @@ macro_rules! internal_call_dispatch {
             }
             if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
                 TransactionRuntimeModule::[< $fn >]($($param, )*)?;
-            }
-            if modules.contains(EnabledModules::TRANSACTION_EVENTS) {
-                TransactionEventsModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::EXECUTION_TRACE) {
                 ExecutionTraceModule::[< $fn >]($($param, )*)?;
@@ -175,8 +160,9 @@ impl SystemModuleMixer {
                 tx_hash,
                 next_id: 0,
                 logs: Vec::new(),
+                events: Vec::new(),
+                replacements: index_map_new(),
             },
-            transaction_events: TransactionEventsModule::default(),
         }
     }
 
@@ -186,14 +172,12 @@ impl SystemModuleMixer {
         LimitsModule,
         CostingModule,
         TransactionRuntimeModule,
-        TransactionEventsModule,
         ExecutionTraceModule,
     ) {
         (
             self.limits,
             self.costing,
             self.transaction_runtime,
-            self.transaction_events,
             self.execution_trace,
         )
     }
@@ -212,11 +196,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         // Enable execution trace
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_init(api)?;
-        }
-
-        // Enable events
-        if modules.contains(EnabledModules::TRANSACTION_EVENTS) {
-            TransactionEventsModule::on_init(api)?;
         }
 
         // Enable transaction runtime
@@ -444,9 +423,9 @@ impl SystemModuleMixer {
     pub fn add_event(&mut self, identifier: EventTypeIdentifier, data: Vec<u8>) {
         if self
             .enabled_modules
-            .contains(EnabledModules::TRANSACTION_EVENTS)
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
-            self.transaction_events.add_event(identifier, data)
+            self.transaction_runtime.add_event(identifier, data)
         }
     }
 
@@ -457,9 +436,9 @@ impl SystemModuleMixer {
     ) {
         if self
             .enabled_modules
-            .contains(EnabledModules::TRANSACTION_EVENTS)
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
-            self.transaction_events.add_replacement(old, new)
+            self.transaction_runtime.add_replacement(old, new)
         }
     }
 

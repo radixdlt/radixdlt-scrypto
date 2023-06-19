@@ -2,7 +2,7 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::errors::SystemUpstreamError;
+use crate::errors::{SystemUpstreamError, EventError};
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
@@ -21,7 +21,6 @@ use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResu
 
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::system_modules::transaction_events::EventError;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
@@ -2356,9 +2355,9 @@ where
                     ..
                 } => (None, blueprint.clone()),
                 _ => {
-                    return Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
-                    ))
+                    return Err(RuntimeError::SystemError(SystemError::EventError(
+                        EventError::InvalidActor,
+                    )))
                 }
             };
 
