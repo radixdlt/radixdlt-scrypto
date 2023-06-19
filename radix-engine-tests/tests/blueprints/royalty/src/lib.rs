@@ -44,7 +44,7 @@ mod royalty_test {
                 .prepare_to_globalize(OwnerRole::None)
                 .royalties(royalties! {
                     roles {
-                        owner => rule!(allow_all);
+                        royalty_admin => rule!(allow_all);
                     },
                     init {
                         free_method => Free,

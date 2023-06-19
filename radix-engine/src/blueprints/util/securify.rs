@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SETTER_ROLE;
+use radix_engine_interface::api::node_modules::metadata::METADATA_ADMIN_ROLE;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 
@@ -32,7 +32,7 @@ pub trait SecurifiedAccessRules {
         }
 
         let mut metadata_roles = Roles::new();
-        metadata_roles.define_immutable_role(METADATA_SETTER_ROLE, owner_rule);
+        metadata_roles.define_immutable_role(METADATA_ADMIN_ROLE, owner_rule);
 
         btreemap!(
             ObjectModuleId::Main => roles,

@@ -1,6 +1,6 @@
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SETTER_ROLE;
+use radix_engine_interface::api::node_modules::metadata::METADATA_ADMIN_ROLE;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
@@ -136,12 +136,12 @@ impl ResourceManager {
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.update_metadata_role_rule(METADATA_SETTER_ROLE, access_rule);
+        access_rules.update_metadata_role_rule(METADATA_ADMIN_ROLE, access_rule);
     }
 
     pub fn lock_updateable_metadata(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.freeze_metadata_role(METADATA_SETTER_ROLE);
+        access_rules.freeze_metadata_role(METADATA_ADMIN_ROLE);
     }
 }
 
