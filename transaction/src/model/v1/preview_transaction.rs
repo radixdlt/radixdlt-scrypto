@@ -1,14 +1,11 @@
 use crate::internal_prelude::*;
-use radix_engine_interface::{
-    api::node_modules::auth::AuthAddresses, blueprints::transaction_processor::RuntimeValidation,
-};
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Default)]
 pub struct PreviewFlags {
     pub use_free_credit: bool,
     pub assume_all_signature_proofs: bool,
-    pub permit_duplicate_intent_hash: bool,
-    pub permit_invalid_header_epoch: bool,
+    pub skip_epoch_check: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -54,24 +51,30 @@ impl ValidatedPreviewIntent {
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
             ExecutionContext {
-                transaction_hash: intent_hash.into_hash(),
+                intent_hash: if flags.skip_epoch_check {
+                    TransactionIntentHash::NotToCheck {
+                        intent_hash: intent_hash.into_hash(),
+                    }
+                } else {
+                    TransactionIntentHash::ToCheck {
+                        intent_hash: intent_hash.into_hash(),
+                        expiry_epoch: intent.header.inner.end_epoch_exclusive,
+                    }
+                },
+                epoch_range: if flags.skip_epoch_check {
+                    None
+                } else {
+                    Some(EpochRange {
+                        start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
+                        end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
+                    })
+                },
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources,
                 },
                 fee_payment,
-                runtime_validations: vec![
-                    RuntimeValidation::IntentHashUniqueness {
-                        intent_hash: intent_hash.into_hash(),
-                    }
-                    .with_skipped_assertion_if(flags.permit_duplicate_intent_hash),
-                    RuntimeValidation::WithinEpochRange {
-                        start_epoch_inclusive: header.start_epoch_inclusive,
-                        end_epoch_exclusive: header.end_epoch_exclusive,
-                    }
-                    .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
-                ],
                 pre_allocated_addresses: vec![],
             },
         )

@@ -105,7 +105,10 @@ impl PreparedSystemTransactionV1 {
             &self.references,
             &self.blobs.blobs_by_hash,
             ExecutionContext {
-                transaction_hash: self.hash_for_execution.hash,
+                intent_hash: TransactionIntentHash::NotToCheck {
+                    intent_hash: self.hash_for_execution.hash,
+                },
+                epoch_range: None,
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
@@ -115,7 +118,6 @@ impl PreparedSystemTransactionV1 {
                     tip_percentage: 0,
                     free_credit_in_xrd: 0,
                 },
-                runtime_validations: vec![],
                 pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
             },
         )

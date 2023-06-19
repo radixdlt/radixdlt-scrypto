@@ -186,6 +186,12 @@ pub const FAUCET_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
 /// The name of the faucet blueprint under the `FAUCET_PACKAGE`.
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
+pub const TRANSACTION_TRACKER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+    13, 144, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 190, 133,
+    161, 125, 72, 188, 166, 49, 140, 99, 24, 198,
+]);
+pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
+
 //=========================================================================
 // SYSTEM SINGLETON COMPONENTS - NATIVE
 //=========================================================================
@@ -213,6 +219,12 @@ pub const FAUCET: ComponentAddress = ComponentAddress::new_or_panic([
 ]);
 // Export an alias for backwards compatibility of dApp developer tests
 pub use FAUCET as FAUCET_COMPONENT;
+
+/// The intent hash store component
+pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic([
+    130, 204, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 232, 245,
+    174, 143, 74, 150, 166, 49, 140, 99, 24, 198,
+]);
 
 //=========================================================================
 //=========================================================================
@@ -343,6 +355,11 @@ mod tests {
             EntityType::GlobalPackage,
             "package_rdx1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxfaucet",
         );
+        check_address(
+            TRANSACTION_TRACKER_PACKAGE.as_ref(),
+            EntityType::GlobalPackage,
+            "package_rdx1pkgxxxxxxxxxtxtrakxxxxxxxxx000595975309xxxxxxxxxtxtrak",
+        );
 
         // System singleton components - native
         check_address(
@@ -361,6 +378,11 @@ mod tests {
             GENESIS_HELPER.as_ref(),
             EntityType::GlobalGenericComponent,
             "component_rdx1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxgenssx",
+        );
+        check_address(
+            TRANSACTION_TRACKER.as_ref(),
+            EntityType::GlobalTransactionTracker,
+            "transactiontracker_rdx1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxxtxtrak",
         );
     }
 

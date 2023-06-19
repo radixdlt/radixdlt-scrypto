@@ -421,8 +421,7 @@ mod tests {
             flags: PreviewFlags {
                 use_free_credit: true,
                 assume_all_signature_proofs: false,
-                permit_invalid_header_epoch: false,
-                permit_duplicate_intent_hash: false,
+                skip_epoch_check: false,
             },
         };
 
