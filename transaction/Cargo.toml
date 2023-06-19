@@ -18,16 +18,26 @@ lazy_static = "1.4.0"
 strum = { version = "0.24.1", default-features = false, features = ["derive"], optional = true }
 strum_macros = { version = "0.24.3", default-features = false, optional = true }
 
+# For message encryption
+hkdf = { version = "0.12.3", default-features = false, optional = true }
+hmac = { version = "0.12.1", default-features = false, optional = true }
+aes-gcm = { version = "0.10.2", default-features = false, features = ["aes", "alloc", "getrandom"], optional = true }
+x25519-dalek = { version = "1.2.0", default-features = false, features = ["u64_backend", "reusable_secrets"], optional = true }
+curve25519-dalek = { version = "3.2.1", default-features = false, features = ["u64_backend"], optional = true }
+rand_core = { version = "0.5", default-features = false, optional = true }
+aes-kw = { version = "0.2.1", default-features = false, optional = true }
+
 [dev-dependencies]
 scrypto = { path = "../scrypto" }
 scrypto-derive = { path = "../scrypto-derive" }
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std"]
+default = ["std", "message_encryption"]
 std = ["sbor/std", "utils/std", "radix-engine-interface/std", "radix-engine-common/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
 alloc = ["sbor/alloc", "utils/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "lazy_static/spin_no_std"]
 serde = ["serde/derive"]
+message_encryption = ["hkdf", "hmac", "aes-gcm", "x25519-dalek", "curve25519-dalek", "rand_core", "aes-kw"]
 
 dump_manifest_to_file = []
 
