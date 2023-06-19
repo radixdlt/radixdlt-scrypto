@@ -43,7 +43,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::default(),
+                &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -74,7 +74,7 @@ fn bench_transfer(c: &mut Criterion) {
             &mut substate_db,
             &mut scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::for_notarized_transaction(),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
                 .unwrap()
@@ -102,7 +102,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::default(),
+                &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()
                     .unwrap()

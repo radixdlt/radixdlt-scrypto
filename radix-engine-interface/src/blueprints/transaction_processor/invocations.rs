@@ -1,7 +1,5 @@
 use crate::*;
-use radix_engine_common::crypto::*;
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
-use radix_engine_common::prelude::Epoch;
 use sbor::rust::prelude::*;
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
@@ -30,42 +28,6 @@ impl InstructionOutput {
             Self::None => {
                 panic!("Expected: {:?} but was None", expected);
             }
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct RuntimeValidationRequest {
-    /// The validation to perform
-    pub validation: RuntimeValidation,
-    /// This option is intended for preview uses cases
-    /// In these cases, we still want to do the look ups to give equivalent cost unit spend, but may wish to ignore the result
-    pub skip_assertion: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RuntimeValidation {
-    /// To ensure we don't commit a duplicate intent hash
-    IntentHashUniqueness { intent_hash: Hash },
-    /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
-    WithinEpochRange {
-        start_epoch_inclusive: Epoch,
-        end_epoch_exclusive: Epoch,
-    },
-}
-
-impl RuntimeValidation {
-    pub fn enforced(self) -> RuntimeValidationRequest {
-        RuntimeValidationRequest {
-            validation: self,
-            skip_assertion: false,
-        }
-    }
-
-    pub fn with_skipped_assertion_if(self, skip_assertion: bool) -> RuntimeValidationRequest {
-        RuntimeValidationRequest {
-            validation: self,
-            skip_assertion,
         }
     }
 }

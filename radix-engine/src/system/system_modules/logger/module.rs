@@ -19,7 +19,7 @@ impl LoggerModule {
         self.0.push((level, message))
     }
 
-    pub fn logs(self) -> Vec<(Level, String)> {
+    pub fn finalize(self) -> Vec<(Level, String)> {
         self.0
     }
 }
