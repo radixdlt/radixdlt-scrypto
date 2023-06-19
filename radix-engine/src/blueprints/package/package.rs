@@ -61,6 +61,15 @@ pub enum PackageError {
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
     MissingRole(RoleKey),
+    UnexpectedNumberOfMethodAuth {
+        blueprint: String,
+        expected: usize,
+        actual: usize,
+    },
+    MissingMethodPermission {
+        blueprint: String,
+        ident: String,
+    },
 
     InvalidMetadataKey(String),
 }
@@ -206,6 +215,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
 
 fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
     for (blueprint, definition_init) in &definition.blueprints {
+        // FIXME: Add function auth completeness check
         match (
             &definition_init.blueprint_type,
             &definition_init.auth_config.method_auth,
@@ -241,6 +251,27 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         MethodPermission::Public | MethodPermission::OuterObjectOnly => {}
                     }
                 }
+
+                let num_methods = definition_init.schema.functions.functions.values()
+                    .filter(|schema| schema.receiver.is_some())
+                    .count();
+
+                if num_methods != static_roles.methods.len() {
+                    return Err(PackageError::UnexpectedNumberOfMethodAuth {
+                        blueprint: blueprint.clone(),
+                        expected: num_methods,
+                        actual: static_roles.methods.len(),
+                    })
+                }
+
+                for (name, schema_init) in &definition_init.schema.functions.functions {
+                    if schema_init.receiver.is_some() && !static_roles.methods.contains_key(&MethodKey::new(name)) {
+                        return Err(PackageError::MissingMethodPermission {
+                            blueprint: blueprint.clone(),
+                            ident: name.clone(),
+                        })
+                    }
+                }
             }
             (
                 BlueprintType::Inner { outer_blueprint },
@@ -273,6 +304,27 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                             check_list(&role_list)?;
                         }
                         MethodPermission::Public | MethodPermission::OuterObjectOnly => {}
+                    }
+                }
+
+                let num_methods = definition_init.schema.functions.functions.values()
+                    .filter(|schema| schema.receiver.is_some())
+                    .count();
+
+                if num_methods != methods.len() {
+                    return Err(PackageError::UnexpectedNumberOfMethodAuth {
+                        blueprint: blueprint.clone(),
+                        expected: num_methods,
+                        actual: methods.len(),
+                    })
+                }
+
+                for (name, schema_init) in &definition_init.schema.functions.functions {
+                    if schema_init.receiver.is_some() && !methods.contains_key(&MethodKey::new(name)) {
+                        return Err(PackageError::MissingMethodPermission {
+                            blueprint: blueprint.clone(),
+                            ident: name.clone(),
+                        })
                     }
                 }
             }
