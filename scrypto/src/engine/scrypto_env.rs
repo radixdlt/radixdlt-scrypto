@@ -469,8 +469,8 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn generate_uuid(&mut self) -> Result<u128, ClientApiError> {
-        let actor = copy_buffer(unsafe { generate_uuid() });
+    fn generate_ruid(&mut self) -> Result<u128, ClientApiError> {
+        let actor = copy_buffer(unsafe { generate_ruid() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }

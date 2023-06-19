@@ -77,13 +77,12 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    /// Generates a UUID.
-    pub fn generate_uuid<Y, E>(api: &mut Y) -> Result<u128, E>
+    pub fn generate_ruid<Y, E>(api: &mut Y) -> Result<u128, E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.generate_uuid()
+        api.generate_ruid()
     }
 
     pub fn assert_access_rule<Y, E>(access_rule: AccessRule, api: &mut Y) -> Result<(), E>

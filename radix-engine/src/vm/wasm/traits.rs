@@ -163,7 +163,7 @@ pub trait WasmRuntime {
 
     fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

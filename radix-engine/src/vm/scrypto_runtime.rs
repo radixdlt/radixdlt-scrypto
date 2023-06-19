@@ -433,8 +433,8 @@ where
         self.allocate_buffer(scrypto_encode(&hash).expect("Failed to encode transaction hash"))
     }
 
-    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let uuid = self.api.generate_uuid()?;
+    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let uuid = self.api.generate_ruid()?;
 
         self.allocate_buffer(scrypto_encode(&uuid).expect("Failed to encode UUID"))
     }
@@ -689,7 +689,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

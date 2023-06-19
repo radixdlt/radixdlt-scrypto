@@ -18,7 +18,7 @@ impl TransactionRuntimeModule {
         self.tx_hash
     }
 
-    pub fn generate_uuid(&mut self) -> u128 {
+    pub fn generate_ruid(&mut self) -> u128 {
         // Take the lower 16 bytes
         let mut temp: [u8; 16] = self.tx_hash.lower_bytes();
 
@@ -103,7 +103,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_uuid())
+            NonFungibleLocalId::uuid(id.generate_ruid())
                 .unwrap()
                 .to_string(),
             "{86cc8d24-194d-4393-85ee-91ee00000005}"
@@ -117,7 +117,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_uuid())
+            NonFungibleLocalId::uuid(id.generate_ruid())
                 .unwrap()
                 .to_string(),
             "{00000000-0000-4000-8000-000000000005}"
@@ -131,7 +131,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_uuid())
+            NonFungibleLocalId::uuid(id.generate_ruid())
                 .unwrap()
                 .to_string(),
             "{ffffffff-ffff-4fff-bfff-ffff00000005}"

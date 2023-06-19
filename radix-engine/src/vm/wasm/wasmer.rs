@@ -665,11 +665,11 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn generate_uuid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn generate_ruid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .generate_uuid()
+                .generate_ruid()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -720,7 +720,7 @@ impl WasmerModule {
                 LOG_MESSAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
                 PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), panic),
                 GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_transaction_hash),
-                GENERATE_UUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_uuid),
+                GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_ruid),
             }
         };
 

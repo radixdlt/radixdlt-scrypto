@@ -2451,10 +2451,10 @@ where
     }
 
     #[trace_resources]
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+    fn generate_ruid(&mut self) -> Result<u128, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(uuid) = self.api.kernel_get_system().modules.generate_uuid() {
+        if let Some(uuid) = self.api.kernel_get_system().modules.generate_ruid() {
             Ok(uuid)
         } else {
             Err(RuntimeError::SystemError(
