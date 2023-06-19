@@ -3,7 +3,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataValue, METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
+    MetadataValue, METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
@@ -104,9 +104,9 @@ fn build_access_rules(
     let metadata_roles = {
         let mut metadata_roles = Roles::new();
 
-        metadata_roles.define_mutable_role(METADATA_SETTER_ROLE, update_metadata_access_rule);
+        metadata_roles.define_mutable_role(METADATA_ADMIN_ROLE, update_metadata_access_rule);
         metadata_roles
-            .define_mutable_role(METADATA_SETTER_UPDATER_ROLE, update_metadata_mutability);
+            .define_mutable_role(METADATA_ADMIN_UPDATER_ROLE, update_metadata_mutability);
 
         metadata_roles
     };
