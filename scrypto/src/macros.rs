@@ -416,6 +416,16 @@ macro_rules! internal_add_role {
 }
 
 #[macro_export]
+macro_rules! internal_role_mutability {
+    () => {{
+        false
+    }};
+    (=> updaters: $($updaters:ident),+) => {{
+        true
+    }};
+}
+
+#[macro_export]
 macro_rules! enable_method_auth {
     (
         roles {
@@ -437,6 +447,12 @@ macro_rules! enable_method_auth {
 
         const ROLE_STRINGS: MethodRoles<&str> = MethodRoles {
             $($role: stringify!($role)),*
+        };
+
+        const ROLE_MUTABLE: MethodRoles<bool> = MethodRoles {
+            $(
+                $role: internal_role_mutability!($( => updaters: $($updaters),+)?)
+            ),*
         };
 
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
@@ -522,17 +538,21 @@ macro_rules! role_definition_entry {
 
 #[macro_export]
 macro_rules! roles_internal {
-    ($module_roles:ident, $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)* ) => ({
-        let method_roles = $module_roles::<RoleEntry> {
-            $($role: role_definition_entry!($rule $(, updaters: $($mutators),+)?)),*
+    ($module_roles:ident, $mutability:ident, $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)* ) => ({
+        let method_roles = $module_roles::<(AccessRule, bool)> {
+            $(
+                $role: {
+                    ($rule, $mutability.$role)
+                }
+            ),*
         };
 
         let mut roles = $crate::blueprints::resource::Roles::new();
-        for (name, entry) in method_roles.list() {
-            if entry.updaters.list.is_empty() {
-                roles.define_immutable_role(name, entry.rule);
+        for (name, (rule, mutable)) in method_roles.list() {
+            if mutable {
+                roles.define_mutable_role(name, RoleEntry::new(rule, RoleList::none()));
             } else {
-                roles.define_mutable_role(name, entry);
+                roles.define_immutable_role(name, rule);
             }
         }
 
@@ -543,7 +563,7 @@ macro_rules! roles_internal {
 #[macro_export]
 macro_rules! roles {
     ( $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)* ) => ({
-        roles_internal!(MethodRoles, $($role => $rule $(, updaters: $($mutators),+)? ;)*)
+        roles_internal!(MethodRoles, ROLE_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*)
     });
 }
 
@@ -588,7 +608,7 @@ macro_rules! metadata {
             $($key:expr => $value:expr),*
         }
     } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
+        let metadata_roles = roles_internal!(MetadataRoles, METADATA_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
         let metadata = metadata_config!($($key => $value),*);
         (metadata, metadata_roles)
     });
@@ -607,7 +627,7 @@ macro_rules! metadata {
             $($role:ident => $rule:expr $(, updaters: $($mutators:ident),+)? ;)*
         }
     } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
+        let metadata_roles = roles_internal!(MetadataRoles, METADATA_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
         let metadata = metadata_config!();
         (metadata, metadata_roles)
     });
@@ -624,7 +644,7 @@ macro_rules! royalties {
             $($init:tt)*
         }
     } => ({
-        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
+        let royalty_roles = roles_internal!(RoyaltyRoles, ROYALTY_MUTABLE, $($role => $rule $(, updaters: $($mutators),+)? ;)*);
         let royalties = royalty_config!($($init)*);
         (royalties, royalty_roles)
     });

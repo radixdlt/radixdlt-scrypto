@@ -134,3 +134,7 @@ impl<T> MetadataRoles<T> {
         vec![("setter", self.setter)]
     }
 }
+
+pub const METADATA_MUTABLE: MetadataRoles<bool> = MetadataRoles {
+    setter: false
+};

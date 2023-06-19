@@ -361,11 +361,17 @@ impl ResourceManagerNativePackage {
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
+                            MINT_UPDATE_ROLE => updaters: [MINT_UPDATE_ROLE];
                             BURN_ROLE => updaters: [BURN_UPDATE_ROLE];
+                            BURN_UPDATE_ROLE => updaters: [BURN_UPDATE_ROLE];
                             WITHDRAW_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
+                            WITHDRAW_UPDATE_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
                             DEPOSIT_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
+                            DEPOSIT_UPDATE_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
                             RECALL_ROLE => updaters: [RECALL_UPDATE_ROLE];
+                            RECALL_UPDATE_ROLE => updaters: [RECALL_UPDATE_ROLE];
                             FREEZE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
+                            FREEZE_UPDATE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
                             RESOURCE_PACKAGE_ROLE;
                         },
                         methods {
@@ -691,12 +697,19 @@ impl ResourceManagerNativePackage {
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
+                            MINT_UPDATE_ROLE => updaters: [MINT_UPDATE_ROLE];
                             BURN_ROLE => updaters: [BURN_UPDATE_ROLE];
+                            BURN_UPDATE_ROLE => updaters: [BURN_UPDATE_ROLE];
                             WITHDRAW_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
+                            WITHDRAW_UPDATE_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
                             DEPOSIT_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
+                            DEPOSIT_UPDATE_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
                             RECALL_ROLE => updaters: [RECALL_UPDATE_ROLE];
+                            RECALL_UPDATE_ROLE => updaters: [RECALL_UPDATE_ROLE];
                             FREEZE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
+                            FREEZE_UPDATE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
                             UPDATE_NON_FUNGIBLE_DATA_ROLE => updaters: [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE];
+                            UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE => updaters: [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE];
                             RESOURCE_PACKAGE_ROLE;
                         },
                         methods {

@@ -451,9 +451,12 @@ impl AccountNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static(roles_template!(
                         roles {
-                            OWNER_ROLE;
+                            OWNER_ROLE => updaters: [SELF_ROLE];
+                            SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },
                         methods {
+                            ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
+
                             ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
                             ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
@@ -465,7 +468,6 @@ impl AccountNativePackage {
                             ACCOUNT_CREATE_PROOF_IDENT => [OWNER_ROLE];
                             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
                             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
-                            ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
                             ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
                             ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
                             ACCOUNT_BURN_IDENT => [OWNER_ROLE];

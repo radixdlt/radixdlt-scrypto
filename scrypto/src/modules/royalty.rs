@@ -77,3 +77,7 @@ impl<T> RoyaltyRoles<T> {
         vec![("owner", self.owner)]
     }
 }
+
+pub const ROYALTY_MUTABLE: RoyaltyRoles<bool> = RoyaltyRoles {
+    owner: false
+};
