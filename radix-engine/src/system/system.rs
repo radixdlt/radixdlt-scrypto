@@ -1173,12 +1173,12 @@ where
         match data {
             SystemLockData::Field(FieldLockData::Write {
                 blueprint_id,
-                type_pointer: schema_pointer,
+                type_pointer,
             }) => {
                 self.validate_payload_at_type_pointer(
                     &blueprint_id,
                     &None, // TODO: Change to Some, once support for generic fields is implemented
-                    schema_pointer,
+                    type_pointer,
                     &buffer,
                 )?;
             }
