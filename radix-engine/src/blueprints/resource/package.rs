@@ -359,6 +359,11 @@ impl ResourceManagerNativePackage {
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                        roles {
+                            MINT_ROLE;
+                            BURN_ROLE;
+                            RESOURCE_PACKAGE_ROLE;
+                        },
                         methods {
                             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
                             RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];

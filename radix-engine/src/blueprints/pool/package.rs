@@ -175,6 +175,9 @@ impl PoolNativePackage {
                         ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                        roles {
+                            POOL_MANAGER_ROLE;
+                        },
                         methods {
                             // Main Module rules
                             ONE_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
@@ -339,6 +342,9 @@ impl PoolNativePackage {
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                        roles {
+                            POOL_MANAGER_ROLE;
+                        },
                         methods {
                             // Main Module rules
                             TWO_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
@@ -501,6 +507,9 @@ impl PoolNativePackage {
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                        roles {
+                            POOL_MANAGER_ROLE;
+                        },
                         methods {
                             MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
                             MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
