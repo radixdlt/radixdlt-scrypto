@@ -1699,7 +1699,7 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_safe!(&NonFungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -1744,7 +1744,7 @@ mod tests {
                     package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                    args: to_manifest_value_safe!(&NonFungibleResourceManagerCreateInput {
+                    args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
@@ -1801,7 +1801,7 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value_safe!(
+                args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
@@ -1822,7 +1822,7 @@ mod tests {
                         ]),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
-                            (to_manifest_value_safe!(&(
+                            (to_manifest_value_and_unwrap!(&(
                                 String::from("Hello World"),
                                 dec!("12")
                             )),),
@@ -1857,7 +1857,7 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_safe!(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: BTreeMap::from([(
@@ -1905,7 +1905,7 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value_safe!(
+                args: to_manifest_value_and_unwrap!(
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
                         track_total_supply: false,
                         divisibility: 18,
@@ -1948,10 +1948,10 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                args: to_manifest_value_safe!(&NonFungibleResourceManagerMintManifestInput {
+                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerMintManifestInput {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
-                        (to_manifest_value_safe!(&(
+                        (to_manifest_value_and_unwrap!(&(
                             String::from("Hello World"),
                             dec!("12")
                         )),)
@@ -1981,12 +1981,14 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-                args: to_manifest_value_safe!(&NonFungibleResourceManagerMintUuidManifestInput {
-                    entries: Vec::from([(to_manifest_value_safe!(&(
-                        String::from("Hello World"),
-                        dec!("12")
-                    )),),])
-                }),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerMintUuidManifestInput {
+                        entries: Vec::from([(to_manifest_value_and_unwrap!(&(
+                            String::from("Hello World"),
+                            dec!("12")
+                        )),),])
+                    }
+                ),
             },
         );
     }
@@ -2000,7 +2002,7 @@ mod tests {
             InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: to_manifest_value_safe!(&ConsensusManagerCreateValidatorInput {
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateValidatorInput {
                     key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
                     fee_factor: Decimal::ONE,
                 }),

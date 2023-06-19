@@ -267,7 +267,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             POOL_PACKAGE,
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
-            to_manifest_value_safe!(&MultiResourcePoolInstantiateManifestInput {
+            to_manifest_value_and_unwrap!(&MultiResourcePoolInstantiateManifestInput {
                 resource_addresses: [non_fungible_resource].into(),
                 pool_manager_rule: rule!(allow_all),
             }),
@@ -565,7 +565,7 @@ impl<const N: usize> TestEnvironment<N> {
                     POOL_PACKAGE,
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    to_manifest_value_safe!(&MultiResourcePoolInstantiateManifestInput {
+                    to_manifest_value_and_unwrap!(&MultiResourcePoolInstantiateManifestInput {
                         resource_addresses: resource_addresses.clone().into(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                     }),
@@ -629,7 +629,7 @@ impl<const N: usize> TestEnvironment<N> {
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_safe!(&MultiResourcePoolRedeemManifestInput { bucket }),
+                    to_manifest_value_and_unwrap!(&MultiResourcePoolRedeemManifestInput { bucket }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -649,9 +649,9 @@ impl<const N: usize> TestEnvironment<N> {
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    to_manifest_value_safe!(&MultiResourcePoolProtectedDepositManifestInput {
-                        bucket
-                    }),
+                    to_manifest_value_and_unwrap!(
+                        &MultiResourcePoolProtectedDepositManifestInput { bucket }
+                    ),
                 )
             })
             .build();
@@ -668,7 +668,7 @@ impl<const N: usize> TestEnvironment<N> {
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                to_manifest_value_safe!(&MultiResourcePoolProtectedWithdrawManifestInput {
+                to_manifest_value_and_unwrap!(&MultiResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
                 }),

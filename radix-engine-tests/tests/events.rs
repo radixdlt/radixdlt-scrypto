@@ -632,7 +632,7 @@ fn consensus_manager_round_update_emits_correct_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_safe!(&ConsensusManagerNextRoundInput::successful(
+        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
             Round::of(1),
             0,
             180000i64,
@@ -684,7 +684,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_safe!(&ConsensusManagerNextRoundInput::successful(
+        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
             Round::of(rounds_per_epoch),
             0,
             180000i64,
@@ -729,7 +729,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_safe!(&ConsensusManagerNextRoundInput::successful(
+        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
             Round::of(1),
             0,
             180000i64,
@@ -1314,7 +1314,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-            to_manifest_value_safe!(&ValidatorUpdateAcceptDelegatedStakeInput {
+            to_manifest_value_and_unwrap!(&ValidatorUpdateAcceptDelegatedStakeInput {
                 accept_delegated_stake: false,
             }),
         )

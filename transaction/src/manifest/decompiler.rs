@@ -221,7 +221,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::PushToAuthZone { proof_id } => {
             ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,))?)
         }
-        InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value_safe!(&())),
+        InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value_and_unwrap!(&())),
         InstructionV1::CreateProofFromAuthZone { resource_address } => {
             let proof = context.new_proof();
             (

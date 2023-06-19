@@ -39,7 +39,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
         .call_method(
             account,
             ACCOUNT_SECURIFY_IDENT,
-            to_manifest_value_safe!(&AccountSecurifyInput {}),
+            to_manifest_value_and_unwrap!(&AccountSecurifyInput {}),
         )
         .call_method(
             storing_account,

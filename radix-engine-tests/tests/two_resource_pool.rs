@@ -334,7 +334,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             POOL_PACKAGE,
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-            to_manifest_value_safe!(&TwoResourcePoolInstantiateManifestInput {
+            to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
                 resource_addresses: (non_fungible_resource, RADIX_TOKEN),
                 pool_manager_rule: rule!(allow_all),
             }),
@@ -751,7 +751,7 @@ impl TestEnvironment {
                     POOL_PACKAGE,
                     TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                     TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    to_manifest_value_safe!(&TwoResourcePoolInstantiateManifestInput {
+                    to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
                         resource_addresses: (pool_resource1, pool_resource2),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                     }),
@@ -803,7 +803,7 @@ impl TestEnvironment {
                     builder.call_method(
                         self.pool_component_address,
                         TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                        to_manifest_value_safe!(&TwoResourcePoolContributeManifestInput {
+                        to_manifest_value_and_unwrap!(&TwoResourcePoolContributeManifestInput {
                             buckets: (bucket1, bucket2),
                         }),
                     )
@@ -825,7 +825,7 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_safe!(&TwoResourcePoolRedeemManifestInput { bucket }),
+                    to_manifest_value_and_unwrap!(&TwoResourcePoolRedeemManifestInput { bucket }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -845,7 +845,7 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    to_manifest_value_safe!(&TwoResourcePoolProtectedDepositManifestInput {
+                    to_manifest_value_and_unwrap!(&TwoResourcePoolProtectedDepositManifestInput {
                         bucket
                     }),
                 )
@@ -864,7 +864,7 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                to_manifest_value_safe!(&TwoResourcePoolProtectedWithdrawManifestInput {
+                to_manifest_value_and_unwrap!(&TwoResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
                 }),

@@ -532,7 +532,7 @@ impl AccountDepositModesTestRunner {
             .call_method(
                 self.component_address,
                 ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-                to_manifest_value_safe!(&AccountChangeDefaultDepositRuleInput {
+                to_manifest_value_and_unwrap!(&AccountChangeDefaultDepositRuleInput {
                     default_deposit_rule,
                 }),
             )
@@ -550,7 +550,7 @@ impl AccountDepositModesTestRunner {
             .call_method(
                 self.component_address,
                 ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
-                to_manifest_value_safe!(&AccountConfigureResourceDepositRuleInput {
+                to_manifest_value_and_unwrap!(&AccountConfigureResourceDepositRuleInput {
                     resource_address,
                     resource_deposit_configuration,
                 }),
