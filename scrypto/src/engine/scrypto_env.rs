@@ -120,23 +120,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-    ) -> Result<GlobalAddress, ClientApiError> {
-        let modules = scrypto_encode(&modules).unwrap();
-
-        let bytes = copy_buffer(unsafe { globalize_object(modules.as_ptr(), modules.len()) });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn globalize_with_address(
-        &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: GlobalAddressReservation,
+        address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
         let address_reservation = scrypto_encode(&address_reservation).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            globalize_with_address(
+            globalize(
                 modules.as_ptr(),
                 modules.len(),
                 address_reservation.as_ptr(),

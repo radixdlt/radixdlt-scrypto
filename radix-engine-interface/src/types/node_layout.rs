@@ -14,9 +14,13 @@ pub const ROYALTY_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8
 pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 
 pub const ACCESS_RULES_BASE_PARTITION: PartitionNumber = PartitionNumber(4u8);
-pub const ACCESS_RULES_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+pub const ACCESS_RULES_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
+pub const ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+pub const ACCESS_RULES_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 
-pub const ACCESS_RULES_MUTABILITY_PARTITION: PartitionNumber = PartitionNumber(5u8);
+pub const ACCESS_RULES_FIELDS_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ACCESS_RULES_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(5u8);
+pub const ACCESS_RULES_MUTABILITY_PARTITION: PartitionNumber = PartitionNumber(6u8);
 
 pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
@@ -30,6 +34,20 @@ pub enum TypeInfoField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum RoyaltyField {
     RoyaltyAccumulator,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum AccessRulesField {
+    OwnerRole,
+}
+
+impl TryFrom<u8> for AccessRulesField {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
 }
 
 #[repr(u8)]
@@ -283,6 +301,7 @@ macro_rules! substate_key {
 
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
+substate_key!(AccessRulesField);
 substate_key!(ComponentField);
 substate_key!(PackageField);
 substate_key!(FungibleResourceManagerField);
