@@ -395,7 +395,7 @@ impl Secp256k1Secret {
         todo!()
     }
 
-    fn from_private_key(private_key: &Secp256k1PrivateKey) -> Self {
+    fn from_private_key(_private_key: &Secp256k1PrivateKey) -> Self {
         todo!()
     }
 
@@ -403,7 +403,7 @@ impl Secp256k1Secret {
     /// of the unhashed x-coordinate of the shared point. This is known as the ASN1 X9.63 variant of ECDH.
     fn create_unhashed_x_coord_shared_secret_bytes(
         &self,
-        public_key: &Secp256k1PublicKey,
+        _public_key: &Secp256k1PublicKey,
     ) -> Result<[u8; 32], PublicKeyMappingError> {
         todo!()
     }
@@ -451,7 +451,7 @@ mod tests {
     pub fn test_some_ed25519_test_vectors() {
         // From our other implementation
         let private_key_1 = PrivateKey::from(
-            Ed25519PrivateKey::from_any_bytes(
+            Ed25519PrivateKey::from_seed_bytes(
                 &hex::decode("406cc483a8aec712cac732d0c187934cb054cdcadc1c5bc4af72c098a5984844")
                     .unwrap(),
             )
