@@ -254,7 +254,7 @@ mod tests {
             for _ in 0..COUNT {
                 let value = DatabaseUpdate::Set(vec![1; size]);
 
-                let mut node_id_value = [0u8; NodeId::RUID_LENGTH];
+                let mut node_id_value = [0u8; NodeId::RANDOM_LENGTH];
                 rng.fill(&mut node_id_value);
                 let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
                 let partition_key =
@@ -339,7 +339,7 @@ mod tests {
         let mut rng = rand::thread_rng();
 
         for _ in 0..COUNT {
-            let mut node_id_value = [0u8; NodeId::RUID_LENGTH];
+            let mut node_id_value = [0u8; NodeId::RANDOM_LENGTH];
             rng.fill(&mut node_id_value);
             let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
             let partition_key =

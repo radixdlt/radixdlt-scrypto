@@ -47,7 +47,7 @@ impl TryFrom<&[u8]> for Ed25519PublicKey {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 #[sbor(transparent)]
-pub struct Ed25519PublicKeyHash(pub [u8; NodeId::RUID_LENGTH]);
+pub struct Ed25519PublicKeyHash(pub [u8; NodeId::RANDOM_LENGTH]);
 
 impl Ed25519PublicKeyHash {
     pub fn new_from_public_key(public_key: &Ed25519PublicKey) -> Self {
@@ -64,7 +64,7 @@ impl HasPublicKeyHash for Ed25519PublicKey {
 }
 
 impl IsPublicKeyHash for Ed25519PublicKeyHash {
-    fn get_hash_bytes(&self) -> &[u8; NodeId::RUID_LENGTH] {
+    fn get_hash_bytes(&self) -> &[u8; NodeId::RANDOM_LENGTH] {
         &self.0
     }
 

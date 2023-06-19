@@ -573,7 +573,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     _ => return Ok(false),
                 };
 
-                let mut args = [0u8; NodeId::RUID_LENGTH];
+                let mut args = [0u8; NodeId::RANDOM_LENGTH];
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let invocation = KernelInvocation {
