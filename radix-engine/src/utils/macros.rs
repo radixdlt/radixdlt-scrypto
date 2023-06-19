@@ -21,6 +21,7 @@ macro_rules! method_auth_template {
     () => ({
         radix_engine_interface::blueprints::package::StaticRoles {
             methods: BTreeMap::new(),
+            updatable_roles: BTreeMap::new(),
         }
     });
     ( $($method:expr => $entry:expr );* ) => ({
@@ -31,7 +32,8 @@ macro_rules! method_auth_template {
         )*
 
         radix_engine_interface::blueprints::package::StaticRoles {
-            methods
+            methods,
+            updatable_roles: BTreeMap::new(),
         }
     });
     ( $($key:expr => $entry:expr;)* ) => (

@@ -431,7 +431,8 @@ macro_rules! enable_method_auth {
             )*
 
             let roles = scrypto::blueprints::package::StaticRoles {
-                methods
+                methods,
+                updatable_roles: BTreeMap::new(),
             };
 
             scrypto::blueprints::package::MethodAuthTemplate::Static(roles)
@@ -448,7 +449,8 @@ macro_rules! enable_method_auth {
             )*
 
             let roles = scrypto::blueprints::package::StaticRoles {
-                methods
+                methods,
+                updatable_roles: BTreeMap::new(),
             };
 
             scrypto::blueprints::package::MethodAuthTemplate::Static(roles)

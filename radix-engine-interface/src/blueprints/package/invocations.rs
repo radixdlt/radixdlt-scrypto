@@ -130,13 +130,14 @@ pub struct AuthConfig {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct StaticRoles {
     pub methods: BTreeMap<MethodKey, MethodPermission>,
-    //pub updatable_roles: BTreeMap<RoleKey, RoleList>,
+    pub updatable_roles: BTreeMap<RoleKey, RoleList>,
 }
 
 impl Default for StaticRoles {
     fn default() -> Self {
         Self {
-            methods: BTreeMap::new()
+            methods: BTreeMap::new(),
+            updatable_roles: BTreeMap::new(),
         }
     }
 }
