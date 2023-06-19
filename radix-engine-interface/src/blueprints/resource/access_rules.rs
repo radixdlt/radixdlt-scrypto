@@ -231,8 +231,7 @@ impl Roles {
     }
 
     pub fn define_immutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
-        self.roles
-            .insert(role.into(), (access_rule, true));
+        self.roles.insert(role.into(), (access_rule, true));
     }
 
     pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {

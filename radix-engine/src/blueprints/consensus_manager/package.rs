@@ -439,9 +439,6 @@ impl ConsensusManagerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static(roles_template! {
-                        roles {
-                            OWNER_ROLE;
-                        },
                         methods {
                             VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
                             VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;

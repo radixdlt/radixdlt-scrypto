@@ -19,7 +19,10 @@ macro_rules! event_schema {
 #[macro_export]
 macro_rules! add_role {
     ($roles:expr, $role:expr) => {{
-        $roles.insert($role.into(), radix_engine_interface::blueprints::resource::RoleList::none());
+        $roles.insert(
+            $role.into(),
+            radix_engine_interface::blueprints::resource::RoleList::none(),
+        );
     }};
     ($roles:expr, $role:expr => updaters: $updaters:expr) => {{
         $roles.insert($role.into(), $updaters.into());
@@ -42,7 +45,6 @@ macro_rules! method_auth_template {
         methods
     });
 }
-
 
 #[macro_export]
 macro_rules! roles_template {
@@ -72,7 +74,7 @@ macro_rules! roles_template {
             methods,
         }
     });
-    ( methods { $($key:expr => $entry:expr;)* }) => (
+    ( methods { $($method:expr => $entry:expr;)* }) => ({
         let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
             = BTreeMap::new();
         $(
@@ -83,6 +85,5 @@ macro_rules! roles_template {
             methods,
             roles: BTreeMap::new(),
         }
-    );
+    });
 }
-

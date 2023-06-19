@@ -31,7 +31,7 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Mint)
             .unwrap_or((DenyAll, DenyAll));
         {
-            main_roles.define_mutable_role( MINT_UPDATE_ROLE, mint_mutability);
+            main_roles.define_mutable_role(MINT_UPDATE_ROLE, mint_mutability);
             main_roles.define_mutable_role(MINT_ROLE, mint_access_rule);
         }
 
@@ -50,9 +50,15 @@ fn build_access_rules(
                 .remove(&ResourceMethodAuthKey::UpdateNonFungibleData)
                 .unwrap_or((AllowAll, DenyAll));
         {
-            main_roles.define_mutable_role( UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE, update_non_fungible_data_mutability);
+            main_roles.define_mutable_role(
+                UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
+                update_non_fungible_data_mutability,
+            );
 
-            main_roles.define_mutable_role(UPDATE_NON_FUNGIBLE_DATA_ROLE, update_non_fungible_data_access_rule);
+            main_roles.define_mutable_role(
+                UPDATE_NON_FUNGIBLE_DATA_ROLE,
+                update_non_fungible_data_access_rule,
+            );
         }
 
         // Withdraw
@@ -60,7 +66,7 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Withdraw)
             .unwrap_or((AllowAll, DenyAll));
         {
-            main_roles.define_mutable_role( WITHDRAW_ROLE, withdraw_access_rule);
+            main_roles.define_mutable_role(WITHDRAW_ROLE, withdraw_access_rule);
             main_roles.define_mutable_role(WITHDRAW_UPDATE_ROLE, withdraw_mutability);
         }
 
@@ -99,7 +105,8 @@ fn build_access_rules(
         let mut metadata_roles = Roles::new();
 
         metadata_roles.define_mutable_role(METADATA_SETTER_ROLE, update_metadata_access_rule);
-        metadata_roles.define_mutable_role(METADATA_SETTER_UPDATER_ROLE, update_metadata_mutability);
+        metadata_roles
+            .define_mutable_role(METADATA_SETTER_UPDATER_ROLE, update_metadata_mutability);
 
         metadata_roles
     };

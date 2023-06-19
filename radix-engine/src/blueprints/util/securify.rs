@@ -10,43 +10,16 @@ pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
     const SECURIFY_ROLE: Option<&'static str> = None;
 
-    fn create_roles(owner_rule: AccessRule, presecurify: bool) -> BTreeMap<ObjectModuleId, Roles> {
-        let mut roles = Roles::new();
-
-        if presecurify {
-            roles.define_mutable_role(RoleKey::new(OWNER_ROLE), owner_rule.clone());
-        } else {
-            roles.define_immutable_role(RoleKey::new(OWNER_ROLE), owner_rule.clone());
-        }
-
-        if let Some(securify_role) = Self::SECURIFY_ROLE {
-            if presecurify {
-                roles.define_mutable_role(
-                    RoleKey::new(securify_role),
-                    owner_rule.clone(),
-                );
-            } else {
-                roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
-            };
-        }
-
-        let mut metadata_roles = Roles::new();
-        metadata_roles.define_immutable_role(METADATA_SETTER_ROLE, owner_rule);
-
-        btreemap!(
-            ObjectModuleId::Main => roles,
-            ObjectModuleId::Metadata => metadata_roles,
-        )
-    }
-
     fn create_advanced<Y: ClientApi<RuntimeError>>(
         owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        // FIXME: Remove to_role_entry mapping
-        let owner_rule = owner_rule.to_role_entry(OWNER_ROLE).rule;
-        let roles = Self::create_roles(owner_rule, false);
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
+        let mut roles = Roles::new();
+        if let Some(securify_role) = Self::SECURIFY_ROLE {
+            roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
+        }
+        let roles = btreemap!(ObjectModuleId::Main => roles);
+        let access_rules = AccessRules::create(owner_rule, roles, api)?;
         Ok(access_rules)
     }
 
@@ -54,8 +27,12 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let (bucket, owner_rule) = Self::mint_securified_badge(api)?;
-        let roles = Self::create_roles(owner_rule, false);
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
+        let mut roles = Roles::new();
+        if let Some(securify_role) = Self::SECURIFY_ROLE {
+            roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
+        }
+        let roles = btreemap!(ObjectModuleId::Main => roles);
+        let access_rules = AccessRules::create(OwnerRole::Fixed(owner_rule), roles, api)?;
         Ok((access_rules, bucket))
     }
 
@@ -70,12 +47,27 @@ pub trait SecurifiedAccessRules {
 }
 
 pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
+    const OBJECT_OWNER_ROLE: &'static str;
+
     fn create_presecurified<Y: ClientApi<RuntimeError>>(
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let roles = Self::create_roles(rule!(require(owner_id)), true);
+        let mut roles = Roles::new();
+        let owner_rule = rule!(require(owner_id));
+        roles.define_mutable_role(RoleKey::new(Self::OBJECT_OWNER_ROLE), owner_rule.clone());
+        if let Some(securify_role) = Self::SECURIFY_ROLE {
+            roles.define_mutable_role(RoleKey::new(securify_role), owner_rule.clone());
+        }
+        let mut metadata_roles = Roles::new();
+        metadata_roles.define_immutable_role(METADATA_SETTER_ROLE, owner_rule);
 
+        let roles = btreemap!(
+            ObjectModuleId::Main => roles,
+            ObjectModuleId::Metadata => metadata_roles,
+        );
+
+        // FIXME: How do we get around the presecurified owner role problem?
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
         Ok(access_rules)
     }
@@ -99,7 +91,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         access_rules.update_role(
             ObjectModuleId::Main,
-            RoleKey::new(OWNER_ROLE),
+            Self::OBJECT_OWNER_ROLE,
             Some(owner_rule),
             true,
             api,

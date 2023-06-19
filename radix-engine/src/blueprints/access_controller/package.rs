@@ -472,6 +472,7 @@ impl AccessControllerNativePackage {
                             "primary" => updaters: [SELF_ROLE];
                             "recovery" => updaters: [SELF_ROLE];
                             "confirmation" => updaters: [SELF_ROLE];
+                            "this_package";
                         },
                         methods {
                             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];

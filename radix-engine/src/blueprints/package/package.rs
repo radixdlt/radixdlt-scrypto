@@ -26,6 +26,7 @@ use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
 use crate::roles_template;
+use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -58,6 +59,8 @@ pub enum PackageError {
     InvalidGenericId(u8),
 
     InvalidAuthSetup,
+    DefiningReservedRoleKey(String, RoleKey),
+    MissingRole(RoleKey),
 
     InvalidMetadataKey(String),
 }
@@ -200,6 +203,89 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
 
     Ok(())
 }
+
+fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
+    for (blueprint, definition_init) in &definition.blueprints {
+        match (
+            &definition_init.blueprint_type,
+            &definition_init.auth_config.method_auth,
+        ) {
+            (_, MethodAuthTemplate::NoAuth) => {}
+            (_, MethodAuthTemplate::Static(static_roles)) => {
+                let check_list = |list: &RoleList| {
+                    for role_key in &list.list {
+                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                            continue;
+                        }
+                        if !static_roles.roles.contains_key(role_key) {
+                            return Err(PackageError::MissingRole(role_key.clone()));
+                        }
+                    }
+                    Ok(())
+                };
+
+                for (role_key, role_list) in &static_roles.roles {
+                    check_list(&role_list)?;
+                    if AccessRulesNativePackage::is_reserved_role_key(&role_key) {
+                        return Err(PackageError::DefiningReservedRoleKey(
+                            blueprint.to_string(),
+                            role_key.clone(),
+                        ));
+                    }
+                }
+                for (_method, permission) in &static_roles.methods {
+                    match permission {
+                        MethodPermission::Protected(role_list) => {
+                            check_list(&role_list)?;
+                        }
+                        MethodPermission::Public | MethodPermission::OuterObjectOnly => {}
+                    }
+                }
+            }
+            (
+                BlueprintType::Inner { outer_blueprint },
+                MethodAuthTemplate::StaticUseOuterRoles(methods),
+            ) => {
+                let check_list = |list: &RoleList| {
+                    for role_key in &list.list {
+                        if role_key.key.eq(SELF_ROLE) {
+                            continue;
+                        }
+                        if let Some(blueprint) = definition.blueprints.get(outer_blueprint) {
+                            match &blueprint.auth_config.method_auth {
+                                MethodAuthTemplate::Static(static_roles) => {
+                                    if !static_roles.roles.contains_key(role_key) {
+                                        return Err(PackageError::MissingRole(role_key.clone()));
+                                    }
+                                }
+                                _ => return Err(PackageError::InvalidAuthSetup),
+                            }
+                        } else {
+                            return Err(PackageError::InvalidAuthSetup);
+                        }
+                    }
+                    Ok(())
+                };
+
+                for (_method, permission) in methods {
+                    match permission {
+                        MethodPermission::Protected(role_list) => {
+                            check_list(&role_list)?;
+                        }
+                        MethodPermission::Public | MethodPermission::OuterObjectOnly => {}
+                    }
+                }
+            }
+            _ => {
+                return Err(PackageError::InvalidAuthSetup);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 
 struct SecurifiedPackage;
 
@@ -647,10 +733,10 @@ impl PackageNativePackage {
                     method_auth: MethodAuthTemplate::Static(
                         roles_template! {
                             roles {
-                                OWNER_ROLE;
+                                SECURIFY_OWNER_ROLE;
                             },
                             methods {
-                                PACKAGE_CLAIM_ROYALTIES_IDENT => [OWNER_ROLE];
+                                PACKAGE_CLAIM_ROYALTIES_IDENT => [SECURIFY_OWNER_ROLE];
                             }
                         },
                     ),
@@ -734,7 +820,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_native<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u8,
-        setup: PackageDefinition,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -742,9 +828,11 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(setup.blueprints.values().map(|s| &s.schema))
+        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(setup.blueprints.values())
+        validate_package_event_schema(definition.blueprints.values())
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
@@ -761,21 +849,7 @@ impl PackageNativePackage {
         let code_hash = hash(scrypto_encode(&code).unwrap());
 
         {
-            for (blueprint, definition_init) in setup.blueprints {
-                match (
-                    &definition_init.blueprint_type,
-                    &definition_init.auth_config.method_auth,
-                ) {
-                    (_, MethodAuthTemplate::Static(..)) => {}
-                    (_, MethodAuthTemplate::NoAuth) => {}
-                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterRoles(..)) => {}
-                    _ => {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::PackageError(PackageError::InvalidAuthSetup),
-                        ));
-                    }
-                }
-
+            for (blueprint, definition_init) in definition.blueprints {
                 auth_configs.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
@@ -932,7 +1006,7 @@ impl PackageNativePackage {
     fn publish_wasm_internal<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
-        setup: PackageDefinition,
+        definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
         api: &mut Y,
@@ -941,9 +1015,11 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Validate schema
-        validate_package_schema(setup.blueprints.values().map(|s| &s.schema))
+        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(setup.blueprints.values())
+        validate_package_event_schema(definition.blueprints.values())
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         for BlueprintDefinitionInit {
@@ -956,7 +1032,7 @@ impl PackageNativePackage {
                     ..
                 },
             ..
-        } in setup.blueprints.values()
+        } in definition.blueprints.values()
         {
             match blueprint_type {
                 BlueprintType::Outer { feature_set } => {
@@ -1016,7 +1092,7 @@ impl PackageNativePackage {
 
         // Validate WASM
         WasmValidator::default()
-            .validate(&code, setup.blueprints.values())
+            .validate(&code, definition.blueprints.values())
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -1039,20 +1115,7 @@ impl PackageNativePackage {
 
         // Build node init
         {
-            for (blueprint, definition_init) in setup.blueprints {
-                match (
-                    &definition_init.blueprint_type,
-                    &definition_init.auth_config.method_auth,
-                ) {
-                    (_, MethodAuthTemplate::Static(..)) => {}
-                    (_, MethodAuthTemplate::NoAuth) => {}
-                    (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterRoles(..)) => {}
-                    _ => {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::PackageError(PackageError::InvalidAuthSetup),
-                        ));
-                    }
-                }
+            for (blueprint, definition_init) in definition.blueprints {
                 auth_templates.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
