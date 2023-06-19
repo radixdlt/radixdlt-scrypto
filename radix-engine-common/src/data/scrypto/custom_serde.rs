@@ -149,7 +149,7 @@ mod tests {
                     ),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::uuid(
+                    value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::ruid(
                         [0x11; 32],
                     )),
                 },

@@ -633,7 +633,7 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_uuid_non_fungible_local_id_succeeds() {
+    pub fn parsing_of_ruid_non_fungible_local_id_succeeds() {
         // Arrange
         let arg = "{f7223dbc-bbd6-4769-8d6f-effce550080d}";
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::NonFungibleLocalId);
@@ -646,7 +646,7 @@ mod test {
         // Assert
         assert_eq!(
             parsed_arg,
-            NonFungibleLocalId::uuid(0xf7223dbc_bbd6_4769_8d6f_effce550080d).unwrap()
+            NonFungibleLocalId::ruid(0xf7223dbc_bbd6_4769_8d6f_effce550080d).unwrap()
         )
     }
 

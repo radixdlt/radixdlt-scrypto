@@ -62,7 +62,7 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<(Bucket, RoleEntry), RuntimeError> {
         let owner_token = ResourceManager(Self::OWNER_BADGE);
-        let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
+        let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_ruid((), api)?;
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
         let owner_entry = RoleEntry::immutable(rule!(require(global_id)));
         Ok((bucket, owner_entry))

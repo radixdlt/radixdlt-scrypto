@@ -22,7 +22,7 @@ pub enum NonFungibleResourceManagerError {
     FieldNotMutable(String),
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
-    NonFungibleLocalIdProvidedForUUIDType,
+    NonFungibleLocalIdProvidedForRUIDType,
     DropNonEmptyBucket,
 }
 
@@ -180,10 +180,10 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Do this check in a better way (e.g. via type check)
-        if id_type == NonFungibleIdType::UUID {
+        if id_type == NonFungibleIdType::RUID {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForUUIDType,
+                    NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForRUIDType,
                 ),
             ));
         }
@@ -253,7 +253,7 @@ impl NonFungibleResourceManagerBlueprint {
         Ok((resource_address, bucket))
     }
 
-    pub(crate) fn create_uuid_with_initial_supply<Y>(
+    pub(crate) fn create_ruid_with_initial_supply<Y>(
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
@@ -268,8 +268,8 @@ impl NonFungibleResourceManagerBlueprint {
         let mut non_fungibles = BTreeMap::new();
         let supply = Decimal::from(entries.len());
         for (entry,) in entries {
-            let uuid = Runtime::generate_ruid(api)?;
-            let id = NonFungibleLocalId::uuid(uuid);
+            let ruid = Runtime::generate_ruid(api)?;
+            let id = NonFungibleLocalId::ruid(ruid);
             ids.insert(id.clone());
             non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
@@ -301,7 +301,7 @@ impl NonFungibleResourceManagerBlueprint {
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
+                scrypto_encode(&NonFungibleIdType::RUID).unwrap(),
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
@@ -336,7 +336,7 @@ impl NonFungibleResourceManagerBlueprint {
             )?;
             let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
             api.field_lock_release(handle)?;
-            if id_type == NonFungibleIdType::UUID {
+            if id_type == NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
                         NonFungibleResourceManagerError::InvalidNonFungibleIdType,
@@ -378,7 +378,7 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(bucket)
     }
 
-    pub(crate) fn mint_single_uuid_non_fungible<Y>(
+    pub(crate) fn mint_single_ruid_non_fungible<Y>(
         value: ScryptoValue,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
@@ -398,7 +398,7 @@ impl NonFungibleResourceManagerBlueprint {
             let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
             api.field_lock_release(id_type_handle)?;
 
-            if id_type != NonFungibleIdType::UUID {
+            if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
                         NonFungibleResourceManagerError::InvalidNonFungibleIdType,
@@ -429,7 +429,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id = {
             // FIXME: Is this enough bits to prevent hash collisions?
             // Possibly use an always incrementing timestamp
-            let id = NonFungibleLocalId::uuid(Runtime::generate_ruid(api)?);
+            let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
             let non_fungibles = btreemap!(id.clone() => value);
 
             create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
@@ -444,7 +444,7 @@ impl NonFungibleResourceManagerBlueprint {
         Ok((bucket, id))
     }
 
-    pub(crate) fn mint_uuid_non_fungible<Y>(
+    pub(crate) fn mint_ruid_non_fungible<Y>(
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -464,7 +464,7 @@ impl NonFungibleResourceManagerBlueprint {
             let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
             api.field_lock_release(handle)?;
 
-            if id_type != NonFungibleIdType::UUID {
+            if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
                         NonFungibleResourceManagerError::InvalidNonFungibleIdType,
@@ -497,7 +497,7 @@ impl NonFungibleResourceManagerBlueprint {
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
             for value in entries {
-                let id = NonFungibleLocalId::uuid(Runtime::generate_ruid(api)?);
+                let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
                 ids.insert(id.clone());
                 non_fungibles.insert(id, value.0);
             }
@@ -724,7 +724,7 @@ impl NonFungibleResourceManagerBlueprint {
                 )?;
                 api.key_value_entry_remove(handle)?;
                 // Tombstone the non fungible
-                // TODO: UUID non fungibles with no data don't need to go through this process
+                // TODO: RUID non fungibles with no data don't need to go through this process
                 api.key_value_entry_freeze(handle)?;
                 api.key_value_entry_release(handle)?;
             }

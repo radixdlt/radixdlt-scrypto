@@ -86,12 +86,12 @@ pub struct NonFungibleResourceManagerCreateWithAddressManifestInput {
 
 pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;
 
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &str =
-    "create_uuid_non_fungible_with_initial_supply";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT: &str =
+    "create_ruid_non_fungible_with_initial_supply";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
+pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
@@ -99,7 +99,7 @@ pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
     pub entries: Vec<(ScryptoValue,)>,
 }
 
-pub type NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput = (ResourceAddress, Bucket);
+pub type NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fungible_data";
 
@@ -145,28 +145,28 @@ pub struct NonFungibleResourceManagerMintInput {
 
 pub type NonFungibleResourceManagerMintOutput = Bucket;
 
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT: &str = "mint_ruid";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
-pub struct NonFungibleResourceManagerMintUuidManifestInput {
+pub struct NonFungibleResourceManagerMintRuidManifestInput {
     pub entries: Vec<(ManifestValue,)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerMintUuidInput {
+pub struct NonFungibleResourceManagerMintRuidInput {
     pub entries: Vec<(ScryptoValue,)>,
 }
 
-pub type NonFungibleResourceManagerMintUuidOutput = Bucket;
+pub type NonFungibleResourceManagerMintRuidOutput = Bucket;
 
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT: &str = "mint_single_uuid";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT: &str = "mint_single_ruid";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerMintSingleUuidInput {
+pub struct NonFungibleResourceManagerMintSingleRuidInput {
     pub entry: ScryptoValue,
 }
-pub type NonFungibleResourceManagerMintSingleUuidOutput = (Bucket, NonFungibleLocalId);
+pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLocalId);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleDataSchema {

@@ -85,7 +85,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_uuid_gen() {
+    fn test_ruid_gen() {
         let mut id = TransactionRuntimeModule {
             tx_hash: Hash::from_str(
                 "71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d",
@@ -97,7 +97,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_ruid()).to_string(),
+            NonFungibleLocalId::ruid(id.generate_ruid()).to_string(),
             "{86cc8d24-194d-4393-85ee-91ee00000005}"
         );
 
@@ -109,7 +109,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_ruid()).to_string(),
+            NonFungibleLocalId::ruid(id.generate_ruid()).to_string(),
             "{00000000-0000-4000-8000-000000000005}"
         );
 
@@ -121,7 +121,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_ruid()).to_string(),
+            NonFungibleLocalId::ruid(id.generate_ruid()).to_string(),
             "{ffffffff-ffff-4fff-bfff-ffff00000005}"
         );
     }

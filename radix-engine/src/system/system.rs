@@ -2443,8 +2443,8 @@ where
     fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(uuid) = self.api.kernel_get_system().modules.generate_ruid() {
-            Ok(uuid)
+        if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
+            Ok(ruid)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::TransactionRuntimeModuleNotEnabled,

@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
     VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT, VAULT_UNFREEZE_IDENT,
 };
 use radix_engine_interface::constants::{
@@ -412,11 +412,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                     fields.push(address.to_instruction_argument());
                     "MINT_NON_FUNGIBLE"
                 }
-                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
+                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT)
                     if address.is_static_global_non_fungible_resource_manager() =>
                 {
                     fields.push(address.to_instruction_argument());
-                    "MINT_UUID_NON_FUNGIBLE"
+                    "MINT_RUID_NON_FUNGIBLE"
                 }
 
                 /* Validator */

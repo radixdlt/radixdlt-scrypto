@@ -655,7 +655,7 @@ fn create_string_non_fungible() {
 }
 
 #[test]
-fn create_uuid_non_fungible() {
+fn create_ruid_non_fungible() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -667,7 +667,7 @@ fn create_uuid_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_uuid_non_fungible",
+            "create_ruid_non_fungible",
             manifest_args!(),
         )
         .call_method(
@@ -709,7 +709,7 @@ fn can_get_total_supply() {
 }
 
 #[test]
-fn can_mint_uuid_non_fungible_in_scrypto() {
+fn can_mint_ruid_non_fungible_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -721,7 +721,7 @@ fn can_mint_uuid_non_fungible_in_scrypto() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_uuid_non_fungible_and_mint",
+            "create_ruid_non_fungible_and_mint",
             manifest_args!(),
         )
         .call_method(
@@ -752,7 +752,7 @@ pub struct Sandwich {
 }
 
 #[test]
-fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
+fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
@@ -762,7 +762,7 @@ fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_mintable_uuid_non_fungible",
+            "create_mintable_ruid_non_fungible",
             manifest_args!(),
         )
         .build();
@@ -772,7 +772,7 @@ fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .mint_uuid_non_fungible(
+        .mint_ruid_non_fungible(
             resource_address,
             vec![Sandwich {
                 name: "test".to_string(),
@@ -795,7 +795,7 @@ fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
 }
 
 #[test]
-fn can_mint_uuid_non_fungible_in_manifest() {
+fn can_mint_ruid_non_fungible_in_manifest() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
@@ -805,7 +805,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_mintable_uuid_non_fungible",
+            "create_mintable_ruid_non_fungible",
             manifest_args!(),
         )
         .build();
@@ -815,7 +815,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .mint_uuid_non_fungible(
+        .mint_ruid_non_fungible(
             resource_address,
             vec![Sandwich {
                 name: "test".to_string(),
@@ -860,7 +860,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
     let non_fungible_global_id =
-        NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::uuid([0x11; 32]));
+        NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::ruid([0x11; 32]));
 
     // Act
     let manifest = ManifestBuilder::new()
