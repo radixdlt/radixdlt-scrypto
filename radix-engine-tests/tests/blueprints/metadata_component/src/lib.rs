@@ -12,6 +12,7 @@ mod metadata_component {
                 .metadata(metadata! {
                     roles {
                         setter => rule!(allow_all);
+                        setter_updater => rule!(deny_all);
                     },
                     init {
                         key.clone() => value.clone()

@@ -127,14 +127,19 @@ impl Metadata {
 
 pub struct MetadataRoles<T> {
     pub setter: T,
+    pub setter_updater: T,
 }
 
 impl<T> MetadataRoles<T> {
     pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![("setter", self.setter)]
+        vec![
+            (METADATA_SETTER_ROLE, self.setter),
+            (METADATA_SETTER_UPDATER_ROLE, self.setter_updater),
+        ]
     }
 }
 
 pub const METADATA_MUTABLE: MetadataRoles<bool> = MetadataRoles {
-    setter: false
+    setter: true,
+    setter_updater: true,
 };

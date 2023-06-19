@@ -23,6 +23,7 @@ mod metadata {
                 .metadata(metadata! {
                     roles {
                         setter => rule!(allow_all);
+                        setter_updater => rule!(deny_all);
                     },
                     init {
                     }

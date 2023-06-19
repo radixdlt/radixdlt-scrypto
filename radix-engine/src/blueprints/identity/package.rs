@@ -114,6 +114,7 @@ impl IdentityNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
+                            OWNER_ROLE => updaters: [SELF_ROLE];
                             SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },
                         methods {
