@@ -2440,7 +2440,7 @@ where
     }
 
     #[trace_resources]
-    fn generate_ruid(&mut self) -> Result<u128, RuntimeError> {
+    fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         if let Some(uuid) = self.api.kernel_get_system().modules.generate_ruid() {

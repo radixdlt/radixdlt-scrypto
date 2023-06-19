@@ -859,10 +859,8 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
-    let non_fungible_global_id = NonFungibleGlobalId::new(
-        resource_address,
-        NonFungibleLocalId::uuid(0x4cdd7469_ac3f_4822_a817_93c904a2a556u128).unwrap(),
-    );
+    let non_fungible_global_id =
+        NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::uuid([0x11; 32]));
 
     // Act
     let manifest = ManifestBuilder::new()

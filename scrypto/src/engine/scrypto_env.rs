@@ -6,13 +6,11 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
-use radix_engine_interface::api::{
-     LockFlags,
-};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
@@ -454,20 +452,20 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         };
         Ok(())
     }
-    
+
     fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
         unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
-    
+
     fn get_transaction_hash(&mut self) -> Result<Hash, ClientApiError> {
         let actor = copy_buffer(unsafe { get_transaction_hash() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn generate_ruid(&mut self) -> Result<u128, ClientApiError> {
+    fn generate_ruid(&mut self) -> Result<[u8; 32], ClientApiError> {
         let actor = copy_buffer(unsafe { generate_ruid() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)

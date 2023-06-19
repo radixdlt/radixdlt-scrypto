@@ -469,7 +469,7 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn generate_ruid(&mut self) -> Option<u128> {
+    pub fn generate_ruid(&mut self) -> Option<[u8; 32]> {
         if self
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)

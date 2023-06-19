@@ -149,9 +149,9 @@ mod tests {
                     ),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::NonFungibleLocalId(
-                        NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd).unwrap(),
-                    ),
+                    value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::uuid(
+                        [0x11; 32],
+                    )),
                 },
             ],
         };

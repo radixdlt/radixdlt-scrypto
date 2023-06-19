@@ -269,7 +269,7 @@ impl NonFungibleResourceManagerBlueprint {
         let supply = Decimal::from(entries.len());
         for (entry,) in entries {
             let uuid = Runtime::generate_ruid(api)?;
-            let id = NonFungibleLocalId::uuid(uuid).unwrap();
+            let id = NonFungibleLocalId::uuid(uuid);
             ids.insert(id.clone());
             non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
@@ -429,7 +429,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id = {
             // FIXME: Is this enough bits to prevent hash collisions?
             // Possibly use an always incrementing timestamp
-            let id = NonFungibleLocalId::uuid(Runtime::generate_ruid(api)?).unwrap();
+            let id = NonFungibleLocalId::uuid(Runtime::generate_ruid(api)?);
             let non_fungibles = btreemap!(id.clone() => value);
 
             create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
@@ -497,7 +497,7 @@ impl NonFungibleResourceManagerBlueprint {
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
             for value in entries {
-                let id = NonFungibleLocalId::uuid(Runtime::generate_ruid(api)?).unwrap();
+                let id = NonFungibleLocalId::uuid(Runtime::generate_ruid(api)?);
                 ids.insert(id.clone());
                 non_fungibles.insert(id, value.0);
             }

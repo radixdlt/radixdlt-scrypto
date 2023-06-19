@@ -18,20 +18,14 @@ impl TransactionRuntimeModule {
         self.tx_hash
     }
 
-    pub fn generate_ruid(&mut self) -> u128 {
-        // Take the lower 16 bytes
-        let mut temp: [u8; 16] = self.tx_hash.lower_bytes();
-
-        // Put TX runtime counter to the last 4 bytes.
-        temp[12..16].copy_from_slice(&self.next_id.to_be_bytes());
-
-        // Construct UUID v4 variant 1
-        let uuid = (u128::from_be_bytes(temp) & 0xffffffff_ffff_0fff_3fff_ffffffffffffu128)
-            | 0x00000000_0000_4000_8000_000000000000u128;
+    pub fn generate_ruid(&mut self) -> [u8; 32] {
+        let mut bytes = [0u8; 64];
+        (&mut bytes[..32]).copy_from_slice(self.tx_hash.as_slice());
+        bytes[32..].copy_from_slice(&self.next_id.to_le_bytes());
 
         self.next_id += 1;
 
-        uuid
+        hash(bytes).0
     }
 
     pub fn add_log(&mut self, level: Level, message: String) {
@@ -103,9 +97,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_ruid())
-                .unwrap()
-                .to_string(),
+            NonFungibleLocalId::uuid(id.generate_ruid()).to_string(),
             "{86cc8d24-194d-4393-85ee-91ee00000005}"
         );
 
@@ -117,9 +109,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_ruid())
-                .unwrap()
-                .to_string(),
+            NonFungibleLocalId::uuid(id.generate_ruid()).to_string(),
             "{00000000-0000-4000-8000-000000000005}"
         );
 
@@ -131,9 +121,7 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_ruid())
-                .unwrap()
-                .to_string(),
+            NonFungibleLocalId::uuid(id.generate_ruid()).to_string(),
             "{ffffffff-ffff-4fff-bfff-ffff00000005}"
         );
     }

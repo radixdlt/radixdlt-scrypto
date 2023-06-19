@@ -77,7 +77,7 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn generate_ruid<Y, E>(api: &mut Y) -> Result<u128, E>
+    pub fn generate_ruid<Y, E>(api: &mut Y) -> Result<[u8; 32], E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,

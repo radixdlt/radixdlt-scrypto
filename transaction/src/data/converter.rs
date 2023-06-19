@@ -19,7 +19,7 @@ pub fn to_non_fungible_local_id(id: ManifestNonFungibleLocalId) -> NonFungibleLo
         ManifestNonFungibleLocalId::String(i) => NonFungibleLocalId::string(i).unwrap(),
         ManifestNonFungibleLocalId::Integer(i) => NonFungibleLocalId::integer(i),
         ManifestNonFungibleLocalId::Bytes(i) => NonFungibleLocalId::bytes(i).unwrap(),
-        ManifestNonFungibleLocalId::UUID(i) => NonFungibleLocalId::uuid(i).unwrap(),
+        ManifestNonFungibleLocalId::UUID(i) => NonFungibleLocalId::uuid(i),
     }
 }
 
@@ -40,6 +40,6 @@ pub fn from_non_fungible_local_id(id: NonFungibleLocalId) -> ManifestNonFungible
         NonFungibleLocalId::Bytes(i) => {
             ManifestNonFungibleLocalId::bytes(i.value().to_owned()).unwrap()
         }
-        NonFungibleLocalId::UUID(i) => ManifestNonFungibleLocalId::uuid(i.value()).unwrap(),
+        NonFungibleLocalId::UUID(i) => ManifestNonFungibleLocalId::uuid(i.value().clone()),
     }
 }
