@@ -7,7 +7,8 @@ use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 
-/// Represents an ED25519 public key.
+/// Represents an Ed25519 public key.
+/// In particular, wraps the 32-byte CompressedEdwardsY representation.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]

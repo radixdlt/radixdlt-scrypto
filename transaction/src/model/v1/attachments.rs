@@ -51,10 +51,12 @@ impl MessageContentsV1 {
 }
 
 //============================================================================
-// ENCRYPTED MESSAGE
+// ENCRYPTED MESSAGE - MODELS
 //============================================================================
 
 /// A `PlaintextMessageV1` encrypted with "MultiPartyECIES" for a number of decryptors (public keys).
+///
+/// See the [`message`](crate::message) module for a demonstration implementation and tests.
 ///
 /// First, a `PlaintextMessageV1` should be created, and encoded as `manifest_sbor_encode(plaintext_message)`
 /// to get the plaintext message payload bytes.
@@ -84,18 +86,27 @@ pub struct EncryptedMessageV1 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ManifestSbor)]
 pub enum CurveType {
-    Ed25519,
     Secp256k1,
+    Ed25519,
+}
+
+impl CurveType {
+    pub fn of(public_key: &PublicKey) -> Self {
+        match public_key {
+            PublicKey::Secp256k1(_) => CurveType::Secp256k1,
+            PublicKey::Ed25519(_) => CurveType::Ed25519,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum DecryptorsByCurve {
-    Ed25519 {
-        dh_ephemeral_public_key: Ed25519PublicKey,
-        decryptors: BTreeMap<PublicKeyFingerprint, AesWrapped128BitKey>,
-    },
     Secp256k1 {
         dh_ephemeral_public_key: Secp256k1PublicKey,
+        decryptors: BTreeMap<PublicKeyFingerprint, AesWrapped128BitKey>,
+    },
+    Ed25519 {
+        dh_ephemeral_public_key: Ed25519PublicKey,
         decryptors: BTreeMap<PublicKeyFingerprint, AesWrapped128BitKey>,
     },
 }
@@ -103,27 +114,65 @@ pub enum DecryptorsByCurve {
 impl DecryptorsByCurve {
     pub fn curve_type(&self) -> CurveType {
         match self {
-            DecryptorsByCurve::Ed25519 { .. } => CurveType::Ed25519,
             DecryptorsByCurve::Secp256k1 { .. } => CurveType::Secp256k1,
+            DecryptorsByCurve::Ed25519 { .. } => CurveType::Ed25519,
+        }
+    }
+
+    pub fn as_secp256k1(
+        &self,
+    ) -> Option<(
+        &Secp256k1PublicKey,
+        &BTreeMap<PublicKeyFingerprint, AesWrapped128BitKey>,
+    )> {
+        match self {
+            DecryptorsByCurve::Secp256k1 {
+                dh_ephemeral_public_key,
+                decryptors,
+            } => Some((dh_ephemeral_public_key, decryptors)),
+            _ => None,
+        }
+    }
+
+    pub fn as_ed25519(
+        &self,
+    ) -> Option<(
+        &Ed25519PublicKey,
+        &BTreeMap<PublicKeyFingerprint, AesWrapped128BitKey>,
+    )> {
+        match self {
+            DecryptorsByCurve::Ed25519 {
+                dh_ephemeral_public_key,
+                decryptors,
+            } => Some((dh_ephemeral_public_key, decryptors)),
+            _ => None,
         }
     }
 
     pub fn number_of_decryptors(&self) -> usize {
         match self {
-            DecryptorsByCurve::Ed25519 { decryptors, .. } => decryptors.len(),
             DecryptorsByCurve::Secp256k1 { decryptors, .. } => decryptors.len(),
+            DecryptorsByCurve::Ed25519 { decryptors, .. } => decryptors.len(),
         }
     }
 }
 
 /// The last 8 bytes of the Blake2b-256 hash of the public key bytes,
 /// in their standard Radix byte-serialization.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ManifestSbor)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, ManifestSbor)]
 #[sbor(transparent)]
 pub struct PublicKeyFingerprint(pub [u8; Self::LENGTH]);
 
 impl PublicKeyFingerprint {
     pub const LENGTH: usize = 8;
+}
+
+impl Debug for PublicKeyFingerprint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("PublicKeyFingerprint")
+            .field(&hex::encode(&self.0))
+            .finish()
+    }
 }
 
 impl From<PublicKey> for PublicKeyFingerprint {
@@ -140,7 +189,7 @@ impl From<PublicKeyHash> for PublicKeyFingerprint {
     }
 }
 
-/// The (128-bit) AES-GCM encrypted bytes of the payload.
+/// The AES-GCM encrypted bytes of the payload.
 ///
 /// This must be serialized as the concatenation `Nonce/IV || Cipher || Tag/MAC` where:
 /// * Nonce/IV: 12 bytes
@@ -158,7 +207,7 @@ pub struct AesGcmPayload(pub Vec<u8>);
 /// This must be serialized as per https://www.ietf.org/rfc/rfc3394.txt as `IV || Cipher` where:
 /// * IV: First 8 bytes
 /// * Cipher: The wrapped 128 bit key, encoded as two 64 bit blocks
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct AesWrapped128BitKey(pub [u8; Self::LENGTH]);
 
@@ -167,11 +216,16 @@ impl AesWrapped128BitKey {
     pub const LENGTH: usize = 24;
 }
 
+impl Debug for AesWrapped128BitKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("AesWrapped128BitKey")
+            .field(&hex::encode(&self.0))
+            .finish()
+    }
+}
+
 //============================================================================
 // PREPARATION
 //============================================================================
 
 pub type PreparedAttachmentsV1 = SummarizedRawFullBody<AttachmentsV1>;
-
-// TODO: Add tests with a canonical implementation of message encryption/decryption,
-// and corresponding test vectors for other implementers.

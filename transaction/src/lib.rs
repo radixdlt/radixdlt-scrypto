@@ -2,6 +2,8 @@ pub mod builder;
 pub mod data;
 pub mod errors;
 pub mod manifest;
+#[cfg(feature = "message_encryption")]
+pub mod message;
 pub mod model;
 pub mod signing;
 pub mod validation;
