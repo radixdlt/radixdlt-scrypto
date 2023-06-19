@@ -8,11 +8,9 @@ use radix_engine_store_interface::{
         SubstateDatabase,
     },
 };
-use rand::Rng;
+use rand::{Rng, seq::SliceRandom};
 use std::{io::Write, path::PathBuf};
 
-/// Delete rounds count
-const ROUNDS_COUNT: usize = 50;
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
@@ -21,7 +19,7 @@ const MAX_SIZE: usize = 4 * 1024 * 1024;
 const SIZE_STEP: usize = 100 * 1024;
 /// Number of nodes written to the database in preparation step. 
 /// Each node has N=(MAX_SIZE-MIN_SIZE)/SIZE_STEP substates of size between MIN_SIZE and MAX_SIZE in one partition.
-const WRITE_NODES_COUNT: usize = ROUNDS_COUNT * 2;
+const WRITE_NODES_COUNT: usize = 4000;
 
 #[test]
 /// Database is created in /tmp/radix-scrypto-db folder.
@@ -34,10 +32,6 @@ const WRITE_NODES_COUNT: usize = ROUNDS_COUNT * 2;
 /// from main radixdlt-scrypto folder.
 /// Test can be parametrized using environment variables: ROUNDS_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP
 fn test_delete_per_size() {
-    let rounds_count = match std::env::var("ROUNDS_COUNT") {
-        Ok(v) => usize::from_str(&v).unwrap(),
-        _ => ROUNDS_COUNT,
-    };
     let min_size = match std::env::var("MIN_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => MIN_SIZE,
@@ -53,7 +47,6 @@ fn test_delete_per_size() {
 
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_delete_per_size_internal(
-        rounds_count,
         min_size,
         max_size,
         size_step,
@@ -66,7 +59,7 @@ fn test_delete_per_size() {
 
     let axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     export_graph_and_print_summary(
-        &format!("RocksDB per size deletion, rounds: {}", rounds_count),
+        "RocksDB per size deletion",
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_delete_per_size_rocksdb.png",
@@ -80,7 +73,6 @@ fn test_delete_per_size() {
     println!("JMT part");
     let (jmt_rocksdb_data, jmt_rocksdb_data_output, jmt_rocksdb_data_original) =
         test_delete_per_size_internal(
-            rounds_count,
             min_size,
             max_size,
             size_step,
@@ -93,10 +85,7 @@ fn test_delete_per_size() {
 
     let axis_ranges = calculate_axis_ranges(&jmt_rocksdb_data, None, None);
     export_graph_and_print_summary(
-        &format!(
-            "RocksDB per size deletion with JMT, rounds: {}",
-            rounds_count
-        ),
+        "RocksDB per size deletion with JMT",
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
         "/tmp/scrypto_delete_per_size_rocksdb_JMT.png",
@@ -108,10 +97,7 @@ fn test_delete_per_size() {
     .unwrap();
 
     export_graph_two_series(
-        &format!(
-            "95th percentile of deletion per size, rounds: {}",
-            rounds_count
-        ),
+        "95th percentile of deletion per size",
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
         "/tmp/scrypto_delete_per_size_rocksdb_diff.png",
@@ -207,7 +193,6 @@ fn test_delete_per_partition() {
 }
 
 fn test_delete_per_size_internal<F, S>(
-    rounds_count: usize,
     min_size: usize,
     max_size: usize,
     size_step: usize,
@@ -244,7 +229,7 @@ where
     }
 
     // Stage 2: reopen database and fill db with additional substates which will be deleted in next step
-    let data: Vec<(DbPartitionKey, DbSortKey, usize)> = {
+    let mut data: Vec<(DbPartitionKey, DbSortKey, usize)> = {
         let mut substate_db = create_store(path.clone());
 
         prepare_db(
@@ -262,35 +247,17 @@ where
     println!("Delete test execution");
     let mut rng = rand::thread_rng();
 
-    // repeat 1 substate commit n-times
-    for i in 0..rounds_count {
-        print!("Round {}/{}\r", i + 1, rounds_count);
-        std::io::stdout().flush().ok();
+    data.shuffle(&mut rng);
 
-        // prepare vector with indices of data to draw from
-        let mut size_vector: Vec<usize> = Vec::new();
-        for j in (i..data.len()).step_by(prepare_db_write_repeats) {
-            size_vector.push(j);
-        } // todo optimize
+    for (partition_key, sort_key, _usize) in data {
+        let mut input_data = DatabaseUpdates::new();
 
-        let mut idx_vector = size_vector.clone();
+        let mut partition = PartitionUpdates::new();
+        partition.insert(sort_key, DatabaseUpdate::Delete);
 
-        for _ in 0..size_vector.len() {
-            assert!(!idx_vector.is_empty());
-            // randomize substate size
-            let idx = rng.gen_range(0..idx_vector.len());
+        input_data.insert(partition_key, partition);
 
-            let mut input_data = DatabaseUpdates::new();
-
-            let mut partition = PartitionUpdates::new();
-            partition.insert(data[idx_vector[idx]].1.clone(), DatabaseUpdate::Delete);
-
-            input_data.insert(data[idx_vector[idx]].0.clone(), partition);
-
-            substate_db.commit(&input_data);
-
-            idx_vector.remove(idx);
-        }
+        substate_db.commit(&input_data);
     }
 
     discard_spikes(&mut substate_db.commit_delete_metrics.borrow_mut(), 100f32);
@@ -392,55 +359,35 @@ where
 
     let mut rocksdb_data_intermediate: BTreeMap<usize, Vec<Duration>> = BTreeMap::new();
 
-    for (idx, round) in data_per_round.iter().enumerate() {
+    for (idx, mut round) in data_per_round.into_iter().enumerate() {
         print!("\rRound {}/{}", idx + 1, rounds_count);
         std::io::stdout().flush().ok();
 
-        // prepare vector with indices of data to draw from
-        let mut idx_vector: Vec<usize> = (0..round.len()).collect();
-        let mut idx_vector_output: Vec<usize> = Vec::new();
+        round.shuffle(&mut rng);
 
-        for _ in 0..round.len() {
-            assert!(!idx_vector.is_empty());
-            // randomize index of data to delete
-            let idx = rng.gen_range(0..idx_vector.len());
+        let mut idx_vector_output: Vec<usize> = Vec::with_capacity(round.len());
 
+        for (idx, (partition_key, sort_keys)) in round.iter().enumerate() {
             // store sequence of indices for intermediate data
-            idx_vector_output.push(idx_vector[idx]);
-
-            // select current random item
-            let item = &round[idx_vector[idx]];
+            idx_vector_output.push(idx);
 
             let mut input_data = DatabaseUpdates::new();
-
             let mut partition = PartitionUpdates::new();
-            for j in &item.1 {
-                partition.insert(j.clone(), DatabaseUpdate::Delete);
+
+            for key in sort_keys {
+                partition.insert(key.clone(), DatabaseUpdate::Delete);
             }
 
-            input_data.insert(item.0.clone(), partition);
+            input_data.insert(partition_key.clone(), partition);
 
             substate_db.commit(&input_data);
-
-            idx_vector.remove(idx);
         }
-        assert!(idx_vector.is_empty());
 
         // prepare intermediate data
         for (_k, v) in substate_db.commit_delete_metrics.borrow().iter() {
             assert_eq!(v.len(), idx_vector_output.len());
             for (i, val) in v.iter().enumerate() {
-                let exists = rocksdb_data_intermediate
-                    .get(&(idx_vector_output[i] + 1))
-                    .is_some();
-                if exists {
-                    rocksdb_data_intermediate
-                        .get_mut(&(idx_vector_output[i] + 1))
-                        .unwrap()
-                        .push(*val);
-                } else {
-                    rocksdb_data_intermediate.insert(idx_vector_output[i] + 1, vec![*val]);
-                }
+                rocksdb_data_intermediate.entry(idx_vector_output[i] + 1).or_default().push(*val);
             }
         }
         // clear metrics between rounds

@@ -8,7 +8,7 @@ use radix_engine_store_interface::{
         SubstateDatabase,
     },
 };
-use rand::Rng;
+use rand::{Rng, seq::SliceRandom};
 use std::{io::Write, path::PathBuf};
 
 /// Number of repated reads of each node previously written to the database.
@@ -283,15 +283,7 @@ where
         // prepare intermediate data
         for (_k, v) in substate_db.commit_set_metrics.borrow().iter() {
             for (i, val) in v.iter().enumerate() {
-                let exists = rocksdb_data_intermediate.get(&(i + 1)).is_some();
-                if exists {
-                    rocksdb_data_intermediate
-                        .get_mut(&(i + 1))
-                        .unwrap()
-                        .push(*val);
-                } else {
-                    rocksdb_data_intermediate.insert(i + 1, vec![*val]);
-                }
+                rocksdb_data_intermediate.entry(i + 1).or_default().push(*val);
             }
         }
 
@@ -367,24 +359,17 @@ where
         let partition_key =
             SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
 
-        let mut idx_vector = size_vector.clone();
+        size_vector.shuffle(&mut rng);
 
-        for _ in 0..size_vector.len() {
-            assert!(!idx_vector.is_empty());
-
-            // randomize substate size
-            let idx = rng.gen_range(0..idx_vector.len());
-
+        for substate_size in size_vector.iter() {
             let mut input_data = DatabaseUpdates::new();
             let mut partition = PartitionUpdates::new();
 
-            generate_commit_data(&mut partition, &mut rng, idx_vector[idx]);
+            generate_commit_data(&mut partition, &mut rng, *substate_size);
 
             input_data.insert(partition_key.clone(), partition);
 
             substate_db.commit(&input_data);
-
-            idx_vector.remove(idx);
         }
     }
 

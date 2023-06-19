@@ -4,7 +4,7 @@ use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{CommittableSubstateDatabase, DbPartitionKey, DbSortKey, SubstateDatabase},
 };
-use rand::Rng;
+use rand::{Rng, seq::SliceRandom};
 use std::{io::Write, path::PathBuf};
 
 /// Range start of the measuremnts
@@ -87,15 +87,16 @@ fn test_read() {
         )
     };
 
-    let data_index_vector = data_index_vector
+    let mut data_index_vector = data_index_vector
         .into_iter()
         .filter(|x| x.2 <= read_max_size)
         .collect();
 
     // reopen database
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path);
+
     // and run read test
-    run_read_test(&mut substate_db, &data_index_vector, read_repeats);
+    run_read_test(&mut substate_db, &mut data_index_vector, read_repeats);
     // run read not found test
     run_read_not_found_test(&mut substate_db, read_repeats, read_not_fund_count);
 
@@ -143,12 +144,12 @@ fn test_read() {
         write_nodes_count,
     );
 
-    let data_index_vector = data_index_vector
+    let mut data_index_vector = data_index_vector
         .into_iter()
         .filter(|x| x.2 <= read_max_size)
         .collect();
 
-    run_read_test(&mut substate_db, &data_index_vector, read_repeats);
+    run_read_test(&mut substate_db, &mut data_index_vector, read_repeats);
     // run read not found test
     run_read_not_found_test(&mut substate_db, read_repeats, read_not_fund_count);
 
@@ -198,7 +199,7 @@ fn test_read() {
 
 fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_db: &mut S,
-    data_index_vector: &Vec<(DbPartitionKey, DbSortKey, usize)>,
+    data_index_vector: &mut Vec<(DbPartitionKey, DbSortKey, usize)>,
     read_repeats: usize,
 ) {
     println!("Random read start...");
@@ -208,14 +209,10 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
 
     for i in 0..read_repeats {
         let time_start = std::time::Instant::now();
-        let mut idx_vector: Vec<usize> = (0..data_index_vector.len()).collect();
 
-        for j in 0..data_index_vector.len() {
-            assert!(!idx_vector.is_empty());
-            let idx = rng.gen_range(0..idx_vector.len());
+        data_index_vector.shuffle(&mut rng);
 
-            let (p, s, v) = &data_index_vector[idx_vector[idx]];
-
+        for (j, (p, s, v)) in data_index_vector.iter().enumerate() {
             print!("\rRead {}/{}", j + 1, data_index_vector.len());
             std::io::stdout().flush().ok();
 
@@ -223,8 +220,6 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
 
             assert!(read_value.is_some());
             assert_eq!(read_value.unwrap().len(), *v);
-
-            idx_vector.remove(idx);
         }
 
         let time_end = std::time::Instant::now();
@@ -254,7 +249,7 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
 ) {
     println!("Read not found test start...");
 
-    let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
+    let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey)> = Vec::with_capacity(prepare_count);
     let mut rng = rand::thread_rng();
 
     // prepare list of partition_keys/sort_keys to qeury database
@@ -274,6 +269,8 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
     }
 
     for _ in 0..read_repeats {
+        data_index_vector.shuffle(&mut rng);
+
         for (p, s) in data_index_vector.iter() {
             let read_value = substate_db.get_substate(&p, &s);
             assert!(read_value.is_none());
