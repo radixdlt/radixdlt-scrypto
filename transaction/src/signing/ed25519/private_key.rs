@@ -29,7 +29,7 @@ impl Ed25519PrivateKey {
         }
         let mut expanded_secret_key_bytes = [0u8; 64];
         expanded_secret_key_bytes[0..32].copy_from_slice(scalar_bytes);
-        // Note - the unwrap is not safe
+        // Note - the unwrap is safe because it only panics if the length is invalid - which is checked above
         Ok(Self(
             ExpandedSecretKey::from_bytes(expanded_secret_key_bytes.as_slice()).unwrap(),
         ))

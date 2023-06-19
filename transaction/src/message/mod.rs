@@ -448,14 +448,23 @@ mod tests {
     // and corresponding test vectors for other implementers.
     #[test]
     #[ignore = "Doesn't work at present - see slack"]
-    pub fn test_some_ed25519_test_vectors() {
+    pub fn test_some_curve25519_test_vectors() {
         // From our other implementation
-        let private_key_1 = PrivateKey::from(
-            Ed25519PrivateKey::from_seed_bytes(
-                &hex::decode("406cc483a8aec712cac732d0c187934cb054cdcadc1c5bc4af72c098a5984844")
-                    .unwrap(),
+        let curve25519_private_key = Ed25519PrivateKey::from_seed_bytes(
+            &hex::decode("880237bde777a014c5a8cb6f25734168919cda52a8789e483c95acac76b38478")
+                .unwrap(),
+        )
+        .unwrap();
+        let curve25519_public_key_1 = curve25519_private_key.public_key();
+        let private_key_1 = PrivateKey::from(curve25519_private_key);
+        assert_eq!(
+            &curve25519_public_key_1,
+            &Ed25519PublicKey(
+                hex::decode("8a7e5a25f7f6d88c53530547ad0e676ae10fdf2e18f2f7281d6d8791ef6ce042")
+                    .unwrap()
+                    .try_into()
+                    .unwrap()
             )
-            .unwrap(),
         );
         let encrypted_message = EncryptedMessageV1 {
             encrypted: AesGcmPayload(
