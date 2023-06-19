@@ -3,7 +3,7 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
+    METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE,
 };
 use radix_engine_interface::api::ObjectModuleId;
 
@@ -70,7 +70,7 @@ impl ResourceMethodAuthKey {
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
 
-            Self::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE)),
+            Self::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_ADMIN_ROLE)),
         }
     }
 
@@ -89,7 +89,7 @@ impl ResourceMethodAuthKey {
 
             Self::UpdateMetadata => (
                 ObjectModuleId::Metadata,
-                RoleKey::new(METADATA_SETTER_UPDATER_ROLE),
+                RoleKey::new(METADATA_ADMIN_UPDATER_ROLE),
             ),
         }
     }
