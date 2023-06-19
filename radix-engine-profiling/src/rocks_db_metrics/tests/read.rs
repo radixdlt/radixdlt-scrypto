@@ -13,13 +13,15 @@ const MIN_SIZE: usize = 1;
 const MAX_SIZE: usize = 1024 * 1024;
 /// Range step
 const SIZE_STEP: usize = 16 * 1024;
-/// Each step write and read
-const COUNT: usize = 40;
+/// Number of substates generated for each step size
+const PREPARE_NUM_OF_SUBSTATES_PER_SIZE: usize = 40;
 /// Multiplication of each step read (COUNT * READ_REPEATS)
-const READ_REPEATS: usize = 100;
+const READ_ROUNDS: usize = 100;
+/// Number of substates to read in read not found test
+const PREPARE_NUM_OF_SUBSTATES_NOT_FUND: usize = 100;
 /// Max size of read substates to use
 const READ_MAX_SIZE: usize = MAX_SIZE;
-/// Filter to use to discard spikes (only range median +/- filter value is used)
+/// Filter to use to discard spikes (only value in range median +/- filter is used)
 const FILTER: f32 = 500f32;
 
 #[test]
@@ -31,11 +33,12 @@ const FILTER: f32 = 500f32;
 /// or
 ///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_read
 /// from main radixdlt-scrypto folder.
-/// Test can be parametrized using environment variables: READ_REPEATS, MIN_SIZE, MAX_SIZE, SIZE_STEP, COUNT, READ_MAX_SIZE, FILTER
+/// Test can be parametrized using environment variables: READ_ROUNDS, MIN_SIZE, MAX_SIZE, SIZE_STEP,
+///  PREPARE_NUM_OF_SUBSTATES_PER_SIZE, READ_MAX_SIZE, FILTER, PREPARE_NUM_OF_SUBSTATES_NOT_FUND
 fn test_read() {
-    let read_repeats = match std::env::var("READ_REPEATS") {
+    let read_repeats = match std::env::var("READ_ROUNDS") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => READ_REPEATS,
+        _ => READ_ROUNDS,
     };
     let min_size = match std::env::var("MIN_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -49,9 +52,9 @@ fn test_read() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => SIZE_STEP,
     };
-    let prepare_db_write_count = match std::env::var("COUNT") {
+    let prepare_db_write_count = match std::env::var("PREPARE_NUM_OF_SUBSTATES_PER_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => COUNT,
+        _ => PREPARE_NUM_OF_SUBSTATES_PER_SIZE,
     };
     let read_max_size = match std::env::var("READ_MAX_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -60,6 +63,10 @@ fn test_read() {
     let filter = match std::env::var("FILTER") {
         Ok(v) => f32::from_str(&v).unwrap(),
         _ => FILTER,
+    };
+    let read_not_fund_count = match std::env::var("PREPARE_NUM_OF_SUBSTATES_NOT_FUND") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => PREPARE_NUM_OF_SUBSTATES_NOT_FUND,
     };
 
     // RocksDB part
@@ -89,7 +96,7 @@ fn test_read() {
     // and run read test
     run_read_test(&mut substate_db, &data_index_vector, read_repeats);
     // run read not found test
-    run_read_not_found_test(&mut substate_db, read_repeats, prepare_db_write_count);
+    run_read_not_found_test(&mut substate_db, read_repeats, read_not_fund_count);
 
     // prepare data for linear approximation
     discard_spikes(&mut substate_db.read_metrics.borrow_mut(), filter);
@@ -137,7 +144,7 @@ fn test_read() {
 
     run_read_test(&mut substate_db, &data_index_vector, read_repeats);
     // run read not found test
-    run_read_not_found_test(&mut substate_db, read_repeats, prepare_db_write_count);
+    run_read_not_found_test(&mut substate_db, read_repeats, read_not_fund_count);
 
     // prepare data for linear approximation
     discard_spikes(&mut substate_db.read_metrics.borrow_mut(), filter);
@@ -184,6 +191,7 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
     read_repeats: usize,
 ) {
     println!("Random read start...");
+    assert!(!data_index_vector.is_empty());
 
     let mut rng = rand::thread_rng();
 
@@ -231,14 +239,15 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
 fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_db: &mut S,
     read_repeats: usize,
-    count: usize,
+    prepare_count: usize,
 ) {
     println!("Read not found test start...");
 
-    let mut data_index_vector_2: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
+    let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey)> = Vec::new();
     let mut rng = rand::thread_rng();
 
-    for _ in 0..count {
+    // prepare list of partition_keys/sort_keys to qeury database
+    for _ in 0..prepare_count {
         let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
         rng.fill(&mut node_id_value);
         let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
@@ -250,11 +259,11 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
         let sort_key =
             SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(substate_key_value.into()));
 
-        data_index_vector_2.push((partition_key.clone(), sort_key));
+        data_index_vector.push((partition_key.clone(), sort_key));
     }
 
     for _ in 0..read_repeats {
-        for (p, s) in data_index_vector_2.iter() {
+        for (p, s) in data_index_vector.iter() {
             let read_value = substate_db.get_substate(&p, &s);
             assert!(read_value.is_none());
         }

@@ -191,12 +191,12 @@ pub fn calculate_axis_ranges(
     x_ofs: Option<f32>,
     y_ofs: Option<f32>,
 ) -> (f32, f32, f32, f32) {
-    let x_ofs = x_ofs.unwrap_or_else(|| 0f32);
-    let y_ofs = y_ofs.unwrap_or_else(|| 0f32);
-    let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap() as f32 - x_ofs;
-    let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap() as f32 + x_ofs;
-    let mut y_min = data.iter().map(|i| i.1 as i32).min().unwrap() as f32 - y_ofs;
-    let y_max = data.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    let x_ofs = x_ofs.unwrap_or(0f32);
+    let y_ofs = y_ofs.unwrap_or(0f32);
+    let x_min = data.iter().map(|i| (i.0 as i32)).min().unwrap_or_default() as f32 - x_ofs;
+    let x_max = data.iter().map(|i| (i.0 as i32)).max().unwrap_or_default() as f32 + x_ofs;
+    let mut y_min = data.iter().map(|i| i.1 as i32).min().unwrap_or_default() as f32 - y_ofs;
+    let y_max = data.iter().map(|i| i.1 as i32).max().unwrap_or_default() as f32 + y_ofs;
     if y_min > 0f32 {
         y_min = 0f32;
     }
@@ -209,16 +209,48 @@ pub fn calculate_axis_ranges_for_two_series(
     x_ofs: Option<f32>,
     y_ofs: Option<f32>,
 ) -> (f32, f32, f32, f32) {
-    let x_ofs = x_ofs.unwrap_or_else(|| 0f32);
-    let y_ofs = y_ofs.unwrap_or_else(|| 0f32);
-    let x_min1 = data_series1.iter().map(|i| i.0 as i32).min().unwrap() as f32;
-    let x_max1 = data_series1.iter().map(|i| i.0 as i32).max().unwrap() as f32;
-    let y_min1 = data_series1.iter().map(|i| i.1 as i32).min().unwrap() as f32;
-    let y_max1 = data_series1.iter().map(|i| i.1 as i32).max().unwrap() as f32;
-    let x_min2 = data_series2.iter().map(|i| i.0 as i32).min().unwrap() as f32;
-    let x_max2 = data_series2.iter().map(|i| i.0 as i32).max().unwrap() as f32;
-    let y_min2 = data_series2.iter().map(|i| i.1 as i32).min().unwrap() as f32;
-    let y_max2 = data_series2.iter().map(|i| i.1 as i32).max().unwrap() as f32;
+    let x_ofs = x_ofs.unwrap_or(0f32);
+    let y_ofs = y_ofs.unwrap_or(0f32);
+    let x_min1 = data_series1
+        .iter()
+        .map(|i| i.0 as i32)
+        .min()
+        .unwrap_or_default() as f32;
+    let x_max1 = data_series1
+        .iter()
+        .map(|i| i.0 as i32)
+        .max()
+        .unwrap_or_default() as f32;
+    let y_min1 = data_series1
+        .iter()
+        .map(|i| i.1 as i32)
+        .min()
+        .unwrap_or_default() as f32;
+    let y_max1 = data_series1
+        .iter()
+        .map(|i| i.1 as i32)
+        .max()
+        .unwrap_or_default() as f32;
+    let x_min2 = data_series2
+        .iter()
+        .map(|i| i.0 as i32)
+        .min()
+        .unwrap_or_default() as f32;
+    let x_max2 = data_series2
+        .iter()
+        .map(|i| i.0 as i32)
+        .max()
+        .unwrap_or_default() as f32;
+    let y_min2 = data_series2
+        .iter()
+        .map(|i| i.1 as i32)
+        .min()
+        .unwrap_or_default() as f32;
+    let y_max2 = data_series2
+        .iter()
+        .map(|i| i.1 as i32)
+        .max()
+        .unwrap_or_default() as f32;
     let x_min = if x_min1 < x_min2 {
         x_min1 - x_ofs
     } else {
@@ -262,7 +294,8 @@ pub fn export_graph_and_print_summary(
     let mut y_max = axis_ranges.3;
 
     // 4. calculate linear approximation
-    let (lin_slope, lin_intercept): (f32, f32) = linear_regression_of(&output_data).unwrap();
+    let (lin_slope, lin_intercept): (f32, f32) =
+        linear_regression_of(&output_data).unwrap_or_default();
     let lin_x_axis = (x_min as f32..(x_max + 1f32) as f32).step(1f32);
     if lin_intercept < y_min.into() {
         y_min = lin_intercept as f32;
@@ -396,23 +429,38 @@ pub fn export_graph_and_print_summary_for_two_series(
         *diff_value -= data_series2[idx].1;
     }
     // calculate linear approximation of diff points
-    let (lin_slope_1, lin_intercept_1): (f32, f32) = linear_regression_of(&v1).unwrap();
+    let (lin_slope_1, lin_intercept_1): (f32, f32) = linear_regression_of(&v1).unwrap_or_default();
 
     // calculate linethrough 1st and last diff points
     let v2: Vec<(f32, f32)> = vec![
-        *data_series1.first().unwrap(),
-        *data_series1.last().unwrap(),
+        *data_series1.first().unwrap_or(&(0f32, 0f32)),
+        *data_series1.last().unwrap_or(&(0f32, 0f32)),
     ];
-    let (lin_slope_2, lin_intercept_2): (f32, f32) = linear_regression_of(&v2).unwrap();
+    let (lin_slope_2, lin_intercept_2): (f32, f32) = linear_regression_of(&v2).unwrap_or_default();
 
     // calculate axis max/min values
     let y_ofs = 0f32;
     let x_ofs = 0f32;
     let x_min = -x_ofs;
-    let x_max = data_series1.iter().map(|i| i.0 as i32).max().unwrap() as f32 + x_ofs;
+    let x_max = data_series1
+        .iter()
+        .map(|i| i.0 as i32)
+        .max()
+        .unwrap_or_default() as f32
+        + x_ofs;
     let y_min = 0f32;
-    let mut y_max = data_series1.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
-    let y_max_2 = data_series2.iter().map(|i| i.1 as i32).max().unwrap() as f32 + y_ofs;
+    let mut y_max = data_series1
+        .iter()
+        .map(|i| i.1 as i32)
+        .max()
+        .unwrap_or_default() as f32
+        + y_ofs;
+    let y_max_2 = data_series2
+        .iter()
+        .map(|i| i.1 as i32)
+        .max()
+        .unwrap_or_default() as f32
+        + y_ofs;
     if y_max_2 > y_max {
         y_max = y_max_2;
     }

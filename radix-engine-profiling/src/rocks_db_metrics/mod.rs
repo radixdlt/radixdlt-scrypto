@@ -90,7 +90,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase
         let duration = start.elapsed();
 
         if let Some(value) = ret {
-            self.commit_delete_metrics
+            self.read_metrics
                 .borrow_mut()
                 .entry(value.len())
                 .or_default()
