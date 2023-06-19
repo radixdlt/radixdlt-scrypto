@@ -10,7 +10,9 @@ use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
-use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
+use radix_engine_interface::api::{
+     LockFlags,
+};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
@@ -436,7 +438,7 @@ impl ClientAuthApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientEventApi<ClientApiError> for ScryptoEnv {
+impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
     fn emit_event(
         &mut self,
         event_name: String,
@@ -452,17 +454,13 @@ impl ClientEventApi<ClientApiError> for ScryptoEnv {
         };
         Ok(())
     }
-}
-
-impl ClientLoggerApi<ClientApiError> for ScryptoEnv {
+    
     fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
         unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
-}
-
-impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
+    
     fn get_transaction_hash(&mut self) -> Result<Hash, ClientApiError> {
         let actor = copy_buffer(unsafe { get_transaction_hash() });
 

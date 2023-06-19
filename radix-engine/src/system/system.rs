@@ -2294,7 +2294,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientLimitsApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -2329,7 +2329,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -2416,13 +2416,8 @@ where
 
         Ok(())
     }
-}
 
-impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
+    #[trace_resources]
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -2430,13 +2425,7 @@ where
 
         Ok(())
     }
-}
 
-impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
     #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;

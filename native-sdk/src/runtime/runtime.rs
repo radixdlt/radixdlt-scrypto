@@ -19,7 +19,7 @@ impl Runtime {
         event: T,
     ) -> Result<(), E>
     where
-        Y: ClientEventApi<E>,
+        Y: ClientTransactionRuntimeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
