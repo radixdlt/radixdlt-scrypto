@@ -4,8 +4,8 @@ use scrypto::prelude::*;
 mod mutable_access_rules_component {
     enable_method_auth! {
         roles {
-            borrow_funds_auth,
-            deposit_funds_auth
+            borrow_funds_auth;
+            deposit_funds_auth;
         },
         methods {
             borrow_funds => borrow_funds_auth;

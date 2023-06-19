@@ -404,7 +404,7 @@ macro_rules! module_permissions {
 macro_rules! enable_method_auth {
     (
         roles {
-            $($role:ident),*
+            $($role:ident $( => updaters: $($updaters:ident),+)?;)*
         },
         $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
     ) => (
