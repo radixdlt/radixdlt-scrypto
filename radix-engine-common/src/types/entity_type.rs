@@ -23,8 +23,8 @@ pub enum EntityType {
     /// The global consensus manager entity (134 in decimal). Gives Bech32 prefix: `s` followed by one of `c`, `e`, `6` or `m`.
     GlobalConsensusManager = 0b10000110, //-------------- 10000 => s, 110xx => ce6m [se vanity prefix]
 
-    /// A global validator entity (130 in decimal). Gives Bech32 prefix: `s` followed by one of `v`, `d`, `w` or `0`.
-    GlobalValidator = 0b10000011, //--------------------- 10000 => s, 110xx => vdw0
+    /// A global validator entity (131 in decimal). Gives Bech32 prefix: `s` followed by one of `v`, `d`, `w` or `0`.
+    GlobalValidator = 0b10000011, //--------------------- 10000 => s, 011xx => vdw0
 
     //=========================================================================
     // Standard Global Components (start with char c for component)
