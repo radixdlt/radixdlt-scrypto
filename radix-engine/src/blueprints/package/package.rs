@@ -646,7 +646,9 @@ impl PackageNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static(
                         method_auth_template! {
-                            PACKAGE_CLAIM_ROYALTIES_IDENT => [OWNER_ROLE];
+                            methods {
+                                PACKAGE_CLAIM_ROYALTIES_IDENT => [OWNER_ROLE];
+                            }
                         },
                     ),
                 },

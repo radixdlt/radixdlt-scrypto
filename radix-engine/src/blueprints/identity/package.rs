@@ -83,7 +83,9 @@ impl IdentityNativePackage {
         );
 
         let method_auth = method_auth_template! {
-            IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
+            methods {
+                IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
+            }
         };
 
         let schema = generate_full_schema(aggregator);

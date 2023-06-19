@@ -24,7 +24,7 @@ macro_rules! method_auth_template {
             updatable_roles: BTreeMap::new(),
         }
     });
-    ( $($method:expr => $entry:expr );* ) => ({
+    (methods { $($method:expr => $entry:expr );* }) => ({
         let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
             = BTreeMap::new();
         $(
@@ -36,7 +36,7 @@ macro_rules! method_auth_template {
             updatable_roles: BTreeMap::new(),
         }
     });
-    ( $($key:expr => $entry:expr;)* ) => (
-        method_auth_template!{$($key => $entry);*}
+    ( methods { $($key:expr => $entry:expr;)* }) => (
+        method_auth_template!(methods { $($key => $entry);* })
     );
 }

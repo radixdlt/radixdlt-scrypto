@@ -175,13 +175,15 @@ impl PoolNativePackage {
                         ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        // Main Module rules
-                        ONE_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
-                        ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
-                        ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT => MethodPermission::Public;
-                        ONE_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        methods {
+                            // Main Module rules
+                            ONE_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
+                            ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
+                            ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT => MethodPermission::Public;
+                            ONE_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        }
                     }),
                 },
             }
@@ -337,13 +339,15 @@ impl PoolNativePackage {
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        // Main Module rules
-                        TWO_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
-                        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
-                        TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodPermission::Public;
-                        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        methods {
+                            // Main Module rules
+                            TWO_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
+                            TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
+                            TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodPermission::Public;
+                            TWO_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        }
                     }),
                 },
             }
@@ -497,12 +501,14 @@ impl PoolNativePackage {
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
-                        MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
-                        MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodPermission::Public;
-                        MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        methods {
+                            MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodPermission::Public;
+                            MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodPermission::Public;
+                            MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodPermission::Public;
+                            MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        }
                     }),
                 },
             }
