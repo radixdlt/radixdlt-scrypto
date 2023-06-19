@@ -31,7 +31,8 @@ parity-wasm = { version = "0.45.0", features = ["sign_ext"] }
 wasmparser = { version = "0.107.0", default-features = false }
 
 # WASM instrumentation
-wasm-instrument = { version = "0.4.0", features = ["sign_ext"] }
+##wasm-instrument = { version = "0.4.0", features = ["sign_ext"] }
+wasm-instrument = { path = "../wasm-instrument", features = ["sign_ext"] }
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
