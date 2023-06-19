@@ -131,6 +131,9 @@ pub trait SubstateStore {
         handle: u32,
         substate_value: IndexedScryptoValue,
     ) -> StoreAccessInfo;
+
+    /// Note: unstable interface, for intent transaction tracker only
+    fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
 }
 
 #[derive(Clone)]

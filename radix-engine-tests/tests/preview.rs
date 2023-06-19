@@ -1,3 +1,5 @@
+use radix_engine::transaction::ExecutionConfig;
+use radix_engine::transaction::FeeReserveConfig;
 use radix_engine::types::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
@@ -21,8 +23,7 @@ fn test_transaction_preview_cost_estimate() {
     let preview_flags = PreviewFlags {
         use_free_credit: true,
         assume_all_signature_proofs: false,
-        permit_invalid_header_epoch: false,
-        permit_duplicate_intent_hash: false,
+        skip_epoch_check: false,
     };
     let (notarized_transaction, preview_intent) = prepare_matching_test_tx_and_preview_intent(
         &mut test_runner,
@@ -37,8 +38,11 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap();
     preview_receipt.expect_commit_success();
 
-    let receipt = test_runner
-        .execute_transaction(validate(&network, &notarized_transaction).get_executable());
+    let receipt = test_runner.execute_transaction(
+        validate(&network, &notarized_transaction).get_executable(),
+        FeeReserveConfig::default(),
+        ExecutionConfig::for_preview(),
+    );
     let commit_result = receipt.expect_commit(true);
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
@@ -61,8 +65,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let preview_flags = PreviewFlags {
         use_free_credit: true,
         assume_all_signature_proofs: true,
-        permit_invalid_header_epoch: false,
-        permit_duplicate_intent_hash: false,
+        skip_epoch_check: false,
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone

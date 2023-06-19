@@ -156,7 +156,7 @@ pub struct SystemLoanFeeReserve {
     royalty_committed_sum: u128,
 
     /// Payments made during the execution of a transaction.
-    locked_fees: Vec<(Option<NodeId>, LiquidFungibleResource, bool)>,
+    locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
 }
 
 #[inline]
@@ -224,11 +224,6 @@ impl SystemLoanFeeReserve {
 
     pub fn with_free_credit(mut self, xrd_amount: u128) -> Self {
         self.xrd_balance += xrd_amount;
-        self.locked_fees.push((
-            None,
-            LiquidFungibleResource::new(transmute_u128_as_decimal(xrd_amount)),
-            false,
-        ));
         self
     }
 
@@ -456,7 +451,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
         // Move resource
         self.locked_fees
-            .push((Some(vault_id), fee.take_all(), contingent));
+            .push((vault_id, fee.take_all(), contingent));
 
         Ok(fee)
     }
@@ -610,10 +605,7 @@ mod tests {
         assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
         assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
-        assert_eq!(
-            summary.locked_fees,
-            vec![(Some(TEST_VAULT_ID), xrd(100), false)],
-        );
+        assert_eq!(summary.locked_fees, vec![(TEST_VAULT_ID, xrd(100), false)],);
     }
 
     #[test]
@@ -678,10 +670,7 @@ mod tests {
         assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("16"));
         assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
-        assert_eq!(
-            summary.locked_fees,
-            vec![(Some(TEST_VAULT_ID), xrd(100), false)]
-        );
+        assert_eq!(summary.locked_fees, vec![(TEST_VAULT_ID, xrd(100), false)]);
         assert_eq!(
             summary.execution_cost_breakdown,
             btreemap!(
