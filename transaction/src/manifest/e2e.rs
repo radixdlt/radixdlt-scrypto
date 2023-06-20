@@ -1285,7 +1285,7 @@ CALL_METHOD
             },
             instructions,
             blobs,
-            attachments: AttachmentsV1 {},
+            message: MessageV1::default(),
         })
     }
 
