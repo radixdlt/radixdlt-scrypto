@@ -717,9 +717,9 @@ where
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::MintUuidNonFungible { address, args } => InstructionV1::CallMethod {
+        ast::Instruction::MintRuidNonFungible { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
-            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
@@ -1418,7 +1418,7 @@ mod tests {
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
+        NonFungibleResourceManagerMintRuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1962,7 +1962,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mint_uuid_non_fungible_instruction() {
+    fn test_mint_ruid_non_fungible_instruction() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let resource_address = ResourceAddress::try_from_bech32(
             &bech32_decoder,
@@ -1972,7 +1972,7 @@ mod tests {
 
         generate_instruction_ok!(
             r#"
-            MINT_UUID_NON_FUNGIBLE
+            MINT_RUID_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
                 Array<Tuple>(
                     Tuple(Tuple("Hello World", Decimal("12")))
@@ -1980,9 +1980,9 @@ mod tests {
             "#,
             InstructionV1::CallMethod {
                 address: resource_address.into(),
-                method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+                method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(
-                    &NonFungibleResourceManagerMintUuidManifestInput {
+                    &NonFungibleResourceManagerMintRuidManifestInput {
                         entries: Vec::from([(to_manifest_value_and_unwrap!(&(
                             String::from("Hello World"),
                             dec!("12")

@@ -956,7 +956,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn mint_uuid_non_fungible<T, V>(
+    pub fn mint_ruid_non_fungible<T, V>(
         &mut self,
         resource_address: ResourceAddress,
         entries: T,
@@ -972,8 +972,8 @@ impl ManifestBuilder {
 
         self.add_instruction(InstructionV1::CallMethod {
             address: resource_address.into(),
-            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerMintUuidManifestInput {
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerMintRuidManifestInput {
                 entries
             }),
         });

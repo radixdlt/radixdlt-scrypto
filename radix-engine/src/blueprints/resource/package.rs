@@ -53,8 +53,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleRe
 const NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME: &str =
     "package_burn_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
-    "mint_uuid_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_EXPORT_NAME: &str =
+    "mint_ruid_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
     "create_empty_vault_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME: &str =
@@ -436,14 +436,14 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
                     input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>()),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateRuidWithInitialSupplyInput>()),
                     output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput>()),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput>()),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
 
@@ -501,27 +501,27 @@ impl ResourceManagerNativePackage {
             );
 
             functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintRuidInput>(
                         )),
                     output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintRuidOutput>(
                         )),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>()),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleRuidInput>()),
                     output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidOutput>()),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleRuidOutput>()),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT.to_string(),
                 },
             );
 
@@ -664,13 +664,13 @@ impl ResourceManagerNativePackage {
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT => [MINT_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT => [MINT_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINT_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINT_ROLE];
                             RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
                             RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
                             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
@@ -2425,15 +2425,15 @@ impl ResourceManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: NonFungibleResourceManagerCreateUuidWithInitialSupplyInput =
+                let input: NonFungibleResourceManagerCreateRuidWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
-                let rtn = NonFungibleResourceManagerBlueprint::create_uuid_with_initial_supply(
+                let rtn = NonFungibleResourceManagerBlueprint::create_ruid_with_initial_supply(
                     input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
@@ -2454,27 +2454,27 @@ impl ResourceManagerNativePackage {
                     NonFungibleResourceManagerBlueprint::mint_non_fungible(input.entries, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: NonFungibleResourceManagerMintUuidInput =
+                let input: NonFungibleResourceManagerMintRuidInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleResourceManagerBlueprint::mint_uuid_non_fungible(
+                let rtn = NonFungibleResourceManagerBlueprint::mint_ruid_non_fungible(
                     input.entries,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: NonFungibleResourceManagerMintSingleUuidInput =
+                let input: NonFungibleResourceManagerMintSingleRuidInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleResourceManagerBlueprint::mint_single_uuid_non_fungible(
+                let rtn = NonFungibleResourceManagerBlueprint::mint_single_ruid_non_fungible(
                     input.entry,
                     api,
                 )?;

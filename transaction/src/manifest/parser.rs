@@ -98,7 +98,7 @@ pub enum InstructionIdent {
     ClaimPackageRoyalty,
     MintFungible,
     MintNonFungible,
-    MintUuidNonFungible,
+    MintRuidNonFungible,
     CreateValidator,
 }
 
@@ -190,7 +190,7 @@ impl InstructionIdent {
             // ==============
             "MINT_FUNGIBLE" => InstructionIdent::MintFungible,
             "MINT_NON_FUNGIBLE" => InstructionIdent::MintNonFungible,
-            "MINT_UUID_NON_FUNGIBLE" => InstructionIdent::MintUuidNonFungible,
+            "MINT_RUID_NON_FUNGIBLE" => InstructionIdent::MintRuidNonFungible,
             "CLAIM_PACKAGE_ROYALTY" => InstructionIdent::ClaimPackageRoyalty,
             "CREATE_VALIDATOR" => InstructionIdent::CreateValidator,
             _ => {
@@ -687,7 +687,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::MintUuidNonFungible => Instruction::MintUuidNonFungible {
+            InstructionIdent::MintRuidNonFungible => Instruction::MintRuidNonFungible {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

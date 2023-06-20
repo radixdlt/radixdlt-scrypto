@@ -1,7 +1,6 @@
 pub mod bootstrap;
 pub mod id_allocation;
 pub mod module;
-pub mod module_mixer;
 pub mod node_init;
 pub mod node_modules;
 pub mod payload_validation;

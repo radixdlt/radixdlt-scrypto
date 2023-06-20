@@ -213,12 +213,12 @@ mod tests {
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
                 &format!(
-                    "{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:{{8fe4abde-affa-4f99-9a0f-300ec6acb64d}}"
+                    "{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:{{1111111111111111-2222222222222222-3333333333333333-4444444444444444}}"
                 ),
             )
             .unwrap()
             .to_canonical_string(&enc),
-            format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:{{8fe4abde-affa-4f99-9a0f-300ec6acb64d}}")
+            format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:{{1111111111111111-2222222222222222-3333333333333333-4444444444444444}}")
         );
 
         assert_eq!(

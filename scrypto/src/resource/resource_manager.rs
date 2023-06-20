@@ -233,15 +233,15 @@ impl ResourceManagerStub {
         )
     }
 
-    /// Mints uuid non-fungible resources
-    pub fn mint_uuid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
+    /// Mints ruid non-fungible resources
+    pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
         let mut entries = Vec::new();
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
         entries.push((value,));
 
         self.call(
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-            &NonFungibleResourceManagerMintUuidInput { entries },
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
+            &NonFungibleResourceManagerMintRuidInput { entries },
         )
     }
 

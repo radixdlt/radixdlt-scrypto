@@ -135,9 +135,7 @@ impl TxFuzzer {
                 .substate_db()
                 .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                     &vault,
-                    MAIN_BASE_PARTITION
-                        .at_offset(PartitionOffset(1u8))
-                        .unwrap(),
+                    MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
                 );
 
             substate_iter.next().map(|(_key, id)| {
@@ -514,7 +512,10 @@ impl TxFuzzer {
                 }
                 // CreateValidator
                 31 => {
-                    let input = ConsensusManagerCreateValidatorInput { key: public_key, fee_factor: Decimal::ONE };
+                    let input = ConsensusManagerCreateValidatorInput {
+                        key: public_key,
+                        fee_factor: Decimal::ONE,
+                    };
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallMethod {
@@ -583,9 +584,9 @@ impl TxFuzzer {
                         Err(_) => None,
                     }
                 }
-                // MintUuidNonFungible
+                // MintRuidNonFungible
                 37 => {
-                    let input = NonFungibleResourceManagerMintUuidManifestInput::arbitrary(
+                    let input = NonFungibleResourceManagerMintRuidManifestInput::arbitrary(
                         &mut unstructured,
                     )
                     .unwrap();
@@ -593,7 +594,7 @@ impl TxFuzzer {
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallMethod {
                             address: resource_address.into(),
-                            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+                            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,

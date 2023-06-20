@@ -12,7 +12,7 @@ mod foo {
 
     impl Foo {
         pub fn nfts() -> Bucket {
-            ResourceBuilder::new_uuid_non_fungible()
+            ResourceBuilder::new_ruid_non_fungible()
                 .metadata("name", "Cars!")
                 .metadata("description", "Fast Cars")
                 .mint_initial_supply(vec![
