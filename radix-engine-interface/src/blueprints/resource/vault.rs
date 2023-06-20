@@ -69,6 +69,7 @@ pub struct VaultRecallInput {
 pub type VaultRecallOutput = Bucket;
 
 bitflags! {
+    #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
     #[derive(Sbor)]
     pub struct VaultFreezeFlags: u32 {
         const WITHDRAW = 0b00000001;
