@@ -160,6 +160,7 @@ impl<T> BlueprintCollectionSchema<T> {
 pub enum Condition {
     Always,
     IfFeature(String),
+    IfOuterFeature(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -173,6 +174,13 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfFeature(feature.to_string()),
+        }
+    }
+
+    pub fn if_outer_feature<I: Into<LocalTypeIndex>, S: ToString>(value: I, feature: S) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::IfOuterFeature(feature.to_string()),
         }
     }
 

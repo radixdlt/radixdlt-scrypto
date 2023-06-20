@@ -54,11 +54,6 @@ pub trait WasmRuntime {
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn globalize_object_with_address(
-        &mut self,
-        modules: Vec<u8>,
         address: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
@@ -163,7 +158,7 @@ pub trait WasmRuntime {
 
     fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

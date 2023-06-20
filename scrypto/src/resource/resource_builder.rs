@@ -65,9 +65,9 @@ impl ResourceBuilder {
         InProgressResourceBuilder::default()
     }
 
-    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::UUID`
-    pub fn new_uuid_non_fungible<D: NonFungibleData>(
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<UUIDNonFungibleLocalId, D>, NoAuth> {
+    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
+    pub fn new_ruid_non_fungible<D: NonFungibleData>(
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>, NoAuth> {
         InProgressResourceBuilder::default()
     }
 }
@@ -297,34 +297,6 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
         self.add_auth(Freeze, method_auth, mutability.into())
     }
 
-    /// Sets the resource to have unfreezeable vaults.
-    ///
-    /// * The first parameter is the access rule which allows unfreezing of the vault.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
-    ///
-    /// ### Examples
-    ///
-    /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
-    /// # let resource_address = RADIX_TOKEN;
-    /// // Sets the resource to be unfreezeable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
-    ///    .unfreezeable(rule!(require(resource_address)), LOCKED);
-    ///
-    /// # let resource_address = RADIX_TOKEN;
-    /// // Sets the resource to not be unfreezeable, but this is can be changed in future by the second rule
-    /// ResourceBuilder::new_fungible()
-    ///    .unfreezeable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
-    /// ```
-    fn unfreezeable<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Unfreeze, method_auth, mutability.into())
-    }
-
     /// Sets the resource to not be freely withdrawable from a vault.
     ///
     /// * The first parameter is the access rule which allows withdrawing from a vault.
@@ -431,12 +403,12 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     ///     pub flag: bool,
     /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_uuid_non_fungible::<NFData>()
+    /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
     ///    .updateable_non_fungible_data(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
-    /// ResourceBuilder::new_uuid_non_fungible::<NFData>()
+    /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
     ///    .updateable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn updateable_non_fungible_data<R: Into<AccessRule>>(
@@ -731,11 +703,11 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
 }
 
 impl<A: ConfiguredAuth, D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<UUIDNonFungibleLocalId, D>, A>
+    InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>, A>
 {
-    /// Creates the UUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
+    /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
     ///
-    /// The system automatically generates a new UUID `NonFungibleLocalId` for each non-fungible,
+    /// The system automatically generates a new RUID `NonFungibleLocalId` for each non-fungible,
     /// and assigns the given data to each.
     ///
     /// ### Example
@@ -749,7 +721,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_uuid_non_fungible::<NFData>()
+    /// let bucket = ResourceBuilder::new_ruid_non_fungible::<NFData>()
     ///     .mint_initial_supply([
     ///         (NFData { name: "NF One".to_owned(), flag: true }),
     ///         (NFData { name: "NF Two".to_owned(), flag: true }),
@@ -766,9 +738,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
-                    &NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
+                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
                         non_fungible_schema,
                         track_total_supply: true,
                         metadata: self.metadata,

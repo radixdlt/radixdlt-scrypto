@@ -2,12 +2,12 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::errors::SystemUpstreamError;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
     SystemError, SystemModuleError,
 };
+use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
@@ -20,7 +20,6 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
 
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -241,33 +240,14 @@ where
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
-        features: &BTreeSet<String>,
+        blueprint_interface: &BlueprintInterface,
+        blueprint_features: &BTreeSet<String>,
+        outer_blueprint_features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
-    ) -> Result<
-        (
-            Option<String>,
-            BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
-        ),
-        RuntimeError,
-    > {
-        let blueprint_interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
-        )?;
-
-        // Validate features
-        {
-            for feature in features {
-                if !blueprint_interface.features.contains(feature) {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
-                        feature.to_string(),
-                    )));
-                }
-            }
-        }
-
+    ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
+    {
         // Validate instance schema
         {
             if let Some(instance_schema) = instance_schema {
@@ -306,10 +286,18 @@ where
 
                 for (i, field) in fields.iter().enumerate() {
                     // Check for any feature conditions
-                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
-                        if !features.contains(feature) {
-                            continue;
+                    match &field_schemas[i].condition {
+                        Condition::IfFeature(feature) => {
+                            if !blueprint_features.contains(feature) {
+                                continue;
+                            }
                         }
+                        Condition::IfOuterFeature(feature) => {
+                            if !outer_blueprint_features.contains(feature) {
+                                continue;
+                            }
+                        }
+                        Condition::Always => {}
                     }
 
                     let pointer = blueprint_interface
@@ -333,11 +321,20 @@ where
 
                 for (i, field) in fields.into_iter().enumerate() {
                     // Check for any feature conditions
-                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
-                        if !features.contains(feature) {
-                            continue;
+                    match &field_schemas[i].condition {
+                        Condition::IfFeature(feature) => {
+                            if !blueprint_features.contains(feature) {
+                                continue;
+                            }
                         }
+                        Condition::IfOuterFeature(feature) => {
+                            if !outer_blueprint_features.contains(feature) {
+                                continue;
+                            }
+                        }
+                        Condition::Always => {}
                     }
+
                     partition.insert(
                         SubstateKey::Field(i as u8),
                         IndexedScryptoValue::from_vec(field)
@@ -424,9 +421,7 @@ where
             }
         }
 
-        let parent_blueprint = blueprint_interface.outer_blueprint.clone();
-
-        Ok((parent_blueprint, partitions))
+        Ok(partitions)
     }
 
     pub fn get_schema(
@@ -588,9 +583,9 @@ where
                 },
                 version: BlueprintVersion::default(),
 
-                outer_object: None,
+                blueprint_info: ObjectBlueprintInfo::default(),
+                features: btreeset!(MINT_FEATURE.to_string(), BURN_FEATURE.to_string(),),
                 instance_schema: None,
-                features: btreeset!(),
             }));
         } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
@@ -611,9 +606,9 @@ where
                 },
                 version: BlueprintVersion::default(),
 
-                outer_object: None,
-                instance_schema: None,
+                blueprint_info: ObjectBlueprintInfo::default(),
                 features: btreeset!(),
+                instance_schema: None,
             }));
         }
 
@@ -640,39 +635,69 @@ where
 
     fn new_object_internal(
         &mut self,
-        blueprint: &BlueprintId,
+        blueprint_id: &BlueprintId,
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, RuntimeError> {
-        let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+        let blueprint_interface = self.get_blueprint_default_interface(
+            blueprint_id.package_address,
+            blueprint_id.blueprint_name.as_str(),
+        )?;
+        let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
 
-        let (expected_blueprint_parent, user_substates) = self.validate_instance_schema_and_state(
-            blueprint,
-            &features,
+        let (blueprint_info, object_features, outer_object_features) =
+            if let BlueprintType::Inner { outer_blueprint } = &expected_outer_blueprint {
+                match instance_context {
+                    Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
+                        let outer_object_info =
+                            self.get_object_info(context.outer_object.as_node_id())?;
+
+                        (
+                            ObjectBlueprintInfo::Inner {
+                                outer_object: context.outer_object,
+                            },
+                            BTreeSet::new(),
+                            outer_object_info.get_features(),
+                        )
+                    }
+                    _ => {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::InvalidChildObjectCreation,
+                        ));
+                    }
+                }
+            } else {
+                let features: BTreeSet<String> =
+                    features.into_iter().map(|s| s.to_string()).collect();
+
+                // Validate features
+                for feature in &features {
+                    if !blueprint_interface.feature_set.contains(feature) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                            feature.to_string(),
+                        )));
+                    }
+                }
+
+                (ObjectBlueprintInfo::Outer, features, BTreeSet::new())
+            };
+
+        let user_substates = self.validate_instance_schema_and_state(
+            blueprint_id,
+            &blueprint_interface,
+            &object_features,
+            &outer_object_features,
             &instance_schema,
             fields,
             kv_entries,
         )?;
 
-        let outer_object = if let Some(parent) = &expected_blueprint_parent {
-            match instance_context {
-                Some(context) if context.outer_blueprint.eq(parent) => Some(context.outer_object),
-                _ => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidChildObjectCreation,
-                    ));
-                }
-            }
-        } else {
-            None
-        };
-
         let node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
-                blueprint_id: blueprint.clone(),
+                blueprint_id: blueprint_id.clone(),
                 global: false,
             }
             .entity_type(),
@@ -683,12 +708,12 @@ where
                 TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
 
-                    blueprint_id: blueprint.clone(),
+                    blueprint_id: blueprint_id.clone(),
                     version: BlueprintVersion::default(),
 
-                    outer_object,
+                    blueprint_info,
+                    features: object_features,
                     instance_schema,
-                    features,
                 })
             ),
         );
@@ -737,7 +762,7 @@ where
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
         match actor_object_type {
             ActorObjectType::OuterObject => {
-                let address = method.module_object_info.outer_object.unwrap();
+                let address = method.module_object_info.get_outer_object();
                 let info = self.get_object_info(address.as_node_id())?;
 
                 let blueprint_interface = self.get_blueprint_default_interface(
@@ -786,13 +811,26 @@ where
                 ))
             })?;
 
-        if let Condition::IfFeature(feature) = field_schema.condition {
-            if !info.features.contains(&feature) {
-                return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    info.blueprint_id.clone(),
-                    field_index,
-                )));
+        match field_schema.condition {
+            Condition::IfFeature(feature) => {
+                if !self.is_feature_enabled(&node_id, feature.as_str())? {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint_id.clone(),
+                        field_index,
+                    )));
+                }
             }
+            Condition::IfOuterFeature(feature) => {
+                if !self
+                    .is_feature_enabled(info.get_outer_object().as_node_id(), feature.as_str())?
+                {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint_id.clone(),
+                        field_index,
+                    )));
+                }
+            }
+            Condition::Always => {}
         }
 
         let pointer = field_schema.field;
@@ -986,18 +1024,14 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::Main,
             )))?;
-        if let Some(module) = self
-            .api
+        self.api
             .kernel_get_system_state()
             .system
             .modules
-            .events_module()
-        {
-            module.add_replacement(
+            .add_replacement(
                 (node_id, ObjectModuleId::Main),
                 (*global_address.as_node_id(), ObjectModuleId::Main),
             );
-        };
         let lock_handle = self.api.kernel_lock_substate(
             &node_id,
             TYPE_INFO_FIELD_PARTITION,
@@ -1089,18 +1123,14 @@ where
                         )));
                     }
 
-                    if let Some(module) = self
-                        .api
+                    self.api
                         .kernel_get_system_state()
                         .system
                         .modules
-                        .events_module()
-                    {
-                        module.add_replacement(
+                        .add_replacement(
                             (node_id, ObjectModuleId::Main),
                             (*global_address.as_node_id(), module_id),
                         );
-                    };
 
                     // Move and drop
                     let interface = self.get_blueprint_default_interface(
@@ -1140,6 +1170,17 @@ where
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.fn_identifier())
     }
+
+    pub fn is_feature_enabled(
+        &mut self,
+        node_id: &NodeId,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
+        let object_info = self.get_object_info(node_id)?;
+        let enabled = object_info.features.contains(feature);
+
+        Ok(enabled)
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1173,12 +1214,12 @@ where
         match data {
             SystemLockData::Field(FieldLockData::Write {
                 blueprint_id,
-                schema_pointer,
+                type_pointer,
             }) => {
                 self.validate_payload_at_type_pointer(
                     &blueprint_id,
                     &None, // TODO: Change to Some, once support for generic fields is implemented
-                    schema_pointer,
+                    type_pointer,
                     &buffer,
                 )?;
             }
@@ -1237,33 +1278,6 @@ where
         )
     }
 
-    fn attach_access_rules(
-        &mut self,
-        node_id: &NodeId,
-        access_rules_node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        // Move and drop
-        let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
-        let interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
-        )?;
-        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
-        for offset in 0u8..interface.state.num_partitions {
-            let src = MAIN_BASE_PARTITION
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-            let dest = module_base_partition
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-
-            self.kernel_move_module(access_rules_node_id, src, node_id, dest)?;
-        }
-        self.kernel_drop_node(access_rules_node_id)?;
-
-        Ok(())
-    }
-
     #[trace_resources]
     fn allocate_global_address(
         &mut self,
@@ -1302,30 +1316,25 @@ where
     }
 
     // FIXME: ensure that only the package actor can globalize its own blueprints
-
     #[trace_resources]
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
+        address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, RuntimeError> {
-        let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
-
         // TODO: optimize by skipping address allocation
         let (global_address_reservation, global_address) =
-            self.allocate_global_address(blueprint_id)?;
+            if let Some(reservation) = address_reservation {
+                let address = self.get_reservation_address(reservation.0.as_node_id())?;
+                (reservation, address)
+            } else {
+                let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
+                self.allocate_global_address(blueprint_id)?
+            };
 
         self.globalize_with_address_internal(modules, global_address_reservation)?;
 
         Ok(global_address)
-    }
-
-    #[trace_resources]
-    fn globalize_with_address(
-        &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: GlobalAddressReservation,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        self.globalize_with_address_internal(modules, address_reservation)
     }
 
     #[trace_resources]
@@ -1366,11 +1375,11 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let receiver_info = self.get_object_info(receiver)?;
+        let node_object_info = self.get_object_info(receiver)?;
 
-        let (object_info, global_address) = match object_module_id {
+        let (module_object_info, global_address) = match object_module_id {
             ObjectModuleId::Main => {
-                let global_address = if receiver_info.global {
+                let global_address = if node_object_info.global {
                     Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                 } else {
                     // FIXME: Have a correct implementation of tracking global address
@@ -1396,19 +1405,19 @@ where
                     }
                 };
 
-                (receiver_info.clone(), global_address)
+                (node_object_info.clone(), global_address)
             }
             // FIXME: verify whether we need to check the modules or not
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
                 ObjectInfo {
-                    global: receiver_info.global,
+                    global: node_object_info.global,
 
                     blueprint_id: object_module_id.static_blueprint().unwrap(),
                     version: BlueprintVersion::default(),
 
-                    outer_object: None,
-                    instance_schema: None,
+                    blueprint_info: ObjectBlueprintInfo::default(),
                     features: btreeset!(),
+                    instance_schema: None,
                 },
                 None,
             ),
@@ -1418,26 +1427,26 @@ where
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
 
         // TODO: Can we load this lazily when needed?
-        let instance_context = if object_info.global {
+        let instance_context = if module_object_info.global {
             match global_address {
                 None => None,
                 Some(address) => Some(InstanceContext {
                     outer_object: address,
-                    outer_blueprint: object_info.blueprint_id.blueprint_name.clone(),
+                    outer_blueprint: module_object_info.blueprint_id.blueprint_name.clone(),
                 }),
             }
         } else {
-            match &object_info.outer_object {
-                None => None,
-                Some(blueprint_parent) => {
+            match &module_object_info.blueprint_info {
+                ObjectBlueprintInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
                     // FIXME: is unwrap safe?
-                    let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
+                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
                     Some(InstanceContext {
-                        outer_object: blueprint_parent.clone(),
-                        outer_blueprint: parent_info.blueprint_id.blueprint_name.clone(),
+                        outer_object: outer_object.clone(),
+                        outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),
                     })
                 }
+                ObjectBlueprintInfo::Outer { .. } => None,
             }
         };
 
@@ -1445,8 +1454,7 @@ where
             actor: Actor::method(
                 global_address,
                 identifier,
-                receiver_info,
-                object_info,
+                module_object_info,
                 instance_context,
                 direct_access,
             ),
@@ -1495,13 +1503,17 @@ where
         // FIXME: what's the right model, trading off between flexibility and security?
 
         // If the actor is the object's outer object
-        if let Some(outer_object) = info.outer_object {
-            if let Some(instance_context) = actor.instance_context() {
-                if instance_context.outer_object.eq(&outer_object) {
-                    is_drop_allowed = true;
+        match info.blueprint_info {
+            ObjectBlueprintInfo::Inner { outer_object } => {
+                if let Some(instance_context) = actor.instance_context() {
+                    if instance_context.outer_object.eq(&outer_object) {
+                        is_drop_allowed = true;
+                    }
                 }
             }
+            ObjectBlueprintInfo::Outer { .. } => {}
         }
+
         // If the actor is a function within the same blueprint
         if let Actor::Function {
             blueprint_id: blueprint,
@@ -1611,7 +1623,7 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id,
                 instance_schema,
-                schema_pointer,
+                type_pointer: schema_pointer,
                 can_own,
             }) => {
                 self.validate_payload_at_type_pointer(
@@ -2008,19 +2020,15 @@ where
         units: u32,
         reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            module.apply_execution_cost(
-                match reason {
-                    ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                    ClientCostingReason::RunNative => CostingReason::RunNative,
-                    ClientCostingReason::RunSystem => CostingReason::RunSystem,
-                },
-                |_| units,
-                5,
-            )
-        } else {
-            Ok(())
-        }
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            match reason {
+                ClientCostingReason::RunWasm => CostingReason::RunWasm,
+                ClientCostingReason::RunNative => CostingReason::RunNative,
+                ClientCostingReason::RunSystem => CostingReason::RunSystem,
+            },
+            |_| units,
+            5,
+        )
     }
 
     #[trace_resources]
@@ -2030,18 +2038,15 @@ where
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
-        // No costing applied
-
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            module.credit_cost_units(vault_id, locked_fee, contingent)
-        } else {
-            Ok(locked_fee)
-        }
+        self.api
+            .kernel_get_system()
+            .modules
+            .credit_cost_units(vault_id, locked_fee, contingent)
     }
 
     fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.cost_unit_limit())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.cost_unit_limit())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2050,8 +2055,8 @@ where
     }
 
     fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.cost_unit_price())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.cost_unit_price())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2060,8 +2065,8 @@ where
     }
 
     fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.tip_percentage())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.tip_percentage())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2070,8 +2075,8 @@ where
     }
 
     fn fee_balance(&mut self) -> Result<Decimal, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.fee_balance())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.fee_balance())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2115,7 +2120,7 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
                 blueprint_id: object_info.blueprint_id,
-                schema_pointer,
+                type_pointer: schema_pointer,
             }
         } else {
             FieldLockData::Read
@@ -2168,7 +2173,7 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
-        Ok(actor.blueprint().clone())
+        Ok(actor.blueprint_id().clone())
     }
 
     #[trace_resources]
@@ -2186,16 +2191,33 @@ where
                     .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
                     .0
             }
-            ActorObjectType::OuterObject => self
-                .actor_get_info()?
-                .outer_object
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::OuterObjectDoesNotExist,
-                ))?
-                .into_node_id(),
+            ActorObjectType::OuterObject => match self.actor_get_info()?.blueprint_info {
+                ObjectBlueprintInfo::Inner { outer_object } => outer_object.into_node_id(),
+                ObjectBlueprintInfo::Outer { .. } => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::OuterObjectDoesNotExist,
+                    ));
+                }
+            },
         };
 
         self.call_method_advanced(&node_id, false, module_id, method_name, args)
+    }
+
+    #[trace_resources]
+    fn actor_is_feature_enabled(
+        &mut self,
+        object_handle: ObjectHandle,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let node_id = match actor_object_type {
+            ActorObjectType::SELF => self.actor_get_node_id()?,
+            ActorObjectType::OuterObject => {
+                self.actor_get_info()?.get_outer_object().into_node_id()
+            }
+        };
+        self.is_feature_enabled(&node_id, feature)
     }
 }
 
@@ -2209,7 +2231,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        key: &[u8],
+        key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
@@ -2217,11 +2239,17 @@ where
         let (node_id, partition_num, kv_schema, object_info) =
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
+        self.validate_payload_against_blueprint_schema(
+            &object_info.blueprint_id,
+            &object_info.instance_schema,
+            &[(key, kv_schema.key)],
+        )?;
+
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id: object_info.blueprint_id,
                 instance_schema: object_info.instance_schema,
-                schema_pointer: kv_schema.value,
+                type_pointer: kv_schema.value,
                 can_own: kv_schema.can_own,
             }
         } else {
@@ -2279,8 +2307,7 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self.api.kernel_get_system().modules.auth_module() {
-            let auth_zone_id = module.last_auth_zone().expect("Auth zone missing");
+        if let Some(auth_zone_id) = self.api.kernel_get_system().modules.auth_zone_id() {
             Ok(auth_zone_id.into())
         } else {
             Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
@@ -2311,7 +2338,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientLimitsApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -2321,17 +2348,11 @@ where
         // No costing applied
 
         let current_depth = self.api.kernel_get_current_depth();
-        if let Some(module) = self
-            .api
+        self.api
             .kernel_get_system()
             .modules
-            .transaction_limits_module()
-        {
-            module.update_wasm_memory_usage(current_depth, consumed_memory)?;
-            Ok(())
-        } else {
-            Ok(())
-        }
+            .update_wasm_memory_usage(current_depth, consumed_memory)?;
+        Ok(())
     }
 }
 
@@ -2344,21 +2365,15 @@ where
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
-        if let Some(module) = self
-            .api
+        self.api
             .kernel_get_system()
             .modules
-            .execution_trace_module()
-        {
-            module.update_instruction_index(new_index);
-            Ok(())
-        } else {
-            Ok(())
-        }
+            .update_instruction_index(new_index);
+        Ok(())
     }
 }
 
-impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -2384,9 +2399,9 @@ where
                     ..
                 } => (None, blueprint.clone()),
                 _ => {
-                    return Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
-                    ))
+                    return Err(RuntimeError::SystemError(SystemError::EventError(
+                        EventError::InvalidActor,
+                    )))
                 }
             };
 
@@ -2438,47 +2453,29 @@ where
         }?;
 
         // Adding the event to the event store
-        if let Some(module) = self.api.kernel_get_system().modules.events_module() {
-            module.add_event(event_type_identifier, event_data);
-        }
+        self.api
+            .kernel_get_system()
+            .modules
+            .add_event(event_type_identifier, event_data);
 
         Ok(())
     }
-}
 
-impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
+    #[trace_resources]
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self.api.kernel_get_system().modules.logger_module() {
-            module.add(level, message);
-            Ok(())
-        } else {
-            Ok(())
-        }
-    }
-}
+        self.api.kernel_get_system().modules.add_log(level, message);
 
-impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
+        Ok(())
+    }
+
     #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self
-            .api
-            .kernel_get_system()
-            .modules
-            .transaction_runtime_module()
-        {
-            Ok(module.transaction_hash())
+        if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
+            Ok(hash)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::TransactionRuntimeModuleNotEnabled,
@@ -2487,16 +2484,11 @@ where
     }
 
     #[trace_resources]
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+    fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self
-            .api
-            .kernel_get_system()
-            .modules
-            .transaction_runtime_module()
-        {
-            Ok(module.generate_uuid())
+        if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
+            Ok(ruid)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::TransactionRuntimeModuleNotEnabled,

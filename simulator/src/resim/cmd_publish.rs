@@ -160,8 +160,8 @@ impl Publish {
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
                         generics: s.schema.generics,
-                        outer_blueprint: s.outer_blueprint,
-                        features: s.feature_set,
+                        blueprint_type: s.blueprint_type,
+                        feature_set: s.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),

@@ -303,6 +303,7 @@ CALL_METADATA_METHOD
 CALL_ACCESS_RULES_METHOD
     Address("${component_address}")
     "get_role"
+    Enum<0u8>()
     "hello"
 ;
 "##,
@@ -417,7 +418,7 @@ CALL_METHOD
     NonFungibleLocalId("<SomeId>")
     NonFungibleLocalId("#12#")
     NonFungibleLocalId("[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
-    NonFungibleLocalId("{43968a72-5954-45da-9678-8659dd399faa}")
+    NonFungibleLocalId("{1111111111111111-1111111111111111-1111111111111111-1111111111111111}")
 ;
 "##,
             ),
@@ -627,6 +628,7 @@ REMOVE_METADATA
                 r##"
 UPDATE_ROLE
     Address("${resource_address}")
+    Enum<0u8>()
     "hello"
     Enum<0u8>()
     Enum<0u8>()
@@ -1283,7 +1285,7 @@ CALL_METHOD
             },
             instructions,
             blobs,
-            attachments: AttachmentsV1 {},
+            message: MessageV1::default(),
         })
     }
 

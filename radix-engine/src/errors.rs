@@ -21,9 +21,8 @@ use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
-use crate::system::system_modules::events::EventError;
+use crate::system::system_modules::limits::TransactionLimitsError;
 use crate::system::system_modules::node_move::NodeMoveError;
-use crate::system::system_modules::transaction_limits::TransactionLimitsError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
@@ -239,6 +238,18 @@ pub enum SystemError {
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
     PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
+    EventError(EventError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum EventError {
+    SchemaNotFoundError {
+        blueprint: BlueprintId,
+        event_name: String,
+    },
+    EventSchemaNotMatch(String),
+    NoAssociatedPackage,
+    InvalidActor,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -424,7 +435,7 @@ pub enum ApplicationError {
 
     ValidatorError(ValidatorError),
 
-    ResourceManagerError(FungibleResourceManagerError),
+    FungibleResourceManagerError(FungibleResourceManagerError),
 
     NonFungibleResourceManagerError(NonFungibleResourceManagerError),
 
@@ -471,7 +482,7 @@ impl From<ConsensusManagerError> for ApplicationError {
 
 impl From<FungibleResourceManagerError> for ApplicationError {
     fn from(value: FungibleResourceManagerError) -> Self {
-        Self::ResourceManagerError(value)
+        Self::FungibleResourceManagerError(value)
     }
 }
 

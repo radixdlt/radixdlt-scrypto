@@ -268,7 +268,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
 
         {
-            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodPermission::*; };
+            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodAccessibility::*; };
             use_statements.push(item);
             let item: ItemUse = parse_quote! { use scrypto::prelude::RoyaltyAmount::*; };
             use_statements.push(item);
@@ -357,10 +357,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         } else {
             // FIXME: Use AllPublicMethod Template instead
             quote! {
-                fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
+                fn method_auth_template() -> BTreeMap<MethodKey, MethodAccessibility> {
                     btreemap!(
                         #(
-                            MethodKey::main(#method_names) => MethodPermission::Public,
+                            MethodKey::new(#method_names) => MethodAccessibility::Public,
                         )*
                     )
                 }
@@ -611,11 +611,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let auth_config = {
                     let auth = method_auth_template();
-                    let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
-                        auth,
-                        outer_auth: BTreeMap::new(),
-                    };
-                    method_auth.add_metadata_default_if_not_specified();
+                    let method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static(auth);
 
                     scrypto::blueprints::package::AuthConfig {
                         method_auth,
@@ -626,9 +622,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let royalty_config = package_royalty_config();
 
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-                    outer_blueprint: None,
+                    blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                    feature_set: BTreeSet::default(),
                     dependencies,
-                    feature_set: BTreeSet::new(),
                     schema,
                     auth_config,
                     royalty_config,
@@ -656,7 +652,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
 
         impl HasMethods for #bp_ident {
-            type Permissions = Methods<MethodPermission>;
+            type Permissions = Methods<MethodAccessibility>;
             type Royalties = Methods<RoyaltyAmount>;
         }
 
@@ -1309,12 +1305,12 @@ mod tests {
                 pub mod test {
                     use scrypto::prelude::*;
                     use super::*;
-                    use scrypto::prelude::MethodPermission::*;
+                    use scrypto::prelude::MethodAccessibility::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
-                    fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
+                    fn method_auth_template() -> BTreeMap<MethodKey, MethodAccessibility> {
                         btreemap!(
-                            MethodKey::main("x") => MethodPermission::Public,
+                            MethodKey::new("x") => MethodAccessibility::Public,
                         )
                     }
 
@@ -1342,7 +1338,7 @@ mod tests {
                     }
 
                     impl HasMethods for Test {
-                        type Permissions = Methods<MethodPermission>;
+                        type Permissions = Methods<MethodAccessibility>;
                         type Royalties = Methods<RoyaltyAmount>;
                     }
 
@@ -1514,11 +1510,7 @@ mod tests {
 
                         let auth_config = {
                             let auth = method_auth_template();
-                            let mut method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static {
-                                auth,
-                                outer_auth: BTreeMap::new(),
-                            };
-                            method_auth.add_metadata_default_if_not_specified();
+                            let method_auth = scrypto::blueprints::package::MethodAuthTemplate::Static(auth);
 
                             scrypto::blueprints::package::AuthConfig {
                                 method_auth,
@@ -1529,9 +1521,9 @@ mod tests {
                         let royalty_config = package_royalty_config();
 
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-                            outer_blueprint: None,
+                            blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                            feature_set: BTreeSet::default(),
                             dependencies,
-                            feature_set: BTreeSet::new(),
                             schema,
                             auth_config,
                             royalty_config,

@@ -28,6 +28,7 @@
         "radiswap",
         "repr",
         "Rocksdb",
+        "ruid",
         "Sbor",
         "Scrypto",
         "Secp",

@@ -7,7 +7,6 @@ use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{
     ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
 };
-use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -632,7 +631,7 @@ fn consensus_manager_round_update_emits_correct_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(
+        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
             Round::of(1),
             0,
             180000i64,
@@ -684,7 +683,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(
+        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
             Round::of(rounds_per_epoch),
             0,
             180000i64,
@@ -729,7 +728,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(
+        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
             Round::of(1),
             0,
             180000i64,
@@ -896,7 +895,7 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.stake_validator(validator_address, bucket)
+            builder.stake_validator_as_owner(validator_address, bucket)
         })
         .call_method(
             account,
@@ -1314,7 +1313,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-            to_manifest_value(&ValidatorUpdateAcceptDelegatedStakeInput {
+            to_manifest_value_and_unwrap!(&ValidatorUpdateAcceptDelegatedStakeInput {
                 accept_delegated_stake: false,
             }),
         )
@@ -1331,11 +1330,10 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         5 Events:
         1. Vault lock fee event
         2. Withdraw event
-        3. AccessRule set rule
-        4. Validator update delegation state
-        5. Deposit event
+        3. Validator update delegation state
+        4. Deposit event
          */
-        assert_eq!(events.len(), 5);
+        assert_eq!(events.len(), 4);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1347,16 +1345,6 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             _ => false,
         });
         assert!(match events.get(2) {
-            Some((
-                event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, ObjectModuleId::AccessRules),
-                    ..,
-                ),
-                ..,
-            )) if test_runner.is_event_name_equal::<UpdateRoleEvent>(event_identifier) => true,
-            _ => false,
-        });
-        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),

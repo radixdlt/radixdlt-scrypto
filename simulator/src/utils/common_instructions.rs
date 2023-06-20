@@ -36,8 +36,8 @@ pub enum BuildCallInstructionError {
 #[derive(Debug, Clone)]
 pub enum BuildCallArgumentsError {
     WrongNumberOfArguments(usize, usize),
-
     BuildCallArgumentError(BuildCallArgumentError),
+    RustToManifestValueError(RustToManifestValueError),
 }
 
 /// Represents an error when parsing an argument.
@@ -62,6 +62,12 @@ impl From<BuildCallArgumentsError> for BuildCallInstructionError {
 impl From<BuildCallArgumentError> for BuildCallArgumentsError {
     fn from(error: BuildCallArgumentError) -> Self {
         Self::BuildCallArgumentError(error)
+    }
+}
+
+impl From<RustToManifestValueError> for BuildCallArgumentsError {
+    fn from(error: RustToManifestValueError) -> Self {
+        Self::RustToManifestValueError(error)
     }
 }
 
@@ -121,13 +127,10 @@ pub fn build_call_arguments<'a>(
                 built_args.push(tuple.1);
             }
         }
-        e @ _ => panic!("Inconsistent schema: {:?}", e),
+        _ => panic!("Inconsistent schema"),
     }
-
-    Ok((
-        builder,
-        to_manifest_value(&ManifestValue::Tuple { fields: built_args }),
-    ))
+    let manifest_value = to_manifest_value(&ManifestValue::Tuple { fields: built_args })?;
+    Ok((builder, manifest_value))
 }
 
 macro_rules! parse_basic_type {
@@ -633,9 +636,9 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_uuid_non_fungible_local_id_succeeds() {
+    pub fn parsing_of_ruid_non_fungible_local_id_succeeds() {
         // Arrange
-        let arg = "{f7223dbc-bbd6-4769-8d6f-effce550080d}";
+        let arg = "{1111111111111111-2222222222222222-3333333333333333-4444444444444444}";
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::NonFungibleLocalId);
 
         // Act
@@ -646,7 +649,11 @@ mod test {
         // Assert
         assert_eq!(
             parsed_arg,
-            NonFungibleLocalId::uuid(0xf7223dbc_bbd6_4769_8d6f_effce550080d).unwrap()
+            NonFungibleLocalId::ruid([
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                0x22, 0x22, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x44, 0x44, 0x44, 0x44,
+                0x44, 0x44, 0x44, 0x44,
+            ])
         )
     }
 

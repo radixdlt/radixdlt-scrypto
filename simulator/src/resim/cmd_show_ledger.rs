@@ -115,7 +115,7 @@ impl ShowLedger {
         let instructions = vec![InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
         }];
         let blobs = vec![];
         let initial_proofs = btreeset![];
@@ -131,7 +131,7 @@ impl ShowLedger {
         let instructions = vec![InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
         let initial_proofs = btreeset![];

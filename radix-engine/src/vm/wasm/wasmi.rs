@@ -298,30 +298,13 @@ fn globalize_object(
     mut caller: Caller<'_, HostState>,
     modules_ptr: u32,
     modules_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    runtime
-        .globalize_object(read_memory(
-            caller.as_context_mut(),
-            memory,
-            modules_ptr,
-            modules_len,
-        )?)
-        .map(|buffer| buffer.0)
-}
-
-fn globalize_object_with_address(
-    mut caller: Caller<'_, HostState>,
-    modules_ptr: u32,
-    modules_len: u32,
     address_ptr: u32,
     address_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .globalize_object_with_address(
+        .globalize_object(
             read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
             read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
         )
@@ -534,10 +517,10 @@ fn get_transaction_hash(
     runtime.get_transaction_hash().map(|buffer| buffer.0)
 }
 
-fn generate_uuid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn generate_ruid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_, runtime) = grab_runtime!(caller);
 
-    runtime.generate_uuid().map(|buffer| buffer.0)
+    runtime.generate_ruid().map(|buffer| buffer.0)
 }
 
 fn log_message(
@@ -766,28 +749,12 @@ impl WasmiModule {
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              modules_ptr: u32,
-             modules_len: u32|
-             -> Result<u64, Trap> {
-                globalize_object(caller, modules_ptr, modules_len).map_err(|e| e.into())
-            },
-        );
-
-        let host_globalize_object_with_address = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             modules_ptr: u32,
              modules_len: u32,
              address_ptr: u32,
              address_len: u32|
              -> Result<u64, Trap> {
-                globalize_object_with_address(
-                    caller,
-                    modules_ptr,
-                    modules_len,
-                    address_ptr,
-                    address_len,
-                )
-                .map_err(|e| e.into())
+                globalize_object(caller, modules_ptr, modules_len, address_ptr, address_len)
+                    .map_err(|e| e.into())
             },
         );
 
@@ -997,10 +964,10 @@ impl WasmiModule {
             },
         );
 
-        let host_generate_uuid = Func::wrap(
+        let host_generate_ruid = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                generate_uuid(caller).map_err(|e| e.into())
+                generate_ruid(caller).map_err(|e| e.into())
             },
         );
 
@@ -1024,11 +991,6 @@ impl WasmiModule {
             linker,
             GLOBALIZE_OBJECT_FUNCTION_NAME,
             host_globalize_object
-        );
-        linker_define!(
-            linker,
-            GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME,
-            host_globalize_object_with_address
         );
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
@@ -1099,7 +1061,7 @@ impl WasmiModule {
             GET_TRANSACTION_HASH_FUNCTION_NAME,
             host_get_transaction_hash
         );
-        linker_define!(linker, GENERATE_UUID_FUNCTION_NAME, host_generate_uuid);
+        linker_define!(linker, GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
 
         let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);
         linker_define!(linker, "test_global_mutable_value", global_value);

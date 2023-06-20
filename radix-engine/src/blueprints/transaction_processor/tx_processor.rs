@@ -113,8 +113,8 @@ impl TransactionProcessorBlueprint {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         version: BlueprintVersion::default(),
 
-                        outer_object: None,
                         instance_schema: None,
+                        blueprint_info: ObjectBlueprintInfo::default(),
                         features: btreeset!(),
                     })
                 )

@@ -8,7 +8,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FieldSchema,
@@ -81,7 +81,7 @@ impl TransactionTrackerNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             TRANSACTION_TRACKER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(
                 ),
                 feature_set: btreeset!(),
@@ -104,10 +104,7 @@ impl TransactionTrackerNativePackage {
                     function_auth: btreemap!(
                         TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::Static(btreemap!()),
                 },
             }
         );
@@ -224,18 +221,18 @@ impl TransactionTrackerBlueprint {
             })
             .unwrap()],
         )?;
-        let access_rules = AccessRules::create(Roles::new(), api)?.0;
+        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-        let address = api.globalize_with_address(
+        let address = api.globalize(
             btreemap!(
                 ObjectModuleId::Main => intent_store,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_reservation,
+            Some(address_reservation),
         )?;
         Ok(address)
     }

@@ -29,13 +29,12 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
     PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
-use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{
@@ -60,7 +59,7 @@ use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::model::{
-    AttachmentsV1, BlobV1, Executable, InstructionV1, IntentV1, PreviewFlags, PreviewIntentV1,
+    BlobV1, Executable, InstructionV1, IntentV1, MessageV1, PreviewFlags, PreviewIntentV1,
     SystemTransactionV1, TestTransaction, TransactionHeaderV1, TransactionPayload,
 };
 use transaction::prelude::*;
@@ -738,7 +737,7 @@ impl TestRunner {
                     package_address: PACKAGE_PACKAGE.into(),
                     blueprint_name: PACKAGE_BLUEPRINT.to_string(),
                     function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-                    args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                    args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         setup: definition,
                         metadata: btreemap!(),
@@ -957,7 +956,7 @@ impl TestRunner {
                     blobs: BlobsV1 {
                         blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
                     },
-                    attachments: AttachmentsV1 {},
+                    message: MessageV1::default(),
                 },
                 signer_public_keys,
                 flags,
@@ -1053,7 +1052,6 @@ impl TestRunner {
         ResourceAddress,
         ResourceAddress,
         ResourceAddress,
-        ResourceAddress,
     ) {
         let mint_auth = self.create_non_fungible_resource(account);
         let burn_auth = self.create_non_fungible_resource(account);
@@ -1061,7 +1059,6 @@ impl TestRunner {
         let recall_auth = self.create_non_fungible_resource(account);
         let update_metadata_auth = self.create_non_fungible_resource(account);
         let freeze_auth = self.create_non_fungible_resource(account);
-        let unfreeze_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
         let mut access_rules = BTreeMap::new();
@@ -1108,13 +1105,6 @@ impl TestRunner {
             ),
         );
         access_rules.insert(
-            Unfreeze,
-            (
-                rule!(require(unfreeze_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
-        );
-        access_rules.insert(
             Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
@@ -1129,7 +1119,6 @@ impl TestRunner {
             recall_auth,
             update_metadata_auth,
             freeze_auth,
-            unfreeze_auth,
             admin_auth,
         )
     }
@@ -1162,7 +1151,6 @@ impl TestRunner {
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Recall, (rule!(allow_all), LOCKED));
         access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
-        access_rules.insert(Unfreeze, (rule!(allow_all), LOCKED));
 
         self.create_fungible_resource_and_deposit(access_rules, account)
     }
@@ -1382,7 +1370,7 @@ impl TestRunner {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
             }],
             btreeset![AuthAddresses::validator_role()],
         );
@@ -1484,7 +1472,7 @@ impl TestRunner {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerNextRoundInput {
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput {
                     round,
                     proposer_timestamp_ms,
                     leader_proposal_history: LeaderProposalHistory {
@@ -1522,7 +1510,9 @@ impl TestRunner {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInput {
+                    precision
+                }),
             }],
             btreeset![AuthAddresses::validator_role()],
         );
@@ -1736,9 +1726,9 @@ pub fn single_function_package_definition(
     blueprints.insert(
         blueprint_name.to_string(),
         BlueprintDefinitionInit {
-            outer_blueprint: None,
-            dependencies: btreeset!(),
+            blueprint_type: BlueprintType::default(),
             feature_set: btreeset!(),
+            dependencies: btreeset!(),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
@@ -1772,10 +1762,7 @@ pub fn single_function_package_definition(
                 function_auth: btreemap!(
                     function_name.to_string() => rule!(allow_all),
                 ),
-                method_auth: MethodAuthTemplate::Static {
-                    auth: btreemap!(),
-                    outer_auth: btreemap!(),
-                },
+                method_auth: MethodAuthTemplate::AllowAll,
             },
         },
     );

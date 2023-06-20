@@ -88,7 +88,7 @@ fn dangling_worktop_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::DropNonEmptyBucket
             ))
         )

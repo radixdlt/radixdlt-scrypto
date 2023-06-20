@@ -137,7 +137,7 @@ impl ScryptoVault for Vault {
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoEnv;
         let info = env.get_object_info(self.0.as_node_id()).unwrap();
-        ResourceAddress::try_from(info.outer_object.unwrap().as_ref()).unwrap()
+        ResourceAddress::try_from(info.get_outer_object().as_ref()).unwrap()
     }
 
     fn create_proof(&self) -> Proof {

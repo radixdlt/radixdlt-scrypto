@@ -220,7 +220,7 @@ impl ConsensusManagerBlueprint {
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
             ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
-                NonFungibleIdType::UUID,
+                NonFungibleIdType::RUID,
                 true,
                 metadata,
                 access_rules,
@@ -277,18 +277,19 @@ impl ConsensusManagerBlueprint {
             START_ROLE => rule!(require(AuthAddresses::system_role())), mut [SELF_ROLE];
         };
 
-        let access_rules = AccessRules::create(role_definitions, api)?.0;
+        let roles = btreemap!(ObjectModuleId::Main => role_definitions);
+        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-        api.globalize_with_address(
+        api.globalize(
             btreemap!(
                 ObjectModuleId::Main => consensus_manager_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            component_address_reservation,
+            Some(component_address_reservation),
         )?;
 
         Ok(())
@@ -334,7 +335,12 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.update_role(RoleKey::new(START_ROLE), RoleEntry::disabled(), api)?;
+        access_rules.update_role(
+            ObjectModuleId::Main,
+            RoleKey::new(START_ROLE),
+            RoleEntry::disabled(),
+            api,
+        )?;
 
         Ok(())
     }

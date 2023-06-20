@@ -2,14 +2,11 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
@@ -421,44 +418,40 @@ impl AccountNativePackage {
         */
 
         let method_auth = method_auth_template!(
-            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+            ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [OWNER_ROLE];
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+            ACCOUNT_CREATE_PROOF_IDENT => [OWNER_ROLE];
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+            ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
+            ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
+            ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
+            ACCOUNT_BURN_IDENT => [OWNER_ROLE];
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
 
-            MethodKey::main(ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => [SECURIFY_ROLE];
-            MethodKey::main(ACCOUNT_DEPOSIT_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_BURN_IDENT) => [OWNER_ROLE];
-            MethodKey::main(ACCOUNT_BURN_NON_FUNGIBLES_IDENT) => [OWNER_ROLE];
-
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT) => MethodPermission::Public;
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT) => MethodPermission::Public;
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT) => MethodPermission::Public;
-            MethodKey::main(ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT) => MethodPermission::Public;
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
         );
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                     ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
                     ACCOUNT_OWNER_BADGE.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
-                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -481,10 +474,9 @@ impl AccountNativePackage {
                         ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
                         ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth,
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth,
+                    ),
                 },
             }
         );

@@ -6,11 +6,11 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
-use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
@@ -109,34 +109,16 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn attach_access_rules(
-        &mut self,
-        _node_id: &NodeId,
-        _access_rules_node_id: &NodeId,
-    ) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
-    ) -> Result<GlobalAddress, ClientApiError> {
-        let modules = scrypto_encode(&modules).unwrap();
-
-        let bytes = copy_buffer(unsafe { globalize_object(modules.as_ptr(), modules.len()) });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn globalize_with_address(
-        &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: GlobalAddressReservation,
+        address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
         let address_reservation = scrypto_encode(&address_reservation).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            globalize_with_address(
+            globalize(
                 modules.as_ptr(),
                 modules.len(),
                 address_reservation.as_ptr(),
@@ -376,6 +358,14 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
+    fn actor_is_feature_enabled(
+        &mut self,
+        _: ObjectHandle,
+        _feature: &str,
+    ) -> Result<bool, ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
@@ -436,7 +426,7 @@ impl ClientAuthApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientEventApi<ClientApiError> for ScryptoEnv {
+impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
     fn emit_event(
         &mut self,
         event_name: String,
@@ -452,25 +442,21 @@ impl ClientEventApi<ClientApiError> for ScryptoEnv {
         };
         Ok(())
     }
-}
 
-impl ClientLoggerApi<ClientApiError> for ScryptoEnv {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
         unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
-}
 
-impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
     fn get_transaction_hash(&mut self) -> Result<Hash, ClientApiError> {
         let actor = copy_buffer(unsafe { get_transaction_hash() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn generate_uuid(&mut self) -> Result<u128, ClientApiError> {
-        let actor = copy_buffer(unsafe { generate_uuid() });
+    fn generate_ruid(&mut self) -> Result<[u8; 32], ClientApiError> {
+        let actor = copy_buffer(unsafe { generate_ruid() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }

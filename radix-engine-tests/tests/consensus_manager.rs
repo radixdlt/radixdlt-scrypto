@@ -3,7 +3,6 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -453,7 +452,11 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let manifest = builder
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.call_method(validator_address, "stake", manifest_args!(bucket))
+            if owner {
+                builder.call_method(validator_address, "stake_as_owner", manifest_args!(bucket))
+            } else {
+                builder.call_method(validator_address, "stake", manifest_args!(bucket))
+            }
         })
         .call_method(
             validator_account_address,
@@ -473,8 +476,8 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemModuleError(SystemModuleError::AuthError(
-                    AuthError::Unauthorized { .. }
+                RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake
                 ))
             )
         });
@@ -1187,7 +1190,7 @@ impl RegisterAndStakeTransactionType {
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .register_validator(validator_address)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .call_method(
                         account_address,
@@ -1203,7 +1206,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .register_validator(validator_address)
                     .call_method(
@@ -1226,7 +1229,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .call_method(
                         account_address,
@@ -1249,7 +1252,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .call_method(
                         account_address,
@@ -2344,7 +2347,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerCreateManifestInput {
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateManifestInput {
                 validator_owner_token_address: ManifestAddressReservation(0),
                 component_address: ManifestAddressReservation(1),
                 initial_epoch: Epoch::of(1),

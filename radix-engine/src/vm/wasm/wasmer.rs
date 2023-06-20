@@ -344,27 +344,13 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             modules_ptr: u32,
             modules_len: u32,
-        ) -> Result<u64, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .globalize_object(read_memory(&instance, modules_ptr, modules_len)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn globalize_object_with_address(
-            env: &WasmerInstanceEnv,
-            modules_ptr: u32,
-            modules_len: u32,
             address_ptr: u32,
             address_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .globalize_object_with_address(
+                .globalize_object(
                     read_memory(&instance, modules_ptr, modules_len)?,
                     read_memory(&instance, address_ptr, address_len)?,
                 )
@@ -665,11 +651,11 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn generate_uuid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn generate_ruid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .generate_uuid()
+                .generate_ruid()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -696,7 +682,6 @@ impl WasmerModule {
                 TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),
                 FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), fee_balance),
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
-                GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object_with_address),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
                 ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_lock_field),
@@ -720,7 +705,7 @@ impl WasmerModule {
                 LOG_MESSAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
                 PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), panic),
                 GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_transaction_hash),
-                GENERATE_UUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_uuid),
+                GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_ruid),
             }
         };
 

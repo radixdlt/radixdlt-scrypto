@@ -16,7 +16,7 @@ pub enum ManifestNonFungibleLocalId {
     String(String),
     Integer(u64),
     Bytes(Vec<u8>),
-    UUID(u128),
+    RUID([u8; 32]),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,7 +24,7 @@ pub enum ContentValidationError {
     TooLong,
     Empty,
     ContainsBadCharacter(char),
-    NotUuidV4Variant1,
+    NotRuidV4Variant1,
 }
 
 impl ManifestNonFungibleLocalId {
@@ -57,15 +57,8 @@ impl ManifestNonFungibleLocalId {
         Ok(Self::Bytes(s))
     }
 
-    pub fn uuid(s: u128) -> Result<Self, ContentValidationError> {
-        // 0100 - v4
-        // 10 - variant 1
-        if (s & 0x00000000_0000_f000_c000_000000000000u128)
-            != 0x00000000_0000_4000_8000_000000000000u128
-        {
-            return Err(ContentValidationError::NotUuidV4Variant1);
-        }
-        Ok(Self::UUID(s))
+    pub fn ruid(s: [u8; 32]) -> Self {
+        Self::RUID(s.into())
     }
 }
 
@@ -96,11 +89,8 @@ impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
                 Self::Bytes(bytes)
             }
             3 => {
-                let mut uuid = u128::arbitrary(u).unwrap();
-                // make sure this is v4 and variant 1
-                uuid &= !0x00000000_0000_f000_c000_000000000000u128;
-                uuid |= 0x00000000_0000_4000_8000_000000000000u128;
-                Self::UUID(uuid)
+                let ruid = <[u8; 32]>::arbitrary(u).unwrap();
+                Self::RUID(ruid)
             }
             _ => unreachable!(),
         };
@@ -145,9 +135,9 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
                 encoder.write_size(v.len())?;
                 encoder.write_slice(v.as_slice())?;
             }
-            Self::UUID(v) => {
+            Self::RUID(v) => {
                 encoder.write_discriminator(3)?;
-                encoder.write_slice(&v.to_be_bytes())?;
+                encoder.write_slice(v.as_slice())?;
             }
         }
         Ok(())
@@ -178,8 +168,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
                 Self::bytes(decoder.read_slice(size)?.to_vec())
                     .map_err(|_| DecodeError::InvalidCustomValue)
             }
-            3 => Self::uuid(u128::from_be_bytes(copy_u8_array(decoder.read_slice(16)?)))
-                .map_err(|_| DecodeError::InvalidCustomValue),
+            3 => Ok(Self::ruid(decoder.read_slice(32)?.try_into().unwrap())),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }

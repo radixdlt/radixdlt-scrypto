@@ -1,6 +1,4 @@
-use crate::blueprints::util::{
-    PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
-};
+use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
@@ -56,10 +54,6 @@ struct SecurifiedAccount;
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
-
-    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
-        btreemap!()
-    }
 }
 
 impl PresecurifiedAccessRules for SecurifiedAccount {}
@@ -172,7 +166,7 @@ impl AccountBlueprint {
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, None)?;
 
         Ok(address)
     }
@@ -187,7 +181,7 @@ impl AccountBlueprint {
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, None)?;
 
         Ok((address, bucket))
     }

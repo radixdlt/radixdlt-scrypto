@@ -17,9 +17,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{
-    MethodPermission, OwnerRole, Roles, OWNER_ROLE,
-};
+use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -65,7 +63,7 @@ pub trait HasStub {
 }
 
 pub trait HasMethods {
-    type Permissions: MethodMapping<MethodPermission>;
+    type Permissions: MethodMapping<MethodAccessibility>;
     type Royalties: MethodMapping<RoyaltyAmount>;
 }
 
@@ -172,15 +170,13 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Owned<T> {
 }
 
 impl<C: HasStub + HasMethods> Owned<C> {
-    pub fn prepare_to_globalize(self, owner_entry: OwnerRole) -> Globalizing<C> {
-        let mut roles = Roles::new();
-        roles.define_role(OWNER_ROLE, owner_entry.to_role_entry(OWNER_ROLE));
-
+    pub fn prepare_to_globalize(self, owner_role: OwnerRole) -> Globalizing<C> {
         Globalizing {
             stub: self.0,
-            metadata: None,
-            royalty: RoyaltyConfig::default(),
-            roles,
+            owner_role,
+            metadata_config: None,
+            royalty_config: None,
+            roles: Roles::new(),
             address_reservation: None,
         }
     }
@@ -259,10 +255,13 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
-    pub metadata: Option<Metadata>,
-    pub royalty: RoyaltyConfig,
-    pub roles: Roles,
+
+    pub owner_role: OwnerRole,
+    pub metadata_config: Option<(Metadata, Roles)>,
+    pub royalty_config: Option<(RoyaltyConfig, Roles)>,
     pub address_reservation: Option<GlobalAddressReservation>,
+
+    pub roles: Roles,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -279,19 +278,22 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn metadata(mut self, metadata: Metadata) -> Self {
-        if self.metadata.is_some() {
+    pub fn metadata(mut self, metadata: (Metadata, Roles)) -> Self {
+        if self.metadata_config.is_some() {
             panic!("Metadata already set.");
         }
-        self.metadata = Some(metadata);
+        self.metadata_config = Some(metadata);
 
         self
     }
 
-    pub fn royalties(mut self, royalties: C::Royalties) -> Self {
-        for (method, royalty) in royalties.to_mapping() {
-            self.royalty.set_rule(method, royalty);
+    pub fn royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
+        let mut royalty_config = RoyaltyConfig::default();
+        for (method, royalty) in royalties.0.to_mapping() {
+            royalty_config.set_rule(method, royalty);
         }
+
+        self.royalty_config = Some((royalty_config, royalties.1));
 
         self
     }
@@ -302,10 +304,23 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
-        let royalty = Royalty::new(self.royalty);
-
-        let access_rules = AccessRules::new(self.roles);
+        let (metadata, metadata_roles) = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| (Metadata::new(), Roles::new()));
+        let (royalty_config, royalty_roles) = self
+            .royalty_config
+            .take()
+            .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));
+        let royalty = Royalty::new(royalty_config);
+        let access_rules = AccessRules::new(
+            self.owner_role,
+            btreemap!(
+                ObjectModuleId::Main => self.roles,
+                ObjectModuleId::Metadata => metadata_roles,
+                ObjectModuleId::Royalty => royalty_roles,
+            ),
+        );
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),
@@ -314,13 +329,9 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
         );
 
-        let address = if let Some(address_reservation) = self.address_reservation {
-            ScryptoEnv
-                .globalize_with_address(modules, address_reservation)
-                .unwrap()
-        } else {
-            ScryptoEnv.globalize(modules).unwrap()
-        };
+        let address = ScryptoEnv
+            .globalize(modules, self.address_reservation)
+            .unwrap();
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }

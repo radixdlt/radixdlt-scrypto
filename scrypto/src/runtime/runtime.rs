@@ -108,11 +108,6 @@ impl Runtime {
         ScryptoEnv.get_transaction_hash().unwrap()
     }
 
-    /// Generates a UUID.
-    pub fn generate_uuid() -> u128 {
-        ScryptoEnv.generate_uuid().unwrap()
-    }
-
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoEnv

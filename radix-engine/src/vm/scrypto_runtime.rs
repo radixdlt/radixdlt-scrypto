@@ -164,20 +164,6 @@ where
         self.allocate_buffer(component_id_encoded)
     }
 
-    fn globalize_object(
-        &mut self,
-        modules: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
-            .map_err(WasmRuntimeError::InvalidModules)?;
-
-        let object_address = self.api.globalize(modules)?;
-        let object_address_encoded =
-            scrypto_encode(&object_address).expect("Failed to encode object address");
-
-        self.allocate_buffer(object_address_encoded)
-    }
-
     fn allocate_global_address(
         &mut self,
         blueprint_id: Vec<u8>,
@@ -192,19 +178,18 @@ where
         self.allocate_buffer(object_address_encoded)
     }
 
-    fn globalize_object_with_address(
+    fn globalize_object(
         &mut self,
         modules: Vec<u8>,
         address_reservation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
-        let address_reservation = scrypto_decode::<GlobalAddressReservation>(&address_reservation)
-            .map_err(|_| WasmRuntimeError::InvalidGlobalAddressReservation)?;
+        let address_reservation =
+            scrypto_decode::<Option<GlobalAddressReservation>>(&address_reservation)
+                .map_err(|_| WasmRuntimeError::InvalidGlobalAddressReservation)?;
 
-        let address = self
-            .api
-            .globalize_with_address(modules, address_reservation)?;
+        let address = self.api.globalize(modules, address_reservation)?;
 
         let address_encoded = scrypto_encode(&address).expect("Failed to encode object address");
 
@@ -433,10 +418,10 @@ where
         self.allocate_buffer(scrypto_encode(&hash).expect("Failed to encode transaction hash"))
     }
 
-    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let uuid = self.api.generate_uuid()?;
+    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let ruid = self.api.generate_ruid()?;
 
-        self.allocate_buffer(scrypto_encode(&uuid).expect("Failed to encode UUID"))
+        self.allocate_buffer(scrypto_encode(&ruid).expect("Failed to encode RUID"))
     }
 
     fn cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
@@ -540,13 +525,6 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn globalize_object(
-        &mut self,
-        modules: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn globalize_object_with_address(
         &mut self,
         modules: Vec<u8>,
         address: Vec<u8>,
@@ -689,7 +667,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

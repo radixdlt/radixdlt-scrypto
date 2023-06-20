@@ -1,6 +1,4 @@
-use crate::blueprints::util::{
-    PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
-};
+use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::method_auth_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
@@ -10,15 +8,12 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -88,27 +83,20 @@ impl IdentityNativePackage {
         );
 
         let method_auth = method_auth_template! {
-            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-
-            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
-
-            MethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
+            IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
         };
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                     ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
                     IDENTITY_OWNER_BADGE.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 ),
-                feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
@@ -129,10 +117,9 @@ impl IdentityNativePackage {
                         IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
                         IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth,
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::Static(
+                        method_auth,
+                    ),
                 },
             }
         );
@@ -220,10 +207,6 @@ struct SecurifiedIdentity;
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
-
-    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
-        btreemap!()
-    }
 }
 
 impl PresecurifiedAccessRules for SecurifiedIdentity {}
@@ -242,7 +225,7 @@ impl IdentityBlueprint {
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, None)?;
         Ok(address)
     }
 
@@ -254,7 +237,7 @@ impl IdentityBlueprint {
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, None)?;
         Ok((address, bucket))
     }
 

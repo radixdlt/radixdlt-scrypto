@@ -3,7 +3,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -22,8 +21,10 @@ pub enum NonFungibleResourceManagerError {
     FieldNotMutable(String),
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
-    NonFungibleLocalIdProvidedForUUIDType,
+    NonFungibleLocalIdProvidedForRUIDType,
     DropNonEmptyBucket,
+    NotMintable,
+    NotBurnable,
 }
 
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
@@ -141,10 +142,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -180,10 +178,10 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Do this check in a better way (e.g. via type check)
-        if id_type == NonFungibleIdType::UUID {
+        if id_type == NonFungibleIdType::RUID {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForUUIDType,
+                    NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForRUIDType,
                 ),
             ));
         }
@@ -225,10 +223,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -253,7 +248,7 @@ impl NonFungibleResourceManagerBlueprint {
         Ok((resource_address, bucket))
     }
 
-    pub(crate) fn create_uuid_with_initial_supply<Y>(
+    pub(crate) fn create_ruid_with_initial_supply<Y>(
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, MetadataValue>,
@@ -268,8 +263,8 @@ impl NonFungibleResourceManagerBlueprint {
         let mut non_fungibles = BTreeMap::new();
         let supply = Decimal::from(entries.len());
         for (entry,) in entries {
-            let uuid = Runtime::generate_uuid(api)?;
-            let id = NonFungibleLocalId::uuid(uuid).unwrap();
+            let ruid = Runtime::generate_ruid(api)?;
+            let id = NonFungibleLocalId::ruid(ruid);
             ids.insert(id.clone());
             non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
@@ -291,17 +286,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
+                scrypto_encode(&NonFungibleIdType::RUID).unwrap(),
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
@@ -326,6 +318,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let id_type = {
@@ -336,7 +330,7 @@ impl NonFungibleResourceManagerBlueprint {
             )?;
             let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
             api.field_lock_release(handle)?;
-            if id_type == NonFungibleIdType::UUID {
+            if id_type == NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
                         NonFungibleResourceManagerError::InvalidNonFungibleIdType,
@@ -348,11 +342,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -378,13 +368,15 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(bucket)
     }
 
-    pub(crate) fn mint_single_uuid_non_fungible<Y>(
+    pub(crate) fn mint_single_ruid_non_fungible<Y>(
         value: ScryptoValue,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
@@ -398,7 +390,7 @@ impl NonFungibleResourceManagerBlueprint {
             let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
             api.field_lock_release(id_type_handle)?;
 
-            if id_type != NonFungibleIdType::UUID {
+            if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
                         NonFungibleResourceManagerError::InvalidNonFungibleIdType,
@@ -411,11 +403,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update Total Supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -429,7 +417,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id = {
             // FIXME: Is this enough bits to prevent hash collisions?
             // Possibly use an always incrementing timestamp
-            let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
+            let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
             let non_fungibles = btreemap!(id.clone() => value);
 
             create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
@@ -444,13 +432,15 @@ impl NonFungibleResourceManagerBlueprint {
         Ok((bucket, id))
     }
 
-    pub(crate) fn mint_uuid_non_fungible<Y>(
+    pub(crate) fn mint_ruid_non_fungible<Y>(
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
@@ -464,7 +454,7 @@ impl NonFungibleResourceManagerBlueprint {
             let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
             api.field_lock_release(handle)?;
 
-            if id_type != NonFungibleIdType::UUID {
+            if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
                         NonFungibleResourceManagerError::InvalidNonFungibleIdType,
@@ -476,11 +466,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -497,7 +483,7 @@ impl NonFungibleResourceManagerBlueprint {
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
             for value in entries {
-                let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
+                let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
                 ids.insert(id.clone());
                 non_fungibles.insert(id, value.0);
             }
@@ -685,6 +671,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_burnable(api)?;
+
         // Drop the bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -698,11 +686,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -724,7 +708,7 @@ impl NonFungibleResourceManagerBlueprint {
                 )?;
                 api.key_value_entry_remove(handle)?;
                 // Tombstone the non fungible
-                // TODO: UUID non fungibles with no data don't need to go through this process
+                // TODO: RUID non fungibles with no data don't need to go through this process
                 api.key_value_entry_freeze(handle)?;
                 api.key_value_entry_release(handle)?;
             }
@@ -763,23 +747,9 @@ impl NonFungibleResourceManagerBlueprint {
             vec![
                 scrypto_encode(&vault).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
             ],
         )?;
-
-        // These roles define an extra filter on top of the roles defined on the resource manager
-        // The purpose of these roles is to enable freezing of individual vaults
-        // TODO: Figure out how to use SELF_ROLE rather than package
-        let mut roles = Roles::new();
-        roles.define_role(
-            RESOURCE_PACKAGE_ROLE,
-            RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        );
-        roles.define_role(
-            VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
-        );
-        let access_rules = AccessRules::create(roles, api)?;
-        api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
 
         Runtime::emit_event(api, VaultCreationEvent { vault_id })?;
 
@@ -806,11 +776,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
@@ -821,5 +787,35 @@ impl NonFungibleResourceManagerBlueprint {
         } else {
             Ok(None)
         }
+    }
+
+    fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, MINT_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::NotMintable,
+                ),
+            ));
+        }
+
+        return Ok(());
+    }
+
+    fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, BURN_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::NotBurnable,
+                ),
+            ));
+        }
+
+        return Ok(());
     }
 }

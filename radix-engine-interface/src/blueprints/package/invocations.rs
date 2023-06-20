@@ -1,6 +1,3 @@
-use crate::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
@@ -90,13 +87,23 @@ pub struct PackageDefinition {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintType {
+    Outer,
+    Inner { outer_blueprint: String },
+}
+
+impl Default for BlueprintType {
+    fn default() -> Self {
+        BlueprintType::Outer
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinitionInit {
-    pub outer_blueprint: Option<String>,
+    pub blueprint_type: BlueprintType,
     pub feature_set: BTreeSet<String>,
     pub dependencies: BTreeSet<GlobalAddress>,
-
     pub schema: BlueprintSchemaInit,
-
     pub royalty_config: RoyaltyConfig,
     pub auth_config: AuthConfig,
 }
@@ -104,9 +111,9 @@ pub struct BlueprintDefinitionInit {
 impl Default for BlueprintDefinitionInit {
     fn default() -> Self {
         Self {
-            outer_blueprint: None,
-            dependencies: BTreeSet::default(),
+            blueprint_type: BlueprintType::default(),
             feature_set: BTreeSet::default(),
+            dependencies: BTreeSet::default(),
             schema: BlueprintSchemaInit::default(),
             royalty_config: RoyaltyConfig::default(),
             auth_config: AuthConfig::default(),
@@ -122,49 +129,15 @@ pub struct AuthConfig {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum MethodAuthTemplate {
-    Static {
-        auth: BTreeMap<MethodKey, MethodPermission>,
-        outer_auth: BTreeMap<MethodKey, MethodPermission>,
-    },
-}
-
-impl MethodAuthTemplate {
-    pub fn add_metadata_default_if_not_specified(&mut self) {
-        match self {
-            MethodAuthTemplate::Static { auth, .. } => {
-                if !auth.contains_key(&MethodKey::metadata(METADATA_GET_IDENT)) {
-                    auth.insert(
-                        MethodKey::metadata(METADATA_GET_IDENT),
-                        MethodPermission::Public,
-                    );
-                    auth.insert(MethodKey::metadata(METADATA_SET_IDENT), [OWNER_ROLE].into());
-                    auth.insert(
-                        MethodKey::metadata(METADATA_REMOVE_IDENT),
-                        [OWNER_ROLE].into(),
-                    );
-                }
-            }
-        }
-    }
-
-    pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
-        match self {
-            MethodAuthTemplate::Static { auth, .. } => auth,
-        }
-    }
-
-    pub fn outer_auth(self) -> BTreeMap<MethodKey, MethodPermission> {
-        match self {
-            MethodAuthTemplate::Static { outer_auth, .. } => outer_auth,
-        }
-    }
+    Static(BTreeMap<MethodKey, MethodAccessibility>),
+    /// This should only be used by inner blueprints and is verified during package schema verification
+    StaticUseOuterAuth(BTreeMap<MethodKey, MethodAccessibility>),
+    /// All methods are accessible
+    AllowAll,
 }
 
 impl Default for MethodAuthTemplate {
     fn default() -> Self {
-        MethodAuthTemplate::Static {
-            auth: BTreeMap::default(),
-            outer_auth: BTreeMap::default(),
-        }
+        MethodAuthTemplate::Static(BTreeMap::default())
     }
 }

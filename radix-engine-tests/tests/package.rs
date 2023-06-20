@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, VmError}
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, PackageDefinition,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
@@ -146,9 +146,9 @@ fn test_basic_package_missing_export() {
     blueprints.insert(
         "Test".to_string(),
         BlueprintDefinitionInit {
-            outer_blueprint: None,
-            dependencies: btreeset!(),
+            blueprint_type: BlueprintType::default(),
             feature_set: btreeset!(),
+            dependencies: btreeset!(),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
