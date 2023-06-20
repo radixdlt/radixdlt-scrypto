@@ -359,7 +359,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: PACKAGE_CODE_ID,
                 setup: PackageNativePackage::definition(),
@@ -378,7 +378,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: METADATA_CODE_ID,
                 setup: MetadataNativePackage::definition(),
@@ -397,7 +397,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: ROYALTY_CODE_ID,
                 setup: RoyaltyNativePackage::definition(),
@@ -416,7 +416,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 setup: AccessRulesNativePackage::definition(),
@@ -435,7 +435,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 setup: ResourceManagerNativePackage::definition(),
@@ -483,7 +483,7 @@ pub fn create_system_bootstrap_transaction(
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
-            args: to_manifest_value(
+            args: to_manifest_value_and_unwrap!(
                 &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                     track_total_supply: false,
                     divisibility: 18,
@@ -491,7 +491,7 @@ pub fn create_system_bootstrap_transaction(
                     access_rules,
                     initial_supply: Decimal::zero(),
                     resource_address: id_allocator.new_address_reservation_id(),
-                },
+                }
             ),
         });
     }
@@ -509,14 +509,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::Bytes,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata,
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::Bytes,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata,
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
     }
 
@@ -533,14 +535,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::Bytes,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata,
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::Bytes,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata,
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
     }
 
@@ -564,14 +568,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::RUID,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata: btreemap!(),
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::RUID,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata: btreemap!(),
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
     }
 
@@ -595,14 +601,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::RUID,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata: btreemap!(),
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::RUID,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata: btreemap!(),
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
 
         pre_allocated_addresses.push((
@@ -613,7 +621,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
@@ -632,7 +640,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
@@ -661,14 +669,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::RUID,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata: btreemap!(),
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::RUID,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata: btreemap!(),
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
 
         pre_allocated_addresses.push((
@@ -679,7 +689,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
@@ -698,7 +708,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: AccessControllerNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -717,7 +727,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: PoolNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -736,7 +746,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: TransactionProcessorNativePackage::definition(),
                 metadata: BTreeMap::new(),
@@ -758,14 +768,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::Bytes,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata,
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::Bytes,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata,
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
     }
 
@@ -782,14 +794,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::Bytes,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata,
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::Bytes,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata,
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
     }
 
@@ -806,14 +820,16 @@ pub fn create_system_bootstrap_transaction(
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressManifestInput {
-                id_type: NonFungibleIdType::Bytes,
-                track_total_supply: false,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                metadata,
-                access_rules,
-                resource_address: id_allocator.new_address_reservation_id(),
-            }),
+            args: to_manifest_value_and_unwrap!(
+                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    id_type: NonFungibleIdType::Bytes,
+                    track_total_supply: false,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata,
+                    access_rules,
+                    resource_address: id_allocator.new_address_reservation_id(),
+                }
+            ),
         });
     }
 
@@ -831,7 +847,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(faucet_code_hash.0),
                 setup: manifest_decode(&faucet_abi).unwrap(),
@@ -857,7 +873,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(genesis_helper_code_hash.0),
                 setup: manifest_decode(&genesis_helper_abi).unwrap(),
@@ -881,7 +897,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerCreateManifestInput {
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateManifestInput {
                 validator_owner_token_address: id_allocator.new_address_reservation_id(),
                 component_address: id_allocator.new_address_reservation_id(),
                 initial_epoch,
@@ -920,7 +936,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeManifestInput {
+            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: TRANSACTION_TRACKER_CODE_ID,
                 setup: TransactionTrackerNativePackage::definition(),
