@@ -547,16 +547,16 @@ impl TxFuzzer {
                         args: to_manifest_value(&input),
                     })
                 }
-                // MintUuidNonFungible
+                // MintRuidNonFungible
                 37 => {
-                    let input = NonFungibleResourceManagerMintUuidManifestInput::arbitrary(
+                    let input = NonFungibleResourceManagerMintRuidManifestInput::arbitrary(
                         &mut unstructured,
                     )
                     .unwrap();
 
                     Some(InstructionV1::CallMethod {
                         address: resource_address.into(),
-                        method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+                        method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }

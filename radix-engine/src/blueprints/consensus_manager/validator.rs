@@ -298,7 +298,7 @@ impl ValidatorBlueprint {
 
             let bucket = stake_vault.take(xrd_amount, api)?;
             unstake_vault.put(bucket, api)?;
-            let (unstake_bucket, _) = nft_resman.mint_non_fungible_single_uuid(data, api)?;
+            let (unstake_bucket, _) = nft_resman.mint_non_fungible_single_ruid(data, api)?;
 
             let new_stake_amount = stake_vault.amount(api)?;
 
@@ -1065,7 +1065,7 @@ impl ValidatorCreator {
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
-            NonFungibleIdType::UUID,
+            NonFungibleIdType::RUID,
             true,
             BTreeMap::new(),
             unstake_nft_auth,

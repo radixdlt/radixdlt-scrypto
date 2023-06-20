@@ -84,17 +84,11 @@ impl AuthModule {
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
     {
-        if let Some(auth_zone_id) = api
-            .kernel_get_system()
-            .modules
-            .auth_module()
-            .unwrap()
-            .last_auth_zone()
-        {
+        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
             let mut system = SystemService::new(api);
 
             // Step 1: Resolve method to permission
@@ -298,7 +292,7 @@ impl AuthModule {
         let is_barrier = callee.is_barrier();
         let is_transaction_processor = callee.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_system().modules.auth_module().unwrap();
+            let auth_module = &api.kernel_get_system().modules.auth;
             (
                 auth_module.params.virtual_resources.clone(),
                 auth_module.params.initial_proofs.clone(),
@@ -309,8 +303,7 @@ impl AuthModule {
         let parent = api
             .kernel_get_system()
             .modules
-            .auth_module()
-            .unwrap()
+            .auth
             .auth_zone_stack
             .last()
             .map(|x| Reference(x.clone().into()));
@@ -352,8 +345,7 @@ impl AuthModule {
         // Update auth zone stack
         api.kernel_get_system()
             .modules
-            .auth_module()
-            .unwrap()
+            .auth
             .auth_zone_stack
             .push(auth_zone_node_id);
 
@@ -377,12 +369,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         _dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         // update internal state
-        api.kernel_get_system()
-            .modules
-            .auth_module()
-            .unwrap()
-            .auth_zone_stack
-            .pop();
+        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
         Ok(())
     }
 }
