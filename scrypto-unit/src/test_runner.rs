@@ -44,6 +44,8 @@ use radix_engine_interface::schema::{
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
+use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
+use radix_engine_store_interface::interface::ListableSubstateDatabase;
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -498,6 +500,36 @@ impl TestRunner {
         vaults
             .get(index)
             .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
+    }
+
+    pub fn find_all_nodes(&self) -> Vec<NodeId> {
+        let mut node_ids = Vec::new();
+        for pk in self.substate_db.list_partition_keys() {
+            let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&pk);
+            node_ids.push(node_id);
+        }
+        node_ids
+    }
+
+    pub fn find_all_components(&self) -> Vec<ComponentAddress> {
+        self.find_all_nodes()
+            .iter()
+            .filter_map(|node_id| ComponentAddress::try_from(node_id.as_bytes()).ok())
+            .collect()
+    }
+
+    pub fn find_all_packages(&self) -> Vec<PackageAddress> {
+        self.find_all_nodes()
+            .iter()
+            .filter_map(|node_id| PackageAddress::try_from(node_id.as_bytes()).ok())
+            .collect()
+    }
+
+    pub fn find_all_resources(&self) -> Vec<ResourceAddress> {
+        self.find_all_nodes()
+            .iter()
+            .filter_map(|node_id| ResourceAddress::try_from(node_id.as_bytes()).ok())
+            .collect()
     }
 
     pub fn get_component_vaults(
