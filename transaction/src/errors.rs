@@ -50,6 +50,7 @@ pub enum TransactionValidationError {
     SignatureValidationError(SignatureValidationError),
     IdValidationError(ManifestIdValidationError),
     CallDataValidationError(CallDataValidationError),
+    InvalidMessage(InvalidMessageError),
 }
 
 impl From<PrepareError> for TransactionValidationError {
@@ -62,4 +63,38 @@ impl From<EncodeError> for TransactionValidationError {
     fn from(value: EncodeError) -> Self {
         Self::EncodeError(value)
     }
+}
+
+impl From<InvalidMessageError> for TransactionValidationError {
+    fn from(value: InvalidMessageError) -> Self {
+        Self::InvalidMessage(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InvalidMessageError {
+    PlaintextMessageTooLong {
+        actual: usize,
+        permitted: usize,
+    },
+    MimeTypeTooLong {
+        actual: usize,
+        permitted: usize,
+    },
+    EncryptedMessageTooLong {
+        actual: usize,
+        permitted: usize,
+    },
+    NoDecryptors,
+    MismatchingDecryptorCurves {
+        actual: CurveType,
+        expected: CurveType,
+    },
+    TooManyDecryptors {
+        actual: usize,
+        permitted: usize,
+    },
+    NoDecryptorsForCurveType {
+        curve_type: CurveType,
+    },
 }
