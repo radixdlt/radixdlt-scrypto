@@ -37,7 +37,7 @@ pub enum BuildCallInstructionError {
 pub enum BuildCallArgumentsError {
     WrongNumberOfArguments(usize, usize),
     BuildCallArgumentError(BuildCallArgumentError),
-    ValueConversionError(ValueConversionError),
+    RustToManifestValueError(RustToManifestValueError),
 }
 
 /// Represents an error when parsing an argument.
@@ -65,9 +65,9 @@ impl From<BuildCallArgumentError> for BuildCallArgumentsError {
     }
 }
 
-impl From<ValueConversionError> for BuildCallArgumentsError {
-    fn from(error: ValueConversionError) -> Self {
-        Self::ValueConversionError(error)
+impl From<RustToManifestValueError> for BuildCallArgumentsError {
+    fn from(error: RustToManifestValueError) -> Self {
+        Self::RustToManifestValueError(error)
     }
 }
 

@@ -54,9 +54,15 @@ impl<T: for<'a> Encode<ManifestCustomValueKind, ManifestEncoder<'a>> + ?Sized> M
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValueConversionError {
-    RustToManifestValueError(DecodeError),
-    ManifestToRustValueError(EncodeError),
+pub enum RustToManifestValueError {
+    DecodeError(DecodeError),
+    EncodeError(EncodeError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ManifestToRustValueError {
+    DecodeError(DecodeError),
+    EncodeError(EncodeError),
 }
 
 pub fn manifest_encode<T: ManifestEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
@@ -73,19 +79,18 @@ pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> 
 
 pub fn to_manifest_value<T: ManifestEncode + ?Sized>(
     value: &T,
-) -> Result<ManifestValue, ValueConversionError> {
-    let encoded = manifest_encode(value).map_err(ValueConversionError::ManifestToRustValueError)?;
+) -> Result<ManifestValue, RustToManifestValueError> {
+    let encoded = manifest_encode(value).map_err(RustToManifestValueError::EncodeError)?;
 
-    manifest_decode(&encoded).map_err(ValueConversionError::RustToManifestValueError)
+    manifest_decode(&encoded).map_err(RustToManifestValueError::DecodeError)
 }
 
 pub fn from_manifest_value<T: ManifestDecode>(
     manifest_value: &ManifestValue,
-) -> Result<T, ValueConversionError> {
-    let encoded =
-        manifest_encode(manifest_value).map_err(ValueConversionError::ManifestToRustValueError)?;
+) -> Result<T, ManifestToRustValueError> {
+    let encoded = manifest_encode(manifest_value).map_err(ManifestToRustValueError::EncodeError)?;
 
-    manifest_decode(&encoded).map_err(ValueConversionError::RustToManifestValueError)
+    manifest_decode(&encoded).map_err(ManifestToRustValueError::DecodeError)
 }
 
 #[cfg(test)]
@@ -105,7 +110,7 @@ mod tests {
         };
         assert!(matches!(
             to_manifest_value(&invalid_value),
-            Err(ValueConversionError::ManifestToRustValueError(
+            Err(RustToManifestValueError::EncodeError(
                 EncodeError::MismatchingArrayElementValueKind { .. }
             ))
         ));
@@ -120,7 +125,7 @@ mod tests {
         };
         assert!(matches!(
             to_manifest_value(&invalid_value),
-            Err(ValueConversionError::ManifestToRustValueError(
+            Err(RustToManifestValueError::EncodeError(
                 EncodeError::MismatchingMapKeyValueKind { .. }
             ))
         ));
@@ -135,7 +140,7 @@ mod tests {
         };
         assert!(matches!(
             to_manifest_value(&invalid_value),
-            Err(ValueConversionError::ManifestToRustValueError(
+            Err(RustToManifestValueError::EncodeError(
                 EncodeError::MismatchingMapValueValueKind { .. }
             ))
         ));
@@ -143,7 +148,7 @@ mod tests {
         let too_deep_tuple = get_tuple_of_depth(MANIFEST_SBOR_V1_MAX_DEPTH + 1).unwrap();
         assert!(matches!(
             to_manifest_value(&too_deep_tuple),
-            Err(ValueConversionError::ManifestToRustValueError(
+            Err(RustToManifestValueError::EncodeError(
                 EncodeError::MaxDepthExceeded { .. }
             ))
         ));

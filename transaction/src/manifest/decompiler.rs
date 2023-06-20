@@ -49,7 +49,7 @@ pub enum DecompileError {
     EncodeError(EncodeError),
     DecodeError(DecodeError),
     FormattingError(fmt::Error),
-    ValueConversionError(ValueConversionError),
+    ValueConversionError(RustToManifestValueError),
 }
 
 impl From<EncodeError> for DecompileError {
@@ -70,8 +70,8 @@ impl From<fmt::Error> for DecompileError {
     }
 }
 
-impl From<ValueConversionError> for DecompileError {
-    fn from(error: ValueConversionError) -> Self {
+impl From<RustToManifestValueError> for DecompileError {
+    fn from(error: RustToManifestValueError) -> Self {
         Self::ValueConversionError(error)
     }
 }
