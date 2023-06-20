@@ -23,8 +23,9 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             println!("Checking blueprint {:?}", key.blueprint);
             if let Some(fields) = definition.interface.state.fields {
                 for (i, f) in fields.1.iter().enumerate() {
-                    if !is_safe_type_pointer(&schemas_by_hash, &f.field) {
-                        println!("Unsafe: field #{}", i);
+                    let result = check_type_pointer(&schemas_by_hash, &f.field);
+                    if result.is_not_safe() {
+                        println!("Field {:?} is {:?}", i, result);
                     }
                 }
             }
@@ -32,11 +33,9 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             for (partition, collection_schema) in collections {
                 match collection_schema {
                     BlueprintCollectionSchema::KeyValueStore(kv) => {
-                        if !is_safe_type_pointer(&schemas_by_hash, &kv.key) {
-                            println!("Unsafe: key of partition #{:?}", partition.0);
-                        }
-                        if !is_safe_type_pointer(&schemas_by_hash, &kv.value) {
-                            println!("Unsafe: value of partition #{:?}", partition.0);
+                        let result = check_type_pointers(&schemas_by_hash, &[kv.key, kv.value]);
+                        if result.is_not_safe() {
+                            println!("Partition {:?} is {:?}", partition.0, result);
                         }
                     }
                     BlueprintCollectionSchema::Index(_) => {
@@ -49,130 +48,158 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             }
             let functions = definition.interface.functions;
             for (name, func) in functions {
-                if !is_safe_type_pointer(&schemas_by_hash, &func.input) {
-                    println!("Unsafe: function input of {:?}", name);
-                }
-                if !is_safe_type_pointer(&schemas_by_hash, &func.output) {
-                    println!("Unsafe: function output of {:?}", name);
+                let result = check_type_pointers(&schemas_by_hash, &[func.input, func.output]);
+                if result.is_not_safe() {
+                    println!("Function {:?} is {:?}", name, result);
                 }
             }
             let events = definition.interface.events;
             for (name, ty) in events {
-                if !is_safe_type_pointer(&schemas_by_hash, &ty) {
-                    println!("Unsafe: event {:?}", name);
+                let result = check_type_pointer(&schemas_by_hash, &ty);
+                if result.is_not_safe() {
+                    println!("Event {:?} is {:?}", name, result);
                 }
             }
         }
     }
 }
 
-fn is_safe_type_pointer(
+fn check_type_pointers(
+    schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
+    type_pointers: &[TypePointer],
+) -> CheckResult {
+    for ty in type_pointers {
+        let result = check_type_pointer(schemas_by_hash, ty);
+        if result.is_not_safe() {
+            return result;
+        }
+    }
+    return CheckResult::Safe;
+}
+
+fn check_type_pointer(
     schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
     type_pointer: &TypePointer,
-) -> bool {
+) -> CheckResult {
     match type_pointer {
-        TypePointer::Package(hash, index) => {
-            is_safe_type(schemas_by_hash.get(hash).unwrap(), *index)
-        }
-        TypePointer::Instance(_) => true,
+        TypePointer::Package(hash, index) => check_type(schemas_by_hash.get(hash).unwrap(), *index),
+        TypePointer::Instance(_) => CheckResult::Safe,
     }
 }
 
-fn is_safe_type(schema: &ScryptoSchema, index: LocalTypeIndex) -> bool {
+fn check_type(schema: &ScryptoSchema, index: LocalTypeIndex) -> CheckResult {
     let mut visited_indices = index_set_new();
-    is_safe_type_internal(schema, index, &mut visited_indices)
+    check_type_internal(schema, index, &mut visited_indices)
 }
 
-fn is_safe_type_internal(
+fn check_types_internal(
+    schema: &ScryptoSchema,
+    indices: &[LocalTypeIndex],
+    visited_indices: &mut IndexSet<LocalTypeIndex>,
+) -> CheckResult {
+    for index in indices {
+        let result = check_type_internal(schema, *index, visited_indices);
+        if result.is_not_safe() {
+            return result;
+        }
+    }
+    CheckResult::Safe
+}
+
+fn check_type_internal(
     schema: &ScryptoSchema,
     index: LocalTypeIndex,
     visited_indices: &mut IndexSet<LocalTypeIndex>,
-) -> bool {
+) -> CheckResult {
     if visited_indices.contains(&index) {
-        return true;
+        return CheckResult::Safe;
     }
     visited_indices.insert(index);
     match index {
-        LocalTypeIndex::WellKnown(x) => return is_safe_well_known_type(x),
-        LocalTypeIndex::SchemaLocalIndex(i) => match &schema.type_kinds[i] {
-            ScryptoTypeKind::Array { element_type } => {
-                return is_safe_type_internal(schema, *element_type, visited_indices);
-            }
-            ScryptoTypeKind::Tuple { field_types } => {
-                for ty in field_types {
-                    if !is_safe_type_internal(schema, *ty, visited_indices) {
-                        return false;
-                    }
+        LocalTypeIndex::WellKnown(x) => return is_safe_well_known_type(schema, x),
+        LocalTypeIndex::SchemaLocalIndex(i) => {
+            let type_kind = &schema.type_kinds[i];
+            match type_kind {
+                ScryptoTypeKind::Array { element_type } => {
+                    return check_type_internal(schema, *element_type, visited_indices);
                 }
-                return true;
-            }
-            ScryptoTypeKind::Enum { variants } => {
-                for v in variants {
-                    for ty in v.1 {
-                        if !is_safe_type_internal(schema, *ty, visited_indices) {
-                            return false;
+                ScryptoTypeKind::Tuple { field_types } => {
+                    return check_types_internal(schema, field_types, visited_indices);
+                }
+                ScryptoTypeKind::Enum { variants } => {
+                    let mut indices = Vec::<LocalTypeIndex>::new();
+                    for v in variants {
+                        for ty in v.1 {
+                            indices.push(*ty);
                         }
                     }
+                    return check_types_internal(schema, &indices, visited_indices);
                 }
-                return true;
-            }
-            ScryptoTypeKind::Map {
-                key_type,
-                value_type,
-            } => {
-                return is_safe_type_internal(schema, *key_type, visited_indices)
-                    && is_safe_type_internal(schema, *value_type, visited_indices);
-            }
-            ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own) => {
-                match &schema.type_validations[i] {
-                    TypeValidation::Custom(ScryptoCustomTypeValidation::Own(x)) => match x {
-                        OwnValidation::IsTypedObject(_, _) => {
-                            return true;
+                ScryptoTypeKind::Map {
+                    key_type,
+                    value_type,
+                } => {
+                    return check_types_internal(
+                        schema,
+                        &[*key_type, *value_type],
+                        visited_indices,
+                    );
+                }
+                ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own) => {
+                    match &schema.type_validations[i] {
+                        TypeValidation::Custom(ScryptoCustomTypeValidation::Own(x)) => match x {
+                            OwnValidation::IsTypedObject(_, _) => {
+                                return CheckResult::Safe;
+                            }
+                            OwnValidation::IsKeyValueStore => {
+                                // TODO: consider this as unsafe in native blueprints?
+                                return CheckResult::Safe;
+                            }
+                            OwnValidation::IsGlobalAddressReservation => {
+                                // TODO: consider this as unsafe in native blueprints?
+                                return CheckResult::Safe;
+                            }
+                            _ => {
+                                return CheckResult::NotSafeDueTo {
+                                    type_kind: type_kind.clone(),
+                                    type_validation: schema.type_validations[i].clone(),
+                                };
+                            }
+                        },
+                        _ => panic!("Wrong type validation attached to `Own` type kind"),
+                    }
+                }
+                ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference) => {
+                    match &schema.type_validations[i] {
+                        TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(x)) => {
+                            match x {
+                                ReferenceValidation::IsGlobalTyped(_, _)
+                                | ReferenceValidation::IsInternalTyped(_, _)
+                                | ReferenceValidation::IsGlobalPackage
+                                | ReferenceValidation::IsGlobalResourceManager
+                                | ReferenceValidation::IsGlobalComponent => {
+                                    return CheckResult::Safe;
+                                }
+                                _ => {
+                                    return CheckResult::NotSafeDueTo {
+                                        type_kind: type_kind.clone(),
+                                        type_validation: schema.type_validations[i].clone(),
+                                    };
+                                }
+                            }
                         }
-                        OwnValidation::IsKeyValueStore => {
-                            // TODO: consider this as unsafe in native blueprints?
-                            println!("Warning: KeyValueStore is used");
-                            return true;
-                        }
-                        OwnValidation::IsGlobalAddressReservation => {
-                            // TODO: consider this as unsafe in native blueprints?
-                            println!("Warning: GlobalAddressReservation is used");
-                            return true;
-                        }
-                        x => {
-                            println!("Debug: unsafe own validation {:?}", x);
-                            return false;
-                        }
-                    },
-                    _ => panic!("Wrong type validation attached to `Own` type kind"),
+                        _ => panic!("Wrong type validation attached to `Reference` type kind"),
+                    }
+                }
+                _ => {
+                    return CheckResult::Safe;
                 }
             }
-            ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference) => {
-                match &schema.type_validations[i] {
-                    TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(x)) => match x {
-                        ReferenceValidation::IsGlobalTyped(_, _)
-                        | ReferenceValidation::IsInternalTyped(_, _)
-                        | ReferenceValidation::IsGlobalPackage
-                        | ReferenceValidation::IsGlobalResourceManager
-                        | ReferenceValidation::IsGlobalComponent => {
-                            return true;
-                        }
-                        x => {
-                            println!("Debug: unsafe reference validation {:?}", x);
-                            return false;
-                        }
-                    },
-                    _ => panic!("Wrong type validation attached to `Reference` type kind"),
-                }
-            }
-            _ => {
-                return true;
-            }
-        },
+        }
     };
 }
 
-fn is_safe_well_known_type(type_id: u8) -> bool {
+fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
     let is_safe = match type_id {
         // Basic SBOR
         BOOL_ID => true,
@@ -199,10 +226,10 @@ fn is_safe_well_known_type(type_id: u8) -> bool {
         COMPONENT_ADDRESS_ID => true,
         RESOURCE_ADDRESS_ID => true,
         OWN_ID => false,
-        OWN_BUCKET_ID => false,
+        OWN_BUCKET_ID => true, // TODO: maybe unsafe?
         OWN_FUNGIBLE_BUCKET_ID => true,
         OWN_NON_FUNGIBLE_BUCKET_ID => true,
-        OWN_PROOF_ID => false,
+        OWN_PROOF_ID => true, // TODO: maybe unsafe?
         OWN_FUNGIBLE_PROOF_ID => true,
         OWN_NON_FUNGIBLE_PROOF_ID => true,
         OWN_VAULT_ID => false,
@@ -216,9 +243,36 @@ fn is_safe_well_known_type(type_id: u8) -> bool {
         t => panic!("Unexpected well-known type id: {}", t),
     };
 
-    if !is_safe {
-        println!("Debug: unsafe well-known type {:?}", type_id);
+    if is_safe {
+        CheckResult::Safe
+    } else {
+        CheckResult::NotSafeDueTo {
+            type_kind: schema
+                .resolve_type_kind(LocalTypeIndex::WellKnown(type_id))
+                .unwrap()
+                .clone(),
+            type_validation: schema
+                .resolve_type_validation(LocalTypeIndex::WellKnown(type_id))
+                .unwrap()
+                .clone(),
+        }
     }
+}
 
-    return is_safe;
+#[derive(Debug, Clone)]
+pub enum CheckResult {
+    Safe,
+    NotSafeDueTo {
+        type_kind: ScryptoTypeKind<LocalTypeIndex>,
+        type_validation: TypeValidation<ScryptoCustomTypeValidation>,
+    },
+}
+
+impl CheckResult {
+    fn is_safe(&self) -> bool {
+        matches!(self, CheckResult::Safe)
+    }
+    fn is_not_safe(&self) -> bool {
+        !self.is_safe()
+    }
 }
