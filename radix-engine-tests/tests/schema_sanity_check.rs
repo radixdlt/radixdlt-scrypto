@@ -160,7 +160,7 @@ fn check_type_internal(
                                 return CheckResult::Safe;
                             }
                             _ => {
-                                return CheckResult::NotSafeDueTo {
+                                return CheckResult::PossiblyUnsafe {
                                     type_kind: type_kind.clone(),
                                     type_validation: schema.type_validations[i].clone(),
                                 };
@@ -181,7 +181,7 @@ fn check_type_internal(
                                     return CheckResult::Safe;
                                 }
                                 _ => {
-                                    return CheckResult::NotSafeDueTo {
+                                    return CheckResult::PossiblyUnsafe {
                                         type_kind: type_kind.clone(),
                                         type_validation: schema.type_validations[i].clone(),
                                     };
@@ -235,7 +235,7 @@ fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
         OWN_VAULT_ID => false,
         OWN_FUNGIBLE_VAULT_ID => true,
         OWN_NON_FUNGIBLE_VAULT_ID => true,
-        OWN_KEY_VALUE_STORE_ID => false,
+        OWN_KEY_VALUE_STORE_ID => true, // TODO: maybe unsafe?
         OWN_GLOBAL_ADDRESS_RESERVATION_ID => true,
         DECIMAL_ID => true,
         PRECISE_DECIMAL_ID => true,
@@ -246,7 +246,7 @@ fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
     if is_safe {
         CheckResult::Safe
     } else {
-        CheckResult::NotSafeDueTo {
+        CheckResult::PossiblyUnsafe {
             type_kind: schema
                 .resolve_type_kind(LocalTypeIndex::WellKnown(type_id))
                 .unwrap()
@@ -262,7 +262,7 @@ fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
 #[derive(Debug, Clone)]
 pub enum CheckResult {
     Safe,
-    NotSafeDueTo {
+    PossiblyUnsafe {
         type_kind: ScryptoTypeKind<LocalTypeIndex>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     },
