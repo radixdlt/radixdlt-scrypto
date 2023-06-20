@@ -36,8 +36,8 @@ pub enum BuildCallInstructionError {
 #[derive(Debug, Clone)]
 pub enum BuildCallArgumentsError {
     WrongNumberOfArguments(usize, usize),
-
     BuildCallArgumentError(BuildCallArgumentError),
+    RustToManifestValueError(RustToManifestValueError),
 }
 
 /// Represents an error when parsing an argument.
@@ -62,6 +62,12 @@ impl From<BuildCallArgumentsError> for BuildCallInstructionError {
 impl From<BuildCallArgumentError> for BuildCallArgumentsError {
     fn from(error: BuildCallArgumentError) -> Self {
         Self::BuildCallArgumentError(error)
+    }
+}
+
+impl From<RustToManifestValueError> for BuildCallArgumentsError {
+    fn from(error: RustToManifestValueError) -> Self {
+        Self::RustToManifestValueError(error)
     }
 }
 
@@ -121,13 +127,10 @@ pub fn build_call_arguments<'a>(
                 built_args.push(tuple.1);
             }
         }
-        e @ _ => panic!("Inconsistent schema: {:?}", e),
+        _ => panic!("Inconsistent schema"),
     }
-
-    Ok((
-        builder,
-        to_manifest_value(&ManifestValue::Tuple { fields: built_args }),
-    ))
+    let manifest_value = to_manifest_value(&ManifestValue::Tuple { fields: built_args })?;
+    Ok((builder, manifest_value))
 }
 
 macro_rules! parse_basic_type {
