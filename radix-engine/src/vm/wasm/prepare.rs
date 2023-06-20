@@ -668,23 +668,6 @@ impl WasmModule {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
-                                return Err(PrepareError::InvalidImport(
-                                    InvalidImport::InvalidFunctionType(
-                                        GLOBALIZE_OBJECT_FUNCTION_NAME.to_string(),
-                                    ),
-                                ));
-                            }
-                        }
-                        GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
                                     vec![
                                         ValueType::I32,
                                         ValueType::I32,
@@ -697,7 +680,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME.to_string(),
+                                        GLOBALIZE_OBJECT_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

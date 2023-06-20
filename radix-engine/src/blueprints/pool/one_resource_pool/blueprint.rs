@@ -1,5 +1,4 @@
 use crate::blueprints::pool::one_resource_pool::*;
-use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
 use native_sdk::modules::access_rules::*;
@@ -62,7 +61,8 @@ impl OneResourcePoolBlueprint {
             ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
         };
 
-        let access_rules = AccessRules::create(roles(pool_manager_rule), api)?.0;
+        let access_rules =
+            AccessRules::create(OwnerRole::Updateable(pool_manager_rule), btreemap!(), api)?.0;
         // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
@@ -86,14 +86,14 @@ impl OneResourcePoolBlueprint {
             )?
         };
 
-        api.globalize_with_address(
+        api.globalize(
             btreemap!(
                 ObjectModuleId::Main => object_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_reservation,
+            Some(address_reservation),
         )?;
 
         Ok(ComponentAddress::new_or_panic(address.as_node_id().0))
@@ -365,11 +365,5 @@ impl OneResourcePoolBlueprint {
         let substate = api.field_lock_read_typed::<OneResourcePoolSubstate>(handle)?;
 
         Ok((substate, handle))
-    }
-}
-
-fn roles(pool_manager_rule: AccessRule) -> Roles {
-    roles2! {
-        POOL_MANAGER_ROLE => pool_manager_rule, mut [POOL_MANAGER_ROLE]
     }
 }

@@ -10,8 +10,7 @@ pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
 
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
-pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize_object";
-pub const GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME: &str = "globalize_with_address";
+pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize";
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 pub const GET_OBJECT_INFO_FUNCTION_NAME: &str = "get_object_info";

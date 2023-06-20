@@ -535,6 +535,7 @@ impl ValidatorBlueprint {
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_GET_ROLE_IDENT,
                 scrypto_encode(&AccessRulesGetRoleInput {
+                    module: ObjectModuleId::Main,
                     role_key: RoleKey::new(OWNER_ROLE),
                 })
                 .unwrap(),
@@ -548,6 +549,7 @@ impl ValidatorBlueprint {
             ObjectModuleId::AccessRules,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
+                module: ObjectModuleId::Main,
                 role_key: RoleKey::new(STAKE_ROLE),
                 rule: Some(rule),
                 mutability: None,
@@ -1120,14 +1122,14 @@ impl ValidatorCreator {
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-        api.globalize_with_address(
+        api.globalize(
             btreemap!(
                 ObjectModuleId::Main => validator_id,
                 ObjectModuleId::AccessRules => access_rules.0.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_reservation,
+            Some(address_reservation),
         )?;
 
         Ok((

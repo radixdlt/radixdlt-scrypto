@@ -56,7 +56,7 @@ pub enum KeyValueEntryLockData {
     BlueprintWrite {
         blueprint_id: BlueprintId,
         instance_schema: Option<InstanceSchema>,
-        schema_pointer: TypePointer,
+        type_pointer: TypePointer,
         can_own: bool,
     },
 }
@@ -66,7 +66,7 @@ pub enum FieldLockData {
     Read,
     Write {
         blueprint_id: BlueprintId,
-        schema_pointer: TypePointer,
+        type_pointer: TypePointer,
     },
 }
 
@@ -593,7 +593,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let mut system = SystemService::new(api);
                 let address_reservation =
                     system.allocate_virtual_global_address(blueprint, address)?;
-                system.globalize_with_address(modules, address_reservation)?;
+                system.globalize(modules, Some(address_reservation))?;
 
                 Ok(true)
             }

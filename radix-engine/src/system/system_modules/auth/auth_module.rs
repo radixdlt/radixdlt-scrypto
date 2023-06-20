@@ -23,7 +23,7 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     NoFunction(FnIdentifier),
-    NoMethod(FnIdentifier),
+    NoMethodMapping(FnIdentifier),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
@@ -69,7 +69,6 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let node_id = callee.node_id;
-        let module_id = callee.module_id;
         let ident = callee.ident.as_str();
         let acting_location = if callee.module_object_info.global {
             ActingLocation::AtBarrier
@@ -78,7 +77,7 @@ impl AuthModule {
         };
 
         let info = api.get_object_info(&node_id)?;
-        let method_key = MethodKey::new(module_id, ident);
+        let method_key = MethodKey::new(ident);
 
         if let Some(parent) = info.outer_object {
             Self::check_authorization_against_access_rules(
@@ -124,23 +123,28 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             callee
-                .node_object_info
+                .module_object_info
                 .blueprint_id
                 .package_address
                 .as_node_id(),
             &BlueprintVersionKey::new_default(
-                callee.node_object_info.blueprint_id.blueprint_name.as_str(),
+                callee
+                    .module_object_info
+                    .blueprint_id
+                    .blueprint_name
+                    .as_str(),
             ),
             api.api,
-        )?;
+        )?
+        .method_auth;
 
         // TODO: Cleanup logic here
-        let node_authority_rules = match &object_key {
-            ObjectKey::SELF => auth_template.method_auth.auth(),
-            ObjectKey::InnerBlueprint(_blueprint_name) => auth_template.method_auth.outer_auth(),
+        let method_permissions = match &object_key {
+            ObjectKey::SELF => auth_template.auth(),
+            ObjectKey::InnerBlueprint(_blueprint_name) => auth_template.outer_auth(),
         };
 
-        let permission = match method_key.module_id {
+        let (permission, module) = match callee.module_id {
             ObjectModuleId::AccessRules => {
                 match &object_key {
                     ObjectKey::SELF => {}
@@ -154,13 +158,13 @@ impl AuthModule {
                 )?
             }
             _ => {
-                if let Some(permission) = node_authority_rules.get(&method_key) {
-                    permission.clone()
+                if let Some(permission) = method_permissions.get(&method_key) {
+                    (permission.clone(), callee.module_id)
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
                             return Err(RuntimeError::SystemModuleError(
-                                SystemModuleError::AuthError(AuthError::NoMethod(
+                                SystemModuleError::AuthError(AuthError::NoMethodMapping(
                                     callee.fn_identifier(),
                                 )),
                             ));
@@ -181,6 +185,7 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             access_rules_of,
+            module,
             &role_list,
             api,
         )?;
@@ -196,6 +201,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules_of: &NodeId,
+        module: ObjectModuleId,
         role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
@@ -203,6 +209,7 @@ impl AuthModule {
             acting_location,
             *auth_zone_id,
             access_rules_of,
+            module,
             role_list,
             api,
         )?;

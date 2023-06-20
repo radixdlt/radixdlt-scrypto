@@ -1164,12 +1164,12 @@ where
         match data {
             SystemLockData::Field(FieldLockData::Write {
                 blueprint_id,
-                schema_pointer,
+                type_pointer,
             }) => {
                 self.validate_payload_at_type_pointer(
                     &blueprint_id,
                     &None, // TODO: Change to Some, once support for generic fields is implemented
-                    schema_pointer,
+                    type_pointer,
                     &buffer,
                 )?;
             }
@@ -1293,30 +1293,25 @@ where
     }
 
     // FIXME: ensure that only the package actor can globalize its own blueprints
-
     #[trace_resources]
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
+        address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, RuntimeError> {
-        let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
-
         // TODO: optimize by skipping address allocation
         let (global_address_reservation, global_address) =
-            self.allocate_global_address(blueprint_id)?;
+            if let Some(reservation) = address_reservation {
+                let address = self.get_reservation_address(reservation.0.as_node_id())?;
+                (reservation, address)
+            } else {
+                let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
+                self.allocate_global_address(blueprint_id)?
+            };
 
         self.globalize_with_address_internal(modules, global_address_reservation)?;
 
         Ok(global_address)
-    }
-
-    #[trace_resources]
-    fn globalize_with_address(
-        &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
-        address_reservation: GlobalAddressReservation,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        self.globalize_with_address_internal(modules, address_reservation)
     }
 
     #[trace_resources]
@@ -1357,11 +1352,11 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let receiver_info = self.get_object_info(receiver)?;
+        let node_object_info = self.get_object_info(receiver)?;
 
-        let (object_info, global_address) = match object_module_id {
+        let (module_object_info, global_address) = match object_module_id {
             ObjectModuleId::Main => {
-                let global_address = if receiver_info.global {
+                let global_address = if node_object_info.global {
                     Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                 } else {
                     // FIXME: Have a correct implementation of tracking global address
@@ -1387,12 +1382,12 @@ where
                     }
                 };
 
-                (receiver_info.clone(), global_address)
+                (node_object_info.clone(), global_address)
             }
             // FIXME: verify whether we need to check the modules or not
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
                 ObjectInfo {
-                    global: receiver_info.global,
+                    global: node_object_info.global,
 
                     blueprint_id: object_module_id.static_blueprint().unwrap(),
                     version: BlueprintVersion::default(),
@@ -1409,16 +1404,16 @@ where
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
 
         // TODO: Can we load this lazily when needed?
-        let instance_context = if object_info.global {
+        let instance_context = if module_object_info.global {
             match global_address {
                 None => None,
                 Some(address) => Some(InstanceContext {
                     outer_object: address,
-                    outer_blueprint: object_info.blueprint_id.blueprint_name.clone(),
+                    outer_blueprint: module_object_info.blueprint_id.blueprint_name.clone(),
                 }),
             }
         } else {
-            match &object_info.outer_object {
+            match &module_object_info.outer_object {
                 None => None,
                 Some(blueprint_parent) => {
                     // TODO: do this recursively until global?
@@ -1436,8 +1431,8 @@ where
             actor: Actor::method(
                 global_address,
                 identifier,
-                receiver_info,
-                object_info,
+                node_object_info,
+                module_object_info,
                 instance_context,
                 direct_access,
             ),
@@ -1602,7 +1597,7 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id,
                 instance_schema,
-                schema_pointer,
+                type_pointer: schema_pointer,
                 can_own,
             }) => {
                 self.validate_payload_at_type_pointer(
@@ -2099,7 +2094,7 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
                 blueprint_id: object_info.blueprint_id,
-                schema_pointer,
+                type_pointer: schema_pointer,
             }
         } else {
             FieldLockData::Read
@@ -2193,7 +2188,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        key: &[u8],
+        key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
@@ -2201,11 +2196,17 @@ where
         let (node_id, partition_num, kv_schema, object_info) =
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
+        self.validate_payload_against_blueprint_schema(
+            &object_info.blueprint_id,
+            &object_info.instance_schema,
+            &[(key, kv_schema.key)],
+        )?;
+
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id: object_info.blueprint_id,
                 instance_schema: object_info.instance_schema,
-                schema_pointer: kv_schema.value,
+                type_pointer: kv_schema.value,
                 can_own: kv_schema.can_own,
             }
         } else {

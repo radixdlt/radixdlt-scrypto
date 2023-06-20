@@ -7,6 +7,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -692,6 +693,7 @@ impl ManifestBuilder {
     pub fn update_role(
         &mut self,
         address: GlobalAddress,
+        module: ObjectModuleId,
         role_key: RoleKey,
         rule: AccessRule,
     ) -> &mut Self {
@@ -699,6 +701,7 @@ impl ManifestBuilder {
             address: address.into(),
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesUpdateRoleInput {
+                module,
                 role_key,
                 rule: Some(rule),
                 mutability: None,
@@ -710,6 +713,7 @@ impl ManifestBuilder {
     pub fn update_role_mutability(
         &mut self,
         address: GlobalAddress,
+        module: ObjectModuleId,
         role_key: RoleKey,
         mutability: (RoleList, bool),
     ) -> &mut Self {
@@ -717,6 +721,7 @@ impl ManifestBuilder {
             address: address.into(),
             method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesUpdateRoleInput {
+                module,
                 role_key,
                 rule: None,
                 mutability: Some(mutability),

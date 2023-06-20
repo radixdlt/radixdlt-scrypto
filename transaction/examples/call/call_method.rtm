@@ -18,4 +18,5 @@ CALL_METADATA_METHOD
 CALL_ACCESS_RULES_METHOD
     Address("${component_address}")
     "get_role"
+    Enum<0u8>()
     "hello";
