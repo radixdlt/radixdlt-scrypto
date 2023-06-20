@@ -197,7 +197,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -246,7 +246,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -338,7 +338,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if api.actor_is_feature_enabled(TRACK_TOTAL_SUPPLY_FEATURE)? {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -355,7 +355,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(MINT_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, MINT_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(
                     FungibleResourceManagerError::NotMintable,
@@ -370,7 +370,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(BURN_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, BURN_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(
                     FungibleResourceManagerError::NotBurnable,

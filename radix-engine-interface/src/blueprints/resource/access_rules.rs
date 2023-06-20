@@ -41,11 +41,11 @@ impl From<&str> for MethodKey {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodEntry {
-    pub permission: MethodPermission,
+    pub permission: MethodAccessibility,
 }
 
 impl MethodEntry {
-    pub fn new<P: Into<MethodPermission>>(permission: P) -> Self {
+    pub fn new<P: Into<MethodAccessibility>>(permission: P) -> Self {
         Self {
             permission: permission.into(),
         }
@@ -54,27 +54,31 @@ impl MethodEntry {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum MethodPermission {
+pub enum MethodAccessibility {
+    /// Method is accessible to all
     Public,
+    /// Only outer objects have access to a given method. Currently used by Validator blueprint
+    /// to only allow ConsensusManager to access some methods.
     OuterObjectOnly,
-    Protected(RoleList),
+    /// Method is only accessible by any role in the role list
+    RoleProtected(RoleList),
 }
 
-impl MethodPermission {
+impl MethodAccessibility {
     pub fn nobody() -> Self {
-        MethodPermission::Protected(RoleList::none())
+        MethodAccessibility::RoleProtected(RoleList::none())
     }
 }
 
-impl<const N: usize> From<[&str; N]> for MethodPermission {
+impl<const N: usize> From<[&str; N]> for MethodAccessibility {
     fn from(value: [&str; N]) -> Self {
-        MethodPermission::Protected(value.into())
+        MethodAccessibility::RoleProtected(value.into())
     }
 }
 
-impl From<RoleList> for MethodPermission {
+impl From<RoleList> for MethodAccessibility {
     fn from(value: RoleList) -> Self {
-        Self::Protected(value)
+        Self::RoleProtected(value)
     }
 }
 

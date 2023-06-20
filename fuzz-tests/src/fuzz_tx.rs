@@ -19,9 +19,9 @@ use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::manifest::ast;
 use transaction::model::InstructionV1;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 use crate::common::*;
 
@@ -135,9 +135,7 @@ impl TxFuzzer {
                 .substate_db()
                 .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                     &vault,
-                    MAIN_BASE_PARTITION
-                        .at_offset(PartitionOffset(1u8))
-                        .unwrap(),
+                    MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
                 );
 
             substate_iter.next().map(|(_key, id)| {
@@ -250,11 +248,14 @@ impl TxFuzzer {
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesCreateInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallAccessRulesMethod {
-                        address: address.into(),
-                        method_name: ACCESS_RULES_CREATE_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_CREATE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CallFunction
                 5 => {
@@ -327,15 +328,17 @@ impl TxFuzzer {
                 15 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
+                    let input = AccountCreateInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                        function_name: ACCOUNT_CREATE_IDENT.to_string(),
-                        args: to_manifest_value(
-                            &AccountCreateInput::arbitrary(&mut unstructured).unwrap(),
-                        ),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                            function_name: ACCOUNT_CREATE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CreateAccountAdvanced
                 16 => {
@@ -343,12 +346,15 @@ impl TxFuzzer {
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                        function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                            function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CreateFungibleResource
                 17 => {
@@ -357,12 +363,15 @@ impl TxFuzzer {
                     let input =
                         FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                        function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CreateFungibleResourceWithInitialSupply
                 18 => {
@@ -373,13 +382,17 @@ impl TxFuzzer {
                     )
                     .unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                        function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                            .to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            function_name:
+                                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                                    .to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CreateIdentity
                 19 => {
@@ -387,12 +400,15 @@ impl TxFuzzer {
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = IdentityCreateInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                        function_name: IDENTITY_CREATE_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                            function_name: IDENTITY_CREATE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CreateIdentityAdvanced
                 20 => {
@@ -400,12 +416,15 @@ impl TxFuzzer {
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                        function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                            function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CreateNonFungibleResource
                 21 => {
@@ -414,12 +433,15 @@ impl TxFuzzer {
                     let input = NonFungibleResourceManagerCreateInput::arbitrary(&mut unstructured)
                         .unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                        function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
 
                 // CreateNonFungibleResourceWithInitialSupply
@@ -432,14 +454,17 @@ impl TxFuzzer {
                         )
                         .unwrap();
 
-                    Some(InstructionV1::CallFunction {
-                        package_address: package_address.into(),
-                        blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                        function_name:
-                            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                                .to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallFunction {
+                            package_address: package_address.into(),
+                            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                            function_name:
+                                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                                    .to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // CreateProofFromAuthZone
                 23 => Some(InstructionV1::CreateProofFromAuthZone { resource_address }),
@@ -487,13 +512,19 @@ impl TxFuzzer {
                 }
                 // CreateValidator
                 31 => {
-                    let input = ConsensusManagerCreateValidatorInput { key: public_key, fee_factor: Decimal::ONE };
+                    let input = ConsensusManagerCreateValidatorInput {
+                        key: public_key,
+                        fee_factor: Decimal::ONE,
+                    };
 
-                    Some(InstructionV1::CallMethod {
-                        address: component_address.into(),
-                        method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallMethod {
+                            address: component_address.into(),
+                            method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // DropAllProofs
                 32 => Some(InstructionV1::DropAllProofs),
@@ -519,11 +550,14 @@ impl TxFuzzer {
                     };
                     let input = VaultFreezeInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallDirectVaultMethod {
-                        address: InternalAddress::new_or_panic(vault_id.into()),
-                        method_name: VAULT_FREEZE_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallDirectVaultMethod {
+                            address: InternalAddress::new_or_panic(vault_id.into()),
+                            method_name: VAULT_FREEZE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // MintFungible
                 35 => {
@@ -541,24 +575,30 @@ impl TxFuzzer {
                         NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
                             .unwrap();
 
-                    Some(InstructionV1::CallMethod {
-                        address: resource_address.into(),
-                        method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallMethod {
+                            address: resource_address.into(),
+                            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
-                // MintUuidNonFungible
+                // MintRuidNonFungible
                 37 => {
-                    let input = NonFungibleResourceManagerMintUuidManifestInput::arbitrary(
+                    let input = NonFungibleResourceManagerMintRuidManifestInput::arbitrary(
                         &mut unstructured,
                     )
                     .unwrap();
 
-                    Some(InstructionV1::CallMethod {
-                        address: resource_address.into(),
-                        method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallMethod {
+                            address: resource_address.into(),
+                            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // PopFromAuthZone
                 38 => Some(InstructionV1::PopFromAuthZone {}),
@@ -675,11 +715,14 @@ impl TxFuzzer {
                     };
                     let input = VaultUnfreezeInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallDirectVaultMethod {
-                        address: InternalAddress::new_or_panic(vault_id.into()),
-                        method_name: VAULT_UNFREEZE_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallDirectVaultMethod {
+                            address: InternalAddress::new_or_panic(vault_id.into()),
+                            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // UpdateRole
                 51 => {
@@ -687,11 +730,14 @@ impl TxFuzzer {
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();
 
-                    Some(InstructionV1::CallAccessRulesMethod {
-                        address: address.into(),
-                        method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
-                        args: to_manifest_value(&input),
-                    })
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
                 }
                 // If you encounter below error you can check what are the current instructions
                 // using below command:

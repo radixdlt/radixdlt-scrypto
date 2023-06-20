@@ -14,7 +14,7 @@ mod resource_test {
     impl ResourceTest {
         pub fn set_mintable_with_self_resource_address() {
             let super_admin_manager: ResourceManager =
-                ResourceBuilder::new_uuid_non_fungible::<TestNFData>()
+                ResourceBuilder::new_ruid_non_fungible::<TestNFData>()
                     .metadata("name", "Super Admin Badge")
                     .mintable(rule!(allow_all), rule!(allow_all))
                     .create_with_no_initial_supply();

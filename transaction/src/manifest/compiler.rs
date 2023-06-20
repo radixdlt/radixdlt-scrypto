@@ -21,7 +21,7 @@ where
     let bech32_decoder = Bech32Decoder::new(network);
 
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
-    let instructions = parser::Parser::new(tokens)
+    let instructions = parser::Parser::new(tokens, parser::PARSER_MAX_DEPTH)
         .parse_manifest()
         .map_err(CompileError::ParserError)?;
     generator::generate_manifest(&instructions, &bech32_decoder, blobs)

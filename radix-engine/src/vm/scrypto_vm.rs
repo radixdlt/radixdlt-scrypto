@@ -2,7 +2,7 @@ use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::{ScryptoRuntime, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
+use radix_engine_interface::api::{ClientApi, ClientLimitsApi};
 
 pub struct ScryptoVm<W: WasmEngine> {
     pub wasm_engine: W,
@@ -50,7 +50,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + ClientTransactionLimitsApi<RuntimeError>,
+        Y: ClientApi<RuntimeError> + ClientLimitsApi<RuntimeError>,
     {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));

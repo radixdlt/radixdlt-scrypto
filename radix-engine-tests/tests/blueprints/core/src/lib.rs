@@ -49,12 +49,11 @@ mod core_test {
     struct CoreTest;
 
     impl CoreTest {
-        pub fn query() -> (PackageAddress, Hash, Epoch, u128) {
+        pub fn query() -> (PackageAddress, Hash, Epoch) {
             (
                 Runtime::package_address(),
                 Runtime::transaction_hash(),
                 Runtime::current_epoch(),
-                Runtime::generate_uuid(),
             )
         }
     }

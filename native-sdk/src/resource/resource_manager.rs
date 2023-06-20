@@ -131,7 +131,7 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible_single_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
+    pub fn mint_non_fungible_single_ruid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
         &self,
         data: T,
         api: &mut Y,
@@ -143,8 +143,8 @@ impl ResourceManager {
 
         let rtn = api.call_method(
             self.0.as_node_id(),
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerMintSingleUuidInput { entry: value })
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerMintSingleRuidInput { entry: value })
                 .unwrap(),
         )?;
 
