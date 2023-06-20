@@ -370,64 +370,65 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let import_statements = {
         let mut import_statements = Vec::new();
-        let import_blueprint_index = macro_statements.iter().position(|item| {
-            item.mac
-                .path
-                .get_ident()
-                .unwrap()
-                .eq(&Ident::new("extern_blueprint", Span::call_site()))
-        });
-        if let Some(import_blueprint_index) = import_blueprint_index {
-            let import_macro = macro_statements.remove(import_blueprint_index);
-            let import_blueprint: ImportBlueprint = import_macro.mac.parse_body()?;
+        loop {
+            let import_blueprint_index = macro_statements.iter().position(|item| {
+                item.mac
+                    .path
+                    .get_ident()
+                    .unwrap()
+                    .eq(&Ident::new("extern_blueprint", Span::call_site()))
+            });
+            if let Some(import_blueprint_index) = import_blueprint_index {
+                let import_macro = macro_statements.remove(import_blueprint_index);
+                let import_blueprint: ImportBlueprint = import_macro.mac.parse_body()?;
 
-            let package_expr = {
-                let package = import_blueprint.package;
-                match package {
-                    Expr::Lit(..) => {
-                        let lit_str: LitStr = parse_quote!( #package );
-                        let (_hrp, _entity_type, address) =
-                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                .unwrap();
-                        let package_expr: Expr = parse_quote! {
+                let package_expr = {
+                    let package = import_blueprint.package;
+                    match package {
+                        Expr::Lit(..) => {
+                            let lit_str: LitStr = parse_quote!( #package );
+                            let (_hrp, _entity_type, address) =
+                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                    .unwrap();
+                            let package_expr: Expr = parse_quote! {
                             PackageAddress :: new_or_panic([ #(#address),* ])
                         };
-                        package_expr
+                            package_expr
+                        }
+                        _ => package,
                     }
-                    _ => package,
-                }
-            };
+                };
 
-            dependency_exprs.push(package_expr.clone());
+                dependency_exprs.push(package_expr.clone());
 
-            let blueprint_name = import_blueprint.blueprint.to_string();
-            let blueprint = if let Some((_, rename)) = import_blueprint.rename {
-                rename
-            } else {
-                import_blueprint.blueprint
-            };
-
-            let owned_typed_name = format!("Owned{}", blueprint.to_string());
-            let global_typed_name = format!("Global{}", blueprint.to_string());
-            let blueprint_functions_ident = format_ident!("{}Functions", blueprint);
-
-            let mut methods = Vec::new();
-            let mut functions = Vec::new();
-            for function in import_blueprint.functions {
-                let is_method = function
-                    .sig
-                    .inputs
-                    .iter()
-                    .find(|arg| matches!(arg, FnArg::Receiver(..)))
-                    .is_some();
-                if is_method {
-                    methods.push(function.sig);
+                let blueprint_name = import_blueprint.blueprint.to_string();
+                let blueprint = if let Some((_, rename)) = import_blueprint.rename {
+                    rename
                 } else {
-                    functions.push(function.sig);
-                }
-            }
+                    import_blueprint.blueprint
+                };
 
-            let import_statement = quote! {
+                let owned_typed_name = format!("Owned{}", blueprint.to_string());
+                let global_typed_name = format!("Global{}", blueprint.to_string());
+                let blueprint_functions_ident = format_ident!("{}Functions", blueprint);
+
+                let mut methods = Vec::new();
+                let mut functions = Vec::new();
+                for function in import_blueprint.functions {
+                    let is_method = function
+                        .sig
+                        .inputs
+                        .iter()
+                        .find(|arg| matches!(arg, FnArg::Receiver(..)))
+                        .is_some();
+                    if is_method {
+                        methods.push(function.sig);
+                    } else {
+                        functions.push(function.sig);
+                    }
+                }
+
+                let import_statement = quote! {
                 extern_blueprint_internal! {
                     #package_expr,
                     #blueprint,
@@ -442,7 +443,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     }
                 }
             };
-            import_statements.push(import_statement);
+                import_statements.push(import_statement);
+            } else {
+                break;
+            }
         }
         import_statements
     };

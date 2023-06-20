@@ -45,6 +45,7 @@ members = [
     "royalty-auth",
     "transaction_limits",
     "transaction_runtime",
+    "tx_processor_access",
     "events",
     "events_invalid",
     "logger",
