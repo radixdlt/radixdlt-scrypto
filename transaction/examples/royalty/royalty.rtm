@@ -1,7 +1,7 @@
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
     "my_method"
-    Enum<0u8>(Enum<RoyaltyAmount::Free>())
+    Enum<1u8>(Enum<RoyaltyAmount::Free>())
     true;
 
 CLAIM_PACKAGE_ROYALTY

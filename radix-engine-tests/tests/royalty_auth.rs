@@ -258,14 +258,8 @@ fn test_component_owner_can_claim_royalty() {
 #[test]
 fn test_non_component_owner_cannot_claim_royalty() {
     // Arrange
-    let (
-        mut test_runner,
-        account,
-        public_key,
-        _package_address,
-        component_address,
-        _,
-    ) = set_up_package_and_component();
+    let (mut test_runner, account, public_key, _package_address, component_address, _) =
+        set_up_package_and_component();
 
     // Act
     let receipt = test_runner.execute_manifest(
