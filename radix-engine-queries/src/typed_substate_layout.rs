@@ -93,8 +93,9 @@ impl TypedSubstateKey {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesSubstateKey {
-    Rule(RoleKey),
-    Mutability(RoleKey),
+    AccessRulesField(AccessRulesField),
+    Rule(ModuleRoleKey),
+    Mutability(ModuleRoleKey),
 }
 
 /// Doesn't include non-object modules, nor transient nodes.
@@ -125,6 +126,7 @@ pub enum TypedMainModuleSubstateKey {
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
     TransactionTrackerField(TransactionTrackerField),
+    TransactionTrackerCollectionEntry(Hash),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -173,7 +175,12 @@ pub fn to_typed_substate_key(
         ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModuleField(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
-        ACCESS_RULES_BASE_PARTITION => {
+        ACCESS_RULES_FIELDS_PARTITION => {
+            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
+                AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
+            ))
+        }
+        ACCESS_RULES_ROLE_DEF_PARTITION => {
             let key = substate_key
                 .for_map()
                 .ok_or_else(|| error("Access Rules key"))?;
@@ -371,9 +378,19 @@ fn to_typed_object_substate_key_internal(
             MultiResourcePoolField::try_from(substate_key)?,
         ),
         EntityType::GlobalTransactionTracker => {
-            TypedMainModuleSubstateKey::TransactionTrackerField(TransactionTrackerField::try_from(
-                substate_key,
-            )?)
+            if partition_offset == 0 {
+                TypedMainModuleSubstateKey::TransactionTrackerField(
+                    TransactionTrackerField::try_from(substate_key)?,
+                )
+            } else {
+                if let Some(key) = substate_key.for_map() {
+                    TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                } else {
+                    return Err(());
+                }
+            }
         }
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
@@ -400,6 +417,7 @@ pub enum TypedTypeInfoModuleFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModule {
+    OwnerRole(OwnerRole),
     Rule(KeyValueEntrySubstate<AccessRule>),
     Mutability(KeyValueEntrySubstate<RoleList>),
 }
@@ -437,6 +455,7 @@ pub enum TypedMainModuleSubstateValue {
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     TransactionTracker(TypedTransactionTrackerFieldValue),
+    TransactionTrackerCollectionEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
@@ -552,6 +571,13 @@ fn to_typed_substate_value_internal(
             })
         }
         TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
+            TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => {
+                match access_rules_field_offset {
+                    AccessRulesField::OwnerRole => TypedSubstateValue::AccessRulesModule(
+                        TypedAccessRulesModule::OwnerRole(scrypto_decode(data)?),
+                    ),
+                }
+            }
             TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
                 TypedAccessRulesModule::Rule(scrypto_decode(data)?),
             ),
@@ -748,6 +774,9 @@ fn to_typed_object_substate_value(
                     TypedTransactionTrackerFieldValue::TransactionTracker(scrypto_decode(data)?)
                 }
             })
+        }
+        TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(_) => {
+            TypedMainModuleSubstateValue::TransactionTrackerCollectionEntry(scrypto_decode(data)?)
         }
     };
     Ok(substate_value)

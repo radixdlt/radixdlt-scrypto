@@ -126,6 +126,8 @@ pub enum WasmRuntimeError {
     /// Invalid modules
     InvalidModules(DecodeError),
 
+    InvalidTemplateArgs(DecodeError),
+
     InvalidKeyValueStoreSchema(DecodeError),
 
     /// Invalid component address

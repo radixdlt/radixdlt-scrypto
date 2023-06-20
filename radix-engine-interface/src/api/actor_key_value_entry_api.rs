@@ -10,7 +10,7 @@ pub trait ClientActorKeyValueEntryApi<E: Debug> {
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        key: &[u8],
+        key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, E>;
 

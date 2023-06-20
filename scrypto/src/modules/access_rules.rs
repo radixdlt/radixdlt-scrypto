@@ -8,7 +8,9 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, RoleKey, RoleList, Roles};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, OwnerRole, RoleKey, RoleList, Roles,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -19,13 +21,13 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(roles: Roles) -> Self {
+    pub fn new(owner_role: OwnerRole, roles: BTreeMap<ObjectModuleId, Roles>) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput { roles }).unwrap(),
+                scrypto_encode(&AccessRulesCreateInput { owner_role, roles }).unwrap(),
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
@@ -36,6 +38,7 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
+                module: ObjectModuleId::Main,
                 role_key: RoleKey::new(name),
                 rule: Some(entry.into()),
                 mutability: None,
@@ -47,6 +50,31 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
+                module: ObjectModuleId::Main,
+                role_key: RoleKey::new(name),
+                rule: None,
+                mutability: Some((mutability.into(), true)),
+            },
+        );
+    }
+
+    pub fn update_metadata_role_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
+                module: ObjectModuleId::Metadata,
+                role_key: RoleKey::new(name),
+                rule: Some(entry.into()),
+                mutability: None,
+            },
+        );
+    }
+
+    pub fn update_metadata_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
+                module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new(name),
                 rule: None,
                 mutability: Some((mutability.into(), true)),
@@ -64,12 +92,6 @@ impl Attachable for AccessRules {
 
     fn handle(&self) -> &ModuleHandle {
         &self.0
-    }
-}
-
-impl Default for AccessRules {
-    fn default() -> Self {
-        AccessRules::new(Roles::new())
     }
 }
 

@@ -400,7 +400,7 @@ pub mod collections {
         #[macro_export]
         macro_rules! indexmap {
             ( ) => ({
-                $crate::rust::collections::index_map::index_map_new()
+                $crate::rust::collections::index_map_new()
             });
             ($($key:expr => $value:expr,)+) => ( $crate::rust::collections::index_map::indexmap!{$($key => $value),*} );
             ($($key:expr => $value:expr),*) => ({

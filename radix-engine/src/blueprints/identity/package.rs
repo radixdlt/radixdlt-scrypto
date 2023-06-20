@@ -10,9 +10,6 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
@@ -88,14 +85,7 @@ impl IdentityNativePackage {
         );
 
         let method_auth = method_auth_template! {
-            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-
-            MethodKey::royalty(COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => [OWNER_ROLE];
-            MethodKey::royalty(COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => [OWNER_ROLE];
-
-            MethodKey::main(IDENTITY_SECURIFY_IDENT) => [SECURIFY_ROLE];
+            IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
         };
 
         let schema = generate_full_schema(aggregator);
@@ -242,7 +232,7 @@ impl IdentityBlueprint {
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, None)?;
         Ok(address)
     }
 
@@ -254,7 +244,7 @@ impl IdentityBlueprint {
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules)?;
+        let address = api.globalize(modules, None)?;
         Ok((address, bucket))
     }
 

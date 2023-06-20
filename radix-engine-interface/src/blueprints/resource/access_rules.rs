@@ -1,9 +1,9 @@
-use crate::api::ObjectModuleId;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_engine_interface::api::ObjectModuleId;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
@@ -32,39 +32,22 @@ impl ObjectKey {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
 pub struct MethodKey {
-    // TODO: Remove `ObjectModuleId::AccessRules`?
-    pub module_id: ObjectModuleId,
     pub ident: String,
 }
 
 impl MethodKey {
-    pub fn new<S: ToString>(module_id: ObjectModuleId, method_ident: S) -> Self {
+    pub fn new<S: ToString>(method_ident: S) -> Self {
         Self {
-            module_id,
             ident: method_ident.to_string(),
         }
     }
+}
 
-    pub fn metadata<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: ObjectModuleId::Metadata,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn royalty<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: ObjectModuleId::Royalty,
-            ident: method_ident.to_string(),
-        }
-    }
-
-    pub fn main<S: ToString>(method_ident: S) -> Self {
-        Self {
-            module_id: ObjectModuleId::Main,
-            ident: method_ident.to_string(),
-        }
+impl From<&str> for MethodKey {
+    fn from(value: &str) -> Self {
+        MethodKey::new(value)
     }
 }
 
@@ -112,6 +95,22 @@ impl From<RoleList> for MethodPermission {
 pub enum AttachedModule {
     Metadata,
     Royalty,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct ModuleRoleKey {
+    pub module: ObjectModuleId,
+    pub key: RoleKey,
+}
+
+impl ModuleRoleKey {
+    pub fn new<K: Into<RoleKey>>(module: ObjectModuleId, key: K) -> Self {
+        Self {
+            module,
+            key: key.into(),
+        }
+    }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -248,8 +247,8 @@ impl Roles {
         Self { roles: btreemap!() }
     }
 
-    pub fn define_role<K: Into<RoleKey>>(&mut self, authority: K, entry: RoleEntry) {
-        self.roles.insert(authority.into(), entry);
+    pub fn define_role<K: Into<RoleKey>>(&mut self, role: K, entry: RoleEntry) {
+        self.roles.insert(role.into(), entry);
     }
 }
 

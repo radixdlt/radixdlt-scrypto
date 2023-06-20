@@ -5,9 +5,6 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_auth_template, types::*};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
@@ -200,13 +197,13 @@ impl ConsensusManagerNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template!(
-                            MethodKey::main(CONSENSUS_MANAGER_START_IDENT) => [START_ROLE];
-                            MethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
+                            CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
+                            CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
-                            MethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT) => MethodPermission::Public;
-                            MethodKey::main(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT) => MethodPermission::Public;
-                            MethodKey::main(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT) => MethodPermission::Public;
-                            MethodKey::main(CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public;
+                            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodPermission::Public;
+                            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodPermission::Public;
+                            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodPermission::Public;
+                            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodPermission::Public;
                         ),
                         outer_auth: method_auth_template!(),
                     },
@@ -427,23 +424,19 @@ impl ConsensusManagerNativePackage {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static {
                         auth: method_auth_template! {
-                            MethodKey::metadata(METADATA_SET_IDENT) => [OWNER_ROLE];
-                            MethodKey::metadata(METADATA_REMOVE_IDENT) => [OWNER_ROLE];
-                            MethodKey::metadata(METADATA_GET_IDENT) => MethodPermission::Public;
-
-                            MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
-                            MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
-                            MethodKey::main(VALIDATOR_STAKE_IDENT) => [STAKE_ROLE];
-                            MethodKey::main(VALIDATOR_REGISTER_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_UPDATE_FEE_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [OWNER_ROLE];
-                            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
-                            MethodKey::main(VALIDATOR_APPLY_REWARD_IDENT) => [VALIDATOR_APPLY_REWARD_AUTHORITY];
+                            VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
+                            VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;
+                            VALIDATOR_STAKE_IDENT => [STAKE_ROLE];
+                            VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
+                            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
+                            VALIDATOR_APPLY_EMISSION_IDENT => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
+                            VALIDATOR_APPLY_REWARD_IDENT => [VALIDATOR_APPLY_REWARD_AUTHORITY];
                         },
                         outer_auth: btreemap!(),
                     },

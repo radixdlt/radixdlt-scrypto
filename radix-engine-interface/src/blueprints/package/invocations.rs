@@ -1,6 +1,3 @@
-use crate::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
@@ -129,24 +126,6 @@ pub enum MethodAuthTemplate {
 }
 
 impl MethodAuthTemplate {
-    pub fn add_metadata_default_if_not_specified(&mut self) {
-        match self {
-            MethodAuthTemplate::Static { auth, .. } => {
-                if !auth.contains_key(&MethodKey::metadata(METADATA_GET_IDENT)) {
-                    auth.insert(
-                        MethodKey::metadata(METADATA_GET_IDENT),
-                        MethodPermission::Public,
-                    );
-                    auth.insert(MethodKey::metadata(METADATA_SET_IDENT), [OWNER_ROLE].into());
-                    auth.insert(
-                        MethodKey::metadata(METADATA_REMOVE_IDENT),
-                        [OWNER_ROLE].into(),
-                    );
-                }
-            }
-        }
-    }
-
     pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
         match self {
             MethodAuthTemplate::Static { auth, .. } => auth,

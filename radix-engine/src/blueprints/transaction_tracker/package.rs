@@ -224,18 +224,18 @@ impl TransactionTrackerBlueprint {
             })
             .unwrap()],
         )?;
-        let access_rules = AccessRules::create(Roles::new(), api)?.0;
+        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
-        let address = api.globalize_with_address(
+        let address = api.globalize(
             btreemap!(
                 ObjectModuleId::Main => intent_store,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address_reservation,
+            Some(address_reservation),
         )?;
         Ok(address)
     }
