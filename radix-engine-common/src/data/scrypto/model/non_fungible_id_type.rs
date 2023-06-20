@@ -10,5 +10,5 @@ pub enum NonFungibleIdType {
     String,
     Integer,
     Bytes,
-    UUID,
+    RUID,
 }

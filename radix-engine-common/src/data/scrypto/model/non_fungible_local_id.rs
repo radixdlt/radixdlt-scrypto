@@ -10,7 +10,7 @@ use utils::copy_u8_array;
 
 pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 
-/// Marks the rust type that represents a non-fungible id, of any kind (i.e. String, Integer, Bytes and UUID).
+/// Marks the rust type that represents a non-fungible id, of any kind (i.e. String, Integer, Bytes and RUID).
 pub trait IsNonFungibleLocalId: Into<NonFungibleLocalId> {
     fn id_type() -> NonFungibleIdType;
 }
@@ -30,9 +30,9 @@ impl IsNonFungibleLocalId for BytesNonFungibleLocalId {
         NonFungibleIdType::Bytes
     }
 }
-impl IsNonFungibleLocalId for UUIDNonFungibleLocalId {
+impl IsNonFungibleLocalId for RUIDNonFungibleLocalId {
     fn id_type() -> NonFungibleIdType {
-        NonFungibleIdType::UUID
+        NonFungibleIdType::RUID
     }
 }
 
@@ -65,11 +65,9 @@ impl TryFrom<Vec<u8>> for NonFungibleLocalId {
     }
 }
 
-impl TryFrom<u128> for NonFungibleLocalId {
-    type Error = ContentValidationError;
-
-    fn try_from(value: u128) -> Result<Self, Self::Error> {
-        Ok(UUIDNonFungibleLocalId::new(value)?.into())
+impl From<[u8; 32]> for NonFungibleLocalId {
+    fn from(value: [u8; 32]) -> Self {
+        Self::RUID(value.into())
     }
 }
 
@@ -89,10 +87,10 @@ pub enum NonFungibleLocalId {
     ///
     /// Create using `NonFungibleLocalId::bytes(...).unwrap()`.
     Bytes(BytesNonFungibleLocalId),
-    /// UUID, v4, variant 1, big endian. See https://www.rfc-editor.org/rfc/rfc4122
+    /// RUID, v4, variant 1, big endian. See https://www.rfc-editor.org/rfc/rfc4122
     ///
-    /// Create using `NonFungibleLocalId::uuid(...).unwrap()`.
-    UUID(UUIDNonFungibleLocalId),
+    /// Create using `NonFungibleLocalId::ruid(...).unwrap()`.
+    RUID(RUIDNonFungibleLocalId),
 }
 
 impl NonFungibleLocalId {
@@ -108,8 +106,8 @@ impl NonFungibleLocalId {
         value.into().try_into()
     }
 
-    pub fn uuid(value: u128) -> Result<Self, ContentValidationError> {
-        value.try_into()
+    pub fn ruid(value: [u8; 32]) -> Self {
+        Self::RUID(RUIDNonFungibleLocalId(value))
     }
 
     pub fn to_key(&self) -> Vec<u8> {
@@ -135,9 +133,9 @@ impl From<BytesNonFungibleLocalId> for NonFungibleLocalId {
     }
 }
 
-impl From<UUIDNonFungibleLocalId> for NonFungibleLocalId {
-    fn from(value: UUIDNonFungibleLocalId) -> Self {
-        Self::UUID(value)
+impl From<RUIDNonFungibleLocalId> for NonFungibleLocalId {
+    fn from(value: RUIDNonFungibleLocalId) -> Self {
+        Self::RUID(value)
     }
 }
 
@@ -271,50 +269,23 @@ impl TryFrom<Vec<u8>> for BytesNonFungibleLocalId {
     }
 }
 
-/// UUID, v4, variant 1, big endian. See https://www.rfc-editor.org/rfc/rfc4122
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+/// RUID, v4, variant 1, big endian. See https://www.rfc-editor.org/rfc/rfc4122
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct UUIDNonFungibleLocalId(u128);
+pub struct RUIDNonFungibleLocalId([u8; 32]);
 
-impl UUIDNonFungibleLocalId {
-    pub fn new(id: u128) -> Result<Self, ContentValidationError> {
-        let new = Self(id);
-        new.validate()?;
-        Ok(new)
+impl RUIDNonFungibleLocalId {
+    pub fn new(id: [u8; 32]) -> Self {
+        Self(id)
     }
 
-    pub fn validate(&self) -> Result<(), ContentValidationError> {
-        // 0100 - v4
-        // 10 - variant 1
-        if (self.0 & 0x00000000_0000_f000_c000_000000000000u128)
-            != 0x00000000_0000_4000_8000_000000000000u128
-        {
-            return Err(ContentValidationError::NotUuidV4Variant1);
-        }
-
-        Ok(())
-    }
-
-    pub fn value(&self) -> u128 {
-        self.0
+    pub fn value(&self) -> &[u8; 32] {
+        &self.0
     }
 }
 
-#[cfg(feature = "radix_engine_fuzzing")]
-impl<'a> Arbitrary<'a> for UUIDNonFungibleLocalId {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
-        let mut id = u128::arbitrary(u).unwrap();
-        // make sure this is v4 and variant 1
-        id &= !0x00000000_0000_f000_c000_000000000000u128;
-        id |= 0x00000000_0000_4000_8000_000000000000u128;
-
-        Ok(Self(id))
-    }
-}
-
-impl TryFrom<u128> for UUIDNonFungibleLocalId {
-    type Error = ContentValidationError;
-
-    fn try_from(value: u128) -> Result<Self, Self::Error> {
+impl From<[u8; 32]> for RUIDNonFungibleLocalId {
+    fn from(value: [u8; 32]) -> Self {
         Self::new(value)
     }
 }
@@ -324,7 +295,6 @@ pub enum ContentValidationError {
     TooLong,
     Empty,
     ContainsBadCharacter(char),
-    NotUuidV4Variant1,
 }
 
 impl NonFungibleLocalId {
@@ -333,7 +303,7 @@ impl NonFungibleLocalId {
             NonFungibleLocalId::String(..) => NonFungibleIdType::String,
             NonFungibleLocalId::Integer(..) => NonFungibleIdType::Integer,
             NonFungibleLocalId::Bytes(..) => NonFungibleIdType::Bytes,
-            NonFungibleLocalId::UUID(..) => NonFungibleIdType::UUID,
+            NonFungibleLocalId::RUID(..) => NonFungibleIdType::RUID,
         }
     }
 
@@ -356,9 +326,9 @@ impl NonFungibleLocalId {
                 encoder.write_size(v.0.len())?;
                 encoder.write_slice(v.0.as_slice())?;
             }
-            NonFungibleLocalId::UUID(v) => {
+            NonFungibleLocalId::RUID(v) => {
                 encoder.write_discriminator(3)?;
-                encoder.write_slice(&v.0.to_be_bytes())?;
+                encoder.write_slice(v.value().as_slice())?;
             }
         }
         Ok(())
@@ -391,8 +361,7 @@ impl NonFungibleLocalId {
                 Self::bytes(decoder.read_slice(size)?.to_vec())
                     .map_err(|_| DecodeError::InvalidCustomValue)
             }
-            3 => Self::uuid(u128::from_be_bytes(copy_u8_array(decoder.read_slice(16)?)))
-                .map_err(|_| DecodeError::InvalidCustomValue),
+            3 => Ok(Self::ruid(copy_u8_array(decoder.read_slice(32)?))),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
@@ -408,7 +377,7 @@ pub enum ParseNonFungibleLocalIdError {
     UnknownType,
     InvalidInteger,
     InvalidBytes,
-    InvalidUUID,
+    InvalidRUID,
     ContentValidationError(ContentValidationError),
 }
 
@@ -558,24 +527,21 @@ impl FromStr for NonFungibleLocalId {
             .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
         } else if s.starts_with("{") && s.ends_with("}") {
             let chars: Vec<char> = s[1..s.len() - 1].chars().collect();
-            if chars.len() == 32 + 4
-                && chars[8] == '-'
-                && chars[13] == '-'
-                && chars[18] == '-'
-                && chars[23] == '-'
+            if chars.len() == 32 * 2 + 3 && chars[16] == '-' && chars[33] == '-' && chars[50] == '-'
             {
                 let hyphen_stripped: String = chars.into_iter().filter(|c| *c != '-').collect();
-                if hyphen_stripped.len() == 32 {
-                    NonFungibleLocalId::uuid(
-                        u128::from_str_radix(&hyphen_stripped, 16)
-                            .map_err(|_| ParseNonFungibleLocalIdError::InvalidUUID)?,
-                    )
-                    .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
+                if hyphen_stripped.len() == 64 {
+                    NonFungibleLocalId::RUID(RUIDNonFungibleLocalId(
+                        hex::decode(&hyphen_stripped)
+                            .map_err(|_| ParseNonFungibleLocalIdError::InvalidRUID)?
+                            .try_into()
+                            .unwrap(),
+                    ))
                 } else {
-                    return Err(ParseNonFungibleLocalIdError::InvalidUUID);
+                    return Err(ParseNonFungibleLocalIdError::InvalidRUID);
                 }
             } else {
-                return Err(ParseNonFungibleLocalIdError::InvalidUUID);
+                return Err(ParseNonFungibleLocalIdError::InvalidRUID);
             }
         } else {
             return Err(ParseNonFungibleLocalIdError::UnknownType);
@@ -593,16 +559,15 @@ impl fmt::Display for NonFungibleLocalId {
             NonFungibleLocalId::Bytes(BytesNonFungibleLocalId(v)) => {
                 write!(f, "[{}]", hex::encode(&v))
             }
-            NonFungibleLocalId::UUID(UUIDNonFungibleLocalId(v)) => {
-                let hex = format!("{:032x}", v);
+            NonFungibleLocalId::RUID(RUIDNonFungibleLocalId(v)) => {
+                let hex = hex::encode(v.as_slice());
                 write!(
                     f,
-                    "{{{}-{}-{}-{}-{}}}",
-                    &hex[0..8],
-                    &hex[8..12],
-                    &hex[12..16],
-                    &hex[16..20],
-                    &hex[20..32]
+                    "{{{}-{}-{}-{}}}",
+                    &hex[0..16],
+                    &hex[16..32],
+                    &hex[32..48],
+                    &hex[48..64]
                 )
             }
         }
@@ -644,27 +609,7 @@ mod tests {
             NonFungibleLocalId::from_str("{--------------4----8---------------1}");
         assert_eq!(
             validation_result,
-            Err(ParseNonFungibleLocalIdError::InvalidUUID)
-        );
-
-        // UUIDv1
-        let validation_result =
-            NonFungibleLocalId::from_str("{baaa4d3e-97f6-11ed-a8fc-0242ac120002}");
-        assert_eq!(
-            validation_result,
-            Err(ParseNonFungibleLocalIdError::ContentValidationError(
-                ContentValidationError::NotUuidV4Variant1
-            ))
-        );
-
-        // UUIDv4 variant 2
-        let validation_result =
-            NonFungibleLocalId::from_str("{a5942110-956f-4b51-d517-79366f501d25}");
-        assert_eq!(
-            validation_result,
-            Err(ParseNonFungibleLocalIdError::ContentValidationError(
-                ContentValidationError::NotUuidV4Variant1
-            ))
+            Err(ParseNonFungibleLocalIdError::InvalidRUID)
         );
     }
 
@@ -748,8 +693,11 @@ mod tests {
             Err(ParseNonFungibleLocalIdError::InvalidInteger)
         );
         assert_eq!(
-            NonFungibleLocalId::from_str("{b36f5b3f-835b-406c-980f-7788d8f13c1b}").unwrap(),
-            NonFungibleLocalId::uuid(0xb36f5b3f_835b_406c_980f_7788d8f13c1b).unwrap()
+            NonFungibleLocalId::from_str(
+                "{1111111111111111-1111111111111111-1111111111111111-1111111111111111}"
+            )
+            .unwrap(),
+            NonFungibleLocalId::ruid([0x11; 32])
         );
         assert_eq!(
             NonFungibleLocalId::from_str("<test>").unwrap(),
@@ -767,10 +715,13 @@ mod tests {
         assert_eq!(NonFungibleLocalId::integer(1).to_string(), "#1#",);
         assert_eq!(NonFungibleLocalId::integer(10).to_string(), "#10#",);
         assert_eq!(
-            NonFungibleLocalId::uuid(0x0236805c_56e9_4431_a2a3_7d339db305c4)
-                .unwrap()
-                .to_string(),
-            "{0236805c-56e9-4431-a2a3-7d339db305c4}",
+            NonFungibleLocalId::ruid([
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                0x22, 0x22, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x44, 0x44, 0x44, 0x44,
+                0x44, 0x44, 0x44, 0x44,
+            ])
+            .to_string(),
+            "{1111111111111111-2222222222222222-3333333333333333-4444444444444444}",
         );
         assert_eq!(
             NonFungibleLocalId::string("test").unwrap().to_string(),

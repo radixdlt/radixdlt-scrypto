@@ -215,11 +215,12 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
+        feature_set: btreeset!(),
         schema,
         royalty_config: RoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
             function_auth,
-            method_auth: scrypto::blueprints::package::MethodAuthTemplate::NoAuth,
+            method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };
 

@@ -32,12 +32,12 @@ macro_rules! add_role {
 #[macro_export]
 macro_rules! method_auth_template {
     () => ({
-        let methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+        let methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodAccessibility>
             = BTreeMap::new();
         methods
     });
     ($($method:expr => $entry:expr;)*) => ({
-        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodAccessibility>
             = BTreeMap::new();
         $(
             methods.insert($method.into(), $entry.into());
@@ -58,7 +58,7 @@ macro_rules! roles_template {
         roles { $($role:expr $( => updaters: $updaters:expr)?;)* },
         methods { $($method:expr => $entry:expr; )* }
     ) => ({
-        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodAccessibility>
             = BTreeMap::new();
         $(
             methods.insert($method.into(), $entry.into());
@@ -75,7 +75,7 @@ macro_rules! roles_template {
         }
     });
     ( methods { $($method:expr => $entry:expr;)* }) => ({
-        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
+        let mut methods: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodAccessibility>
             = BTreeMap::new();
         $(
             methods.insert($method.into(), $entry.into());

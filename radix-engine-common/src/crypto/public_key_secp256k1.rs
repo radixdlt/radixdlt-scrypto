@@ -47,7 +47,7 @@ impl TryFrom<&[u8]> for Secp256k1PublicKey {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 #[sbor(transparent)]
-pub struct Secp256k1PublicKeyHash(pub [u8; NodeId::UUID_LENGTH]);
+pub struct Secp256k1PublicKeyHash(pub [u8; NodeId::RID_LENGTH]);
 
 impl Secp256k1PublicKeyHash {
     pub fn new_from_public_key(public_key: &Secp256k1PublicKey) -> Self {
@@ -64,7 +64,7 @@ impl HasPublicKeyHash for Secp256k1PublicKey {
 }
 
 impl IsPublicKeyHash for Secp256k1PublicKeyHash {
-    fn get_hash_bytes(&self) -> &[u8; NodeId::UUID_LENGTH] {
+    fn get_hash_bytes(&self) -> &[u8; NodeId::RID_LENGTH] {
         &self.0
     }
 

@@ -86,6 +86,7 @@ impl IdentityNativePackage {
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                     ED25519_SIGNATURE_VIRTUAL_BADGE.into(),

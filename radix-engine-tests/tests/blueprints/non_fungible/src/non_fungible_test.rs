@@ -73,7 +73,7 @@ mod non_fungible_test {
         }
 
         pub fn create_burnable_non_fungible() -> Bucket {
-            ResourceBuilder::new_uuid_non_fungible()
+            ResourceBuilder::new_ruid_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .mint_initial_supply([
@@ -424,14 +424,14 @@ mod non_fungible_test {
                 (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
             );
 
-            // creating non-fungible id with id type set to default (UUID)
+            // creating non-fungible id with id type set to default (RUID)
             let rtn = ScryptoEnv
                 .call_function(
                     RESOURCE_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                        id_type: NonFungibleIdType::UUID,
+                        id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
@@ -448,7 +448,7 @@ mod non_fungible_test {
         }
 
         pub fn create_string_non_fungible() -> Bucket {
-            // creating non-fungible id with id type set to default (UUID)
+            // creating non-fungible id with id type set to default (RUID)
             ResourceBuilder::new_string_non_fungible::<Sandwich>().mint_initial_supply([
                 (
                     "1".try_into().unwrap(),
@@ -498,8 +498,8 @@ mod non_fungible_test {
             ])
         }
 
-        pub fn create_uuid_non_fungible() -> Bucket {
-            ResourceBuilder::new_uuid_non_fungible::<Sandwich>().mint_initial_supply([Sandwich {
+        pub fn create_ruid_non_fungible() -> Bucket {
+            ResourceBuilder::new_ruid_non_fungible::<Sandwich>().mint_initial_supply([Sandwich {
                 name: "Zero".to_owned(),
                 available: true,
                 tastes_great: true,
@@ -508,20 +508,20 @@ mod non_fungible_test {
             }])
         }
 
-        pub fn create_mintable_uuid_non_fungible() -> ResourceManager {
-            ResourceBuilder::new_uuid_non_fungible::<Sandwich>()
+        pub fn create_mintable_ruid_non_fungible() -> ResourceManager {
+            ResourceBuilder::new_ruid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .create_with_no_initial_supply()
         }
 
-        pub fn create_uuid_non_fungible_and_mint() -> Bucket {
-            // creating non-fungible id with id type set to default (UUID)
-            let resource_manager = ResourceBuilder::new_uuid_non_fungible::<Sandwich>()
+        pub fn create_ruid_non_fungible_and_mint() -> Bucket {
+            // creating non-fungible id with id type set to default (RUID)
+            let resource_manager = ResourceBuilder::new_ruid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .metadata("name", "Katz's Sandwiches")
                 .create_with_no_initial_supply();
 
-            resource_manager.mint_uuid_non_fungible(Sandwich {
+            resource_manager.mint_ruid_non_fungible(Sandwich {
                 name: "Test".to_owned(),
                 available: false,
                 tastes_great: true,
