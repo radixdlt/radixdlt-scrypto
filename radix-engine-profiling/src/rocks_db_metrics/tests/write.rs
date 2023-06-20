@@ -244,7 +244,7 @@ where
     // prepare database
     {
         let mut substate_db = create_store(path.clone());
-        // 1_000_000 substates of size 100 bytes under random partitions
+        // Generate 1_000_000 substates of size 100 bytes, one substate per node.
         prepare_db(&mut substate_db, 100, 100, 1, 1000000);
     }
 

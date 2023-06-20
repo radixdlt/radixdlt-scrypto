@@ -309,7 +309,7 @@ where
     // prepare database
     let data_per_round: Vec<Vec<(DbPartitionKey, Vec<DbSortKey>)>> = {
         let mut substate_db = create_store(path.clone());
-        // fill db with 1_000_000 substates of size 100 bytes under random partitions
+        // Fill db with 1_000_000 substates of size 100 bytes under random partitions, one substate per node.
         // this will prepare base db size
         prepare_db(&mut substate_db, 100, 100, 1, 1000000);
 
