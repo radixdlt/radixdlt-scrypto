@@ -483,7 +483,6 @@ where
 
         let interpretation_result = kernel_boot
             .call_transaction_processor(
-                executable.intent_hash().as_hash(),
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),

@@ -23,7 +23,6 @@ use transaction::validation::*;
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {
-    pub transaction_hash: Hash,
     pub manifest_encoded_instructions: Vec<u8>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
@@ -33,7 +32,6 @@ pub struct TransactionProcessorRunInput {
 // This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
 #[derive(Debug, Eq, PartialEq, ScryptoEncode)]
 pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
-    pub transaction_hash: &'a Hash,
     pub manifest_encoded_instructions: &'a [u8],
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: &'a IndexSet<Reference>,
