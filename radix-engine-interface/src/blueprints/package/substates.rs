@@ -1,3 +1,4 @@
+use crate::blueprints::package::BlueprintType;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -144,7 +145,7 @@ pub struct BlueprintDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintInterface {
-    pub outer_blueprint: Option<String>,
+    pub blueprint_type: BlueprintType,
     pub generics: Vec<Generic>,
     pub feature_set: BTreeSet<String>,
     pub state: IndexedStateSchema,

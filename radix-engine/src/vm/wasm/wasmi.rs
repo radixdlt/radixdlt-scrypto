@@ -517,10 +517,10 @@ fn get_transaction_hash(
     runtime.get_transaction_hash().map(|buffer| buffer.0)
 }
 
-fn generate_uuid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn generate_ruid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_, runtime) = grab_runtime!(caller);
 
-    runtime.generate_uuid().map(|buffer| buffer.0)
+    runtime.generate_ruid().map(|buffer| buffer.0)
 }
 
 fn log_message(
@@ -964,10 +964,10 @@ impl WasmiModule {
             },
         );
 
-        let host_generate_uuid = Func::wrap(
+        let host_generate_ruid = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                generate_uuid(caller).map_err(|e| e.into())
+                generate_ruid(caller).map_err(|e| e.into())
             },
         );
 
@@ -1061,7 +1061,7 @@ impl WasmiModule {
             GET_TRANSACTION_HASH_FUNCTION_NAME,
             host_get_transaction_hash
         );
-        linker_define!(linker, GENERATE_UUID_FUNCTION_NAME, host_generate_uuid);
+        linker_define!(linker, GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
 
         let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);
         linker_define!(linker, "test_global_mutable_value", global_value);

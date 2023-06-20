@@ -189,7 +189,7 @@ extern "C" {
 
     pub fn get_transaction_hash() -> Buffer;
 
-    pub fn generate_uuid() -> Buffer;
+    pub fn generate_ruid() -> Buffer;
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -422,6 +422,6 @@ pub unsafe fn get_transaction_hash() -> Buffer {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn generate_uuid() -> Buffer {
+pub unsafe fn generate_ruid() -> Buffer {
     unreachable!()
 }

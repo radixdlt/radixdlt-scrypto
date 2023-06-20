@@ -53,8 +53,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleRe
 const NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME: &str =
     "package_burn_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
-    "mint_uuid_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_EXPORT_NAME: &str =
+    "mint_ruid_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
     "create_empty_vault_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME: &str =
@@ -328,15 +328,14 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::Outer {
-                    feature_set: btreeset!(
-                        TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        VAULT_FREEZE_FEATURE.to_string(),
-                        VAULT_RECALL_FEATURE.to_string(),
-                        MINT_FEATURE.to_string(),
-                        BURN_FEATURE.to_string(),
-                    ),
-                },
+                blueprint_type: BlueprintType::Outer,
+                feature_set: btreeset!(
+                    TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    VAULT_FREEZE_FEATURE.to_string(),
+                    VAULT_RECALL_FEATURE.to_string(),
+                    MINT_FEATURE.to_string(),
+                    BURN_FEATURE.to_string(),
+                ),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -362,11 +361,11 @@ impl ResourceManagerNativePackage {
                         FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
                         RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
                         RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodPermission::Public;
+                        RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
                     }),
                 },
             }
@@ -440,14 +439,14 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
                     input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>()),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateRuidWithInitialSupplyInput>()),
                     output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput>()),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput>()),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
 
@@ -505,27 +504,27 @@ impl ResourceManagerNativePackage {
             );
 
             functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintRuidInput>(
                         )),
                     output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintRuidOutput>(
                         )),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>()),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleRuidInput>()),
                     output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidOutput>()),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleRuidOutput>()),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT.to_string(),
                 },
             );
 
@@ -645,15 +644,14 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::Outer {
-                    feature_set: btreeset!(
-                        TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        VAULT_FREEZE_FEATURE.to_string(),
-                        VAULT_RECALL_FEATURE.to_string(),
-                        MINT_FEATURE.to_string(),
-                        BURN_FEATURE.to_string(),
-                    ),
-                },
+                blueprint_type: BlueprintType::Outer,
+                feature_set: btreeset!(
+                    TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    VAULT_FREEZE_FEATURE.to_string(),
+                    VAULT_RECALL_FEATURE.to_string(),
+                    MINT_FEATURE.to_string(),
+                    BURN_FEATURE.to_string(),
+                ),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![Generic::Any],
@@ -675,22 +673,22 @@ impl ResourceManagerNativePackage {
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT => [MINT_ROLE];
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT => [MINT_ROLE];
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINT_ROLE];
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINT_ROLE];
                         RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
                         RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
-                        RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                        RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodPermission::Public;
-                        NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodPermission::Public;
-                        NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => MethodPermission::Public;
+                        RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => MethodAccessibility::Public;
                     }),
                 },
             }
@@ -707,7 +705,7 @@ impl ResourceManagerNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
-            fields.push(FieldSchema::if_feature(
+            fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
                 VAULT_FREEZE_FEATURE,
             ));
@@ -895,6 +893,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -915,9 +914,9 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(),
 
                     method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                        VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
+                        VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                        VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                         VAULT_FREEZE_IDENT => [FREEZE_ROLE];
                         VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
                         VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
@@ -943,7 +942,7 @@ impl ResourceManagerNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
             ));
-            fields.push(FieldSchema::if_feature(
+            fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
                 VAULT_FREEZE_FEATURE,
             ));
@@ -1182,6 +1181,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1201,11 +1201,11 @@ impl ResourceManagerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                        VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                        NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
+                        VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                        VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                         VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
                         NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAW_ROLE];
@@ -1371,6 +1371,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1390,13 +1391,13 @@ impl ResourceManagerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
-                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                        BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
-                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
-                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                        BUCKET_PUT_IDENT => MethodPermission::Public;
-                        BUCKET_TAKE_IDENT => MethodPermission::Public;
+                        BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
+                        BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
+                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                        BUCKET_PUT_IDENT => MethodAccessibility::Public;
+                        BUCKET_TAKE_IDENT => MethodAccessibility::Public;
 
                         FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
@@ -1583,6 +1584,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1602,16 +1604,16 @@ impl ResourceManagerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::StaticUseOuterAuth(method_auth_template! {
-                        BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
-                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                        BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
-                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
-                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                        BUCKET_PUT_IDENT => MethodPermission::Public;
-                        BUCKET_TAKE_IDENT => MethodPermission::Public;
-                        NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                        NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                        NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
+                        BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
+                        BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
+                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                        BUCKET_PUT_IDENT => MethodAccessibility::Public;
+                        BUCKET_TAKE_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                         NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                         NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
@@ -1693,6 +1695,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1713,7 +1716,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -1807,6 +1810,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1827,7 +1831,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -1965,6 +1969,7 @@ impl ResourceManagerNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1985,7 +1990,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -2144,6 +2149,7 @@ impl ResourceManagerNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -2159,7 +2165,7 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -2369,15 +2375,15 @@ impl ResourceManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: NonFungibleResourceManagerCreateUuidWithInitialSupplyInput =
+                let input: NonFungibleResourceManagerCreateRuidWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
-                let rtn = NonFungibleResourceManagerBlueprint::create_uuid_with_initial_supply(
+                let rtn = NonFungibleResourceManagerBlueprint::create_ruid_with_initial_supply(
                     input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,
@@ -2398,27 +2404,27 @@ impl ResourceManagerNativePackage {
                     NonFungibleResourceManagerBlueprint::mint_non_fungible(input.entries, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: NonFungibleResourceManagerMintUuidInput =
+                let input: NonFungibleResourceManagerMintRuidInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleResourceManagerBlueprint::mint_uuid_non_fungible(
+                let rtn = NonFungibleResourceManagerBlueprint::mint_ruid_non_fungible(
                     input.entries,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: NonFungibleResourceManagerMintSingleUuidInput =
+                let input: NonFungibleResourceManagerMintSingleRuidInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleResourceManagerBlueprint::mint_single_uuid_non_fungible(
+                let rtn = NonFungibleResourceManagerBlueprint::mint_single_ruid_non_fungible(
                     input.entry,
                     api,
                 )?;
