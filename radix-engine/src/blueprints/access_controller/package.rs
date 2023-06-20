@@ -16,9 +16,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
-};
+use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate, PackageDefinition};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
@@ -465,9 +463,7 @@ impl AccessControllerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::Static(roles_template!(
                         roles {
                             "primary" => updaters: [SELF_ROLE];

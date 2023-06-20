@@ -9,9 +9,7 @@ use crate::types::*;
 use crate::{event_schema, method_auth_template, roles_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
-};
+use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate, PackageDefinition};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
@@ -352,11 +350,7 @@ impl ResourceManagerNativePackage {
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
@@ -686,12 +680,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
@@ -947,8 +936,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
                         VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                         VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
@@ -1235,7 +1223,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
                         VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                         NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
@@ -1425,7 +1413,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
                         BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                         BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
@@ -1638,7 +1626,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
                         BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                         BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
@@ -1749,9 +1737,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
@@ -1864,9 +1850,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
@@ -2023,9 +2007,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
@@ -2200,7 +2182,7 @@ impl ResourceManagerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }

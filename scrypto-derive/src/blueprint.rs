@@ -445,7 +445,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
-        let function_names: Vec<String> = function_idents.iter().map(|i| i.to_string()).collect();
         let function_auth_statements = {
             let function_auth_index = macro_statements.iter().position(|item| {
                 item.mac
@@ -460,14 +459,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     #auth_macro
                 }
             } else {
-                // FIXME: Use AllPublicFunctions Template instead
                 quote! {
-                    fn function_auth() -> BTreeMap<String, AccessRule> {
-                        btreemap!(
-                            #(
-                                #function_names.to_string() => AccessRule::AllowAll,
-                            )*
-                        )
+                    fn function_auth() -> scrypto::blueprints::package::FunctionAuth {
+                        scrypto::blueprints::package::FunctionAuth::AllowAll
                     }
                 }
             }
@@ -595,10 +589,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 })*
 
                 let auth_config = {
-                    let method_auth = method_auth_template();
-
                     scrypto::blueprints::package::AuthConfig {
-                        method_auth,
+                        method_auth: method_auth_template(),
                         function_auth: function_auth(),
                     }
                 };
@@ -1409,10 +1401,8 @@ mod tests {
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
 
-                    fn function_auth() -> BTreeMap<String, AccessRule> {
-                        btreemap!(
-                            "y".to_string() => AccessRule::AllowAll,
-                        )
+                    fn function_auth() -> scrypto::blueprints::package::FunctionAuth {
+                        scrypto::blueprints::package::FunctionAuth::AllowAll
                     }
 
                     fn package_royalty_config() -> PackageRoyaltyConfig {
@@ -1485,10 +1475,8 @@ mod tests {
                         let mut dependencies = BTreeSet::new();
 
                         let auth_config = {
-                            let method_auth = method_auth_template();
-
                             scrypto::blueprints::package::AuthConfig {
-                                method_auth,
+                                method_auth: method_auth_template(),
                                 function_auth: function_auth(),
                             }
                         };

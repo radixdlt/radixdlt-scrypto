@@ -123,8 +123,41 @@ impl Default for BlueprintDefinitionInit {
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct AuthConfig {
-    pub function_auth: BTreeMap<String, AccessRule>,
+    pub function_auth: FunctionAuth,
     pub method_auth: MethodAuthTemplate,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum FunctionAuth {
+    /// All functions are accessible
+    AllowAll,
+    /// Functions are protected by an access rule
+    AccessRules(BTreeMap<String, AccessRule>),
+}
+
+impl Default for FunctionAuth {
+    fn default() -> Self {
+        FunctionAuth::AllowAll
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum MethodAuthTemplate {
+    /// All methods are accessible
+    AllowAll,
+    /// Methods are protected by a set of static roles of which are specified in the blueprint
+    /// and defined in the instantiating object
+    Static(StaticRoles),
+    /// Methods are protected by a set of static roles of which are specified in the *outer* blueprint
+    /// and defined in the instantiating *outer* object.
+    /// This is currently used by the Vault blueprints
+    StaticUseOuterRoles(BTreeMap<MethodKey, MethodAccessibility>),
+}
+
+impl Default for MethodAuthTemplate {
+    fn default() -> Self {
+        MethodAuthTemplate::Static(StaticRoles::default())
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -139,20 +172,5 @@ impl Default for StaticRoles {
             methods: BTreeMap::new(),
             roles: BTreeMap::new(),
         }
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub enum MethodAuthTemplate {
-    Static(StaticRoles),
-    /// This should only be used by inner blueprints and is verified during package schema verification
-    StaticUseOuterRoles(BTreeMap<MethodKey, MethodAccessibility>),
-    /// All methods are accessible
-    AllowAll,
-}
-
-impl Default for MethodAuthTemplate {
-    fn default() -> Self {
-        MethodAuthTemplate::Static(StaticRoles::default())
     }
 }

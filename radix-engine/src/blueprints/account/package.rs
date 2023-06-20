@@ -5,9 +5,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
-};
+use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate, PackageDefinition};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
@@ -445,11 +443,7 @@ impl AccountNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                     function_auth: btreemap!(
-                        ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),
-                        ACCOUNT_CREATE_LOCAL_IDENT.to_string() => rule!(allow_all),
-                        ACCOUNT_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::Static(roles_template!(
                         roles {
                             SECURIFY_ROLE => updaters: [SELF_ROLE];

@@ -9,12 +9,9 @@ use crate::system::system_callback::*;
 use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
-};
+use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate, PackageDefinition};
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::MethodAccessibility;
-use radix_engine_interface::rule;
 use radix_engine_interface::schema::*;
 use radix_engine_interface::types::*;
 use resources_tracker_macro::*;
@@ -172,9 +169,7 @@ impl PoolNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             POOL_MANAGER_ROLE;
@@ -340,9 +335,7 @@ impl PoolNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             POOL_MANAGER_ROLE;
@@ -506,9 +499,7 @@ impl PoolNativePackage {
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
                             POOL_MANAGER_ROLE;

@@ -727,10 +727,12 @@ impl PackageNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
-                        PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                        PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                    function_auth: FunctionAuth::AccessRules(
+                        btreemap!(
+                            PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
+                            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                        )
                     ),
                     method_auth: MethodAuthTemplate::Static(
                         roles_template! {
@@ -1330,19 +1332,24 @@ impl PackageAuthNativeBlueprint {
         Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     {
-        let auth_template = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
-        let access_rule = auth_template.function_auth.get(ident);
-        if let Some(access_rule) = access_rule {
-            Ok(ResolvedPermission::AccessRule(access_rule.clone()))
-        } else {
-            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
-            Err(RuntimeError::SystemModuleError(
-                SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
-                    blueprint_id,
-                    ident: FnIdent::Application(ident.to_string()),
-                })),
-            ))
+        let auth_config = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
+        match auth_config.function_auth {
+            FunctionAuth::AllowAll => Ok(ResolvedPermission::AllowAll),
+            FunctionAuth::AccessRules(access_rules) => {
+                let access_rule = access_rules.get(ident);
+                if let Some(access_rule) = access_rule {
+                    Ok(ResolvedPermission::AccessRule(access_rule.clone()))
+                } else {
+                    let package_address = PackageAddress::new_or_panic(receiver.0.clone());
+                    let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
+                    Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
+                            blueprint_id,
+                            ident: FnIdent::Application(ident.to_string()),
+                        })),
+                    ))
+                }
+            }
         }
     }
 

@@ -7,9 +7,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
-};
+use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate, PackageDefinition};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FieldSchema,
     FunctionSchemaInit, TypeRef,
@@ -101,8 +99,10 @@ impl TransactionTrackerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                    function_auth: FunctionAuth::AccessRules(
+                        btreemap!(
+                            TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                        )
                     ),
                     method_auth: MethodAuthTemplate::default(),
                 },

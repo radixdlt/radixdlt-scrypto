@@ -483,12 +483,12 @@ macro_rules! enable_function_auth {
     (
         $($function:ident => $rule:expr;)*
     ) => (
-        fn function_auth() -> BTreeMap<String, AccessRule> {
+        fn function_auth() -> scrypto::blueprints::package::FunctionAuth {
             let rules = Functions::<AccessRule> {
                 $( $function: $rule, )*
             };
 
-            rules.to_mapping().into_iter().collect()
+            scrypto::blueprints::package::FunctionAuth::AccessRules(rules.to_mapping().into_iter().collect())
         }
     );
 }
