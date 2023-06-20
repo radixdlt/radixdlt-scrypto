@@ -887,6 +887,10 @@ impl TestRunner {
         receipt.expect_commit(true).new_package_addresses()[0]
     }
 
+    pub fn compile<P: AsRef<Path>>(&mut self, package_dir: P) -> (Vec<u8>, PackageDefinition) {
+        Compile::compile(package_dir)
+    }
+
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
         let (code, definition) = Compile::compile(package_dir);
         self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)

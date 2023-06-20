@@ -1,9 +1,13 @@
-use radix_engine::types::*;
+use radix_engine::{
+    errors::{RuntimeError, SystemError},
+    types::*,
+};
 use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
-use radix_engine_interface::schema::BlueprintCollectionSchema;
+use radix_engine_interface::schema::{BlueprintCollectionSchema, TypeRef};
 use radix_engine_queries::typed_substate_layout::TypePointer;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
+use transaction::prelude::ManifestBuilder;
 use utils::ContextualDisplay;
 
 #[test]
@@ -275,4 +279,49 @@ impl CheckResult {
     fn is_not_safe(&self) -> bool {
         !self.is_safe()
     }
+}
+
+#[test]
+pub fn test_fake_bucket() {
+    // Basic setup
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Publish package
+    let (code, mut definition) = test_runner.compile("./tests/blueprints/fake_bucket");
+    definition
+        .blueprints
+        .get_mut("FakeBucket")
+        .unwrap()
+        .schema
+        .state
+        .fields[0]
+        .field = TypeRef::Static(LocalTypeIndex::WellKnown(DECIMAL_ID));
+    let package_address =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+
+    // Instantiate component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .withdraw_from_account(account, RADIX_TOKEN, 100.into())
+            .take_from_worktop(RADIX_TOKEN, 100.into(), |builder, bucket| {
+                builder.call_function(
+                    package_address,
+                    "FakeBucket",
+                    "free_1000_xrd",
+                    manifest_args!(bucket),
+                )
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(e))
+            if format!("{:?}", e).contains("Expected = Own<IsBucket>") =>
+        {
+            true
+        }
+        _ => false,
+    });
 }
