@@ -217,7 +217,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
-        royalty_config: RoyaltyConfig::default(),
+        royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
             function_auth,
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,

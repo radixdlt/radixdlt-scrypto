@@ -1,3 +1,5 @@
+use radix_engine::errors::{ApplicationError, RuntimeError};
+use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
@@ -362,5 +364,12 @@ fn cannot_set_royalty_on_accounts() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ComponentRoyaltyError(
+                ComponentRoyaltyError::ComponentRoyaltyIsDisabled
+            ))
+        )
+    });
 }

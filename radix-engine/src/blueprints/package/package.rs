@@ -1254,13 +1254,11 @@ impl PackageRoyaltyNativeBlueprint {
 
         let royalty_charge = substate
             .value
-            .and_then(|royalty_config| {
-                match royalty_config {
-                    PackageRoyaltyConfig::Enabled(royalty_amounts) => {
-                        royalty_amounts.get(ident).cloned()
-                    },
-                    PackageRoyaltyConfig::Disabled => Some(RoyaltyAmount::Free),
+            .and_then(|royalty_config| match royalty_config {
+                PackageRoyaltyConfig::Enabled(royalty_amounts) => {
+                    royalty_amounts.get(ident).cloned()
                 }
+                PackageRoyaltyConfig::Disabled => Some(RoyaltyAmount::Free),
             })
             .unwrap_or(RoyaltyAmount::Free);
 
