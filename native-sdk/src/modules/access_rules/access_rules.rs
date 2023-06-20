@@ -4,7 +4,9 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, RoleEntry, RoleKey, Roles};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, OwnerRole, RoleEntry, RoleKey, Roles,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -15,7 +17,11 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn create<Y, E: Debug + ScryptoDecode>(roles: Roles, api: &mut Y) -> Result<Self, E>
+    pub fn create<Y, E: Debug + ScryptoDecode>(
+        owner_role: OwnerRole,
+        roles: BTreeMap<ObjectModuleId, Roles>,
+        api: &mut Y,
+    ) -> Result<Self, E>
     where
         Y: ClientApi<E>,
     {
@@ -23,7 +29,7 @@ impl AccessRules {
             ACCESS_RULES_MODULE_PACKAGE,
             ACCESS_RULES_BLUEPRINT,
             ACCESS_RULES_CREATE_IDENT,
-            scrypto_encode(&AccessRulesCreateInput { roles }).unwrap(),
+            scrypto_encode(&AccessRulesCreateInput { owner_role, roles }).unwrap(),
         )?;
 
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
@@ -51,6 +57,7 @@ pub trait AccessRulesObject {
 
     fn update_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
         &self,
+        module: ObjectModuleId,
         role_key: R,
         entry: RoleEntry,
         api: &mut Y,
@@ -62,6 +69,7 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
+                module,
                 role_key: role_key.into(),
                 rule: Some(entry.rule),
                 mutability: Some((entry.mutable, entry.mutable_mutable)),
@@ -79,6 +87,7 @@ pub trait AccessRulesObject {
         A: Into<AccessRule>,
     >(
         &self,
+        module: ObjectModuleId,
         role_key: R,
         entry: A,
         api: &mut Y,
@@ -90,6 +99,7 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             scrypto_encode(&AccessRulesUpdateRoleInput {
+                module,
                 role_key: role_key.into(),
                 rule: Some(entry.into()),
                 mutability: None,

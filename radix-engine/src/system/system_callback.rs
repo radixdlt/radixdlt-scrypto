@@ -46,7 +46,7 @@ pub enum KeyValueEntryLockData {
     BlueprintWrite {
         blueprint_id: BlueprintId,
         instance_schema: Option<InstanceSchema>,
-        schema_pointer: TypePointer,
+        type_pointer: TypePointer,
         can_own: bool,
     },
 }
@@ -56,7 +56,7 @@ pub enum FieldLockData {
     Read,
     Write {
         blueprint_id: BlueprintId,
-        schema_pointer: TypePointer,
+        type_pointer: TypePointer,
     },
 }
 

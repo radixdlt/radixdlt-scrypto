@@ -26,7 +26,7 @@ macro_rules! method_auth_template {
         let mut auth: BTreeMap<radix_engine_interface::blueprints::resource::MethodKey, radix_engine_interface::blueprints::resource::MethodPermission>
             = BTreeMap::new();
         $(
-            auth.insert($method, $entry.into());
+            auth.insert($method.into(), $entry.into());
         )*
         auth
     });

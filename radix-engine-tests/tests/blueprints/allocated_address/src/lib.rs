@@ -83,7 +83,9 @@ mod apa {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata!(
-                    "key" => GlobalAddress::from(address),
+                    init {
+                        "key" => GlobalAddress::from(address)
+                    }
                 ))
                 .with_address(own)
                 .globalize();

@@ -69,7 +69,7 @@ impl VirtualizationModule {
                 let mut system = SystemService::new(api);
                 let address_reservation =
                     system.allocate_virtual_global_address(blueprint, address)?;
-                system.globalize_with_address(modules, address_reservation)?;
+                system.globalize(modules, Some(address_reservation))?;
 
                 Ok(true)
             }

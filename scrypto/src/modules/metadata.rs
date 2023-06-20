@@ -124,3 +124,13 @@ impl Metadata {
         rtn
     }
 }
+
+pub struct MetadataRoles<T> {
+    pub metadata_admin: T,
+}
+
+impl<T> MetadataRoles<T> {
+    pub fn list(self) -> Vec<(&'static str, T)> {
+        vec![(METADATA_ADMIN_ROLE, self.metadata_admin)]
+    }
+}

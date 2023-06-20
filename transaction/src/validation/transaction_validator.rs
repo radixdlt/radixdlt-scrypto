@@ -54,6 +54,7 @@ pub struct ValidationConfig {
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
     pub max_epoch_range: u64,
+    pub message_validation: MessageValidationConfig,
 }
 
 impl ValidationConfig {
@@ -66,11 +67,31 @@ impl ValidationConfig {
             min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
             max_tip_percentage: DEFAULT_MAX_TIP_PERCENTAGE,
             max_epoch_range: DEFAULT_MAX_EPOCH_RANGE,
+            message_validation: MessageValidationConfig::default(),
         }
     }
 
     pub fn simulator() -> Self {
         Self::default(NetworkDefinition::simulator().id)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct MessageValidationConfig {
+    pub max_plaintext_message_length: usize,
+    pub max_encrypted_message_length: usize,
+    pub max_mime_type_length: usize,
+    pub max_decryptors: usize,
+}
+
+impl Default for MessageValidationConfig {
+    fn default() -> Self {
+        Self {
+            max_plaintext_message_length: 2048,
+            max_mime_type_length: 128,
+            max_encrypted_message_length: 2048 + 12 + 16, // Account for IV and MAC - see AesGcmPayload
+            max_decryptors: 20,
+        }
     }
 }
 
@@ -136,6 +157,8 @@ impl NotarizedTransactionValidator {
     ) -> Result<(), TransactionValidationError> {
         self.validate_header_v1(&intent.header.inner)
             .map_err(TransactionValidationError::HeaderValidationError)?;
+
+        self.validate_message_v1(&intent.message.inner)?;
 
         Self::validate_instructions_v1(&intent.instructions.inner.0)?;
 
@@ -347,6 +370,66 @@ impl NotarizedTransactionValidator {
 
         Ok(())
     }
+
+    pub fn validate_message_v1(&self, message: &MessageV1) -> Result<(), InvalidMessageError> {
+        let validation = &self.config.message_validation;
+        match message {
+            MessageV1::None => {}
+            MessageV1::Plaintext(plaintext_message) => {
+                let PlaintextMessageV1 { mime_type, message } = plaintext_message;
+                if mime_type.len() > validation.max_mime_type_length {
+                    return Err(InvalidMessageError::MimeTypeTooLong {
+                        actual: mime_type.len(),
+                        permitted: validation.max_mime_type_length,
+                    });
+                }
+                if message.len() > validation.max_plaintext_message_length {
+                    return Err(InvalidMessageError::PlaintextMessageTooLong {
+                        actual: message.len(),
+                        permitted: validation.max_plaintext_message_length,
+                    });
+                }
+            }
+            MessageV1::Encrypted(encrypted_message) => {
+                let EncryptedMessageV1 {
+                    encrypted,
+                    decryptors_by_curve,
+                } = encrypted_message;
+                if encrypted.0.len() > validation.max_encrypted_message_length {
+                    return Err(InvalidMessageError::EncryptedMessageTooLong {
+                        actual: encrypted.0.len(),
+                        permitted: validation.max_encrypted_message_length,
+                    });
+                }
+                if decryptors_by_curve.len() == 0 {
+                    return Err(InvalidMessageError::NoDecryptors);
+                }
+                let mut total_decryptors = 0;
+                for (curve_type, decryptors) in decryptors_by_curve.iter() {
+                    if decryptors.curve_type() != *curve_type {
+                        return Err(InvalidMessageError::MismatchingDecryptorCurves {
+                            actual: decryptors.curve_type(),
+                            expected: *curve_type,
+                        });
+                    }
+                    if decryptors.number_of_decryptors() == 0 {
+                        return Err(InvalidMessageError::NoDecryptorsForCurveType {
+                            curve_type: decryptors.curve_type(),
+                        });
+                    }
+                    // Can't overflow because decryptor count << size of a transaction < 1MB < usize,
+                    total_decryptors += decryptors.number_of_decryptors();
+                }
+                if total_decryptors > validation.max_decryptors {
+                    return Err(InvalidMessageError::TooManyDecryptors {
+                        actual: total_decryptors,
+                        permitted: validation.max_decryptors,
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -428,6 +511,234 @@ mod tests {
         let result = validator.validate_preview_intent_v1(preview_intent);
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_valid_messages() {
+        // None
+        {
+            let message = MessageV1::None;
+            let result = validate_default(&create_transaction_with_message(message));
+            assert!(result.is_ok());
+        }
+        // Plaintext
+        {
+            let message = MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type: "text/plain".to_owned(),
+                message: MessageContentsV1::String("Hello world!".to_string()),
+            });
+            let result = validate_default(&create_transaction_with_message(message));
+            assert!(result.is_ok());
+        }
+        // Encrypted
+        {
+            // Note - this isn't actually a validly encrypted message,
+            // this just shows that a sufficiently valid encrypted message can pass validation
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    },
+                    CurveType::Secp256k1 => DecryptorsByCurve::Secp256k1 {
+                        dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                            PublicKeyFingerprint([1; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    },
+                ),
+            });
+            let result = validate_default(&create_transaction_with_message(message));
+            assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn test_invalid_message_errors() {
+        // MimeTypeTooLong
+        {
+            let message = MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type: "very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, ".to_owned(),
+                message: MessageContentsV1::String("Hello".to_string()),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
+            assert!(matches!(error, InvalidMessageError::MimeTypeTooLong { .. }))
+        }
+
+        // PlaintextMessageTooLong
+        {
+            let mut long_message: String = "".to_owned();
+            while long_message.len() <= 2048 {
+                long_message.push_str("more text please!");
+            }
+            let message = MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type: "text/plain".to_owned(),
+                message: MessageContentsV1::String(long_message),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
+            assert!(matches!(
+                error,
+                InvalidMessageError::PlaintextMessageTooLong { .. }
+            ))
+        }
+
+        // EncryptedMessageTooLong
+        {
+            let mut message_which_is_too_long: String = "".to_owned();
+            while message_which_is_too_long.len() <= 2048 + 50 {
+                // Some more bytes for the AES padding
+                message_which_is_too_long.push_str("more text please!");
+            }
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(message_which_is_too_long.as_bytes().to_vec()),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
+            assert!(matches!(
+                error,
+                InvalidMessageError::EncryptedMessageTooLong { .. }
+            ))
+        }
+
+        // NoDecryptors
+        {
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
+            assert!(matches!(error, InvalidMessageError::NoDecryptors))
+        }
+
+        // NoDecryptorsForCurveType
+        {
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(),
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
+            assert!(matches!(
+                error,
+                InvalidMessageError::NoDecryptorsForCurveType {
+                    curve_type: CurveType::Ed25519
+                }
+            ))
+        }
+
+        // MismatchingDecryptorCurves
+        {
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Secp256k1 {
+                        dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                        ),
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
+            assert!(matches!(
+                error,
+                InvalidMessageError::MismatchingDecryptorCurves {
+                    actual: CurveType::Secp256k1,
+                    expected: CurveType::Ed25519
+                }
+            ))
+        }
+
+        // TooManyDecryptors
+        {
+            let mut decryptors = IndexMap::<PublicKeyFingerprint, AesWrapped128BitKey>::default();
+            for i in 0..30 {
+                decryptors.insert(
+                    PublicKeyFingerprint([0, 0, 0, 0, 0, 0, 0, i as u8]),
+                    AesWrapped128BitKey([0; AesWrapped128BitKey::LENGTH]),
+                );
+            }
+            let message = MessageV1::Encrypted(EncryptedMessageV1 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurve::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors,
+                    }
+                ),
+            });
+            let error =
+                validate_default_expecting_message_error(&create_transaction_with_message(message));
+            assert!(matches!(
+                error,
+                InvalidMessageError::TooManyDecryptors {
+                    actual: 30,
+                    permitted: 20
+                }
+            ))
+        }
+    }
+
+    fn validate_default_expecting_message_error(
+        transaction: &NotarizedTransactionV1,
+    ) -> InvalidMessageError {
+        match validate_default(transaction).expect_err("Expected validation error") {
+            TransactionValidationError::InvalidMessage(error) => error,
+            error => {
+                panic!("Expected InvalidMessage error, got: {:?}", error)
+            }
+        }
+    }
+
+    fn validate_default(
+        transaction: &NotarizedTransactionV1,
+    ) -> Result<(), TransactionValidationError> {
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        validator
+            .validate(transaction.prepare().unwrap())
+            .map(|_| ())
+    }
+
+    fn create_transaction_with_message(message: MessageV1) -> NotarizedTransactionV1 {
+        let sk_notary = Secp256k1PrivateKey::from_u64(1).unwrap();
+
+        let mut builder = TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(10),
+                nonce: 0,
+                notary_public_key: sk_notary.public_key().into(),
+                notary_is_signatory: false,
+                tip_percentage: 5,
+            })
+            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .message(message);
+
+        builder = builder.notarize(&sk_notary);
+
+        builder.build()
     }
 
     fn create_transaction(

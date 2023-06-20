@@ -360,7 +360,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                     btreemap!(
                         #(
-                            MethodKey::main(#method_names) => MethodPermission::Public,
+                            MethodKey::new(#method_names) => MethodPermission::Public,
                         )*
                     )
                 }
@@ -615,7 +615,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         auth,
                         outer_auth: BTreeMap::new(),
                     };
-                    method_auth.add_metadata_default_if_not_specified();
 
                     scrypto::blueprints::package::AuthConfig {
                         method_auth,
@@ -1314,7 +1313,7 @@ mod tests {
 
                     fn method_auth_template() -> BTreeMap<MethodKey, MethodPermission> {
                         btreemap!(
-                            MethodKey::main("x") => MethodPermission::Public,
+                            MethodKey::new("x") => MethodPermission::Public,
                         )
                     }
 
@@ -1518,7 +1517,6 @@ mod tests {
                                 auth,
                                 outer_auth: BTreeMap::new(),
                             };
-                            method_auth.add_metadata_default_if_not_specified();
 
                             scrypto::blueprints::package::AuthConfig {
                                 method_auth,
