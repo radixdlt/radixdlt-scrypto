@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintDependencies, BlueprintType, FunctionSchema, IndexedStateSchema,
+    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema,
     PackageExport, TypePointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
     PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
@@ -157,18 +157,11 @@ impl Publish {
                     })
                     .collect();
 
-                let (feature_set, outer_blueprint) = match s.blueprint_type {
-                    BlueprintType::Outer { feature_set } => (feature_set, None),
-                    BlueprintType::Inner { outer_blueprint } => {
-                        (BTreeSet::new(), Some(outer_blueprint))
-                    }
-                };
-
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
                         generics: s.schema.generics,
-                        outer_blueprint,
-                        feature_set,
+                        blueprint_type: s.blueprint_type,
+                        feature_set: s.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),

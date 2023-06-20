@@ -644,12 +644,13 @@ where
             blueprint_id.package_address,
             blueprint_id.blueprint_name.as_str(),
         )?;
-        let expected_blueprint_parent = blueprint_interface.outer_blueprint.clone();
+        let expected_blueprint_parent = blueprint_interface.blueprint_type.clone();
 
-        let (blueprint_info, object_features, outer_object_features) = if let Some(parent) = &expected_blueprint_parent
+        let (blueprint_info, object_features, outer_object_features) =
+            if let BlueprintType::Inner { outer_blueprint } = &expected_blueprint_parent
         {
             match instance_context {
-                Some(context) if context.outer_blueprint.eq(parent) => {
+                Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
                     if !features.is_empty() {
                         return Err(RuntimeError::SystemError(
                             SystemError::InvalidChildObjectCreation,

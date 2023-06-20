@@ -88,21 +88,20 @@ pub struct PackageDefinition {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintType {
-    Outer { feature_set: BTreeSet<String> },
+    Outer,
     Inner { outer_blueprint: String },
 }
 
 impl Default for BlueprintType {
     fn default() -> Self {
-        BlueprintType::Outer {
-            feature_set: BTreeSet::default(),
-        }
+        BlueprintType::Outer
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinitionInit {
     pub blueprint_type: BlueprintType,
+    pub feature_set: BTreeSet<String>,
     pub dependencies: BTreeSet<GlobalAddress>,
     pub schema: BlueprintSchemaInit,
     pub royalty_config: RoyaltyConfig,
@@ -113,6 +112,7 @@ impl Default for BlueprintDefinitionInit {
     fn default() -> Self {
         Self {
             blueprint_type: BlueprintType::default(),
+            feature_set: BTreeSet::default(),
             dependencies: BTreeSet::default(),
             schema: BlueprintSchemaInit::default(),
             royalty_config: RoyaltyConfig::default(),
@@ -130,8 +130,10 @@ pub struct AuthConfig {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum MethodAuthTemplate {
     Static(BTreeMap<MethodKey, MethodPermission>),
+    /// This should only be used by inner blueprints and is verified during package schema verification
     StaticUseOuterAuth(BTreeMap<MethodKey, MethodPermission>),
-    NoAuth,
+    /// All methods are accessible
+    AllowAll,
 }
 
 impl Default for MethodAuthTemplate {

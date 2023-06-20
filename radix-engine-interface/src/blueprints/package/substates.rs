@@ -7,6 +7,7 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
+use crate::blueprints::package::BlueprintType;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
@@ -144,7 +145,7 @@ pub struct BlueprintDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintInterface {
-    pub outer_blueprint: Option<String>,
+    pub blueprint_type: BlueprintType,
     pub generics: Vec<Generic>,
     pub feature_set: BTreeSet<String>,
     pub state: IndexedStateSchema,

@@ -618,6 +618,7 @@ impl PackageNativePackage {
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     PACKAGE_OWNER_BADGE.into(),
@@ -762,7 +763,7 @@ impl PackageNativePackage {
                     &definition_init.auth_config.method_auth,
                 ) {
                     (_, MethodAuthTemplate::Static(..)) => {}
-                    (_, MethodAuthTemplate::NoAuth) => {}
+                    (_, MethodAuthTemplate::AllowAll) => {}
                     (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterAuth(..)) => {}
                     _ => {
                         return Err(RuntimeError::ApplicationError(
@@ -824,18 +825,11 @@ impl PackageNativePackage {
                     events.insert(key, index);
                 }
 
-                let (feature_set, outer_blueprint) = match definition_init.blueprint_type {
-                    BlueprintType::Outer { feature_set } => (feature_set, None),
-                    BlueprintType::Inner { outer_blueprint } => {
-                        (BTreeSet::new(), Some(outer_blueprint))
-                    }
-                };
-
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
-                        outer_blueprint,
+                        blueprint_type: definition_init.blueprint_type,
                         generics: definition_init.schema.generics,
-                        feature_set,
+                        feature_set: definition_init.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(
@@ -943,6 +937,7 @@ impl PackageNativePackage {
 
         for BlueprintDefinitionInit {
             blueprint_type,
+            feature_set,
             schema:
                 BlueprintSchemaInit {
                     generics,
@@ -954,15 +949,7 @@ impl PackageNativePackage {
         } in setup.blueprints.values()
         {
             match blueprint_type {
-                BlueprintType::Outer { feature_set } => {
-                    if !feature_set.is_empty() {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                "Feature set not supported".to_string(),
-                            )),
-                        ));
-                    }
-                }
+                BlueprintType::Outer => { }
                 BlueprintType::Inner { .. } => {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::PackageError(PackageError::WasmUnsupported(
@@ -970,6 +957,14 @@ impl PackageNativePackage {
                         )),
                     ));
                 }
+            }
+
+            if !feature_set.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Feature set not supported".to_string(),
+                    )),
+                ));
             }
 
             if !collections.is_empty() {
@@ -1040,7 +1035,7 @@ impl PackageNativePackage {
                     &definition_init.auth_config.method_auth,
                 ) {
                     (_, MethodAuthTemplate::Static(..)) => {}
-                    (_, MethodAuthTemplate::NoAuth) => {}
+                    (_, MethodAuthTemplate::AllowAll) => {}
                     (BlueprintType::Inner { .. }, MethodAuthTemplate::StaticUseOuterAuth(..)) => {}
                     _ => {
                         return Err(RuntimeError::ApplicationError(
@@ -1102,18 +1097,11 @@ impl PackageNativePackage {
                     events.insert(key, index);
                 }
 
-                let (feature_set, outer_blueprint) = match definition_init.blueprint_type {
-                    BlueprintType::Outer { feature_set } => (feature_set, None),
-                    BlueprintType::Inner { outer_blueprint } => {
-                        (BTreeSet::new(), Some(outer_blueprint))
-                    }
-                };
-
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
-                        outer_blueprint,
+                        blueprint_type: definition_init.blueprint_type,
                         generics: definition_init.schema.generics,
-                        feature_set: feature_set,
+                        feature_set: definition_init.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(

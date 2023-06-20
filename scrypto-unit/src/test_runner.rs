@@ -1726,6 +1726,7 @@ pub fn single_function_package_definition(
         blueprint_name.to_string(),
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
+            feature_set: btreeset!(),
             dependencies: btreeset!(),
 
             schema: BlueprintSchemaInit {
@@ -1760,7 +1761,7 @@ pub fn single_function_package_definition(
                 function_auth: btreemap!(
                     function_name.to_string() => rule!(allow_all),
                 ),
-                method_auth: MethodAuthTemplate::NoAuth,
+                method_auth: MethodAuthTemplate::AllowAll,
             },
         },
     );

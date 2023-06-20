@@ -166,6 +166,7 @@ impl ConsensusManagerNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     RADIX_TOKEN.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
@@ -415,6 +416,7 @@ impl ConsensusManagerNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
                 },
+                feature_set: btreeset!(),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],

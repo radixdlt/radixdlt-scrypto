@@ -1250,6 +1250,7 @@ mod tests {
             "Test".to_string(),
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(),
 
                 schema: BlueprintSchemaInit {

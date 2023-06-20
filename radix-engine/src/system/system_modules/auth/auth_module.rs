@@ -247,7 +247,7 @@ impl AuthModule {
                 let access_rules_of = info.get_outer_object();
                 (access_rules_of.into_node_id(), method_roles)
             }
-            MethodAuthTemplate::NoAuth => return Ok(ResolvedPermission::AllowAll),
+            MethodAuthTemplate::AllowAll => return Ok(ResolvedPermission::AllowAll),
         };
 
         match method_permissions.get(&method_key) {

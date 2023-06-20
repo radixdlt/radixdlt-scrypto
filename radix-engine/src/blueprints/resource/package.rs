@@ -328,15 +328,14 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::Outer {
-                    feature_set: btreeset!(
+                blueprint_type: BlueprintType::Outer,
+                feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                         VAULT_FREEZE_FEATURE.to_string(),
                         VAULT_RECALL_FEATURE.to_string(),
                         MINT_FEATURE.to_string(),
                         BURN_FEATURE.to_string(),
                     ),
-                },
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -645,15 +644,14 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::Outer {
-                    feature_set: btreeset!(
+                blueprint_type: BlueprintType::Outer,
+                feature_set: btreeset!(
                         TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                         VAULT_FREEZE_FEATURE.to_string(),
                         VAULT_RECALL_FEATURE.to_string(),
                         MINT_FEATURE.to_string(),
                         BURN_FEATURE.to_string(),
                     ),
-                },
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![Generic::Any],
@@ -895,6 +893,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1182,6 +1181,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1371,6 +1371,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1583,6 +1584,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1693,6 +1695,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1713,7 +1716,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -1807,6 +1810,7 @@ impl ResourceManagerNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1827,7 +1831,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -1965,6 +1969,7 @@ impl ResourceManagerNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1985,7 +1990,7 @@ impl ResourceManagerNativePackage {
                     function_auth: btreemap!(
                         WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -2144,6 +2149,7 @@ impl ResourceManagerNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
+                feature_set: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -2159,7 +2165,7 @@ impl ResourceManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::NoAuth,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
