@@ -45,7 +45,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::ListableSubstateDatabase;
+use radix_engine_store_interface::interface::{ListableSubstateDatabase, SubstateDatabase};
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -502,11 +502,11 @@ impl TestRunner {
             .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
     }
 
-    pub fn find_all_nodes(&self) -> Vec<NodeId> {
-        let mut node_ids = Vec::new();
+    pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
+        let mut node_ids = index_set_new();
         for pk in self.substate_db.list_partition_keys() {
             let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&pk);
-            node_ids.push(node_id);
+            node_ids.insert(node_id);
         }
         node_ids
     }
@@ -530,6 +530,34 @@ impl TestRunner {
             .iter()
             .filter_map(|node_id| ResourceAddress::try_from(node_id.as_bytes()).ok())
             .collect()
+    }
+
+    pub fn get_package_schema(
+        &self,
+        package_address: &PackageAddress,
+    ) -> IndexMap<Hash, ScryptoSchema> {
+        let mut schemas = index_map_new();
+        for entry in self
+            .substate_db()
+            .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
+                package_address.as_node_id(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
+                    .unwrap(),
+            ))
+        {
+            let hash: Hash =
+                scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
+            let value: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&entry.1).unwrap();
+            match value.value {
+                Some(schema) => {
+                    schemas.insert(hash, schema);
+                }
+                None => {}
+            }
+        }
+
+        schemas
     }
 
     pub fn get_component_vaults(
