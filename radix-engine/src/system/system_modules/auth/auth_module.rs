@@ -251,8 +251,8 @@ impl AuthModule {
         };
 
         match method_permissions.get(&method_key) {
-            Some(MethodPermission::Public) => Ok(ResolvedPermission::AllowAll),
-            Some(MethodPermission::OuterObjectOnly) => {
+            Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
+            Some(MethodAccessibility::OuterObjectOnly) => {
                 match callee.module_object_info.blueprint_info {
                     ObjectBlueprintInfo::Inner { outer_object } => Ok(
                         ResolvedPermission::AccessRule(rule!(require(global_caller(outer_object)))),
@@ -262,7 +262,7 @@ impl AuthModule {
                     )),
                 }
             }
-            Some(MethodPermission::Protected(role_list)) => Ok(ResolvedPermission::RoleList {
+            Some(MethodAccessibility::RoleProtected(role_list)) => Ok(ResolvedPermission::RoleList {
                 access_rules_of,
                 role_list: role_list.clone(),
                 module_id: callee.module_id,

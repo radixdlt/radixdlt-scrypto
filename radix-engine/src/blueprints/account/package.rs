@@ -435,10 +435,10 @@ impl AccountNativePackage {
             ACCOUNT_BURN_IDENT => [OWNER_ROLE];
             ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
 
-            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodPermission::Public;
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodPermission::Public;
-            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodPermission::Public;
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodPermission::Public;
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
         );
 
         let schema = generate_full_schema(aggregator);

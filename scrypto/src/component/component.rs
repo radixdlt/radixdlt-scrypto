@@ -17,7 +17,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{MethodPermission, OwnerRole, Roles};
+use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -63,7 +63,7 @@ pub trait HasStub {
 }
 
 pub trait HasMethods {
-    type Permissions: MethodMapping<MethodPermission>;
+    type Permissions: MethodMapping<MethodAccessibility>;
     type Royalties: MethodMapping<RoyaltyAmount>;
 }
 

@@ -129,9 +129,9 @@ pub struct AuthConfig {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum MethodAuthTemplate {
-    Static(BTreeMap<MethodKey, MethodPermission>),
+    Static(BTreeMap<MethodKey, MethodAccessibility>),
     /// This should only be used by inner blueprints and is verified during package schema verification
-    StaticUseOuterAuth(BTreeMap<MethodKey, MethodPermission>),
+    StaticUseOuterAuth(BTreeMap<MethodKey, MethodAccessibility>),
     /// All methods are accessible
     AllowAll,
 }

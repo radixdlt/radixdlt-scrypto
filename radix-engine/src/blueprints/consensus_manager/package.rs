@@ -196,10 +196,10 @@ impl ConsensusManagerNativePackage {
                         CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
                         CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
-                        CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodPermission::Public;
-                        CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodPermission::Public;
-                        CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodPermission::Public;
-                        CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodPermission::Public;
+                        CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
+                        CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                        CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                        CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodAccessibility::Public;
                     )),
                 },
             }
@@ -435,9 +435,9 @@ impl ConsensusManagerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
-                        VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;
-                        VALIDATOR_STAKE_IDENT => MethodPermission::Public;
+                        VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
                         VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
                         VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
                         VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
@@ -447,8 +447,8 @@ impl ConsensusManagerNativePackage {
                         VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
                         VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
                         VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
-                        VALIDATOR_APPLY_EMISSION_IDENT => MethodPermission::OuterObjectOnly;
-                        VALIDATOR_APPLY_REWARD_IDENT => MethodPermission::OuterObjectOnly;
+                        VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
+                        VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
                     }),
                 },
             }
