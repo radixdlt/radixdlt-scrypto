@@ -1,6 +1,11 @@
 use crate::manifest::ast::{Instruction, Value, ValueKind};
 use crate::manifest::enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::lexer::{Token, TokenKind};
+use radix_engine_interface::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
+
+// For values greater than below it is not possible to encode compiled manifest due to
+//   EncodeError::MaxDepthExceeded(MANIFEST_SBOR_V1_MAX_DEPTH)
+pub const PARSER_MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH - 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserError {
@@ -10,6 +15,7 @@ pub enum ParserError {
     InvalidNumberOfTypes { expected: usize, actual: usize },
     InvalidHex(String),
     UnknownEnumDiscriminator(String),
+    MaxDepthExceeded(usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -92,7 +98,7 @@ pub enum InstructionIdent {
     ClaimPackageRoyalty,
     MintFungible,
     MintNonFungible,
-    MintUuidNonFungible,
+    MintRuidNonFungible,
     CreateValidator,
 }
 
@@ -184,7 +190,7 @@ impl InstructionIdent {
             // ==============
             "MINT_FUNGIBLE" => InstructionIdent::MintFungible,
             "MINT_NON_FUNGIBLE" => InstructionIdent::MintNonFungible,
-            "MINT_UUID_NON_FUNGIBLE" => InstructionIdent::MintUuidNonFungible,
+            "MINT_RUID_NON_FUNGIBLE" => InstructionIdent::MintRuidNonFungible,
             "CLAIM_PACKAGE_ROYALTY" => InstructionIdent::ClaimPackageRoyalty,
             "CREATE_VALIDATOR" => InstructionIdent::CreateValidator,
             _ => {
@@ -364,6 +370,8 @@ impl SborValueKindIdent {
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    max_depth: usize,
+    stack_depth: usize,
 }
 
 #[macro_export]
@@ -388,8 +396,28 @@ macro_rules! advance_match {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+    pub fn new(tokens: Vec<Token>, max_depth: usize) -> Self {
+        Self {
+            tokens,
+            current: 0,
+            max_depth,
+            stack_depth: 0,
+        }
+    }
+
+    #[inline]
+    fn track_stack_depth_increase(&mut self) -> Result<(), ParserError> {
+        self.stack_depth += 1;
+        if self.stack_depth > self.max_depth {
+            return Err(ParserError::MaxDepthExceeded(self.max_depth));
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn track_stack_depth_decrease(&mut self) -> Result<(), ParserError> {
+        self.stack_depth -= 1;
+        Ok(())
     }
 
     pub fn is_eof(&self) -> bool {
@@ -659,7 +687,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::MintUuidNonFungible => Instruction::MintUuidNonFungible {
+            InstructionIdent::MintRuidNonFungible => Instruction::MintRuidNonFungible {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
@@ -676,6 +704,7 @@ impl Parser {
     }
 
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
+        self.track_stack_depth_increase()?;
         let token = self.advance()?;
         let value = match &token.kind {
             // ==============
@@ -749,6 +778,7 @@ impl Parser {
                 });
             }
         };
+        self.track_stack_depth_decrease()?;
         Ok(value)
     }
 
@@ -935,7 +965,7 @@ mod tests {
     #[macro_export]
     macro_rules! parse_instruction_ok {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(tokenize($s).unwrap());
+            let mut parser = Parser::new(tokenize($s).unwrap()), PARSER_MAX_DEPTH;
             assert_eq!(parser.parse_instruction(), Ok($expected));
             assert!(parser.is_eof());
         }};
@@ -944,7 +974,7 @@ mod tests {
     #[macro_export]
     macro_rules! parse_value_ok {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(tokenize($s).unwrap());
+            let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH);
             assert_eq!(parser.parse_value(), Ok($expected));
             assert!(parser.is_eof());
         }};
@@ -953,7 +983,7 @@ mod tests {
     #[macro_export]
     macro_rules! parse_value_error {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(tokenize($s).unwrap());
+            let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH);
             match parser.parse_value() {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
@@ -1097,6 +1127,25 @@ mod tests {
                 actual: 2,
                 expected: 1
             }
+        );
+    }
+
+    #[test]
+    fn test_deep_value_does_not_panic_with_stack_overflow() {
+        let depth: usize = 1000;
+        let mut value_string = "".to_string();
+        for _ in 0..depth {
+            value_string.push_str("Tuple(");
+        }
+        value_string.push_str("0u8");
+        for _ in 0..depth {
+            value_string.push_str(")");
+        }
+
+        // Should actually be an error not a panic
+        parse_value_error!(
+            &value_string,
+            ParserError::MaxDepthExceeded(PARSER_MAX_DEPTH)
         );
     }
 

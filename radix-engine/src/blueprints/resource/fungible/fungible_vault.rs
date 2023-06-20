@@ -264,7 +264,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Ok(());
         }
 
@@ -287,7 +287,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
             ));
@@ -300,7 +300,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(VAULT_RECALL_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
             ));

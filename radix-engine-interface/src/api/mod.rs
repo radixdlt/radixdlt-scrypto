@@ -23,10 +23,8 @@ use key_value_store_api::ClientKeyValueStoreApi;
 pub use object_api::*;
 pub use system_modules::auth_api::ClientAuthApi;
 pub use system_modules::costing_api::ClientCostingApi;
-pub use system_modules::event_api::ClientEventApi;
 pub use system_modules::execution_trace_api::ClientExecutionTraceApi;
-pub use system_modules::logger_api::ClientLoggerApi;
-pub use system_modules::transaction_limits_api::ClientTransactionLimitsApi;
+pub use system_modules::limits_api::ClientLimitsApi;
 pub use system_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 
 pub type ObjectHandle = u32;
@@ -51,9 +49,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientFieldLockApi<E>
     + ClientBlueprintApi<E>
     + ClientCostingApi<E>
-    + ClientEventApi<E>
-    + ClientLoggerApi<E>
-    + ClientTransactionLimitsApi<E>
+    + ClientLimitsApi<E>
     + ClientTransactionRuntimeApi<E>
     + ClientExecutionTraceApi<E>
     + ClientAuthApi<E>

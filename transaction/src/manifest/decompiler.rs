@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
     VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT, VAULT_UNFREEZE_IDENT,
 };
 use radix_engine_interface::constants::{
@@ -49,6 +49,7 @@ pub enum DecompileError {
     EncodeError(EncodeError),
     DecodeError(DecodeError),
     FormattingError(fmt::Error),
+    ValueConversionError(RustToManifestValueError),
 }
 
 impl From<EncodeError> for DecompileError {
@@ -66,6 +67,12 @@ impl From<DecodeError> for DecompileError {
 impl From<fmt::Error> for DecompileError {
     fn from(error: fmt::Error) -> Self {
         Self::FormattingError(error)
+    }
+}
+
+impl From<RustToManifestValueError> for DecompileError {
+    fn from(error: RustToManifestValueError) -> Self {
+        Self::ValueConversionError(error)
     }
 }
 
@@ -170,7 +177,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             let bucket = context.new_bucket();
             (
                 "TAKE_FROM_WORKTOP",
-                to_manifest_value(&(resource_address, amount, bucket)),
+                to_manifest_value(&(resource_address, amount, bucket))?,
             )
         }
         InstructionV1::TakeNonFungiblesFromWorktop {
@@ -180,46 +187,46 @@ pub fn decompile_instruction<F: fmt::Write>(
             let bucket = context.new_bucket();
             (
                 "TAKE_NON_FUNGIBLES_FROM_WORKTOP",
-                to_manifest_value(&(resource_address, ids, bucket)),
+                to_manifest_value(&(resource_address, ids, bucket))?,
             )
         }
         InstructionV1::TakeAllFromWorktop { resource_address } => {
             let bucket = context.new_bucket();
             (
                 "TAKE_ALL_FROM_WORKTOP",
-                to_manifest_value(&(resource_address, bucket)),
+                to_manifest_value(&(resource_address, bucket))?,
             )
         }
         InstructionV1::ReturnToWorktop { bucket_id } => {
-            ("RETURN_TO_WORKTOP", to_manifest_value(&(bucket_id,)))
+            ("RETURN_TO_WORKTOP", to_manifest_value(&(bucket_id,))?)
         }
         InstructionV1::AssertWorktopContains {
             amount,
             resource_address,
         } => (
             "ASSERT_WORKTOP_CONTAINS",
-            to_manifest_value(&(resource_address, amount)),
+            to_manifest_value(&(resource_address, amount))?,
         ),
         InstructionV1::AssertWorktopContainsNonFungibles {
             resource_address,
             ids,
         } => (
             "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES",
-            to_manifest_value(&(resource_address, ids)),
+            to_manifest_value(&(resource_address, ids))?,
         ),
         InstructionV1::PopFromAuthZone => {
             let proof = context.new_proof();
-            ("POP_FROM_AUTH_ZONE", to_manifest_value(&(proof,)))
+            ("POP_FROM_AUTH_ZONE", to_manifest_value(&(proof,))?)
         }
         InstructionV1::PushToAuthZone { proof_id } => {
-            ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,)))
+            ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,))?)
         }
-        InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value(&())),
+        InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value_and_unwrap!(&())),
         InstructionV1::CreateProofFromAuthZone { resource_address } => {
             let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE",
-                to_manifest_value(&(resource_address, proof)),
+                to_manifest_value(&(resource_address, proof))?,
             )
         }
         InstructionV1::CreateProofFromAuthZoneOfAmount {
@@ -230,7 +237,7 @@ pub fn decompile_instruction<F: fmt::Write>(
 
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT",
-                to_manifest_value(&(resource_address, amount, proof)),
+                to_manifest_value(&(resource_address, amount, proof))?,
             )
         }
         InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
@@ -240,24 +247,24 @@ pub fn decompile_instruction<F: fmt::Write>(
             let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES",
-                to_manifest_value(&(resource_address, ids, proof)),
+                to_manifest_value(&(resource_address, ids, proof))?,
             )
         }
         InstructionV1::CreateProofFromAuthZoneOfAll { resource_address } => {
             let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL",
-                to_manifest_value(&(resource_address, proof)),
+                to_manifest_value(&(resource_address, proof))?,
             )
         }
 
-        InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())),
+        InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())?),
 
         InstructionV1::CreateProofFromBucket { bucket_id } => {
             let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET",
-                to_manifest_value(&(bucket_id, proof)),
+                to_manifest_value(&(bucket_id, proof))?,
             )
         }
 
@@ -265,31 +272,31 @@ pub fn decompile_instruction<F: fmt::Write>(
             let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT",
-                to_manifest_value(&(bucket_id, amount, proof)),
+                to_manifest_value(&(bucket_id, amount, proof))?,
             )
         }
         InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
             let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES",
-                to_manifest_value(&(bucket_id, ids, proof)),
+                to_manifest_value(&(bucket_id, ids, proof))?,
             )
         }
         InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
             let proof = context.new_proof();
             (
                 "CREATE_PROOF_FROM_BUCKET_OF_ALL",
-                to_manifest_value(&(bucket_id, proof)),
+                to_manifest_value(&(bucket_id, proof))?,
             )
         }
         InstructionV1::BurnResource { bucket_id } => {
-            ("BURN_RESOURCE", to_manifest_value(&(bucket_id,)))
+            ("BURN_RESOURCE", to_manifest_value(&(bucket_id,))?)
         }
         InstructionV1::CloneProof { proof_id } => {
             let proof_id2 = context.new_proof();
-            ("CLONE_PROOF", to_manifest_value(&(proof_id, proof_id2)))
+            ("CLONE_PROOF", to_manifest_value(&(proof_id, proof_id2))?)
         }
-        InstructionV1::DropProof { proof_id } => ("DROP_PROOF", to_manifest_value(&(proof_id,))),
+        InstructionV1::DropProof { proof_id } => ("DROP_PROOF", to_manifest_value(&(proof_id,))?),
         InstructionV1::CallFunction {
             package_address,
             blueprint_name,
@@ -369,8 +376,8 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
                 _ => {
                     fields.push(package_address.to_instruction_argument());
-                    fields.push(to_manifest_value(blueprint_name));
-                    fields.push(to_manifest_value(function_name));
+                    fields.push(to_manifest_value(blueprint_name)?);
+                    fields.push(to_manifest_value(function_name)?);
                     "CALL_FUNCTION"
                 }
             };
@@ -412,11 +419,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                     fields.push(address.to_instruction_argument());
                     "MINT_NON_FUNGIBLE"
                 }
-                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
+                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT)
                     if address.is_static_global_non_fungible_resource_manager() =>
                 {
                     fields.push(address.to_instruction_argument());
-                    "MINT_UUID_NON_FUNGIBLE"
+                    "MINT_RUID_NON_FUNGIBLE"
                 }
 
                 /* Validator */
@@ -429,7 +436,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Default */
                 _ => {
                     fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name));
+                    fields.push(to_manifest_value(method_name)?);
                     "CALL_METHOD"
                 }
             };
@@ -463,7 +470,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Default */
                 _ => {
                     fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name));
+                    fields.push(to_manifest_value(method_name)?);
                     "CALL_ROYALTY_METHOD"
                 }
             };
@@ -497,7 +504,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Default */
                 _ => {
                     fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name));
+                    fields.push(to_manifest_value(method_name)?);
                     "CALL_METADATA_METHOD"
                 }
             };
@@ -527,7 +534,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Default */
                 _ => {
                     fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name));
+                    fields.push(to_manifest_value(method_name)?);
                     "CALL_ACCESS_RULES_METHOD"
                 }
             };
@@ -549,21 +556,21 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match method_name.as_str() {
                 VAULT_RECALL_IDENT => {
-                    fields.push(to_manifest_value(vault_id));
+                    fields.push(to_manifest_value(vault_id)?);
                     "RECALL_VAULT"
                 }
                 VAULT_FREEZE_IDENT => {
-                    fields.push(to_manifest_value(vault_id));
+                    fields.push(to_manifest_value(vault_id)?);
                     "FREEZE_VAULT"
                 }
                 VAULT_UNFREEZE_IDENT => {
-                    fields.push(to_manifest_value(vault_id));
+                    fields.push(to_manifest_value(vault_id)?);
                     "UNFREEZE_VAULT"
                 }
                 /* Default */
                 _ => {
-                    fields.push(to_manifest_value(vault_id));
-                    fields.push(to_manifest_value(method_name));
+                    fields.push(to_manifest_value(vault_id)?);
+                    fields.push(to_manifest_value(method_name)?);
                     "CALL_DIRECT_VAULT_METHOD"
                 }
             };
@@ -578,7 +585,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             (name, parameters)
         }
 
-        InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())),
+        InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())?),
         InstructionV1::AllocateGlobalAddress {
             package_address,
             blueprint_name,
@@ -592,7 +599,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     blueprint_name,
                     address_reservation,
                     named_address,
-                )),
+                ))?,
             )
         }
     };

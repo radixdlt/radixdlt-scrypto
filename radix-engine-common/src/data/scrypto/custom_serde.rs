@@ -149,9 +149,9 @@ mod tests {
                     ),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::NonFungibleLocalId(
-                        NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd).unwrap(),
-                    ),
+                    value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::ruid(
+                        [0x11; 32],
+                    )),
                 },
             ],
         };
@@ -192,7 +192,7 @@ mod tests {
                 },
                 {
                     "kind": "NonFungibleLocalId",
-                    "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+                    "value": "{1111111111111111-1111111111111111-1111111111111111-1111111111111111}"
                 },
             ],
             "kind": "Tuple"
@@ -224,7 +224,7 @@ mod tests {
             },
             {
                 "kind": "NonFungibleLocalId",
-                "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+                "value": "{1111111111111111-1111111111111111-1111111111111111-1111111111111111}"
             },
         ]);
 

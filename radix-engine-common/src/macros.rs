@@ -249,3 +249,10 @@ macro_rules! manifest_args {
         $crate::data::manifest::manifest_decode(&buf).unwrap()
     }};
 }
+
+#[macro_export]
+macro_rules! to_manifest_value_and_unwrap {
+    ( $value:expr ) => {{
+        $crate::data::manifest::to_manifest_value($value).unwrap()
+    }};
+}
