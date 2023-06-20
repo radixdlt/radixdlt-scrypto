@@ -44,7 +44,8 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let instructions = ManifestBuilder::new()
         .withdraw_from_account(account0, XRD, 10.into())
         .try_deposit_batch_or_abort(account1)
-        .build().instructions;
+        .build()
+        .instructions;
     let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
     let references: Vec<ComponentAddress> = vec![account0, account1];
 
@@ -58,7 +59,10 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
             manifest_args!(manifest_encoded_instructions, references),
         )
         .build();
-    test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pub_key)]);
+    test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
 
     // Assert
     let final_balance = test_runner.account_balance(account0, XRD).unwrap();

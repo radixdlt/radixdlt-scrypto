@@ -292,16 +292,20 @@ impl AuthModule {
 
         // Prepare a new auth zone
         let is_barrier = callee.is_barrier();
-        let is_transaction_processor = callee.is_transaction_processor();
-        let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_system().modules.auth;
-            (
-                auth_module.params.virtual_resources.clone(),
-                auth_module.params.initial_proofs.clone(),
-            )
-        } else {
-            (BTreeSet::new(), BTreeSet::new())
-        };
+        // TODO: Remove special casing use of transaction processor and just have virtual resources
+        // stored in root call frame
+        let is_transaction_processor_blueprint = callee.is_transaction_processor_blueprint();
+        let is_at_root = api.kernel_get_current_depth() == 0;
+        let (virtual_resources, virtual_non_fungibles) =
+            if is_transaction_processor_blueprint && is_at_root {
+                let auth_module = &api.kernel_get_system().modules.auth;
+                (
+                    auth_module.params.virtual_resources.clone(),
+                    auth_module.params.initial_proofs.clone(),
+                )
+            } else {
+                (BTreeSet::new(), BTreeSet::new())
+            };
         let parent = api
             .kernel_get_system()
             .modules

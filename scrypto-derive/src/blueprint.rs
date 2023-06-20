@@ -388,11 +388,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         Expr::Lit(..) => {
                             let lit_str: LitStr = parse_quote!( #package );
                             let (_hrp, _entity_type, address) =
-                                Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                    .unwrap();
+                                Bech32Decoder::validate_and_decode_ignore_hrp(
+                                    lit_str.value().as_str(),
+                                )
+                                .unwrap();
                             let package_expr: Expr = parse_quote! {
-                            PackageAddress :: new_or_panic([ #(#address),* ])
-                        };
+                                PackageAddress :: new_or_panic([ #(#address),* ])
+                            };
                             package_expr
                         }
                         _ => package,
@@ -429,20 +431,20 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
 
                 let import_statement = quote! {
-                extern_blueprint_internal! {
-                    #package_expr,
-                    #blueprint,
-                    #blueprint_name,
-                    #owned_typed_name,
-                    #global_typed_name,
-                    #blueprint_functions_ident {
-                        #(#functions;)*
-                    },
-                    {
-                        #(#methods;)*
+                    extern_blueprint_internal! {
+                        #package_expr,
+                        #blueprint,
+                        #blueprint_name,
+                        #owned_typed_name,
+                        #global_typed_name,
+                        #blueprint_functions_ident {
+                            #(#functions;)*
+                        },
+                        {
+                            #(#methods;)*
+                        }
                     }
-                }
-            };
+                };
                 import_statements.push(import_statement);
             } else {
                 break;

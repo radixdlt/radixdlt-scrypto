@@ -21,13 +21,15 @@ mod execute_manifest {
         }
     );
 
-    struct ExecuteManifest {
-    }
+    struct ExecuteManifest {}
 
     impl ExecuteManifest {
-        pub fn execute_manifest(manifest_encoded_instructions: Vec<u8>, references: Vec<Reference>) {
+        pub fn execute_manifest(
+            manifest_encoded_instructions: Vec<u8>,
+            references: Vec<Reference>,
+        ) {
             Blueprint::<TransactionProcessor>::run(
-                Hash([0u8;32]),
+                Hash([0u8; 32]),
                 manifest_encoded_instructions,
                 vec![],
                 references,
