@@ -86,6 +86,7 @@ impl IdentityNativePackage {
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                     ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -114,7 +115,6 @@ impl IdentityNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static(roles_template! {
                         roles {
-                            SECURIFY_OWNER_ROLE => updaters: [SELF_ROLE];
                             SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },
                         methods {
@@ -202,7 +202,6 @@ impl IdentityNativePackage {
 }
 
 const SECURIFY_ROLE: &'static str = "securify";
-const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 
 struct SecurifiedIdentity;
 
@@ -211,9 +210,7 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedIdentity {
-    const OBJECT_OWNER_ROLE: &'static str = SECURIFY_OWNER_ROLE;
-}
+impl PresecurifiedAccessRules for SecurifiedIdentity {}
 
 pub struct IdentityBlueprint;
 

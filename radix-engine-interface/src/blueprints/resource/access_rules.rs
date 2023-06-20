@@ -41,11 +41,11 @@ impl From<&str> for MethodKey {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodEntry {
-    pub permission: MethodPermission,
+    pub permission: MethodAccessibility,
 }
 
 impl MethodEntry {
-    pub fn new<P: Into<MethodPermission>>(permission: P) -> Self {
+    pub fn new<P: Into<MethodAccessibility>>(permission: P) -> Self {
         Self {
             permission: permission.into(),
         }
@@ -54,27 +54,31 @@ impl MethodEntry {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum MethodPermission {
+pub enum MethodAccessibility {
+    /// Method is accessible to all
     Public,
+    /// Only outer objects have access to a given method. Currently used by Validator blueprint
+    /// to only allow ConsensusManager to access some methods.
     OuterObjectOnly,
-    Protected(RoleList),
+    /// Method is only accessible by any role in the role list
+    RoleProtected(RoleList),
 }
 
-impl MethodPermission {
+impl MethodAccessibility {
     pub fn nobody() -> Self {
-        MethodPermission::Protected(RoleList::none())
+        MethodAccessibility::RoleProtected(RoleList::none())
     }
 }
 
-impl<const N: usize> From<[&str; N]> for MethodPermission {
+impl<const N: usize> From<[&str; N]> for MethodAccessibility {
     fn from(value: [&str; N]) -> Self {
-        MethodPermission::Protected(value.into())
+        MethodAccessibility::RoleProtected(value.into())
     }
 }
 
-impl From<RoleList> for MethodPermission {
+impl From<RoleList> for MethodAccessibility {
     fn from(value: RoleList) -> Self {
-        Self::Protected(value)
+        Self::RoleProtected(value)
     }
 }
 
@@ -128,29 +132,25 @@ impl RoleKey {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct RoleEntry {
-    pub rule: AccessRule,
-    pub updaters: RoleList,
+pub enum OwnerRoleUpdater {
+    None,
+    Owner,
+    Object,
 }
 
-impl RoleEntry {
-    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(rule: A, updaters: M) -> Self {
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct OwnerRoleEntry {
+    pub rule: AccessRule,
+    pub updater: OwnerRoleUpdater,
+}
+
+impl OwnerRoleEntry {
+    pub fn new<A: Into<AccessRule>>(rule: A, updater: OwnerRoleUpdater) -> Self {
         Self {
             rule: rule.into(),
-            updaters: updaters.into(),
+            updater,
         }
-    }
-
-    pub fn immutable<A: Into<AccessRule>>(rule: A) -> Self {
-        Self {
-            rule: rule.into(),
-            updaters: RoleList::none(),
-        }
-    }
-
-    // FIXME: Remove and replace with set immutable rule
-    pub fn disabled() -> Self {
-        Self::immutable(AccessRule::DenyAll)
     }
 }
 
@@ -199,21 +199,25 @@ impl<const N: usize> From<[&str; N]> for RoleList {
     }
 }
 
+// Front end data structure for specifying owner role
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRole {
     None,
     Fixed(AccessRule),
-    Updateable(AccessRule),
+    Updatable(AccessRule),
+    UpdatableByObject(AccessRule),
 }
 
 impl OwnerRole {
-    // FIXME: Remove
-    pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
+    pub fn to_entry(self) -> OwnerRoleEntry {
         match self {
-            OwnerRole::Fixed(rule) => RoleEntry::immutable(rule),
-            OwnerRole::Updateable(rule) => RoleEntry::new(rule, [owner_role_name]),
-            OwnerRole::None => RoleEntry::immutable(AccessRule::DenyAll),
+            OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
+            OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
+            OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
+            OwnerRole::UpdatableByObject(rule) => {
+                OwnerRoleEntry::new(rule, OwnerRoleUpdater::Object)
+            }
         }
     }
 }

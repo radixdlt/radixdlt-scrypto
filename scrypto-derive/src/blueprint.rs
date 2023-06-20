@@ -268,7 +268,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
 
         {
-            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodPermission::*; };
+            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodAccessibility::*; };
             use_statements.push(item);
             let item: ItemUse = parse_quote! { use scrypto::prelude::RoyaltyAmount::*; };
             use_statements.push(item);
@@ -356,7 +356,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         } else {
             quote! {
                 fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
-                    scrypto::blueprints::package::MethodAuthTemplate::NoAuth
+                    scrypto::blueprints::package::MethodAuthTemplate::AllowAll
                 }
             }
         }
@@ -616,6 +616,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                     blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                    feature_set: BTreeSet::default(),
                     dependencies,
                     schema,
                     auth_config,
@@ -644,7 +645,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
 
         impl HasMethods for #bp_ident {
-            type Permissions = Methods<MethodPermission>;
+            type Permissions = Methods<MethodAccessibility>;
             type Royalties = Methods<RoyaltyAmount>;
         }
 
@@ -1297,11 +1298,11 @@ mod tests {
                 pub mod test {
                     use scrypto::prelude::*;
                     use super::*;
-                    use scrypto::prelude::MethodPermission::*;
+                    use scrypto::prelude::MethodAccessibility::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
                     fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
-                        scrypto::blueprints::package::MethodAuthTemplate::NoAuth
+                        scrypto::blueprints::package::MethodAuthTemplate::AllowAll
                     }
 
                     #[derive(::scrypto::prelude::ScryptoSbor)]
@@ -1328,7 +1329,7 @@ mod tests {
                     }
 
                     impl HasMethods for Test {
-                        type Permissions = Methods<MethodPermission>;
+                        type Permissions = Methods<MethodAccessibility>;
                         type Royalties = Methods<RoyaltyAmount>;
                     }
 
@@ -1511,6 +1512,7 @@ mod tests {
 
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                             blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                            feature_set: BTreeSet::default(),
                             dependencies,
                             schema,
                             auth_config,

@@ -14,7 +14,7 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
-use crate::blueprints::account::{AccountBlueprint, SECURIFY_OWNER_ROLE, SECURIFY_ROLE};
+use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
 use crate::roles_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
@@ -421,6 +421,7 @@ impl AccountNativePackage {
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                     ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -451,32 +452,31 @@ impl AccountNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static(roles_template!(
                         roles {
-                            SECURIFY_OWNER_ROLE => updaters: [SELF_ROLE];
                             SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },
                         methods {
                             ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
 
-                            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_WITHDRAW_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_LOCK_FEE_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_CREATE_PROOF_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_DEPOSIT_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_DEPOSIT_BATCH_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_BURN_IDENT => [SECURIFY_OWNER_ROLE];
-                            ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [SECURIFY_OWNER_ROLE];
+                            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
+                            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [OWNER_ROLE];
+                            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CREATE_PROOF_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
+                            ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
+                            ACCOUNT_BURN_IDENT => [OWNER_ROLE];
+                            ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
 
-                            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodPermission::Public;
-                            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodPermission::Public;
-                            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodPermission::Public;
-                            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodPermission::Public;
+                            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
                         }
                     )),
                 },

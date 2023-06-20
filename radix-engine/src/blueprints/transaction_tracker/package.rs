@@ -84,6 +84,7 @@ impl TransactionTrackerNativePackage {
                 blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(
                 ),
+                feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,

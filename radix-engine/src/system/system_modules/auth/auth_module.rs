@@ -88,13 +88,7 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        if let Some(auth_zone_id) = api
-            .kernel_get_system()
-            .modules
-            .auth_module()
-            .unwrap()
-            .last_auth_zone()
-        {
+        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
             let mut system = SystemService::new(api);
 
             // Step 1: Resolve method to permission
@@ -253,12 +247,12 @@ impl AuthModule {
                 let access_rules_of = info.get_outer_object();
                 (access_rules_of.into_node_id(), methods)
             }
-            MethodAuthTemplate::NoAuth => return Ok(ResolvedPermission::AllowAll),
+            MethodAuthTemplate::AllowAll => return Ok(ResolvedPermission::AllowAll),
         };
 
         match method_permissions.get(&method_key) {
-            Some(MethodPermission::Public) => Ok(ResolvedPermission::AllowAll),
-            Some(MethodPermission::OuterObjectOnly) => {
+            Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
+            Some(MethodAccessibility::OuterObjectOnly) => {
                 match callee.module_object_info.blueprint_info {
                     ObjectBlueprintInfo::Inner { outer_object } => Ok(
                         ResolvedPermission::AccessRule(rule!(require(global_caller(outer_object)))),
@@ -268,11 +262,13 @@ impl AuthModule {
                     )),
                 }
             }
-            Some(MethodPermission::Protected(role_list)) => Ok(ResolvedPermission::RoleList {
-                access_rules_of,
-                role_list: role_list.clone(),
-                module_id: callee.module_id,
-            }),
+            Some(MethodAccessibility::RoleProtected(role_list)) => {
+                Ok(ResolvedPermission::RoleList {
+                    access_rules_of,
+                    role_list: role_list.clone(),
+                    module_id: callee.module_id,
+                })
+            }
             None => Err(RuntimeError::SystemModuleError(
                 SystemModuleError::AuthError(AuthError::NoMethodMapping(callee.fn_identifier())),
             )),
@@ -298,7 +294,7 @@ impl AuthModule {
         let is_barrier = callee.is_barrier();
         let is_transaction_processor = callee.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_system().modules.auth_module().unwrap();
+            let auth_module = &api.kernel_get_system().modules.auth;
             (
                 auth_module.params.virtual_resources.clone(),
                 auth_module.params.initial_proofs.clone(),
@@ -309,8 +305,7 @@ impl AuthModule {
         let parent = api
             .kernel_get_system()
             .modules
-            .auth_module()
-            .unwrap()
+            .auth
             .auth_zone_stack
             .last()
             .map(|x| Reference(x.clone().into()));
@@ -341,6 +336,7 @@ impl AuthModule {
                     version: BlueprintVersion::default(),
 
                     blueprint_info: ObjectBlueprintInfo::default(),
+                    features: btreeset!(),
                     instance_schema: None,
                 }))
             ),
@@ -352,8 +348,7 @@ impl AuthModule {
         // Update auth zone stack
         api.kernel_get_system()
             .modules
-            .auth_module()
-            .unwrap()
+            .auth
             .auth_zone_stack
             .push(auth_zone_node_id);
 
@@ -377,12 +372,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         _dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         // update internal state
-        api.kernel_get_system()
-            .modules
-            .auth_module()
-            .unwrap()
-            .auth_zone_stack
-            .pop();
+        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
         Ok(())
     }
 }

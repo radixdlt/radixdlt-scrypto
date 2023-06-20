@@ -220,7 +220,7 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
             &definition_init.blueprint_type,
             &definition_init.auth_config.method_auth,
         ) {
-            (_, MethodAuthTemplate::NoAuth) => {}
+            (_, MethodAuthTemplate::AllowAll) => {}
             (_, MethodAuthTemplate::Static(static_roles)) => {
                 let check_list = |list: &RoleList| {
                     for role_key in &list.list {
@@ -245,10 +245,10 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                 }
                 for (_method, permission) in &static_roles.methods {
                     match permission {
-                        MethodPermission::Protected(role_list) => {
+                        MethodAccessibility::RoleProtected(role_list) => {
                             check_list(&role_list)?;
                         }
-                        MethodPermission::Public | MethodPermission::OuterObjectOnly => {}
+                        MethodAccessibility::Public | MethodAccessibility::OuterObjectOnly => {}
                     }
                 }
 
@@ -300,10 +300,10 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 
                 for (_method, permission) in methods {
                     match permission {
-                        MethodPermission::Protected(role_list) => {
+                        MethodAccessibility::RoleProtected(role_list) => {
                             check_list(&role_list)?;
                         }
-                        MethodPermission::Public | MethodPermission::OuterObjectOnly => {}
+                        MethodAccessibility::Public | MethodAccessibility::OuterObjectOnly => {}
                     }
                 }
 
@@ -526,6 +526,7 @@ where
             version: BlueprintVersion::default(),
 
             blueprint_info: ObjectBlueprintInfo::default(),
+            features: btreeset!(),
             instance_schema: None,
         })),
     );
@@ -756,6 +757,7 @@ impl PackageNativePackage {
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     PACKAGE_OWNER_BADGE.into(),
@@ -955,18 +957,11 @@ impl PackageNativePackage {
                     events.insert(key, index);
                 }
 
-                let (feature_set, outer_blueprint) = match definition_init.blueprint_type {
-                    BlueprintType::Outer { feature_set } => (feature_set, None),
-                    BlueprintType::Inner { outer_blueprint } => {
-                        (BTreeSet::new(), Some(outer_blueprint))
-                    }
-                };
-
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
-                        outer_blueprint,
+                        blueprint_type: definition_init.blueprint_type,
                         generics: definition_init.schema.generics,
-                        feature_set,
+                        feature_set: definition_init.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(
@@ -1076,6 +1071,7 @@ impl PackageNativePackage {
 
         for BlueprintDefinitionInit {
             blueprint_type,
+            feature_set,
             schema:
                 BlueprintSchemaInit {
                     generics,
@@ -1087,15 +1083,7 @@ impl PackageNativePackage {
         } in definition.blueprints.values()
         {
             match blueprint_type {
-                BlueprintType::Outer { feature_set } => {
-                    if !feature_set.is_empty() {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                "Feature set not supported".to_string(),
-                            )),
-                        ));
-                    }
-                }
+                BlueprintType::Outer => {}
                 BlueprintType::Inner { .. } => {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::PackageError(PackageError::WasmUnsupported(
@@ -1103,6 +1091,14 @@ impl PackageNativePackage {
                         )),
                     ));
                 }
+            }
+
+            if !feature_set.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Feature set not supported".to_string(),
+                    )),
+                ));
             }
 
             if !collections.is_empty() {
@@ -1222,18 +1218,11 @@ impl PackageNativePackage {
                     events.insert(key, index);
                 }
 
-                let (feature_set, outer_blueprint) = match definition_init.blueprint_type {
-                    BlueprintType::Outer { feature_set } => (feature_set, None),
-                    BlueprintType::Inner { outer_blueprint } => {
-                        (BTreeSet::new(), Some(outer_blueprint))
-                    }
-                };
-
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
-                        outer_blueprint,
+                        blueprint_type: definition_init.blueprint_type,
                         generics: definition_init.schema.generics,
-                        feature_set: feature_set,
+                        feature_set: definition_init.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(

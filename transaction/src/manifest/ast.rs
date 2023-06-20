@@ -229,7 +229,7 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-    MintUuidNonFungible {
+    MintRuidNonFungible {
         address: Value,
         args: Vec<Value>,
     },
