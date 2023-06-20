@@ -496,14 +496,12 @@ macro_rules! enable_function_auth {
 #[macro_export]
 macro_rules! enable_package_royalties {
     ($($function:ident => $royalty:expr,)*) => (
-        fn package_royalty_config() -> RoyaltyConfig {
+        fn package_royalty_config() -> PackageRoyaltyConfig {
             let royalties = Fns::<RoyaltyAmount> {
                 $( $function: $royalty, )*
             };
 
-            RoyaltyConfig {
-                rules: royalties.to_mapping().into_iter().collect()
-            }
+            PackageRoyaltyConfig::Enabled(royalties.to_mapping().into_iter().collect())
         }
     );
 }

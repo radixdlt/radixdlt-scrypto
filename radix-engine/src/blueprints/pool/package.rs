@@ -170,7 +170,7 @@ impl PoolNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
@@ -338,7 +338,7 @@ impl PoolNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
@@ -504,7 +504,7 @@ impl PoolNativePackage {
                         virtual_lazy_load_functions: btreemap!(),
                     },
                 },
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),

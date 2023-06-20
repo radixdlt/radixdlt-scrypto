@@ -187,7 +187,7 @@ impl ConsensusManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
@@ -437,7 +437,7 @@ impl ConsensusManagerNativePackage {
                         functions,
                     },
                 },
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::Static(roles_template! {

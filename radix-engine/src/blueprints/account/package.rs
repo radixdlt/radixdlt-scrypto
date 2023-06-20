@@ -443,7 +443,7 @@ impl AccountNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                      function_auth: btreemap!(
                         ACCOUNT_CREATE_IDENT.to_string() => rule!(allow_all),

@@ -1757,7 +1757,7 @@ pub fn single_function_package_definition(
                 },
             },
 
-            royalty_config: RoyaltyConfig::default(),
+            royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig {
                 function_auth: btreemap!(
                     function_name.to_string() => rule!(allow_all),

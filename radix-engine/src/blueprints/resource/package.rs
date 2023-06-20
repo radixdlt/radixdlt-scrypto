@@ -350,7 +350,7 @@ impl ResourceManagerNativePackage {
                         virtual_lazy_load_functions: btreemap!(),
                     },
                 },
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
@@ -684,7 +684,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
@@ -945,7 +945,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
 
@@ -1233,7 +1233,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
@@ -1423,7 +1423,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
@@ -1636,7 +1636,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
@@ -1747,7 +1747,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
@@ -1862,7 +1862,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         PROOF_DROP_IDENT.to_string() => rule!(allow_all),
@@ -2021,7 +2021,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
@@ -2198,7 +2198,7 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
                     method_auth: MethodAuthTemplate::AllowAll,

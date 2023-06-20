@@ -99,7 +99,7 @@ impl TransactionTrackerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),

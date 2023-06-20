@@ -104,7 +104,7 @@ pub struct BlueprintDefinitionInit {
     pub feature_set: BTreeSet<String>,
     pub dependencies: BTreeSet<GlobalAddress>,
     pub schema: BlueprintSchemaInit,
-    pub royalty_config: RoyaltyConfig,
+    pub royalty_config: PackageRoyaltyConfig,
     pub auth_config: AuthConfig,
 }
 
@@ -115,7 +115,7 @@ impl Default for BlueprintDefinitionInit {
             feature_set: BTreeSet::default(),
             dependencies: BTreeSet::default(),
             schema: BlueprintSchemaInit::default(),
-            royalty_config: RoyaltyConfig::default(),
+            royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig::default(),
         }
     }

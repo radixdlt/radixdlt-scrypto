@@ -302,7 +302,7 @@ fn globalize_package<Y, L: Default>(
     code: PackageCodeSubstate,
     code_hash: Hash,
 
-    package_royalties: BTreeMap<String, RoyaltyConfig>,
+    package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
 
     auth_configs: BTreeMap<String, AuthConfig>,
 
@@ -725,7 +725,7 @@ impl PackageNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
@@ -1248,13 +1248,18 @@ impl PackageRoyaltyNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<RoyaltyConfig> =
+        let substate: KeyValueEntrySubstate<PackageRoyaltyConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
         let royalty_charge = substate
             .value
-            .and_then(|c| c.rules.get(ident).cloned())
+            .and_then(|royalty_config| {
+                match royalty_config {
+                    PackageRoyaltyConfig::Enabled(royalty_amounts) => royalty_amounts.get(ident).cloned(),
+                    PackageRoyaltyConfig::Disabled => Some(RoyaltyAmount::Free),
+                }
+            })
             .unwrap_or(RoyaltyAmount::Free);
 
         if royalty_charge.is_non_zero() {

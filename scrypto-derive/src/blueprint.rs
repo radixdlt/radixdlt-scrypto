@@ -473,7 +473,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         };
 
-        let fn_names: Vec<String> = fn_idents.iter().map(|i| i.to_string()).collect();
         let package_royalties_statements = {
             let package_royalties_index = macro_statements.iter().position(|item| {
                 item.mac
@@ -488,17 +487,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     #royalties_macro
                 }
             } else {
-                // FIXME: Use AllPublicFunctions Template instead
                 quote! {
-                    fn package_royalty_config() -> RoyaltyConfig {
-                        let royalties = btreemap!(
-                            #(
-                                #fn_names.to_string() => Free,
-                            )*
-                        );
-                        RoyaltyConfig {
-                            rules: royalties,
-                        }
+                    fn package_royalty_config() -> PackageRoyaltyConfig {
+                        PackageRoyaltyConfig::Disabled
                     }
                 }
             }
@@ -1424,14 +1415,8 @@ mod tests {
                         )
                     }
 
-                    fn package_royalty_config() -> RoyaltyConfig {
-                        let royalties = btreemap!(
-                            "x".to_string() => Free,
-                            "y".to_string() => Free,
-                        );
-                        RoyaltyConfig {
-                            rules: royalties,
-                        }
+                    fn package_royalty_config() -> PackageRoyaltyConfig {
+                        PackageRoyaltyConfig::Disabled
                     }
 
                     #[no_mangle]

@@ -60,7 +60,7 @@ impl TransactionProcessorNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                 },
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(
                         TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // FIXME: Change to only allow root to call? and add auditors' tests
