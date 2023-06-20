@@ -637,7 +637,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         impl HasMethods for #bp_ident {
             type Permissions = Methods<MethodAccessibility>;
-            type Royalties = Methods<RoyaltyAmount>;
+            type Royalties = Methods<(RoyaltyAmount, bool)>;
         }
 
         impl HasTypeInfo for #bp_ident {
@@ -1321,7 +1321,7 @@ mod tests {
 
                     impl HasMethods for Test {
                         type Permissions = Methods<MethodAccessibility>;
-                        type Royalties = Methods<RoyaltyAmount>;
+                        type Royalties = Methods<(RoyaltyAmount, bool)>;
                     }
 
                     impl HasTypeInfo for Test {

@@ -68,11 +68,11 @@ fn test_basic_transfer() {
         0
         + 897 /* AllocateNodeId */
         + 1417 /* CreateNode */
-        + 5217 /* DropLock */
+        + 5291 /* DropLock */
         + 1365 /* DropNode */
         + 736166 /* Invoke */
-        + 238278 /* LockSubstate */
-        + 7952 /* ReadSubstate */
+        + 239629 /* LockSubstate */
+        + 8064 /* ReadSubstate */
         + 57500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */

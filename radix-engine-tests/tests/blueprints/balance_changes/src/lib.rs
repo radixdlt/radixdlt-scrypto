@@ -3,9 +3,9 @@ use scrypto::prelude::*;
 #[blueprint]
 mod balance_changes_test {
     enable_package_royalties! {
-        instantiate => Free,
-        put => Xrd(2.into()),
-        boom => Xrd(2.into()),
+        instantiate => Free;
+        put => Xrd(2.into());
+        boom => Xrd(2.into());
     }
 
     struct BalanceChangesTest {
@@ -19,13 +19,13 @@ mod balance_changes_test {
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
-            .royalties(royalties! {
+            .royalties(component_royalties! {
                 roles {
                     royalty_admin => rule!(allow_all);
                 },
                 init {
-                    put => Xrd(1.into()),
-                    boom => Xrd(1.into()),
+                    put => Xrd(1.into());
+                    boom => Xrd(1.into());
                 }
             })
             .globalize()

@@ -64,7 +64,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type Permissions: MethodMapping<MethodAccessibility>;
-    type Royalties: MethodMapping<RoyaltyAmount>;
+    type Royalties: MethodMapping<(RoyaltyAmount, bool)>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -289,9 +289,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
         let mut royalty_amounts = BTreeMap::new();
-        for (method, royalty) in royalties.0.to_mapping() {
-            // FIXME: Add updatable to scrypto
-            royalty_amounts.insert(method, (royalty, true));
+        for (method, (royalty, updatable)) in royalties.0.to_mapping() {
+            royalty_amounts.insert(method, (royalty, !updatable));
         }
 
         self.royalty_config = Some((RoyaltyConfig::Enabled(royalty_amounts), royalties.1));

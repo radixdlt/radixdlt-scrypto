@@ -495,7 +495,7 @@ macro_rules! enable_function_auth {
 
 #[macro_export]
 macro_rules! enable_package_royalties {
-    ($($function:ident => $royalty:expr,)*) => (
+    ($($function:ident => $royalty:expr;)*) => (
         fn package_royalty_config() -> PackageRoyaltyConfig {
             let royalties = Fns::<RoyaltyAmount> {
                 $( $function: $royalty, )*
@@ -548,16 +548,23 @@ macro_rules! roles {
 }
 
 #[macro_export]
+macro_rules! internal_royalty_entry {
+    ($royalty:expr) => {{
+        ($royalty.into(), false)
+    }};
+    ($royalty:expr $(, updatable)?) => {{
+        ($royalty.into(), true)
+    }};
+}
+
+#[macro_export]
 macro_rules! royalty_config {
-    ($($method:ident => $royalty:expr),*) => ({
-        Methods::<RoyaltyAmount> {
+    ($($method:ident => $royalty:expr $(, $updatable:ident)? ;)*) => ({
+        Methods::<(RoyaltyAmount, bool)> {
             $(
-                $method: $royalty.into(),
+                $method: internal_royalty_entry!($royalty $(, $updatable)?),
             )*
         }
-    });
-    ($($method:ident => $royalty:expr,)*) => ({
-        royalty_config!($($method => $royalty),*)
     });
 }
 
@@ -615,7 +622,7 @@ macro_rules! metadata {
 }
 
 #[macro_export]
-macro_rules! royalties {
+macro_rules! component_royalties {
     {
         roles {
             $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
