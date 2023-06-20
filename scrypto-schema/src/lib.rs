@@ -160,6 +160,7 @@ impl<T> BlueprintCollectionSchema<T> {
 pub enum Condition {
     Always,
     IfFeature(String),
+    IfOuterFeature(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

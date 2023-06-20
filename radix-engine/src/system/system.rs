@@ -241,7 +241,8 @@ where
         &mut self,
         blueprint_id: &BlueprintId,
         blueprint_interface: &BlueprintInterface,
-        features: BTreeSet<String>,
+        blueprint_features: BTreeSet<String>,
+        outer_blueprint_features: BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
@@ -285,10 +286,18 @@ where
 
                 for (i, field) in fields.iter().enumerate() {
                     // Check for any feature conditions
-                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
-                        if !features.contains(feature) {
-                            continue;
+                    match &field_schemas[i].condition {
+                        Condition::IfFeature(feature) => {
+                            if !blueprint_features.contains(feature) {
+                                continue;
+                            }
                         }
+                        Condition::IfOuterFeature(feature) => {
+                            if !outer_blueprint_features.contains(feature) {
+                                continue;
+                            }
+                        }
+                        Condition::Always => {}
                     }
 
                     let pointer = blueprint_interface
@@ -312,11 +321,20 @@ where
 
                 for (i, field) in fields.into_iter().enumerate() {
                     // Check for any feature conditions
-                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
-                        if !features.contains(feature) {
-                            continue;
+                    match &field_schemas[i].condition {
+                        Condition::IfFeature(feature) => {
+                            if !blueprint_features.contains(feature) {
+                                continue;
+                            }
                         }
+                        Condition::IfOuterFeature(feature) => {
+                            if !outer_blueprint_features.contains(feature) {
+                                continue;
+                            }
+                        }
+                        Condition::Always => {}
                     }
+
                     partition.insert(
                         SubstateKey::Field(i as u8),
                         IndexedScryptoValue::from_vec(field)
@@ -628,7 +646,7 @@ where
         )?;
         let expected_blueprint_parent = blueprint_interface.outer_blueprint.clone();
 
-        let (blueprint_info, associated_features) = if let Some(parent) = &expected_blueprint_parent
+        let (blueprint_info, object_features, outer_object_features) = if let Some(parent) = &expected_blueprint_parent
         {
             match instance_context {
                 Some(context) if context.outer_blueprint.eq(parent) => {
@@ -645,6 +663,7 @@ where
                         ObjectBlueprintInfo::Inner {
                             outer_object: context.outer_object,
                         },
+                        BTreeSet::new(),
                         outer_object_info.get_features(),
                     )
                 }
@@ -671,13 +690,15 @@ where
                     features: features.clone(),
                 },
                 features,
+                BTreeSet::new(),
             )
         };
 
         let user_substates = self.validate_instance_schema_and_state(
             blueprint_id,
             &blueprint_interface,
-            associated_features,
+            object_features,
+            outer_object_features,
             &instance_schema,
             fields,
             kv_entries,
@@ -798,13 +819,24 @@ where
                 ))
             })?;
 
-        if let Condition::IfFeature(feature) = field_schema.condition {
-            if !self.is_feature_enabled(&node_id, feature.as_str())? {
-                return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    info.blueprint_id.clone(),
-                    field_index,
-                )));
+        match field_schema.condition {
+            Condition::IfFeature(feature) => {
+                if !self.is_feature_enabled(&node_id, feature.as_str())? {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint_id.clone(),
+                        field_index,
+                    )));
+                }
             }
+            Condition::IfOuterFeature(feature) => {
+                if !self.is_feature_enabled(info.get_outer_object().as_node_id(), feature.as_str())? {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint_id.clone(),
+                        field_index,
+                    )));
+                }
+            }
+            Condition::Always => {}
         }
 
         let pointer = field_schema.field;
