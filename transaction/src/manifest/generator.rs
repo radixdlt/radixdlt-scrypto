@@ -51,6 +51,7 @@ use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
+use radix_engine_interface::*;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str::FromStr;
@@ -485,7 +486,7 @@ where
                 package_address,
                 blueprint_name,
                 function_name,
-                args: to_manifest_value(&args),
+                args,
             }
         }
         ast::Instruction::CallMethod {
@@ -716,9 +717,9 @@ where
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::MintUuidNonFungible { address, args } => InstructionV1::CallMethod {
+        ast::Instruction::MintRuidNonFungible { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
-            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
@@ -1407,7 +1408,7 @@ where
 mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
-    use crate::manifest::parser::Parser;
+    use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
     use crate::signing::secp256k1::Secp256k1PrivateKey;
     use radix_engine_common::manifest_args;
     use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
@@ -1417,7 +1418,7 @@ mod tests {
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
+        NonFungibleResourceManagerMintRuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1427,7 +1428,9 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_ok {
         ( $s:expr,   $expected:expr ) => {{
-            let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
+            let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
+                .parse_value()
+                .unwrap();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_value(
@@ -1447,7 +1450,7 @@ mod tests {
         ( $s:expr, $expected:expr $(,)? ) => {{
             // If you use the following output for test cases, make sure you've checked the diff
             // println!("{}", crate::manifest::decompile(&[$expected.clone()], &NetworkDefinition::simulator()).unwrap());
-            let instruction = Parser::new(tokenize($s).unwrap())
+            let instruction = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
                 .parse_instruction()
                 .unwrap();
             let mut id_validator = ManifestValidator::new();
@@ -1468,7 +1471,9 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
-            let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
+            let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
+                .parse_value()
+                .unwrap();
             match generate_value(
                 &value,
                 None,
@@ -1694,7 +1699,7 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -1739,7 +1744,7 @@ mod tests {
                     package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                    args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                    args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
@@ -1796,7 +1801,7 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(
+                args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
@@ -1817,7 +1822,7 @@ mod tests {
                         ]),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
-                            (to_manifest_value(&(
+                            (to_manifest_value_and_unwrap!(&(
                                 String::from("Hello World"),
                                 dec!("12")
                             )),),
@@ -1852,7 +1857,7 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: BTreeMap::from([(
@@ -1900,25 +1905,27 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    track_total_supply: false,
-                    divisibility: 18,
-                    metadata: BTreeMap::from([(
-                        "name".to_string(),
-                        MetadataValue::String("Token".to_string())
-                    )]),
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceMethodAuthKey::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                        (
-                            ResourceMethodAuthKey::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                    ]),
-                    initial_supply: "500".parse().unwrap()
-                })
+                args: to_manifest_value_and_unwrap!(
+                    &FungibleResourceManagerCreateWithInitialSupplyInput {
+                        track_total_supply: false,
+                        divisibility: 18,
+                        metadata: BTreeMap::from([(
+                            "name".to_string(),
+                            MetadataValue::String("Token".to_string())
+                        )]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                        ]),
+                        initial_supply: "500".parse().unwrap()
+                    }
+                )
             },
         );
     }
@@ -1941,10 +1948,10 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
+                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerMintManifestInput {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
-                        (to_manifest_value(&(
+                        (to_manifest_value_and_unwrap!(&(
                             String::from("Hello World"),
                             dec!("12")
                         )),)
@@ -1955,7 +1962,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mint_uuid_non_fungible_instruction() {
+    fn test_mint_ruid_non_fungible_instruction() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let resource_address = ResourceAddress::try_from_bech32(
             &bech32_decoder,
@@ -1965,7 +1972,7 @@ mod tests {
 
         generate_instruction_ok!(
             r#"
-            MINT_UUID_NON_FUNGIBLE
+            MINT_RUID_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
                 Array<Tuple>(
                     Tuple(Tuple("Hello World", Decimal("12")))
@@ -1973,13 +1980,15 @@ mod tests {
             "#,
             InstructionV1::CallMethod {
                 address: resource_address.into(),
-                method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput {
-                    entries: Vec::from([(to_manifest_value(&(
-                        String::from("Hello World"),
-                        dec!("12")
-                    )),),])
-                }),
+                method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerMintRuidManifestInput {
+                        entries: Vec::from([(to_manifest_value_and_unwrap!(&(
+                            String::from("Hello World"),
+                            dec!("12")
+                        )),),])
+                    }
+                ),
             },
         );
     }
@@ -1993,11 +2002,91 @@ mod tests {
             InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerCreateValidatorInput {
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateValidatorInput {
                     key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
                     fee_factor: Decimal::ONE,
                 }),
             },
         );
+    }
+
+    macro_rules! generate_manifest_input_with_given_depth {
+        ( $depth:expr ) => {{
+            let depth: usize = $depth;
+            // check depth
+            let mut manifest = r#"CALL_FUNCTION Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk") "blueprint" "func" "#.to_string();
+            for _ in 0..depth - 1 {
+                manifest.push_str("Tuple(");
+            }
+            manifest.push_str("0u8");
+            for _ in 0..depth - 1 {
+                manifest.push_str(")");
+            }
+            manifest.push_str(";");
+            manifest
+        }};
+    }
+
+    macro_rules! generate_compiled_manifest_with_given_depth {
+        ( $depth:expr ) => {{
+            let manifest = generate_manifest_input_with_given_depth!($depth);
+            let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+
+            let tokens = tokenize(&manifest)
+                .map_err(CompileError::LexerError)
+                .unwrap();
+
+            let instructions = parser::Parser::new(tokens, $depth)
+                .parse_manifest()
+                .unwrap();
+            let blobs = BlobProvider::new();
+
+            generate_manifest(&instructions, &bech32_decoder, blobs).unwrap()
+        }};
+    }
+
+    #[test]
+    fn test_no_stack_overflow_for_very_deep_manifest() {
+        use crate::manifest::*;
+
+        let manifest = generate_manifest_input_with_given_depth!(1000);
+
+        let result = compile(
+            &manifest,
+            &NetworkDefinition::simulator(),
+            BlobProvider::default(),
+        );
+        let expected = CompileError::ParserError(ParserError::MaxDepthExceeded(PARSER_MAX_DEPTH));
+
+        match result {
+            Ok(_) => {
+                panic!("Expected {:?} but no error is thrown", expected);
+            }
+            Err(e) => {
+                assert_eq!(e, expected);
+            }
+        }
+    }
+
+    #[test]
+    fn test_if_max_depth_is_possibly_maximal() {
+        use crate::manifest::*;
+        // This test checks if PARSER_MAX_DEPTH is correctly adjusted in relation with
+        // MANIFEST_SBOR_V1_MAX_DEPTH
+
+        // When using manifest input with maximum depth we expect to
+        // successfully encode manifest back from compiled one
+        let compiled = generate_compiled_manifest_with_given_depth!(PARSER_MAX_DEPTH);
+
+        let _result = manifest_encode(&compiled).unwrap();
+
+        // When using manifest input maximum depth is exceeded by one we expect
+        // encoding error when encoding the compiled one.
+        let compiled = generate_compiled_manifest_with_given_depth!(PARSER_MAX_DEPTH + 1);
+
+        let expected = EncodeError::MaxDepthExceeded(MANIFEST_SBOR_V1_MAX_DEPTH);
+
+        let result = manifest_encode(&compiled);
+        assert_eq!(result, Err(expected));
     }
 }

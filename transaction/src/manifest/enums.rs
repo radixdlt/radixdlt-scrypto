@@ -130,7 +130,7 @@ lazy_static! {
                 String = 0;
                 Integer = 1;
                 Bytes = 2;
-                UUID = 3;
+                RUID = 3;
             }
         );
 

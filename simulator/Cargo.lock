@@ -1314,7 +1314,6 @@ dependencies = [
  "temp-env",
  "transaction",
  "utils",
- "uuid",
 ]
 
 [[package]]

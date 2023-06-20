@@ -241,7 +241,7 @@ impl FeeTable {
                             }
                             (
                                 "NonFungibleResourceManager",
-                                "create_uuid_non_fungible_with_initial_supply",
+                                "create_ruid_non_fungible_with_initial_supply",
                             ) => 371965,
                             ("NonFungibleResourceManager", "create_vault") => 290686,
                             ("NonFungibleResourceManager", "create_with_initial_supply") => 348024,
@@ -249,8 +249,8 @@ impl FeeTable {
                             ("NonFungibleResourceManager", "get_resource_type") => 157541,
                             ("NonFungibleResourceManager", "get_total_supply") => 161935,
                             ("NonFungibleResourceManager", "mint") => 370268,
-                            ("NonFungibleResourceManager", "mint_single_uuid") => 304487,
-                            ("NonFungibleResourceManager", "mint_uuid") => 304126,
+                            ("NonFungibleResourceManager", "mint_single_ruid") => 304487,
+                            ("NonFungibleResourceManager", "mint_ruid") => 304126,
                             ("NonFungibleResourceManager", "non_fungible_exists") => 161135,
                             ("NonFungibleResourceManager", "update_non_fungible_data") => 237009,
                             ("NonFungibleVault", "create_proof_of_all") => 212614,

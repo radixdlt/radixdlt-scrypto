@@ -5,7 +5,9 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -274,7 +276,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Ok(());
         }
 
@@ -297,7 +299,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
             ));
@@ -310,7 +312,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(VAULT_RECALL_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
             ));
