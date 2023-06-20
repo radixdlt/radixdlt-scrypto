@@ -19,7 +19,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringCo
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltyAccumulatorSubstate;
+use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -440,7 +440,7 @@ impl TestRunner {
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
         let accumulator = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltySubstate>(
                 component_address.as_node_id(),
                 ROYALTY_BASE_PARTITION
                     .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)

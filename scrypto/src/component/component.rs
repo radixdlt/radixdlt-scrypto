@@ -288,12 +288,13 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
-        let mut royalty_config = RoyaltyConfig::default();
+        let mut royalty_amounts = BTreeMap::new();
         for (method, royalty) in royalties.0.to_mapping() {
-            royalty_config.set_rule(method, royalty);
+            // FIXME: Add updatable to scrypto
+            royalty_amounts.insert(method, (royalty, true));
         }
 
-        self.royalty_config = Some((royalty_config, royalties.1));
+        self.royalty_config = Some((RoyaltyConfig::Enabled(royalty_amounts), royalties.1));
 
         self
     }

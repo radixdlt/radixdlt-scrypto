@@ -348,3 +348,19 @@ fn can_update_updatable_owner_role_account() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn cannot_set_royalty_on_accounts() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let account = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .set_component_royalty(account, "deposit", RoyaltyAmount::Free)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}

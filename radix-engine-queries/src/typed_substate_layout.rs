@@ -414,7 +414,7 @@ pub enum TypedAccessRulesModule {
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleFieldValue {
-    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
+    ComponentRoyaltyAccumulator(ComponentRoyaltySubstate),
 }
 
 /// Contains all the main module substate values, by each known partition layout

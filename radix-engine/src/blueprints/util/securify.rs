@@ -52,14 +52,9 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = Roles::new();
         let owner_rule = rule!(require(owner_id));
-        //roles.define_mutable_role(RoleKey::new(Self::OBJECT_OWNER_ROLE), owner_rule.clone());
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_mutable_role(RoleKey::new(securify_role), owner_rule.clone());
         }
-        /*
-        let mut metadata_roles = Roles::new();
-        metadata_roles.define_immutable_role(METADATA_ADMIN_ROLE, owner_rule);
-         */
 
         let roles = btreemap!(
             ObjectModuleId::Main => roles,

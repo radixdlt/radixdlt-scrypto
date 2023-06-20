@@ -1256,7 +1256,9 @@ impl PackageRoyaltyNativeBlueprint {
             .value
             .and_then(|royalty_config| {
                 match royalty_config {
-                    PackageRoyaltyConfig::Enabled(royalty_amounts) => royalty_amounts.get(ident).cloned(),
+                    PackageRoyaltyConfig::Enabled(royalty_amounts) => {
+                        royalty_amounts.get(ident).cloned()
+                    },
                     PackageRoyaltyConfig::Disabled => Some(RoyaltyAmount::Free),
                 }
             })

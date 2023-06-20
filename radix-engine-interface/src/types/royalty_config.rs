@@ -8,29 +8,23 @@ use crate::*;
 /// Royalty rules
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct RoyaltyConfig {
-    pub rules: BTreeMap<String, RoyaltyAmount>,
+pub enum RoyaltyConfig {
+    Disabled,
+    Enabled(BTreeMap<String, (RoyaltyAmount, bool)>),
 }
 
 impl Default for RoyaltyConfig {
     fn default() -> Self {
-        Self {
-            rules: BTreeMap::new(),
-        }
+        RoyaltyConfig::Disabled
     }
 }
 
-impl RoyaltyConfig {
-    pub fn get_rule(&self, method_name: &str) -> RoyaltyAmount {
-        self.rules
-            .get(method_name)
-            .cloned()
-            .unwrap_or(RoyaltyAmount::Free)
-    }
-
-    pub fn set_rule<S: ToString>(&mut self, method: S, amount: RoyaltyAmount) {
-        self.rules.insert(method.to_string(), amount);
-    }
+/// Royalty rules
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum PackageRoyalty {
+    Disabled,
+    Enabled(BTreeMap<String, RoyaltyAmount>),
 }
 
 /// Royalty rules
