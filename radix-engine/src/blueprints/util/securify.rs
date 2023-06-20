@@ -2,7 +2,6 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::metadata::METADATA_ADMIN_ROLE;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 
@@ -11,7 +10,7 @@ pub trait SecurifiedAccessRules {
     const SECURIFY_ROLE: Option<&'static str> = None;
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        owner_rule: OwnerRole,
+        owner_role: OwnerRole,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = Roles::new();
@@ -19,7 +18,7 @@ pub trait SecurifiedAccessRules {
             roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
         let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(owner_rule, roles, api)?;
+        let access_rules = AccessRules::create(owner_role, roles, api)?;
         Ok(access_rules)
     }
 
@@ -47,28 +46,29 @@ pub trait SecurifiedAccessRules {
 }
 
 pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
-    const OBJECT_OWNER_ROLE: &'static str;
-
     fn create_presecurified<Y: ClientApi<RuntimeError>>(
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = Roles::new();
         let owner_rule = rule!(require(owner_id));
-        roles.define_mutable_role(RoleKey::new(Self::OBJECT_OWNER_ROLE), owner_rule.clone());
+        //roles.define_mutable_role(RoleKey::new(Self::OBJECT_OWNER_ROLE), owner_rule.clone());
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_mutable_role(RoleKey::new(securify_role), owner_rule.clone());
         }
+        /*
         let mut metadata_roles = Roles::new();
         metadata_roles.define_immutable_role(METADATA_ADMIN_ROLE, owner_rule);
+         */
 
         let roles = btreemap!(
             ObjectModuleId::Main => roles,
-            ObjectModuleId::Metadata => metadata_roles,
+            //ObjectModuleId::Metadata => metadata_roles,
         );
 
         // FIXME: How do we get around the presecurified owner role problem?
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
+        let access_rules =
+            AccessRules::create(OwnerRole::UpdatableByObject(owner_rule), roles, api)?;
         Ok(access_rules)
     }
 
@@ -89,13 +89,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         let (bucket, owner_rule) = Self::mint_securified_badge(api)?;
 
-        access_rules.update_role(
-            ObjectModuleId::Main,
-            Self::OBJECT_OWNER_ROLE,
-            Some(owner_rule),
-            true,
-            api,
-        )?;
+        access_rules.update_owner_role(Some(owner_rule), true, api)?;
 
         Ok(bucket)
     }

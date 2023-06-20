@@ -1,6 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::node_modules::access_rules::OwnerRoleSubstate;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
@@ -11,7 +12,6 @@ use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
-use crate::system::node_modules::access_rules::OwnerRoleSubstate;
 
 // FIXME: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -131,6 +131,7 @@ impl RoleKey {
 pub enum OwnerRoleUpdater {
     None,
     Owner,
+    Object,
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -194,20 +195,25 @@ impl<const N: usize> From<[&str; N]> for RoleList {
     }
 }
 
+// Front end data structure for specifying owner role
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRole {
     None,
     Fixed(AccessRule),
     Updatable(AccessRule),
+    UpdatableByObject(AccessRule),
 }
 
 impl OwnerRole {
     pub fn to_entry(self) -> OwnerRoleEntry {
         match self {
+            OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
             OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
             OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
-            OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
+            OwnerRole::UpdatableByObject(rule) => {
+                OwnerRoleEntry::new(rule, OwnerRoleUpdater::Object)
+            }
         }
     }
 }

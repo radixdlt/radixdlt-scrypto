@@ -48,7 +48,6 @@ impl From<AccountError> for RuntimeError {
 }
 
 pub const SECURIFY_ROLE: &'static str = "securify";
-pub const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 
 struct SecurifiedAccount;
 
@@ -57,9 +56,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedAccount {
-    const OBJECT_OWNER_ROLE: &'static str = SECURIFY_OWNER_ROLE;
-}
+impl PresecurifiedAccessRules for SecurifiedAccount {}
 
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;

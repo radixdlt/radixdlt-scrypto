@@ -316,7 +316,6 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     receipt.expect_specific_failure(is_auth_error)
 }
 
-
 #[test]
 fn can_update_updatable_owner_role_account() {
     // Arrange

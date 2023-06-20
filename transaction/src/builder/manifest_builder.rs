@@ -703,11 +703,7 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn update_owner_role(
-        &mut self,
-        address: GlobalAddress,
-        rule: AccessRule,
-    ) -> &mut Self {
+    pub fn update_owner_role(&mut self, address: GlobalAddress, rule: AccessRule) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
             method_name: ACCESS_RULES_UPDATE_OWNER_ROLE_IDENT.to_string(),
@@ -716,7 +712,7 @@ impl ManifestBuilder {
                 freeze: false,
             }),
         })
-            .0
+        .0
     }
 
     pub fn update_role(

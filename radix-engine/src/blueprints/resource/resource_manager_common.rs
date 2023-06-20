@@ -105,8 +105,7 @@ fn build_access_rules(
         let mut metadata_roles = Roles::new();
 
         metadata_roles.define_mutable_role(METADATA_ADMIN_ROLE, update_metadata_access_rule);
-        metadata_roles
-            .define_mutable_role(METADATA_ADMIN_UPDATER_ROLE, update_metadata_mutability);
+        metadata_roles.define_mutable_role(METADATA_ADMIN_UPDATER_ROLE, update_metadata_mutability);
 
         metadata_roles
     };

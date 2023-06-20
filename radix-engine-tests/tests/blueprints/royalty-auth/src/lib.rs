@@ -31,7 +31,7 @@ mod royalty_test {
         ) -> Global<RoyaltyTest> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize(OwnerRole::Updateable(rule!(require(badge.clone()))))
+                .prepare_to_globalize(OwnerRole::Updatable(rule!(require(badge.clone()))))
                 .royalties(royalties! {
                     init {
                         paid_method => Xrd(1.into()),
