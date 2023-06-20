@@ -315,3 +315,37 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Assert
     receipt.expect_specific_failure(is_auth_error)
 }
+
+
+#[test]
+fn can_update_updatable_owner_role_account() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), RADIX_TOKEN));
+    let account = test_runner.new_account_advanced(OwnerRole::Updatable(xrd_auth));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
+                builder.push_to_auth_zone(proof_id);
+                builder.update_owner_role(account.into(), AccessRule::DenyAll);
+                builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
+                builder
+            });
+            builder.return_to_worktop(bucket_id);
+            builder
+        })
+        .call_method(
+            account,
+            "try_deposit_batch_or_abort",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}

@@ -128,16 +128,23 @@ impl RoleKey {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum OwnerRoleUpdater {
+    None,
+    Owner,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct OwnerRoleEntry {
     pub rule: AccessRule,
-    pub updaters: RoleList,
+    pub updater: OwnerRoleUpdater,
 }
 
 impl OwnerRoleEntry {
-    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(rule: A, updaters: M) -> Self {
+    pub fn new<A: Into<AccessRule>>(rule: A, updater: OwnerRoleUpdater) -> Self {
         Self {
             rule: rule.into(),
-            updaters: updaters.into(),
+            updater,
         }
     }
 }
@@ -192,15 +199,15 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 pub enum OwnerRole {
     None,
     Fixed(AccessRule),
-    Updateable(AccessRule),
+    Updatable(AccessRule),
 }
 
 impl OwnerRole {
     pub fn to_entry(self) -> OwnerRoleEntry {
         match self {
-            OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, []),
-            OwnerRole::Updateable(rule) => OwnerRoleEntry::new(rule, [OWNER_ROLE]),
-            OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, []),
+            OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
+            OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
+            OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
         }
     }
 }
