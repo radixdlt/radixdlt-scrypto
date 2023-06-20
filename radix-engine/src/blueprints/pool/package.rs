@@ -9,7 +9,10 @@ use crate::system::system_callback::*;
 use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate, PackageDefinition};
+use radix_engine_interface::blueprints::package::{
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition,
+};
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::MethodAccessibility;
 use radix_engine_interface::schema::*;

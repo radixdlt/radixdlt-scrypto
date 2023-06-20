@@ -71,6 +71,16 @@ pub enum PackageError {
         ident: String,
     },
 
+    UnexpectedNumberOfFunctionAuth {
+        blueprint: String,
+        expected: usize,
+        actual: usize,
+    },
+    MissingFunctionPermission {
+        blueprint: String,
+        ident: String,
+    },
+
     InvalidMetadataKey(String),
 }
 
@@ -215,7 +225,36 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
 
 fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
     for (blueprint, definition_init) in &definition.blueprints {
-        // FIXME: Add function auth completeness check
+        match &definition_init.auth_config.function_auth {
+            FunctionAuth::AllowAll => {}
+            FunctionAuth::AccessRules(functions) => {
+                let num_functions = definition_init
+                    .schema
+                    .functions
+                    .functions
+                    .values()
+                    .filter(|schema| schema.receiver.is_none())
+                    .count();
+
+                if num_functions != functions.len() {
+                    return Err(PackageError::UnexpectedNumberOfFunctionAuth {
+                        blueprint: blueprint.clone(),
+                        expected: num_functions,
+                        actual: functions.len(),
+                    });
+                }
+
+                for (name, schema_init) in &definition_init.schema.functions.functions {
+                    if schema_init.receiver.is_none() && !functions.contains_key(name) {
+                        return Err(PackageError::MissingFunctionPermission {
+                            blueprint: blueprint.clone(),
+                            ident: name.clone(),
+                        });
+                    }
+                }
+            }
+        }
+
         match (
             &definition_init.blueprint_type,
             &definition_init.auth_config.method_auth,
@@ -252,7 +291,11 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                     }
                 }
 
-                let num_methods = definition_init.schema.functions.functions.values()
+                let num_methods = definition_init
+                    .schema
+                    .functions
+                    .functions
+                    .values()
                     .filter(|schema| schema.receiver.is_some())
                     .count();
 
@@ -261,15 +304,17 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         blueprint: blueprint.clone(),
                         expected: num_methods,
                         actual: static_roles.methods.len(),
-                    })
+                    });
                 }
 
                 for (name, schema_init) in &definition_init.schema.functions.functions {
-                    if schema_init.receiver.is_some() && !static_roles.methods.contains_key(&MethodKey::new(name)) {
+                    if schema_init.receiver.is_some()
+                        && !static_roles.methods.contains_key(&MethodKey::new(name))
+                    {
                         return Err(PackageError::MissingMethodPermission {
                             blueprint: blueprint.clone(),
                             ident: name.clone(),
-                        })
+                        });
                     }
                 }
             }
@@ -307,7 +352,11 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                     }
                 }
 
-                let num_methods = definition_init.schema.functions.functions.values()
+                let num_methods = definition_init
+                    .schema
+                    .functions
+                    .functions
+                    .values()
                     .filter(|schema| schema.receiver.is_some())
                     .count();
 
@@ -316,15 +365,17 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         blueprint: blueprint.clone(),
                         expected: num_methods,
                         actual: methods.len(),
-                    })
+                    });
                 }
 
                 for (name, schema_init) in &definition_init.schema.functions.functions {
-                    if schema_init.receiver.is_some() && !methods.contains_key(&MethodKey::new(name)) {
+                    if schema_init.receiver.is_some()
+                        && !methods.contains_key(&MethodKey::new(name))
+                    {
                         return Err(PackageError::MissingMethodPermission {
                             blueprint: blueprint.clone(),
                             ident: name.clone(),
-                        })
+                        });
                     }
                 }
             }
@@ -1393,7 +1444,8 @@ impl PackageAuthNativeBlueprint {
                     Ok(ResolvedPermission::AccessRule(access_rule.clone()))
                 } else {
                     let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-                    let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
+                    let blueprint_id =
+                        BlueprintId::new(&package_address, &bp_version_key.blueprint);
                     Err(RuntimeError::SystemModuleError(
                         SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
                             blueprint_id,
