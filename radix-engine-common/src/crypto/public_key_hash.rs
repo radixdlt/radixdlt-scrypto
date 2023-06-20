@@ -16,11 +16,11 @@ pub trait HasPublicKeyHash {
 }
 
 pub trait IsPublicKeyHash: Copy {
-    fn get_hash_bytes(&self) -> &[u8; NodeId::RANDOM_LENGTH];
+    fn get_hash_bytes(&self) -> &[u8; NodeId::RID_LENGTH];
     fn into_enum(self) -> PublicKeyHash;
 }
 
-pub fn hash_public_key_bytes<T: AsRef<[u8]>>(key_bytes: T) -> [u8; NodeId::RANDOM_LENGTH] {
+pub fn hash_public_key_bytes<T: AsRef<[u8]>>(key_bytes: T) -> [u8; NodeId::RID_LENGTH] {
     hash(key_bytes).lower_bytes()
 }
 
@@ -64,7 +64,7 @@ impl PublicKeyHash {
 }
 
 impl IsPublicKeyHash for PublicKeyHash {
-    fn get_hash_bytes(&self) -> &[u8; NodeId::RANDOM_LENGTH] {
+    fn get_hash_bytes(&self) -> &[u8; NodeId::RID_LENGTH] {
         match self {
             PublicKeyHash::Secp256k1(value) => value.get_hash_bytes(),
             PublicKeyHash::Ed25519(value) => value.get_hash_bytes(),

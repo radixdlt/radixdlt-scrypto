@@ -7,7 +7,7 @@ use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VirtualLazyLoadInput {
-    pub id: [u8; NodeId::RANDOM_LENGTH],
+    pub id: [u8; NodeId::RID_LENGTH],
 }
 
 pub type VirtualLazyLoadOutput = BTreeMap<ObjectModuleId, Own>;
