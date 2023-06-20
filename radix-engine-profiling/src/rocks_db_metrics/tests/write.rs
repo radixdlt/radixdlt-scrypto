@@ -254,7 +254,7 @@ where
     println!("Commit test execution");
     let mut rng = rand::thread_rng();
 
-    let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+    let mut node_id_value = [0u8; NodeId::RID_LENGTH];
     rng.fill(&mut node_id_value);
     let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
 
@@ -362,7 +362,7 @@ where
         print!("Round {}/{}  \r", i + 1, rounds_count);
         std::io::stdout().flush().ok();
 
-        let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
+        let mut node_id_value = [0u8; NodeId::RID_LENGTH];
         rng.fill(&mut node_id_value);
         let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
         let partition_key =
