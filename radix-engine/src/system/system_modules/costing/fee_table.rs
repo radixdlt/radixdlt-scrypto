@@ -340,7 +340,7 @@ impl FeeTable {
                     // apply constant value
                     400u32
                 } else {
-                    // apply function: f(size) = 0.0009622109 * size + 389.5155 
+                    // apply function: f(size) = 0.0009622109 * size + 389.5155
                     // approximated integer representation: f(size) = (63 * size) / 2^16 + 390
                     let mut value: u64 = *size as u64;
                     value *= 63; // 0.0009622109 << 16
