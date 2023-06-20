@@ -11,7 +11,7 @@ pub struct IntentV1 {
     pub header: TransactionHeaderV1,
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
-    pub attachments: AttachmentsV1,
+    pub message: MessageV1,
 }
 
 impl TransactionPayload for IntentV1 {
@@ -25,7 +25,7 @@ pub struct PreparedIntentV1 {
     pub header: PreparedTransactionHeaderV1,
     pub instructions: PreparedInstructionsV1,
     pub blobs: PreparedBlobsV1,
-    pub attachments: PreparedAttachmentsV1,
+    pub message: PreparedMessageV1,
     pub summary: Summary,
 }
 
@@ -47,7 +47,7 @@ impl TransactionFullChildPreparable for PreparedIntentV1 {
             header,
             instructions,
             blobs,
-            attachments,
+            message: attachments,
             summary,
         })
     }
@@ -67,7 +67,7 @@ impl TransactionPayloadPreparable for PreparedIntentV1 {
             header,
             instructions,
             blobs,
-            attachments,
+            message: attachments,
             summary,
         })
     }
