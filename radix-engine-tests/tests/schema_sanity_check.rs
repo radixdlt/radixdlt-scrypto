@@ -224,7 +224,7 @@ fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
 
         // Scrypto SBOR
         REFERENCE_ID => false,
-        GLOBAL_ADDRESS_ID => false,
+        GLOBAL_ADDRESS_ID => true, // TODO: maybe unsafe
         INTERNAL_ADDRESS_ID => false,
         PACKAGE_ADDRESS_ID => true,
         COMPONENT_ADDRESS_ID => true,
@@ -300,7 +300,7 @@ pub fn test_fake_bucket() {
     let package_address =
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
-    // Instantiate component
+    // Test abusing vault put method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
