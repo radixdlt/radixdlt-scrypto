@@ -2,12 +2,12 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
-use crate::errors::SystemUpstreamError;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
     SystemError, SystemModuleError,
 };
+use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
@@ -20,7 +20,6 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
 
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -986,18 +985,14 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::Main,
             )))?;
-        if let Some(module) = self
-            .api
+        self.api
             .kernel_get_system_state()
             .system
             .modules
-            .events_module()
-        {
-            module.add_replacement(
+            .add_replacement(
                 (node_id, ObjectModuleId::Main),
                 (*global_address.as_node_id(), ObjectModuleId::Main),
             );
-        };
         let lock_handle = self.api.kernel_lock_substate(
             &node_id,
             TYPE_INFO_FIELD_PARTITION,
@@ -1089,18 +1084,14 @@ where
                         )));
                     }
 
-                    if let Some(module) = self
-                        .api
+                    self.api
                         .kernel_get_system_state()
                         .system
                         .modules
-                        .events_module()
-                    {
-                        module.add_replacement(
+                        .add_replacement(
                             (node_id, ObjectModuleId::Main),
                             (*global_address.as_node_id(), module_id),
                         );
-                    };
 
                     // Move and drop
                     let interface = self.get_blueprint_default_interface(
@@ -2003,19 +1994,15 @@ where
         units: u32,
         reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            module.apply_execution_cost(
-                match reason {
-                    ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                    ClientCostingReason::RunNative => CostingReason::RunNative,
-                    ClientCostingReason::RunSystem => CostingReason::RunSystem,
-                },
-                |_| units,
-                5,
-            )
-        } else {
-            Ok(())
-        }
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            match reason {
+                ClientCostingReason::RunWasm => CostingReason::RunWasm,
+                ClientCostingReason::RunNative => CostingReason::RunNative,
+                ClientCostingReason::RunSystem => CostingReason::RunSystem,
+            },
+            |_| units,
+            5,
+        )
     }
 
     #[trace_resources]
@@ -2025,18 +2012,15 @@ where
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
-        // No costing applied
-
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            module.credit_cost_units(vault_id, locked_fee, contingent)
-        } else {
-            Ok(locked_fee)
-        }
+        self.api
+            .kernel_get_system()
+            .modules
+            .credit_cost_units(vault_id, locked_fee, contingent)
     }
 
     fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.cost_unit_limit())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.cost_unit_limit())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2045,8 +2029,8 @@ where
     }
 
     fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.cost_unit_price())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.cost_unit_price())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2055,8 +2039,8 @@ where
     }
 
     fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.tip_percentage())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.tip_percentage())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2065,8 +2049,8 @@ where
     }
 
     fn fee_balance(&mut self) -> Result<Decimal, RuntimeError> {
-        if let Some(module) = self.api.kernel_get_system().modules.costing_module() {
-            Ok(module.fee_reserve.fee_balance())
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.fee_balance())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2280,8 +2264,7 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self.api.kernel_get_system().modules.auth_module() {
-            let auth_zone_id = module.last_auth_zone().expect("Auth zone missing");
+        if let Some(auth_zone_id) = self.api.kernel_get_system().modules.auth_zone_id() {
             Ok(auth_zone_id.into())
         } else {
             Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
@@ -2322,17 +2305,11 @@ where
         // No costing applied
 
         let current_depth = self.api.kernel_get_current_depth();
-        if let Some(module) = self
-            .api
+        self.api
             .kernel_get_system()
             .modules
-            .transaction_limits_module()
-        {
-            module.update_wasm_memory_usage(current_depth, consumed_memory)?;
-            Ok(())
-        } else {
-            Ok(())
-        }
+            .update_wasm_memory_usage(current_depth, consumed_memory)?;
+        Ok(())
     }
 }
 
@@ -2345,17 +2322,11 @@ where
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
-        if let Some(module) = self
-            .api
+        self.api
             .kernel_get_system()
             .modules
-            .execution_trace_module()
-        {
-            module.update_instruction_index(new_index);
-            Ok(())
-        } else {
-            Ok(())
-        }
+            .update_instruction_index(new_index);
+        Ok(())
     }
 }
 
@@ -2385,9 +2356,9 @@ where
                     ..
                 } => (None, blueprint.clone()),
                 _ => {
-                    return Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
-                    ))
+                    return Err(RuntimeError::SystemError(SystemError::EventError(
+                        EventError::InvalidActor,
+                    )))
                 }
             };
 
@@ -2439,9 +2410,10 @@ where
         }?;
 
         // Adding the event to the event store
-        if let Some(module) = self.api.kernel_get_system().modules.events_module() {
-            module.add_event(event_type_identifier, event_data);
-        }
+        self.api
+            .kernel_get_system()
+            .modules
+            .add_event(event_type_identifier, event_data);
 
         Ok(())
     }
@@ -2455,12 +2427,9 @@ where
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self.api.kernel_get_system().modules.logger_module() {
-            module.add(level, message);
-            Ok(())
-        } else {
-            Ok(())
-        }
+        self.api.kernel_get_system().modules.add_log(level, message);
+
+        Ok(())
     }
 }
 
@@ -2473,13 +2442,8 @@ where
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self
-            .api
-            .kernel_get_system()
-            .modules
-            .transaction_runtime_module()
-        {
-            Ok(module.transaction_hash())
+        if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
+            Ok(hash)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::TransactionRuntimeModuleNotEnabled,
@@ -2491,13 +2455,8 @@ where
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(module) = self
-            .api
-            .kernel_get_system()
-            .modules
-            .transaction_runtime_module()
-        {
-            Ok(module.generate_uuid())
+        if let Some(uuid) = self.api.kernel_get_system().modules.generate_uuid() {
+            Ok(uuid)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::TransactionRuntimeModuleNotEnabled,

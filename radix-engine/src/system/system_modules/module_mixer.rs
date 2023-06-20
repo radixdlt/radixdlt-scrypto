@@ -10,37 +10,40 @@ use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
 use crate::system::system_modules::costing::FeeTable;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
-use crate::system::system_modules::events::EventsModule;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
-use crate::system::system_modules::kernel_trace::KernelDebugModule;
-use crate::system::system_modules::logger::LoggerModule;
+use crate::system::system_modules::kernel_trace::KernelTraceModule;
+use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::node_move::NodeMoveModule;
-use crate::system::system_modules::transaction_limits::{
-    TransactionLimitsConfig, TransactionLimitsModule,
-};
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
 use paste::paste;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
 
+use super::costing::CostingReason;
+
 bitflags! {
     pub struct EnabledModules: u32 {
+        // Kernel trace, for debugging only
         const KERNEL_TRACE = 0x1 << 0;
-        const COSTING = 0x01 << 1;
-        const NODE_MOVE = 0x01 << 2;
+
+        // Limits, costing and auth
+        const LIMITS = 0x01 << 1;
+        const COSTING = 0x01 << 2;
         const AUTH = 0x01 << 3;
-        const LOGGER = 0x01 << 4;
+        const NODE_MOVE = 0x01 << 4;
+
+        // Transaction runtime data
         const TRANSACTION_RUNTIME = 0x01 << 5;
+
+        // Execution trace, for preview only
         const EXECUTION_TRACE = 0x01 << 6;
-        const TRANSACTION_LIMITS = 0x01 << 7;
-        const EVENTS = 0x01 << 8;
     }
 }
 
@@ -48,30 +51,15 @@ impl EnabledModules {
     /// The difference between genesis transaction and system transaction is "no auth".
     /// TODO: double check if this is the right assumption.
     pub fn for_genesis_transaction() -> Self {
-        Self::NODE_MOVE
-            | Self::LOGGER
-            | Self::TRANSACTION_RUNTIME
-            | Self::TRANSACTION_LIMITS
-            | Self::EVENTS
+        Self::LIMITS | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_system_transaction() -> Self {
-        Self::NODE_MOVE
-            | Self::AUTH
-            | Self::LOGGER
-            | Self::TRANSACTION_RUNTIME
-            | Self::TRANSACTION_LIMITS
-            | Self::EVENTS
+        Self::LIMITS | Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_notarized_transaction() -> Self {
-        Self::COSTING
-            | Self::NODE_MOVE
-            | Self::AUTH
-            | Self::LOGGER
-            | Self::TRANSACTION_RUNTIME
-            | Self::TRANSACTION_LIMITS
-            | Self::EVENTS
+        Self::LIMITS | Self::COSTING | Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_test_transaction() -> Self {
@@ -83,25 +71,22 @@ impl EnabledModules {
     }
 }
 
-// TODO: use option instead of defaults?
 #[allow(dead_code)]
 pub struct SystemModuleMixer {
+    // TODO: Use option instead of default for module states?
+    // The original reason for performance, but we should double check.
+
     /* flags */
-    // TODO: check if the original assumption is still true.
-    // The reason for using bit flags, rather than Option<T>, was to improve method dispatching performance.
     enabled_modules: EnabledModules,
 
     /* states */
-    kernel_trace: KernelDebugModule,
-    costing: CostingModule,
-    node_move: NodeMoveModule,
-    auth: AuthModule,
-    logger: LoggerModule,
-    transaction_runtime: TransactionRuntimeModule,
-    execution_trace: ExecutionTraceModule,
-    transaction_limits: TransactionLimitsModule,
-    events: EventsModule,
-    virtualization: VirtualizationModule,
+    pub(super) kernel_trace: KernelTraceModule,
+    pub(super) limits: LimitsModule,
+    pub(super) costing: CostingModule,
+    pub(super) auth: AuthModule,
+    pub(super) node_move: NodeMoveModule,
+    pub(super) transaction_runtime: TransactionRuntimeModule,
+    pub(super) execution_trace: ExecutionTraceModule,
 }
 
 // Macro generates default modules dispatches call based on passed function name and arguments.
@@ -111,31 +96,25 @@ macro_rules! internal_call_dispatch {
         {
             let modules: EnabledModules = $api.kernel_get_system().modules.enabled_modules;
             if modules.contains(EnabledModules::KERNEL_TRACE) {
-                KernelDebugModule::[< $fn >]($($param, )*)?;
+                KernelTraceModule::[< $fn >]($($param, )*)?;
+            }
+            if modules.contains(EnabledModules::LIMITS) {
+                 LimitsModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::COSTING) {
                 CostingModule::[< $fn >]($($param, )*)?;
             }
-            if modules.contains(EnabledModules::NODE_MOVE) {
-                NodeMoveModule::[< $fn >]($($param, )*)?;
-            }
             if modules.contains(EnabledModules::AUTH) {
                 AuthModule::[< $fn >]($($param, )*)?;
             }
-            if modules.contains(EnabledModules::LOGGER) {
-                LoggerModule::[< $fn >]($($param, )*)?;
+            if modules.contains(EnabledModules::NODE_MOVE) {
+                NodeMoveModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
                 TransactionRuntimeModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::EXECUTION_TRACE) {
                 ExecutionTraceModule::[< $fn >]($($param, )*)?;
-            }
-            if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-                TransactionLimitsModule::[< $fn >]($($param, )*)?;
-            }
-            if modules.contains(EnabledModules::EVENTS) {
-                EventsModule::[< $fn >]($($param, )*)?;
             }
             Ok(())
         }
@@ -155,7 +134,7 @@ impl SystemModuleMixer {
     ) -> Self {
         Self {
             enabled_modules,
-            kernel_trace: KernelDebugModule {},
+            kernel_trace: KernelTraceModule {},
             costing: CostingModule {
                 fee_reserve,
                 fee_table,
@@ -168,12 +147,7 @@ impl SystemModuleMixer {
                 params: auth_zone_params.clone(),
                 auth_zone_stack: Vec::new(),
             },
-            logger: LoggerModule::default(),
-            transaction_runtime: TransactionRuntimeModule {
-                tx_hash,
-                next_id: 0,
-            },
-            transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
+            limits: LimitsModule::new(TransactionLimitsConfig {
                 max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
                 max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
                 max_substate_read_count: execution_config.max_substate_reads_per_transaction,
@@ -182,97 +156,36 @@ impl SystemModuleMixer {
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
             }),
             execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
-            events: EventsModule::default(),
-            virtualization: VirtualizationModule,
-        }
-    }
-
-    pub fn costing_module(&mut self) -> Option<&mut CostingModule> {
-        if self.enabled_modules.contains(EnabledModules::COSTING) {
-            Some(&mut self.costing)
-        } else {
-            None
-        }
-    }
-
-    pub fn events_module(&mut self) -> Option<&mut EventsModule> {
-        if self.enabled_modules.contains(EnabledModules::EVENTS) {
-            Some(&mut self.events)
-        } else {
-            None
-        }
-    }
-
-    pub fn logger_module(&mut self) -> Option<&mut LoggerModule> {
-        if self.enabled_modules.contains(EnabledModules::LOGGER) {
-            Some(&mut self.logger)
-        } else {
-            None
-        }
-    }
-
-    pub fn auth_module(&mut self) -> Option<&mut AuthModule> {
-        if self.enabled_modules.contains(EnabledModules::AUTH) {
-            Some(&mut self.auth)
-        } else {
-            None
-        }
-    }
-
-    pub fn execution_trace_module(&mut self) -> Option<&mut ExecutionTraceModule> {
-        if self
-            .enabled_modules
-            .contains(EnabledModules::EXECUTION_TRACE)
-        {
-            Some(&mut self.execution_trace)
-        } else {
-            None
-        }
-    }
-
-    pub fn transaction_runtime_module(&mut self) -> Option<&mut TransactionRuntimeModule> {
-        if self
-            .enabled_modules
-            .contains(EnabledModules::TRANSACTION_RUNTIME)
-        {
-            Some(&mut self.transaction_runtime)
-        } else {
-            None
-        }
-    }
-
-    pub fn transaction_limits_module(&mut self) -> Option<&mut TransactionLimitsModule> {
-        if self
-            .enabled_modules
-            .contains(EnabledModules::TRANSACTION_LIMITS)
-        {
-            Some(&mut self.transaction_limits)
-        } else {
-            None
+            transaction_runtime: TransactionRuntimeModule {
+                tx_hash,
+                next_id: 0,
+                logs: Vec::new(),
+                events: Vec::new(),
+                replacements: index_map_new(),
+            },
         }
     }
 
     pub fn unpack(
         self,
     ) -> (
+        LimitsModule,
         CostingModule,
-        EventsModule,
-        LoggerModule,
+        TransactionRuntimeModule,
         ExecutionTraceModule,
-        TransactionLimitsModule,
     ) {
         (
+            self.limits,
             self.costing,
-            self.events,
-            self.logger,
+            self.transaction_runtime,
             self.execution_trace,
-            self.transaction_limits,
         )
     }
 }
 
 //====================================================================
 // NOTE: Modules are applied in the reverse order of initialization!
+// This has an impact if there is module dependency.
 //====================================================================
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
@@ -280,13 +193,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
 
-        // Enable transaction limits
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_init(api)?;
-        }
-
         // Enable execution trace
-        if modules.contains(EnabledModules::KERNEL_TRACE) {
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::on_init(api)?;
         }
 
@@ -295,9 +203,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
             TransactionRuntimeModule::on_init(api)?;
         }
 
-        // Enable logger
-        if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_init(api)?;
+        // Enable node move
+        if modules.contains(EnabledModules::NODE_MOVE) {
+            NodeMoveModule::on_init(api)?;
         }
 
         // Enable auth
@@ -305,24 +213,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
             AuthModule::on_init(api)?;
         }
 
-        // Enable node move
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_init(api)?;
-        }
-
         // Enable costing
         if modules.contains(EnabledModules::COSTING) {
             CostingModule::on_init(api)?;
         }
 
-        // Enable debug
-        if modules.contains(EnabledModules::KERNEL_TRACE) {
-            KernelDebugModule::on_init(api)?;
+        // Enable transaction limits
+        if modules.contains(EnabledModules::LIMITS) {
+            LimitsModule::on_init(api)?;
         }
 
-        // Enable events
-        if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_init(api)?;
+        // Enable kernel trace
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
+            KernelTraceModule::on_init(api)?;
         }
 
         Ok(())
@@ -500,5 +403,132 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_take_substates(api, store_access))
+    }
+}
+
+impl SystemModuleMixer {
+    // Note that module mixer is called by both kernel and system.
+    // - Kernel uses the `SystemModule<SystemConfig<V>>` trait above;
+    // - System uses methods defined below (TODO: add a trait?)
+
+    pub fn add_log(&mut self, level: Level, message: String) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            self.transaction_runtime.add_log(level, message)
+        }
+    }
+
+    pub fn add_event(&mut self, identifier: EventTypeIdentifier, data: Vec<u8>) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            self.transaction_runtime.add_event(identifier, data)
+        }
+    }
+
+    pub fn add_replacement(
+        &mut self,
+        old: (NodeId, ObjectModuleId),
+        new: (NodeId, ObjectModuleId),
+    ) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            self.transaction_runtime.add_replacement(old, new)
+        }
+    }
+
+    pub fn auth_zone_id(&mut self) -> Option<NodeId> {
+        if self.enabled_modules.contains(EnabledModules::AUTH) {
+            self.auth.last_auth_zone()
+        } else {
+            None
+        }
+    }
+
+    pub fn fee_reserve(&mut self) -> Option<&SystemLoanFeeReserve> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            Some(&self.costing.fee_reserve)
+        } else {
+            None
+        }
+    }
+
+    pub fn transaction_hash(&self) -> Option<Hash> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            Some(self.transaction_runtime.tx_hash)
+        } else {
+            None
+        }
+    }
+
+    pub fn generate_uuid(&mut self) -> Option<u128> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            Some(self.transaction_runtime.generate_uuid())
+        } else {
+            None
+        }
+    }
+
+    pub fn update_instruction_index(&mut self, new_index: usize) {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::EXECUTION_TRACE)
+        {
+            self.execution_trace.update_instruction_index(new_index)
+        }
+    }
+
+    pub fn update_wasm_memory_usage(
+        &mut self,
+        depth: usize,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
+            self.limits.update_wasm_memory_usage(depth, consumed_memory)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn apply_execution_cost<F>(
+        &mut self,
+        reason: CostingReason,
+        base_price: F,
+        multiplier: usize,
+    ) -> Result<(), RuntimeError>
+    where
+        F: Fn(&FeeTable) -> u32,
+    {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing
+                .apply_execution_cost(reason, base_price, multiplier)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn credit_cost_units(
+        &mut self,
+        vault_id: NodeId,
+        locked_fee: LiquidFungibleResource,
+        contingent: bool,
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing
+                .credit_cost_units(vault_id, locked_fee, contingent)
+        } else {
+            Ok(locked_fee)
+        }
     }
 }

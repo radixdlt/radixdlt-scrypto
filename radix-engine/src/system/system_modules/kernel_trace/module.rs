@@ -13,7 +13,7 @@ use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
-pub struct KernelDebugModule {}
+pub struct KernelTraceModule {}
 
 #[macro_export]
 macro_rules! log {
@@ -24,7 +24,7 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelDebugModule {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation,

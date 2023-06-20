@@ -1,21 +1,31 @@
 use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::resource::AuthZone;
-use crate::errors::{RuntimeError, SystemUpstreamError};
+use crate::errors::RuntimeError;
+use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
-use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system::{KeyValueEntrySubstate, SystemService};
+use crate::system::system::KeyValueEntrySubstate;
+use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::virtualization::VirtualizationModule;
+use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ED25519_ID, ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
+};
+use radix_engine_interface::blueprints::identity::{
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ED25519_ID, IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
+};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -241,6 +251,31 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_execution_start(api)
     }
 
+    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_execution_finish(api, update)
+    }
+
+    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_pop_frame(api, dropped_actor)
+    }
+
+    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_allocate_node_id(api, entity_type)
+    }
+
+    //--------------------------------------------------------------------------
+    // Note that the following logic doesn't go through mixer and is not costed
+    //--------------------------------------------------------------------------
+
     fn invoke_upstream<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -418,13 +453,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(output)
     }
 
-    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_execution_finish(api, update)
-    }
-
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -476,12 +504,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         // to make sure the auth zone stack is in good state for the proof dropping above.
 
         // Detach proofs from the auth zone
-        if let Some(auth_zone_id) = api
-            .kernel_get_system()
-            .modules
-            .auth_module()
-            .and_then(|auth| auth.auth_zone_stack.last().cloned())
-        {
+        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
             let handle = api.kernel_lock_substate(
                 &auth_zone_id,
                 MAIN_BASE_PARTITION,
@@ -517,29 +540,64 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(())
     }
 
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_pop_frame(api, dropped_actor)
-    }
-
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        partition_num: PartitionNumber,
-        offset: &SubstateKey,
+        _partition_num: PartitionNumber,
+        _offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        VirtualizationModule::on_substate_lock_fault(node_id, partition_num, offset, api)
-    }
+        match node_id.entity_type() {
+            // FIXME: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
+            Some(entity_type) => {
+                // Lazy create component if missing
+                let (blueprint, virtual_func_id) = match entity_type {
+                    EntityType::GlobalVirtualSecp256k1Account => (
+                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
+                        ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
+                    ),
+                    EntityType::GlobalVirtualEd25519Account => (
+                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
+                        ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
+                    ),
+                    EntityType::GlobalVirtualSecp256k1Identity => (
+                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
+                        IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
+                    ),
+                    EntityType::GlobalVirtualEd25519Identity => (
+                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
+                        IDENTITY_CREATE_VIRTUAL_ED25519_ID,
+                    ),
+                    _ => return Ok(false),
+                };
 
-    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_allocate_node_id(api, entity_type)
+                let mut args = [0u8; NodeId::UUID_LENGTH];
+                args.copy_from_slice(&node_id.as_ref()[1..]);
+
+                let invocation = KernelInvocation {
+                    actor: Actor::VirtualLazyLoad {
+                        blueprint_id: blueprint.clone(),
+                        ident: virtual_func_id,
+                    },
+                    args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
+                };
+
+                let rtn: Vec<u8> = api.kernel_invoke(Box::new(invocation))?.into();
+
+                let modules: BTreeMap<ObjectModuleId, Own> = scrypto_decode(&rtn).unwrap();
+                let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+                let address = GlobalAddress::new_or_panic(node_id.into());
+
+                let mut system = SystemService::new(api);
+                let address_reservation =
+                    system.allocate_virtual_global_address(blueprint, address)?;
+                system.globalize(modules, Some(address_reservation))?;
+
+                Ok(true)
+            }
+            _ => Ok(false),
+        }
     }
 }
