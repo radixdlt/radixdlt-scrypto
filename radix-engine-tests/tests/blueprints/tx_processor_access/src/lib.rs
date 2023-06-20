@@ -25,12 +25,12 @@ mod execute_manifest {
     }
 
     impl ExecuteManifest {
-        pub fn execute_manifest(manifest_encoded_instructions: Vec<u8>) {
+        pub fn execute_manifest(manifest_encoded_instructions: Vec<u8>, references: Vec<Reference>) {
             Blueprint::<TransactionProcessor>::run(
                 Hash([0u8;32]),
                 manifest_encoded_instructions,
                 vec![],
-                vec![],
+                references,
                 index_map_new(),
             );
         }
