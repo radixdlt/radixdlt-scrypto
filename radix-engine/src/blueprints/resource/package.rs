@@ -707,7 +707,7 @@ impl ResourceManagerNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
-            fields.push(FieldSchema::if_feature(
+            fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
                 VAULT_FREEZE_FEATURE,
             ));
@@ -943,7 +943,7 @@ impl ResourceManagerNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
             ));
-            fields.push(FieldSchema::if_feature(
+            fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
                 VAULT_FREEZE_FEATURE,
             ));

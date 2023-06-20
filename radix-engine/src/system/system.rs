@@ -1183,22 +1183,12 @@ where
         feature: &str,
     ) -> Result<bool, RuntimeError> {
         let object_info = self.get_object_info(node_id)?;
-        let features = match object_info.blueprint_info {
-            ObjectBlueprintInfo::Inner { outer_object } => {
-                match self
-                    .get_object_info(outer_object.as_node_id())?
-                    .blueprint_info
-                {
-                    ObjectBlueprintInfo::Outer { features } => features,
-                    ObjectBlueprintInfo::Inner { .. } => {
-                        panic!("Fully recursive inner blueprints is not supported so this should never occur.");
-                    }
-                }
-            }
-            ObjectBlueprintInfo::Outer { features } => features,
+        let enabled = match object_info.blueprint_info {
+            ObjectBlueprintInfo::Inner { .. } => false,
+            ObjectBlueprintInfo::Outer { features } => features.contains(feature),
         };
 
-        Ok(features.contains(feature))
+        Ok(enabled)
     }
 }
 
@@ -2223,8 +2213,16 @@ where
     }
 
     #[trace_resources]
-    fn actor_is_feature_enabled(&mut self, feature: &str) -> Result<bool, RuntimeError> {
-        let node_id = self.actor_get_node_id()?;
+    fn actor_is_feature_enabled(&mut self, object_handle: ObjectHandle, feature: &str) -> Result<bool, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let node_id = match actor_object_type {
+            ActorObjectType::SELF => {
+                self.actor_get_node_id()?
+            }
+            ActorObjectType::OuterObject => {
+                self.actor_get_info()?.get_outer_object().into_node_id()
+            }
+        };
         self.is_feature_enabled(&node_id, feature)
     }
 }

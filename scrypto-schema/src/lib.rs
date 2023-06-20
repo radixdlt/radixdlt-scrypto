@@ -177,6 +177,13 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         }
     }
 
+    pub fn if_outer_feature<I: Into<LocalTypeIndex>, S: ToString>(value: I, feature: S) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::IfOuterFeature(feature.to_string()),
+        }
+    }
+
     pub fn static_field<I: Into<LocalTypeIndex>>(value: I) -> Self {
         FieldSchema {
             field: TypeRef::Static(value.into()),
