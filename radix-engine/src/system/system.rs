@@ -2295,7 +2295,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientLimitsApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -2330,7 +2330,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -2417,13 +2417,8 @@ where
 
         Ok(())
     }
-}
 
-impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
+    #[trace_resources]
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -2431,13 +2426,7 @@ where
 
         Ok(())
     }
-}
 
-impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
     #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -2452,11 +2441,11 @@ where
     }
 
     #[trace_resources]
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+    fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        if let Some(uuid) = self.api.kernel_get_system().modules.generate_uuid() {
-            Ok(uuid)
+        if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
+            Ok(ruid)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::TransactionRuntimeModuleNotEnabled,

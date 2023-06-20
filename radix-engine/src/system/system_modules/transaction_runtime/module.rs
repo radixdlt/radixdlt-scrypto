@@ -18,20 +18,14 @@ impl TransactionRuntimeModule {
         self.tx_hash
     }
 
-    pub fn generate_uuid(&mut self) -> u128 {
-        // Take the lower 16 bytes
-        let mut temp: [u8; 16] = self.tx_hash.lower_bytes();
-
-        // Put TX runtime counter to the last 4 bytes.
-        temp[12..16].copy_from_slice(&self.next_id.to_be_bytes());
-
-        // Construct UUID v4 variant 1
-        let uuid = (u128::from_be_bytes(temp) & 0xffffffff_ffff_0fff_3fff_ffffffffffffu128)
-            | 0x00000000_0000_4000_8000_000000000000u128;
+    pub fn generate_ruid(&mut self) -> [u8; 32] {
+        let mut bytes = [0u8; 36];
+        (&mut bytes[..32]).copy_from_slice(self.tx_hash.as_slice());
+        bytes[32..].copy_from_slice(&self.next_id.to_le_bytes());
 
         self.next_id += 1;
 
-        uuid
+        hash(bytes).0
     }
 
     pub fn add_log(&mut self, level: Level, message: String) {
@@ -91,7 +85,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_uuid_gen() {
+    fn test_ruid_gen() {
         let mut id = TransactionRuntimeModule {
             tx_hash: Hash::from_str(
                 "71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d",
@@ -103,10 +97,8 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_uuid())
-                .unwrap()
-                .to_string(),
-            "{86cc8d24-194d-4393-85ee-91ee00000005}"
+            NonFungibleLocalId::ruid(id.generate_ruid()).to_string(),
+            "{7b003d8e0b2c9e3a-516cf99882de64a1-f1cd6742ce3299e0-357f54f0333d25d0}"
         );
 
         let mut id = TransactionRuntimeModule {
@@ -117,10 +109,8 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_uuid())
-                .unwrap()
-                .to_string(),
-            "{00000000-0000-4000-8000-000000000005}"
+            NonFungibleLocalId::ruid(id.generate_ruid()).to_string(),
+            "{69f38caee99e9468-866032d1a68b4d2e-7931bb74aede4d0f-8043d3a87e9f2da3}"
         );
 
         let mut id = TransactionRuntimeModule {
@@ -131,10 +121,8 @@ mod tests {
             replacements: index_map_new(),
         };
         assert_eq!(
-            NonFungibleLocalId::uuid(id.generate_uuid())
-                .unwrap()
-                .to_string(),
-            "{ffffffff-ffff-4fff-bfff-ffff00000005}"
+            NonFungibleLocalId::ruid(id.generate_ruid()).to_string(),
+            "{04660ebc8e2a2b36-44a6553bd6a17a3a-ef14ce1fae4cb5bc-000811f979007003}"
         );
     }
 }
