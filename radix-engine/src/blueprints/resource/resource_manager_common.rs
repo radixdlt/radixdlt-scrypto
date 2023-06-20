@@ -111,10 +111,9 @@ fn build_access_rules(
             );
         }
 
-        // Freeze
-        let (freeze_access_rule, freeze_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Freeze)
-            .unwrap_or((DenyAll, DenyAll));
+        // Freeze/Unfreeze Role
+        if let Some((freeze_access_rule, freeze_mutability)) =
+            access_rules_map.remove(&ResourceMethodAuthKey::Freeze)
         {
             main_roles.define_role(
                 FREEZE_ROLE,
@@ -123,21 +122,6 @@ fn build_access_rules(
             main_roles.define_role(
                 FREEZE_UPDATE_ROLE,
                 RoleEntry::new(freeze_mutability, [FREEZE_UPDATE_ROLE], false),
-            );
-        }
-
-        // Unfreeze
-        let (unfreeze_access_rule, unfreeze_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Unfreeze)
-            .unwrap_or((DenyAll, DenyAll));
-        {
-            main_roles.define_role(
-                UNFREEZE_ROLE,
-                RoleEntry::new(unfreeze_access_rule, [UNFREEZE_UPDATE_ROLE], false),
-            );
-            main_roles.define_role(
-                UNFREEZE_UPDATE_ROLE,
-                RoleEntry::new(unfreeze_mutability, [UNFREEZE_UPDATE_ROLE], false),
             );
         }
 
@@ -189,6 +173,31 @@ fn build_access_rules(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata_roles,
     )
+}
+
+pub fn features(
+    track_total_supply: bool,
+    access_rules: &BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+) -> Vec<&str> {
+    let mut features = Vec::new();
+
+    if track_total_supply {
+        features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+    }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+        features.push(VAULT_FREEZE_FEATURE);
+    }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Recall) {
+        features.push(VAULT_RECALL_FEATURE);
+    }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Mint) {
+        features.push(MINT_FEATURE);
+    }
+    if access_rules.contains_key(&ResourceMethodAuthKey::Burn) {
+        features.push(BURN_FEATURE);
+    }
+
+    features
 }
 
 pub fn globalize_resource_manager<Y>(

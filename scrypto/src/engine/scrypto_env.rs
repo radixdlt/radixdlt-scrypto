@@ -109,14 +109,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn attach_access_rules(
-        &mut self,
-        _node_id: &NodeId,
-        _access_rules_node_id: &NodeId,
-    ) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
@@ -364,6 +356,14 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         let handle = unsafe { actor_lock_field(object_handle, u32::from(field), flags.bits()) };
 
         Ok(handle)
+    }
+
+    fn actor_is_feature_enabled(
+        &mut self,
+        _: ObjectHandle,
+        _feature: &str,
+    ) -> Result<bool, ClientApiError> {
+        unimplemented!("Not available for Scrypto")
     }
 
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {

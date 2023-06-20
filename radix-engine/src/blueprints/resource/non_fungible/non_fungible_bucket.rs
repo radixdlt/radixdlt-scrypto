@@ -381,7 +381,7 @@ impl NonFungibleBucketBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }

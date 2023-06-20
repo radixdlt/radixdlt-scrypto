@@ -1619,7 +1619,7 @@ fn is_recovery_proposal_mismatch_error(error: &RuntimeError) -> bool {
 fn is_drop_non_empty_bucket_error(error: &RuntimeError) -> bool {
     matches!(
         error,
-        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+        RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
             FungibleResourceManagerError::DropNonEmptyBucket
         ))
     )

@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
@@ -22,9 +22,6 @@ use super::*;
 
 pub const VALIDATOR_ROLE: &str = "validator";
 pub const START_ROLE: &str = "start";
-
-pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
-pub const VALIDATOR_APPLY_REWARD_AUTHORITY: &str = "apply_reward";
 
 pub struct ConsensusManagerNativePackage;
 
@@ -168,14 +165,14 @@ impl ConsensusManagerNativePackage {
             let consensus_manager_schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
                 dependencies: btreeset!(
                     RADIX_TOKEN.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     SYSTEM_TRANSACTION_BADGE.into(),
                     VALIDATOR_OWNER_BADGE.into(),
                 ),
-                feature_set: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema: consensus_manager_schema,
@@ -195,18 +192,15 @@ impl ConsensusManagerNativePackage {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template!(
-                            CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
-                            CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
+                    method_auth: MethodAuthTemplate::Static(method_auth_template!(
+                        CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
+                        CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
-                            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodPermission::Public;
-                            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodPermission::Public;
-                            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodPermission::Public;
-                            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodPermission::Public;
-                        ),
-                        outer_auth: method_auth_template!(),
-                    },
+                        CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
+                        CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                        CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                        CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodAccessibility::Public;
+                    )),
                 },
             }
         };
@@ -217,6 +211,9 @@ impl ConsensusManagerNativePackage {
             let mut fields = Vec::new();
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ValidatorSubstate>(),
+            ));
+            fields.push(FieldSchema::static_field(
+                aggregator.add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeFlag>(),
             ));
 
             let mut functions = BTreeMap::new();
@@ -244,6 +241,19 @@ impl ConsensusManagerNativePackage {
                         aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
                     ),
                     export: VALIDATOR_UNREGISTER_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerOutput>(),
+                    ),
+                    export: VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -403,9 +413,11 @@ impl ConsensusManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
-                dependencies: btreeset!(),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+                },
                 feature_set: btreeset!(),
+                dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
@@ -422,24 +434,22 @@ impl ConsensusManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template! {
-                            VALIDATOR_UNSTAKE_IDENT => MethodPermission::Public;
-                            VALIDATOR_CLAIM_XRD_IDENT => MethodPermission::Public;
-                            VALIDATOR_STAKE_IDENT => [STAKE_ROLE];
-                            VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
-                            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
-                            VALIDATOR_APPLY_EMISSION_IDENT => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
-                            VALIDATOR_APPLY_REWARD_IDENT => [VALIDATOR_APPLY_REWARD_AUTHORITY];
-                        },
-                        outer_auth: btreemap!(),
-                    },
+                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
+                        VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
+                        VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
+                    }),
                 },
             }
         };
@@ -570,6 +580,15 @@ impl ConsensusManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unregister(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_STAKE_AS_OWNER_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorStakeAsOwnerInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::stake_as_owner(input.stake, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_STAKE_IDENT => {

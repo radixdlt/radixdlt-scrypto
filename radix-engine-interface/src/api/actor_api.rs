@@ -30,4 +30,10 @@ pub trait ClientActorApi<E: Debug> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
+
+    fn actor_is_feature_enabled(
+        &mut self,
+        object_handle: ObjectHandle,
+        feature: &str,
+    ) -> Result<bool, E>;
 }

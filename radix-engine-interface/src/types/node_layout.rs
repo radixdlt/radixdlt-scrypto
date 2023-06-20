@@ -117,6 +117,7 @@ pub enum NonFungibleResourceManagerField {
 pub enum FungibleVaultField {
     LiquidFungible,
     LockedFungible,
+    VaultFrozenFlag,
 }
 
 #[repr(u8)]
@@ -139,6 +140,7 @@ impl TryFrom<u8> for NonFungibleVaultPartitionOffset {
 pub enum NonFungibleVaultField {
     LiquidNonFungible,
     LockedNonFungible,
+    VaultFrozenFlag,
 }
 
 #[repr(u8)]
@@ -172,6 +174,7 @@ pub enum ConsensusManagerField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ValidatorField {
     Validator,
+    AcceptsDelegatedStakeFlag,
 }
 
 #[repr(u8)]

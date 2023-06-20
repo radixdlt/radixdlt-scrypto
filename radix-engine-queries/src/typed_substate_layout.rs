@@ -483,11 +483,13 @@ pub enum TypedNonFungibleResourceManagerFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedFungibleVaultFieldValue {
     Balance(FungibleVaultBalanceSubstate),
+    VaultFrozenFlag(VaultFrozenFlag),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleVaultFieldValue {
     Balance(NonFungibleVaultBalanceSubstate),
+    VaultFrozenFlag(VaultFrozenFlag),
 }
 
 #[derive(Debug, Clone)]
@@ -504,6 +506,7 @@ pub enum TypedConsensusManagerFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedValidatorFieldValue {
     Validator(ValidatorSubstate),
+    AcceptsDelegatedStakeFlag(ValidatorAcceptsDelegatedStakeFlag),
 }
 
 #[derive(Debug, Clone)]
@@ -663,6 +666,9 @@ fn to_typed_object_substate_value(
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
                 FungibleVaultField::LockedFungible => Err(DecodeError::InvalidCustomValue)?,
+                FungibleVaultField::VaultFrozenFlag => {
+                    TypedFungibleVaultFieldValue::VaultFrozenFlag(scrypto_decode(data)?)
+                }
             })
         }
         TypedMainModuleSubstateKey::NonFungibleVaultField(offset) => {
@@ -672,6 +678,9 @@ fn to_typed_object_substate_value(
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
                 NonFungibleVaultField::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
+                NonFungibleVaultField::VaultFrozenFlag => {
+                    TypedNonFungibleVaultFieldValue::VaultFrozenFlag(scrypto_decode(data)?)
+                }
             })
         }
         TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_) => {
@@ -713,6 +722,9 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::Validator(match offset {
                 ValidatorField::Validator => {
                     TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
+                }
+                ValidatorField::AcceptsDelegatedStakeFlag => {
+                    TypedValidatorFieldValue::AcceptsDelegatedStakeFlag(scrypto_decode(data)?)
                 }
             })
         }

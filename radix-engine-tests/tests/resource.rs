@@ -125,7 +125,7 @@ fn mint_with_bad_granularity_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+        if let RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
             FungibleResourceManagerError::InvalidAmount(amount, granularity),
         )) = e
         {
@@ -164,7 +164,7 @@ fn create_fungible_too_high_granularity_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+        if let RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
             FungibleResourceManagerError::InvalidDivisibility(granularity),
         )) = e
         {
@@ -210,7 +210,7 @@ fn mint_too_much_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::MaxMintAmountExceeded
             ))
         )

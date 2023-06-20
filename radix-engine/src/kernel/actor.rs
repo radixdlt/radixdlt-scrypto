@@ -14,8 +14,6 @@ pub struct InstanceContext {
 pub struct MethodActor {
     pub global_address: Option<GlobalAddress>,
     pub node_id: NodeId,
-    pub node_object_info: ObjectInfo,
-
     pub module_id: ObjectModuleId,
     pub module_object_info: ObjectInfo,
 
@@ -175,7 +173,7 @@ impl Actor {
         }
     }
 
-    pub fn blueprint(&self) -> &BlueprintId {
+    pub fn blueprint_id(&self) -> &BlueprintId {
         match self {
             Actor::Method(MethodActor {
                 module_object_info:
@@ -262,7 +260,6 @@ impl Actor {
     pub fn method(
         global_address: Option<GlobalAddress>,
         method: MethodIdentifier,
-        node_object_info: ObjectInfo,
         module_object_info: ObjectInfo,
         instance_context: Option<InstanceContext>,
         is_direct_access: bool,
@@ -270,7 +267,6 @@ impl Actor {
         Self::Method(MethodActor {
             global_address,
             node_id: method.0,
-            node_object_info,
             module_id: method.1,
             ident: method.2,
             module_object_info,

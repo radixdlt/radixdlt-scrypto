@@ -235,8 +235,7 @@ impl NativeBucket for Bucket {
     {
         let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(self.0.as_node_id())?
-                .outer_object
-                .expect("Bucket should have an outer object")
+                .get_outer_object()
                 .into(),
         );
 
