@@ -11,6 +11,7 @@ use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
+use crate::system::node_modules::access_rules::OwnerRoleSubstate;
 
 // FIXME: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -366,13 +367,11 @@ impl Authorization {
                         SystemLockData::default(),
                     )?;
 
-                    let owner_role: OwnerRole =
+                    let owner_role_substate: OwnerRoleSubstate =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
                     api.kernel_drop_lock(handle)?;
-                    match owner_role {
-                        OwnerRole::None => return Ok(AuthorizationCheckResult::Failed(vec![])),
-                        OwnerRole::Updateable(rule) | OwnerRole::Fixed(rule) => rule,
-                    }
+
+                    owner_role_substate.owner_role_entry.rule
                 }
             }
         };
