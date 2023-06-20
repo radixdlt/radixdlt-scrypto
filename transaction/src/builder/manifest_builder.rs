@@ -764,7 +764,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_FREEZE_IDENT.to_string(),
-            args: to_manifest_value(&MetadataFreezeInput { key }),
+            args: to_manifest_value_and_unwrap!(&MetadataFreezeInput { key }),
         })
         .0
     }
