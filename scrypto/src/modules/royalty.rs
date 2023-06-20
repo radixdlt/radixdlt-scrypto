@@ -14,7 +14,7 @@ use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::RoyaltyConfig;
+use radix_engine_interface::types::ComponentRoyaltyConfig;
 use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -37,12 +37,12 @@ impl Attachable for Royalty {
 
 impl Default for Royalty {
     fn default() -> Self {
-        Royalty::new(RoyaltyConfig::default())
+        Royalty::new(ComponentRoyaltyConfig::default())
     }
 }
 
 impl Royalty {
-    pub fn new(royalty_config: RoyaltyConfig) -> Self {
+    pub fn new(royalty_config: ComponentRoyaltyConfig) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ROYALTY_MODULE_PACKAGE,

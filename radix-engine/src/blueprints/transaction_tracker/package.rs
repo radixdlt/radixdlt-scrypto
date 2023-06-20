@@ -223,7 +223,7 @@ impl TransactionTrackerBlueprint {
         )?;
         let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             btreemap!(

@@ -8,14 +8,14 @@ use crate::*;
 /// Royalty rules
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum RoyaltyConfig {
+pub enum ComponentRoyaltyConfig {
     Disabled,
     Enabled(BTreeMap<String, (RoyaltyAmount, bool)>),
 }
 
-impl Default for RoyaltyConfig {
+impl Default for ComponentRoyaltyConfig {
     fn default() -> Self {
-        RoyaltyConfig::Disabled
+        ComponentRoyaltyConfig::Disabled
     }
 }
 

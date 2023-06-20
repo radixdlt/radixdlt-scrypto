@@ -632,7 +632,7 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<RoyaltyConfig>(),
+                    aggregator.add_child_type_and_descendents::<ComponentRoyaltyConfig>(),
                 ),
                 can_own: false,
             },

@@ -280,7 +280,7 @@ impl ConsensusManagerBlueprint {
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
             btreemap!(

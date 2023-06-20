@@ -88,7 +88,7 @@ impl TwoResourcePoolBlueprint {
             ),
             api,
         )?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
         let object_id = {
             let substate = TwoResourcePoolSubstate {
                 vaults: [

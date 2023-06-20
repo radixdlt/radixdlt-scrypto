@@ -258,7 +258,7 @@ pub struct Globalizing<C: HasStub> {
 
     pub owner_role: OwnerRole,
     pub metadata_config: Option<(Metadata, Roles)>,
-    pub royalty_config: Option<(RoyaltyConfig, Roles)>,
+    pub royalty_config: Option<(ComponentRoyaltyConfig, Roles)>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
     pub roles: Roles,
@@ -287,13 +287,16 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
+    pub fn enable_component_royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
         let mut royalty_amounts = BTreeMap::new();
         for (method, (royalty, updatable)) in royalties.0.to_mapping() {
             royalty_amounts.insert(method, (royalty, !updatable));
         }
 
-        self.royalty_config = Some((RoyaltyConfig::Enabled(royalty_amounts), royalties.1));
+        self.royalty_config = Some((
+            ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            royalties.1,
+        ));
 
         self
     }
@@ -311,7 +314,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         let (royalty_config, royalty_roles) = self
             .royalty_config
             .take()
-            .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));
+            .unwrap_or_else(|| (ComponentRoyaltyConfig::default(), Roles::new()));
         let royalty = Royalty::new(royalty_config);
         let access_rules = AccessRules::new(
             self.owner_role,

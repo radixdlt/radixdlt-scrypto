@@ -32,7 +32,7 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::Updatable(rule!(require(badge.clone()))))
-                .royalties(component_royalties! {
+                .enable_component_royalties(component_royalties! {
                     init {
                         paid_method => Xrd(1.into()), updatable;
                         paid_method_panic => Xrd(1.into());

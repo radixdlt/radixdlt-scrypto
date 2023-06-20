@@ -42,7 +42,7 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .royalties(component_royalties! {
+                .enable_component_royalties(component_royalties! {
                     roles {
                         royalty_admin => rule!(allow_all);
                     },
