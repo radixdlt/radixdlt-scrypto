@@ -115,6 +115,7 @@ impl TransactionProcessorBlueprint {
 
                         instance_schema: None,
                         blueprint_info: ObjectBlueprintInfo::default(),
+                        features: btreeset!(),
                     })
                 )
             ),

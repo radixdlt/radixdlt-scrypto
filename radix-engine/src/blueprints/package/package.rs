@@ -388,6 +388,7 @@ where
             version: BlueprintVersion::default(),
 
             blueprint_info: ObjectBlueprintInfo::default(),
+            features: btreeset!(),
             instance_schema: None,
         })),
     );
@@ -949,7 +950,7 @@ impl PackageNativePackage {
         } in setup.blueprints.values()
         {
             match blueprint_type {
-                BlueprintType::Outer => { }
+                BlueprintType::Outer => {}
                 BlueprintType::Inner { .. } => {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::PackageError(PackageError::WasmUnsupported(

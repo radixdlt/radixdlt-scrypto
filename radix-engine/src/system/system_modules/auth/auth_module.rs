@@ -84,9 +84,9 @@ impl AuthModule {
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            V: SystemCallbackObject,
-            Y: KernelApi<SystemConfig<V>>,
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
     {
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
             let mut system = SystemService::new(api);
@@ -262,11 +262,13 @@ impl AuthModule {
                     )),
                 }
             }
-            Some(MethodAccessibility::RoleProtected(role_list)) => Ok(ResolvedPermission::RoleList {
-                access_rules_of,
-                role_list: role_list.clone(),
-                module_id: callee.module_id,
-            }),
+            Some(MethodAccessibility::RoleProtected(role_list)) => {
+                Ok(ResolvedPermission::RoleList {
+                    access_rules_of,
+                    role_list: role_list.clone(),
+                    module_id: callee.module_id,
+                })
+            }
             None => Err(RuntimeError::SystemModuleError(
                 SystemModuleError::AuthError(AuthError::NoMethodMapping(callee.fn_identifier())),
             )),
@@ -334,6 +336,7 @@ impl AuthModule {
                     version: BlueprintVersion::default(),
 
                     blueprint_info: ObjectBlueprintInfo::default(),
+                    features: btreeset!(),
                     instance_schema: None,
                 }))
             ),

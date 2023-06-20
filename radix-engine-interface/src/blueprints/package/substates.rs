@@ -1,3 +1,4 @@
+use crate::blueprints::package::BlueprintType;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -7,7 +8,6 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
-use crate::blueprints::package::BlueprintType;
 
 pub const PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;

@@ -106,6 +106,7 @@ impl AuthZoneBlueprint {
                             blueprint_info: ObjectBlueprintInfo::Inner {
                                 outer_object: resource_address.into(),
                             },
+                            features: btreeset!(),
                             instance_schema: None,
                         })),
                     ),
@@ -125,6 +126,7 @@ impl AuthZoneBlueprint {
                         blueprint_info: ObjectBlueprintInfo::Inner {
                             outer_object: resource_address.into(),
                         },
+                        features: btreeset!(),
                         instance_schema: None,
                     }))),
                 )?;
@@ -168,6 +170,7 @@ impl AuthZoneBlueprint {
                     blueprint_info: ObjectBlueprintInfo::Inner {
                         outer_object: resource_address.into(),
                     },
+                    features: btreeset!(),
                     instance_schema: None,
                 }))
             ),
@@ -213,6 +216,7 @@ impl AuthZoneBlueprint {
                     blueprint_info: ObjectBlueprintInfo::Inner {
                         outer_object: resource_address.into(),
                     },
+                    features: btreeset!(),
                     instance_schema: None,
                 }))
             ),

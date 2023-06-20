@@ -241,8 +241,8 @@ where
         &mut self,
         blueprint_id: &BlueprintId,
         blueprint_interface: &BlueprintInterface,
-        blueprint_features: BTreeSet<String>,
-        outer_blueprint_features: BTreeSet<String>,
+        blueprint_features: &BTreeSet<String>,
+        outer_blueprint_features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
@@ -584,6 +584,7 @@ where
                 version: BlueprintVersion::default(),
 
                 blueprint_info: ObjectBlueprintInfo::default(),
+                features: btreeset!(MINT_FEATURE.to_string(), BURN_FEATURE.to_string(),),
                 instance_schema: None,
             }));
         } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
@@ -606,6 +607,7 @@ where
                 version: BlueprintVersion::default(),
 
                 blueprint_info: ObjectBlueprintInfo::default(),
+                features: btreeset!(),
                 instance_schema: None,
             }));
         }
@@ -644,62 +646,50 @@ where
             blueprint_id.package_address,
             blueprint_id.blueprint_name.as_str(),
         )?;
-        let expected_blueprint_parent = blueprint_interface.blueprint_type.clone();
+        let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
 
         let (blueprint_info, object_features, outer_object_features) =
-            if let BlueprintType::Inner { outer_blueprint } = &expected_blueprint_parent
-        {
-            match instance_context {
-                Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
-                    if !features.is_empty() {
+            if let BlueprintType::Inner { outer_blueprint } = &expected_outer_blueprint {
+                match instance_context {
+                    Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
+                        let outer_object_info =
+                            self.get_object_info(context.outer_object.as_node_id())?;
+
+                        (
+                            ObjectBlueprintInfo::Inner {
+                                outer_object: context.outer_object,
+                            },
+                            BTreeSet::new(),
+                            outer_object_info.get_features(),
+                        )
+                    }
+                    _ => {
                         return Err(RuntimeError::SystemError(
                             SystemError::InvalidChildObjectCreation,
                         ));
                     }
-
-                    let outer_object_info =
-                        self.get_object_info(context.outer_object.as_node_id())?;
-
-                    (
-                        ObjectBlueprintInfo::Inner {
-                            outer_object: context.outer_object,
-                        },
-                        BTreeSet::new(),
-                        outer_object_info.get_features(),
-                    )
                 }
-                _ => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidChildObjectCreation,
-                    ));
-                }
-            }
-        } else {
-            let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+            } else {
+                let features: BTreeSet<String> =
+                    features.into_iter().map(|s| s.to_string()).collect();
 
-            // Validate features
-            for feature in &features {
-                if !blueprint_interface.feature_set.contains(feature) {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
-                        feature.to_string(),
-                    )));
+                // Validate features
+                for feature in &features {
+                    if !blueprint_interface.feature_set.contains(feature) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                            feature.to_string(),
+                        )));
+                    }
                 }
-            }
 
-            (
-                ObjectBlueprintInfo::Outer {
-                    features: features.clone(),
-                },
-                features,
-                BTreeSet::new(),
-            )
-        };
+                (ObjectBlueprintInfo::Outer, features, BTreeSet::new())
+            };
 
         let user_substates = self.validate_instance_schema_and_state(
             blueprint_id,
             &blueprint_interface,
-            object_features,
-            outer_object_features,
+            &object_features,
+            &outer_object_features,
             &instance_schema,
             fields,
             kv_entries,
@@ -722,6 +712,7 @@ where
                     version: BlueprintVersion::default(),
 
                     blueprint_info,
+                    features: object_features,
                     instance_schema,
                 })
             ),
@@ -830,7 +821,9 @@ where
                 }
             }
             Condition::IfOuterFeature(feature) => {
-                if !self.is_feature_enabled(info.get_outer_object().as_node_id(), feature.as_str())? {
+                if !self
+                    .is_feature_enabled(info.get_outer_object().as_node_id(), feature.as_str())?
+                {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                         info.blueprint_id.clone(),
                         field_index,
@@ -1184,10 +1177,7 @@ where
         feature: &str,
     ) -> Result<bool, RuntimeError> {
         let object_info = self.get_object_info(node_id)?;
-        let enabled = match object_info.blueprint_info {
-            ObjectBlueprintInfo::Inner { .. } => false,
-            ObjectBlueprintInfo::Outer { features } => features.contains(feature),
-        };
+        let enabled = object_info.features.contains(feature);
 
         Ok(enabled)
     }
@@ -1426,6 +1416,7 @@ where
                     version: BlueprintVersion::default(),
 
                     blueprint_info: ObjectBlueprintInfo::default(),
+                    features: btreeset!(),
                     instance_schema: None,
                 },
                 None,
@@ -2214,12 +2205,14 @@ where
     }
 
     #[trace_resources]
-    fn actor_is_feature_enabled(&mut self, object_handle: ObjectHandle, feature: &str) -> Result<bool, RuntimeError> {
+    fn actor_is_feature_enabled(
+        &mut self,
+        object_handle: ObjectHandle,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
-            ActorObjectType::SELF => {
-                self.actor_get_node_id()?
-            }
+            ActorObjectType::SELF => self.actor_get_node_id()?,
             ActorObjectType::OuterObject => {
                 self.actor_get_info()?.get_outer_object().into_node_id()
             }

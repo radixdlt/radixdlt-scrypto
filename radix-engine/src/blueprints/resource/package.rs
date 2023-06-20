@@ -330,12 +330,12 @@ impl ResourceManagerNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::Outer,
                 feature_set: btreeset!(
-                        TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        VAULT_FREEZE_FEATURE.to_string(),
-                        VAULT_RECALL_FEATURE.to_string(),
-                        MINT_FEATURE.to_string(),
-                        BURN_FEATURE.to_string(),
-                    ),
+                    TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    VAULT_FREEZE_FEATURE.to_string(),
+                    VAULT_RECALL_FEATURE.to_string(),
+                    MINT_FEATURE.to_string(),
+                    BURN_FEATURE.to_string(),
+                ),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -646,12 +646,12 @@ impl ResourceManagerNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::Outer,
                 feature_set: btreeset!(
-                        TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
-                        VAULT_FREEZE_FEATURE.to_string(),
-                        VAULT_RECALL_FEATURE.to_string(),
-                        MINT_FEATURE.to_string(),
-                        BURN_FEATURE.to_string(),
-                    ),
+                    TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    VAULT_FREEZE_FEATURE.to_string(),
+                    VAULT_RECALL_FEATURE.to_string(),
+                    MINT_FEATURE.to_string(),
+                    BURN_FEATURE.to_string(),
+                ),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![Generic::Any],

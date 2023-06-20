@@ -13,14 +13,12 @@ use utils::ContextualDisplay;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ObjectBlueprintInfo {
     Inner { outer_object: GlobalAddress },
-    Outer { features: BTreeSet<String> },
+    Outer,
 }
 
 impl Default for ObjectBlueprintInfo {
     fn default() -> Self {
-        ObjectBlueprintInfo::Outer {
-            features: BTreeSet::default(),
-        }
+        ObjectBlueprintInfo::Outer
     }
 }
 
@@ -33,6 +31,7 @@ pub struct ObjectInfo {
 
     // Blueprint arguments
     pub blueprint_info: ObjectBlueprintInfo,
+    pub features: BTreeSet<String>,
     pub instance_schema: Option<InstanceSchema>,
 }
 
@@ -54,12 +53,7 @@ impl ObjectInfo {
     }
 
     pub fn get_features(&self) -> BTreeSet<String> {
-        match &self.blueprint_info {
-            ObjectBlueprintInfo::Outer { features } => features.clone(),
-            ObjectBlueprintInfo::Inner { .. } => {
-                panic!("Broken Application logic: Expected to be an inner object but is an outer object");
-            }
-        }
+        self.features.clone()
     }
 }
 
