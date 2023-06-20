@@ -12,7 +12,6 @@ use rand::{rngs::ThreadRng, Rng};
 #[allow(unused_imports)]
 use std::{io::Write, path::PathBuf};
 
-
 pub const SUBSTATE_KEY_LENGTH: usize = 30;
 
 macro_rules! number_to_str {
@@ -23,6 +22,53 @@ macro_rules! number_to_str {
             format!("+{:.1$}", $x, $precission)
         }
     }};
+}
+
+pub fn generate_range(min: usize, max: usize, values_count: usize) -> Vec<usize> {
+    let mut v = Vec::new();
+
+    assert!(min <= max);
+    assert!(values_count > 0);
+
+    let n = values_count as f32;
+    let step = 1f32 / n;
+    let threshold = 0.9f32; // in range 0..1
+
+    const S: f32 = 9f32;
+    const T: f32 = 14f32;
+    const P: i32 = 4;
+
+    let point_a = (threshold, S + (T * threshold).powi(P));
+    let point_b = (1f32, max as f32);
+    let m = (point_a.1 - point_b.1) / (point_a.0 - point_b.0);
+
+    let mut i = step;
+    while i <= 1f32 {
+        let value = if i < threshold {
+            // f(x) = S + ( T * x )^P
+            S + (T * i).powi(P)
+        } else {
+            // A=[threshold, f(threshold)] B=[1,max]
+            // M=(Ay-By)/(Ax-Bx)
+            // f(x) = x * M + (Ay - M * Ax)
+            if i + step > 1f32 {
+                i = 1f32;
+            }
+            i * m + (point_a.1 - m * point_a.0)
+        };
+        if value >= min as f32 {
+            v.push(value.ceil() as usize);
+        }
+        i += step;
+    }
+
+    if v.len() < values_count {
+        v.insert(0, min);
+    } else {
+        v[0] = min;
+    }
+
+    v
 }
 
 pub fn calculate_percent_to_max_points(
@@ -79,20 +125,24 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
     substate_db: &mut S,
     min_size: usize,
     max_size: usize,
-    step: usize,
+    values_count: usize,
     writes_count: usize,
 ) -> Vec<(DbPartitionKey, DbSortKey, usize)> {
     let mut data_index_vector: Vec<(DbPartitionKey, DbSortKey, usize)> =
         Vec::with_capacity(max_size);
 
-    print!(
+    println!(
         "Preparing database ({}, {}, {}, {})...",
-        min_size, max_size, step, writes_count
+        min_size, max_size, values_count, writes_count
     );
-    std::io::stdout().flush().ok();
     let mut rng = rand::thread_rng();
 
-    for _ in 0..writes_count {
+    let substate_size_list = generate_range(min_size, max_size, values_count);
+
+    for i in 0..writes_count {
+        print!("\rNode {}/{}  ", i + 1, writes_count);
+        std::io::stdout().flush().ok();
+
         let mut input_data = DatabaseUpdates::new();
 
         let mut node_id_value = [0u8; NodeId::UUID_LENGTH];
@@ -102,10 +152,10 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
             SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
         let mut partition = PartitionUpdates::new();
 
-        for size in (min_size..=max_size).step_by(step) {
-            let sort_key = generate_commit_data(&mut partition, &mut rng, size);
+        for size in substate_size_list.iter() {
+            let sort_key = generate_commit_data(&mut partition, &mut rng, *size);
 
-            data_index_vector.push((partition_key.clone(), sort_key, size));
+            data_index_vector.push((partition_key.clone(), sort_key, *size));
         }
         input_data.insert(partition_key.clone(), partition.clone());
 

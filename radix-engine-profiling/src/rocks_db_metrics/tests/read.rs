@@ -4,17 +4,17 @@ use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{CommittableSubstateDatabase, DbPartitionKey, DbSortKey, SubstateDatabase},
 };
-use rand::{Rng, seq::SliceRandom};
+use rand::{seq::SliceRandom, Rng};
 use std::{io::Write, path::PathBuf};
 
-/// Range start of the measuremnts
+/// Substate size range start
 const MIN_SIZE: usize = 1;
-/// Range end of the measuremnts
+/// Substate size range end
 const MAX_SIZE: usize = 1024 * 1024;
-/// Range step
-const SIZE_STEP: usize = 16 * 1024;
-/// Number of nodes written to the database in preparation step. 
-/// Each node has N=(MAX_SIZE-MIN_SIZE)/SIZE_STEP substates of size between MIN_SIZE and MAX_SIZE in one partition.
+/// Number of different substate size in range [MIN_SIZE-MAX_SIZE]
+const SIZE_COUNT: usize = 64;
+/// Number of nodes written to the database in preparation step.
+/// Each node has SIZE_COUNT substates of size between MIN_SIZE and MAX_SIZE in one partition.
 const WRITE_NODES_COUNT: usize = 4000;
 /// Number of repated reads of each node previously written to the database.
 const READ_NODES_REPEAT_COUNT: usize = 100;
@@ -35,7 +35,7 @@ const FILTER_SPIKES: f32 = 500f32;
 /// or
 ///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_read
 /// from main radixdlt-scrypto folder.
-/// Test can be parametrized using environment variables: READ_NODES_REPEAT_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP,
+/// Test can be parametrized using environment variables: READ_NODES_REPEAT_COUNT, MIN_SIZE, MAX_SIZE, SIZE_COUNT,
 ///  WRITE_NODES_COUNT, FILTER_READ_MAX_SIZE, FILTER_SPIKES, READ_NOT_FOUND_SUBSTATES_COUNT
 fn test_read() {
     let read_repeats = match std::env::var("READ_NODES_REPEAT_COUNT") {
@@ -50,9 +50,9 @@ fn test_read() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => MAX_SIZE,
     };
-    let size_step = match std::env::var("SIZE_STEP") {
+    let value_size_count = match std::env::var("SIZE_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => SIZE_STEP,
+        _ => SIZE_COUNT,
     };
     let write_nodes_count = match std::env::var("WRITE_NODES_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -83,7 +83,7 @@ fn test_read() {
             &mut substate_db,
             min_size,
             max_size,
-            size_step,
+            value_size_count,
             write_nodes_count,
         )
     };
@@ -141,7 +141,7 @@ fn test_read() {
         &mut substate_db,
         min_size,
         max_size,
-        size_step,
+        value_size_count,
         write_nodes_count,
     );
 
@@ -214,7 +214,7 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
         data_index_vector.shuffle(&mut rng);
 
         for (j, (p, s, v)) in data_index_vector.iter().enumerate() {
-            print!("\rRead {}/{}", j + 1, data_index_vector.len());
+            print!("\rRead {}/{}  ", j + 1, data_index_vector.len());
             std::io::stdout().flush().ok();
 
             let read_value = substate_db.get_substate(&p, &s);

@@ -8,23 +8,23 @@ use radix_engine_store_interface::{
         SubstateDatabase,
     },
 };
-use rand::{Rng, seq::SliceRandom};
+use rand::{seq::SliceRandom, Rng};
 use std::{io::Write, path::PathBuf};
 
-/// Number of repated reads of each node previously written to the database.
-const READ_NODES_REPEAT_COUNT: usize = 50;
-/// Range start of the measuremnts
+/// Number of nodes writes during test execution - measured.
+const WRITE_NODES_REPEAT_COUNT: usize = 4000;
+/// Substate size range start
 const MIN_SIZE: usize = 1;
-/// Range end of the measuremnts
+/// Substate size range end
 const MAX_SIZE: usize = 1024 * 1024;
-/// Range step
-const SIZE_STEP: usize = 100 * 1024;
-/// Number of nodes written to the database in preparation step. 
-/// Each node has N=(MAX_SIZE-MIN_SIZE)/SIZE_STEP substates of size between MIN_SIZE and MAX_SIZE in one partition.
-const WRITE_NODES_COUNT: usize = 10;
+/// Number of different substate size in range [MIN_SIZE-MAX_SIZE]
+const SIZE_COUNT: usize = 64;
+/// Number of nodes written to the database in preparation step.
+/// Each node has SIZE_COUNT substates of size between MIN_SIZE and MAX_SIZE in one partition.
+const WRITE_NODES_COUNT: usize = 4000;
 
 #[test]
-/// Measuring the writing nodes with substates from range [MIN_SIZE-MAX_SIZE] each.
+/// Measuring the writing nodes with SIZE_COUNT substates from range [MIN_SIZE-MAX_SIZE] each.
 /// Database is created in /tmp/radix-scrypto-db folder.
 /// Outputs are genered in png files: /tmp/scrypto_commit_per_size_rocksdb.png, /tmp/scrypto_commit_per_size_rocksdb_JMT.png, /tmp/scrypto_commit_per_size_rocksdb_diff.png
 /// point list is printed to stdout.
@@ -35,9 +35,9 @@ const WRITE_NODES_COUNT: usize = 10;
 /// from main radixdlt-scrypto folder.
 /// Test can be parametrized using environment variables: READ_NODES_REPEAT_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP, WRITE_NODES_COUNT
 fn test_commit_per_size() {
-    let read_nodes_repeat_count = match std::env::var("READ_NODES_REPEAT_COUNT") {
+    let write_nodes_repeat_count = match std::env::var("WRITE_NODES_REPEAT_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => READ_NODES_REPEAT_COUNT,
+        _ => WRITE_NODES_REPEAT_COUNT,
     };
     let min_size = match std::env::var("MIN_SIZE") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -47,9 +47,9 @@ fn test_commit_per_size() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => MAX_SIZE,
     };
-    let size_step = match std::env::var("SIZE_STEP") {
+    let value_size_count = match std::env::var("SIZE_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => SIZE_STEP,
+        _ => SIZE_COUNT,
     };
     let write_nodes_count = match std::env::var("WRITE_NODES_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
@@ -58,10 +58,10 @@ fn test_commit_per_size() {
 
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_commit_per_size_internal(
-        read_nodes_repeat_count,
+        write_nodes_repeat_count,
         min_size,
         max_size,
-        size_step,
+        value_size_count,
         write_nodes_count,
         |path| SubstateStoreWithMetrics::new_rocksdb(path),
     );
@@ -72,7 +72,10 @@ fn test_commit_per_size() {
     let mut axis_ranges = calculate_axis_ranges(&rocksdb_data, None, None);
     axis_ranges.3 = (lin_slope * max_size as f32 + lin_intercept) * 1.2f32;
     export_graph_and_print_summary(
-        &format!("RocksDB per size commits, rounds: {}", read_nodes_repeat_count),
+        &format!(
+            "RocksDB per size commits, rounds: {}",
+            write_nodes_repeat_count
+        ),
         &rocksdb_data,
         &rocksdb_data_output,
         "/tmp/scrypto_commit_per_size_rocksdb.png",
@@ -86,10 +89,10 @@ fn test_commit_per_size() {
     println!("JMT part");
     let (jmt_rocksdb_data, jmt_rocksdb_data_output, jmt_rocksdb_data_original) =
         test_commit_per_size_internal(
-            read_nodes_repeat_count,
+            write_nodes_repeat_count,
             min_size,
             max_size,
-            size_step,
+            value_size_count,
             write_nodes_count,
             |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path),
         );
@@ -102,7 +105,7 @@ fn test_commit_per_size() {
     export_graph_and_print_summary(
         &format!(
             "RocksDB with Merkle tree per size commits, rounds: {}",
-            read_nodes_repeat_count
+            write_nodes_repeat_count
         ),
         &jmt_rocksdb_data,
         &jmt_rocksdb_data_output,
@@ -117,7 +120,7 @@ fn test_commit_per_size() {
     export_graph_two_series(
         &format!(
             "95th percentile of commits per size, rounds: {}",
-            read_nodes_repeat_count
+            write_nodes_repeat_count
         ),
         &rocksdb_data_output,
         &jmt_rocksdb_data_output,
@@ -254,7 +257,7 @@ where
     let mut rocksdb_data_intermediate: BTreeMap<usize, Vec<Duration>> = BTreeMap::new();
 
     for round in 0..rounds_count {
-        print!("\rRound {}/{}", round + 1, rounds_count);
+        print!("\rRound {}/{}  ", round + 1, rounds_count);
         std::io::stdout().flush().ok();
 
         let value_size = 100;
@@ -285,7 +288,10 @@ where
         // prepare intermediate data
         for (_k, v) in substate_db.commit_set_metrics.borrow().iter() {
             for (i, val) in v.iter().enumerate() {
-                rocksdb_data_intermediate.entry(i + 1).or_default().push(*val);
+                rocksdb_data_intermediate
+                    .entry(i + 1)
+                    .or_default()
+                    .push(*val);
             }
         }
 
@@ -311,7 +317,7 @@ fn test_commit_per_size_internal<F, S>(
     rounds_count: usize,
     min_size: usize,
     max_size: usize,
-    size_step: usize,
+    value_size_count: usize,
     prepare_db_write_repeats: usize,
     create_store: F,
 ) -> (
@@ -333,9 +339,9 @@ where
         let mut substate_db = create_store(path.clone());
         prepare_db(
             &mut substate_db,
-            MIN_SIZE,
-            MAX_SIZE,
-            SIZE_STEP,
+            min_size,
+            max_size,
+            value_size_count,
             prepare_db_write_repeats,
         );
     }
@@ -345,14 +351,11 @@ where
     let mut rng = rand::thread_rng();
 
     // prepare vector with substate sizes
-    let mut size_vector: Vec<usize> = Vec::new();
-    for size in (min_size..=max_size).step_by(size_step) {
-        size_vector.push(size);
-    }
+    let mut size_vector = generate_range(min_size, max_size, value_size_count);
 
     // repeat 1 commit of substate of various size into different nodes and partitions n-times
     for i in 0..rounds_count {
-        print!("Round {}/{}\r", i + 1, rounds_count);
+        print!("Round {}/{}  \r", i + 1, rounds_count);
         std::io::stdout().flush().ok();
 
         let mut node_id_value = [0u8; NodeId::UUID_LENGTH];

@@ -8,17 +8,17 @@ use radix_engine_store_interface::{
         SubstateDatabase,
     },
 };
-use rand::{Rng, seq::SliceRandom};
+use rand::{seq::SliceRandom, Rng};
 use std::{io::Write, path::PathBuf};
 
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;
 /// Range end of the measuremnts
 const MAX_SIZE: usize = 1024 * 1024;
-/// Range step
-const SIZE_STEP: usize = 100 * 1024;
-/// Number of nodes written to the database in preparation step. 
-/// Each node has N=(MAX_SIZE-MIN_SIZE)/SIZE_STEP substates of size between MIN_SIZE and MAX_SIZE in one partition.
+/// Number of different substate size in range [MIN_SIZE-MAX_SIZE]
+const SIZE_COUNT: usize = 64;
+/// Number of nodes written to the database in preparation step.
+/// Each node has SIZE_COUNT substates of size between MIN_SIZE and MAX_SIZE in one partition.
 const WRITE_NODES_COUNT: usize = 4000;
 
 #[test]
@@ -41,16 +41,16 @@ fn test_delete_per_size() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => MAX_SIZE,
     };
-    let size_step = match std::env::var("SIZE_STEP") {
+    let value_size_count = match std::env::var("SIZE_COUNT") {
         Ok(v) => usize::from_str(&v).unwrap(),
-        _ => SIZE_STEP,
+        _ => SIZE_COUNT,
     };
 
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_delete_per_size_internal(
         min_size,
         max_size,
-        size_step,
+        value_size_count,
         WRITE_NODES_COUNT,
         |path| SubstateStoreWithMetrics::new_rocksdb(path),
     );
@@ -76,7 +76,7 @@ fn test_delete_per_size() {
         test_delete_per_size_internal(
             min_size,
             max_size,
-            size_step,
+            value_size_count,
             WRITE_NODES_COUNT,
             |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path),
         );
@@ -389,7 +389,10 @@ where
         for (_k, v) in substate_db.commit_delete_metrics.borrow().iter() {
             assert_eq!(v.len(), idx_vector_output.len());
             for (i, val) in v.iter().enumerate() {
-                rocksdb_data_intermediate.entry(idx_vector_output[i] + 1).or_default().push(*val);
+                rocksdb_data_intermediate
+                    .entry(idx_vector_output[i] + 1)
+                    .or_default()
+                    .push(*val);
             }
         }
         // clear metrics between rounds
