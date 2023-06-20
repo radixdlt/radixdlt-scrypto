@@ -1205,7 +1205,10 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = to_manifest_value_and_unwrap!(&AccountBurnInput { resource_address, amount });
+        let args = to_manifest_value_and_unwrap!(&AccountBurnInput {
+            resource_address,
+            amount
+        });
 
         self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
