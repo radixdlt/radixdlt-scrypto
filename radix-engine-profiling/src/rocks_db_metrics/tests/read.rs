@@ -125,6 +125,7 @@ fn test_read() {
         &substate_db.read_metrics.borrow(),
         axis_ranges,
         None,
+        true,
     )
     .unwrap();
 
@@ -178,6 +179,7 @@ fn test_read() {
         &substate_db.read_metrics.borrow(),
         axis_ranges,
         None,
+        true,
     )
     .unwrap();
 

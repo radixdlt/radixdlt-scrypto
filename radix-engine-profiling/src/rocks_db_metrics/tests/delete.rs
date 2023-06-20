@@ -45,13 +45,17 @@ fn test_delete_per_size() {
         Ok(v) => usize::from_str(&v).unwrap(),
         _ => SIZE_COUNT,
     };
+    let write_nodes_count = match std::env::var("WRITE_NODES_COUNT") {
+        Ok(v) => usize::from_str(&v).unwrap(),
+        _ => WRITE_NODES_COUNT,
+    };
 
     println!("No JMT part");
     let (rocksdb_data, rocksdb_data_output, rocksdb_data_original) = test_delete_per_size_internal(
         min_size,
         max_size,
         value_size_count,
-        WRITE_NODES_COUNT,
+        write_nodes_count,
         |path| SubstateStoreWithMetrics::new_rocksdb(path),
     );
 
@@ -68,6 +72,7 @@ fn test_delete_per_size() {
         &rocksdb_data_original,
         axis_ranges,
         Some("Size [bytes]"),
+        true,
     )
     .unwrap();
 
@@ -77,7 +82,7 @@ fn test_delete_per_size() {
             min_size,
             max_size,
             value_size_count,
-            WRITE_NODES_COUNT,
+            write_nodes_count,
             |path| SubstateStoreWithMetrics::new_rocksdb_with_merkle_tree(path),
         );
 
@@ -94,6 +99,7 @@ fn test_delete_per_size() {
         &jmt_rocksdb_data_original,
         axis_ranges,
         Some("Size [bytes]"),
+        true,
     )
     .unwrap();
 
@@ -148,6 +154,7 @@ fn test_delete_per_partition() {
         &rocksdb_data_original,
         axis_ranges,
         Some("N"),
+        false,
     )
     .unwrap();
 
@@ -173,6 +180,7 @@ fn test_delete_per_partition() {
         &jmt_rocksdb_data_original,
         axis_ranges,
         Some("N"),
+        false,
     )
     .unwrap();
 

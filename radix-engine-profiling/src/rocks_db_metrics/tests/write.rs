@@ -83,6 +83,7 @@ fn test_commit_per_size() {
         &rocksdb_data_original,
         axis_ranges,
         Some("Size [bytes]"),
+        true,
     )
     .unwrap();
 
@@ -114,6 +115,7 @@ fn test_commit_per_size() {
         &jmt_rocksdb_data_original,
         axis_ranges,
         Some("Size [bytes]"),
+        true,
     )
     .unwrap();
 
@@ -172,6 +174,7 @@ fn test_commit_per_partition() {
         &rocksdb_data_original,
         axis_ranges,
         Some("N"),
+        false,
     )
     .unwrap();
 
@@ -198,6 +201,7 @@ fn test_commit_per_partition() {
         &jmt_rocksdb_data_original,
         axis_ranges,
         Some("N"),
+        false,
     )
     .unwrap();
 

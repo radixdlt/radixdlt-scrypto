@@ -339,10 +339,11 @@ pub fn export_graph_and_print_summary(
     original_data: &BTreeMap<usize, Vec<Duration>>,
     axis_ranges: (f32, f32, f32, f32),
     x_axis_description: Option<&str>,
+    draw_zoom: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // calculate axis max/min values
     let x_min = axis_ranges.0;
-    let x_max = axis_ranges.1;
+    let mut x_max = axis_ranges.1;
     let mut y_min = axis_ranges.2;
     let mut y_max = axis_ranges.3;
 
@@ -356,11 +357,16 @@ pub fn export_graph_and_print_summary(
     y_max = find_y_max(lin_slope, lin_intercept, None, None, x_max, y_max) * 1.1f32;
 
     // draw scatter plot
-    let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
-    root.margin(20, 20, 20, 20);
+    let root_area = BitMapBackend::new(output_png_file, (1280, 1024)).into_drawing_area();
+    root_area.fill(&WHITE)?;
+    root_area.margin(20, 20, 20, 20);
+    let (upper, lower) = if draw_zoom {
+        root_area.split_vertically(700)
+    } else {
+        root_area.split_vertically(1024)
+    };
 
-    let mut scatter_ctx = ChartBuilder::on(&root)
+    let mut scatter_ctx = ChartBuilder::on(&upper)
         .caption(caption, ("sans-serif", 20).into_font())
         .x_label_area_size(40)
         .y_label_area_size(80)
@@ -389,7 +395,7 @@ pub fn export_graph_and_print_summary(
         )?
         .label(output_data_name)
         .legend(|(x, y)| Cross::new((x + 10, y), 6, RED));
-    // 3. draw linear approximetion line
+    // 3. draw linear approximation line
     scatter_ctx
         .draw_series(LineSeries::new(
             lin_x_axis
@@ -411,7 +417,45 @@ pub fn export_graph_and_print_summary(
         .position(SeriesLabelPosition::UpperMiddle)
         .draw()?;
 
-    root.present().expect("Unable to write result to file");
+    if draw_zoom {
+        // draw 2nd graph
+        x_max /= 25f32;
+        let y_max = output_data
+            .iter()
+            .filter(|(x, _y)| *x < x_max)
+            .map(|(_x, y)| (*y as i32))
+            .max()
+            .unwrap() as f32
+            * 2f32;
+
+        let mut scatter_lower_ctx = ChartBuilder::on(&lower)
+            .x_label_area_size(40)
+            .y_label_area_size(80)
+            .margin(20)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+        scatter_lower_ctx
+            .configure_mesh()
+            .x_desc(x_axis_description.unwrap_or_else(|| "Size [bytes]"))
+            .y_desc("Duration [µs]")
+            .axis_desc_style(("sans-serif", 16))
+            .y_max_light_lines(2)
+            .draw()?;
+        // 1. draw all read points
+        scatter_lower_ctx.draw_series(
+            data.iter()
+                .filter(|(x, _y)| *x < x_max)
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?;
+        // 2. draw median for each read series (basaed on same size)
+        scatter_lower_ctx.draw_series(
+            output_data
+                .iter()
+                .filter(|(x, _y)| *x < x_max)
+                .map(|(x, y)| Cross::new((*x, *y), 6, RED)),
+        )?;
+    }
+
+    root_area.present().expect("Unable to write result to file");
 
     // print some informations
     println!("Points count: {}", data.len());
