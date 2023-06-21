@@ -600,6 +600,18 @@ SET_METADATA
         )
     )
 ;
+LOCK_METADATA
+    Address("${package_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${account_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${resource_address}")
+    "field_name"
+;
 REMOVE_METADATA
     Address("${package_address}")
     "field_name"
