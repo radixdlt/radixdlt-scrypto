@@ -443,10 +443,10 @@ LOCK_COMPONENT_ROYALTY
     Address("${account_address}")
     "my_method"
 ;
-CLAIM_PACKAGE_ROYALTY
+CLAIM_PACKAGE_ROYALTIES
     Address("${package_address}")
 ;
-CLAIM_COMPONENT_ROYALTY
+CLAIM_COMPONENT_ROYALTIES
     Address("${account_address}")
 ;
 "##,

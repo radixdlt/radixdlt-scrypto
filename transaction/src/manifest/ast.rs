@@ -223,7 +223,7 @@ pub enum Instruction {
     },
 
     /* call main method aliases */
-    ClaimPackageRoyalty {
+    ClaimPackageRoyalties {
         address: Value,
         args: Vec<Value>,
     },

@@ -730,7 +730,7 @@ where
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
+        ast::Instruction::ClaimPackageRoyalties { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,

@@ -1,5 +1,5 @@
-use radix_engine::vm::wasm::DEFAULT_CACHE_SIZE;
 use radix_engine::types::*;
+use radix_engine::vm::wasm::DEFAULT_CACHE_SIZE;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

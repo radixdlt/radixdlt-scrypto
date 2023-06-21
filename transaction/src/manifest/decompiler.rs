@@ -404,7 +404,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Package */
                 (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_static_global_package() => {
                     fields.push(address.to_instruction_argument());
-                    "CLAIM_PACKAGE_ROYALTY"
+                    "CLAIM_PACKAGE_ROYALTIES"
                 }
 
                 /* Resource manager */

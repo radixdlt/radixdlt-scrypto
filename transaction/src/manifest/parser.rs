@@ -96,7 +96,7 @@ pub enum InstructionIdent {
     // ==============
     // Call main-method aliases
     // ==============
-    ClaimPackageRoyalty,
+    ClaimPackageRoyalties,
     MintFungible,
     MintNonFungible,
     MintRuidNonFungible,
@@ -193,7 +193,7 @@ impl InstructionIdent {
             "MINT_FUNGIBLE" => InstructionIdent::MintFungible,
             "MINT_NON_FUNGIBLE" => InstructionIdent::MintNonFungible,
             "MINT_RUID_NON_FUNGIBLE" => InstructionIdent::MintRuidNonFungible,
-            "CLAIM_PACKAGE_ROYALTY" => InstructionIdent::ClaimPackageRoyalty,
+            "CLAIM_PACKAGE_ROYALTIES" => InstructionIdent::ClaimPackageRoyalties,
             "CREATE_VALIDATOR" => InstructionIdent::CreateValidator,
             _ => {
                 return None;
@@ -697,7 +697,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
+            InstructionIdent::ClaimPackageRoyalties => Instruction::ClaimPackageRoyalties {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
