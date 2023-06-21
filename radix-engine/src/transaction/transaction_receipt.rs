@@ -27,6 +27,7 @@ pub struct ResourcesUsage {
 pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
+    pub fee_locks: FeeLocks,
 }
 
 impl TransactionExecutionTrace {
@@ -37,6 +38,12 @@ impl TransactionExecutionTrace {
         }
         aggregator
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, Default)]
+pub struct FeeLocks {
+    pub lock: Decimal,
+    pub contingent_lock: Decimal,
 }
 
 /// Metrics gathered during transaction execution.
