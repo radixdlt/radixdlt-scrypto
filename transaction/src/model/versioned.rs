@@ -161,7 +161,7 @@ mod tests {
         let intent_hash = prepared_intent.intent_hash();
 
         assert_eq!(
-            intent_hash.to_string(),
+            intent_hash.to_string(None),
             "d5f67c03d5693901a08732359452107b6385e4b76c9edbf1ab1074c640578b24"
         );
         assert_eq!(
@@ -222,7 +222,7 @@ mod tests {
         let signed_intent_hash = expected_signed_intent_hash;
 
         assert_eq!(
-            signed_intent_hash.to_string(),
+            signed_intent_hash.to_string(None),
             "693e4e830b6fc3319fda3b33a4135bbc8646d1d5d43190b4d47cc3f25b55428e"
         );
         assert_eq!(
@@ -287,7 +287,7 @@ mod tests {
         assert_eq!(intent_hash, prepared_notarized_transaction.intent_hash());
 
         assert_eq!(
-            notarized_transaction_hash.to_string(),
+            notarized_transaction_hash.to_string(None),
             "fdd33105eaf217e6f31011b76fbd400869f099549840e3587650004bc1e71f6d"
         );
         assert_eq!(
