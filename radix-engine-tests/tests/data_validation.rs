@@ -190,7 +190,7 @@ fn cannot_return_proof_for_bucket() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("SchemaValidationError"))
+    assert!(error_message.contains("PayloadValidationError"))
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn cannot_return_bucket_for_proof() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("SchemaValidationError"))
+    assert!(error_message.contains("PayloadValidationError"))
 }
 
 #[test]
