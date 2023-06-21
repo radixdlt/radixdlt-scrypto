@@ -531,4 +531,12 @@ impl SystemModuleMixer {
             Ok(locked_fee)
         }
     }
+
+    pub fn event_count(&self) -> usize {
+        self.transaction_runtime.events.len()
+    }
+
+    pub fn log_count(&self) -> usize {
+        self.transaction_runtime.logs.len()
+    }
 }

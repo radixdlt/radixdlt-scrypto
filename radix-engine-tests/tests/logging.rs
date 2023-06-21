@@ -1,9 +1,7 @@
 use radix_engine::{
-    errors::{ApplicationError, RuntimeError},
-    transaction::TransactionReceipt,
+    errors::{RuntimeError, SystemError},
     types::*,
 };
-use radix_engine_interface::types::Level;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -32,12 +30,12 @@ fn test_basic_transfer() {
                 (i32.const 0)
                 (i32.const 4)
                 (i32.const 4)
-                (i32.const 4190208)
+                (i32.const 65536)
             )
 
-            ;; if $i is less than 1000000 branch to loop
+            ;; if $i is less than 1000000000 branch to loop
             local.get $i
-            i32.const 1000000
+            i32.const 1000000000
             i32.lt_s
             br_if $my_loop
         )
@@ -48,7 +46,7 @@ fn test_basic_transfer() {
    (export "Test_f" (func $test))
 )
     "##
-        .replace("TEXT", " ".repeat(4190208).as_str())
+        .replace("TEXT", " ".repeat(65536).as_str())
         .as_str(),
     );
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -67,5 +65,7 @@ fn test_basic_transfer() {
 
     // Assert
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit(true);
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::SystemError(SystemError::TooManyLogs))
+    })
 }

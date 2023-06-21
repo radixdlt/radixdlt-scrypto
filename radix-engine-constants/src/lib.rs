@@ -107,3 +107,6 @@ pub const FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
 pub const MAX_EVENT_SIZE: usize = 64 * 1024;
 pub const MAX_LOG_SIZE: usize = 64 * 1024;
 pub const MAX_PANIC_MESSAGE_SIZE: usize = 64 * 1024;
+
+pub const MAX_NUMBER_OF_EVENTS: usize = 256;
+pub const MAX_NUMBER_OF_LOGS: usize = 256;

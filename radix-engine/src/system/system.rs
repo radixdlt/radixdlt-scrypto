@@ -2380,10 +2380,14 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
+        if self.kernel_get_system_state().system.modules.event_count() >= MAX_NUMBER_OF_EVENTS {
+            return Err(RuntimeError::SystemError(SystemError::TooManyEvents));
+        }
         if event_name.len() + event_data.len() > MAX_EVENT_SIZE {
-            return Err(RuntimeError::SystemError(SystemError::EventSizeTooLarge(
-                event_name.len() + event_data.len(),
-            )));
+            return Err(RuntimeError::SystemError(SystemError::EventSizeTooLarge {
+                actual: event_name.len() + event_data.len(),
+                max: MAX_LOG_SIZE,
+            }));
         }
         // TODO: linear costing base on size?
         self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
@@ -2469,10 +2473,14 @@ where
 
     #[trace_resources]
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        if self.kernel_get_system_state().system.modules.log_count() >= MAX_NUMBER_OF_LOGS {
+            return Err(RuntimeError::SystemError(SystemError::TooManyLogs));
+        }
         if message.len() > MAX_LOG_SIZE {
-            return Err(RuntimeError::SystemError(SystemError::LogSizeTooLarge(
-                message.len(),
-            )));
+            return Err(RuntimeError::SystemError(SystemError::LogSizeTooLarge {
+                actual: message.len(),
+                max: MAX_LOG_SIZE,
+            }));
         }
         // TODO: linear costing base on size?
         self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
@@ -2485,7 +2493,10 @@ where
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
         if message.len() > MAX_PANIC_MESSAGE_SIZE {
             return Err(RuntimeError::SystemError(
-                SystemError::PanicMessageSizeTooLarge(message.len()),
+                SystemError::PanicMessageSizeTooLarge {
+                    actual: message.len(),
+                    max: MAX_LOG_SIZE,
+                },
             ));
         }
         self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
