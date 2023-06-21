@@ -461,7 +461,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Component royalty */
                 (address, COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => {
                     fields.push(address.to_instruction_argument());
-                    "SET_COMPONENT_ROYALTY_CONFIG"
+                    "SET_COMPONENT_ROYALTY"
                 }
                 (address, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT) => {
                     fields.push(address.to_instruction_argument());
