@@ -1,4 +1,10 @@
-use radix_engine_interface::api::node_modules::auth::{AccessRulesCreateInput, AccessRulesLockRoleInput, AccessRulesSetAndLockRoleInput, AccessRulesSetRoleInput, AccessRulesSetOwnerRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT, ACCESS_RULES_SET_OWNER_ROLE_IDENT, AccessRulesSetAndLockOwnerRoleInput, AccessRulesLockOwnerRoleInput};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesCreateInput, AccessRulesLockOwnerRoleInput, AccessRulesLockRoleInput,
+    AccessRulesSetAndLockOwnerRoleInput, AccessRulesSetAndLockRoleInput,
+    AccessRulesSetOwnerRoleInput, AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT,
+    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleKey, Roles};
@@ -61,10 +67,7 @@ pub trait AccessRulesObject {
             false,
             module_id,
             ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            scrypto_encode(&AccessRulesSetOwnerRoleInput {
-                rule: rule.into(),
-            })
-            .unwrap(),
+            scrypto_encode(&AccessRulesSetOwnerRoleInput { rule: rule.into() }).unwrap(),
         )?;
 
         Ok(())
@@ -80,9 +83,7 @@ pub trait AccessRulesObject {
             false,
             module_id,
             ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            scrypto_encode(&AccessRulesLockOwnerRoleInput {
-            })
-                .unwrap(),
+            scrypto_encode(&AccessRulesLockOwnerRoleInput {}).unwrap(),
         )?;
 
         Ok(())
@@ -99,10 +100,7 @@ pub trait AccessRulesObject {
             false,
             module_id,
             ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            scrypto_encode(&AccessRulesSetAndLockOwnerRoleInput {
-                rule: rule.into(),
-            })
-                .unwrap(),
+            scrypto_encode(&AccessRulesSetAndLockOwnerRoleInput { rule: rule.into() }).unwrap(),
         )?;
 
         Ok(())

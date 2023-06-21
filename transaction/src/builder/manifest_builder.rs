@@ -710,9 +710,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
             method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput {
-                rule,
-            }),
+            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput { rule }),
         })
         .0
     }

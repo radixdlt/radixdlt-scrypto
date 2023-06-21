@@ -312,8 +312,8 @@ fn test_flash_loan() {
         + 20979 /* DropLock */
         + 5565 /* DropNode */
         + 4095003 /* Invoke */
-        + 4461383 /* LockSubstate */
-        + 32312 /* ReadSubstate */
+        + 4458623 /* LockSubstate */
+        + 32424 /* ReadSubstate */
         + 192500 /* RunNative */
         + 40000 /* RunSystem */
         + 1188780 /* RunWasm */

@@ -10,7 +10,11 @@ use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT, ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT};
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
