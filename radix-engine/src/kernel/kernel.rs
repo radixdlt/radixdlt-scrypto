@@ -37,7 +37,7 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 }
 
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
-    pub fn start_test_kernel(&mut self) -> Kernel<SystemConfig<V>, S> {
+    pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
         Kernel {
             heap: Heap::new(),
             store: self.store,
