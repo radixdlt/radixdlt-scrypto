@@ -4,6 +4,7 @@ pub mod prelude {
     // std::prelude::v1
     pub use super::borrow::ToOwned;
     pub use super::boxed::Box;
+    pub use super::cell::RefCell;
     pub use super::clone::Clone;
     pub use super::cmp::{Eq, Ord, PartialEq, PartialOrd};
     pub use super::convert::{AsMut, AsRef, From, Into};

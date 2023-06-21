@@ -1,5 +1,5 @@
 use arbitrary::{Arbitrary, Unstructured};
-use radix_engine::types::blueprints::package::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;

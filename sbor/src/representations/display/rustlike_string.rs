@@ -64,7 +64,7 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
     Ok(())
 }
 
-pub fn consume_end_event<E: FormattableCustomExtension>(
+fn consume_end_event<E: FormattableCustomExtension>(
     traverser: &mut TypedTraverser<E>,
 ) -> Result<(), FormattingError> {
     traverser.consume_end_event().map_err(FormattingError::Sbor)

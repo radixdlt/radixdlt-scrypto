@@ -1,13 +1,8 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
-use radix_engine_common::data::manifest::model::ManifestAddressReservation;
-use radix_engine_common::data::manifest::ManifestValue;
-use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
-use radix_engine_common::prelude::replace_self_package_address;
-use radix_engine_common::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::types::NonFungibleData;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
