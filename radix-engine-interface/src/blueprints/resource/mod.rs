@@ -21,7 +21,7 @@ pub use non_fungible_global_id::*;
 pub use proof::*;
 pub use proof_rule::*;
 pub use resource::*;
-pub use resource_manager::ResourceMethodAuthKey::*;
+pub use resource_manager::ResourceAction::*;
 pub use resource_manager::*;
 pub use resource_type::*;
 pub use vault::*;

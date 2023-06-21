@@ -20,12 +20,12 @@ enum Action {
 impl Action {
     fn get_role(&self) -> (ObjectModuleId, RoleKey) {
         match self {
-            Action::Mint => (ObjectModuleId::Main, RoleKey::new(MINT_ROLE)),
-            Action::Burn => (ObjectModuleId::Main, RoleKey::new(BURN_ROLE)),
-            Action::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_ROLE)),
-            Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_ROLE)),
-            Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
-            Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
+            Action::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_ROLE)),
+            Action::Burn => (ObjectModuleId::Main, RoleKey::new(BURNER_ROLE)),
+            Action::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_ROLE)),
+            Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITER_ROLE)),
+            Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
+            Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
 
             Action::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_ADMIN_ROLE)),
         }

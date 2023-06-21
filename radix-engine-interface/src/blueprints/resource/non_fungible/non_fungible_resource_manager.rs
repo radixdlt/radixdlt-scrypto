@@ -27,7 +27,7 @@ pub struct NonFungibleResourceManagerCreateInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
 }
 
 pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
@@ -42,7 +42,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
 }
 
@@ -53,7 +53,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
 }
 
@@ -69,7 +69,7 @@ pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub resource_address: GlobalAddressReservation,
 }
 
@@ -80,7 +80,7 @@ pub struct NonFungibleResourceManagerCreateWithAddressManifestInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub resource_address: ManifestAddressReservation,
 }
 
@@ -95,7 +95,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub entries: Vec<(ScryptoValue,)>,
 }
 

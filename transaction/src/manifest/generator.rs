@@ -1418,7 +1418,7 @@ mod tests {
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintRuidManifestInput, ResourceMethodAuthKey, Roles,
+        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1709,11 +1709,11 @@ mod tests {
                     )]),
                     access_rules: BTreeMap::from([
                         (
-                            ResourceMethodAuthKey::Withdraw,
+                            ResourceAction::Withdraw,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                         (
-                            ResourceMethodAuthKey::Deposit,
+                            ResourceAction::Deposit,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
@@ -1812,11 +1812,11 @@ mod tests {
                         )]),
                         access_rules: BTreeMap::from([
                             (
-                                ResourceMethodAuthKey::Withdraw,
+                                ResourceAction::Withdraw,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                             (
-                                ResourceMethodAuthKey::Deposit,
+                                ResourceAction::Deposit,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),
@@ -1866,11 +1866,11 @@ mod tests {
                     )]),
                     access_rules: BTreeMap::from([
                         (
-                            ResourceMethodAuthKey::Withdraw,
+                            ResourceAction::Withdraw,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                         (
-                            ResourceMethodAuthKey::Deposit,
+                            ResourceAction::Deposit,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
@@ -1915,11 +1915,11 @@ mod tests {
                         )]),
                         access_rules: BTreeMap::from([
                             (
-                                ResourceMethodAuthKey::Withdraw,
+                                ResourceAction::Withdraw,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                             (
-                                ResourceMethodAuthKey::Deposit,
+                                ResourceAction::Deposit,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),

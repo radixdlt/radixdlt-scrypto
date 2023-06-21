@@ -12,7 +12,7 @@ fn test_all_resource_roles_have_immutable_updater() {
     }
 }
 
-fn ensure_auth_updater_is_immutable(action: ResourceMethodAuthKey) {
+fn ensure_auth_updater_is_immutable(action: ResourceAction) {
     // Arrange 1
     let mut test_runner = TestRunner::builder().build();
     let resource_address = test_runner.create_everything_allowed_non_fungible_resource();
@@ -56,7 +56,7 @@ fn test_locked_resource_auth_cannot_be_updated() {
     }
 }
 
-pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceMethodAuthKey) {
+pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceAction) {
     // Arrange 1
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();

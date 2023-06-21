@@ -26,7 +26,7 @@ use radix_engine_interface::blueprints::package::{
     PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
-use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
+use radix_engine_interface::blueprints::resource::ResourceAction::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
@@ -438,7 +438,7 @@ impl ManifestBuilder {
         track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
         let access_rules = access_rules
@@ -484,7 +484,7 @@ impl ManifestBuilder {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
@@ -854,7 +854,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
         access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
@@ -872,7 +872,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 
@@ -887,7 +887,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
         access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
@@ -905,7 +905,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 

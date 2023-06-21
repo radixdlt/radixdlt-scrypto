@@ -358,8 +358,8 @@ impl ResourceManagerNativePackage {
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                        RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
+                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
+                        RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
                         RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
                         RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                         RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
@@ -676,12 +676,12 @@ impl ResourceManagerNativePackage {
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINT_ROLE];
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINT_ROLE];
-                        RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINTER_ROLE];
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINTER_ROLE];
+                        RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
                         RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
+                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [NON_FUNGIBLE_DATA_UPDATER_ROLE];
                         RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                         RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                         RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
@@ -917,13 +917,13 @@ impl ResourceManagerNativePackage {
                         VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                         VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
                         VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
-                        VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                        VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
-                        VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                        FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAW_ROLE];
-                        VAULT_RECALL_IDENT => [RECALL_ROLE];
-                        VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                        VAULT_BURN_IDENT => [BURN_ROLE];
+                        VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                        VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                        VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                        FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
+                        VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                        VAULT_PUT_IDENT => [DEPOSITER_ROLE];
+                        VAULT_BURN_IDENT => [BURNER_ROLE];
                         FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                     }),
@@ -1207,15 +1207,15 @@ impl ResourceManagerNativePackage {
                         VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                         NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
-                        VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAW_ROLE];
-                        VAULT_RECALL_IDENT => [RECALL_ROLE];
-                        VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                        VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
-                        NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALL_ROLE];
-                        VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                        VAULT_BURN_IDENT => [BURN_ROLE];
-                        NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURN_ROLE];
+                        VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
+                        VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                        VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                        VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                        NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALLER_ROLE];
+                        VAULT_PUT_IDENT => [DEPOSITER_ROLE];
+                        VAULT_BURN_IDENT => [BURNER_ROLE];
+                        NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
 
                         NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                         NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
