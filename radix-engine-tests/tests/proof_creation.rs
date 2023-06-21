@@ -1,4 +1,8 @@
-use radix_engine::types::*;
+use radix_engine::{
+    errors::{ApplicationError, RuntimeError},
+    types::*,
+};
+use radix_engine_queries::typed_substate_layout::{AuthZoneError, ComposeProofError};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -94,4 +98,35 @@ fn can_create_proof_from_non_fungible_auth_zone() {
         None,
     );
     create_proof_internal("create_proof_from_non_fungible_auth_zone_of_all", None);
+}
+
+#[test]
+fn test_create_non_fungible_proof_with_large_amount() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (pk, _sk, account) = test_runner.new_account(false);
+    let resource_address = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, 10.into())
+        .create_proof_from_auth_zone_of_amount(
+            resource_address,
+            dec!("100000000000000000000000000000000000000000000"),
+            |builder, proof| builder.drop_proof(proof),
+        )
+        .drop_all_proofs()
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                AuthZoneError::ComposeProofError(ComposeProofError::InvalidAmount)
+            ))
+        )
+    })
 }
