@@ -85,7 +85,7 @@ pub struct TransactionLimitsConfig {
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     /// Definitions of the limits levels.
-    pub limits_config: TransactionLimitsConfig,
+    limits_config: TransactionLimitsConfig,
     /// Internal stack of data for each call frame.
     call_frames_stack: Vec<CallFrameLimitInfo>,
     /// Substate store read count.
@@ -114,6 +114,10 @@ impl LimitsModule {
             wasm_max_memory: 0,
             invoke_payload_max_size: 0,
         }
+    }
+
+    pub fn config(&self) -> &TransactionLimitsConfig {
+        &self.limits_config
     }
 
     /// Exports metrics to transaction receipt.

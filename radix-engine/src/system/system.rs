@@ -2380,7 +2380,7 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        // TODO: linear costing base on size?
+        // TODO: apply linear costing based on size?
         self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
         // Locking the package info substate associated with the emitter's package
@@ -2464,7 +2464,7 @@ where
 
     #[trace_resources]
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        // TODO: linear costing base on size?
+        // TODO: apply linear costing based on size?
         self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
@@ -2476,7 +2476,7 @@ where
     }
 
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        // TODO: linear costing base on size?
+        // TODO: apply linear costing based on size?
         self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
         self.api

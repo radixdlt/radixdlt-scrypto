@@ -419,17 +419,17 @@ impl SystemModuleMixer {
 
     pub fn add_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            if self.transaction_runtime.logs.len() >= self.limits.limits_config.max_number_of_logs {
+            if self.transaction_runtime.logs.len() >= self.limits.config().max_number_of_logs {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(TransactionLimitsError::TooManyLogs),
                 ));
             }
-            if message.len() > self.limits.limits_config.max_log_size {
+            if message.len() > self.limits.config().max_log_size {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::LogSizeTooLarge {
                             actual: message.len(),
-                            max: self.limits.limits_config.max_log_size,
+                            max: self.limits.config().max_log_size,
                         },
                     ),
                 ));
@@ -452,21 +452,19 @@ impl SystemModuleMixer {
         data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            if self.transaction_runtime.events.len()
-                >= self.limits.limits_config.max_number_of_events
-            {
+            if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::TooManyEvents,
                     ),
                 ));
             }
-            if data.len() > self.limits.limits_config.max_event_size {
+            if data.len() > self.limits.config().max_event_size {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::EventSizeTooLarge {
                             actual: data.len(),
-                            max: self.limits.limits_config.max_event_size,
+                            max: self.limits.config().max_event_size,
                         },
                     ),
                 ));
@@ -485,12 +483,12 @@ impl SystemModuleMixer {
 
     pub fn set_panic_message(&mut self, message: String) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            if message.len() > self.limits.limits_config.max_panic_message_size {
+            if message.len() > self.limits.config().max_panic_message_size {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::PanicMessageSizeTooLarge {
                             actual: message.len(),
-                            max: self.limits.limits_config.max_panic_message_size,
+                            max: self.limits.config().max_panic_message_size,
                         },
                     ),
                 ));
