@@ -3,10 +3,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
+use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT, ComponentLockRoyaltyInput};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -680,23 +677,6 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn freeze_component_royalty<S: ToString>(
-        &mut self,
-        component_address: ComponentAddress,
-        method: S,
-    ) -> &mut Self {
-        self.add_instruction(InstructionV1::CallRoyaltyMethod {
-            address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentSetRoyaltyInput {
-                method: method.to_string(),
-                amount: None,
-                freeze: true,
-            }),
-        })
-        .0
-    }
-
     pub fn set_component_royalty<S: ToString>(
         &mut self,
         component_address: ComponentAddress,
@@ -708,11 +688,25 @@ impl ManifestBuilder {
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&ComponentSetRoyaltyInput {
                 method: method.to_string(),
-                amount: Some(amount),
-                freeze: false,
+                amount,
             }),
         })
         .0
+    }
+
+    pub fn lock_component_royalty<S: ToString>(
+        &mut self,
+        component_address: ComponentAddress,
+        method: S,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallRoyaltyMethod {
+            address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ComponentLockRoyaltyInput {
+                method: method.to_string(),
+            }),
+        })
+            .0
     }
 
     pub fn claim_component_royalties(&mut self, component_address: ComponentAddress) -> &mut Self {

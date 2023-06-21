@@ -8,8 +8,7 @@ CALL_ROYALTY_METHOD
     Address("${component_address}")
     "set_royalty"
     "my_method"
-    Enum<0u8>()
-    false;
+    Enum<0u8>();
 
 CALL_METADATA_METHOD
     Address("${component_address}")

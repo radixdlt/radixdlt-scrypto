@@ -187,7 +187,7 @@ fn test_cannot_set_royalty_after_freezing() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .freeze_component_royalty(component_address, "paid_method".to_string())
+            .lock_component_royalty(component_address, "paid_method".to_string())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

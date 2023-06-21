@@ -13,9 +13,7 @@ use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -691,6 +689,13 @@ where
             InstructionV1::CallRoyaltyMethod {
                 address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
                 method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::LockComponentRoyalty { address, args } => {
+            InstructionV1::CallRoyaltyMethod {
+                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }

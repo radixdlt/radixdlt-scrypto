@@ -294,7 +294,6 @@ SET_COMPONENT_ROYALTY_CONFIG
     Address("${component_address}")
     "my_method"
     Enum<0u8>()
-    false
 ;
 CALL_METADATA_METHOD
     Address("${component_address}")
@@ -438,10 +437,11 @@ CALL_METHOD
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
     "my_method"
-    Enum<1u8>(
-        Enum<0u8>()
-    )
-    true
+    Enum<0u8>()
+;
+LOCK_COMPONENT_ROYALTY
+    Address("${account_address}")
+    "my_method"
 ;
 CLAIM_PACKAGE_ROYALTY
     Address("${package_address}")

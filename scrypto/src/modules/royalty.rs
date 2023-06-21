@@ -3,12 +3,7 @@ use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyInput,
-    COMPONENT_ROYALTY_ADMIN_ROLE, COMPONENT_ROYALTY_BLUEPRINT,
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_CREATE_IDENT,
-    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
+use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyInput, COMPONENT_ROYALTY_ADMIN_ROLE, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT, ComponentLockRoyaltyInput, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::Bucket;
@@ -61,19 +56,16 @@ impl Royalty {
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
             &ComponentSetRoyaltyInput {
                 method: method.to_string(),
-                amount: Some(amount),
-                freeze: false,
+                amount
             },
         );
     }
 
-    pub fn freeze_royalty_amount<M: ToString>(&self, method: M) {
+    pub fn lock_royalty<M: ToString>(&self, method: M) {
         self.call_ignore_rtn(
-            COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-            &ComponentSetRoyaltyInput {
+            COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+            &ComponentLockRoyaltyInput {
                 method: method.to_string(),
-                amount: None,
-                freeze: true,
             },
         );
     }
