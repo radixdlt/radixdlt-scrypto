@@ -71,7 +71,7 @@ fn test_basic_transfer() {
         + 5291 /* DropLock */
         + 1365 /* DropNode */
         + 736166 /* Invoke */
-        + 238990 /* LockSubstate */
+        + 239127 /* LockSubstate */
         + 8064 /* ReadSubstate */
         + 57500 /* RunNative */
         + 7500 /* RunSystem */
