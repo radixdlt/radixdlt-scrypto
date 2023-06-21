@@ -343,15 +343,27 @@ impl FeeTable {
                     // apply function: f(size) = 0.0009622109 * size + 389.5155
                     // approximated integer representation: f(size) = (63 * size) / 2^16 + 390
                     let mut value: u64 = *size as u64;
-                    value *= 63; // 0.0009622109 << 16
+                    value *= 63; // 0.0009622109 * 2^16
                     value += (value >> 16) + 390;
                     value.try_into().unwrap_or(u32::MAX)
                 }
             }
             CostingEntry::SubstateReadFromDbNotFound => 322, // average value from benchmark
+            CostingEntry::SubstateWriteToTrack { size } => {
+                if *size <= 25 * 1024 {
+                    // apply constant value
+                    2200u32
+                } else {
+                    // apply function: f(size) = 0.00082827697 * size + 2243.5469
+                    // approximated integer representation: f(size) = (54 * size) / 2^16 + 2244
+                    let mut value: u64 = *size as u64;
+                    value *= 54; // 0.00082827697 * 2^16
+                    value += (value >> 16) + 2244;
+                    value.try_into().unwrap_or(u32::MAX)
+                }
+            }
             // FIXME: update numbers below
             CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
-            CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new,
