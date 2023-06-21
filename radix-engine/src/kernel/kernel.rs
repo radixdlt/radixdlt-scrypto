@@ -37,6 +37,17 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 }
 
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
+    pub fn start_test_kernel(&mut self) -> Kernel<SystemConfig<V>, S> {
+        Kernel {
+            heap: Heap::new(),
+            store: self.store,
+            id_allocator: self.id_allocator,
+            current_frame: CallFrame::new_root(Actor::Root),
+            prev_frame_stack: vec![],
+            callback: self.callback,
+        }
+    }
+
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         self,
