@@ -362,8 +362,15 @@ impl FeeTable {
                     value.try_into().unwrap_or(u32::MAX)
                 }
             }
+            CostingEntry::SubstateReadFromTrack { size } => {
+                // apply function: f(size) = 0.00012232433 * size + 1.4939442
+                // approximated integer representation: f(size) = (8 * size) / 2^16 + 1
+                let mut value: u64 = *size as u64;
+                value *= 8; // 0.00082827697 * 2^16
+                value += (value >> 16) + 1;
+                value.try_into().unwrap_or(u32::MAX)
+            }
             // FIXME: update numbers below
-            CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new,
