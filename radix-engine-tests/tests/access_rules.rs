@@ -135,7 +135,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     )));
 
     // Act
-    let receipt = test_runner.lock_group_auth(RoleKey::new("borrow_funds_auth"));
+    let receipt = test_runner.lock_role(RoleKey::new("borrow_funds_auth"));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -176,7 +176,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.lock_group_auth(RoleKey::new("borrow_funds_auth"));
+    let receipt = test_runner.lock_role(RoleKey::new("borrow_funds_auth"));
 
     // Assert
     receipt.expect_commit_success();
@@ -415,9 +415,9 @@ impl MutableAccessRulesTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn lock_group_auth(&mut self, role_key: RoleKey) -> TransactionReceipt {
+    pub fn lock_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .freeze_role(
+            .lock_role(
                 self.component_address.into(),
                 ObjectModuleId::Main,
                 role_key,

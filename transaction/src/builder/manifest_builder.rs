@@ -715,18 +715,17 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesUpdateRoleInput {
+            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesSetRoleInput {
                 module,
                 role_key,
-                rule: Some(rule),
-                freeze: false,
+                rule,
             }),
         })
         .0
     }
 
-    pub fn freeze_role(
+    pub fn lock_role(
         &mut self,
         address: GlobalAddress,
         module: ObjectModuleId,
@@ -734,13 +733,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesUpdateRoleInput {
-                module,
-                role_key,
-                rule: None,
-                freeze: true,
-            }),
+            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesLockRoleInput { module, role_key }),
         })
         .0
     }

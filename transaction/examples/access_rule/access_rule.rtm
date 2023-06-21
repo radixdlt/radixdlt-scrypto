@@ -1,6 +1,16 @@
-UPDATE_ROLE
+SET_ROLE
     Address("${resource_address}")
     Enum<0u8>()
-    "hello"     # The name of the role to update the access rule for.
-    None        # The rule associated with the role, can either be Some `AccessRule` or none.
-    false;      # Whether to freeze the role
+    "hello"      # The name of the role to update the access rule for.
+    Enum<0u8>(); # The rule associated with the role
+
+LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello";      # The name of the role to update the access rule for.
+
+SET_AND_LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello"      # The name of the role to update the access rule for.
+    Enum<0u8>(); # The rule associated with the role

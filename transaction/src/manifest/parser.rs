@@ -90,7 +90,9 @@ pub enum InstructionIdent {
     RemoveMetadata,
     SetComponentRoyaltyConfig,
     ClaimComponentRoyalty,
-    UpdateRole,
+    SetRole,
+    LockRole,
+    SetAndLockRole,
 
     // ==============
     // Call main-method aliases
@@ -183,7 +185,9 @@ impl InstructionIdent {
             "REMOVE_METADATA" => InstructionIdent::RemoveMetadata,
             "SET_COMPONENT_ROYALTY_CONFIG" => InstructionIdent::SetComponentRoyaltyConfig,
             "CLAIM_COMPONENT_ROYALTY" => InstructionIdent::ClaimComponentRoyalty,
-            "UPDATE_ROLE" => InstructionIdent::UpdateRole,
+            "SET_ROLE" => InstructionIdent::SetRole,
+            "LOCK_ROLE" => InstructionIdent::LockRole,
+            "SET_AND_LOCK_ROLE" => InstructionIdent::SetAndLockRole,
 
             // ==============
             // Call main-method aliases
@@ -673,7 +677,15 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::UpdateRole => Instruction::UpdateRole {
+            InstructionIdent::SetRole => Instruction::SetRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockRole => Instruction::LockRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetAndLockRole => Instruction::SetAndLockRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
