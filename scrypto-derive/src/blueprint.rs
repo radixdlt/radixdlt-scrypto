@@ -1,6 +1,6 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
-use radix_engine_common::address::Bech32Decoder;
+use radix_engine_common::address::AddressBech32Decoder;
 use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
 use syn::token::{Brace, Comma};
@@ -121,7 +121,7 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                 let lit_str: LitStr = parse_quote!( #address );
 
                 let (_hrp, _entity_type, address) =
-                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                    AddressBech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
                         .unwrap();
 
                 dependency_exprs.push(parse_quote! {
@@ -138,7 +138,7 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                 let lit_str: LitStr = parse_quote!( #address );
 
                 let (_hrp, _entity_type, address) =
-                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                    AddressBech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
                         .unwrap();
 
                 dependency_exprs.push(parse_quote! {
@@ -153,7 +153,7 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                 let lit_str: LitStr = parse_quote!( #address );
 
                 let (_hrp, _entity_type, address) =
-                    Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                    AddressBech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
                         .unwrap();
 
                 dependency_exprs.push(parse_quote! {
@@ -308,8 +308,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         let lit_str: LitStr = parse_quote!( #tokens );
 
                         let (_hrp, _entity_type, address) =
-                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                .unwrap();
+                            AddressBech32Decoder::validate_and_decode_ignore_hrp(
+                                lit_str.value().as_str(),
+                            )
+                            .unwrap();
 
                         let expr: Expr = parse_quote! {
                             #ty :: new_or_panic([ #(#address),* ])
@@ -387,8 +389,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     Expr::Lit(..) => {
                         let lit_str: LitStr = parse_quote!( #package );
                         let (_hrp, _entity_type, address) =
-                            Bech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                .unwrap();
+                            AddressBech32Decoder::validate_and_decode_ignore_hrp(
+                                lit_str.value().as_str(),
+                            )
+                            .unwrap();
                         let package_expr: Expr = parse_quote! {
                             PackageAddress :: new_or_panic([ #(#address),* ])
                         };

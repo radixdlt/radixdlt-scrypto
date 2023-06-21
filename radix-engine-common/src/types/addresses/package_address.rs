@@ -1,5 +1,5 @@
+use crate::address::{AddressBech32Decoder, EncodeBech32AddressError};
 use crate::address::{AddressDisplayContext, NO_NETWORK};
-use crate::address::{Bech32Decoder, EncodeBech32AddressError};
 use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;
@@ -46,7 +46,7 @@ impl PackageAddress {
             .and_then(|x| Self::try_from(x.as_ref()).ok())
     }
 
-    pub fn try_from_bech32(decoder: &Bech32Decoder, s: &str) -> Option<Self> {
+    pub fn try_from_bech32(decoder: &AddressBech32Decoder, s: &str) -> Option<Self> {
         if let Ok((_, full_data)) = decoder.validate_and_decode(s) {
             Self::try_from(full_data.as_ref()).ok()
         } else {

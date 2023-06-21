@@ -456,6 +456,9 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
     // No assertion here - this is just a sanity-test
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
     receipt.expect_commit_failure();
 }

@@ -126,13 +126,13 @@ impl NewSimpleBadge {
         if let Some(receipt) = receipt {
             let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
 
-            let bech32_encoder = Bech32Encoder::new(&network_definition);
+            let address_bech32_encoder = AddressBech32Encoder::new(&network_definition);
             writeln!(
                 out,
                 "NonFungibleGlobalId: {}",
                 NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1))
                     // This should be the opposite of parse_args in the manifest builder
-                    .to_canonical_string(&bech32_encoder)
+                    .to_canonical_string(&address_bech32_encoder)
                     .green()
             )
             .map_err(Error::IOError)?;

@@ -21,7 +21,7 @@ impl FormattableCustomExtension for ManifestCustomExtension {
         match &value.0 {
             ManifestCustomValue::Address(value) => match value {
                 ManifestAddress::Static(node_id) => {
-                    if let Some(encoder) = context.bech32_encoder {
+                    if let Some(encoder) = context.address_bech32_encoder {
                         if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
                             write!(f, "\"{}\"", bech32)?;
                         } else {
@@ -85,11 +85,11 @@ mod tests {
 
     use super::*;
     use crate::address::test_addresses::*;
-    use crate::address::Bech32Encoder;
+    use crate::address::AddressBech32Encoder;
 
     #[test]
     fn test_rustlike_string_format_with_network() {
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
         let payload = manifest_encode(&(
             ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(

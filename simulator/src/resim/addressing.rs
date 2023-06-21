@@ -1,6 +1,6 @@
 use radix_engine::types::{
-    Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleGlobalId, PackageAddress,
-    ResourceAddress,
+    AddressBech32Decoder, AddressBech32Encoder, ComponentAddress, NonFungibleGlobalId,
+    PackageAddress, ResourceAddress,
 };
 use radix_engine_interface::{
     blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
@@ -45,7 +45,7 @@ impl FromStr for SimulatorPackageAddress {
     fn from_str(address: &str) -> Result<Self, Self::Err> {
         PackageAddress::try_from_hex(address)
             .or(PackageAddress::try_from_bech32(
-                &Bech32Decoder::for_simulator(),
+                &AddressBech32Decoder::for_simulator(),
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
@@ -55,7 +55,11 @@ impl FromStr for SimulatorPackageAddress {
 
 impl fmt::Display for SimulatorPackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.display(&Bech32Encoder::for_simulator()))
+        write!(
+            f,
+            "{}",
+            self.0.display(&AddressBech32Encoder::for_simulator())
+        )
     }
 }
 
@@ -86,7 +90,7 @@ impl FromStr for SimulatorResourceAddress {
     fn from_str(address: &str) -> Result<Self, Self::Err> {
         ResourceAddress::try_from_hex(address)
             .or(ResourceAddress::try_from_bech32(
-                &Bech32Decoder::for_simulator(),
+                &AddressBech32Decoder::for_simulator(),
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
@@ -96,7 +100,11 @@ impl FromStr for SimulatorResourceAddress {
 
 impl fmt::Display for SimulatorResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.display(&Bech32Encoder::for_simulator()))
+        write!(
+            f,
+            "{}",
+            self.0.display(&AddressBech32Encoder::for_simulator())
+        )
     }
 }
 
@@ -127,7 +135,7 @@ impl FromStr for SimulatorComponentAddress {
     fn from_str(address: &str) -> Result<Self, Self::Err> {
         ComponentAddress::try_from_hex(address)
             .or(ComponentAddress::try_from_bech32(
-                &Bech32Decoder::for_simulator(),
+                &AddressBech32Decoder::for_simulator(),
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
@@ -137,7 +145,11 @@ impl FromStr for SimulatorComponentAddress {
 
 impl fmt::Display for SimulatorComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.display(&Bech32Encoder::for_simulator()))
+        write!(
+            f,
+            "{}",
+            self.0.display(&AddressBech32Encoder::for_simulator())
+        )
     }
 }
 
@@ -166,8 +178,10 @@ impl FromStr for SimulatorNonFungibleGlobalId {
     type Err = ParseNonFungibleGlobalIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let global_id =
-            NonFungibleGlobalId::try_from_canonical_string(&Bech32Decoder::for_simulator(), s)?;
+        let global_id = NonFungibleGlobalId::try_from_canonical_string(
+            &AddressBech32Decoder::for_simulator(),
+            s,
+        )?;
         Ok(Self(global_id))
     }
 }
@@ -177,7 +191,8 @@ impl fmt::Display for SimulatorNonFungibleGlobalId {
         write!(
             f,
             "{}",
-            self.0.to_canonical_string(&Bech32Encoder::for_simulator())
+            self.0
+                .to_canonical_string(&AddressBech32Encoder::for_simulator())
         )
     }
 }

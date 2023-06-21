@@ -7,16 +7,16 @@ use sbor::rust::prelude::*;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.
 #[derive(Debug)]
-pub struct Bech32Encoder {
+pub struct AddressBech32Encoder {
     pub hrp_set: HrpSet,
 }
 
-impl Bech32Encoder {
+impl AddressBech32Encoder {
     pub fn for_simulator() -> Self {
         Self::new(&NetworkDefinition::simulator())
     }
 
-    /// Instantiates a new Bech32Encoder with the HRP corresponding to the passed network.
+    /// Instantiates a new AddressBech32Encoder with the HRP corresponding to the passed network.
     pub fn new(network: &NetworkDefinition) -> Self {
         Self {
             hrp_set: network.into(),

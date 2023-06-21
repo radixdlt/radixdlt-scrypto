@@ -57,7 +57,7 @@ impl NewAccount {
             out,
         )?;
 
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+        let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
 
         if let Some(ref receipt) = receipt {
             let commit_result = receipt.expect_commit(true);
@@ -114,7 +114,7 @@ impl NewAccount {
             writeln!(
                 out,
                 "Account component address: {}",
-                account.display(&bech32_encoder).to_string().green()
+                account.display(&address_bech32_encoder).to_string().green()
             )
             .map_err(Error::IOError)?;
             writeln!(out, "Public key: {}", public_key.to_string().green())
@@ -129,7 +129,7 @@ impl NewAccount {
                 out,
                 "Owner badge: {}",
                 owner_badge
-                    .to_canonical_string(&Bech32Encoder::for_simulator())
+                    .to_canonical_string(&AddressBech32Encoder::for_simulator())
                     .green()
             )
             .map_err(Error::IOError)?;
