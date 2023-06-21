@@ -1,6 +1,6 @@
 pub use radix_engine_constants::*;
 pub use radix_engine_interface::address::{
-    AddressBech32Decoder, AddressBech32Encoder, DecodeBech32AddressError, EncodeBech32AddressError,
+    AddressBech32DecodeError, AddressBech32Decoder, AddressBech32EncodeError, AddressBech32Encoder,
 };
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::constants::*;

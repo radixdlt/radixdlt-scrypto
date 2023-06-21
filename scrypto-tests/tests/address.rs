@@ -1,6 +1,6 @@
 use bech32::{self, ToBase32, Variant};
 use scrypto::{
-    address::{AddressBech32Decoder, AddressBech32Encoder, DecodeBech32AddressError},
+    address::{AddressBech32DecodeError, AddressBech32Decoder, AddressBech32Encoder},
     network::NetworkDefinition,
     prelude::*,
 };
@@ -81,7 +81,7 @@ fn decode_truncated_checksum_address_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(DecodeBech32AddressError::Bech32mDecodingError(_))
+        Err(AddressBech32DecodeError::Bech32mDecodingError(_))
     ));
 }
 
@@ -104,7 +104,7 @@ fn decode_modified_checksum_address_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(DecodeBech32AddressError::Bech32mDecodingError(_))
+        Err(AddressBech32DecodeError::Bech32mDecodingError(_))
     ));
 }
 
@@ -132,7 +132,7 @@ fn decode_invalid_bech32_variant_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(DecodeBech32AddressError::InvalidVariant(Variant::Bech32))
+        Err(AddressBech32DecodeError::InvalidVariant(Variant::Bech32))
     ));
 }
 
@@ -227,7 +227,7 @@ fn decode_mismatched_package_address_entity_id_fails() {
     // Assert
     assert!(matches!(
         decoded_package_address,
-        Err(DecodeBech32AddressError::InvalidHrp)
+        Err(AddressBech32DecodeError::InvalidHrp)
     ));
 }
 
@@ -276,7 +276,7 @@ fn decode_mismatched_resource_address_entity_id_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(DecodeBech32AddressError::InvalidHrp)
+        Err(AddressBech32DecodeError::InvalidHrp)
     ));
 }
 

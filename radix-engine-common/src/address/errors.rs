@@ -2,7 +2,7 @@ use bech32;
 use sbor::rust::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EncodeBech32AddressError {
+pub enum AddressBech32EncodeError {
     Bech32mEncodingError(bech32::Error),
     FormatError(fmt::Error),
     MissingEntityTypeByte,
@@ -10,16 +10,16 @@ pub enum EncodeBech32AddressError {
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for EncodeBech32AddressError {}
+impl std::error::Error for AddressBech32EncodeError {}
 
-impl fmt::Display for EncodeBech32AddressError {
+impl fmt::Display for AddressBech32EncodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DecodeBech32AddressError {
+pub enum AddressBech32DecodeError {
     MissingEntityTypeByte,
     Bech32mEncodingError(bech32::Error),
     Bech32mDecodingError(bech32::Error),
@@ -29,9 +29,9 @@ pub enum DecodeBech32AddressError {
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for DecodeBech32AddressError {}
+impl std::error::Error for AddressBech32DecodeError {}
 
-impl fmt::Display for DecodeBech32AddressError {
+impl fmt::Display for AddressBech32DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

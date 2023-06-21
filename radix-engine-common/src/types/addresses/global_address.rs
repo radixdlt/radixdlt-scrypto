@@ -1,5 +1,5 @@
 use crate::address::AddressBech32Decoder;
-use crate::address::{AddressDisplayContext, EncodeBech32AddressError, NO_NETWORK};
+use crate::address::{AddressBech32EncodeError, AddressDisplayContext, NO_NETWORK};
 use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;
@@ -222,7 +222,7 @@ impl fmt::Debug for GlobalAddress {
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for GlobalAddress {
-    type Error = EncodeBech32AddressError;
+    type Error = AddressBech32EncodeError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
@@ -235,6 +235,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for GlobalAddress {
 
         // This could be made more performant by streaming the hex into the formatter
         write!(f, "Address({})", hex::encode(&self.0))
-            .map_err(EncodeBech32AddressError::FormatError)
+            .map_err(AddressBech32EncodeError::FormatError)
     }
 }

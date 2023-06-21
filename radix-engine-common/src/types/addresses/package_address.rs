@@ -1,4 +1,4 @@
-use crate::address::{AddressBech32Decoder, EncodeBech32AddressError};
+use crate::address::{AddressBech32Decoder, AddressBech32EncodeError};
 use crate::address::{AddressDisplayContext, NO_NETWORK};
 use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
@@ -220,7 +220,7 @@ impl fmt::Debug for PackageAddress {
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
-    type Error = EncodeBech32AddressError;
+    type Error = AddressBech32EncodeError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
@@ -233,6 +233,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
 
         // This could be made more performant by streaming the hex into the formatter
         write!(f, "PackageAddress({})", hex::encode(&self.0))
-            .map_err(|err| EncodeBech32AddressError::FormatError(err))
+            .map_err(|err| AddressBech32EncodeError::FormatError(err))
     }
 }
