@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_ID
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
@@ -28,7 +28,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
-use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
+use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::resource::*;
@@ -702,10 +702,10 @@ where
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::ClaimComponentRoyalty { address, args } => {
+        ast::Instruction::ClaimComponentRoyalties { address, args } => {
             InstructionV1::CallRoyaltyMethod {
                 address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
-                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
@@ -732,7 +732,7 @@ where
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {

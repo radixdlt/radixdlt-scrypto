@@ -602,16 +602,16 @@ impl PackageNativePackage {
             },
         );
         functions.insert(
-            PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyInput>(),
+                    aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 ),
                 output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyOutput>(),
+                    aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesOutput>(),
                 ),
-                export: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+                export: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             },
         );
 
@@ -648,7 +648,7 @@ impl PackageNativePackage {
                     ),
                     method_auth: MethodAuthTemplate::Static(
                         method_auth_template! {
-                            PACKAGE_CLAIM_ROYALTY_IDENT => [OWNER_ROLE];
+                            PACKAGE_CLAIM_ROYALTIES_IDENT => [OWNER_ROLE];
                         },
                     ),
                 },
@@ -714,12 +714,12 @@ impl PackageNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            PACKAGE_CLAIM_ROYALTY_IDENT => {
+            PACKAGE_CLAIM_ROYALTIES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-                let _input: PackageClaimRoyaltyInput = input.as_typed().map_err(|e| {
+                let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = PackageRoyaltyNativeBlueprint::claim_royalty(api)?;
+                let rtn = PackageRoyaltyNativeBlueprint::claim_royalties(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::ApplicationError(
@@ -1224,7 +1224,7 @@ impl PackageRoyaltyNativeBlueprint {
         Ok(())
     }
 
-    pub(crate) fn claim_royalty<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn claim_royalties<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

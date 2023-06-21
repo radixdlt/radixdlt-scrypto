@@ -84,7 +84,7 @@ fn test_only_package_owner_can_claim_royalty() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .claim_package_royalty(package_address)
+            .claim_package_royalties(package_address)
             .call_method(
                 account,
                 "try_deposit_batch_or_abort",
@@ -99,7 +99,7 @@ fn test_only_package_owner_can_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .claim_package_royalty(package_address)
+            .claim_package_royalties(package_address)
             .call_method(
                 account,
                 "try_deposit_batch_or_abort",

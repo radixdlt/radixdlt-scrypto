@@ -2,7 +2,7 @@ use super::HasTypeInfo;
 use crate::prelude::{Global, HasStub, ObjectStub, ObjectStubHandle};
 use radix_engine_common::prelude::PACKAGE_PACKAGE;
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTY_IDENT,
+    PackageClaimRoyaltiesInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::types::*;
@@ -39,10 +39,10 @@ impl ObjectStub for PackageStub {
 }
 
 impl PackageStub {
-    pub fn claim_royalty(&self) -> Bucket {
+    pub fn claim_royalties(&self) -> Bucket {
         self.call(
-            PACKAGE_CLAIM_ROYALTY_IDENT,
-            &PackageClaimRoyaltyInput {},
+            PACKAGE_CLAIM_ROYALTIES_IDENT,
+            &PackageClaimRoyaltiesInput {},
         )
     }
 }

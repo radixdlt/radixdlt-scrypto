@@ -72,14 +72,14 @@ pub struct PackagePublishNativeManifestInput {
 
 pub type PackagePublishNativeOutput = PackageAddress;
 
-pub const PACKAGE_CLAIM_ROYALTY_IDENT: &str = "PackageRoyalty_claim_royalty";
+pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageClaimRoyaltyInput {}
+pub struct PackageClaimRoyaltiesInput {}
 
-pub type PackageClaimRoyaltyOutput = Bucket;
+pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageDefinition {

@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_ID
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
@@ -22,7 +22,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
-use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
+use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::resource::{
@@ -402,7 +402,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 // Nb - For Main method call, we also check the address type to avoid name clashing.
 
                 /* Package */
-                (address, PACKAGE_CLAIM_ROYALTY_IDENT) if address.is_static_global_package() => {
+                (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_static_global_package() => {
                     fields.push(address.to_instruction_argument());
                     "CLAIM_PACKAGE_ROYALTY"
                 }
@@ -467,9 +467,9 @@ pub fn decompile_instruction<F: fmt::Write>(
                     fields.push(address.to_instruction_argument());
                     "LOCK_COMPONENT_ROYALTY"
                 }
-                (address, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => {
+                (address, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => {
                     fields.push(address.to_instruction_argument());
-                    "CLAIM_COMPONENT_ROYALTY"
+                    "CLAIM_COMPONENT_ROYALTIES"
                 }
 
                 /* Default */

@@ -212,7 +212,7 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-    ClaimComponentRoyalty {
+    ClaimComponentRoyalties {
         address: Value,
         args: Vec<Value>,
     },
