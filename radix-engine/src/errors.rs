@@ -305,7 +305,7 @@ pub enum PayloadValidationAgainstSchemaError {
     KeyValueStoreKeyDoesNotExist,
     KeyValueStoreValueDoesNotExist,
     EventDoesNotExist(String),
-    SchemaValidationError(String),
+    PayloadValidationError(String),
     InstanceSchemaDoesNotExist,
     SchemaNotFound,
 }

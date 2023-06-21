@@ -8,7 +8,7 @@ use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
-use crate::transaction::TransactionExecutionTrace;
+use crate::transaction::{FeeLocks, TransactionExecutionTrace};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -90,7 +90,7 @@ pub enum VaultOp {
     Create(Decimal),               // TODO: add trace of vault creation
     Put(ResourceAddress, Decimal), // TODO: add non-fungible support
     Take(ResourceAddress, Decimal),
-    LockFee,
+    LockFee(Decimal, bool),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
@@ -345,7 +345,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         api: &mut Y,
         callee: &Actor,
         update: &mut Message,
-        _args: &IndexedScryptoValue,
+        args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_message(api, update);
         let system_state = api.kernel_get_system_state();
@@ -353,7 +353,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_before_push_frame(system_state.current, callee, resource_summary);
+            .handle_before_push_frame(system_state.current, callee, resource_summary, args);
         Ok(())
     }
 
@@ -459,6 +459,7 @@ impl ExecutionTraceModule {
         current_actor: &Actor,
         callee: &Actor,
         resource_summary: ResourceSummary,
+        args: &IndexedScryptoValue,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
@@ -513,7 +514,7 @@ impl ExecutionTraceModule {
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint_id)
                 && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
-                self.handle_vault_lock_fee_input(current_actor, node_id)
+                self.handle_vault_lock_fee_input(current_actor, node_id, args)
             }
             _ => {}
         }
@@ -604,11 +605,13 @@ impl ExecutionTraceModule {
             execution_traces.extend(traces);
         }
 
+        let fee_locks = calculate_fee_locks(&self.vault_ops);
         let resource_changes = calculate_resource_changes(self.vault_ops, fee_payments, is_success);
 
         TransactionExecutionTrace {
             execution_traces,
             resource_changes,
+            fee_locks,
         }
     }
 
@@ -633,12 +636,18 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Actor, vault_id: &NodeId) {
+    fn handle_vault_lock_fee_input<'s>(
+        &mut self,
+        caller: &Actor,
+        vault_id: &NodeId,
+        args: &IndexedScryptoValue,
+    ) {
         let actor = TraceActor::from_actor(caller);
+        let FungibleVaultLockFeeInput { amount, contingent } = args.as_typed().unwrap();
         self.vault_ops.push((
             actor,
             vault_id.clone(),
-            VaultOp::LockFee,
+            VaultOp::LockFee(amount, contingent),
             self.instruction_index(),
         ));
     }
@@ -667,7 +676,7 @@ pub fn calculate_resource_changes(
 ) -> IndexMap<usize, Vec<ResourceChange>> {
     // Retain lock fee only if the transaction fails.
     if !is_commit_success {
-        vault_ops.retain(|x| matches!(x.2, VaultOp::LockFee));
+        vault_ops.retain(|x| matches!(x.2, VaultOp::LockFee(..)));
     }
 
     // Calculate per instruction index, actor, vault resource changes.
@@ -697,7 +706,7 @@ pub fn calculate_resource_changes(
                         .or_insert((resource_address, Decimal::zero()))
                         .1 -= amount;
                 }
-                VaultOp::LockFee => {
+                VaultOp::LockFee(..) => {
                     vault_changes
                         .entry(instruction_index)
                         .or_default()
@@ -733,4 +742,21 @@ pub fn calculate_resource_changes(
     }
 
     resource_changes
+}
+
+pub fn calculate_fee_locks(vault_ops: &Vec<(TraceActor, NodeId, VaultOp, usize)>) -> FeeLocks {
+    let mut fee_locks = FeeLocks {
+        lock: Decimal::ZERO,
+        contingent_lock: Decimal::ZERO,
+    };
+    for (_, _, vault_op, _) in vault_ops {
+        if let VaultOp::LockFee(amount, is_contingent) = vault_op {
+            if !is_contingent {
+                fee_locks.lock += *amount
+            } else {
+                fee_locks.contingent_lock += *amount;
+            }
+        };
+    }
+    fee_locks
 }

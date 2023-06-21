@@ -73,18 +73,17 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<Bucket, RuntimeError> {
         let access_rules = AttachedAccessRules(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            access_rules.update_role(
+            access_rules.set_and_lock_role(
                 ObjectModuleId::Main,
                 RoleKey::new(securify_role),
-                Some(AccessRule::DenyAll),
-                true,
+                AccessRule::DenyAll,
                 api,
             )?;
         }
 
         let (bucket, owner_rule) = Self::mint_securified_badge(api)?;
 
-        access_rules.update_owner_role(Some(owner_rule), true, api)?;
+        access_rules.set_and_lock_owner_role(owner_rule, api)?;
 
         Ok(bucket)
     }

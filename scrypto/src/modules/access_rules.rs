@@ -4,8 +4,9 @@ use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesUpdateRoleInput, ACCESS_RULES_BLUEPRINT,
-    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_UPDATE_ROLE_IDENT,
+    AccessRulesCreateInput, AccessRulesLockRoleInput, AccessRulesSetRoleInput,
+    ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleKey, Roles};
@@ -32,50 +33,44 @@ impl AccessRules {
         Self(ModuleHandle::Own(access_rules))
     }
 
-    pub fn update_role_rule<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    pub fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.call_ignore_rtn(
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            &AccessRulesUpdateRoleInput {
+            ACCESS_RULES_SET_ROLE_IDENT,
+            &AccessRulesSetRoleInput {
                 module: ObjectModuleId::Main,
                 role_key: RoleKey::new(name),
-                rule: Some(rule.into()),
-                freeze: false,
+                rule: rule.into(),
             },
         );
     }
 
-    pub fn freeze_role(&self, name: &str) {
+    pub fn lock_role(&self, name: &str) {
         self.call_ignore_rtn(
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            &AccessRulesUpdateRoleInput {
+            ACCESS_RULES_LOCK_ROLE_IDENT,
+            &AccessRulesLockRoleInput {
                 module: ObjectModuleId::Main,
                 role_key: RoleKey::new(name),
-                rule: None,
-                freeze: true,
             },
         );
     }
 
-    pub fn update_metadata_role_rule<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    pub fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.call_ignore_rtn(
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            &AccessRulesUpdateRoleInput {
+            ACCESS_RULES_SET_ROLE_IDENT,
+            &AccessRulesSetRoleInput {
                 module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new(name),
-                rule: Some(rule.into()),
-                freeze: false,
+                rule: rule.into(),
             },
         );
     }
 
-    pub fn freeze_metadata_role(&self, name: &str) {
+    pub fn lock_metadata_role(&self, name: &str) {
         self.call_ignore_rtn(
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            &AccessRulesUpdateRoleInput {
+            ACCESS_RULES_LOCK_ROLE_IDENT,
+            &AccessRulesLockRoleInput {
                 module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new(name),
-                rule: None,
-                freeze: true,
             },
         );
     }

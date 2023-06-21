@@ -90,7 +90,12 @@ pub enum InstructionIdent {
     RemoveMetadata,
     SetComponentRoyaltyConfig,
     ClaimComponentRoyalty,
-    UpdateRole,
+    SetOwnerRole,
+    LockOwnerRole,
+    SetAndLockOwnerRole,
+    SetRole,
+    LockRole,
+    SetAndLockRole,
 
     // ==============
     // Call main-method aliases
@@ -183,7 +188,12 @@ impl InstructionIdent {
             "REMOVE_METADATA" => InstructionIdent::RemoveMetadata,
             "SET_COMPONENT_ROYALTY_CONFIG" => InstructionIdent::SetComponentRoyaltyConfig,
             "CLAIM_COMPONENT_ROYALTY" => InstructionIdent::ClaimComponentRoyalty,
-            "UPDATE_ROLE" => InstructionIdent::UpdateRole,
+            "SET_OWNER_ROLE" => InstructionIdent::SetOwnerRole,
+            "LOCK_OWNER_ROLE" => InstructionIdent::LockOwnerRole,
+            "SET_AND_LOCK_OWNER_ROLE" => InstructionIdent::SetAndLockOwnerRole,
+            "SET_ROLE" => InstructionIdent::SetRole,
+            "LOCK_ROLE" => InstructionIdent::LockRole,
+            "SET_AND_LOCK_ROLE" => InstructionIdent::SetAndLockRole,
 
             // ==============
             // Call main-method aliases
@@ -673,7 +683,27 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::UpdateRole => Instruction::UpdateRole {
+            InstructionIdent::SetOwnerRole => Instruction::SetOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockOwnerRole => Instruction::LockOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetAndLockOwnerRole => Instruction::SetAndLockOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetRole => Instruction::SetRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockRole => Instruction::LockRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetAndLockRole => Instruction::SetAndLockRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
