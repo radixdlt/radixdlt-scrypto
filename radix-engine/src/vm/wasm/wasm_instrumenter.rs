@@ -3,6 +3,8 @@ use crate::types::*;
 use crate::vm::wasm::{WasmMeteringConfig, WasmModule};
 use sbor::rust::sync::Arc;
 
+pub const DEFAULT_CACHE_SIZE: usize = 1000;
+
 pub struct WasmInstrumenter {
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
@@ -16,14 +18,20 @@ pub struct WasmInstrumenter {
 
 #[derive(Debug, Clone)]
 pub struct InstrumenterOptions {
-    max_cache_size_bytes: usize,
+    max_cache_size: usize,
+}
+
+impl Default for InstrumenterOptions {
+    fn default() -> Self {
+        InstrumenterOptions {
+            max_cache_size: DEFAULT_CACHE_SIZE,
+        }
+    }
 }
 
 impl Default for WasmInstrumenter {
     fn default() -> Self {
-        Self::new(InstrumenterOptions {
-            max_cache_size_bytes: 200 * 1024 * 1024,
-        })
+        Self::new(InstrumenterOptions::default())
     }
 }
 
@@ -36,17 +44,18 @@ impl WasmInstrumenter {
     pub fn new(options: InstrumenterOptions) -> Self {
         #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let cache = RefCell::new(lru::LruCache::new(
-            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+            NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let cache = moka::sync::Cache::builder()
-            .weigher(|_key: &MeteredCodeKey, value: &Arc<Vec<u8>>| -> u32 {
-                value.len().try_into().unwrap_or(u32::MAX)
+            .weigher(|_key: &MeteredCodeKey, _value: &Arc<Vec<u8>>| -> u32 {
+                // No sophisticated weighing mechanism, just keep a fixed size cache
+                1u32
             })
-            .max_capacity(options.max_cache_size_bytes as u64)
+            .max_capacity(options.max_cache_size as u64)
             .build();
         #[cfg(feature = "radix_engine_fuzzing")]
-        let cache = options.max_cache_size_bytes;
+        let cache = options.max_cache_size;
 
         Self { cache }
     }
