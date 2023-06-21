@@ -260,93 +260,55 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
             &definition_init.auth_config.method_auth,
         ) {
             (_, MethodAuthTemplate::AllowAll) => {}
-            (_, MethodAuthTemplate::Static(static_roles)) => {
-                let check_list = |list: &RoleList| {
-                    for role_key in &list.list {
-                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
-                            continue;
-                        }
-                        if !static_roles.roles.contains_key(role_key) {
-                            return Err(PackageError::MissingRole(role_key.clone()));
-                        }
-                    }
-                    Ok(())
-                };
-
-                for (role_key, role_list) in &static_roles.roles {
-                    check_list(&role_list)?;
-                    if AccessRulesNativePackage::is_reserved_role_key(&role_key) {
-                        return Err(PackageError::DefiningReservedRoleKey(
-                            blueprint.to_string(),
-                            role_key.clone(),
-                        ));
-                    }
-                }
-                for (_method, permission) in &static_roles.methods {
-                    match permission {
-                        MethodAccessibility::RoleProtected(role_list) => {
-                            check_list(&role_list)?;
-                        }
-                        MethodAccessibility::Public | MethodAccessibility::OuterObjectOnly => {}
-                    }
-                }
-
-                let num_methods = definition_init
-                    .schema
-                    .functions
-                    .functions
-                    .values()
-                    .filter(|schema| schema.receiver.is_some())
-                    .count();
-
-                if num_methods != static_roles.methods.len() {
-                    return Err(PackageError::UnexpectedNumberOfMethodAuth {
-                        blueprint: blueprint.clone(),
-                        expected: num_methods,
-                        actual: static_roles.methods.len(),
-                    });
-                }
-
-                for (name, schema_init) in &definition_init.schema.functions.functions {
-                    if schema_init.receiver.is_some()
-                        && !static_roles.methods.contains_key(&MethodKey::new(name))
-                    {
-                        return Err(PackageError::MissingMethodPermission {
-                            blueprint: blueprint.clone(),
-                            ident: name.clone(),
-                        });
-                    }
-                }
-            }
-            (
-                BlueprintType::Inner { outer_blueprint },
-                MethodAuthTemplate::StaticUseOuterRoles(methods),
-            ) => {
-                let check_list = |list: &RoleList| {
-                    for role_key in &list.list {
-                        if role_key.key.eq(SELF_ROLE) {
-                            continue;
-                        }
+            (blueprint_type, MethodAuthTemplate::StaticRoles(StaticRoles { roles, methods })) => {
+                let role_specification = match (blueprint_type, roles) {
+                    (_, RoleSpecification::Normal(roles)) => roles,
+                    (BlueprintType::Inner { outer_blueprint }, RoleSpecification::UseOuter) => {
                         if let Some(blueprint) = definition.blueprints.get(outer_blueprint) {
                             match &blueprint.auth_config.method_auth {
-                                MethodAuthTemplate::Static(static_roles) => {
-                                    if !static_roles.roles.contains_key(role_key) {
-                                        return Err(PackageError::MissingRole(role_key.clone()));
-                                    }
-                                }
+                                MethodAuthTemplate::StaticRoles(StaticRoles {
+                                    roles: RoleSpecification::Normal(roles),
+                                    ..
+                                }) => roles,
                                 _ => return Err(PackageError::InvalidAuthSetup),
                             }
                         } else {
                             return Err(PackageError::InvalidAuthSetup);
                         }
                     }
+                    _ => {
+                        return Err(PackageError::InvalidAuthSetup);
+                    }
+                };
+
+                let check_list = |list: &RoleList| {
+                    for role_key in &list.list {
+                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                            continue;
+                        }
+                        if !role_specification.contains_key(role_key) {
+                            return Err(PackageError::MissingRole(role_key.clone()));
+                        }
+                    }
                     Ok(())
                 };
 
-                for (_method, permission) in methods {
-                    match permission {
+                if let RoleSpecification::Normal(roles) = roles {
+                    for (role_key, role_list) in roles {
+                        check_list(role_list)?;
+                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                            return Err(PackageError::DefiningReservedRoleKey(
+                                blueprint.to_string(),
+                                role_key.clone(),
+                            ));
+                        }
+                    }
+                }
+
+                for (_method, accessibility) in methods {
+                    match accessibility {
                         MethodAccessibility::RoleProtected(role_list) => {
-                            check_list(&role_list)?;
+                            check_list(role_list)?;
                         }
                         MethodAccessibility::Public | MethodAccessibility::OuterObjectOnly => {}
                     }
@@ -378,9 +340,6 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         });
                     }
                 }
-            }
-            _ => {
-                return Err(PackageError::InvalidAuthSetup);
             }
         }
     }
@@ -837,7 +796,7 @@ impl PackageNativePackage {
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                         )
                     ),
-                    method_auth: MethodAuthTemplate::Static(
+                    method_auth: MethodAuthTemplate::StaticRoles(
                         roles_template! {
                             roles {
                                 SECURIFY_OWNER_ROLE;

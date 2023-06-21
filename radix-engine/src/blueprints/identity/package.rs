@@ -111,7 +111,7 @@ impl IdentityNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
                         roles {
                             SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },

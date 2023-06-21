@@ -16,7 +16,7 @@ use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
-    BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate,
+    BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -231,21 +231,26 @@ impl AuthModule {
         .method_auth;
 
         let (access_rules_of, method_permissions) = match auth_template {
-            MethodAuthTemplate::Static(static_roles) => {
-                // Non-globalized objects do not have access rules objet yet
-                if !callee.module_object_info.global {
-                    return Ok(ResolvedPermission::AllowAll);
-                }
+            MethodAuthTemplate::StaticRoles(static_roles) => {
+                let access_rules_of = match static_roles.roles {
+                    RoleSpecification::Normal(..) => {
+                        // Non-globalized objects do not have access rules module
+                        if !callee.module_object_info.global {
+                            return Ok(ResolvedPermission::AllowAll);
+                        }
 
-                (callee.node_id, static_roles.methods)
-            }
-            MethodAuthTemplate::StaticUseOuterRoles(methods) => {
-                let node_id = callee.node_id;
-                let info = api.get_object_info(&node_id)?;
+                        callee.node_id
+                    }
+                    RoleSpecification::UseOuter => {
+                        let node_id = callee.node_id;
+                        let info = api.get_object_info(&node_id)?;
 
-                // FIXME: Add verification that StaticUseOuterAuth should only be used with inner blueprints
-                let access_rules_of = info.get_outer_object();
-                (access_rules_of.into_node_id(), methods)
+                        let access_rules_of = info.get_outer_object();
+                        access_rules_of.into_node_id()
+                    }
+                };
+
+                (access_rules_of, static_roles.methods)
             }
             MethodAuthTemplate::AllowAll => return Ok(ResolvedPermission::AllowAll),
         };

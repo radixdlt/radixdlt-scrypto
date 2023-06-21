@@ -193,7 +193,7 @@ impl ConsensusManagerNativePackage {
                     function_auth: FunctionAuth::AccessRules(btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     )),
-                    method_auth: MethodAuthTemplate::Static(roles_template!(
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template!(
                         roles {
                             START_ROLE => updaters: [SELF_ROLE];
                             VALIDATOR_ROLE;
@@ -441,7 +441,7 @@ impl ConsensusManagerNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
                         methods {
                             VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
                             VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;

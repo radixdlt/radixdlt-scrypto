@@ -219,7 +219,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
-            function_auth,
+            function_auth: scrypto::blueprints::package::FunctionAuth::AccessRules(function_auth),
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };

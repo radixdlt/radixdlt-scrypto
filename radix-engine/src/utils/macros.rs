@@ -50,8 +50,8 @@ macro_rules! method_auth_template {
 macro_rules! roles_template {
     () => ({
         radix_engine_interface::blueprints::package::StaticRoles {
+            roles: radix_engine_interface::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
             methods: BTreeMap::new(),
-            roles: BTreeMap::new(),
         }
     });
     (
@@ -70,7 +70,7 @@ macro_rules! roles_template {
         )*
 
         radix_engine_interface::blueprints::package::StaticRoles {
-            roles,
+            roles: radix_engine_interface::blueprints::package::RoleSpecification::Normal(roles),
             methods,
         }
     });
@@ -82,8 +82,8 @@ macro_rules! roles_template {
         )*
 
         radix_engine_interface::blueprints::package::StaticRoles {
+            roles: radix_engine_interface::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
             methods,
-            roles: BTreeMap::new(),
         }
     });
 }

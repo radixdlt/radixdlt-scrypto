@@ -145,32 +145,36 @@ impl Default for FunctionAuth {
 pub enum MethodAuthTemplate {
     /// All methods are accessible
     AllowAll,
-    /// Methods are protected by a set of static roles of which are specified in the blueprint
-    /// and defined in the instantiating object
-    Static(StaticRoles),
-    /// Methods are protected by a set of static roles of which are specified in the *outer* blueprint
-    /// and defined in the instantiating *outer* object.
-    /// This is currently used by the Vault blueprints
-    StaticUseOuterRoles(BTreeMap<MethodKey, MethodAccessibility>),
+    /// Methods are protected by a static method to roles mapping
+    StaticRoles(StaticRoles),
 }
 
 impl Default for MethodAuthTemplate {
     fn default() -> Self {
-        MethodAuthTemplate::Static(StaticRoles::default())
+        MethodAuthTemplate::StaticRoles(StaticRoles::default())
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum RoleSpecification {
+    /// Roles are specified in the current blueprint and defined in the instantiated object.
+    Normal(BTreeMap<RoleKey, RoleList>),
+    /// Roles are specified in the *outer* blueprint and defined in the instantiated *outer* object.
+    /// This may only be used by inner blueprints and is currently used by the Vault blueprints
+    UseOuter,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct StaticRoles {
+    pub roles: RoleSpecification,
     pub methods: BTreeMap<MethodKey, MethodAccessibility>,
-    pub roles: BTreeMap<RoleKey, RoleList>,
 }
 
 impl Default for StaticRoles {
     fn default() -> Self {
         Self {
             methods: BTreeMap::new(),
-            roles: BTreeMap::new(),
+            roles: RoleSpecification::Normal(BTreeMap::new()),
         }
     }
 }

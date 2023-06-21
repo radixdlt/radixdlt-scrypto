@@ -452,10 +452,10 @@ macro_rules! enable_method_auth {
 
             let static_roles = scrypto::blueprints::package::StaticRoles {
                 methods,
-                roles,
+                roles: scrypto::blueprints::package::RoleSpecification::Normal(roles),
             };
 
-            scrypto::blueprints::package::MethodAuthTemplate::Static(static_roles)
+            scrypto::blueprints::package::MethodAuthTemplate::StaticRoles(static_roles)
         }
     );
 
@@ -470,10 +470,10 @@ macro_rules! enable_method_auth {
 
             let roles = scrypto::blueprints::package::StaticRoles {
                 methods,
-                roles: BTreeMap::new(),
+                roles: scrypto::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
             };
 
-            scrypto::blueprints::package::MethodAuthTemplate::Static(roles)
+            scrypto::blueprints::package::MethodAuthTemplate::StaticRoles(roles)
         }
     );
 }
