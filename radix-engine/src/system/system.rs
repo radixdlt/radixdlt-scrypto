@@ -2468,7 +2468,7 @@ where
     }
 
     #[trace_resources]
-    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         if message.len() > MAX_LOG_SIZE {
             return Err(RuntimeError::SystemError(SystemError::LogSizeTooLarge(
                 message.len(),

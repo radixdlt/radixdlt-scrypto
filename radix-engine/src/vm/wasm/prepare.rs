@@ -753,7 +753,7 @@ impl WasmModule {
                                 }
                             }
                         }
-                        LOG_MESSAGE_FUNCTION_NAME => {
+                        EMIT_LOG_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,

@@ -7,7 +7,7 @@ mod logger {
     }
 
     impl Logger {
-        pub fn log_message(message: String) {
+        pub fn emit_log(message: String) {
             info!("{}", message)
         }
 
