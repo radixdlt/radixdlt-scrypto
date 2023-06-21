@@ -1417,19 +1417,19 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.update_role_rules(
+    attached.set_role(
         ObjectModuleId::Main,
         RoleKey::new("primary"),
         rule_set.primary_role.clone(),
         api,
     )?;
-    attached.update_role_rules(
+    attached.set_role(
         ObjectModuleId::Main,
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
-    attached.update_role_rules(
+    attached.set_role(
         ObjectModuleId::Main,
         RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),

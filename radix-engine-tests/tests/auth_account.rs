@@ -332,7 +332,7 @@ fn can_update_updatable_owner_role_account() {
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.update_owner_role(account.into(), AccessRule::DenyAll);
+                builder.set_owner_role(account.into(), AccessRule::DenyAll);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });

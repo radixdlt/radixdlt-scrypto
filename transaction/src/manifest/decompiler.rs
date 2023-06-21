@@ -4,7 +4,9 @@ use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::Bech32Encoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -526,9 +528,17 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
-                (address, ACCESS_RULES_UPDATE_ROLE_IDENT) => {
+                (address, ACCESS_RULES_SET_ROLE_IDENT) => {
                     fields.push(address.to_instruction_argument());
-                    "UPDATE_ROLE"
+                    "SET_ROLE"
+                }
+                (address, ACCESS_RULES_LOCK_ROLE_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "LOCK_ROLE"
+                }
+                (address, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "SET_AND_LOCK_ROLE"
                 }
 
                 /* Default */

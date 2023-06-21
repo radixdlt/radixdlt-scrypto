@@ -10,7 +10,11 @@ use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -701,11 +705,41 @@ where
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::UpdateRole { address, args } => InstructionV1::CallAccessRulesMethod {
+        ast::Instruction::SetOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
-            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::LockOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetAndLockOwnerRole { address, args } => {
+            InstructionV1::CallAccessRulesMethod {
+                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                method_name: ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::SetRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::LockRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetAndLockRole { address, args } => {
+            InstructionV1::CallAccessRulesMethod {
+                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                method_name: ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
