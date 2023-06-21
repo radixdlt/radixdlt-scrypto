@@ -152,7 +152,7 @@ impl RoleEntry {
         }
     }
 
-    // FIXME: Remove and replace with set immutable rule
+    // TODO: Remove and replace with set immutable rule
     pub fn disabled() -> Self {
         Self::immutable(AccessRule::DenyAll)
     }
@@ -212,7 +212,7 @@ pub enum OwnerRole {
 }
 
 impl OwnerRole {
-    // FIXME: Remove
+    // TODO: Remove
     pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
         match self {
             OwnerRole::Fixed(rule) => RoleEntry::immutable(rule),

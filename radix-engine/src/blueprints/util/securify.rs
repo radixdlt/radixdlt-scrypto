@@ -44,7 +44,7 @@ pub trait SecurifiedAccessRules {
         owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        // FIXME: Remove to_role_entry mapping
+        // TODO: Remove to_role_entry mapping
         let owner_rule = owner_rule.to_role_entry(OWNER_ROLE).rule;
         let roles = Self::create_roles(owner_rule, false);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
