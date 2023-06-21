@@ -1,7 +1,7 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
-use super::system_modules::costing::CostingReason;
+use super::system_modules::costing::{CostingReason, FIXED_HIGH_FEE};
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
@@ -2380,7 +2380,13 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        if event_name.len() + event_data.len() > MAX_EVENT_SIZE {
+            return Err(RuntimeError::SystemError(SystemError::EventSizeTooLarge(
+                event_name.len() + event_data.len(),
+            )));
+        }
+        // TODO: linear costing base on size?
+        self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
@@ -2463,11 +2469,30 @@ where
 
     #[trace_resources]
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        if message.len() > MAX_LOG_SIZE {
+            return Err(RuntimeError::SystemError(SystemError::LogSizeTooLarge(
+                message.len(),
+            )));
+        }
+        // TODO: linear costing base on size?
+        self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
         self.api.kernel_get_system().modules.add_log(level, message);
 
         Ok(())
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        if message.len() > MAX_PANIC_MESSAGE_SIZE {
+            return Err(RuntimeError::SystemError(SystemError::LogSizeTooLarge(
+                message.len(),
+            )));
+        }
+        self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
+
+        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+            message.to_string(),
+        )))
     }
 
     #[trace_resources]
@@ -2494,16 +2519,6 @@ where
                 SystemError::TransactionRuntimeModuleNotEnabled,
             ))
         }
-    }
-
-    // FIXME: update costing for runtime data, such as logs, error messages and events.
-
-    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
-
-        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
-            message.to_string(),
-        )))
     }
 }
 

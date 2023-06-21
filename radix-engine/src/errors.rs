@@ -239,6 +239,9 @@ pub enum SystemError {
     TransactionRuntimeModuleNotEnabled,
     PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
     EventError(EventError),
+    LogSizeTooLarge(usize),
+    EventSizeTooLarge(usize),
+    PanicMessageSizeTooLarge(usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
