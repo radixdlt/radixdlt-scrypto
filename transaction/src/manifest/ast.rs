@@ -211,7 +211,15 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-    UpdateRole {
+    SetRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    LockRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetAndLockRole {
         address: Value,
         args: Vec<Value>,
     },

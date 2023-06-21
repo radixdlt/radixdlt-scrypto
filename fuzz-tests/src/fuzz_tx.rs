@@ -724,16 +724,46 @@ impl TxFuzzer {
                         Err(_) => None,
                     }
                 }
-                // UpdateRole
+                // SetRole
                 51 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();
+                    let input = AccessRulesSetRoleInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
                             address: address.into(),
-                            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+                            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
+                }
+                // LockRole
+                52 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let input = AccessRulesLockRoleInput::arbitrary(&mut unstructured).unwrap();
+
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
+                }
+                // SetAndLockRole
+                53 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let input = AccessRulesSetAndLockRoleInput::arbitrary(&mut unstructured).unwrap();
+
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,
