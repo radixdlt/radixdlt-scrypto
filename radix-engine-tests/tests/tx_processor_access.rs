@@ -1,13 +1,58 @@
-use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
-    ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
+    RuntimeError, SystemModuleError,
 };
-use radix_engine::kernel::call_frame::{CreateNodeError, TakeNodeError, UnlockSubstateError};
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::transaction_processor::{
+    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+};
 use scrypto::prelude::FromPublicKey;
-use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::InstructionV1;
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ManifestTransactionProcessorRunInput {
+    pub manifest_encoded_instructions: Vec<u8>,
+    pub global_address_reservations: Vec<()>,
+    pub references: Vec<()>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+}
+
+#[test]
+fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let instructions: Vec<InstructionV1> = Vec::new();
+    let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .call_function(
+            TRANSACTION_PROCESSOR_PACKAGE,
+            TRANSACTION_PROCESSOR_BLUEPRINT,
+            TRANSACTION_PROCESSOR_RUN_IDENT,
+            to_manifest_value_and_unwrap!(&ManifestTransactionProcessorRunInput {
+                manifest_encoded_instructions,
+                global_address_reservations: vec![],
+                references: vec![],
+                blobs: index_map_new(),
+            }),
+        )
+        .build();
+    let result = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    result.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
+}
 
 #[test]
 fn calling_transaction_processor_from_scrypto_should_not_panic() {

@@ -226,7 +226,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
 fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
     for (blueprint, definition_init) in &definition.blueprints {
         match &definition_init.auth_config.function_auth {
-            FunctionAuth::AllowAll => {}
+            FunctionAuth::AllowAll | FunctionAuth::RootOnly => {}
             FunctionAuth::AccessRules(functions) => {
                 let num_functions = definition_init
                     .schema
@@ -1397,6 +1397,13 @@ impl PackageAuthNativeBlueprint {
         let auth_config = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
         match auth_config.function_auth {
             FunctionAuth::AllowAll => Ok(ResolvedPermission::AllowAll),
+            FunctionAuth::RootOnly => {
+                if api.kernel_get_current_depth() == 0 {
+                    Ok(ResolvedPermission::AllowAll)
+                } else {
+                    Ok(ResolvedPermission::AccessRule(AccessRule::DenyAll))
+                }
+            }
             FunctionAuth::AccessRules(access_rules) => {
                 let access_rule = access_rules.get(ident);
                 if let Some(access_rule) = access_rule {

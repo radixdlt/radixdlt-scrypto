@@ -133,6 +133,10 @@ pub enum FunctionAuth {
     AllowAll,
     /// Functions are protected by an access rule
     AccessRules(BTreeMap<String, AccessRule>),
+    /// Only the root call frame may call all functions.
+    /// Used primarily for transaction processor functions, any other use would
+    /// essentially make the function inaccessible for any normal transaction
+    RootOnly,
 }
 
 impl Default for FunctionAuth {
