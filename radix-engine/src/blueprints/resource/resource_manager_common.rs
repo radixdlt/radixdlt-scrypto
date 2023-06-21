@@ -116,12 +116,12 @@ fn build_access_rules(
             access_rules_map.remove(&ResourceMethodAuthKey::Freeze)
         {
             main_roles.define_role(
-                REMOTE_FREEZE_ROLE,
-                RoleEntry::new(freeze_access_rule, [REMOTE_FREEZE_UPDATER_ROLE], false),
+                FREEZE_ROLE,
+                RoleEntry::new(freeze_access_rule, [FREEZE_UPDATER_ROLE], false),
             );
             main_roles.define_role(
-                REMOTE_FREEZE_UPDATER_ROLE,
-                RoleEntry::new(freeze_mutability, [REMOTE_FREEZE_UPDATER_ROLE], false),
+                FREEZE_UPDATER_ROLE,
+                RoleEntry::new(freeze_mutability, [FREEZE_UPDATER_ROLE], false),
             );
         }
 

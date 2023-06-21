@@ -25,7 +25,7 @@ impl Action {
             Action::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_ROLE)),
             Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_ROLE)),
             Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
-            Action::Freeze => (ObjectModuleId::Main, RoleKey::new(REMOTE_FREEZE_ROLE)),
+            Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
 
             Action::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_ADMIN_ROLE)),
         }

@@ -91,7 +91,7 @@ impl ResourceManager {
 
     pub fn set_freezeable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_rule(REMOTE_FREEZE_ROLE, access_rule);
+        access_rules.update_role_rule(FREEZE_ROLE, access_rule);
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
@@ -131,7 +131,7 @@ impl ResourceManager {
 
     pub fn lock_freezeable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(REMOTE_FREEZE_ROLE, RoleList::none());
+        access_rules.update_role_mutability(FREEZE_ROLE, RoleList::none());
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
