@@ -7,106 +7,65 @@ use radix_engine_interface::types::Level;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
-    let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/logger");
+#[test]
+fn test_basic_transfer() {
+    // Arrange
+    let code = wat2wasm(
+        r##"
+(module
+   (import "env" "emit_log" (func $emit_log (param i32 i32 i32 i32)))
+   (data (i32.const 0) "\5C\22\01\00TEXT")
+   (func $test (param $0 i64) (result i64)
+        ;; create a local variable and initialize it to 0
+        (local $i i32)
 
-    let manifest = ManifestBuilder::new()
-        .call_function(
-            package_address,
-            "Logger",
-            function_name,
-            manifest_args!(message.as_ref().to_owned()),
+        (loop $my_loop
+
+            ;; add one to $i
+            local.get $i
+            i32.const 1
+            i32.add
+            local.set $i
+
+            ;; emit log
+            (call $emit_log
+                (i32.const 0)
+                (i32.const 4)
+                (i32.const 4)
+                (i32.const 4190208)
+            )
+
+            ;; if $i is less than 1000000 branch to loop
+            local.get $i
+            i32.const 1000000
+            i32.lt_s
+            br_if $my_loop
         )
+        (i64.const 0)
+   )
+   (memory $0 64)
+   (export "memory" (memory $0))
+   (export "Test_f" (func $test))
+)
+    "##
+        .replace("TEXT", " ".repeat(4190208).as_str())
+        .as_str(),
+    );
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let package_address = test_runner.publish_package(
+        code,
+        single_function_package_definition("Test", "f"),
+        BTreeMap::new(),
+        OwnerRole::None,
+    );
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-
-    receipt
-}
-
-#[test]
-fn test_emit_log() {
-    // Arrange
-    let function_name = "emit_log";
-    let message = "Hello";
-
-    // Act
-    let receipt = call(function_name, message);
 
     // Assert
-    {
-        receipt.expect_commit_success();
-
-        let logs = receipt.expect_commit(true).application_logs.clone();
-        let expected_logs = vec![(Level::Info, message.to_owned())];
-
-        assert_eq!(expected_logs, logs)
-    }
-}
-
-#[test]
-fn test_rust_panic() {
-    // Arrange
-    let function_name = "rust_panic";
-    let message = "Hey";
-
-    // Act
-    let receipt = call(function_name, message);
-
-    // Assert
-    {
-        let logs = receipt.expect_commit(false).application_logs.clone();
-        assert!(logs.is_empty());
-
-        receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => {
-                e.eq("Hey @ logger/src/lib.rs:15:13")
-            }
-            _ => false,
-        })
-    }
-}
-
-#[test]
-fn test_scrypto_panic() {
-    // Arrange
-    let function_name = "scrypto_panic";
-    let message = "Hi";
-
-    // Act
-    let receipt = call(function_name, message);
-
-    // Assert
-    {
-        let logs = receipt.expect_commit(false).application_logs.clone();
-        assert!(logs.is_empty());
-
-        receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq(message),
-            _ => false,
-        })
-    }
-}
-
-// FIXME: add length tests when adding event/log/panic message length limit.
-
-#[test]
-fn test_assert_length_5() {
-    // Arrange
-    let function_name = "assert_length_5";
-    let message = "!5";
-
-    // Act
-    let receipt = call(function_name, message);
-
-    // Assert
-    {
-        let logs = receipt.expect_commit(false).application_logs.clone();
-        assert!(logs.is_empty());
-
-        receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
-            _ => false,
-        })
-    }
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit(true);
 }

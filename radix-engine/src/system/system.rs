@@ -2484,9 +2484,9 @@ where
 
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
         if message.len() > MAX_PANIC_MESSAGE_SIZE {
-            return Err(RuntimeError::SystemError(SystemError::LogSizeTooLarge(
-                message.len(),
-            )));
+            return Err(RuntimeError::SystemError(
+                SystemError::PanicMessageSizeTooLarge(message.len()),
+            ));
         }
         self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
