@@ -34,6 +34,21 @@ pub enum TransactionLimitsError {
     /// Returned when function or method invocation payload size exceeds defined limit,
     /// as parameter actual payload size is returned.
     MaxInvokePayloadSizeExceeded(usize),
+
+    LogSizeTooLarge {
+        actual: usize,
+        max: usize,
+    },
+    EventSizeTooLarge {
+        actual: usize,
+        max: usize,
+    },
+    PanicMessageSizeTooLarge {
+        actual: usize,
+        max: usize,
+    },
+    TooManyLogs,
+    TooManyEvents,
 }
 
 /// Representation of data which needs to be limited for each call frame.
@@ -56,6 +71,12 @@ pub struct TransactionLimitsConfig {
     pub max_substate_size: usize,
     /// Maximum Invoke payload size.
     pub max_invoke_payload_size: usize,
+
+    pub max_event_size: usize,
+    pub max_log_size: usize,
+    pub max_panic_message_size: usize,
+    pub max_number_of_logs: usize,
+    pub max_number_of_events: usize,
 }
 
 /// Tracks and verifies transaction limits during transactino execution,
@@ -64,7 +85,7 @@ pub struct TransactionLimitsConfig {
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     /// Definitions of the limits levels.
-    limits_config: TransactionLimitsConfig,
+    pub limits_config: TransactionLimitsConfig,
     /// Internal stack of data for each call frame.
     call_frames_stack: Vec<CallFrameLimitInfo>,
     /// Substate store read count.
