@@ -203,7 +203,8 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-    SetComponentRoyaltyConfig {
+
+    SetComponentRoyalty {
         address: Value,
         args: Vec<Value>,
     },
@@ -215,6 +216,7 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
+
     UpdateRole {
         address: Value,
         args: Vec<Value>,

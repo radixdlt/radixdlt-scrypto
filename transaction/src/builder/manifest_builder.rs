@@ -3,7 +3,11 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT, ComponentLockRoyaltyInput};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInput, ComponentLockRoyaltyInput, ComponentSetRoyaltyInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -19,8 +23,8 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltiesInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
-    PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
+    PackageClaimRoyaltyInput, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTY_IDENT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
@@ -671,8 +675,8 @@ impl ManifestBuilder {
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
-            method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackageClaimRoyaltiesInput {}),
+            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&PackageClaimRoyaltyInput {}),
         })
         .0
     }
@@ -706,14 +710,14 @@ impl ManifestBuilder {
                 method: method.to_string(),
             }),
         })
-            .0
+        .0
     }
 
     pub fn claim_component_royalties(&mut self, component_address: ComponentAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
-            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentClaimRoyaltiesInput {}),
+            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ComponentClaimRoyaltyInput {}),
         })
         .0
     }

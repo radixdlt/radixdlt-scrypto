@@ -1,4 +1,4 @@
-SET_COMPONENT_ROYALTY_CONFIG
+SET_COMPONENT_ROYALTY
     Address("${account_address}")
     "my_method"
     Enum<RoyaltyAmount::Free>();
