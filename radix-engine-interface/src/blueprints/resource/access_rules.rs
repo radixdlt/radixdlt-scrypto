@@ -132,35 +132,25 @@ impl RoleKey {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct RoleEntry {
-    pub rule: AccessRule,
-    pub mutable: RoleList,
-    pub mutable_mutable: bool,
+pub enum OwnerRoleUpdater {
+    None,
+    Owner,
+    Object,
 }
 
-impl RoleEntry {
-    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(
-        rule: A,
-        mutable: M,
-        mutable_mutable: bool,
-    ) -> Self {
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct OwnerRoleEntry {
+    pub rule: AccessRule,
+    pub updater: OwnerRoleUpdater,
+}
+
+impl OwnerRoleEntry {
+    pub fn new<A: Into<AccessRule>>(rule: A, updater: OwnerRoleUpdater) -> Self {
         Self {
             rule: rule.into(),
-            mutable: mutable.into(),
-            mutable_mutable,
+            updater,
         }
-    }
-
-    pub fn immutable<A: Into<AccessRule>>(rule: A) -> Self {
-        Self {
-            rule: rule.into(),
-            mutable: RoleList::none(),
-            mutable_mutable: false,
-        }
-    }
-
-    pub fn disabled() -> Self {
-        Self::immutable(AccessRule::DenyAll)
     }
 }
 
@@ -209,20 +199,25 @@ impl<const N: usize> From<[&str; N]> for RoleList {
     }
 }
 
+// Front end data structure for specifying owner role
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRole {
     None,
     Fixed(AccessRule),
-    Updateable(AccessRule),
+    Updatable(AccessRule),
+    UpdatableByObject(AccessRule),
 }
 
 impl OwnerRole {
-    pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
+    pub fn to_entry(self) -> OwnerRoleEntry {
         match self {
-            OwnerRole::Fixed(rule) => RoleEntry::immutable(rule),
-            OwnerRole::Updateable(rule) => RoleEntry::new(rule, [owner_role_name], false),
-            OwnerRole::None => RoleEntry::immutable(AccessRule::DenyAll),
+            OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
+            OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
+            OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
+            OwnerRole::UpdatableByObject(rule) => {
+                OwnerRoleEntry::new(rule, OwnerRoleUpdater::Object)
+            }
         }
     }
 }
@@ -231,7 +226,7 @@ impl OwnerRole {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
-    pub roles: BTreeMap<RoleKey, RoleEntry>,
+    pub roles: BTreeMap<RoleKey, (AccessRule, bool)>,
 }
 
 impl Roles {
@@ -239,8 +234,12 @@ impl Roles {
         Self { roles: btreemap!() }
     }
 
-    pub fn define_role<K: Into<RoleKey>>(&mut self, role: K, entry: RoleEntry) {
-        self.roles.insert(role.into(), entry);
+    pub fn define_immutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
+        self.roles.insert(role.into(), (access_rule, true));
+    }
+
+    pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
+        self.roles.insert(role.into(), (access_rule, false));
     }
 }
 

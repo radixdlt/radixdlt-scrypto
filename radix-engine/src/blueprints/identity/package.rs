@@ -1,6 +1,6 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::{ApplicationError, RuntimeError};
-use crate::method_auth_template;
+use crate::roles_template;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -13,7 +13,8 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -82,10 +83,6 @@ impl IdentityNativePackage {
             IDENTITY_CREATE_VIRTUAL_ED25519_ID => IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
         );
 
-        let method_auth = method_auth_template! {
-            IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
-        };
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -111,15 +108,17 @@ impl IdentityNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
-                        IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static(
-                        method_auth,
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
+                        roles {
+                            SECURIFY_ROLE => updaters: [SELF_ROLE];
+                        },
+                        methods {
+                            IDENTITY_SECURIFY_IDENT => [SECURIFY_ROLE];
+                        }
+                    }),
                 },
             }
         );
@@ -314,7 +313,7 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
 

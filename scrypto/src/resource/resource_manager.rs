@@ -101,37 +101,37 @@ impl ResourceManager {
 
     pub fn lock_mintable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(MINT_ROLE, RoleList::none());
+        access_rules.freeze_role(MINT_ROLE);
     }
 
     pub fn lock_burnable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(BURN_ROLE, RoleList::none());
+        access_rules.freeze_role(BURN_ROLE);
     }
 
     pub fn lock_updateable_non_fungible_data(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(UPDATE_NON_FUNGIBLE_DATA_ROLE, RoleList::none());
+        access_rules.freeze_role(UPDATE_NON_FUNGIBLE_DATA_ROLE);
     }
 
     pub fn lock_withdrawable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(WITHDRAW_ROLE, RoleList::none());
+        access_rules.freeze_role(WITHDRAW_ROLE);
     }
 
     pub fn lock_depositable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(DEPOSIT_ROLE, RoleList::none());
+        access_rules.freeze_role(DEPOSIT_ROLE);
     }
 
     pub fn lock_recallable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(RECALL_ROLE, RoleList::none());
+        access_rules.freeze_role(RECALL_ROLE);
     }
 
     pub fn lock_freezeable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_role_mutability(FREEZE_ROLE, RoleList::none());
+        access_rules.freeze_role(FREEZE_ROLE);
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
@@ -141,7 +141,7 @@ impl ResourceManager {
 
     pub fn lock_updateable_metadata(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.update_metadata_role_mutability(METADATA_ADMIN_ROLE, RoleList::none());
+        access_rules.freeze_metadata_role(METADATA_ADMIN_ROLE);
     }
 }
 

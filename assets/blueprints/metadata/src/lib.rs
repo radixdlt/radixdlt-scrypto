@@ -12,6 +12,7 @@ mod metadata {
                 .metadata(metadata! {
                     roles {
                         metadata_admin => rule!(allow_all);
+                        metadata_admin_updater => rule!(deny_all);
                     },
                     init {
                     }

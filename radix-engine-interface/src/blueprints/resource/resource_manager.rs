@@ -49,11 +49,11 @@ pub const ALL_RESOURCE_AUTH_KEYS: [ResourceMethodAuthKey; 8] = [
     ResourceMethodAuthKey::Mint,
     ResourceMethodAuthKey::Burn,
     ResourceMethodAuthKey::UpdateNonFungibleData,
-    ResourceMethodAuthKey::UpdateMetadata,
     ResourceMethodAuthKey::Withdraw,
     ResourceMethodAuthKey::Deposit,
     ResourceMethodAuthKey::Recall,
     ResourceMethodAuthKey::Freeze,
+    ResourceMethodAuthKey::UpdateMetadata,
 ];
 
 impl ResourceMethodAuthKey {

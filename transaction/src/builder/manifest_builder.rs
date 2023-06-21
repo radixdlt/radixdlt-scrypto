@@ -706,6 +706,18 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn update_owner_role(&mut self, address: GlobalAddress, rule: AccessRule) -> &mut Self {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+            address: address.into(),
+            method_name: ACCESS_RULES_UPDATE_OWNER_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesUpdateOwnerRoleInput {
+                rule: Some(rule),
+                freeze: false,
+            }),
+        })
+        .0
+    }
+
     pub fn update_role(
         &mut self,
         address: GlobalAddress,
@@ -720,18 +732,17 @@ impl ManifestBuilder {
                 module,
                 role_key,
                 rule: Some(rule),
-                mutability: None,
+                freeze: false,
             }),
         })
         .0
     }
 
-    pub fn update_role_mutability(
+    pub fn freeze_role(
         &mut self,
         address: GlobalAddress,
         module: ObjectModuleId,
         role_key: RoleKey,
-        mutability: (RoleList, bool),
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
@@ -740,7 +751,7 @@ impl ManifestBuilder {
                 module,
                 role_key,
                 rule: None,
-                mutability: Some(mutability),
+                freeze: true,
             }),
         })
         .0

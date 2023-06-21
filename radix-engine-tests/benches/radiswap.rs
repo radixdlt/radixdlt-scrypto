@@ -27,7 +27,7 @@ fn bench_radiswap(c: &mut Criterion) {
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(),
-        OwnerRole::Updateable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+        OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
     // Instantiate Radiswap

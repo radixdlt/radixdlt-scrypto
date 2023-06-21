@@ -8,9 +8,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, OwnerRole, RoleKey, RoleList, Roles,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleKey, Roles};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -34,50 +32,50 @@ impl AccessRules {
         Self(ModuleHandle::Own(access_rules))
     }
 
-    pub fn update_role_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+    pub fn update_role_rule<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
                 module: ObjectModuleId::Main,
                 role_key: RoleKey::new(name),
-                rule: Some(entry.into()),
-                mutability: None,
+                rule: Some(rule.into()),
+                freeze: false,
             },
         );
     }
 
-    pub fn update_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
+    pub fn freeze_role(&self, name: &str) {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
                 module: ObjectModuleId::Main,
                 role_key: RoleKey::new(name),
                 rule: None,
-                mutability: Some((mutability.into(), true)),
+                freeze: true,
             },
         );
     }
 
-    pub fn update_metadata_role_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+    pub fn update_metadata_role_rule<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
                 module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new(name),
-                rule: Some(entry.into()),
-                mutability: None,
+                rule: Some(rule.into()),
+                freeze: false,
             },
         );
     }
 
-    pub fn update_metadata_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
+    pub fn freeze_metadata_role(&self, name: &str) {
         self.call_ignore_rtn(
             ACCESS_RULES_UPDATE_ROLE_IDENT,
             &AccessRulesUpdateRoleInput {
                 module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new(name),
                 rule: None,
-                mutability: Some((mutability.into(), true)),
+                freeze: true,
             },
         );
     }

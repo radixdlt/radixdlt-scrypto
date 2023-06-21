@@ -4,8 +4,8 @@ use scrypto::prelude::*;
 mod mutable_access_rules_component {
     enable_method_auth! {
         roles {
-            borrow_funds_auth,
-            deposit_funds_auth
+            borrow_funds_auth => updaters: deposit_funds_auth;
+            deposit_funds_auth;
         },
         methods {
             borrow_funds => borrow_funds_auth;
@@ -33,7 +33,7 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    borrow_funds_auth => rule!(require(RADIX_TOKEN)), mutable_by: deposit_funds_auth;
+                    borrow_funds_auth => rule!(require(RADIX_TOKEN)), updatable;
                     deposit_funds_auth => owner_update_access_rule;
                 })
                 .globalize()
@@ -51,7 +51,7 @@ mod mutable_access_rules_component {
 
         pub fn lock_authority(&self, role: String) {
             let access_rules = Runtime::access_rules();
-            access_rules.update_role_mutability(role.as_str(), RoleList::none());
+            access_rules.freeze_role(role.as_str());
         }
 
         // The methods that the access rules will be added to

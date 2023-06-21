@@ -95,7 +95,6 @@ impl TypedSubstateKey {
 pub enum TypedAccessRulesSubstateKey {
     AccessRulesField(AccessRulesField),
     Rule(ModuleRoleKey),
-    Mutability(ModuleRoleKey),
 }
 
 /// Doesn't include non-object modules, nor transient nodes.
@@ -186,14 +185,6 @@ pub fn to_typed_substate_key(
                 .ok_or_else(|| error("Access Rules key"))?;
             TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
                 scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
-            ))
-        }
-        ACCESS_RULES_MUTABILITY_PARTITION => {
-            let key = substate_key
-                .for_map()
-                .ok_or_else(|| error("Access Rules Mutability key"))?;
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(
-                scrypto_decode(&key).map_err(|_| error("Access Rules Mutability key"))?,
             ))
         }
         partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
@@ -417,14 +408,13 @@ pub enum TypedTypeInfoModuleFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModule {
-    OwnerRole(OwnerRole),
+    OwnerRole(OwnerRoleSubstate),
     Rule(KeyValueEntrySubstate<AccessRule>),
-    Mutability(KeyValueEntrySubstate<RoleList>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleFieldValue {
-    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
+    ComponentRoyaltyAccumulator(ComponentRoyaltySubstate),
 }
 
 /// Contains all the main module substate values, by each known partition layout
@@ -437,7 +427,7 @@ pub enum TypedMainModuleSubstateValue {
     PackageSchema(KeyValueEntrySubstate<ScryptoSchema>),
     PackageCode(KeyValueEntrySubstate<PackageCodeSubstate>),
     PackageAuthTemplate(KeyValueEntrySubstate<AuthConfig>),
-    PackageRoyalty(KeyValueEntrySubstate<RoyaltyConfig>),
+    PackageRoyalty(KeyValueEntrySubstate<ComponentRoyaltyConfig>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
     NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
@@ -583,9 +573,6 @@ fn to_typed_substate_value_internal(
             }
             TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
                 TypedAccessRulesModule::Rule(scrypto_decode(data)?),
-            ),
-            TypedAccessRulesSubstateKey::Mutability(_) => TypedSubstateValue::AccessRulesModule(
-                TypedAccessRulesModule::Mutability(scrypto_decode(data)?),
             ),
         },
         TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {

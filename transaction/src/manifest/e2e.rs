@@ -631,7 +631,7 @@ UPDATE_ROLE
     Enum<0u8>()
     "hello"
     Enum<0u8>()
-    Enum<0u8>()
+    false
 ;
 "##,
             ),
