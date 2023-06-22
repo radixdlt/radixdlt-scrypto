@@ -203,7 +203,10 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-
+    LockMetadata {
+        address: Value,
+        args: Vec<Value>,
+    },
     SetComponentRoyalty {
         address: Value,
         args: Vec<Value>,

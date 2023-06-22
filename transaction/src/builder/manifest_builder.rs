@@ -1,7 +1,7 @@
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
+    MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentSetRoyaltyInput,
@@ -772,6 +772,15 @@ impl ManifestBuilder {
             address: address.into(),
             method_name: METADATA_SET_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&MetadataSetInput { key, value }),
+        })
+        .0
+    }
+
+    pub fn freeze_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
+        self.add_instruction(InstructionV1::CallMetadataMethod {
+            address: address.into(),
+            method_name: METADATA_LOCK_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&MetadataLockInput { key }),
         })
         .0
     }

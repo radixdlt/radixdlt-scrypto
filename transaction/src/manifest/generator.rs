@@ -11,8 +11,10 @@ use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
@@ -686,6 +688,11 @@ where
         ast::Instruction::RemoveMetadata { address, args } => InstructionV1::CallMetadataMethod {
             address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
             method_name: METADATA_REMOVE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::LockMetadata { address, args } => InstructionV1::CallMetadataMethod {
+            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            method_name: METADATA_LOCK_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetComponentRoyalty { address, args } => {

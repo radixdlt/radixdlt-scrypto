@@ -88,6 +88,7 @@ pub enum InstructionIdent {
     // ==============
     SetMetadata,
     RemoveMetadata,
+    LockMetadata,
     SetComponentRoyalty,
     LockComponentRoyalty,
     ClaimComponentRoyalties,
@@ -182,6 +183,7 @@ impl InstructionIdent {
             // ==============
             "SET_METADATA" => InstructionIdent::SetMetadata,
             "REMOVE_METADATA" => InstructionIdent::RemoveMetadata,
+            "LOCK_METADATA" => InstructionIdent::LockMetadata,
             "SET_COMPONENT_ROYALTY" => InstructionIdent::SetComponentRoyalty,
             "LOCK_COMPONENT_ROYALTY" => InstructionIdent::LockComponentRoyalty,
             "CLAIM_COMPONENT_ROYALTIES" => InstructionIdent::ClaimComponentRoyalties,
@@ -664,6 +666,10 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::RemoveMetadata => Instruction::RemoveMetadata {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockMetadata => Instruction::LockMetadata {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
