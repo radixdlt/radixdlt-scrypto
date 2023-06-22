@@ -78,14 +78,14 @@ impl TwoResourcePoolBlueprint {
         // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
-            btreemap!(
-                "pool_vault_number".into() => MetadataValue::U8(2),
-                "pool_resources".into() => MetadataValue::GlobalAddressArray(vec![
+            metadata_init! {
+                "pool_vault_number" => MetadataValue::U8(2u8), locked;
+                "pool_resources" => MetadataValue::GlobalAddressArray(vec![
                     resource_address1.into(),
                     resource_address2.into()
-                ]),
-                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
-            ).into(),
+                ]), locked;
+                "pool_unit" => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()), locked;
+            },
             api,
         )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
