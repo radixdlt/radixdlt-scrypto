@@ -9,9 +9,7 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
 use radix_engine_common::prelude::{
     OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, MetadataInit};
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
@@ -257,7 +255,7 @@ pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
 
     pub owner_role: OwnerRole,
-    pub metadata_config: Option<(Metadata, Roles)>,
+    pub metadata_config: Option<(MetadataInit, Roles)>,
     pub royalty_config: Option<(ComponentRoyaltyConfig, Roles)>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
@@ -278,11 +276,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn metadata(mut self, metadata: (Metadata, Roles)) -> Self {
-        if self.metadata_config.is_some() {
-            panic!("Metadata already set.");
-        }
-        self.metadata_config = Some(metadata);
+    pub fn metadata(mut self, metadata_config: (MetadataInit, Roles)) -> Self {
+        self.metadata_config = Some(metadata_config);
 
         self
     }
@@ -307,15 +302,23 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let (metadata, metadata_roles) = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| (Metadata::new(), Roles::new()));
+
+        let (metadata, metadata_roles) = {
+            let (metadata_init, metadata_roles) = self
+                .metadata_config
+                .take()
+                .unwrap_or_else(|| (MetadataInit::new(), Roles::new()));
+
+            (Metadata::new_with_data(metadata_init), metadata_roles)
+        };
+
         let (royalty_config, royalty_roles) = self
             .royalty_config
             .take()
             .unwrap_or_else(|| (ComponentRoyaltyConfig::default(), Roles::new()));
+
         let royalty = Royalty::new(royalty_config);
+
         let access_rules = AccessRules::new(
             self.owner_role,
             btreemap!(

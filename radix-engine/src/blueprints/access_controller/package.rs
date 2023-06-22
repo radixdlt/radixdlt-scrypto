@@ -30,6 +30,7 @@ use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::prelude::*;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {

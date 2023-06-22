@@ -15,7 +15,7 @@ mod metadata_component {
                         metadata_admin_updater => rule!(deny_all);
                     },
                     init {
-                        key.clone() => value.clone()
+                        key.clone() => value.clone(), locked;
                     }
                 })
                 .globalize();

@@ -569,43 +569,26 @@ macro_rules! royalty_config {
 }
 
 #[macro_export]
-macro_rules! metadata_config {
-    ( ) => ({
-        ::scrypto::prelude::Metadata::new()
-    });
-    ( $($key:expr => $value:expr),* ) => ({
-        let mut metadata = ::scrypto::prelude::Metadata::new();
-        $(
-            metadata.set($key, $value);
-        )*
-        metadata
-    });
-    ( $($key:expr => $value:expr,)* ) => ({
-        metadata!{$($key => $value),*}
-    });
-}
-
-#[macro_export]
 macro_rules! metadata {
     {
         roles {
             $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
         },
         init {
-            $($key:expr => $value:expr),*
+            $($key:expr => $value:expr, $locked:ident;)*
         }
     } => ({
         let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable)? ;)*);
-        let metadata = metadata_config!($($key => $value),*);
+        let metadata = metadata_init!($($key => $value, $locked;)*);
         (metadata, metadata_roles)
     });
 
     {
         init {
-            $($key:expr => $value:expr),*
+            $($key:expr => $value:expr, $locked:ident;)*
         }
     } => ({
-        let metadata = metadata_config!($($key => $value),*);
+        let metadata = metadata_init!($($key => $value, $locked;)*);
         (metadata, Roles::new())
     });
 
@@ -615,7 +598,7 @@ macro_rules! metadata {
         }
     } => ({
         let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable:ident)? ;)*);
-        let metadata = metadata_config!();
+        let metadata = metadata_init!();
         (metadata, metadata_roles)
     });
 

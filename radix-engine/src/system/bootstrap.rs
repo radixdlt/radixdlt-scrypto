@@ -40,6 +40,7 @@ use transaction::model::{
 };
 use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
