@@ -604,7 +604,7 @@ impl PackageNativePackage {
         functions.insert(
             PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             FunctionSchemaInit {
-                receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageClaimRoyaltiesInput>(),
                 ),

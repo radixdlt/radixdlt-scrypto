@@ -1,10 +1,4 @@
-use super::*;
-use crate::*;
-use sbor::representations::*;
-use sbor::rust::prelude::*;
-use sbor::traversal::*;
-use sbor::*;
-use utils::ContextualDisplay;
+use crate::internal_prelude::*;
 
 impl SerializableCustomExtension for ScryptoCustomExtension {
     fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
