@@ -63,14 +63,12 @@ impl OneResourcePoolBlueprint {
 
         let access_rules =
             AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
-        // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
-        // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
-            btreemap!(
-                "pool_vault_number".into() => MetadataValue::U8(1),
-                "pool_resources".into() => MetadataValue::GlobalAddress(resource_address.into()),
-                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
-            ).into(),
+            metadata_init! {
+                "pool_vault_number" => MetadataValue::U8(1u8), locked;
+                "pool_resources" => MetadataValue::GlobalAddress(resource_address.into()), locked;
+                "pool_unit" => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()), locked;
+            },
             api,
         )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
