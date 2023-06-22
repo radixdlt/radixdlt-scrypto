@@ -1,14 +1,74 @@
 use radix_engine::{
     errors::{RuntimeError, SystemError},
+    system::system_modules::costing::NATIVE_FUNCTION_BASE_COSTS,
     types::*,
 };
 use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, TypeRef};
+use radix_engine_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::TypePointer;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
 use transaction::prelude::ManifestBuilder;
 use utils::ContextualDisplay;
+
+#[test]
+fn check_native_function_base_costs() {
+    let test_runner = TestRunner::builder().build();
+    let mut lookup: IndexMap<PackageAddress, IndexSet<String>> = index_map_new();
+    let package_addresses = test_runner.find_all_packages();
+    for package_address in package_addresses {
+        let blueprint_definitions = test_runner.get_package_blueprint_definitions(&package_address);
+        for (_, definition) in blueprint_definitions {
+            let functions = definition.interface.functions;
+            for (name, _) in functions {
+                let export_name = definition
+                    .function_exports
+                    .get(&name)
+                    .unwrap()
+                    .export_name
+                    .clone();
+                lookup
+                    .entry(package_address)
+                    .or_default()
+                    .insert(export_name);
+            }
+        }
+    }
+
+    for (package_address, m) in NATIVE_FUNCTION_BASE_COSTS.iter() {
+        for (export_name, _) in m {
+            if !matches!(
+                lookup
+                    .get(package_address)
+                    .map(|x| x.contains(&export_name.to_string())),
+                Some(true)
+            ) {
+                println!(
+                    "Invalid definition: {}, {}",
+                    package_address.to_hex(),
+                    export_name
+                );
+            }
+        }
+    }
+
+    for (package_address, m) in &lookup {
+        for export_name in m {
+            if !matches!(
+                NATIVE_FUNCTION_BASE_COSTS
+                    .get(package_address)
+                    .map(|x| x.contains_key(export_name.as_str())),
+                Some(true)
+            ) {
+                println!(
+                    "Missing definition: {}, {}",
+                    package_address.to_hex(),
+                    export_name
+                );
+            }
+        }
+    }
+}
 
 #[test]
 fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {

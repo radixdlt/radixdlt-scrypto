@@ -16,7 +16,6 @@ use radix_engine_interface::blueprints::resource::MethodAccessibility;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::*;
 use radix_engine_interface::types::*;
-use resources_tracker_macro::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 

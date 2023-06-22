@@ -2,20 +2,20 @@ use crate::{kernel::actor::Actor, track::interface::StoreAccessInfo, types::*};
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<&'static str, IndexMap<&'static str, u32>> = {
-        let mut costs: IndexMap<&'static str, IndexMap<&'static str, u32>> = index_map_new();
+    pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = {
+        let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = index_map_new();
         include_str!("../../../../../assets/native_function_base_costs.csv")
             .split("\n")
             .filter(|x| x.len() > 0)
             .for_each(|x| {
                 let mut tokens = x.split(",");
-                let blueprint_name = tokens.next().unwrap();
-                let function_name = tokens.next().unwrap();
-                let cost = tokens.next().unwrap();
+                let package_address = PackageAddress::try_from_hex(tokens.next().unwrap()).unwrap();
+                let export_name = tokens.next().unwrap();
+                let cost = u32::from_str(tokens.next().unwrap()).unwrap();
                 costs
-                    .entry(blueprint_name)
+                    .entry(package_address)
                     .or_default()
-                    .insert(function_name, u32::from_str(cost).unwrap());
+                    .insert(export_name, cost);
             });
         costs
     };
@@ -268,4 +268,27 @@ impl FeeTable {
     //======================
     // FIXME: add more costing rules
     // We should account for running modules, such as auth and royalty.
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test_x() {
+        let mut costs: IndexMap<&'static str, IndexMap<&'static str, u32>> = index_map_new();
+        include_str!("../../../../../assets/native_function_base_costs.csv")
+            .split("\n")
+            .filter(|x| x.len() > 0)
+            .for_each(|x| {
+                let mut tokens = x.split(",");
+                let blueprint_name = tokens.next().unwrap();
+                let function_name = tokens.next().unwrap();
+                let cost = tokens.next().unwrap();
+                costs
+                    .entry(blueprint_name)
+                    .or_default()
+                    .insert(function_name, u32::from_str(cost).unwrap());
+            });
+    }
 }
