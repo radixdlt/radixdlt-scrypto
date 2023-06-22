@@ -230,7 +230,6 @@ fn bad_function_schema_should_fail() {
     });
 }
 
-
 #[test]
 fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor() {
     // Arrange
@@ -241,6 +240,29 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package, "PublishPackage", "publish_package", manifest_args!())
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))
+        )
+    });
+}
+
+#[test]
+fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_processor() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(package, "PublishPackage", "publish_package_advanced", manifest_args!())
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);

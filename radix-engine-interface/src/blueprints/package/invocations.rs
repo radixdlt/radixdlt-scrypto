@@ -38,7 +38,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub code: Vec<u8>,
     pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub owner_rule: OwnerRole,
+    pub owner_role: OwnerRole,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -47,7 +47,7 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub code: ManifestBlobRef,
     pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub owner_rule: OwnerRole,
+    pub owner_role: OwnerRole,
 }
 
 pub type PackagePublishWasmAdvancedOutput = PackageAddress;

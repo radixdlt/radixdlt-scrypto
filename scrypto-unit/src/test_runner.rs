@@ -835,7 +835,7 @@ impl TestRunner {
                         setup: definition,
                         metadata: btreemap!(),
                         package_address: Some(ManifestAddressReservation(0)),
-                        owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
+                        owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
                 }]),
                 blobs: BlobsV1 {

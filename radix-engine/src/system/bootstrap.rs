@@ -835,7 +835,7 @@ pub fn create_system_bootstrap_transaction(
                 code: ManifestBlobRef(faucet_code_hash.0),
                 setup: manifest_decode(&faucet_abi).unwrap(),
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRole::None,
+                owner_role: OwnerRole::None,
             }),
         });
     }
@@ -861,7 +861,7 @@ pub fn create_system_bootstrap_transaction(
                 code: ManifestBlobRef(genesis_helper_code_hash.0),
                 setup: manifest_decode(&genesis_helper_abi).unwrap(),
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRole::None,
+                owner_role: OwnerRole::None,
             }),
         });
     }

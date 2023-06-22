@@ -131,7 +131,7 @@ fn test_non_existent_blob_hash() {
                     blueprints: btreemap!(),
                 },
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRole::None,
+                owner_role: OwnerRole::None,
                 package_address: None,
             }),
         })

@@ -11,6 +11,14 @@ mod publish_package {
                 setup: PackageDefinition,
                 metadata: BTreeMap<String, MetadataValue>
             );
+
+            fn publish_wasm_advanced(
+                package_address: Option<GlobalAddressReservation>,
+                code: Vec<u8>,
+                setup: PackageDefinition,
+                metadata: BTreeMap<String, MetadataValue>,
+                owner_role: OwnerRole
+            );
         }
     );
 
@@ -21,5 +29,16 @@ mod publish_package {
         pub fn publish_package() {
             Blueprint::<FiFi>::publish_wasm(vec![], PackageDefinition::default(), btreemap!());
         }
+
+        pub fn publish_package_advanced() {
+            Blueprint::<FiFi>::publish_wasm_advanced(
+                None,
+                vec![],
+                PackageDefinition::default(),
+                btreemap!(),
+                OwnerRole::None,
+            );
+        }
+
     }
 }
