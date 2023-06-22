@@ -141,7 +141,8 @@ impl SystemModuleMixer {
                 max_call_depth: execution_config.max_call_depth,
                 payload_len,
                 num_of_signatures,
-                trace: execution_config.costing_trace,
+                trace_costing: execution_config.trace_costing,
+                costing_traces: index_map_new(),
             },
             node_move: NodeMoveModule {},
             auth: AuthModule {

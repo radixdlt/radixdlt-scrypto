@@ -54,7 +54,7 @@ pub struct ExecutionConfig {
     pub max_substate_writes_per_transaction: usize,
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
-    pub costing_trace: bool,
+    pub trace_costing: bool,
 }
 
 impl ExecutionConfig {
@@ -73,7 +73,7 @@ impl ExecutionConfig {
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
-            costing_trace: false,
+            trace_costing: false,
         }
     }
 
@@ -102,6 +102,7 @@ impl ExecutionConfig {
     pub fn for_test_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_test_transaction(),
+            trace_costing: true,
             ..Self::default()
         }
     }
@@ -262,6 +263,17 @@ where
                             track.revert_non_force_write_changes();
 
                             // FIXME: clean up locks
+                        }
+
+                        #[cfg(not(feature = "alloc"))]
+                        if execution_config
+                            .enabled_modules
+                            .contains(EnabledModules::KERNEL_TRACE)
+                        {
+                            println!("{:-^80}", "Costing Traces");
+                            for (k, v) in costing_module.costing_traces {
+                                println!("        + {} /* {} */", v, k);
+                            }
                         }
 
                         // Distribute fees

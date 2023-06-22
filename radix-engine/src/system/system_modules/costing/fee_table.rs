@@ -106,7 +106,7 @@ impl FeeTable {
         &self,
         node_id: &NodeId,
         _total_size: usize,
-        _db_access: &StoreAccessInfo,
+        _store_access: &StoreAccessInfo,
     ) -> u32 {
         // FIXME: add size count
         if let Some(entity_type) = node_id.entity_type() {
@@ -146,55 +146,55 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn open_substate_cost(&self, _size: usize, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn open_substate_cost(&self, _size: usize, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn read_substate_cost(&self, _size: usize, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn read_substate_cost(&self, _size: usize, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn write_substate_cost(&self, _size: usize, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn write_substate_cost(&self, _size: usize, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn close_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn close_substate_cost(&self, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn set_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn set_substate_cost(&self, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn remove_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn remove_substate_cost(&self, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn scan_sorted_substates_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn scan_sorted_substates_cost(&self, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn scan_substates_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn scan_substates_cost(&self, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
     #[inline]
-    pub fn take_substates_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
+    pub fn take_substates_cost(&self, _store_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }

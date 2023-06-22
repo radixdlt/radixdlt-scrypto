@@ -41,7 +41,8 @@ pub struct CostingModule {
     pub max_call_depth: usize,
     pub payload_len: usize,
     pub num_of_signatures: usize,
-    pub trace: bool,
+    pub trace_costing: bool,
+    pub costing_traces: IndexMap<&'static str, u32>,
 }
 
 impl CostingModule {
@@ -55,11 +56,23 @@ impl CostingModule {
     ) -> Result<(), RuntimeError> {
         let cost_units = costing_entry.to_cost_units(&self.fee_table);
 
-        self.fee_reserve.consume_execution(cost_units).map_err(|e| {
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(e),
-            ))
-        })
+        self.fee_reserve
+            .consume_execution(cost_units)
+            .map_err(|e| {
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
+            })?;
+
+        if self.trace_costing {
+            let key: &'static str = costing_entry.into();
+            self.costing_traces
+                .entry(key)
+                .or_default()
+                .add_assign(cost_units);
+        }
+
+        Ok(())
     }
 
     pub fn apply_deferred_execution_cost(
@@ -72,7 +85,17 @@ impl CostingModule {
             RuntimeError::SystemModuleError(SystemModuleError::CostingError(
                 CostingError::FeeReserveError(e),
             ))
-        })
+        })?;
+
+        if self.trace_costing {
+            let key: &'static str = costing_entry.into();
+            self.costing_traces
+                .entry(key)
+                .or_default()
+                .add_assign(cost_units);
+        }
+
+        Ok(())
     }
 
     pub fn credit_cost_units(
@@ -215,7 +238,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .apply_execution_cost(CostingEntry::CreateNode {
                 node_id,
                 total_substate_size,
-                db_access: store_access,
+                store_access: store_access,
             })?;
 
         Ok(())
@@ -245,7 +268,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::OpenSubstate {
-                db_access: store_access,
+                store_access: store_access,
                 value_size,
             })?;
 
@@ -263,7 +286,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .costing
             .apply_execution_cost(CostingEntry::ReadSubstate {
                 value_size,
-                db_access: store_access,
+                store_access: store_access,
             })?;
 
         Ok(())
@@ -280,7 +303,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .costing
             .apply_execution_cost(CostingEntry::WriteSubstate {
                 value_size,
-                db_access: &store_access,
+                store_access: &store_access,
             })?;
 
         Ok(())
@@ -295,7 +318,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::CloseSubstate {
-                db_access: store_access,
+                store_access: store_access,
             })?;
 
         Ok(())
@@ -309,7 +332,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::ScanSubstates {
-                db_access: store_access,
+                store_access: store_access,
             })?;
 
         Ok(())
@@ -323,7 +346,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::SetSubstate {
-                db_access: store_access,
+                store_access: store_access,
             })?;
 
         Ok(())
@@ -337,7 +360,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::TakeSubstate {
-                db_access: store_access,
+                store_access: store_access,
             })?;
 
         Ok(())
