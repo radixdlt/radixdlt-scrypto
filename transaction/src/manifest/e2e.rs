@@ -256,6 +256,68 @@ RECALL_VAULT
     }
 
     #[test]
+    fn test_vault_freeze() {
+        compile_and_decompile_with_inversion_test(
+            "resource_recall",
+            apply_address_replacements(include_str!("../../examples/resources/freeze.rtm")),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        1u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        2u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        4u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        7u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        1u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        2u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        4u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        7u32
+    )
+;
+"##,
+            ),
+        );
+    }
+
+    #[test]
     fn test_call_function() {
         compile_and_decompile_with_inversion_test(
             "call_function",
@@ -290,7 +352,7 @@ CALL_METHOD
     Decimal("1")
     PreciseDecimal("2")
 ;
-SET_COMPONENT_ROYALTY_CONFIG
+SET_COMPONENT_ROYALTY
     Address("${component_address}")
     "my_method"
     Enum<0u8>()
@@ -434,15 +496,19 @@ CALL_METHOD
             vec![],
             apply_address_replacements(
                 r##"
-SET_COMPONENT_ROYALTY_CONFIG
+SET_COMPONENT_ROYALTY
     Address("${account_address}")
     "my_method"
     Enum<0u8>()
 ;
-CLAIM_PACKAGE_ROYALTY
+LOCK_COMPONENT_ROYALTY
+    Address("${account_address}")
+    "my_method"
+;
+CLAIM_PACKAGE_ROYALTIES
     Address("${package_address}")
 ;
-CLAIM_COMPONENT_ROYALTY
+CLAIM_COMPONENT_ROYALTIES
     Address("${account_address}")
 ;
 "##,
@@ -600,6 +666,18 @@ SET_METADATA
         )
     )
 ;
+LOCK_METADATA
+    Address("${package_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${account_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${resource_address}")
+    "field_name"
+;
 REMOVE_METADATA
     Address("${package_address}")
     "field_name"
@@ -626,11 +704,21 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-UPDATE_ROLE
+SET_ROLE
     Address("${resource_address}")
     Enum<0u8>()
     "hello"
     Enum<0u8>()
+;
+LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello"
+;
+SET_AND_LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello"
     Enum<0u8>()
 ;
 "##,
@@ -1076,11 +1164,11 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "withdraw"
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
 ;
 TAKE_FROM_WORKTOP
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
     Bucket("bucket1")
 ;

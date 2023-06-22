@@ -33,7 +33,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Self::assert_not_frozen(api)?;
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         let divisibility = Self::get_divisibility(api)?;
 
@@ -55,6 +55,8 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
+
         // Drop other bucket
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -82,7 +84,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Self::assert_not_frozen(api)?;
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Check resource address and amount
         let resource_address =
@@ -155,7 +157,7 @@ impl FungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn freeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -168,13 +170,13 @@ impl FungibleVaultBlueprint {
         )?;
 
         let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        frozen.is_frozen = true;
+        frozen.frozen.insert(to_freeze);
         api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }
 
-    pub fn unfreeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -186,7 +188,7 @@ impl FungibleVaultBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        frozen.is_frozen = false;
+        frozen.frozen.remove(to_unfreeze);
         api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
@@ -231,6 +233,8 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take(&amount, api)?.package_burn(api)?;
         Ok(())
     }
@@ -260,7 +264,7 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -274,7 +278,8 @@ impl FungibleVaultBlueprint {
             LockFlags::MUTABLE,
         )?;
         let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        if frozen.is_frozen {
+
+        if frozen.frozen.intersects(flags) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::VaultIsFrozen),
             ));

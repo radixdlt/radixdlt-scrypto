@@ -1,8 +1,4 @@
-use super::*;
-use crate::types::PackageAddress;
-use crate::*;
-use sbor::rust::prelude::*;
-use sbor::*;
+use crate::internal_prelude::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
 pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
