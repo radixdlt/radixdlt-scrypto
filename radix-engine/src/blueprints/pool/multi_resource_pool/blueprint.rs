@@ -78,9 +78,15 @@ impl MultiResourcePoolBlueprint {
             AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
-                "pool_vault_number" => MetadataValue::U8(2u8), locked;
-                "pool_resources" => MetadataValue::GlobalAddressArray(resource_addresses.iter().cloned().map(Into::into).collect()), locked;
-                "pool_unit" => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()), locked;
+                "pool_vault_number" => 2u8, locked;
+                "pool_resources" => {
+                    let addresses: Vec<GlobalAddress> = resource_addresses.iter().cloned().map(Into::into).collect();
+                    addresses
+                }, locked;
+                "pool_unit" => {
+                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
+                    address
+                }, locked;
             },
             api,
         )?;

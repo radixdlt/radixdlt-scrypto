@@ -65,9 +65,15 @@ impl OneResourcePoolBlueprint {
             AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
-                "pool_vault_number" => MetadataValue::U8(1u8), locked;
-                "pool_resources" => MetadataValue::GlobalAddress(resource_address.into()), locked;
-                "pool_unit" => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()), locked;
+                "pool_vault_number" => 1u8, locked;
+                "pool_resources" => {
+                    let resource_address: GlobalAddress = resource_address.into();
+                    resource_address
+                }, locked;
+                "pool_unit" => {
+                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
+                    address
+                }, locked;
             },
             api,
         )?;

@@ -1738,7 +1738,7 @@ mod tests {
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: metadata_init! {
-                        "name" => MetadataValue::String("Token".to_string()), locked;
+                        "name" => "Token".to_string(), locked;
                     },
                     access_rules: BTreeMap::from([
                         (
@@ -1894,7 +1894,7 @@ mod tests {
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: metadata_init!(
-                        "name" => MetadataValue::String("Token".to_string()), locked;
+                        "name" => "Token".to_owned(), locked;
                     ),
                     access_rules: BTreeMap::from([
                         (
@@ -1942,7 +1942,7 @@ mod tests {
                         track_total_supply: false,
                         divisibility: 18,
                         metadata: metadata_init!(
-                            "name" => MetadataValue::String("Token".to_string()), locked;
+                            "name" => "Token".to_owned(), locked;
                         ),
                         access_rules: BTreeMap::from([
                             (

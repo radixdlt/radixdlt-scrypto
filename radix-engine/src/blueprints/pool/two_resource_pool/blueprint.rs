@@ -75,14 +75,21 @@ impl TwoResourcePoolBlueprint {
         // Creating the pool nodes
         let access_rules =
             AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
+
         let metadata = Metadata::create_with_data(
             metadata_init! {
-                "pool_vault_number" => MetadataValue::U8(2u8), locked;
-                "pool_resources" => MetadataValue::GlobalAddressArray(vec![
-                    resource_address1.into(),
-                    resource_address2.into()
-                ]), locked;
-                "pool_unit" => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()), locked;
+                "pool_vault_number" => 2u8, locked;
+                "pool_resources" => {
+                    let pool_resources: Vec<GlobalAddress> = vec![
+                        resource_address1.into(),
+                        resource_address2.into()
+                    ];
+                    pool_resources
+                }, locked;
+                "pool_unit" => {
+                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
+                    address
+                }, locked;
             },
             api,
         )?;

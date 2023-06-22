@@ -469,11 +469,11 @@ pub fn create_system_bootstrap_transaction(
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: metadata_init! {
-                        "symbol" => MetadataValue::String(XRD_SYMBOL.to_owned()), locked;
-                        "name" => MetadataValue::String(XRD_NAME.to_owned()), locked;
-                        "description" => MetadataValue::String(XRD_DESCRIPTION.to_owned()), locked;
-                        "url" => MetadataValue::String(XRD_URL.to_owned()), locked;
-                        "icon_url" => MetadataValue::String(XRD_ICON_URL.to_owned()), locked;
+                        "symbol" => XRD_SYMBOL.to_owned(), locked;
+                        "name" => XRD_NAME.to_owned(), locked;
+                        "description" => XRD_DESCRIPTION.to_owned(), locked;
+                        "url" => XRD_URL.to_owned(), locked;
+                        "icon_url" => XRD_ICON_URL.to_owned(), locked;
                     },
                     access_rules,
                     initial_supply: Decimal::zero(),
