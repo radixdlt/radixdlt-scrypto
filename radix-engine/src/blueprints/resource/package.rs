@@ -2401,7 +2401,7 @@ impl ResourceManagerNativePackage {
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.metadata,
+                    input.metadata.into(),
                     input.access_rules,
                     input.entries,
                     api,

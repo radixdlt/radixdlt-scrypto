@@ -743,7 +743,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
                         non_fungible_schema,
                         track_total_supply: true,
-                        metadata: self.metadata,
+                        metadata: self.metadata.into(),
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
                             .into_iter()

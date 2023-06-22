@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue};
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -169,7 +169,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
@@ -251,7 +251,7 @@ impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create_ruid_with_initial_supply<Y>(
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,

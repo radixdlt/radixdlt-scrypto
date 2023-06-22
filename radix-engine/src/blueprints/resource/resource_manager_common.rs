@@ -2,9 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataValue, METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE, MetadataInit};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -209,7 +207,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -220,7 +218,7 @@ where
 
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-    let metadata = Metadata::create_with_data(metadata.into(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(

@@ -8,7 +8,7 @@ use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue};
 use radix_engine_interface::types::NonFungibleData;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
@@ -94,7 +94,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT: &
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: Vec<(ScryptoValue,)>,
 }
