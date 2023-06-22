@@ -35,12 +35,14 @@ impl<W: WasmEngine> ScryptoVm<W> {
             .expect("Failed to re-instrument");
         ScryptoVmInstance {
             instance: self.wasm_engine.instantiate(&instrumented_code),
+            package_address: *package_address,
         }
     }
 }
 
 pub struct ScryptoVmInstance<I: WasmInstance> {
     instance: I,
+    package_address: PackageAddress,
 }
 
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
@@ -54,7 +56,11 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         Y: ClientApi<RuntimeError> + ClientLimitsApi<RuntimeError>,
     {
         let rtn = {
-            let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
+            let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
+                api,
+                self.package_address,
+                func_name.to_string(),
+            ));
 
             let mut input = Vec::new();
             input.push(

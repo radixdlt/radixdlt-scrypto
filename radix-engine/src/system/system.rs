@@ -1,7 +1,7 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
-use super::system_modules::costing::CostingReason;
+use super::system_modules::costing::CostingEntry;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
@@ -18,8 +18,6 @@ use crate::system::system_callback::{
 };
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
-
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -1188,6 +1186,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     #[trace_resources]
     fn field_lock_read(&mut self, lock_handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
@@ -1203,6 +1202,7 @@ where
             .map(|v| v.as_slice().to_vec())
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn field_lock_write(
         &mut self,
@@ -1235,6 +1235,7 @@ where
         Ok(())
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn field_lock_release(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
@@ -1254,6 +1255,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     #[trace_resources]
     fn new_object(
         &mut self,
@@ -1278,6 +1280,7 @@ where
         )
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn allocate_global_address(
         &mut self,
@@ -1303,6 +1306,7 @@ where
         Ok((global_address_reservation, global_address))
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn allocate_virtual_global_address(
         &mut self,
@@ -1315,6 +1319,7 @@ where
         Ok(global_address_reservation)
     }
 
+    // Costing through kernel
     // FIXME: ensure that only the package actor can globalize its own blueprints
     #[trace_resources]
     fn globalize(
@@ -1337,6 +1342,7 @@ where
         Ok(global_address)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn globalize_with_address_and_create_inner_object(
         &mut self,
@@ -1366,6 +1372,7 @@ where
         Ok((global_address, inner_object))
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn call_method_advanced(
         &mut self,
@@ -1468,6 +1475,7 @@ where
             .map(|v| v.into())
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -1479,6 +1487,7 @@ where
         Ok(object_info)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -1494,6 +1503,7 @@ where
         Ok(address)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
@@ -1551,6 +1561,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     #[trace_resources]
     fn key_value_entry_get(
         &mut self,
@@ -1570,6 +1581,7 @@ where
         })
     }
 
+    // Costing through kernel
     // FIXME: Should this release lock or continue allow to mutate entry until lock released?
     fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
@@ -1592,6 +1604,7 @@ where
         Ok(())
     }
 
+    // Costing through kernel
     fn key_value_entry_remove(
         &mut self,
         handle: KeyValueEntryHandle,
@@ -1611,6 +1624,7 @@ where
         Ok(current_value)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn key_value_entry_set(
         &mut self,
@@ -1677,6 +1691,7 @@ where
         Ok(())
     }
 
+    // Costing through kernel
     fn key_value_entry_release(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         if !data.is_kv_entry() {
@@ -1692,6 +1707,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     #[trace_resources]
     fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
@@ -1718,6 +1734,7 @@ where
         Ok(node_id)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn key_value_store_get_info(
         &mut self,
@@ -1732,6 +1749,7 @@ where
         Ok(info.schema)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn key_value_store_lock_entry(
         &mut self,
@@ -1799,6 +1817,7 @@ where
         Ok(handle)
     }
 
+    // Costing through kernel
     fn key_value_store_remove_entry(
         &mut self,
         node_id: &NodeId,
@@ -1814,6 +1833,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     fn actor_index_insert(
         &mut self,
         object_handle: ObjectHandle,
@@ -1838,6 +1858,7 @@ where
             .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
     }
 
+    // Costing through kernel
     fn actor_index_remove(
         &mut self,
         object_handle: ObjectHandle,
@@ -1856,6 +1877,7 @@ where
         Ok(rtn)
     }
 
+    // Costing through kernel
     fn actor_index_scan(
         &mut self,
         object_handle: ObjectHandle,
@@ -1876,6 +1898,7 @@ where
         Ok(substates)
     }
 
+    // Costing through kernel
     fn actor_index_take(
         &mut self,
         object_handle: ObjectHandle,
@@ -1902,6 +1925,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     #[trace_resources]
     fn actor_sorted_index_insert(
         &mut self,
@@ -1932,6 +1956,7 @@ where
         )
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn actor_sorted_index_remove(
         &mut self,
@@ -1956,6 +1981,7 @@ where
         Ok(rtn)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn actor_sorted_index_scan(
         &mut self,
@@ -1984,6 +2010,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -2014,21 +2041,31 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // No costing should be applied
     #[trace_resources(log=units, log=reason)]
     fn consume_cost_units(
         &mut self,
-        units: u32,
-        reason: ClientCostingReason,
+        costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_get_system().modules.apply_execution_cost(
-            match reason {
-                ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                ClientCostingReason::RunNative => CostingReason::RunNative,
-                ClientCostingReason::RunSystem => CostingReason::RunSystem,
-            },
-            |_| units,
-            5,
-        )
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(match costing_entry {
+                ClientCostingEntry::RunNativeCode {
+                    package_address,
+                    export_name,
+                } => CostingEntry::RunNativeCode {
+                    package_address,
+                    export_name,
+                },
+                ClientCostingEntry::RunWasmCode {
+                    package_address,
+                    export_name,
+                } => CostingEntry::RunWasmCode {
+                    package_address,
+                    export_name,
+                },
+            })
     }
 
     #[trace_resources]
@@ -2041,10 +2078,20 @@ where
         self.api
             .kernel_get_system()
             .modules
+            .apply_execution_cost(CostingEntry::LockFee)?;
+
+        self.api
+            .kernel_get_system()
+            .modules
             .credit_cost_units(vault_id, locked_fee, contingent)
     }
 
     fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.cost_unit_limit())
         } else {
@@ -2055,6 +2102,11 @@ where
     }
 
     fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.cost_unit_price())
         } else {
@@ -2065,6 +2117,11 @@ where
     }
 
     fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.tip_percentage())
         } else {
@@ -2075,6 +2132,11 @@ where
     }
 
     fn fee_balance(&mut self) -> Result<Decimal, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.fee_balance())
         } else {
@@ -2090,6 +2152,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     #[trace_resources]
     fn actor_lock_field(
         &mut self,
@@ -2137,6 +2200,11 @@ where
 
     #[trace_resources]
     fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryActor)?;
+
         let actor = self.api.kernel_get_system_state().current;
         let object_info = actor
             .try_as_method()
@@ -2148,6 +2216,11 @@ where
 
     #[trace_resources]
     fn actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryActor)?;
+
         let actor = self.api.kernel_get_system_state().current;
         match actor {
             Actor::Method(MethodActor { node_id, .. }) => Ok(*node_id),
@@ -2156,6 +2229,11 @@ where
     }
     #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryActor)?;
+
         let actor = self.api.kernel_get_system_state().current;
         match actor {
             Actor::Method(MethodActor {
@@ -2170,12 +2248,16 @@ where
 
     #[trace_resources]
     fn actor_get_blueprint(&mut self) -> Result<BlueprintId, RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryActor)?;
 
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.blueprint_id().clone())
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn actor_call_module_method(
         &mut self,
@@ -2210,6 +2292,11 @@ where
         object_handle: ObjectHandle,
         feature: &str,
     ) -> Result<bool, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryActor)?;
+
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
             ActorObjectType::SELF => self.actor_get_node_id()?,
@@ -2226,6 +2313,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // Costing through kernel
     #[trace_resources]
     fn actor_lock_key_value_entry(
         &mut self,
@@ -2282,6 +2370,7 @@ where
         Ok(handle)
     }
 
+    // Costing through kernel
     fn actor_remove_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
@@ -2305,7 +2394,10 @@ where
 {
     #[trace_resources]
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryAuthZone)?;
 
         if let Some(auth_zone_id) = self.api.kernel_get_system().modules.auth_zone_id() {
             Ok(auth_zone_id.into())
@@ -2316,8 +2408,10 @@ where
 
     #[trace_resources]
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
-        // FIXME: possibly non-constant costing
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::AssertAccessRule)?;
 
         // Fetch the tip auth zone
         let auth_zone_id = self.get_auth_zone()?;
@@ -2343,10 +2437,9 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // No costing should be applied
     #[trace_resources]
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
-        // No costing applied
-
         let current_depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
@@ -2361,10 +2454,9 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    // No costing should be applied
     #[trace_resources]
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
-        // No costing applied
-
         self.api
             .kernel_get_system()
             .modules
@@ -2380,7 +2472,12 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::EmitEvent {
+                size: event_data.len(),
+            })?;
 
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
@@ -2463,7 +2560,12 @@ where
 
     #[trace_resources]
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::EmitLog {
+                size: message.len(),
+            })?;
 
         self.api.kernel_get_system().modules.add_log(level, message);
 
@@ -2472,7 +2574,10 @@ where
 
     #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryTransactionHash)?;
 
         if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
             Ok(hash)
@@ -2485,7 +2590,10 @@ where
 
     #[trace_resources]
     fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::GenerateRuid)?;
 
         if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
             Ok(ruid)
@@ -2499,7 +2607,12 @@ where
     // FIXME: update costing for runtime data, such as logs, error messages and events.
 
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::Panic {
+                size: message.len(),
+            })?;
 
         Err(RuntimeError::ApplicationError(ApplicationError::Panic(
             message.to_string(),

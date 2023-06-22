@@ -7,7 +7,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::ClientCostingReason;
+use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
 
@@ -19,17 +19,21 @@ where
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
+    package_address: PackageAddress,
+    export_name: String,
 }
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
 where
     Y: ClientApi<RuntimeError>,
 {
-    pub fn new(api: &'y mut Y) -> Self {
+    pub fn new(api: &'y mut Y, package_address: PackageAddress, export_name: String) -> Self {
         ScryptoRuntime {
             api,
             buffers: BTreeMap::new(),
             next_buffer_id: 0,
+            package_address,
+            export_name,
         }
     }
 }
@@ -354,7 +358,13 @@ where
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
-            .consume_cost_units(n, ClientCostingReason::RunWasm)
+            .consume_cost_units(
+                n,
+                ClientCostingEntry::RunNativeCode {
+                    package_address: &self.package_address,
+                    export_name: &self.export_name,
+                },
+            )
             .map_err(InvokeError::downstream)
     }
 

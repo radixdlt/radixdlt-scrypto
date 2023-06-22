@@ -54,6 +54,7 @@ pub struct ExecutionConfig {
     pub max_substate_writes_per_transaction: usize,
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
+    pub costing_trace: bool,
 }
 
 impl ExecutionConfig {
@@ -72,6 +73,7 @@ impl ExecutionConfig {
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
+            costing_trace: false,
         }
     }
 
@@ -814,17 +816,6 @@ where
     fn print_execution_summary(receipt: &TransactionReceipt) {
         match &receipt.transaction_result {
             TransactionResult::Commit(commit) => {
-                println!("{:-^80}", "Cost Breakdown");
-                let break_down = commit
-                    .fee_summary
-                    .execution_cost_breakdown
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), v))
-                    .collect::<BTreeMap<String, &u32>>();
-                for (k, v) in break_down {
-                    println!("        + {} /* {} */", v, k);
-                }
-
                 println!("{:-^80}", "Cost Totals");
                 println!(
                     "{:<30}: {:>10}",

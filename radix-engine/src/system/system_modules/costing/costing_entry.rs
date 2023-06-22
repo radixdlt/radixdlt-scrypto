@@ -35,12 +35,12 @@ pub enum CostingEntry<'a> {
 
     /* node */
     AllocateNodeId,
-    AllocateGlobalAddress,
     CreateNode {
         node_id: &'a NodeId,
         db_access: &'a StoreAccessInfo,
     },
     DropNode,
+    MoveModules, // FIXME: apply this
     OpenSubstate {
         db_access: &'a StoreAccessInfo,
     },
@@ -72,10 +72,17 @@ pub enum CostingEntry<'a> {
     },
 
     /* system */
-    Event {
+    LockFee,
+    QueryFeeReserve,
+    QueryActor,
+    QueryAuthZone,
+    AssertAccessRule,
+    QueryTransactionHash,
+    GenerateRuid,
+    EmitEvent {
         size: usize,
     },
-    Log {
+    EmitLog {
         size: usize,
     },
     Panic {

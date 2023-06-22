@@ -141,6 +141,7 @@ impl SystemModuleMixer {
                 max_call_depth: execution_config.max_call_depth,
                 payload_len,
                 num_of_signatures,
+                trace: execution_config.costing_trace,
             },
             node_move: NodeMoveModule {},
             auth: AuthModule {
@@ -501,13 +502,10 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn apply_execution_cost<F>(
+    pub fn apply_execution_cost(
         &mut self,
         costing_entry: CostingEntry,
-    ) -> Result<(), RuntimeError>
-    where
-        F: Fn(&FeeTable) -> u32,
-    {
+    ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_execution_cost(costing_entry)
         } else {
