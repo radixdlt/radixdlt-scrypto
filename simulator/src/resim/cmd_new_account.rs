@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, NonFungibleDataSchema,
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceAction,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
@@ -82,7 +82,7 @@ impl NewAccount {
                             "name".to_owned() => MetadataValue::String("Owner Badge".to_owned())
                         ),
                         access_rules: btreemap!(
-                            ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
+                            ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
                         ),
                         entries: btreemap!(
                             NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),

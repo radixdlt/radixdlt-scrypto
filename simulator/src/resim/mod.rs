@@ -83,7 +83,6 @@ use radix_engine_store_interface::{
     interface::SubstateDatabase,
 };
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
-use sbor::rust::prelude::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;

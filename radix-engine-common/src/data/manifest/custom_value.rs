@@ -1,5 +1,6 @@
 use crate::data::manifest::model::*;
-use crate::data::manifest::*;
+use crate::internal_prelude::*;
+
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 

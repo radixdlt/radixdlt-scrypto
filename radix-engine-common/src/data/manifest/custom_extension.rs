@@ -1,7 +1,4 @@
-use super::*;
-use crate::data::scrypto::*;
-use crate::*;
-use sbor::rust::prelude::*;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum ManifestCustomExtension {}
