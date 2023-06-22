@@ -1842,7 +1842,8 @@ mod tests {
                         metadata: BTreeMap::from([(
                             "name".to_string(),
                             MetadataValue::String("Token".to_string())
-                        )]).into(),
+                        )])
+                        .into(),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceMethodAuthKey::Withdraw,

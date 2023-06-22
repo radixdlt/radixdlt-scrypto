@@ -11,7 +11,7 @@ pub struct KeyValueStoreInit<K: Ord, V> {
 impl<K: Ord, V> Default for KeyValueStoreInit<K, V> {
     fn default() -> Self {
         Self {
-            data: BTreeMap::new()
+            data: BTreeMap::new(),
         }
     }
 }
@@ -19,23 +19,17 @@ impl<K: Ord, V> Default for KeyValueStoreInit<K, V> {
 impl<K: Ord, V> KeyValueStoreInit<K, V> {
     pub fn new() -> Self {
         KeyValueStoreInit {
-            data: BTreeMap::new()
+            data: BTreeMap::new(),
         }
     }
 
     pub fn set<E: Into<K>>(&mut self, key: E, value: V) {
-        let entry = KeyValueStoreInitEntry {
-            value,
-            lock: false,
-        };
+        let entry = KeyValueStoreInitEntry { value, lock: false };
         self.data.insert(key.into(), entry);
     }
 
     pub fn set_and_lock<E: Into<K>>(&mut self, key: E, value: V) {
-        let entry = KeyValueStoreInitEntry {
-            value,
-            lock: true,
-        };
+        let entry = KeyValueStoreInitEntry { value, lock: true };
         self.data.insert(key.into(), entry);
     }
 }
@@ -49,12 +43,12 @@ pub struct KeyValueStoreInitEntry<V> {
 
 #[macro_export]
 macro_rules! kv_store_init_set_entry {
-    ($store:expr, $key:expr, $value:expr, updatable) => ({
+    ($store:expr, $key:expr, $value:expr, updatable) => {{
         $store.set($key, $value);
-    });
-    ($store:expr, $key:expr, $value:expr, locked) => ({
+    }};
+    ($store:expr, $key:expr, $value:expr, locked) => {{
         $store.set_and_lock($key, $value);
-    });
+    }};
 }
 
 #[macro_export]

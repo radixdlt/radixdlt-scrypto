@@ -15,11 +15,16 @@ fn one_resource_pool_can_be_instantiated() {
 
 pub fn cannot_set_locked_metadata(key: &str, expect_success: bool) {
     let mut test_runner = TestEnvironment::new(18);
-    let receipt = test_runner.set_metadata(key,  MetadataValue::U8(2u8), true);
+    let receipt = test_runner.set_metadata(key, MetadataValue::U8(2u8), true);
     if expect_success {
         receipt.expect_commit_success();
     } else {
-        receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)));
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            )
+        });
     }
 }
 

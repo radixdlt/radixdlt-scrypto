@@ -4,7 +4,7 @@ use crate::*;
 use arbitrary::Arbitrary;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataInit};
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::rust::collections::BTreeMap;
 
 pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";

@@ -1,6 +1,8 @@
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, MetadataValue, METADATA_SET_IDENT, MetadataInit};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataInit, MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
@@ -495,7 +497,6 @@ impl ManifestBuilder {
             .map(|(k, v)| (k, (v.0, v.1.into())))
             .collect();
 
-
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
@@ -757,7 +758,10 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_SET_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&MetadataSetInput { key: key.to_string(), value }),
+            args: to_manifest_value_and_unwrap!(&MetadataSetInput {
+                key: key.to_string(),
+                value
+            }),
         })
         .0
     }

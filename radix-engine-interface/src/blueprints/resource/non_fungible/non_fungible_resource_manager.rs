@@ -8,7 +8,7 @@ use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataInit};
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::types::NonFungibleData;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
