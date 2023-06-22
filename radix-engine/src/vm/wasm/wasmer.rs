@@ -593,10 +593,10 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: u32) -> Result<(), RuntimeError> {
+        fn consume_gas(env: &WasmerInstanceEnv, n: u32) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
             runtime
-                .consume_cost_units(cost_unit)
+                .consume_gas(n)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
@@ -701,7 +701,7 @@ impl WasmerModule {
                 GET_BLUEPRINT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
                 GET_AUTH_ZONE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_auth_zone),
                 ASSERT_ACCESS_RULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), assert_access_rule),
-                CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
+                CONSUME_GAS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_gas),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
                 LOG_MESSAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
                 PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), panic),

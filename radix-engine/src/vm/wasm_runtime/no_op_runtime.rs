@@ -176,7 +176,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.fee_reserve
             .consume_execution(n)
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))

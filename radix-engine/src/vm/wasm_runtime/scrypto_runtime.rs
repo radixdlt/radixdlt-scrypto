@@ -356,7 +356,7 @@ where
             .map_err(InvokeError::downstream)
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
