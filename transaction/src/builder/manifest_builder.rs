@@ -4,8 +4,9 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentSetRoyaltyInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
@@ -671,7 +672,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
+    pub fn claim_package_royalties(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
@@ -692,6 +693,21 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&ComponentSetRoyaltyInput {
                 method: method.to_string(),
                 amount,
+            }),
+        })
+        .0
+    }
+
+    pub fn lock_component_royalty<S: ToString>(
+        &mut self,
+        component_address: ComponentAddress,
+        method: S,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallRoyaltyMethod {
+            address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ComponentLockRoyaltyInput {
+                method: method.to_string(),
             }),
         })
         .0

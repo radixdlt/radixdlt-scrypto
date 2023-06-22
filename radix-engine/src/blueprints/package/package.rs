@@ -719,7 +719,7 @@ impl PackageNativePackage {
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = PackageRoyaltyNativeBlueprint::claim_royalty(api)?;
+                let rtn = PackageRoyaltyNativeBlueprint::claim_royalties(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::ApplicationError(
@@ -1224,7 +1224,7 @@ impl PackageRoyaltyNativeBlueprint {
         Ok(())
     }
 
-    pub(crate) fn claim_royalty<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn claim_royalties<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
