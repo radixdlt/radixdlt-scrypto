@@ -507,22 +507,19 @@ macro_rules! enable_package_royalties {
 }
 
 #[macro_export]
-macro_rules! role_definition_entry {
-    ($rule:expr) => {{
-        ($rule, false)
-    }};
-    ($rule:expr, updatable) => {{
-        ($rule, true)
-    }};
+macro_rules! roles {
+    ( $($role:ident => $rule:expr, $locked:ident;)* ) => ({
+        roles_internal!(MethodRoles, $($role => $rule, $locked;)*)
+    });
 }
 
 #[macro_export]
 macro_rules! roles_internal {
-    ($module_roles:ident, $($role:ident => $rule:expr $(, $updatable:ident)? ;)* ) => ({
+    ($module_roles:ident, $($role:ident => $rule:expr, $locked:ident;)* ) => ({
         let method_roles = $module_roles::<(AccessRule, bool)> {
             $(
                 $role: {
-                    role_definition_entry!($rule $(, $updatable)?)
+                    role_definition_entry!($rule, $locked)
                 }
             ),*
         };
@@ -541,10 +538,13 @@ macro_rules! roles_internal {
 }
 
 #[macro_export]
-macro_rules! roles {
-    ( $($role:ident => $rule:expr $(, $updatable:ident)? ;)* ) => ({
-        roles_internal!(MethodRoles, $($role => $rule $(, $updatable)? ;)*)
-    });
+macro_rules! role_definition_entry {
+    ($rule:expr, locked) => {{
+        ($rule, false)
+    }};
+    ($rule:expr, updatable) => {{
+        ($rule, true)
+    }};
 }
 
 #[macro_export]
@@ -612,14 +612,14 @@ macro_rules! component_royalty_config {
     ($($method:ident => $royalty:expr, $locked:ident;)*) => ({
         Methods::<(RoyaltyAmount, bool)> {
             $(
-                $method: internal_royalty_entry!($royalty, $locked),
+                $method: internal_component_royalty_entry!($royalty, $locked),
             )*
         }
     });
 }
 
 #[macro_export]
-macro_rules! internal_royalty_entry {
+macro_rules! internal_component_royalty_entry {
     ($royalty:expr, locked) => {{
         ($royalty.into(), false)
     }};

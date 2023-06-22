@@ -44,7 +44,7 @@ mod royalty_test {
                 .prepare_to_globalize(OwnerRole::None)
                 .enable_component_royalties(component_royalties! {
                     roles {
-                        royalty_admin => rule!(allow_all);
+                        royalty_admin => rule!(allow_all), locked;
                     },
                     init {
                         free_method => Free, locked;

@@ -21,7 +21,7 @@ mod balance_changes_test {
             .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
             .enable_component_royalties(component_royalties! {
                 roles {
-                    royalty_admin => rule!(allow_all);
+                    royalty_admin => rule!(allow_all), locked;
                 },
                 init {
                     put => Xrd(1.into()), locked;
