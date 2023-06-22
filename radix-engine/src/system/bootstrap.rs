@@ -446,25 +446,6 @@ pub fn create_system_bootstrap_transaction(
 
     // XRD Token
     {
-        let mut metadata = BTreeMap::new();
-        metadata.insert(
-            "symbol".to_owned(),
-            MetadataValue::String(XRD_SYMBOL.to_owned()),
-        );
-        metadata.insert(
-            "name".to_owned(),
-            MetadataValue::String(XRD_NAME.to_owned()),
-        );
-        metadata.insert(
-            "description".to_owned(),
-            MetadataValue::String(XRD_DESCRIPTION.to_owned()),
-        );
-        metadata.insert("url".to_owned(), MetadataValue::String(XRD_URL.to_owned()));
-        metadata.insert(
-            "icon_url".to_owned(),
-            MetadataValue::String(XRD_ICON_URL.to_owned()),
-        );
-
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         access_rules.insert(
@@ -487,7 +468,13 @@ pub fn create_system_bootstrap_transaction(
                 &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                     track_total_supply: false,
                     divisibility: 18,
-                    metadata,
+                    metadata: metadata_init! {
+                        "symbol" => MetadataValue::String(XRD_SYMBOL.to_owned()), locked;
+                        "name" => MetadataValue::String(XRD_NAME.to_owned()), locked;
+                        "description" => MetadataValue::String(XRD_DESCRIPTION.to_owned()), locked;
+                        "url" => MetadataValue::String(XRD_URL.to_owned()), locked;
+                        "icon_url" => MetadataValue::String(XRD_ICON_URL.to_owned()), locked;
+                    },
                     access_rules,
                     initial_supply: Decimal::zero(),
                     resource_address: id_allocator.new_address_reservation_id(),
@@ -498,7 +485,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Package Token
     {
-        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         pre_allocated_addresses.push((
@@ -514,7 +500,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata,
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }
@@ -524,7 +510,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Object Token
     {
-        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         pre_allocated_addresses.push((
@@ -540,7 +525,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata,
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }
@@ -573,7 +558,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: btreemap!(),
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }
@@ -606,7 +591,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: btreemap!(),
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }
@@ -674,7 +659,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: btreemap!(),
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }
@@ -757,7 +742,6 @@ pub fn create_system_bootstrap_transaction(
 
     // ECDSA Secp256k1
     {
-        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
@@ -773,7 +757,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata,
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }
@@ -783,7 +767,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Ed25519
     {
-        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
@@ -799,7 +782,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata,
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }
@@ -809,7 +792,6 @@ pub fn create_system_bootstrap_transaction(
 
     // System Token
     {
-        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
@@ -825,7 +807,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata,
+                    metadata: metadata_init!(),
                     access_rules,
                     resource_address: id_allocator.new_address_reservation_id(),
                 }

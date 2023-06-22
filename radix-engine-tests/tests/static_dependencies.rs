@@ -150,7 +150,7 @@ fn static_resource_should_be_callable() {
                         &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                             track_total_supply: true,
                             divisibility: 0u8,
-                            metadata: btreemap!(),
+                            metadata: metadata_init!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
                             resource_address: ManifestAddressReservation(0),

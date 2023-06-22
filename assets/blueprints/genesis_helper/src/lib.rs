@@ -252,7 +252,7 @@ mod genesis_helper {
                     &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                         track_total_supply: true,
                         divisibility: 18,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                         initial_supply: Decimal::zero(),
                         resource_address: resource.address_reservation,

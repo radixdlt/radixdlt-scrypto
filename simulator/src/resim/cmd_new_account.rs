@@ -78,8 +78,8 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: btreemap!(
-                            "name".to_owned() => MetadataValue::String("Owner Badge".to_owned())
+                        metadata: metadata_init!(
+                            "name" => MetadataValue::String("Owner Badge".to_owned()), locked;
                         ),
                         access_rules: btreemap!(
                             ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))

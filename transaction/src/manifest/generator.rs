@@ -1737,10 +1737,9 @@ mod tests {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: BTreeMap::from([(
-                        "name".to_string(),
-                        MetadataValue::String("Token".to_string())
-                    )]),
+                    metadata: metadata_init! {
+                        "name" => MetadataValue::String("Token".to_string()), locked;
+                    },
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
@@ -1783,7 +1782,7 @@ mod tests {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
                         ),
-                        metadata: BTreeMap::new(),
+                        metadata: metadata_init!(),
                         access_rules: BTreeMap::new(),
                     }),
                 }],
@@ -1894,10 +1893,9 @@ mod tests {
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     track_total_supply: false,
                     divisibility: 18,
-                    metadata: BTreeMap::from([(
-                        "name".to_string(),
-                        MetadataValue::String("Token".to_string())
-                    )]),
+                    metadata: metadata_init!(
+                        "name" => MetadataValue::String("Token".to_string()), locked;
+                    ),
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
@@ -1943,10 +1941,9 @@ mod tests {
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
                         track_total_supply: false,
                         divisibility: 18,
-                        metadata: BTreeMap::from([(
-                            "name".to_string(),
-                            MetadataValue::String("Token".to_string())
-                        )]),
+                        metadata: metadata_init!(
+                            "name" => MetadataValue::String("Token".to_string()), locked;
+                        ),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceMethodAuthKey::Withdraw,

@@ -453,7 +453,7 @@ impl ManifestBuilder {
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
                         divisibility,
                         track_total_supply,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                         initial_supply,
                     }
@@ -467,7 +467,7 @@ impl ManifestBuilder {
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     divisibility,
                     track_total_supply,
-                    metadata,
+                    metadata: metadata.into(),
                     access_rules,
                 }),
             });
@@ -528,7 +528,7 @@ impl ManifestBuilder {
                     id_type,
                     track_total_supply,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                    metadata,
+                    metadata: metadata.into(),
                     access_rules,
                 }),
             });

@@ -33,7 +33,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateInput {
                 track_total_supply,
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
                 divisibility,
             })
@@ -61,7 +61,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                 track_total_supply,
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
                 divisibility,
                 initial_supply: amount,
@@ -92,7 +92,7 @@ impl ResourceManager {
                 id_type,
                 track_total_supply,
                 non_fungible_schema,
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
             })
             .unwrap(),
@@ -120,7 +120,7 @@ impl ResourceManager {
                 id_type,
                 track_total_supply,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
                 resource_address: address_reservation,
             })

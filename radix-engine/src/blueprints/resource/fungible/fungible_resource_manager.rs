@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataInit};
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -72,7 +72,7 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
@@ -107,7 +107,7 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create_with_initial_supply<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         api: &mut Y,
@@ -134,7 +134,7 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create_with_initial_supply_and_address<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         resource_address_reservation: GlobalAddressReservation,

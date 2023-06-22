@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE, MetadataInit};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE, MetadataInit};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -143,7 +143,7 @@ pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
@@ -152,7 +152,7 @@ where
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-    let metadata = Metadata::create_with_data(metadata.into(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
 
     let address = api.globalize(
         btreemap!(
@@ -170,7 +170,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -179,7 +179,7 @@ where
 {
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
-    let metadata = Metadata::create_with_data(metadata.into(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
 
     let modules = btreemap!(
         ObjectModuleId::Main => object_id,
