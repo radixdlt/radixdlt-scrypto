@@ -1,5 +1,6 @@
 use crate::kernel::actor::Actor;
 use crate::types::*;
+use lazy_static::lazy_static;
 
 pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
@@ -12,6 +13,25 @@ const COSTING_COEFFICIENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or do
 const COSTING_COEFFICIENT_STORAGE: u64 = 10;
 const COSTING_COEFFICIENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
 
+lazy_static! {
+    pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<&'static str, IndexMap<&'static str, u32>> = {
+        let mut costs: IndexMap<&'static str, IndexMap<&'static str, u32>> = index_map_new();
+        include_str!("../../../../../assets/native_function_base_costs.csv")
+            .split("\n")
+            .filter(|x| x.len() > 0)
+            .for_each(|x| {
+                let mut tokens = x.split(",");
+                let blueprint_name = tokens.next().unwrap();
+                let function_name = tokens.next().unwrap();
+                let cost = tokens.next().unwrap();
+                costs
+                    .entry(blueprint_name)
+                    .or_default()
+                    .insert(function_name, u32::from_str(cost).unwrap());
+            });
+        costs
+    };
+}
 
 pub enum CostingEntry<'a> {
     /* invoke */
