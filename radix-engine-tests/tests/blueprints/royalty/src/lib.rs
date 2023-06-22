@@ -47,10 +47,10 @@ mod royalty_test {
                         royalty_admin => rule!(allow_all);
                     },
                     init {
-                        free_method => Free;
-                        paid_method => Xrd(1.into());
-                        paid_method_usd => Usd(1.into());
-                        paid_method_panic => Xrd(1.into());
+                        free_method => Free, locked;
+                        paid_method => Xrd(1.into()), locked;
+                        paid_method_usd => Usd(1.into()), locked;
+                        paid_method_panic => Xrd(1.into()), locked;
                     }
                 })
                 .globalize()

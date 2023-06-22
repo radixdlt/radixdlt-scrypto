@@ -587,13 +587,13 @@ macro_rules! metadata {
 macro_rules! component_royalties {
     {
         roles {
-            $($role:ident => $rule:expr, $locked:ident;)*
+            $($role:ident => $rule:expr $(, $updatable:ident)?;)*
         },
         init {
             $($init:tt)*
         }
     } => ({
-        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule, $locked;)*);
+        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, $updatable)?;)*);
         let royalties = component_royalty_config!($($init)*);
         (royalties, royalty_roles)
     });

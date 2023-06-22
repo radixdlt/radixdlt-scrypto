@@ -35,8 +35,8 @@ mod royalty_test {
                 .enable_component_royalties(component_royalties! {
                     init {
                         paid_method => Xrd(1.into()), updatable;
-                        paid_method_panic => Xrd(1.into());
-                        free_method => Free;
+                        paid_method_panic => Xrd(1.into()), locked;
+                        free_method => Free, locked;
                     }
                 })
                 .globalize()
