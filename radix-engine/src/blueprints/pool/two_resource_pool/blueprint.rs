@@ -63,12 +63,15 @@ impl TwoResourcePoolBlueprint {
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // FIXME: Pool unit resource metadata - one things is needed to do this:
-            // 1- A fix for the issue with references so that we can have the component address of
-            //    the pool component in the metadata of the pool unit resource (currently results in
-            //    an error because we're passing a reference to a node that doesn't exist).
-
-            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
+            ResourceManager::new_fungible(
+                true,
+                18,
+                metadata_init! {
+                    "pool" => address, locked;
+                },
+                access_rules,
+                api,
+            )?
         };
 
         // Creating the pool nodes
@@ -78,17 +81,11 @@ impl TwoResourcePoolBlueprint {
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "pool_vault_number" => 2u8, locked;
-                "pool_resources" => {
-                    let pool_resources: Vec<GlobalAddress> = vec![
-                        resource_address1.into(),
-                        resource_address2.into()
-                    ];
-                    pool_resources
-                }, locked;
-                "pool_unit" => {
-                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
-                    address
-                }, locked;
+                "pool_resources" => vec![
+                    GlobalAddress::from(resource_address1),
+                    GlobalAddress::from(resource_address2),
+                ], locked;
+                "pool_unit" => GlobalAddress::from(pool_unit_resource_manager.0), locked;
             },
             api,
         )?;

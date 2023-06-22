@@ -1,5 +1,6 @@
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
+use radix_engine_interface::metadata_init;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;

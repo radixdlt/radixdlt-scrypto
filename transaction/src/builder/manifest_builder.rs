@@ -1,8 +1,8 @@
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataInit,
-    MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT, METADATA_SET_IDENT,
+    MetadataInit, MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT,
+    METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentSetRoyaltyInput,
@@ -793,11 +793,11 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package_advanced(
+    pub fn publish_package_advanced<M: Into<MetadataInit>>(
         &mut self,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: M,
         owner_rule: OwnerRole,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -810,7 +810,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata,
+                metadata: metadata.into(),
                 package_address: None,
                 owner_rule,
             }),
@@ -830,7 +830,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new(),
+                metadata: BTreeMap::new().into(),
             }),
         });
         self
@@ -854,7 +854,7 @@ impl ManifestBuilder {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new(),
+                metadata: BTreeMap::new().into(),
                 owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });

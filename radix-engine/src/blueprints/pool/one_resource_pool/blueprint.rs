@@ -52,12 +52,15 @@ impl OneResourcePoolBlueprint {
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // FIXME: Pool unit resource metadata - one things is needed to do this:
-            // 1- A fix for the issue with references so that we can have the component address of
-            //    the pool component in the metadata of the pool unit resource (currently results in
-            //    an error because we're passing a reference to a node that doesn't exist).
-
-            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
+            ResourceManager::new_fungible(
+                true,
+                18,
+                metadata_init! {
+                    "pool" => address, locked;
+                },
+                access_rules,
+                api,
+            )?
         };
 
         let access_rules =
@@ -65,14 +68,8 @@ impl OneResourcePoolBlueprint {
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "pool_vault_number" => 1u8, locked;
-                "pool_resources" => {
-                    let resource_address: GlobalAddress = resource_address.into();
-                    resource_address
-                }, locked;
-                "pool_unit" => {
-                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
-                    address
-                }, locked;
+                "pool_resources" => GlobalAddress::from(resource_address), locked;
+                "pool_unit" => GlobalAddress::from(pool_unit_resource_manager.0), locked;
             },
             api,
         )?;

@@ -11,10 +11,12 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::metadata_init;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
@@ -1036,7 +1038,13 @@ impl ValidatorCreator {
         let stake_unit_resman = ResourceManager::new_fungible(
             true,
             18,
-            BTreeMap::new(),
+            metadata_init! {
+                "name" => "Liquid Stake Units".to_owned(), locked;
+                "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
+                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
+                "validator" => GlobalAddress::from(address), locked;
+                "tags" => Vec::<String>::new(), locked;
+            },
             stake_unit_resource_auth,
             api,
         )?;
@@ -1064,10 +1072,16 @@ impl ValidatorCreator {
         unstake_nft_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
+        let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
             NonFungibleIdType::RUID,
             true,
-            BTreeMap::new(),
+            metadata_init! {
+                "name" => "Stake Claim NFT".to_owned(), locked;
+                "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
+                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
+                "validator" => GlobalAddress::from(address), locked;
+                "tags" => Vec::<String>::new(), locked;
+            },
             unstake_nft_auth,
             api,
         )?;
@@ -1129,7 +1143,18 @@ impl ValidatorCreator {
         )?;
 
         let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
-        let metadata = Metadata::create(api)?;
+        let owner_badge_local_id = owner_token_bucket
+            .non_fungible_local_ids(api)?
+            .first()
+            .expect("Impossible Case")
+            .clone();
+        let metadata = Metadata::create_with_data(
+            metadata_init! {
+                "owner_badge" => owner_badge_local_id, locked;
+                "pool_unit" => GlobalAddress::from(stake_unit_resource), locked;
+            },
+            api,
+        )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(

@@ -89,6 +89,16 @@ mod genesis_helper {
                 system => rule!(require(system_role.clone())), updatable;
             })
             .with_address(address_reservation)
+            .metadata(metadata! {
+                roles {
+                    metadata_admin => rule!(deny_all);
+                    metadata_admin_updater => rule!(deny_all);
+                },
+                init {
+                    "name" => "Genesis Helper".to_owned(), // TODO: Lock
+                    "description" => "".to_owned() // TODO: Lock
+                }
+            })
             .globalize()
         }
 

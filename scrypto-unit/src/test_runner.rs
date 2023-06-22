@@ -833,7 +833,7 @@ impl TestRunner {
                     args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         setup: definition,
-                        metadata: btreemap!(),
+                        metadata: btreemap!().into(),
                         package_address: Some(ManifestAddressReservation(0)),
                         owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),

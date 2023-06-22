@@ -2,6 +2,7 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
+use crate::system::node_modules::metadata::MetadataValueSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{
     apply_royalty_cost, RoyaltyRecipient, FIXED_HIGH_FEE, FIXED_MEDIUM_FEE,
@@ -12,7 +13,7 @@ use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
@@ -368,7 +369,7 @@ fn globalize_package<Y, L: Default>(
 
     auth_configs: BTreeMap<String, AuthConfig>,
 
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     access_rules: Option<AccessRules>,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
@@ -542,8 +543,13 @@ where
     );
     let metadata_partition = {
         let mut metadata_partition = BTreeMap::new();
-        for (key, value) in metadata {
-            let value = KeyValueEntrySubstate::entry(value);
+        for (key, value) in metadata.data {
+            let value = if value.lock {
+                MetadataValueSubstate::immutable_entry(value.value)
+            } else {
+                MetadataValueSubstate::entry(value.value)
+            };
+
             metadata_partition.insert(
                 SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 IndexedScryptoValue::from_typed(&value),
@@ -887,7 +893,7 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u8,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
@@ -1025,7 +1031,7 @@ impl PackageNativePackage {
     pub(crate) fn publish_wasm<Y, L: Default>(
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
@@ -1042,7 +1048,7 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -1066,7 +1072,7 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         access_rules: AccessRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>

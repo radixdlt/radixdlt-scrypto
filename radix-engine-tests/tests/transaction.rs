@@ -130,7 +130,7 @@ fn test_non_existent_blob_hash() {
                 setup: PackageDefinition {
                     blueprints: btreemap!(),
                 },
-                metadata: BTreeMap::new(),
+                metadata: BTreeMap::new().into(),
                 owner_rule: OwnerRole::None,
                 package_address: None,
             }),

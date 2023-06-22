@@ -719,7 +719,12 @@ impl AccessControllerNativePackage {
         let roles = btreemap!(ObjectModuleId::Main => roles);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-        let metadata = Metadata::create(api)?;
+        let metadata = Metadata::create_with_data(
+            metadata_init! {
+                "recovery_badge" => GlobalAddress::from(recovery_badge_resource), locked;
+            },
+            api,
+        )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode

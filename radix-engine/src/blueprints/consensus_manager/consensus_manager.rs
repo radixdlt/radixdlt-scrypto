@@ -12,12 +12,12 @@ use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::rule;
+use radix_engine_interface::{metadata_init, rule};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -223,7 +223,12 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         {
-            let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
+            let metadata = metadata_init! {
+                "name" => "Validator Owner Badges".to_owned(), locked;
+                "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
+                "tags" => vec!["badge".to_owned(), "owner badge".to_owned(), "validator".to_owned()], locked;
+                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
+            };
             let mut access_rules = BTreeMap::new();
 
             // TODO: remove mint and premint all tokens
@@ -235,7 +240,7 @@ impl ConsensusManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
+            ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError, _>(
                 NonFungibleIdType::RUID,
                 true,
                 metadata,
@@ -296,7 +301,13 @@ impl ConsensusManagerBlueprint {
 
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
-        let metadata = Metadata::create(api)?;
+        let metadata = Metadata::create_with_data(
+            metadata_init! {
+                "name" => "Consensus Manager".to_owned(), locked;
+                "description" => "".to_owned(), locked;
+            },
+            api,
+        )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(

@@ -20,6 +20,16 @@ mod faucet {
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .with_address(address_reservation)
+            .metadata(metadata! {
+                roles {
+                    metadata_admin => rule!(deny_all);
+                    metadata_admin_updater => rule!(deny_all);
+                },
+                init {
+                    "name" => "Test Faucet".to_owned(), // TODO: Lock
+                    "description" => "A simple faucet for distributing tokens for testing purposes.".to_owned() // TODO: Lock
+                }
+            })
             .globalize()
         }
 

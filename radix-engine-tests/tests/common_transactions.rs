@@ -1,10 +1,11 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
-use transaction::manifest::{compile, BlobProvider};
+use transaction::manifest::{compile, decompile, BlobProvider};
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
@@ -153,6 +154,20 @@ fn publish_package_succeeds() {
         (manifest, vec![code_blob])
     })
     .expect_commit_success();
+}
+
+#[test]
+fn x() {
+    let manifest = ManifestBuilder::new()
+        .publish_package_advanced(
+            vec![],
+            PackageDefinition::default(),
+            BTreeMap::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let string = decompile(&manifest.instructions, &NetworkDefinition::simulator()).unwrap();
+    println!("{string}");
 }
 
 /// A sample manifest for minting of a fungible resource
