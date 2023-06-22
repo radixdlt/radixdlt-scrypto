@@ -5,12 +5,13 @@ pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
 pub const FIXED_HIGH_FEE: u32 = 5000;
 
-const COSTING_COEFFICENT_CPU: u64 = 335;
-const COSTING_COEFFICENT_CPU_DIV_BITS: u64 = 4; // used to divide by shift left operator
-const COSTING_COEFFICENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
+const COSTING_COEFFICIENT_CPU: u64 = 335;
+const COSTING_COEFFICIENT_CPU_DIV_BITS: u64 = 4; // used to divide by shift left operator
+const COSTING_COEFFICIENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
 
-const COSTING_COEFFICENT_STORAGE: u64 = 10;
-const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
+const COSTING_COEFFICIENT_STORAGE: u64 = 10;
+const COSTING_COEFFICIENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
+
 
 pub enum CostingEntry<'a> {
     /* invoke */
@@ -324,8 +325,8 @@ impl FeeTable {
                 size_new: _,
             } => 0,
         }) as u64
-            * COSTING_COEFFICENT_CPU
-            >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON))
+            * COSTING_COEFFICIENT_CPU
+            >> (COSTING_COEFFICIENT_CPU_DIV_BITS + COSTING_COEFFICIENT_CPU_DIV_BITS_ADDON))
             as u32
     }
 
@@ -358,8 +359,8 @@ impl FeeTable {
             } => 10 * size_new, // todo: determine correct value
             _ => 0,
         }) as u64
-            * COSTING_COEFFICENT_STORAGE
-            >> COSTING_COEFFICENT_STORAGE_DIV_BITS) as u32
+            * COSTING_COEFFICIENT_STORAGE
+            >> COSTING_COEFFICIENT_STORAGE_DIV_BITS) as u32
     }
 
     pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
