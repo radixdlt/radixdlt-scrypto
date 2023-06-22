@@ -692,7 +692,7 @@ impl TxFuzzer {
                     })
                 }
                 // LockMetadata
-                47 => {
+                48 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
@@ -704,9 +704,9 @@ impl TxFuzzer {
                     })
                 }
                 // TakeAllFromWorktop
-                48 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
+                49 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
                 // TakeFromWorktop
-                49 => {
+                50 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::TakeFromWorktop {
@@ -715,12 +715,12 @@ impl TxFuzzer {
                     })
                 }
                 // TakeNonFungiblesFromWorktop
-                50 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
+                51 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
                 // UnfreezeVault
-                51 => {
+                52 => {
                     let vault_id = {
                         let vaults = self
                             .runner
@@ -745,7 +745,7 @@ impl TxFuzzer {
                     }
                 }
                 // UpdateRole
-                52 => {
+                53 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();
