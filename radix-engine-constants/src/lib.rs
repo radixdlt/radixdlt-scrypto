@@ -50,7 +50,8 @@ pub const DEFAULT_MIN_TIP_PERCENTAGE: u16 = 0;
 pub const DEFAULT_MAX_TIP_PERCENTAGE: u16 = u16::MAX;
 
 /// The max epoch range
-pub const DEFAULT_MAX_EPOCH_RANGE: u64 = 100;
+/// Should be ~ 1 month. The below is ~30 days given 5 minute epochs.
+pub const DEFAULT_MAX_EPOCH_RANGE: u64 = 12 * 24 * 30;
 
 /// The max transaction size
 pub const DEFAULT_MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
