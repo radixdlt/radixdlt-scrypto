@@ -45,7 +45,7 @@ pub enum CostingEntry<'a> {
     DropNode {
         total_substate_size: usize,
     },
-    MoveModules, // FIXME: apply this
+    MoveModules,
     OpenSubstate {
         value_size: usize,
         store_access: &'a StoreAccessInfo,
