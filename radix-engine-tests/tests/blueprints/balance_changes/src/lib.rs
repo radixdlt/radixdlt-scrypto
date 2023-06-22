@@ -24,8 +24,8 @@ mod balance_changes_test {
                     royalty_admin => rule!(allow_all);
                 },
                 init {
-                    put => Xrd(1.into());
-                    boom => Xrd(1.into());
+                    put => Xrd(1.into()), locked;
+                    boom => Xrd(1.into()), locked;
                 }
             })
             .globalize()

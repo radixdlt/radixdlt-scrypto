@@ -12,7 +12,7 @@ pub use crate::{
     enable_package_royalties, error, extern_blueprint_internal, include_code, include_schema, info,
     internal_add_role, internal_royalty_entry, main_accessibility, metadata,
     method_accessibilities, method_accessibility, module_accessibility, permission_role_list,
-    resource_list, role_definition_entry, roles, roles_internal, royalty_config, this_package,
+    resource_list, role_definition_entry, roles, roles_internal, component_royalty_config, this_package,
     to_role_key, trace, warn, NonFungibleData,
 };
 

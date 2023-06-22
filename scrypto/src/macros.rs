@@ -548,27 +548,6 @@ macro_rules! roles {
 }
 
 #[macro_export]
-macro_rules! internal_royalty_entry {
-    ($royalty:expr) => {{
-        ($royalty.into(), false)
-    }};
-    ($royalty:expr $(, updatable)?) => {{
-        ($royalty.into(), true)
-    }};
-}
-
-#[macro_export]
-macro_rules! royalty_config {
-    ($($method:ident => $royalty:expr $(, $updatable:ident)? ;)*) => ({
-        Methods::<(RoyaltyAmount, bool)> {
-            $(
-                $method: internal_royalty_entry!($royalty $(, $updatable)?),
-            )*
-        }
-    });
-}
-
-#[macro_export]
 macro_rules! metadata {
     {
         roles {
@@ -608,14 +587,14 @@ macro_rules! metadata {
 macro_rules! component_royalties {
     {
         roles {
-            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
+            $($role:ident => $rule:expr, $locked:ident;)*
         },
         init {
             $($init:tt)*
         }
     } => ({
-        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, $updatable)? ;)*);
-        let royalties = royalty_config!($($init)*);
+        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule, $locked;)*);
+        let royalties = component_royalty_config!($($init)*);
         (royalties, royalty_roles)
     });
     {
@@ -623,7 +602,28 @@ macro_rules! component_royalties {
             $($init:tt)*
         }
     } => ({
-        let royalties = royalty_config!($($init)*);
+        let royalties = component_royalty_config!($($init)*);
         (royalties, Roles::new())
     })
+}
+
+#[macro_export]
+macro_rules! component_royalty_config {
+    ($($method:ident => $royalty:expr, $locked:ident;)*) => ({
+        Methods::<(RoyaltyAmount, bool)> {
+            $(
+                $method: internal_royalty_entry!($royalty, $locked),
+            )*
+        }
+    });
+}
+
+#[macro_export]
+macro_rules! internal_royalty_entry {
+    ($royalty:expr, locked) => {{
+        ($royalty.into(), false)
+    }};
+    ($royalty:expr, updatable) => {{
+        ($royalty.into(), true)
+    }};
 }

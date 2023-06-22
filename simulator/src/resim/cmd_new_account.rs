@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataInit};
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, NonFungibleDataSchema,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey,
@@ -79,7 +79,7 @@ impl NewAccount {
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: metadata_init!(
-                            "name" => MetadataValue::String("Owner Badge".to_owned()), locked;
+                            "name" => "Owner Badge".to_owned(), locked;
                         ),
                         access_rules: btreemap!(
                             ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
