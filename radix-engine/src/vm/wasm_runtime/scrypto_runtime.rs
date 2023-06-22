@@ -358,13 +358,11 @@ where
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
-            .consume_cost_units(
-                n,
-                ClientCostingEntry::RunNativeCode {
-                    package_address: &self.package_address,
-                    export_name: &self.export_name,
-                },
-            )
+            .consume_cost_units(ClientCostingEntry::RunWasmCode {
+                package_address: &self.package_address,
+                export_name: &self.export_name,
+                gas: n,
+            })
             .map_err(InvokeError::downstream)
     }
 

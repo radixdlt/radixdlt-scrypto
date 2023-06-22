@@ -2061,9 +2061,11 @@ where
                 ClientCostingEntry::RunWasmCode {
                     package_address,
                     export_name,
+                    gas,
                 } => CostingEntry::RunWasmCode {
                     package_address,
                     export_name,
+                    gas,
                 },
             })
     }

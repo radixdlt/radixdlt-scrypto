@@ -59,27 +59,28 @@ impl FeeTable {
 
     pub fn run_native_code_cost(
         &self,
-        package_address: &PackageAddress,
-        export_name: &str,
-    ) -> Option<u32> {
-        None
+        _package_address: &PackageAddress,
+        _export_name: &str,
+    ) -> u32 {
+        // FIXME
+        1
     }
 
     pub fn run_wasm_code_cost(
         &self,
-        package_address: &PackageAddress,
-        export_name: &str,
-        instruction_cost: u32,
+        _package_address: &PackageAddress,
+        _export_name: &str,
+        gas: u32,
     ) -> u32 {
         // FIXME: add multiplier
-        instruction_cost
+        gas
     }
 
     //======================
     // Kernel costs
     //======================
 
-    pub fn invoke_cost(&self, actor: &Actor, input_size: usize) -> u32 {
+    pub fn invoke_cost(&self, _actor: &Actor, _input_size: usize) -> u32 {
         // FIXME: add rule
         1
     }
@@ -93,7 +94,7 @@ impl FeeTable {
         1
     }
 
-    pub fn create_node_cost(&self, entity_type: EntityType, size: usize) -> u32 {
+    pub fn create_node_cost(&self, entity_type: EntityType, _size: usize) -> u32 {
         // FIXME: add size count
 
         match entity_type {
@@ -117,51 +118,51 @@ impl FeeTable {
         }
     }
 
-    pub fn drop_node_cost(&self, size: usize) -> u32 {
+    pub fn drop_node_cost(&self, _size: usize) -> u32 {
         324 // average of gathered data
     }
 
-    pub fn open_substate_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn open_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn read_substate_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn read_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn write_substate_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn write_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn close_substate_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn close_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn set_substate_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn set_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn remove_substate_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn remove_substate_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn scan_sorted_substates_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn scan_sorted_substates_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn scan_substates_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn scan_substates_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn take_substates_cost(&self, db_access: &StoreAccessInfo) -> u32 {
+    pub fn take_substates_cost(&self, _db_access: &StoreAccessInfo) -> u32 {
         // FIXME: add rule
         1
     }
@@ -169,17 +170,17 @@ impl FeeTable {
     //======================
     // System costs
     //======================
-    pub fn event_cost(&self, size: usize) -> u32 {
+    pub fn event_cost(&self, _size: usize) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn log_cost(&self, size: usize) -> u32 {
+    pub fn log_cost(&self, _size: usize) -> u32 {
         // FIXME: add rule
         1
     }
 
-    pub fn panic_cost(&self, size: usize) -> u32 {
+    pub fn panic_cost(&self, _size: usize) -> u32 {
         // FIXME: add rule
         1
     }

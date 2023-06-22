@@ -25,6 +25,7 @@ pub enum CostingEntry<'a> {
     RunWasmCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
+        gas: u32,
     },
 
     /* invoke */
@@ -42,12 +43,15 @@ pub enum CostingEntry<'a> {
     DropNode,
     MoveModules, // FIXME: apply this
     OpenSubstate {
+        value_size: usize,
         db_access: &'a StoreAccessInfo,
     },
     ReadSubstate {
+        value_size: usize,
         db_access: &'a StoreAccessInfo,
     },
     WriteSubstate {
+        value_size: usize,
         db_access: &'a StoreAccessInfo,
     },
     CloseSubstate {
@@ -100,7 +104,7 @@ pub enum CostingEntry<'a> {
 }
 
 impl<'a> CostingEntry<'a> {
-    pub fn to_cost_units(&self, fee_table: &FeeTable) -> u32 {
+    pub fn to_cost_units(&self, _fee_table: &FeeTable) -> u32 {
         todo!()
     }
 }

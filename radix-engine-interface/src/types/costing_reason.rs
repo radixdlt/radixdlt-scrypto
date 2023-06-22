@@ -9,5 +9,6 @@ pub enum ClientCostingEntry<'a> {
     RunWasmCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
+        gas: u32,
     },
 }

@@ -232,13 +232,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api: &mut Y,
         _handle: LockHandle,
         store_access: &StoreAccessInfo,
-        _size: usize,
+        value_size: usize,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(CostingEntry::OpenSubstate {
                 db_access: store_access,
+                value_size,
             })?;
 
         Ok(())
@@ -254,6 +255,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::ReadSubstate {
+                value_size,
                 db_access: store_access,
             })?;
 
@@ -270,6 +272,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::WriteSubstate {
+                value_size,
                 db_access: &store_access,
             })?;
 

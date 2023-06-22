@@ -113,13 +113,6 @@ fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), FeeReserveErr
     Ok(())
 }
 
-#[inline]
-fn checked_multiply(amount: u32, multiplier: usize) -> Result<u32, FeeReserveError> {
-    u32::try_from(multiplier)
-        .map_err(|_| FeeReserveError::Overflow)
-        .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))
-}
-
 pub fn transmute_u128_as_decimal(a: u128) -> Decimal {
     Decimal(a.into())
 }
