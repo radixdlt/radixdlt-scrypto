@@ -7,7 +7,9 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::ValidatorRewardAppliedEvent;
+use radix_engine_queries::typed_substate_layout::{
+    ConsensusManagerError, ValidatorRewardAppliedEvent,
+};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand_chacha;
@@ -229,6 +231,52 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch").epoch;
     assert_eq!(next_epoch, initial_epoch.next());
+}
+
+#[test]
+fn next_round_fails_if_time_moves_backward() {
+    // Arrange
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 100;
+    let target_epoch_duration_millis = 1000;
+    let genesis_start_time_millis: i64 = 0;
+    let genesis = CustomGenesis::default(
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: 0,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: target_epoch_duration_millis,
+            },
+        ),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Act 1 - a small jump in timestamp should be fine
+    let next_round = Round::of(1);
+    let next_timestamp = genesis_start_time_millis + 5;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 1
+    let result = receipt.expect_commit_success();
+    assert!(result.next_epoch().is_none());
+
+    // Act 2 - a jump backwards in timestamp fails
+    let next_round = Round::of(2);
+    let next_timestamp = next_timestamp - 1;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 2
+    let error = receipt.expect_failure();
+    assert_eq!(
+        error,
+        &RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+            ConsensusManagerError::InvalidProposerTimestampUpdate {
+                from_millis: genesis_start_time_millis + 5,
+                to_millis: genesis_start_time_millis + 4,
+            }
+        ))
+    );
 }
 
 #[test]

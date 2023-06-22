@@ -122,6 +122,10 @@ impl EpochChangeCondition {
         round: Round,
     ) -> EpochChangeOutcome {
         let epoch_duration_millis =
+            // The application invariants in `check_non_decreasing_and_update_timestamps`
+            // ensures that current_time > effective_start, and genesis should ensure
+            // effective_start > 0.
+            // This is just a sanity-check to avoid overflow if something invaraint fails.
             if current_time >= 0 && effective_start >= 0 && current_time > effective_start {
                 (current_time - effective_start) as u64
             } else {

@@ -185,6 +185,10 @@ pub enum ConsensusManagerError {
         from: Round,
         to: Round,
     },
+    InvalidProposerTimestampUpdate {
+        from_millis: i64,
+        to_millis: i64,
+    },
     InconsistentGapRounds {
         gap_rounds: usize,
         progressed_rounds: u64,
@@ -434,6 +438,8 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::check_non_decreasing_and_update_timestamps(proposer_timestamp_milli, api)?;
+
         let config_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::Config.into(),
@@ -491,8 +497,6 @@ impl ConsensusManagerBlueprint {
         api.field_lock_write_typed(manager_handle, &manager_substate)?;
         api.field_lock_release(manager_handle)?;
 
-        Self::update_timestamps(proposer_timestamp_milli, api)?;
-
         Ok(())
     }
 
@@ -510,30 +514,49 @@ impl ConsensusManagerBlueprint {
         Ok((validator_address, owner_token_bucket))
     }
 
-    fn update_timestamps<Y>(current_time_ms: i64, api: &mut Y) -> Result<(), RuntimeError>
+    fn check_non_decreasing_and_update_timestamps<Y>(
+        current_time_ms: i64,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let proposer_milli_timestamp = ProposerMilliTimestampSubstate {
-            epoch_milli: current_time_ms,
-        };
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTime.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
+        let mut exact_time_substate: ProposerMilliTimestampSubstate =
+            api.field_lock_read_typed(handle)?;
+        let previous_timestamp = exact_time_substate.epoch_milli;
+        if current_time_ms < previous_timestamp {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::InvalidProposerTimestampUpdate {
+                        from_millis: previous_timestamp,
+                        to_millis: current_time_ms,
+                    },
+                ),
+            ));
+        } else if current_time_ms > previous_timestamp {
+            exact_time_substate.epoch_milli = current_time_ms;
+            api.field_lock_write_typed(handle, &exact_time_substate)?;
+        }
         api.field_lock_release(handle)?;
 
-        let proposer_minute_timestamp = ProposerMinuteTimestampSubstate {
-            epoch_minute: Self::milli_to_minute(current_time_ms),
-        };
+        let new_rounded_value = Self::milli_to_minute(current_time_ms);
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
+        let mut rounded_timestamp_substate: ProposerMinuteTimestampSubstate =
+            api.field_lock_read_typed(handle)?;
+        let previous_rounded_value = rounded_timestamp_substate.epoch_minute;
+        if new_rounded_value > previous_rounded_value {
+            rounded_timestamp_substate.epoch_minute = new_rounded_value;
+            api.field_lock_write_typed(handle, &rounded_timestamp_substate)?;
+        }
         api.field_lock_release(handle)?;
 
         Ok(())
