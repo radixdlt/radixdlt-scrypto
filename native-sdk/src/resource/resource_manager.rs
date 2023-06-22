@@ -21,7 +21,7 @@ impl ResourceManager {
         track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -49,7 +49,7 @@ impl ResourceManager {
         divisibility: u8,
         amount: Decimal,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
@@ -77,7 +77,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -105,7 +105,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<Self, E>

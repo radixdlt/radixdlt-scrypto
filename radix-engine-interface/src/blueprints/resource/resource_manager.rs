@@ -17,24 +17,24 @@ pub const BURN_FEATURE: &str = "burn";
 pub const RESOURCE_PACKAGE_ROLE: &str = "resource_package";
 
 // Main roles
-pub const MINT_ROLE: &str = "mint";
-pub const MINT_UPDATE_ROLE: &str = "mint_update";
-pub const BURN_ROLE: &str = "burn";
-pub const BURN_UPDATE_ROLE: &str = "burn_update";
-pub const WITHDRAW_ROLE: &str = "withdraw";
-pub const WITHDRAW_UPDATE_ROLE: &str = "withdraw_update";
-pub const DEPOSIT_ROLE: &str = "deposit";
-pub const DEPOSIT_UPDATE_ROLE: &str = "deposit_update";
-pub const RECALL_ROLE: &str = "recall";
-pub const RECALL_UPDATE_ROLE: &str = "recall_update";
-pub const FREEZE_ROLE: &str = "freeze";
-pub const FREEZE_UPDATE_ROLE: &str = "freeze_update";
-pub const UPDATE_NON_FUNGIBLE_DATA_ROLE: &str = "update_non_fungible_data";
-pub const UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE: &str = "update_non_fungible_data_update";
+pub const MINTER_ROLE: &str = "minter";
+pub const MINTER_UPDATER_ROLE: &str = "minter_updater";
+pub const BURNER_ROLE: &str = "burner";
+pub const BURNER_UPDATER_ROLE: &str = "burner_updater";
+pub const WITHDRAWER_ROLE: &str = "withdrawer";
+pub const WITHDRAWER_UPDATER_ROLE: &str = "withdrawer_updater";
+pub const DEPOSITER_ROLE: &str = "depositor";
+pub const DEPOSITER_UPDATER_ROLE: &str = "depositor_updater";
+pub const RECALLER_ROLE: &str = "recaller";
+pub const RECALLER_UPDATER_ROLE: &str = "recaller_updater";
+pub const FREEZER_ROLE: &str = "freezer";
+pub const FREEZER_UPDATER_ROLE: &str = "freezer_updater";
+pub const NON_FUNGIBLE_DATA_UPDATER_ROLE: &str = "non_fungible_data_updater";
+pub const NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE: &str = "non_fungible_data_updater_updater";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
-pub enum ResourceMethodAuthKey {
+pub enum ResourceAction {
     Mint,
     Burn,
     UpdateNonFungibleData,
@@ -45,30 +45,30 @@ pub enum ResourceMethodAuthKey {
     Freeze,
 }
 
-pub const ALL_RESOURCE_AUTH_KEYS: [ResourceMethodAuthKey; 8] = [
-    ResourceMethodAuthKey::Mint,
-    ResourceMethodAuthKey::Burn,
-    ResourceMethodAuthKey::UpdateNonFungibleData,
-    ResourceMethodAuthKey::UpdateMetadata,
-    ResourceMethodAuthKey::Withdraw,
-    ResourceMethodAuthKey::Deposit,
-    ResourceMethodAuthKey::Recall,
-    ResourceMethodAuthKey::Freeze,
+pub const ALL_RESOURCE_AUTH_KEYS: [ResourceAction; 8] = [
+    ResourceAction::Mint,
+    ResourceAction::Burn,
+    ResourceAction::UpdateNonFungibleData,
+    ResourceAction::UpdateMetadata,
+    ResourceAction::Withdraw,
+    ResourceAction::Deposit,
+    ResourceAction::Recall,
+    ResourceAction::Freeze,
 ];
 
-impl ResourceMethodAuthKey {
+impl ResourceAction {
     pub fn action_role_key(&self) -> (ObjectModuleId, RoleKey) {
         match self {
-            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINT_ROLE)),
-            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURN_ROLE)),
+            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_ROLE)),
+            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURNER_ROLE)),
             Self::UpdateNonFungibleData => (
                 ObjectModuleId::Main,
-                RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_ROLE),
+                RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_ROLE),
             ),
-            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_ROLE)),
-            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_ROLE)),
-            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_ROLE)),
-            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_ROLE)),
+            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_ROLE)),
+            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITER_ROLE)),
+            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
+            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
 
             Self::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_ADMIN_ROLE)),
         }
@@ -76,16 +76,16 @@ impl ResourceMethodAuthKey {
 
     pub fn updater_role_key(&self) -> (ObjectModuleId, RoleKey) {
         match self {
-            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINT_UPDATE_ROLE)),
-            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURN_UPDATE_ROLE)),
+            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_UPDATER_ROLE)),
+            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURNER_UPDATER_ROLE)),
             Self::UpdateNonFungibleData => (
                 ObjectModuleId::Main,
-                RoleKey::new(UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE),
+                RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE),
             ),
-            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAW_UPDATE_ROLE)),
-            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSIT_UPDATE_ROLE)),
-            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALL_UPDATE_ROLE)),
-            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZE_UPDATE_ROLE)),
+            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_UPDATER_ROLE)),
+            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITER_UPDATER_ROLE)),
+            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_UPDATER_ROLE)),
+            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_UPDATER_ROLE)),
 
             Self::UpdateMetadata => (
                 ObjectModuleId::Metadata,

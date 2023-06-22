@@ -256,6 +256,68 @@ RECALL_VAULT
     }
 
     #[test]
+    fn test_vault_freeze() {
+        compile_and_decompile_with_inversion_test(
+            "resource_recall",
+            apply_address_replacements(include_str!("../../examples/resources/freeze.rtm")),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        1u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        2u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        4u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        7u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        1u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        2u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        4u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        7u32
+    )
+;
+"##,
+            ),
+        );
+    }
+
+    #[test]
     fn test_call_function() {
         compile_and_decompile_with_inversion_test(
             "call_function",

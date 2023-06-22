@@ -27,7 +27,7 @@ use radix_engine_interface::blueprints::package::{
     PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
-use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
+use radix_engine_interface::blueprints::resource::ResourceAction::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
@@ -439,7 +439,7 @@ impl ManifestBuilder {
         track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
         let access_rules = access_rules
@@ -485,7 +485,7 @@ impl ManifestBuilder {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
@@ -879,7 +879,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
         access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
@@ -897,7 +897,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 
@@ -912,7 +912,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
         access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
@@ -930,7 +930,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 
@@ -1027,20 +1027,68 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn freeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+    pub fn freeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {}),
+            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::WITHDRAW,
+            }),
         });
         self
     }
 
-    pub fn unfreeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+    pub fn unfreeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {}),
+            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::WITHDRAW,
+            }),
+        });
+        self
+    }
+
+    pub fn freeze_deposit(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::DEPOSIT,
+            }),
+        });
+        self
+    }
+
+    pub fn unfreeze_deposit(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::DEPOSIT,
+            }),
+        });
+        self
+    }
+
+    pub fn freeze_burn(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::BURN,
+            }),
+        });
+        self
+    }
+
+    pub fn unfreeze_burn(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::BURN,
+            }),
         });
         self
     }
@@ -1170,6 +1218,26 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            args,
+        })
+        .0
+    }
+
+    /// Withdraws resource from an account.
+    pub fn burn_in_account(
+        &mut self,
+        account: ComponentAddress,
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        let args = to_manifest_value_and_unwrap!(&AccountBurnInput {
+            resource_address,
+            amount
+        });
+
+        self.add_instruction(InstructionV1::CallMethod {
+            address: account.into(),
+            method_name: ACCOUNT_BURN_IDENT.to_string(),
             args,
         })
         .0

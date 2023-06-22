@@ -1433,7 +1433,7 @@ mod tests {
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintRuidManifestInput, ResourceMethodAuthKey, Roles,
+        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1701,11 +1701,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1724,11 +1724,11 @@ mod tests {
                     )]),
                     access_rules: BTreeMap::from([
                         (
-                            ResourceMethodAuthKey::Withdraw,
+                            ResourceAction::Withdraw,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                         (
-                            ResourceMethodAuthKey::Deposit,
+                            ResourceAction::Deposit,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
@@ -1793,11 +1793,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1827,11 +1827,11 @@ mod tests {
                         )]),
                         access_rules: BTreeMap::from([
                             (
-                                ResourceMethodAuthKey::Withdraw,
+                                ResourceAction::Withdraw,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                             (
-                                ResourceMethodAuthKey::Deposit,
+                                ResourceAction::Deposit,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),
@@ -1858,11 +1858,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1881,11 +1881,11 @@ mod tests {
                     )]),
                     access_rules: BTreeMap::from([
                         (
-                            ResourceMethodAuthKey::Withdraw,
+                            ResourceAction::Withdraw,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                         (
-                            ResourceMethodAuthKey::Deposit,
+                            ResourceAction::Deposit,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
@@ -1904,11 +1904,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1930,11 +1930,11 @@ mod tests {
                         )]),
                         access_rules: BTreeMap::from([
                             (
-                                ResourceMethodAuthKey::Withdraw,
+                                ResourceAction::Withdraw,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                             (
-                                ResourceMethodAuthKey::Deposit,
+                                ResourceAction::Deposit,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),
