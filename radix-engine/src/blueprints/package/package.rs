@@ -791,7 +791,7 @@ impl PackageNativePackage {
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AccessRules(
                         btreemap!(
-                            PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
+                            PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                         )
