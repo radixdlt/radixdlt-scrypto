@@ -83,7 +83,7 @@ impl MultiResourcePoolBlueprint {
                 "pool_vault_number".into() => MetadataValue::U8(2),
                 "pool_resources".into() => MetadataValue::GlobalAddressArray(resource_addresses.iter().cloned().map(Into::into).collect()),
                 "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
-            ),
+            ).into(),
             api,
         )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;

@@ -85,7 +85,7 @@ impl TwoResourcePoolBlueprint {
                     resource_address2.into()
                 ]),
                 "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
-            ),
+            ).into(),
             api,
         )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;

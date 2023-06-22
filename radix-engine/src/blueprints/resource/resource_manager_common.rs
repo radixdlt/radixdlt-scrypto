@@ -154,7 +154,7 @@ where
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-    let metadata = Metadata::create_with_data(metadata, api)?;
+    let metadata = Metadata::create_with_data(metadata.into(), api)?;
 
     let address = api.globalize(
         btreemap!(
@@ -181,7 +181,7 @@ where
 {
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
-    let metadata = Metadata::create_with_data(metadata, api)?;
+    let metadata = Metadata::create_with_data(metadata.into(), api)?;
 
     let modules = btreemap!(
         ObjectModuleId::Main => object_id,
@@ -220,7 +220,7 @@ where
 
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-    let metadata = Metadata::create_with_data(metadata, api)?;
+    let metadata = Metadata::create_with_data(metadata.into(), api)?;
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
