@@ -138,8 +138,6 @@ impl IdentityNativePackage {
     {
         match export_name {
             IDENTITY_CREATE_ADVANCED_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: IdentityCreateAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -149,8 +147,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -160,8 +156,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_SECURIFY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -172,8 +166,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -183,8 +175,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

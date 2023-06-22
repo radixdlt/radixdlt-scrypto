@@ -83,11 +83,7 @@ impl TransactionProcessorNativePackage {
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         match export_name {
-            TRANSACTION_PROCESSOR_RUN_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                TransactionProcessorBlueprint::run(input, api)
-            }
+            TRANSACTION_PROCESSOR_RUN_IDENT => TransactionProcessorBlueprint::run(input, api),
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),

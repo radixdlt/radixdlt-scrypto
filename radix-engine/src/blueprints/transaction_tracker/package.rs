@@ -123,8 +123,6 @@ impl TransactionTrackerNativePackage {
     {
         match export_name {
             TRANSACTION_TRACKER_CREATE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: TransactionTrackerCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

@@ -669,8 +669,6 @@ impl PackageNativePackage {
     {
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -686,8 +684,6 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_PUBLISH_WASM_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
                 let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -697,8 +693,6 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
                 let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -715,7 +709,6 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_CLAIM_ROYALTIES_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
                 let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
