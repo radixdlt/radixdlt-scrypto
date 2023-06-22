@@ -10,15 +10,6 @@ mod royalty_test {
         create_component_with_royalty_enabled => Free;
     }
 
-    enable_method_auth! {
-        methods {
-            paid_method => PUBLIC;
-            paid_method_usd => PUBLIC;
-            paid_method_panic => PUBLIC;
-            free_method => PUBLIC;
-        }
-    }
-
     struct RoyaltyTest {}
 
     impl RoyaltyTest {

@@ -395,8 +395,8 @@ macro_rules! main_accessibility {
 
 #[macro_export]
 macro_rules! module_accessibility {
-    ($permissions:expr, methods { $($method:ident => $($permission:ident),+ ;)* }) => ({
-        main_accessibility!($permissions, Methods, $($method => $($permission),+ ;)*);
+    ($permissions:expr, methods { $($method:ident => $($permission:ident),* ;)* }) => ({
+        main_accessibility!($permissions, Methods, $($method => $($permission),* ;)*);
     });
 }
 
@@ -405,11 +405,11 @@ macro_rules! internal_add_role {
     ($roles:ident, $role:ident) => {{
         $roles.insert(stringify!($role).into(), RoleList::none());
     }};
-    ($roles:ident, $role:ident => updaters: $($updaters:ident),+) => {{
+    ($roles:ident, $role:ident => updatable_by: [$($updaters:ident),*]) => {{
         let role_list = [
             $(
                 ROLE_STRINGS.$updaters
-            ),+
+            ),*
         ];
         $roles.insert(stringify!($role).into(), role_list.into());
     }};
@@ -419,7 +419,7 @@ macro_rules! internal_add_role {
 macro_rules! enable_method_auth {
     (
         roles {
-            $($role:ident $( => updaters: $($updaters:ident),+)?;)*
+            $($role:ident => updatable_by: [$($updaters:ident),*];)*
         },
         $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
     ) => (
@@ -447,7 +447,7 @@ macro_rules! enable_method_auth {
 
             let mut roles: BTreeMap<RoleKey, RoleList> = BTreeMap::new();
             $(
-                internal_add_role!(roles, $role $( => updaters: $($updaters),+)?);
+                internal_add_role!(roles, $role => updatable_by: [$($updaters),*]);
             )*
 
             let static_roles = scrypto::blueprints::package::StaticRoles {
