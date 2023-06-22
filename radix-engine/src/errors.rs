@@ -21,7 +21,7 @@ use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
-use crate::system::system_modules::limits::TransactionLimitsError;
+use crate::system::system_modules::limits::LimitingError;
 use crate::system::system_modules::node_move::NodeMoveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
@@ -292,7 +292,7 @@ pub enum SystemModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
-    TransactionLimitsError(TransactionLimitsError),
+    LimitingError(LimitingError),
     EventError(Box<EventError>),
 }
 

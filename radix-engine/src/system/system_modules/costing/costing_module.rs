@@ -21,15 +21,12 @@ use radix_engine_interface::{types::NodeId, *};
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
     FeeReserveError(FeeReserveError),
-    MaxCallDepthLimitReached,
-    WrongSubstateStoreDbAccessInfo,
 }
 
 impl CanBeAbortion for CostingError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             Self::FeeReserveError(err) => err.abortion(),
-            _ => None,
         }
     }
 }
@@ -151,15 +148,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        // TODO: move this to limits module
-        let current_depth = api.kernel_get_current_depth();
-        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
-            return Err(RuntimeError::SystemModuleError(
-                SystemModuleError::CostingError(CostingError::MaxCallDepthLimitReached),
-            ));
-        }
-
-        if current_depth > 0 {
+        // Skip invocation costing for transaction processor
+        if api.kernel_get_current_depth() > 0 {
             api.kernel_get_system()
                 .modules
                 .costing

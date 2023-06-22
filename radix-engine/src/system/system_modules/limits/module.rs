@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TransactionLimitsError {
+pub enum LimitingError {
     /// Retruned when WASM memory consumed during transaction execution exceeds defined limit,
     /// as parameter current memory value is returned.
     MaxWasmMemoryExceeded(usize),
@@ -34,6 +34,7 @@ pub enum TransactionLimitsError {
     /// Returned when function or method invocation payload size exceeds defined limit,
     /// as parameter actual payload size is returned.
     MaxInvokePayloadSizeExceeded(usize),
+    MaxCallDepthLimitReached,
 }
 
 /// Representation of data which needs to be limited for each call frame.
@@ -119,11 +120,9 @@ impl LimitsModule {
         if current_call_frame.wasm_memory_usage > self.limits_config.max_wasm_memory_per_call_frame
         {
             return Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxWasmInstanceMemoryExceeded(
-                        current_call_frame.wasm_memory_usage,
-                    ),
-                ),
+                SystemModuleError::LimitingError(LimitingError::MaxWasmInstanceMemoryExceeded(
+                    current_call_frame.wasm_memory_usage,
+                )),
             ));
         };
 
@@ -142,9 +141,7 @@ impl LimitsModule {
         // validate if limit was exceeded
         if max_value > self.limits_config.max_wasm_memory {
             Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxWasmMemoryExceeded(max_value),
-                ),
+                SystemModuleError::LimitingError(LimitingError::MaxWasmMemoryExceeded(max_value)),
             ))
         } else {
             Ok(())
@@ -160,33 +157,29 @@ impl LimitsModule {
         if let Some(size) = read_size {
             if size > self.limits_config.max_substate_size {
                 return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::TransactionLimitsError(
-                        TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
-                    ),
+                    SystemModuleError::LimitingError(LimitingError::MaxSubstateReadSizeExceeded(
+                        size,
+                    )),
                 ));
             }
         }
         if let Some(size) = write_size {
             if size > self.limits_config.max_substate_size {
                 return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::TransactionLimitsError(
-                        TransactionLimitsError::MaxSubstateWriteSizeExceeded(size),
-                    ),
+                    SystemModuleError::LimitingError(LimitingError::MaxSubstateWriteSizeExceeded(
+                        size,
+                    )),
                 ));
             }
         }
 
         if self.substate_db_read_count > self.limits_config.max_substate_read_count {
             Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateReadCountExceeded,
-                ),
+                SystemModuleError::LimitingError(LimitingError::MaxSubstateReadCountExceeded),
             ))
         } else if self.substate_db_write_count > self.limits_config.max_substate_write_count {
             Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateWriteCountExceeded,
-                ),
+                SystemModuleError::LimitingError(LimitingError::MaxSubstateWriteCountExceeded),
             ))
         } else {
             Ok(())
@@ -222,6 +215,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
+        let current_depth = api.kernel_get_current_depth();
+        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::LimitingError(LimitingError::MaxCallDepthLimitReached),
+            ));
+        }
+
         let tlimit = &mut api.kernel_get_system().modules.limits;
         let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
@@ -230,9 +230,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
 
         if input_size > tlimit.limits_config.max_invoke_payload_size {
             Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxInvokePayloadSizeExceeded(input_size),
-                ),
+                SystemModuleError::LimitingError(LimitingError::MaxInvokePayloadSizeExceeded(
+                    input_size,
+                )),
             ))
         } else {
             Ok(())

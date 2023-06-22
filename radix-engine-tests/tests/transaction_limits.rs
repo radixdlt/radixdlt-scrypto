@@ -1,6 +1,6 @@
 use radix_engine::{
     errors::{RejectionError, RuntimeError, SystemModuleError},
-    system::system_modules::limits::TransactionLimitsError,
+    system::system_modules::limits::LimitingError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
     vm::wasm::WASM_MEMORY_PAGE_SIZE,
@@ -34,8 +34,8 @@ fn transaction_limit_call_frame_memory_exceeded() {
     // Assert, exceeded memory should be larger by 1 memory page than the limit
     let expected_mem = DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME + WASM_MEMORY_PAGE_SIZE as usize;
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxWasmInstanceMemoryExceeded(x),
+        RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
+            LimitingError::MaxWasmInstanceMemoryExceeded(x),
         )) => *x == expected_mem,
         _ => false,
     })
@@ -80,8 +80,8 @@ fn transaction_limit_memory_exceeded() {
     assert!((DEFAULT_MAX_WASM_MEM_PER_TRANSACTION / call_frame_mem + 1) < DEFAULT_MAX_CALL_DEPTH);
 
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxWasmMemoryExceeded(x),
+        RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
+            LimitingError::MaxWasmMemoryExceeded(x),
         )) => *x == expected_mem,
         _ => false,
     })
@@ -120,8 +120,8 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateReadCountExceeded
+            RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
+                LimitingError::MaxSubstateReadCountExceeded
             ))
         )
     });
@@ -160,8 +160,8 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateWriteCountExceeded
+            RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
+                LimitingError::MaxSubstateWriteCountExceeded
             ))
         )
     });
@@ -199,9 +199,7 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
     // Assert
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::SystemModuleError(
-            SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
-            ),
+            SystemModuleError::LimitingError(LimitingError::MaxSubstateReadSizeExceeded(size)),
         )) => *size > execution_config.max_substate_size,
         _ => false,
     });
@@ -239,8 +237,8 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxSubstateWriteSizeExceeded(x),
+        RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
+            LimitingError::MaxSubstateWriteSizeExceeded(x),
         )) => *x == SIZE as usize + 13, /* SBOR prefix + Substate wrapper */
         _ => false,
     })
@@ -279,9 +277,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
         matches!(
             e,
             RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxInvokePayloadSizeExceeded(_)
-                )
+                SystemModuleError::LimitingError(LimitingError::MaxInvokePayloadSizeExceeded(_))
             ))
         )
     })
