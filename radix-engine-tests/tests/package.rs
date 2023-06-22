@@ -1,10 +1,13 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError, VmError};
+use radix_engine::errors::{
+    ApplicationError, RuntimeError, SystemError, SystemModuleError, VmError,
+};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, PackageDefinition,
+    PackagePublishNativeInput, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
@@ -239,7 +242,12 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_function(package, "PublishPackage", "publish_package", manifest_args!())
+        .call_function(
+            package,
+            "PublishPackage",
+            "publish_package",
+            manifest_args!(),
+        )
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -248,7 +256,9 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
         )
     });
 }
@@ -262,7 +272,12 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_function(package, "PublishPackage", "publish_package_advanced", manifest_args!())
+        .call_function(
+            package,
+            "PublishPackage",
+            "publish_package_advanced",
+            manifest_args!(),
+        )
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -271,7 +286,73 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
+}
+
+#[test]
+fn should_not_be_able_to_publish_native_packages() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            "publish_native",
+            to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+                package_address: None,
+                native_package_code_id: 0u8,
+                setup: PackageDefinition::default(),
+                metadata: btreemap!(),
+            }),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
+}
+
+#[test]
+fn should_not_be_able_to_publish_native_packages_in_scrypto() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package,
+            "PublishPackage",
+            "publish_native",
+            manifest_args!(),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
         )
     });
 }

@@ -1,5 +1,5 @@
-use scrypto::prelude::*;
 use scrypto::blueprints::package::PackageDefinition;
+use scrypto::prelude::*;
 
 #[blueprint]
 mod publish_package {
@@ -19,11 +19,17 @@ mod publish_package {
                 metadata: BTreeMap<String, MetadataValue>,
                 owner_role: OwnerRole
             );
+
+            fn publish_native(
+                package_address: Option<GlobalAddressReservation>,
+                native_package_code_id: u8,
+                setup: PackageDefinition,
+                metadata: BTreeMap<String, MetadataValue>
+            );
         }
     );
 
-    struct PublishPackage {
-    }
+    struct PublishPackage {}
 
     impl PublishPackage {
         pub fn publish_package() {
@@ -40,5 +46,8 @@ mod publish_package {
             );
         }
 
+        pub fn publish_native() {
+            Blueprint::<FiFi>::publish_native(None, 0u8, PackageDefinition::default(), btreemap!());
+        }
     }
 }
