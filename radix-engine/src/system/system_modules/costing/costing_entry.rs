@@ -100,7 +100,6 @@ pub enum CostingEntry<'a> {
     AuthModule {
         direct_charge: u32,
     },
-    DropLock {},
 }
 
 impl<'a> CostingEntry<'a> {
