@@ -394,13 +394,6 @@ macro_rules! main_accessibility {
 }
 
 #[macro_export]
-macro_rules! module_accessibility {
-    ($permissions:expr, methods { $($method:ident => $($permission:ident),* ;)* }) => ({
-        main_accessibility!($permissions, Methods, $($method => $($permission),* ;)*);
-    });
-}
-
-#[macro_export]
 macro_rules! internal_add_role {
     ($roles:ident, $role:ident) => {{
         $roles.insert(stringify!($role).into(), RoleList::none());
@@ -421,7 +414,9 @@ macro_rules! enable_method_auth {
         roles {
             $($role:ident => updatable_by: [$($updaters:ident),*];)*
         },
-        $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
+        methods {
+            $($method:ident => $($permission:ident),+ ;)*
+        }
     ) => (
         pub struct MethodRoles<T> {
             $($role: T),*
@@ -441,9 +436,7 @@ macro_rules! enable_method_auth {
 
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
             let mut methods: BTreeMap<MethodKey, MethodAccessibility> = BTreeMap::new();
-            $(
-                module_accessibility!(methods, $module { $($method => $($permission),+ ;)* });
-            )*
+            main_accessibility!(methods, Methods, $($method => $($permission),+ ;)*);
 
             let mut roles: BTreeMap<RoleKey, RoleList> = BTreeMap::new();
             $(
@@ -460,13 +453,11 @@ macro_rules! enable_method_auth {
     );
 
     (
-        $($module:ident { $($method:ident => $($permission:ident),+ ;)* }),*
+        methods { $($method:ident => $($permission:ident),+ ;)* }
     ) => (
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
             let mut methods: BTreeMap<MethodKey, MethodAccessibility> = BTreeMap::new();
-            $(
-                module_accessibility!(methods, $module { $($method => $($permission),+ ;)* });
-            )*
+            main_accessibility!(methods, Methods, $($method => $($permission),+ ;)*);
 
             let roles = scrypto::blueprints::package::StaticRoles {
                 methods,
