@@ -748,16 +748,16 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn set_metadata(
+    pub fn set_metadata<S: ToString>(
         &mut self,
         address: GlobalAddress,
-        key: String,
+        key: S,
         value: MetadataValue,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_SET_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&MetadataSetInput { key, value }),
+            args: to_manifest_value_and_unwrap!(&MetadataSetInput { key: key.to_string(), value }),
         })
         .0
     }

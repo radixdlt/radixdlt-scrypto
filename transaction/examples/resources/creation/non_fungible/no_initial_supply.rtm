@@ -22,7 +22,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         "name" => Tuple(
             Enum<Metadata::String>("MyResource"),                                     # Resource Name
             true                                                                      # Resource Name locked
-        )
+        ),
         "description" => Tuple(
             Enum<Metadata::String>("A very innovative and important resource"),       # Resource Description
             false                                                                     # Resource Description not locked

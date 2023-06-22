@@ -1,7 +1,5 @@
 use crate::*;
-use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use sbor::rust::prelude::*;
-use sbor::rust::string::String;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
