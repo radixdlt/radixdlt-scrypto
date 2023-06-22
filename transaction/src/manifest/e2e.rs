@@ -352,7 +352,7 @@ CALL_METHOD
     Decimal("1")
     PreciseDecimal("2")
 ;
-SET_COMPONENT_ROYALTY_CONFIG
+SET_COMPONENT_ROYALTY
     Address("${component_address}")
     "my_method"
     Enum<0u8>()
@@ -496,15 +496,19 @@ CALL_METHOD
             vec![],
             apply_address_replacements(
                 r##"
-SET_COMPONENT_ROYALTY_CONFIG
+SET_COMPONENT_ROYALTY
     Address("${account_address}")
     "my_method"
     Enum<0u8>()
 ;
-CLAIM_PACKAGE_ROYALTY
+LOCK_COMPONENT_ROYALTY
+    Address("${account_address}")
+    "my_method"
+;
+CLAIM_PACKAGE_ROYALTIES
     Address("${package_address}")
 ;
-CLAIM_COMPONENT_ROYALTY
+CLAIM_COMPONENT_ROYALTIES
     Address("${account_address}")
 ;
 "##,
@@ -661,6 +665,18 @@ SET_METADATA
             "yet_another_string"
         )
     )
+;
+LOCK_METADATA
+    Address("${package_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${account_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${resource_address}")
+    "field_name"
 ;
 REMOVE_METADATA
     Address("${package_address}")

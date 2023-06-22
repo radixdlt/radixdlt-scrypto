@@ -88,14 +88,16 @@ pub enum InstructionIdent {
     // ==============
     SetMetadata,
     RemoveMetadata,
-    SetComponentRoyaltyConfig,
-    ClaimComponentRoyalty,
+    LockMetadata,
+    SetComponentRoyalty,
+    LockComponentRoyalty,
+    ClaimComponentRoyalties,
     UpdateRole,
 
     // ==============
     // Call main-method aliases
     // ==============
-    ClaimPackageRoyalty,
+    ClaimPackageRoyalties,
     MintFungible,
     MintNonFungible,
     MintRuidNonFungible,
@@ -181,8 +183,10 @@ impl InstructionIdent {
             // ==============
             "SET_METADATA" => InstructionIdent::SetMetadata,
             "REMOVE_METADATA" => InstructionIdent::RemoveMetadata,
-            "SET_COMPONENT_ROYALTY_CONFIG" => InstructionIdent::SetComponentRoyaltyConfig,
-            "CLAIM_COMPONENT_ROYALTY" => InstructionIdent::ClaimComponentRoyalty,
+            "LOCK_METADATA" => InstructionIdent::LockMetadata,
+            "SET_COMPONENT_ROYALTY" => InstructionIdent::SetComponentRoyalty,
+            "LOCK_COMPONENT_ROYALTY" => InstructionIdent::LockComponentRoyalty,
+            "CLAIM_COMPONENT_ROYALTIES" => InstructionIdent::ClaimComponentRoyalties,
             "UPDATE_ROLE" => InstructionIdent::UpdateRole,
 
             // ==============
@@ -191,7 +195,7 @@ impl InstructionIdent {
             "MINT_FUNGIBLE" => InstructionIdent::MintFungible,
             "MINT_NON_FUNGIBLE" => InstructionIdent::MintNonFungible,
             "MINT_RUID_NON_FUNGIBLE" => InstructionIdent::MintRuidNonFungible,
-            "CLAIM_PACKAGE_ROYALTY" => InstructionIdent::ClaimPackageRoyalty,
+            "CLAIM_PACKAGE_ROYALTIES" => InstructionIdent::ClaimPackageRoyalties,
             "CREATE_VALIDATOR" => InstructionIdent::CreateValidator,
             _ => {
                 return None;
@@ -665,11 +669,19 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
+            InstructionIdent::LockMetadata => Instruction::LockMetadata {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
+            InstructionIdent::SetComponentRoyalty => Instruction::SetComponentRoyalty {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockComponentRoyalty => Instruction::LockComponentRoyalty {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::ClaimComponentRoyalties => Instruction::ClaimComponentRoyalties {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
@@ -691,7 +703,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
+            InstructionIdent::ClaimPackageRoyalties => Instruction::ClaimPackageRoyalties {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

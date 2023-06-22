@@ -9,7 +9,7 @@ use crate::*;
 
 // NOTE: redundant code to `NonFungibleLocalId` in favor of minimum dependency
 
-pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
+pub const MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestNonFungibleLocalId {
@@ -20,7 +20,7 @@ pub enum ManifestNonFungibleLocalId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ContentValidationError {
+pub enum ManifestNonFungibleLocalIdValidationError {
     TooLong,
     Empty,
     ContainsBadCharacter(char),
@@ -28,31 +28,31 @@ pub enum ContentValidationError {
 }
 
 impl ManifestNonFungibleLocalId {
-    pub fn string(s: String) -> Result<Self, ContentValidationError> {
+    pub fn string(s: String) -> Result<Self, ManifestNonFungibleLocalIdValidationError> {
         if s.len() == 0 {
-            return Err(ContentValidationError::Empty);
+            return Err(ManifestNonFungibleLocalIdValidationError::Empty);
         }
-        if s.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
-            return Err(ContentValidationError::TooLong);
+        if s.len() > MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
+            return Err(ManifestNonFungibleLocalIdValidationError::TooLong);
         }
         for char in s.chars() {
             if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
-                return Err(ContentValidationError::ContainsBadCharacter(char));
+                return Err(ManifestNonFungibleLocalIdValidationError::ContainsBadCharacter(char));
             }
         }
         Ok(Self::String(s))
     }
 
-    pub fn integer(s: u64) -> Result<Self, ContentValidationError> {
+    pub fn integer(s: u64) -> Result<Self, ManifestNonFungibleLocalIdValidationError> {
         Ok(Self::Integer(s))
     }
 
-    pub fn bytes(s: Vec<u8>) -> Result<Self, ContentValidationError> {
+    pub fn bytes(s: Vec<u8>) -> Result<Self, ManifestNonFungibleLocalIdValidationError> {
         if s.len() == 0 {
-            return Err(ContentValidationError::Empty);
+            return Err(ManifestNonFungibleLocalIdValidationError::Empty);
         }
-        if s.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
-            return Err(ContentValidationError::TooLong);
+        if s.len() > MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
+            return Err(ManifestNonFungibleLocalIdValidationError::TooLong);
         }
         Ok(Self::Bytes(s))
     }
@@ -72,7 +72,7 @@ impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
                         .chars()
                         .collect();
                 let len: u8 = u
-                    .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
+                    .int_in_range(1..=MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
                     .unwrap();
                 let s = (0..len).map(|_| *u.choose(&charset[..]).unwrap()).collect();
                 Self::String(s)
@@ -83,7 +83,7 @@ impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
             }
             2 => {
                 let len: u8 = u
-                    .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
+                    .int_in_range(1..=MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
                     .unwrap();
                 let bytes = (0..len).map(|_| u8::arbitrary(u).unwrap()).collect();
                 Self::Bytes(bytes)

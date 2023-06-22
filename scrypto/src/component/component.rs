@@ -12,9 +12,6 @@ use radix_engine_common::prelude::{
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
@@ -191,39 +188,6 @@ pub trait MethodMapping<T> {
 
     fn to_mapping(self) -> Vec<(String, T)>;
     fn methods() -> Vec<&'static str>;
-}
-
-pub struct RoyaltyMethods<T> {
-    pub set_royalty_config: T,
-    pub claim_royalty: T,
-}
-
-impl<T> MethodMapping<T> for RoyaltyMethods<T> {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
-
-    fn to_mapping(self) -> Vec<(String, T)> {
-        vec![
-            (
-                COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-                self.set_royalty_config,
-            ),
-            (
-                COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                self.claim_royalty,
-            ),
-        ]
-    }
-
-    fn methods() -> Vec<&'static str> {
-        vec![
-            COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-            COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
-        ]
-    }
-}
-
-pub struct RoyaltiesConfig<R: MethodMapping<RoyaltyAmount>> {
-    pub method_royalties: R,
 }
 
 pub struct MetadataMethods<T> {

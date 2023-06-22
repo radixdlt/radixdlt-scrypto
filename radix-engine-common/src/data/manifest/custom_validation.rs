@@ -1,11 +1,8 @@
-use super::model::ManifestExpression;
-use super::*;
+use super::model::*;
 use crate::data::scrypto::{
     ReferenceValidation, ScryptoCustomTypeKind, ScryptoCustomTypeValidation,
 };
-use crate::*;
-use sbor::rust::prelude::*;
-use sbor::traversal::TerminalValueRef;
+use crate::internal_prelude::*;
 
 impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
     fn apply_validation_for_custom_value<'de>(
@@ -117,7 +114,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                         reference_validation,
                     )) => {
                         let is_valid = match address {
-                            model::ManifestAddress::Static(node_id) => match reference_validation {
+                            ManifestAddress::Static(node_id) => match reference_validation {
                                 ReferenceValidation::IsGlobal => node_id.is_global(),
                                 ReferenceValidation::IsGlobalPackage => node_id.is_global_package(),
                                 ReferenceValidation::IsGlobalComponent => {
@@ -130,7 +127,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                                 ReferenceValidation::IsInternal => node_id.is_internal(),
                                 ReferenceValidation::IsInternalTyped(_, _) => node_id.is_internal(), // Assume yes
                             },
-                            model::ManifestAddress::Named(_) => {
+                            ManifestAddress::Named(_) => {
                                 reference_validation.could_match_manifest_address()
                             }
                         };
@@ -228,15 +225,14 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
 
 #[cfg(test)]
 mod tests {
-    use crate::data::manifest::model::*;
+    use super::*;
+
     use crate::data::scrypto::model::NonFungibleLocalId;
     use crate::data::scrypto::{well_known_scrypto_custom_types, ScryptoValue};
     use crate::data::scrypto::{ScryptoCustomSchema, ScryptoDescribe};
     use crate::math::{Decimal, PreciseDecimal};
     use crate::native_addresses::*;
     use crate::types::{PackageAddress, ResourceAddress};
-
-    use super::*;
 
     pub struct Bucket;
 

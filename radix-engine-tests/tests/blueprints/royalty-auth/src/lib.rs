@@ -43,7 +43,7 @@ mod royalty_test {
         }
 
         pub fn claim_package_royalty(package: Package, proof: Proof) -> Bucket {
-            proof.authorize(|| package.claim_royalty())
+            proof.authorize(|| package.claim_royalties())
         }
 
         pub fn claim_component_royalty(component: Global<AnyComponent>, proof: Proof) -> Bucket {

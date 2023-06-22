@@ -3,7 +3,6 @@ use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
-use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::*;
 
