@@ -1164,11 +1164,11 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "withdraw"
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
 ;
 TAKE_FROM_WORKTOP
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
     Bucket("bucket1")
 ;
