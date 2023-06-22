@@ -371,7 +371,7 @@ impl Authorization {
                     api.kernel_drop_lock(handle)?;
                     match owner_role {
                         OwnerRole::None => return Ok(AuthorizationCheckResult::Failed(vec![])),
-                        OwnerRole::Updateable(rule) | OwnerRole::Fixed(rule) => rule,
+                        OwnerRole::Updatable(rule) | OwnerRole::Fixed(rule) => rule,
                     }
                 }
             }

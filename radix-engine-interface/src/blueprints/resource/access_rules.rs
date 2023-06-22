@@ -208,7 +208,7 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 pub enum OwnerRole {
     None,
     Fixed(AccessRule),
-    Updateable(AccessRule),
+    Updatable(AccessRule),
 }
 
 impl OwnerRole {
@@ -216,7 +216,7 @@ impl OwnerRole {
     pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
         match self {
             OwnerRole::Fixed(rule) => RoleEntry::immutable(rule),
-            OwnerRole::Updateable(rule) => RoleEntry::new(rule, [owner_role_name]),
+            OwnerRole::Updatable(rule) => RoleEntry::new(rule, [owner_role_name]),
             OwnerRole::None => RoleEntry::immutable(AccessRule::DenyAll),
         }
     }
