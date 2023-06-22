@@ -56,6 +56,7 @@ pub enum CostingEntry<'a> {
         size_old: u32,
         size_new: u32,
     },
+    SubstateDeleteFromTrack,
     // FIXME: more costing after API becomes stable.
 }
 
@@ -323,6 +324,7 @@ impl FeeTable {
                 size_old: _,
                 size_new: _,
             } => 0,
+            CostingEntry::SubstateDeleteFromTrack => 0,
         }) as u64
             * COSTING_COEFFICENT_CPU
             >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON))
@@ -356,9 +358,11 @@ impl FeeTable {
             | CostingEntry::SubstateWriteToTrack { size } => {
                 let size =
                     if let CostingEntry::SubstateRewriteToTrack { size_old, size_new } = entry {
-                        if size_new == size_old || size_new < size_old
+                        if size_new == size_old {
+                            return 0;
+                        }
                         // TODO: refund for reduced write size?
-                        {
+                        if size_new < size_old {
                             return 0;
                         }
                         size_new - size_old
@@ -381,6 +385,7 @@ impl FeeTable {
                 value += (value >> 16) + 1;
                 value.try_into().unwrap_or(u32::MAX)
             }
+            CostingEntry::SubstateDeleteFromTrack => 191, // Averga of P95 points from benchmark
             _ => 0,
         }) as u64
             * COSTING_COEFFICENT_STORAGE
