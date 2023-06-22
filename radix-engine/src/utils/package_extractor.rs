@@ -5,7 +5,7 @@ use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::NopWasmRuntime;
+use crate::vm::wasm_runtime::NopWasmRuntime;
 use sbor::rust::sync::Arc;
 
 #[derive(Debug)]

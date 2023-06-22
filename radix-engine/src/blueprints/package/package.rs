@@ -3,9 +3,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system_modules::costing::{
-    apply_royalty_cost, RoyaltyRecipient, FIXED_HIGH_FEE, FIXED_MEDIUM_FEE,
-};
+use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};

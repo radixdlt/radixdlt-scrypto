@@ -1,5 +1,4 @@
 use crate::errors::{ApplicationError, RuntimeError};
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;

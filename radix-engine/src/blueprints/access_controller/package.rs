@@ -2,7 +2,6 @@ use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use crate::{event_schema, method_auth_template};
 use native_sdk::component::BorrowedObject;
@@ -25,7 +24,6 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use resources_tracker_macro::trace_resources;

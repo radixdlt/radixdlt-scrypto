@@ -1,7 +1,6 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorBlueprint};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_auth_template, types::*};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;

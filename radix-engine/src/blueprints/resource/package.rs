@@ -4,7 +4,6 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
-use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
 use crate::{event_schema, method_auth_template};
 use native_sdk::runtime::Runtime;

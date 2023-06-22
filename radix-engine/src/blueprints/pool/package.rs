@@ -6,7 +6,6 @@ use crate::event_schema;
 use crate::kernel::kernel_api::*;
 use crate::method_auth_template;
 use crate::system::system_callback::*;
-use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
