@@ -26,7 +26,6 @@ use radix_engine_interface::schema::{
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
-use resources_tracker_macro::trace_resources;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -503,7 +502,6 @@ impl AccessControllerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

@@ -17,6 +17,7 @@ use crate::types::*;
 use crate::vm::VmInvoke;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
+use resources_tracker_macro::trace_resources;
 
 pub struct NativeVm;
 
@@ -44,6 +45,7 @@ pub struct NativeVmInstance {
 }
 
 impl VmInvoke for NativeVmInstance {
+    #[trace_resources(log=self.package_address.to_hex(),log=export_name)]
     fn invoke<Y>(
         &mut self,
         export_name: &str,

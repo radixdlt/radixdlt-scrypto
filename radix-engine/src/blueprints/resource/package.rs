@@ -23,7 +23,6 @@ use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, TypeRef,
 };
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
-use resources_tracker_macro::trace_resources;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -2185,7 +2184,6 @@ impl ResourceManagerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

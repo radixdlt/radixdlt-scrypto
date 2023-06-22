@@ -16,7 +16,6 @@ use radix_engine_interface::schema::{
 
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
 use crate::method_auth_template;
-use resources_tracker_macro::trace_resources;
 
 use super::AccountSubstate;
 
@@ -482,7 +481,6 @@ impl AccountNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

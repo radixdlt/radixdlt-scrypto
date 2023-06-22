@@ -14,7 +14,6 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit, TypeRef,
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
-use resources_tracker_macro::trace_resources;
 
 pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
 
@@ -111,7 +110,6 @@ impl TransactionTrackerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

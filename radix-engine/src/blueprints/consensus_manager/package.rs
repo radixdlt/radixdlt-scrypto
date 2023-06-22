@@ -15,7 +15,6 @@ use radix_engine_interface::schema::{
     BlueprintSortedIndexSchema, BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
     ReceiverInfo, TypeRef,
 };
-use resources_tracker_macro::trace_resources;
 
 use super::*;
 
@@ -461,7 +460,6 @@ impl ConsensusManagerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

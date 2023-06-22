@@ -19,7 +19,6 @@ use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, RefTypes, TypeRef,
 };
-use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
@@ -656,7 +655,6 @@ impl PackageNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y, L: Default>(
         export_name: &str,
         input: &IndexedScryptoValue,

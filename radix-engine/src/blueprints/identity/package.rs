@@ -20,7 +20,6 @@ use radix_engine_interface::schema::{
     TypeRef,
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
-use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
 const IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
@@ -126,7 +125,6 @@ impl IdentityNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

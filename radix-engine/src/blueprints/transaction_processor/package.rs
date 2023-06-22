@@ -12,7 +12,6 @@ use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FunctionSchemaInit, TypeRef,
 };
-use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
 use super::TransactionProcessorRunInput;
@@ -72,7 +71,6 @@ impl TransactionProcessorNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

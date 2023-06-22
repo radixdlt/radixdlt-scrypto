@@ -4,6 +4,7 @@ use crate::vm::vm::VmInvoke;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::ScryptoRuntime;
 use radix_engine_interface::api::{ClientApi, ClientLimitsApi};
+use resources_tracker_macro::trace_resources;
 
 pub struct ScryptoVm<W: WasmEngine> {
     pub wasm_engine: W,
@@ -46,9 +47,10 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 }
 
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
+    #[trace_resources(log=self.package_address.to_hex(),log=export_name)]
     fn invoke<Y>(
         &mut self,
-        func_name: &str,
+        export_name: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -59,7 +61,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
                 api,
                 self.package_address,
-                func_name.to_string(),
+                export_name.to_string(),
             ));
 
             let mut input = Vec::new();
@@ -69,7 +71,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
                     .expect("Failed to allocate buffer"),
             );
             self.instance
-                .invoke_export(func_name, input, &mut runtime)?
+                .invoke_export(export_name, input, &mut runtime)?
         };
 
         let consumed = self.instance.consumed_memory()?;
