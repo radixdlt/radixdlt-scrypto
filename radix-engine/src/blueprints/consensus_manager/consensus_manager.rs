@@ -30,9 +30,21 @@ pub struct ConsensusManagerConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerSubstate {
+    /// The current epoch.
     pub epoch: Epoch,
-    pub epoch_start_milli: i64,
+    /// The effective start-time of the epoch.
+    /// This is used to calculate the effective duration, for the purpose of calculating
+    /// when to change epoch. This will typically be close to the `actual_epoch_start_milli`
+    /// but may differ slightly as it attempts to avoid minor systematic drift in the epoch
+    /// start time.
+    pub effective_epoch_start_milli: i64,
+    /// The actual start-time of the epoch.
+    /// This is just saved as a sanity-check for checking divergence between actual and effective.
+    pub actual_epoch_start_milli: i64,
+    /// The current round in the epoch.
     pub round: Round,
+    /// The current leader - this is used for knowing who was the validator for the following
+    /// round of transactions
     pub current_leader: Option<ValidatorIndex>,
 }
 
@@ -235,7 +247,8 @@ impl ConsensusManagerBlueprint {
             };
             let consensus_manager = ConsensusManagerSubstate {
                 epoch: initial_epoch,
-                epoch_start_milli: initial_time_milli,
+                actual_epoch_start_milli: initial_time_milli,
+                effective_epoch_start_milli: initial_time_milli,
                 round: Round::zero(),
                 current_leader: initial_current_leader,
             };
@@ -452,19 +465,26 @@ impl ConsensusManagerBlueprint {
         Self::update_proposal_statistics(progressed_rounds, proposal_history, api)?;
 
         let config = &config_substate.config;
-        let epoch_duration_millis = proposer_timestamp_milli - manager_substate.epoch_start_milli;
-        if config
-            .epoch_change_condition
-            .is_met(epoch_duration_millis, round)
-        {
-            let next_epoch = manager_substate.epoch.next();
-            Self::epoch_change(next_epoch, config, api)?;
-            manager_substate.epoch = next_epoch;
-            manager_substate.epoch_start_milli = proposer_timestamp_milli;
-            manager_substate.round = Round::zero();
-        } else {
-            Runtime::emit_event(api, RoundChangeEvent { round })?;
-            manager_substate.round = round;
+        let should_epoch_change = config.epoch_change_condition.should_epoch_change(
+            manager_substate.effective_epoch_start_milli,
+            proposer_timestamp_milli,
+            round,
+        );
+        match should_epoch_change {
+            EpochChangeOutcome::NoChange => {
+                Runtime::emit_event(api, RoundChangeEvent { round })?;
+                manager_substate.round = round;
+            }
+            EpochChangeOutcome::Change {
+                next_epoch_effective_start_millis: next_epoch_effective_start,
+            } => {
+                let next_epoch = manager_substate.epoch.next();
+                Self::epoch_change(next_epoch, config, api)?;
+                manager_substate.epoch = next_epoch;
+                manager_substate.round = Round::zero();
+                manager_substate.actual_epoch_start_milli = proposer_timestamp_milli;
+                manager_substate.effective_epoch_start_milli = next_epoch_effective_start;
+            }
         }
         manager_substate.current_leader = Some(current_leader);
 

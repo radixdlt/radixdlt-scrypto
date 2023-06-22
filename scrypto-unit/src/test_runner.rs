@@ -1558,12 +1558,12 @@ impl TestRunner {
     /// Executes a "start round number `round` at timestamp `timestamp_ms`" system transaction, as
     /// if it was proposed by the first validator from the validator set, after `round - 1` missed
     /// rounds by that validator.
-    /// Please note that this assumes that state is right at the beginning of an epoch.
     pub fn advance_to_round_at_timestamp(
         &mut self,
         round: Round,
         proposer_timestamp_ms: i64,
     ) -> TransactionReceipt {
+        let expected_round_number = self.get_consensus_manager_state().round.number() + 1;
         self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
@@ -1572,7 +1572,9 @@ impl TestRunner {
                     round,
                     proposer_timestamp_ms,
                     leader_proposal_history: LeaderProposalHistory {
-                        gap_round_leaders: (1..round.number()).map(|_| 0).collect(),
+                        gap_round_leaders: (expected_round_number..round.number())
+                            .map(|_| 0)
+                            .collect(),
                         current_leader: 0,
                         is_fallback: false,
                     },
@@ -1599,6 +1601,16 @@ impl TestRunner {
             )
             .unwrap()
             .epoch_milli
+    }
+
+    pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
+        self.substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+                CONSENSUS_MANAGER.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+            )
+            .unwrap()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
