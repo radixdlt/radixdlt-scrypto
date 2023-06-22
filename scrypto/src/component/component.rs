@@ -9,7 +9,9 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
 use radix_engine_common::prelude::{
     OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, MetadataInit};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
@@ -266,7 +268,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-
         let (metadata, metadata_roles) = {
             let (metadata_init, metadata_roles) = self
                 .metadata_config

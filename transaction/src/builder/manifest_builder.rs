@@ -1,8 +1,8 @@
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataInit,
-    MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT, METADATA_SET_IDENT,
+    MetadataInit, MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT,
+    METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentSetRoyaltyInput,

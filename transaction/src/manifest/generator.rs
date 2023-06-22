@@ -1463,6 +1463,7 @@ mod tests {
     use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::api::node_modules::metadata::MetadataInit;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
@@ -1473,7 +1474,6 @@ mod tests {
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
-    use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 
     #[macro_export]
     macro_rules! generate_value_ok {
