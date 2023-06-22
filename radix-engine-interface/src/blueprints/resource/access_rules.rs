@@ -133,8 +133,12 @@ impl RoleKey {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRoleUpdater {
+    /// Owner is fixed and cannot be updated by anyone
     None,
+    /// Owner role may only be updated by the owner themself
     Owner,
+    /// Owner role may be updated by the object containing the access rules.
+    /// This is currently primarily used for Presecurified objects
     Object,
 }
 
@@ -199,13 +203,19 @@ impl<const N: usize> From<[&str; N]> for RoleList {
     }
 }
 
-// Front end data structure for specifying owner role
+/// Front end data structure for specifying owner role
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRole {
+    /// No owner role
     None,
+    /// Rule protected Owner role which may not be updated
     Fixed(AccessRule),
+    /// Rule protected Owner role which may only be updated by the owner themself
     Updatable(AccessRule),
+    /// Rule protected Owner role which may only be updated by the object
+    /// containing the access rules.
+    /// This is currently primarily used for Presecurified objects
     UpdatableByObject(AccessRule),
 }
 
