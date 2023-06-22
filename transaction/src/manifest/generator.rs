@@ -1701,11 +1701,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1793,11 +1793,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1858,11 +1858,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1904,11 +1904,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
