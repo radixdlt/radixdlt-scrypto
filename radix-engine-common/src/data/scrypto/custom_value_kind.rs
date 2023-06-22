@@ -1,6 +1,6 @@
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::*;
 
 pub const VALUE_KIND_REFERENCE: u8 = 0x80;
 pub const VALUE_KIND_OWN: u8 = 0x90;

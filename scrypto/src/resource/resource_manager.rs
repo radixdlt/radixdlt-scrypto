@@ -66,7 +66,7 @@ impl ResourceManager {
 
     pub fn set_mintable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_role(MINT_ROLE, access_rule);
+        access_rules.set_role(MINTER_ROLE, access_rule);
     }
 
     pub fn set_burnable(&self, access_rule: AccessRule) {
@@ -76,62 +76,62 @@ impl ResourceManager {
 
     pub fn set_withdrawable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_role(WITHDRAW_ROLE, access_rule);
+        access_rules.set_role(WITHDRAWER_ROLE, access_rule);
     }
 
     pub fn set_depositable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_role(DEPOSIT_ROLE, access_rule);
+        access_rules.set_role(DEPOSITOR_ROLE, access_rule);
     }
 
     pub fn set_recallable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_role(RECALL_ROLE, access_rule);
+        access_rules.set_role(RECALLER_ROLE, access_rule);
     }
 
     pub fn set_freezeable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_role(FREEZE_ROLE, access_rule);
+        access_rules.set_role(FREEZER_ROLE, access_rule);
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_role(UPDATE_NON_FUNGIBLE_DATA_ROLE, access_rule);
+        access_rules.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
     }
 
     pub fn lock_mintable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.lock_role(MINT_ROLE);
+        access_rules.lock_role(MINTER_ROLE);
     }
 
     pub fn lock_burnable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.lock_role(BURN_ROLE);
+        access_rules.lock_role(BURNER_ROLE);
     }
 
     pub fn lock_updateable_non_fungible_data(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.lock_role(UPDATE_NON_FUNGIBLE_DATA_ROLE);
+        access_rules.lock_role(NON_FUNGIBLE_DATA_UPDATER_ROLE);
     }
 
     pub fn lock_withdrawable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.lock_role(WITHDRAW_ROLE);
+        access_rules.lock_role(WITHDRAWER_ROLE);
     }
 
     pub fn lock_depositable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.lock_role(DEPOSIT_ROLE);
+        access_rules.lock_role(DEPOSITOR_ROLE);
     }
 
     pub fn lock_recallable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.lock_role(RECALL_ROLE);
+        access_rules.lock_role(RECALLER_ROLE);
     }
 
     pub fn lock_freezeable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.lock_role(FREEZE_ROLE);
+        access_rules.lock_role(FREEZER_ROLE);
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {

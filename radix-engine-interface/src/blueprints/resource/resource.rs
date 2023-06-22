@@ -1,6 +1,7 @@
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
+use radix_engine_interface::blueprints::resource::VaultFreezeFlags;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -19,12 +20,14 @@ pub struct LiquidFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct VaultFrozenFlag {
-    pub is_frozen: bool,
+    pub frozen: VaultFreezeFlags,
 }
 
 impl Default for VaultFrozenFlag {
     fn default() -> Self {
-        Self { is_frozen: false }
+        Self {
+            frozen: VaultFreezeFlags::empty(),
+        }
     }
 }
 

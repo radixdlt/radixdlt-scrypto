@@ -1121,7 +1121,7 @@ impl TestRunner {
 
     fn create_fungible_resource_and_deposit(
         &mut self,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
@@ -1221,8 +1221,7 @@ impl TestRunner {
     }
 
     pub fn create_everything_allowed_non_fungible_resource(&mut self) -> ResourceAddress {
-        let mut access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> =
-            BTreeMap::new();
+        let mut access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)> = BTreeMap::new();
         for key in ALL_RESOURCE_AUTH_KEYS {
             access_rules.insert(key, (rule!(allow_all), rule!(allow_all)));
         }
@@ -1246,6 +1245,7 @@ impl TestRunner {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         access_rules.insert(Recall, (rule!(allow_all), LOCKED));
         access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
 
@@ -1254,9 +1254,9 @@ impl TestRunner {
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
 
         self.create_fungible_resource_and_deposit(access_rules, account)
     }
@@ -1268,8 +1268,8 @@ impl TestRunner {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
@@ -1284,10 +1284,10 @@ impl TestRunner {
 
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(require(auth_resource_address)), LOCKED),
         );
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
         (auth_resource_address, resource_address)
@@ -1295,8 +1295,8 @@ impl TestRunner {
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
         entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
@@ -1329,8 +1329,8 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
             .create_fungible_resource(

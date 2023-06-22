@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::resource::{
-    ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+    ResourceAction, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
@@ -95,7 +95,7 @@ impl NewSimpleBadge {
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata,
                     access_rules: btreemap!(
-                        ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
+                        ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
                     ),
                     entries: btreemap!(
                         NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),

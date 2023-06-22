@@ -1,0 +1,23 @@
+# Freeze Withdraws from a vault
+FREEZE_VAULT Address("${vault_address}") Tuple(1u32);
+
+# Freeze Deposits into a vault
+FREEZE_VAULT Address("${vault_address}") Tuple(2u32);
+
+# Freeze Burns in a vault
+FREEZE_VAULT Address("${vault_address}") Tuple(4u32);
+
+# Freeze Withdraws/Deposits/Burns of a vault
+FREEZE_VAULT Address("${vault_address}") Tuple(7u32);
+
+# Unfreeze Withdraws from a vault
+UNFREEZE_VAULT Address("${vault_address}") Tuple(1u32);
+
+# Unfreeze Deposits into a vault
+UNFREEZE_VAULT Address("${vault_address}") Tuple(2u32);
+
+# Unfreeze Burns in a vault
+UNFREEZE_VAULT Address("${vault_address}") Tuple(4u32);
+
+# Unfreeze Withdraws/Deposits/Burns of a vault
+UNFREEZE_VAULT Address("${vault_address}") Tuple(7u32);
