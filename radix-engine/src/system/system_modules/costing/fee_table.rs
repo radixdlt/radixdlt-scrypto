@@ -9,8 +9,8 @@ const COSTING_COEFFICENT_CPU: u64 = 335;
 const COSTING_COEFFICENT_CPU_DIV_BITS: u64 = 4; // used to divide by shift left operator
 const COSTING_COEFFICENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
 
-const COSTING_COEFFICENT_STORAGE: u64 = 10;
-const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
+const COSTING_COEFFICENT_STORAGE: u64 = 14;
+const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 8; // used to scale up or down all storage costing
 
 pub enum CostingEntry<'a> {
     /* invoke */
@@ -349,18 +349,29 @@ impl FeeTable {
                 }
             }
             CostingEntry::SubstateReadFromDbNotFound => 322, // average value from benchmark
-            CostingEntry::SubstateWriteToTrack { size } => {
-                if *size <= 25 * 1024 {
-                    // apply constant value
-                    2200u32
-                } else {
-                    // apply function: f(size) = 0.00082827697 * size + 2243.5469
-                    // approximated integer representation: f(size) = (54 * size) / 2^16 + 2244
-                    let mut value: u64 = *size as u64;
-                    value *= 54; // 0.00082827697 * 2^16
-                    value += (value >> 16) + 2244;
-                    value.try_into().unwrap_or(u32::MAX)
-                }
+            CostingEntry::SubstateRewriteToTrack {
+                size_old: _,
+                size_new: size,
+            }
+            | CostingEntry::SubstateWriteToTrack { size } => {
+                let size =
+                    if let CostingEntry::SubstateRewriteToTrack { size_old, size_new } = entry {
+                        if size_new == size_old || size_new < size_old
+                        // TODO: refund for reduced write size?
+                        {
+                            return 0;
+                        }
+                        size_new - size_old
+                    } else {
+                        *size
+                    };
+
+                // apply function: f(size) = 0.0004 * size + 1000
+                // approximated integer representation: f(size) = (262 * size) / 2^16 + 1000
+                let mut value: u64 = size as u64;
+                value *= 262; // 0.0004 * 2^16
+                value += (value >> 16) + 1000;
+                value.try_into().unwrap_or(u32::MAX)
             }
             CostingEntry::SubstateReadFromTrack { size } => {
                 // apply function: f(size) = 0.00012232433 * size + 1.4939442
@@ -370,11 +381,6 @@ impl FeeTable {
                 value += (value >> 16) + 1;
                 value.try_into().unwrap_or(u32::MAX)
             }
-            // FIXME: update numbers below
-            CostingEntry::SubstateRewriteToTrack {
-                size_old: _,
-                size_new,
-            } => 10 * size_new, // todo: determine correct value
             _ => 0,
         }) as u64
             * COSTING_COEFFICENT_STORAGE

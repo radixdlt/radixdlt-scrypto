@@ -70,15 +70,15 @@ fn test_basic_transfer() {
         + 1417 /* CreateNode */
         + 5217 /* DropLock */
         + 1365 /* DropNode */
-        + 736166 /* Invoke */
-        + 20688 /* LockSubstate */
+        + 735425 /* Invoke */
+        + 327518 /* LockSubstate */
         + 7952 /* ReadSubstate */
         + 57500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1345 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 856 /* WriteSubstate */
+        + 697 /* WriteSubstate */
     );
 }
 
@@ -199,8 +199,8 @@ fn test_radiswap() {
         + 3281 /* CreateNode */
         + 12469 /* DropLock */
         + 3045 /* DropNode */
-        + 3109581 /* Invoke */
-        + 3366197 /* LockSubstate */
+        + 3107898 /* Invoke */
+        + 3727486 /* LockSubstate */
         + 18928 /* ReadSubstate */
         + 122500 /* RunNative */
         + 20000 /* RunSystem */
@@ -208,12 +208,12 @@ fn test_radiswap() {
         + 50000 /* TxBaseCost */
         + 1765 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1885 /* WriteSubstate */
+        + 2056 /* WriteSubstate */
     );
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7414006"),
+        dec!("0.7773783"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -311,8 +311,8 @@ fn test_flash_loan() {
         + 5777 /* CreateNode */
         + 20905 /* DropLock */
         + 5565 /* DropNode */
-        + 4095003 /* Invoke */
-        + 7039471 /* LockSubstate */
+        + 4091947 /* Invoke */
+        + 7501158 /* LockSubstate */
         + 32312 /* ReadSubstate */
         + 192500 /* RunNative */
         + 40000 /* RunSystem */
@@ -320,7 +320,7 @@ fn test_flash_loan() {
         + 50000 /* TxBaseCost */
         + 2570 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 4302 /* WriteSubstate */
+        + 4967 /* WriteSubstate */
     );
 }
 
