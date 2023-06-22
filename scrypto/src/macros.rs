@@ -365,7 +365,7 @@ macro_rules! method_accessibility {
     (NOBODY) => ({
         [].into()
     });
-    ($($roles:ident),+) => ({
+    (restrict_to: [$($roles:ident),+]) => ({
         let mut list = RoleList::none();
         permission_role_list!(list, $($roles),+);
         MethodAccessibility::RoleProtected(list)
@@ -374,10 +374,10 @@ macro_rules! method_accessibility {
 
 #[macro_export]
 macro_rules! method_accessibilities {
-    ($module_methods:ident, $($method:ident => $($permission:ident),+ ;)*) => ({
+    ($module_methods:ident, $($method:ident => $accessibility:ident $(: [$($allow_role:ident),+])?;)*) => ({
         $module_methods::<MethodAccessibility> {
             $(
-                $method: method_accessibility!($($permission),+),
+                $method: method_accessibility!($accessibility $(: [$($allow_role),+])?),
             )*
         }
     })
@@ -385,8 +385,11 @@ macro_rules! method_accessibilities {
 
 #[macro_export]
 macro_rules! main_accessibility {
-    ($permissions:expr, $module_methods:ident, $($method:ident => $($permission:ident),+ ;)*) => ({
-        let permissions = method_accessibilities!($module_methods, $($method => $($permission),+ ;)*);
+    ($permissions:expr, $module_methods:ident, $($method:ident => $accessibility:ident $(: [$($allow_role:ident),+])?;)*) => ({
+        let permissions = method_accessibilities!(
+            $module_methods,
+            $($method => $accessibility $(: [$($allow_role),+])?;)*
+        );
         for (method, permission) in permissions.to_mapping() {
             $permissions.insert(MethodKey::new(method), permission);
         }
@@ -415,7 +418,7 @@ macro_rules! enable_method_auth {
             $($role:ident => updatable_by: [$($updaters:ident),*];)*
         },
         methods {
-            $($method:ident => $($permission:ident),+ ;)*
+            $($method:ident => $accessibility:ident $(: [$($allow_role:ident),+])?;)*
         }
     ) => (
         pub struct MethodRoles<T> {
@@ -436,7 +439,11 @@ macro_rules! enable_method_auth {
 
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
             let mut methods: BTreeMap<MethodKey, MethodAccessibility> = BTreeMap::new();
-            main_accessibility!(methods, Methods, $($method => $($permission),+ ;)*);
+            main_accessibility!(
+                methods,
+                Methods,
+                $($method => $accessibility $(: [$($allow_role),+])?;)*
+            );
 
             let mut roles: BTreeMap<RoleKey, RoleList> = BTreeMap::new();
             $(
@@ -453,11 +460,17 @@ macro_rules! enable_method_auth {
     );
 
     (
-        methods { $($method:ident => $($permission:ident),+ ;)* }
+        methods {
+            $($method:ident => $accessibility:ident $(: [$($allow_role:ident),+])?;)*
+        }
     ) => (
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
             let mut methods: BTreeMap<MethodKey, MethodAccessibility> = BTreeMap::new();
-            main_accessibility!(methods, Methods, $($method => $($permission),+ ;)*);
+            main_accessibility!(
+                methods,
+                Methods,
+                $($method => $accessibility $(: [$($allow_role),+])?;)*
+            );
 
             let roles = scrypto::blueprints::package::StaticRoles {
                 methods,

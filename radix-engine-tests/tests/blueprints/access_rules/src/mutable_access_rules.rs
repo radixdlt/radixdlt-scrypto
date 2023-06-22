@@ -8,8 +8,8 @@ mod mutable_access_rules_component {
             deposit_funds_auth => updatable_by: [];
         },
         methods {
-            borrow_funds => borrow_funds_auth;
-            deposit_funds => deposit_funds_auth;
+            borrow_funds => restrict_to: [borrow_funds_auth];
+            deposit_funds => restrict_to: [deposit_funds_auth];
             set_authority_rules => PUBLIC;
             lock_authority => PUBLIC;
         }

@@ -22,6 +22,7 @@ mod balance_changes_test {
             .enable_component_royalties(component_royalties! {
                 roles {
                     royalty_admin => rule!(allow_all), locked;
+                    royalty_admin_updater => rule!(deny_all), locked;
                 },
                 init {
                     put => Xrd(1.into()), locked;

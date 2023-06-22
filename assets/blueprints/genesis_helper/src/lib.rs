@@ -63,8 +63,8 @@ mod genesis_helper {
             system => updatable_by: [system];
         },
         methods {
-            ingest_data_chunk => system;
-            wrap_up => system;
+            ingest_data_chunk => restrict_to: [system];
+            wrap_up => restrict_to: [system];
         }
     }
 
