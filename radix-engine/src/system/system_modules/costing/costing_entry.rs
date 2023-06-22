@@ -6,6 +6,8 @@ use radix_engine_interface::*;
 use super::FeeTable;
 
 pub enum CostingEntry<'a> {
+    // FIXME: Add test to verify each entry
+
     /* TX */
     TxBaseCost,
     TxPayloadCost {
@@ -28,19 +30,17 @@ pub enum CostingEntry<'a> {
     /* invoke */
     Invoke {
         actor: &'a Actor,
-        input_size: u32,
+        input_size: usize,
     },
 
     /* node */
     AllocateNodeId,
     AllocateGlobalAddress,
     CreateNode {
-        entity_type: EntityType,
-        size: usize,
+        node_id: &'a NodeId,
+        db_access: &'a StoreAccessInfo,
     },
-    DropNode {
-        size: usize,
-    },
+    DropNode,
     OpenSubstate {
         db_access: &'a StoreAccessInfo,
     },
@@ -89,6 +89,7 @@ pub enum CostingEntry<'a> {
     AuthModule {
         direct_charge: u32,
     },
+    DropLock {},
 }
 
 impl<'a> CostingEntry<'a> {
